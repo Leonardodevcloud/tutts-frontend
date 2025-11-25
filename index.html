@@ -274,10 +274,48 @@
                   <div className="text-white text-5xl font-bold">tutts</div>
                 </div>
                 <h1 className="text-3xl font-bold text-gray-800">Sistema de Solicitações</h1>
-                <p className="text-gray-600 mt-2">{view === 'login' ? 'Entre com suas credenciais' : 'Cadastre-se'}</p>
+                <p className="text-gray-600 mt-2">
+                  {view === 'login' ? 'Entre com suas credenciais' : 
+                   view === 'register' ? 'Cadastre-se' :
+                   'Recuperar senha'}
+                </p>
               </div>
 
-              {view === 'login' ? (
+              {view === 'forgot-password' ? (
+                <div className="space-y-4">
+                  <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">
+                    <div className="flex">
+                      <div className="flex-shrink-0">
+                        <svg className="h-5 w-5 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <div className="ml-3">
+                        <p className="text-sm text-blue-700">
+                          <strong>Para recuperar sua senha:</strong><br/>
+                          Entre em contato com o administrador informando seu COD Profissional.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+                    <p className="text-sm font-semibold text-gray-700">📞 Contatos:</p>
+                    <p className="text-sm text-gray-600">📧 Email: supervisor@tutts.com.br</p>
+                    <p className="text-sm text-gray-600">📱 WhatsApp: https://wa.me/message/GIQEV373ZCF4M1</p>
+                    <p className="text-xs text-gray-500 mt-2">
+                      
+                    </p>
+                  </div>
+
+                  <button 
+                    onClick={() => setView('login')} 
+                    className="w-full bg-purple-900 text-white py-3 rounded-lg font-semibold hover:bg-purple-800"
+                  >
+                    ← Voltar para login
+                  </button>
+                </div>
+              ) : view === 'login' ? (
                 <div className="space-y-4">
                   <input
                     type="text"
@@ -303,6 +341,12 @@
                   </button>
                   <button onClick={() => setView('register')} className="w-full text-purple-900 text-sm">
                     Não tem conta? Cadastre-se
+                  </button>
+                  <button 
+                    onClick={() => setView('forgot-password')} 
+                    className="w-full text-purple-700 text-sm hover:text-purple-900 underline"
+                  >
+                    Esqueci minha senha
                   </button>
                   
                 </div>
@@ -579,6 +623,53 @@
             </div>
 
             <PieChart submissions={submissions} />
+
+            <div className="bg-white rounded-xl shadow p-6 mt-6">
+              <h2 className="text-lg font-semibold mb-4">👥 Gerenciar Usuários</h2>
+              <div className="space-y-3">
+                {users.map(u => (
+                  <div key={u.codProfissional} className="border rounded-lg p-4 flex items-center justify-between">
+                    <div className="flex-1">
+                      <p className="font-semibold text-gray-800">{u.fullName}</p>
+                      <p className="text-sm text-gray-600">COD: {u.codProfissional}</p>
+                      <p className="text-xs text-gray-500">Cadastrado em: {u.createdAt}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <input
+                        type="password"
+                        placeholder="Nova senha"
+                        value={formData[`newpass_${u.codProfissional}`] || ''}
+                        onChange={e => setFormData({...formData, [`newpass_${u.codProfissional}`]: e.target.value})}
+                        className="px-3 py-2 border rounded text-sm w-32"
+                      />
+                      <button
+                        onClick={async () => {
+                          const newPassword = formData[`newpass_${u.codProfissional}`];
+                          if (!newPassword) {
+                            showToast('Digite uma nova senha', 'error');
+                            return;
+                          }
+                          try {
+                            await fetch(`${API_URL}/users/reset-password`, {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ codProfissional: u.codProfissional, newPassword })
+                            });
+                            showToast('✅ Senha alterada com sucesso!', 'success');
+                            setFormData({...formData, [`newpass_${u.codProfissional}`]: ''});
+                          } catch (err) {
+                            showToast('Erro ao alterar senha', 'error');
+                          }
+                        }}
+                        className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 text-sm"
+                      >
+                        🔑 Resetar
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
 
             <div className="bg-white rounded-xl shadow p-6 mb-6 mt-6">
               <h2 className="text-lg font-semibold mb-4">Aguardando Validação</h2>
