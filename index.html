@@ -149,21 +149,34 @@
       };
 
       const loadSubmissions = async () => {
-        if (loadingSubmissions) return; // Evita múltiplas chamadas
+        if (loadingSubmissions) return;
         setLoadingSubmissions(true);
         try {
           const query = user.role === 'user' ? `?userId=${user.id}&userCod=${user.cod_profissional}` : '';
           const res = await fetch(`${API_URL}/submissions${query}`);
           const data = await res.json();
-          setSubmissions(data.map(s => ({
-            ...s,
-            ordemServico: s.ordem_servico,
-            codProfissional: s.user_cod,
-            fullName: s.user_name,
-            imagemComprovante: s.imagem_comprovante,
-            imagens: s.imagens ? JSON.parse(s.imagens) : [], // Parse múltiplas imagens
-            timestamp: new Date(s.created_at).toLocaleString('pt-BR')
-          })));
+          setSubmissions(data.map(s => {
+            // Parse seguro de imagens
+            let parsedImages = [];
+            if (s.imagens) {
+              try {
+                parsedImages = JSON.parse(s.imagens);
+              } catch (e) {
+                console.warn('Erro ao parsear imagens:', e);
+                parsedImages = [];
+              }
+            }
+            
+            return {
+              ...s,
+              ordemServico: s.ordem_servico,
+              codProfissional: s.user_cod,
+              fullName: s.user_name,
+              imagemComprovante: s.imagem_comprovante,
+              imagens: parsedImages,
+              timestamp: new Date(s.created_at).toLocaleString('pt-BR')
+            };
+          }));
         } catch (err) {
           console.error('Erro ao carregar:', err);
           showToast('Erro ao carregar submissões', 'error');
@@ -232,9 +245,23 @@
       };
 
       const handleSubmitOS = async () => {
+        if (!formData.os || !formData.motivo) {
+          showToast('⚠️ Preencha OS e Motivo', 'error');
+          return;
+        }
+        
         setLoading(true);
         try {
-          await fetch(`${API_URL}/submissions`, {
+          // Preparar dados
+          const imagesJson = images.length > 0 ? JSON.stringify(images) : null;
+          
+          // Validar tamanho total
+          const dataSize = new Blob([imagesJson || '']).size;
+          if (dataSize > 10 * 1024 * 1024) {
+            throw new Error('Fotos muito grandes. Tente com fotos menores.');
+          }
+          
+          const res = await fetch(`${API_URL}/submissions`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -243,42 +270,96 @@
               userId: user.id,
               userCod: user.codProfissional,
               userName: user.fullName,
-              imagemComprovante: formData.imagem || null,
-              imagens: JSON.stringify(images), // Array de múltiplas imagens
+              imagemComprovante: null,
+              imagens: imagesJson,
               coordenadas: formData.coordenadas || null
             })
           });
+          
+          if (!res.ok) {
+            const error = await res.json().catch(() => ({ message: `Erro ${res.status}` }));
+            throw new Error(error.message || `Erro ${res.status}`);
+          }
+          
           showToast('✅ OS enviada com sucesso!', 'success');
           setFormData({});
-          setImages([]); // Limpar imagens
+          setImages([]);
           loadSubmissions();
         } catch (err) {
-          showToast('Erro ao enviar', 'error');
+          console.error('Erro ao enviar:', err);
+          showToast(`❌ ${err.message}`, 'error');
         } finally {
           setLoading(false);
         }
       };
 
-      // Adicionar múltiplas imagens (máximo 2)
-      const handleAddImages = (e) => {
+      // Comprimir imagem antes de adicionar
+      const compressImage = (file) => {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            const img = new Image();
+            img.onload = () => {
+              const canvas = document.createElement('canvas');
+              let width = img.width;
+              let height = img.height;
+              
+              // Redimensionar se muito grande
+              const MAX_WIDTH = 1200;
+              const MAX_HEIGHT = 1200;
+              
+              if (width > height) {
+                if (width > MAX_WIDTH) {
+                  height *= MAX_WIDTH / width;
+                  width = MAX_WIDTH;
+                }
+              } else {
+                if (height > MAX_HEIGHT) {
+                  width *= MAX_HEIGHT / height;
+                  height = MAX_HEIGHT;
+                }
+              }
+              
+              canvas.width = width;
+              canvas.height = height;
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(img, 0, 0, width, height);
+              
+              // Comprimir para JPEG qualidade 70%
+              const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+              resolve(compressedBase64);
+            };
+            img.onerror = reject;
+            img.src = event.target.result;
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      };
+
+      // Adicionar múltiplas imagens (máximo 2) com compressão
+      const handleAddImages = async (e) => {
         const files = Array.from(e.target.files);
         if (images.length + files.length > 2) {
           showToast('⚠️ Máximo 2 fotos por OS', 'error');
           return;
         }
         
-        files.forEach(file => {
-          if (file.size > 5 * 1024 * 1024) {
-            showToast('⚠️ Imagem muito grande (máx 5MB)', 'error');
-            return;
+        for (const file of files) {
+          if (file.size > 10 * 1024 * 1024) {
+            showToast('⚠️ Imagem muito grande (máx 10MB)', 'error');
+            continue;
           }
           
-          const reader = new FileReader();
-          reader.onload = (event) => {
-            setImages(prev => [...prev, event.target.result]);
-          };
-          reader.readAsDataURL(file);
-        });
+          try {
+            showToast('📸 Comprimindo foto...', 'success');
+            const compressedImage = await compressImage(file);
+            setImages(prev => [...prev, compressedImage]);
+            showToast('✅ Foto adicionada!', 'success');
+          } catch (err) {
+            showToast('❌ Erro ao processar imagem', 'error');
+          }
+        }
       };
 
       // Remover imagem específica
