@@ -527,21 +527,6 @@
         }
       };
 
-        try {
-          await fetch(`${API_URL}/submissions/${id}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-              status: newStatus, 
-              observacao: newStatus === 'pendente' ? null : (formData.obs || null)
-            })
-          });
-        } catch (err) {
-          showToast('⚠️ Erro. Recarregando...', 'error');
-          loadSubmissions();
-        }
-      };
-
       if (!user) {
         return (
           <div className="min-h-screen bg-gradient-to-br from-purple-100 to-purple-200 flex items-center justify-center p-4">
