@@ -525,28 +525,28 @@
                 ) : (
                   <div className="space-y-3">
                     {submissions.map(s => (
-                      <div key={s.id} className="border rounded-lg p-4">
-                        <div className="bg-purple-50 p-3 rounded mb-2">
+                      <div key={s.id} className="border rounded-lg p-3">
+                        <div className="bg-purple-50 p-2 rounded mb-2">
                           <p className="text-xs text-purple-700 uppercase font-semibold">OS</p>
-                          <p className="text-xl font-bold text-purple-900">{s.ordemServico}</p>
+                          <p className="text-lg font-bold text-purple-900">{s.ordemServico}</p>
                         </div>
-                        <div className="bg-blue-50 p-3 rounded mb-2">
+                        <div className="bg-blue-50 p-2 rounded mb-2">
                           <p className="text-xs text-blue-700 uppercase font-semibold">Motivo</p>
-                          <p className="text-sm font-bold text-blue-900">{s.motivo}</p>
+                          <p className="text-xs font-bold text-blue-900">{s.motivo}</p>
                         </div>
                         {s.coordenadas && (
-                          <div className="bg-green-50 border border-green-200 p-3 rounded mb-2">
+                          <div className="bg-green-50 border border-green-200 p-2 rounded mb-2">
                             <div className="flex items-center justify-between">
                               <div className="flex-1">
                                 <p className="text-xs text-green-700 uppercase font-semibold">📍 Coordenadas</p>
-                                <p className="text-sm font-mono font-bold text-green-900">{s.coordenadas}</p>
+                                <p className="text-xs font-mono font-bold text-green-900">{s.coordenadas}</p>
                               </div>
                               <button
                                 onClick={() => {
                                   navigator.clipboard.writeText(s.coordenadas);
                                   showToast('📋 Coordenadas copiadas!', 'success');
                                 }}
-                                className="ml-2 px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
+                                className="ml-2 px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
                               >
                                 📋
                               </button>
@@ -671,26 +671,26 @@
                     <p className="text-gray-500">Nenhuma solicitação pendente</p>
                   ) : (
                     submissions.filter(s => s.status === 'pendente').map(s => (
-                      <div key={s.id} className="border rounded-lg p-4 mb-3">
-                        <p className="font-mono text-xl font-bold">OS: {s.ordemServico}</p>
+                      <div key={s.id} className="border rounded-lg p-3 mb-2">
+                        <p className="font-mono text-lg font-bold">OS: {s.ordemServico}</p>
                         <p className="text-sm text-gray-700">{s.fullName}</p>
                         <p className="text-xs text-purple-900 font-semibold">Motivo: {s.motivo}</p>
                         <p className="text-xs text-gray-500 mt-1">{s.timestamp}</p>
                         {s.coordenadas && (
-                          <div className="mt-3 bg-green-50 border-2 border-green-200 rounded-lg p-3">
+                          <div className="mt-2 bg-green-50 border border-green-200 rounded-lg p-2">
                             <div className="flex items-center justify-between">
                               <div className="flex-1">
                                 <p className="text-xs text-green-700 font-semibold mb-1">📍 COORDENADAS</p>
-                                <p className="text-base font-mono font-bold text-green-900">{s.coordenadas}</p>
+                                <p className="text-sm font-mono font-bold text-green-900">{s.coordenadas}</p>
                               </div>
                               <button
                                 onClick={() => {
                                   navigator.clipboard.writeText(s.coordenadas);
                                   showToast('📋 Coordenadas copiadas!', 'success');
                                 }}
-                                className="ml-3 px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                                className="ml-2 px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
                               >
-                                📋 Copiar
+                                📋
                               </button>
                             </div>
                             <a
@@ -704,12 +704,12 @@
                           </div>
                         )}
                         {s.imagemComprovante && (
-                          <div className="mt-3">
+                          <div className="mt-2">
                             <p className="text-xs text-gray-600 mb-1">Comprovante:</p>
                             <img 
                               src={s.imagemComprovante} 
                               alt="Comprovante" 
-                              className="max-h-48 rounded border cursor-pointer hover:opacity-80 transition"
+                              className="max-h-32 rounded border cursor-pointer hover:opacity-80 transition"
                               onClick={() => setImageModal(s.imagemComprovante)}
                             />
                             <p className="text-xs text-gray-500 mt-1">📷 Clique para expandir</p>
@@ -762,17 +762,17 @@
                     {submissions
                       .filter(s => !formData.filterStatus || formData.filterStatus === 'all' || s.status === formData.filterStatus)
                       .map(s => (
-                        <div key={s.id} className={`border rounded-lg p-4 ${
+                        <div key={s.id} className={`border rounded-lg p-3 ${
                           s.status === 'aprovada' ? 'bg-green-50 border-green-200' :
                           s.status === 'rejeitada' ? 'bg-red-50 border-red-200' :
                           'bg-gray-50'
                         }`}>
                           <div className="flex justify-between items-start mb-2">
                             <div>
-                              <p className="font-mono text-lg font-bold">OS: {s.ordemServico}</p>
-                              <p className="text-sm text-gray-700">{s.fullName} ({s.userCod || s.user_cod})</p>
+                              <p className="font-mono text-base font-bold">OS: {s.ordemServico}</p>
+                              <p className="text-xs text-gray-700">{s.fullName} ({s.userCod || s.user_cod})</p>
                             </div>
-                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                            <span className={`px-2 py-1 rounded-full text-xs font-bold ${
                               s.status === 'aprovada' ? 'bg-green-600 text-white' :
                               s.status === 'rejeitada' ? 'bg-red-600 text-white' :
                               'bg-yellow-600 text-white'
@@ -780,13 +780,13 @@
                               {s.status?.toUpperCase()}
                             </span>
                           </div>
-                          <p className="text-sm text-gray-600 mb-1">Motivo: {s.motivo}</p>
+                          <p className="text-xs text-gray-600 mb-1">Motivo: {s.motivo}</p>
                           {s.coordenadas && (
                             <div className="mt-2 bg-green-50 border border-green-200 rounded p-2">
                               <div className="flex items-center justify-between">
                                 <div className="flex-1">
                                   <p className="text-xs text-green-700 font-semibold">📍 Coordenadas</p>
-                                  <p className="text-sm font-mono text-green-900">{s.coordenadas}</p>
+                                  <p className="text-xs font-mono text-green-900">{s.coordenadas}</p>
                                 </div>
                                 <button
                                   onClick={() => {
@@ -818,6 +818,76 @@
                             </div>
                           )}
                           <p className="text-xs text-gray-500 mt-2">{s.timestamp}</p>
+                          
+                          {/* Botões de Edição */}
+                          <div className="flex gap-2 mt-3 pt-3 border-t">
+                            {s.status !== 'aprovada' && (
+                              <button
+                                onClick={async () => {
+                                  if (confirm('Alterar status para APROVADA?')) {
+                                    try {
+                                      await fetch(`${API_URL}/submissions/${s.id}`, {
+                                        method: 'PATCH',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ status: 'aprovada', observacao: formData.obs || null })
+                                      });
+                                      showToast('✅ Status alterado para APROVADA!', 'success');
+                                      loadSubmissions();
+                                    } catch (err) {
+                                      showToast('Erro ao alterar status', 'error');
+                                    }
+                                  }
+                                }}
+                                className="flex-1 bg-green-600 text-white py-2 px-3 rounded-lg text-xs hover:bg-green-700"
+                              >
+                                ✓ Aprovar
+                              </button>
+                            )}
+                            {s.status !== 'rejeitada' && (
+                              <button
+                                onClick={async () => {
+                                  if (confirm('Alterar status para REJEITADA?')) {
+                                    try {
+                                      await fetch(`${API_URL}/submissions/${s.id}`, {
+                                        method: 'PATCH',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ status: 'rejeitada', observacao: formData.obs || null })
+                                      });
+                                      showToast('✅ Status alterado para REJEITADA!', 'success');
+                                      loadSubmissions();
+                                    } catch (err) {
+                                      showToast('Erro ao alterar status', 'error');
+                                    }
+                                  }
+                                }}
+                                className="flex-1 bg-red-600 text-white py-2 px-3 rounded-lg text-xs hover:bg-red-700"
+                              >
+                                ✗ Rejeitar
+                              </button>
+                            )}
+                            {s.status !== 'pendente' && (
+                              <button
+                                onClick={async () => {
+                                  if (confirm('Alterar status para PENDENTE?')) {
+                                    try {
+                                      await fetch(`${API_URL}/submissions/${s.id}`, {
+                                        method: 'PATCH',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ status: 'pendente', observacao: null })
+                                      });
+                                      showToast('✅ Status alterado para PENDENTE!', 'success');
+                                      loadSubmissions();
+                                    } catch (err) {
+                                      showToast('Erro ao alterar status', 'error');
+                                    }
+                                  }
+                                }}
+                                className="flex-1 bg-yellow-600 text-white py-2 px-3 rounded-lg text-xs hover:bg-yellow-700"
+                              >
+                                ⟲ Voltar para Pendente
+                              </button>
+                            )}
+                          </div>
                         </div>
                       ))}
                   </div>
@@ -1063,7 +1133,7 @@
                           return true;
                         })
                         .map(s => (
-                          <div key={s.id} className={`border rounded-lg p-4 ${
+                          <div key={s.id} className={`border rounded-lg p-3 ${
                             s.status === 'aprovada' ? 'bg-green-50 border-green-200' :
                             s.status === 'rejeitada' ? 'bg-red-50 border-red-200' :
                             s.status === 'pendente' ? 'bg-yellow-50 border-yellow-200' :
@@ -1071,10 +1141,10 @@
                           }`}>
                             <div className="flex justify-between items-start mb-2">
                               <div>
-                                <p className="font-mono text-lg font-bold">OS: {s.ordemServico}</p>
-                                <p className="text-sm text-gray-700">{s.fullName} ({s.userCod || s.user_cod})</p>
+                                <p className="font-mono text-base font-bold">OS: {s.ordemServico}</p>
+                                <p className="text-xs text-gray-700">{s.fullName} ({s.userCod || s.user_cod})</p>
                               </div>
-                              <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                              <span className={`px-2 py-1 rounded-full text-xs font-bold ${
                                 s.status === 'aprovada' ? 'bg-green-600 text-white' :
                                 s.status === 'rejeitada' ? 'bg-red-600 text-white' :
                                 'bg-yellow-600 text-white'
@@ -1082,13 +1152,13 @@
                                 {s.status?.toUpperCase()}
                               </span>
                             </div>
-                            <p className="text-sm text-gray-600 mb-1">Motivo: {s.motivo}</p>
+                            <p className="text-xs text-gray-600 mb-1">Motivo: {s.motivo}</p>
                             {s.coordenadas && (
                               <div className="mt-2 bg-green-50 border border-green-200 rounded p-2">
                                 <div className="flex items-center justify-between">
                                   <div className="flex-1">
                                     <p className="text-xs text-green-700 font-semibold">📍 Coordenadas</p>
-                                    <p className="text-sm font-mono text-green-900">{s.coordenadas}</p>
+                                    <p className="text-xs font-mono text-green-900">{s.coordenadas}</p>
                                   </div>
                                   <button
                                     onClick={() => {
@@ -1120,6 +1190,76 @@
                               </div>
                             )}
                             <p className="text-xs text-gray-500 mt-2">{s.timestamp}</p>
+                            
+                            {/* Botões de Edição */}
+                            <div className="flex gap-2 mt-3 pt-3 border-t">
+                              {s.status !== 'aprovada' && (
+                                <button
+                                  onClick={async () => {
+                                    if (confirm('Alterar status para APROVADA?')) {
+                                      try {
+                                        await fetch(`${API_URL}/submissions/${s.id}`, {
+                                          method: 'PATCH',
+                                          headers: { 'Content-Type': 'application/json' },
+                                          body: JSON.stringify({ status: 'aprovada', observacao: formData.obs || null })
+                                        });
+                                        showToast('✅ Status alterado para APROVADA!', 'success');
+                                        loadSubmissions();
+                                      } catch (err) {
+                                        showToast('Erro ao alterar status', 'error');
+                                      }
+                                    }
+                                  }}
+                                  className="flex-1 bg-green-600 text-white py-2 px-3 rounded-lg text-xs hover:bg-green-700"
+                                >
+                                  ✓ Aprovar
+                                </button>
+                              )}
+                              {s.status !== 'rejeitada' && (
+                                <button
+                                  onClick={async () => {
+                                    if (confirm('Alterar status para REJEITADA?')) {
+                                      try {
+                                        await fetch(`${API_URL}/submissions/${s.id}`, {
+                                          method: 'PATCH',
+                                          headers: { 'Content-Type': 'application/json' },
+                                          body: JSON.stringify({ status: 'rejeitada', observacao: formData.obs || null })
+                                        });
+                                        showToast('✅ Status alterado para REJEITADA!', 'success');
+                                        loadSubmissions();
+                                      } catch (err) {
+                                        showToast('Erro ao alterar status', 'error');
+                                      }
+                                    }
+                                  }}
+                                  className="flex-1 bg-red-600 text-white py-2 px-3 rounded-lg text-xs hover:bg-red-700"
+                                >
+                                  ✗ Rejeitar
+                                </button>
+                              )}
+                              {s.status !== 'pendente' && (
+                                <button
+                                  onClick={async () => {
+                                    if (confirm('Alterar status para PENDENTE?')) {
+                                      try {
+                                        await fetch(`${API_URL}/submissions/${s.id}`, {
+                                          method: 'PATCH',
+                                          headers: { 'Content-Type': 'application/json' },
+                                          body: JSON.stringify({ status: 'pendente', observacao: null })
+                                        });
+                                        showToast('✅ Status alterado para PENDENTE!', 'success');
+                                        loadSubmissions();
+                                      } catch (err) {
+                                        showToast('Erro ao alterar status', 'error');
+                                      }
+                                    }
+                                  }}
+                                  className="flex-1 bg-yellow-600 text-white py-2 px-3 rounded-lg text-xs hover:bg-yellow-700"
+                                >
+                                  ⟲ Voltar para Pendente
+                                </button>
+                              )}
+                            </div>
                           </div>
                         ))
                     )}
