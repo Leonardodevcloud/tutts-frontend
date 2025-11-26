@@ -738,6 +738,19 @@
                             <p className="text-xs text-gray-500 mt-1">📷 Clique para expandir</p>
                           </div>
                         )}
+                        {/* Foto Antiga (Compatibilidade) */}
+                        {(!s.imagens || s.imagens.length === 0) && s.imagemComprovante && (
+                          <div className="mt-2">
+                            <p className="text-xs text-gray-600 mb-2">📸 Foto:</p>
+                            <img 
+                              src={s.imagemComprovante} 
+                              alt="Comprovante" 
+                              className="w-full max-h-48 object-contain rounded border cursor-pointer hover:opacity-80 transition"
+                              onClick={() => setImageModal(s.imagemComprovante)}
+                            />
+                            <p className="text-xs text-gray-500 mt-1">📷 Clique para expandir</p>
+                          </div>
+                        )}
                         {s.observacao && (
                           <div className="mt-2 bg-gray-50 p-2 rounded">
                             <p className="text-xs text-gray-600">Observação do admin:</p>
@@ -903,6 +916,18 @@
                             </div>
                           </div>
                         )}
+                        {/* Foto Antiga (Compatibilidade) */}
+                        {(!s.imagens || s.imagens.length === 0) && s.imagemComprovante && (
+                          <div className="mt-2">
+                            <p className="text-xs text-gray-600 mb-2">📸 Foto:</p>
+                            <img 
+                              src={s.imagemComprovante} 
+                              alt="Comprovante" 
+                              className="w-full h-32 object-cover rounded border cursor-pointer hover:opacity-80 transition"
+                              onClick={() => setImageModal(s.imagemComprovante)}
+                            />
+                          </div>
+                        )}
                         <textarea
                           placeholder="Observação (opcional)"
                           value={formData[`obs_${s.id}`] || ''}
@@ -1002,6 +1027,17 @@
                                   </span>
                                 </div>
                               ))}
+                            </div>
+                          )}
+                          {/* Foto Antiga (Compatibilidade) */}
+                          {(!s.imagens || s.imagens.length === 0) && s.imagemComprovante && (
+                            <div className="mt-2">
+                              <img 
+                                src={s.imagemComprovante} 
+                                alt="Comprovante" 
+                                className="h-20 w-20 object-cover rounded border cursor-pointer hover:opacity-80"
+                                onClick={() => setImageModal(s.imagemComprovante)}
+                              />
                             </div>
                           )}
                           {s.observacao && (
@@ -1314,6 +1350,18 @@
                                     </div>
                                   ))}
                                 </div>
+                              </div>
+                            )}
+                            {/* Foto Antiga (Compatibilidade) */}
+                            {(!s.imagens || s.imagens.length === 0) && s.imagemComprovante && (
+                              <div className="mt-2">
+                                <p className="text-xs text-gray-600 mb-2">📸 Foto:</p>
+                                <img 
+                                  src={s.imagemComprovante} 
+                                  alt="Comprovante" 
+                                  className="w-full h-32 object-cover rounded border cursor-pointer hover:opacity-80 transition"
+                                  onClick={() => setImageModal(s.imagemComprovante)}
+                                />
                               </div>
                             )}
                             {s.observacao && (
