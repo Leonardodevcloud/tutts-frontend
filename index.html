@@ -301,10 +301,10 @@
                   
                   <div className="bg-gray-50 rounded-lg p-4 space-y-2">
                     <p className="text-sm font-semibold text-gray-700">📞 Contatos:</p>
-                    <p className="text-sm text-gray-600">📧 Email: supevisor@tutts.com.br</p>
+                    <p className="text-sm text-gray-600">📧 Email: supervisor.com.br</p>
                     <p className="text-sm text-gray-600">📱 WhatsApp: (71) 93300-1635</p>
                     <p className="text-xs text-gray-500 mt-2">
-                      * Atualize com os contatos reais do administrador
+                      
                     </p>
                   </div>
 
@@ -727,30 +727,243 @@
 
                 <div className="bg-white rounded-xl shadow p-6">
                   <h2 className="text-lg font-semibold mb-4">Histórico Completo</h2>
-                  <div className="mb-4 flex gap-2">
-                    <button
-                      onClick={() => setFormData({...formData, filterStatus: 'all'})}
-                      className={`px-4 py-2 rounded-lg ${(!formData.filterStatus || formData.filterStatus === 'all') ? 'bg-purple-900 text-white' : 'bg-gray-100'}`}
-                    >
-                      Todas ({submissions.length})
-                    </button>
-                    <button
-                      onClick={() => setFormData({...formData, filterStatus: 'aprovada'})}
-                      className={`px-4 py-2 rounded-lg ${formData.filterStatus === 'aprovada' ? 'bg-green-600 text-white' : 'bg-gray-100'}`}
-                    >
-                      Aprovadas ({submissions.filter(s => s.status === 'aprovada').length})
-                    </button>
-                    <button
-                      onClick={() => setFormData({...formData, filterStatus: 'rejeitada'})}
-                      className={`px-4 py-2 rounded-lg ${formData.filterStatus === 'rejeitada' ? 'bg-red-600 text-white' : 'bg-gray-100'}`}
-                    >
-                      Rejeitadas ({submissions.filter(s => s.status === 'rejeitada').length})
-                    </button>
+                  
+                  {/* Filtros e Busca */}
+                  <div className="mb-4 space-y-3">
+                    {/* Busca por OS e COD */}
+                    <div className="flex gap-2">
+                      <div className="flex-1 relative">
+                        <input
+                          type="text"
+                          placeholder="🔍 Buscar por OS ou COD do usuário..."
+                          value={formData.searchOS || ''}
+                          onChange={e => setFormData({...formData, searchOS: e.target.value})}
+                          className="w-full px-4 py-2 border rounded-lg pl-10"
+                        />
+                        <span className="absolute left-3 top-3 text-gray-400">🔍</span>
+                      </div>
+                      {formData.searchOS && (
+                        <button
+                          onClick={() => setFormData({...formData, searchOS: ''})}
+                          className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
+                        >
+                          ✕ Limpar
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Filtro por Data */}
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => setFormData({...formData, dateFilter: 'today'})}
+                        className={`px-4 py-2 rounded-lg ${formData.dateFilter === 'today' ? 'bg-blue-600 text-white' : 'bg-gray-100'}`}
+                      >
+                        📅 Hoje
+                      </button>
+                      <button
+                        onClick={() => setFormData({...formData, dateFilter: 'week'})}
+                        className={`px-4 py-2 rounded-lg ${formData.dateFilter === 'week' ? 'bg-blue-600 text-white' : 'bg-gray-100'}`}
+                      >
+                        📅 Esta Semana
+                      </button>
+                      <button
+                        onClick={() => setFormData({...formData, dateFilter: 'month'})}
+                        className={`px-4 py-2 rounded-lg ${formData.dateFilter === 'month' ? 'bg-blue-600 text-white' : 'bg-gray-100'}`}
+                      >
+                        📅 Este Mês
+                      </button>
+                      <button
+                        onClick={() => setFormData({...formData, dateFilter: 'all'})}
+                        className={`px-4 py-2 rounded-lg ${(!formData.dateFilter || formData.dateFilter === 'all') ? 'bg-blue-600 text-white' : 'bg-gray-100'}`}
+                      >
+                        📅 Todas
+                      </button>
+                      <button
+                        onClick={() => setFormData({...formData, dateFilter: 'custom', showCustomDate: !formData.showCustomDate})}
+                        className={`px-4 py-2 rounded-lg ${formData.dateFilter === 'custom' ? 'bg-blue-600 text-white' : 'bg-gray-100'}`}
+                      >
+                        📅 Personalizado
+                      </button>
+                    </div>
+
+                    {/* Data Personalizada */}
+                    {formData.showCustomDate && (
+                      <div className="flex gap-2 items-center bg-blue-50 p-3 rounded-lg">
+                        <span className="text-sm font-semibold">De:</span>
+                        <input
+                          type="date"
+                          value={formData.startDate || ''}
+                          onChange={e => setFormData({...formData, startDate: e.target.value, dateFilter: 'custom'})}
+                          className="px-3 py-2 border rounded"
+                        />
+                        <span className="text-sm font-semibold">Até:</span>
+                        <input
+                          type="date"
+                          value={formData.endDate || ''}
+                          onChange={e => setFormData({...formData, endDate: e.target.value, dateFilter: 'custom'})}
+                          className="px-3 py-2 border rounded"
+                        />
+                        <button
+                          onClick={() => setFormData({...formData, showCustomDate: false, dateFilter: 'all', startDate: '', endDate: ''})}
+                          className="px-3 py-2 bg-red-100 text-red-700 rounded hover:bg-red-200"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Filtro por Status */}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setFormData({...formData, filterStatus: 'all'})}
+                        className={`px-4 py-2 rounded-lg ${(!formData.filterStatus || formData.filterStatus === 'all') ? 'bg-purple-900 text-white' : 'bg-gray-100'}`}
+                      >
+                        Todas ({submissions.length})
+                      </button>
+                      <button
+                        onClick={() => setFormData({...formData, filterStatus: 'aprovada'})}
+                        className={`px-4 py-2 rounded-lg ${formData.filterStatus === 'aprovada' ? 'bg-green-600 text-white' : 'bg-gray-100'}`}
+                      >
+                        Aprovadas ({submissions.filter(s => s.status === 'aprovada').length})
+                      </button>
+                      <button
+                        onClick={() => setFormData({...formData, filterStatus: 'rejeitada'})}
+                        className={`px-4 py-2 rounded-lg ${formData.filterStatus === 'rejeitada' ? 'bg-red-600 text-white' : 'bg-gray-100'}`}
+                      >
+                        Rejeitadas ({submissions.filter(s => s.status === 'rejeitada').length})
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {/* Contador de Resultados */}
+                  <div className="mb-3 flex items-center justify-between bg-gray-50 px-4 py-2 rounded-lg">
+                    <p className="text-sm text-gray-600">
+                      Exibindo <strong className="text-purple-900">
+                        {submissions.filter(s => {
+                          if (formData.filterStatus && formData.filterStatus !== 'all' && s.status !== formData.filterStatus) return false;
+                          if (formData.searchOS && 
+                              !s.ordemServico.toLowerCase().includes(formData.searchOS.toLowerCase()) &&
+                              !s.codProfissional.toLowerCase().includes(formData.searchOS.toLowerCase())) return false;
+                          const submissionDate = new Date(s.created_at);
+                          const today = new Date();
+                          today.setHours(0, 0, 0, 0);
+                          if (formData.dateFilter === 'today') {
+                            const tomorrow = new Date(today);
+                            tomorrow.setDate(tomorrow.getDate() + 1);
+                            if (submissionDate < today || submissionDate >= tomorrow) return false;
+                          } else if (formData.dateFilter === 'week') {
+                            const weekAgo = new Date(today);
+                            weekAgo.setDate(weekAgo.getDate() - 7);
+                            if (submissionDate < weekAgo) return false;
+                          } else if (formData.dateFilter === 'month') {
+                            const monthAgo = new Date(today);
+                            monthAgo.setMonth(monthAgo.getMonth() - 1);
+                            if (submissionDate < monthAgo) return false;
+                          } else if (formData.dateFilter === 'custom' && formData.startDate && formData.endDate) {
+                            const start = new Date(formData.startDate);
+                            const end = new Date(formData.endDate);
+                            end.setHours(23, 59, 59, 999);
+                            if (submissionDate < start || submissionDate > end) return false;
+                          }
+                          return true;
+                        }).length}
+                      </strong> de <strong>{submissions.length}</strong> solicitações
+                    </p>
+                    {(formData.searchOS || formData.dateFilter || formData.filterStatus !== 'all') && (
+                      <button
+                        onClick={() => setFormData({
+                          ...formData,
+                          searchOS: '',
+                          dateFilter: 'all',
+                          filterStatus: 'all',
+                          showCustomDate: false,
+                          startDate: '',
+                          endDate: ''
+                        })}
+                        className="text-sm text-red-600 hover:text-red-800 font-semibold"
+                      >
+                        🔄 Limpar todos os filtros
+                      </button>
+                    )}
                   </div>
                   
                   <div className="space-y-3 max-h-96 overflow-y-auto">
                     {submissions
-                      .filter(s => !formData.filterStatus || formData.filterStatus === 'all' || s.status === formData.filterStatus)
+                      .filter(s => {
+                        // Filtro por status
+                        if (formData.filterStatus && formData.filterStatus !== 'all' && s.status !== formData.filterStatus) {
+                          return false;
+                        }
+                        
+                        // Filtro por busca de OS ou COD
+                        if (formData.searchOS && 
+                            !s.ordemServico.toLowerCase().includes(formData.searchOS.toLowerCase()) &&
+                            !s.codProfissional.toLowerCase().includes(formData.searchOS.toLowerCase())) {
+                          return false;
+                        }
+                        
+                        // Filtro por data
+                        const submissionDate = new Date(s.created_at);
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        
+                        if (formData.dateFilter === 'today') {
+                          const tomorrow = new Date(today);
+                          tomorrow.setDate(tomorrow.getDate() + 1);
+                          if (submissionDate < today || submissionDate >= tomorrow) return false;
+                        } else if (formData.dateFilter === 'week') {
+                          const weekAgo = new Date(today);
+                          weekAgo.setDate(weekAgo.getDate() - 7);
+                          if (submissionDate < weekAgo) return false;
+                        } else if (formData.dateFilter === 'month') {
+                          const monthAgo = new Date(today);
+                          monthAgo.setMonth(monthAgo.getMonth() - 1);
+                          if (submissionDate < monthAgo) return false;
+                        } else if (formData.dateFilter === 'custom' && formData.startDate && formData.endDate) {
+                          const start = new Date(formData.startDate);
+                          const end = new Date(formData.endDate);
+                          end.setHours(23, 59, 59, 999);
+                          if (submissionDate < start || submissionDate > end) return false;
+                        }
+                        
+                        return true;
+                      })
+                      .length === 0 ? (
+                        <div className="text-center py-12">
+                          <div className="text-6xl mb-4">🔍</div>
+                          <p className="text-gray-500 text-lg font-semibold">Nenhuma solicitação encontrada</p>
+                          <p className="text-gray-400 text-sm mt-2">Tente ajustar os filtros ou fazer uma nova busca</p>
+                        </div>
+                      ) : (
+                        submissions
+                          .filter(s => {
+                            if (formData.filterStatus && formData.filterStatus !== 'all' && s.status !== formData.filterStatus) return false;
+                            if (formData.searchOS && 
+                                !s.ordemServico.toLowerCase().includes(formData.searchOS.toLowerCase()) &&
+                                !s.codProfissional.toLowerCase().includes(formData.searchOS.toLowerCase())) return false;
+                            const submissionDate = new Date(s.created_at);
+                            const today = new Date();
+                            today.setHours(0, 0, 0, 0);
+                            if (formData.dateFilter === 'today') {
+                              const tomorrow = new Date(today);
+                              tomorrow.setDate(tomorrow.getDate() + 1);
+                              if (submissionDate < today || submissionDate >= tomorrow) return false;
+                            } else if (formData.dateFilter === 'week') {
+                              const weekAgo = new Date(today);
+                              weekAgo.setDate(weekAgo.getDate() - 7);
+                              if (submissionDate < weekAgo) return false;
+                            } else if (formData.dateFilter === 'month') {
+                              const monthAgo = new Date(today);
+                              monthAgo.setMonth(monthAgo.getMonth() - 1);
+                              if (submissionDate < monthAgo) return false;
+                            } else if (formData.dateFilter === 'custom' && formData.startDate && formData.endDate) {
+                              const start = new Date(formData.startDate);
+                              const end = new Date(formData.endDate);
+                              end.setHours(23, 59, 59, 999);
+                              if (submissionDate < start || submissionDate > end) return false;
+                            }
+                            return true;
+                          })
                       .map(s => (
                         <div key={s.id} className={`border rounded-lg p-4 ${
                           s.status === 'aprovada' ? 'bg-green-50 border-green-200' :
