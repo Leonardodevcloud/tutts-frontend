@@ -155,16 +155,26 @@
           const query = user.role === 'user' ? `?userId=${user.id}&userCod=${user.cod_profissional}` : '';
           const res = await fetch(`${API_URL}/submissions${query}`);
           const data = await res.json();
+          
+          console.log('🔍 DEBUG - Carregando submissões:');
+          console.log('  - Total:', data.length);
+          
           setSubmissions(data.map(s => {
             // Parse seguro de imagens
             let parsedImages = [];
             if (s.imagens) {
               try {
                 parsedImages = JSON.parse(s.imagens);
+                console.log(`  - OS ${s.ordem_servico}: ${parsedImages.length} foto(s) no campo imagens`);
               } catch (e) {
-                console.warn('Erro ao parsear imagens:', e);
+                console.warn(`  - ⚠️ OS ${s.ordem_servico}: Erro ao parsear imagens:`, e);
+                console.warn('    Conteúdo:', s.imagens.substring(0, 100));
                 parsedImages = [];
               }
+            } else if (s.imagem_comprovante) {
+              console.log(`  - OS ${s.ordem_servico}: 1 foto no campo imagem_comprovante (antiga)`);
+            } else {
+              console.log(`  - OS ${s.ordem_servico}: Sem fotos`);
             }
             
             return {
@@ -178,7 +188,7 @@
             };
           }));
         } catch (err) {
-          console.error('Erro ao carregar:', err);
+          console.error('❌ Erro ao carregar:', err);
           showToast('Erro ao carregar submissões', 'error');
         } finally {
           setLoadingSubmissions(false);
@@ -255,38 +265,56 @@
           // Preparar dados
           const imagesJson = images.length > 0 ? JSON.stringify(images) : null;
           
+          console.log('🔍 DEBUG - Enviando OS:');
+          console.log('  - Número de imagens:', images.length);
+          console.log('  - Tamanho do JSON:', imagesJson ? (imagesJson.length / 1024).toFixed(0) + 'KB' : '0KB');
+          console.log('  - Primeiros 100 chars:', imagesJson ? imagesJson.substring(0, 100) : 'null');
+          
           // Validar tamanho total
           const dataSize = new Blob([imagesJson || '']).size;
           if (dataSize > 10 * 1024 * 1024) {
             throw new Error('Fotos muito grandes. Tente com fotos menores.');
           }
           
+          const payload = {
+            ordemServico: formData.os,
+            motivo: formData.motivo,
+            userId: user.id,
+            userCod: user.codProfissional,
+            userName: user.fullName,
+            imagemComprovante: null,
+            imagens: imagesJson,
+            coordenadas: formData.coordenadas || null
+          };
+          
+          console.log('📦 Payload:', {
+            ...payload,
+            imagens: imagesJson ? `[${images.length} fotos]` : null
+          });
+          
           const res = await fetch(`${API_URL}/submissions`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              ordemServico: formData.os,
-              motivo: formData.motivo,
-              userId: user.id,
-              userCod: user.codProfissional,
-              userName: user.fullName,
-              imagemComprovante: null,
-              imagens: imagesJson,
-              coordenadas: formData.coordenadas || null
-            })
+            body: JSON.stringify(payload)
           });
+          
+          console.log('📡 Response status:', res.status);
           
           if (!res.ok) {
             const error = await res.json().catch(() => ({ message: `Erro ${res.status}` }));
+            console.error('❌ Erro do servidor:', error);
             throw new Error(error.message || `Erro ${res.status}`);
           }
+          
+          const result = await res.json();
+          console.log('✅ Resultado:', result);
           
           showToast('✅ OS enviada com sucesso!', 'success');
           setFormData({});
           setImages([]);
           loadSubmissions();
         } catch (err) {
-          console.error('Erro ao enviar:', err);
+          console.error('❌ Erro ao enviar:', err);
           showToast(`❌ ${err.message}`, 'error');
         } finally {
           setLoading(false);
