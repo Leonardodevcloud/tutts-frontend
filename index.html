@@ -304,7 +304,7 @@
                     <p className="text-sm text-gray-600">📧 Email: supervisor.com.br</p>
                     <p className="text-sm text-gray-600">📱 WhatsApp: (71) 93300-1635</p>
                     <p className="text-xs text-gray-500 mt-2">
-                      
+                     
                     </p>
                   </div>
 
@@ -843,7 +843,7 @@
                           if (formData.filterStatus && formData.filterStatus !== 'all' && s.status !== formData.filterStatus) return false;
                           if (formData.searchOS && 
                               !s.ordemServico.toLowerCase().includes(formData.searchOS.toLowerCase()) &&
-                              !s.codProfissional.toLowerCase().includes(formData.searchOS.toLowerCase())) return false;
+                              !(s.userCod || s.user_cod || '').toLowerCase().includes(formData.searchOS.toLowerCase())) return false;
                           const submissionDate = new Date(s.created_at);
                           const today = new Date();
                           today.setHours(0, 0, 0, 0);
@@ -898,7 +898,7 @@
                         // Filtro por busca de OS ou COD
                         if (formData.searchOS && 
                             !s.ordemServico.toLowerCase().includes(formData.searchOS.toLowerCase()) &&
-                            !s.codProfissional.toLowerCase().includes(formData.searchOS.toLowerCase())) {
+                            !(s.userCod || s.user_cod || '').toLowerCase().includes(formData.searchOS.toLowerCase())) {
                           return false;
                         }
                         
@@ -940,7 +940,7 @@
                             if (formData.filterStatus && formData.filterStatus !== 'all' && s.status !== formData.filterStatus) return false;
                             if (formData.searchOS && 
                                 !s.ordemServico.toLowerCase().includes(formData.searchOS.toLowerCase()) &&
-                                !s.codProfissional.toLowerCase().includes(formData.searchOS.toLowerCase())) return false;
+                                !(s.userCod || s.user_cod || '').toLowerCase().includes(formData.searchOS.toLowerCase())) return false;
                             const submissionDate = new Date(s.created_at);
                             const today = new Date();
                             today.setHours(0, 0, 0, 0);
@@ -973,7 +973,7 @@
                           <div className="flex justify-between items-start mb-2">
                             <div>
                               <p className="font-mono text-lg font-bold">OS: {s.ordemServico}</p>
-                              <p className="text-sm text-gray-700">{s.fullName} ({s.codProfissional})</p>
+                              <p className="text-sm text-gray-700">{s.fullName} ({s.userCod || s.user_cod})</p>
                             </div>
                             <span className={`px-3 py-1 rounded-full text-xs font-bold ${
                               s.status === 'aprovada' ? 'bg-green-600 text-white' :
@@ -1022,7 +1022,8 @@
                           )}
                           <p className="text-xs text-gray-500 mt-2">{s.timestamp}</p>
                         </div>
-                      ))}
+                      ))
+                    )}
                   </div>
                 </div>
               </>
