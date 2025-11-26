@@ -881,6 +881,54 @@
 
                 <div className="bg-white rounded-xl shadow p-6 mb-6 mt-6">
                   <h2 className="text-lg font-semibold mb-4">Aguardando Validação</h2>
+                  
+                  {/* Botões de Filtro por Motivo */}
+                  <div className="mb-4 flex flex-wrap gap-2">
+                    <button
+                      onClick={() => setFormData({...formData, filterMotivo: 'todos'})}
+                      className={`px-4 py-2 rounded-lg font-semibold transition ${
+                        (!formData.filterMotivo || formData.filterMotivo === 'todos') 
+                          ? 'bg-purple-900 text-white' 
+                          : 'bg-gray-100 hover:bg-gray-200'
+                      }`}
+                    >
+                      📋 Todos ({submissions.filter(s => s.status === 'pendente').length})
+                    </button>
+                    <button
+                      onClick={() => setFormData({...formData, filterMotivo: 'retorno'})}
+                      className={`px-4 py-2 rounded-lg font-semibold transition ${
+                        formData.filterMotivo === 'retorno' 
+                          ? 'bg-blue-600 text-white' 
+                          : 'bg-gray-100 hover:bg-gray-200'
+                      }`}
+                    >
+                      🔄 Retorno ({submissions.filter(s => s.status === 'pendente' && s.motivo === 'Ajuste de Retorno').length})
+                    </button>
+                    <button
+                      onClick={() => setFormData({...formData, filterMotivo: 'ponto1'})}
+                      className={`px-4 py-2 rounded-lg font-semibold transition ${
+                        formData.filterMotivo === 'ponto1' 
+                          ? 'bg-green-600 text-white' 
+                          : 'bg-gray-100 hover:bg-gray-200'
+                      }`}
+                    >
+                      📍 Ponto 1 ({submissions.filter(s => 
+                        s.status === 'pendente' && 
+                        (s.motivo === 'Alteração Ponto 1 (Campinas)' || s.motivo === 'Alteração Ponto 1 (Goiânia)')
+                      ).length})
+                    </button>
+                    <button
+                      onClick={() => setFormData({...formData, filterMotivo: 'pedagio'})}
+                      className={`px-4 py-2 rounded-lg font-semibold transition ${
+                        formData.filterMotivo === 'pedagio' 
+                          ? 'bg-orange-600 text-white' 
+                          : 'bg-gray-100 hover:bg-gray-200'
+                      }`}
+                    >
+                      🛣️ Pedágio ({submissions.filter(s => s.status === 'pendente' && s.motivo === 'Ajuste de Pedágio (Campinas e Recife)').length})
+                    </button>
+                  </div>
+
                   {loadingSubmissions ? (
                     <div className="text-center py-8">
                       <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-900"></div>
@@ -890,7 +938,32 @@
                     <p className="text-gray-500">Nenhuma solicitação pendente</p>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {submissions.filter(s => s.status === 'pendente').map(s => (
+                    {submissions
+                      .filter(s => {
+                        // Filtrar apenas pendentes
+                        if (s.status !== 'pendente') return false;
+                        
+                        // Aplicar filtro de motivo
+                        const filterMotivo = formData.filterMotivo || 'todos';
+                        
+                        if (filterMotivo === 'todos') return true;
+                        
+                        if (filterMotivo === 'retorno') {
+                          return s.motivo === 'Ajuste de Retorno';
+                        }
+                        
+                        if (filterMotivo === 'ponto1') {
+                          return s.motivo === 'Alteração Ponto 1 (Campinas)' || 
+                                 s.motivo === 'Alteração Ponto 1 (Goiânia)';
+                        }
+                        
+                        if (filterMotivo === 'pedagio') {
+                          return s.motivo === 'Ajuste de Pedágio (Campinas e Recife)';
+                        }
+                        
+                        return true;
+                      })
+                      .map(s => (
                       <div key={s.id} className="border rounded-lg p-3">
                         <div className="flex items-center justify-between mb-2">
                           <p className="font-mono text-lg font-bold">OS: {s.ordemServico}</p>
@@ -973,112 +1046,24 @@
                         </div>
                       </div>
                     ))}
+                    {submissions.filter(s => {
+                      if (s.status !== 'pendente') return false;
+                      const filterMotivo = formData.filterMotivo || 'todos';
+                      if (filterMotivo === 'todos') return true;
+                      if (filterMotivo === 'retorno') return s.motivo === 'Ajuste de Retorno';
+                      if (filterMotivo === 'ponto1') return s.motivo === 'Alteração Ponto 1 (Campinas)' || s.motivo === 'Alteração Ponto 1 (Goiânia)';
+                      if (filterMotivo === 'pedagio') return s.motivo === 'Ajuste de Pedágio (Campinas e Recife)';
+                      return true;
+                    }).length === 0 && (
+                      <div className="col-span-2 text-center py-8 text-gray-500">
+                        <p className="text-lg">🔍 Nenhuma OS encontrada neste filtro</p>
+                        <p className="text-sm mt-2">Tente selecionar outro tipo de solicitação</p>
+                      </div>
+                    )}
                     </div>
                   )}
                 </div>
 
-                <div className="bg-white rounded-xl shadow p-6">
-                  <h2 className="text-lg font-semibold mb-4">Histórico Completo</h2>
-                  <div className="mb-4 flex gap-2">
-                    <button
-                      onClick={() => setFormData({...formData, filterStatus: 'all'})}
-                      className={`px-4 py-2 rounded-lg ${(!formData.filterStatus || formData.filterStatus === 'all') ? 'bg-purple-900 text-white' : 'bg-gray-100'}`}
-                    >
-                      Todas ({submissions.length})
-                    </button>
-                    <button
-                      onClick={() => setFormData({...formData, filterStatus: 'aprovada'})}
-                      className={`px-4 py-2 rounded-lg ${formData.filterStatus === 'aprovada' ? 'bg-green-600 text-white' : 'bg-gray-100'}`}
-                    >
-                      Aprovadas ({submissions.filter(s => s.status === 'aprovada').length})
-                    </button>
-                    <button
-                      onClick={() => setFormData({...formData, filterStatus: 'rejeitada'})}
-                      className={`px-4 py-2 rounded-lg ${formData.filterStatus === 'rejeitada' ? 'bg-red-600 text-white' : 'bg-gray-100'}`}
-                    >
-                      Rejeitadas ({submissions.filter(s => s.status === 'rejeitada').length})
-                    </button>
-                  </div>
-                  
-                  <div className="space-y-3 max-h-96 overflow-y-auto">
-                    {submissions
-                      .filter(s => !formData.filterStatus || formData.filterStatus === 'all' || s.status === formData.filterStatus)
-                      .map(s => (
-                        <div key={s.id} className={`border rounded p-2 ${
-                          s.status === 'aprovada' ? 'bg-green-50 border-green-200' :
-                          s.status === 'rejeitada' ? 'bg-red-50 border-red-200' :
-                          'bg-gray-50'
-                        }`}>
-                          <div className="flex justify-between items-start mb-1">
-                            <div>
-                              <p className="text-sm font-bold">OS: {s.ordemServico}</p>
-                              <p className="text-xs text-gray-600">{s.fullName} ({s.userCod || s.user_cod})</p>
-                            </div>
-                            <span className={`px-2 py-1 rounded text-xs font-bold ${
-                              s.status === 'aprovada' ? 'bg-green-600 text-white' :
-                              s.status === 'rejeitada' ? 'bg-red-600 text-white' :
-                              'bg-yellow-600 text-white'
-                            }`}>
-                              {s.status === 'aprovada' ? '✓ Aprovada' : s.status === 'rejeitada' ? '✗ Rejeitada' : '⏳ Pendente'}
-                            </span>
-                          </div>
-                          <p className="text-xs text-gray-600 mb-1">{s.motivo}</p>
-                          {s.coordenadas && (
-                            <div className="mt-1 bg-gray-50 border rounded p-1">
-                              <div className="flex items-center justify-between">
-                                <p className="text-xs text-gray-600">📍 {s.coordenadas}</p>
-                                <button
-                                  onClick={() => {
-                                    navigator.clipboard.writeText(s.coordenadas);
-                                    showToast('📋 Copiado!', 'success');
-                                  }}
-                                  className="ml-2 px-2 py-1 bg-gray-200 text-gray-700 text-xs rounded hover:bg-gray-300"
-                                >
-                                  📋
-                                </button>
-                              </div>
-                            </div>
-                          )}
-                          {/* Galeria Mini */}
-                          {s.imagens && s.imagens.length > 0 && (
-                            <div className="mt-2 flex gap-2">
-                              {s.imagens.map((img, idx) => (
-                                <div key={idx} className="relative flex-shrink-0">
-                                  <img 
-                                    src={img} 
-                                    alt={`Foto ${idx + 1}`} 
-                                    className="h-20 w-20 object-cover rounded border cursor-pointer hover:opacity-80"
-                                    onClick={() => setImageModal(img)}
-                                  />
-                                  <span className="absolute bottom-1 right-1 bg-black bg-opacity-70 text-white text-xs px-1.5 py-0.5 rounded font-bold">
-                                    {idx + 1}/2
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                          {/* Foto Antiga (Compatibilidade) */}
-                          {(!s.imagens || s.imagens.length === 0) && s.imagemComprovante && (
-                            <div className="mt-2">
-                              <img 
-                                src={s.imagemComprovante} 
-                                alt="Comprovante" 
-                                className="h-20 w-20 object-cover rounded border cursor-pointer hover:opacity-80"
-                                onClick={() => setImageModal(s.imagemComprovante)}
-                              />
-                            </div>
-                          )}
-                          {s.observacao && (
-                            <div className="mt-2 bg-white p-2 rounded border">
-                              <p className="text-xs text-gray-600">Observação:</p>
-                              <p className="text-sm">{s.observacao}</p>
-                            </div>
-                          )}
-                          <p className="text-xs text-gray-500 mt-2">{s.timestamp}</p>
-                        </div>
-                      ))}
-                  </div>
-                </div>
               </>
             )}
 
