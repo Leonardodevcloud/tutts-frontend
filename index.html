@@ -216,6 +216,31 @@
         }
       }, [user]);
 
+      // Polling automático para admin (atualiza a cada 2 minutos)
+      useEffect(() => {
+        if (!user || user.role !== 'admin') return;
+        
+        let isFirstLoad = true;
+        
+        const interval = setInterval(() => {
+          console.log('🔄 Atualizando submissões automaticamente...');
+          loadSubmissions();
+          
+          // Mostrar toast apenas após primeira atualização automática
+          if (!isFirstLoad) {
+            // Toast discreto sem bloquear visualização
+            const toastDiv = document.createElement('div');
+            toastDiv.className = 'fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg text-sm z-50';
+            toastDiv.textContent = '✓ Atualizado';
+            document.body.appendChild(toastDiv);
+            setTimeout(() => toastDiv.remove(), 2000);
+          }
+          isFirstLoad = false;
+        }, 120000); // 2 minutos (120 segundos)
+        
+        return () => clearInterval(interval);
+      }, [user]);
+
       const handleLogin = async () => {
         setLoading(true);
         try {
@@ -819,37 +844,50 @@
           {/* Abas de Navegação */}
           <div className="bg-white border-b sticky top-0 z-10 shadow-sm">
             <div className="max-w-7xl mx-auto px-4">
-              <div className="flex gap-1">
-                <button
-                  onClick={() => setFormData({...formData, adminTab: 'dashboard'})}
-                  className={`px-6 py-3 font-semibold transition ${
-                    (!formData.adminTab || formData.adminTab === 'dashboard')
-                      ? 'text-purple-900 border-b-2 border-purple-900'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  📊 Dashboard
-                </button>
-                <button
-                  onClick={() => setFormData({...formData, adminTab: 'search'})}
-                  className={`px-6 py-3 font-semibold transition ${
-                    formData.adminTab === 'search'
-                      ? 'text-purple-900 border-b-2 border-purple-900'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  🔍 Busca Detalhada
-                </button>
-                <button
-                  onClick={() => setFormData({...formData, adminTab: 'users'})}
-                  className={`px-6 py-3 font-semibold transition ${
-                    formData.adminTab === 'users'
-                      ? 'text-purple-900 border-b-2 border-purple-900'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  👥 Gerenciar Usuários
-                </button>
+              <div className="flex justify-between items-center">
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => setFormData({...formData, adminTab: 'dashboard'})}
+                    className={`px-6 py-3 font-semibold transition ${
+                      (!formData.adminTab || formData.adminTab === 'dashboard')
+                        ? 'text-purple-900 border-b-2 border-purple-900'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    📊 Dashboard
+                  </button>
+                  <button
+                    onClick={() => setFormData({...formData, adminTab: 'search'})}
+                    className={`px-6 py-3 font-semibold transition ${
+                      formData.adminTab === 'search'
+                        ? 'text-purple-900 border-b-2 border-purple-900'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    🔍 Busca Detalhada
+                  </button>
+                  <button
+                    onClick={() => setFormData({...formData, adminTab: 'users'})}
+                    className={`px-6 py-3 font-semibold transition ${
+                      formData.adminTab === 'users'
+                        ? 'text-purple-900 border-b-2 border-purple-900'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    👥 Gerenciar Usuários
+                  </button>
+                </div>
+                {/* Indicador de Auto-Atualização */}
+                <div className="flex items-center gap-2 text-sm text-gray-600 py-3">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <span>Atualização automática ativa</span>
+                  <button 
+                    onClick={loadSubmissions}
+                    className="ml-2 px-3 py-1 bg-purple-100 text-purple-900 rounded hover:bg-purple-200 transition text-xs font-semibold"
+                  >
+                    🔄 Atualizar agora
+                  </button>
+                </div>
               </div>
             </div>
           </div>
