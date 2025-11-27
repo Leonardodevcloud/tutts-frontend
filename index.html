@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistema Tutts v5.0</title>
+  <title>Sistema Tutts</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     @keyframes slideIn {
@@ -15,49 +15,28 @@
 </head>
 <body>
   <div id="root"></div>
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   
-  <script>
-    const { useState, useEffect, createElement: h } = React;
+  <script type="text/babel">
+    const { useState, useEffect } = React;
     const API_URL = 'https://tutts-backend-production.up.railway.app/api';
 
-    // Helper para normalizar usuário (backend retorna cod_profissional, frontend usa username)
-    const normalizeUser = (user) => {
-      return {
-        ...user,
-        username: user.cod_profissional || user.username,
-        id: user.id
-      };
-    };
+    const Toast = ({ message, type }) => (
+      <div className={`fixed top-4 right-4 z-50 px-6 py-4 rounded-lg shadow-2xl toast text-white font-semibold flex items-center gap-3 ${type === 'success' ? 'bg-green-600' : 'bg-red-600'}`}>
+        <span className="text-2xl">{type === 'success' ? '✓' : '✗'}</span>
+        <span>{message}</span>
+      </div>
+    );
 
-    const Toast = ({ message, type }) => {
-      const bgColor = type === 'success' ? 'bg-green-600' : 'bg-red-600';
-      const icon = type === 'success' ? '✓' : '✗';
-      return h('div', { 
-        className: 'fixed top-4 right-4 z-50 px-6 py-4 rounded-lg shadow-2xl toast text-white font-semibold flex items-center gap-3 ' + bgColor 
-      },
-        h('span', { className: 'text-2xl' }, icon),
-        h('span', null, message)
-      );
-    };
-
-    const ImageModal = ({ imageUrl, onClose }) => h('div', { 
-      className: 'fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4',
-      onClick: onClose
-    },
-      h('div', { className: 'relative max-w-4xl max-h-screen' },
-        h('button', { 
-          onClick: onClose,
-          className: 'absolute -top-10 right-0 text-white text-3xl hover:text-gray-300'
-        }, '✕'),
-        h('img', { 
-          src: imageUrl,
-          alt: 'Imagem expandida',
-          className: 'max-w-full max-h-screen rounded-lg shadow-2xl',
-          onClick: (e) => e.stopPropagation()
-        })
-      )
+    const ImageModal = ({ imageUrl, onClose }) => (
+      <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4" onClick={onClose}>
+        <div className="relative max-w-4xl max-h-screen">
+          <button onClick={onClose} className="absolute -top-10 right-0 text-white text-3xl hover:text-gray-300">✕</button>
+          <img src={imageUrl} alt="Imagem" className="max-w-full max-h-screen rounded-lg shadow-2xl" onClick={(e) => e.stopPropagation()} />
+        </div>
+      </div>
     );
 
     function App() {
@@ -65,112 +44,76 @@
       const [page, setPage] = useState('login');
       const [toast, setToast] = useState(null);
       const [selectedImage, setSelectedImage] = useState(null);
-      const [lastActivity, setLastActivity] = useState(Date.now());
 
       useEffect(() => {
         const token = localStorage.getItem('token');
         const user = localStorage.getItem('user');
         if (token && user) {
-          const userData = normalizeUser(JSON.parse(user));
+          const userData = JSON.parse(user);
           setCurrentUser(userData);
           setPage(userData.role === 'admin' ? 'form' : 'list');
         }
       }, []);
 
-      useEffect(() => {
-        if (!currentUser) return;
-        
-        const updateActivity = () => setLastActivity(Date.now());
-        
-        window.addEventListener('mousemove', updateActivity);
-        window.addEventListener('keydown', updateActivity);
-        window.addEventListener('click', updateActivity);
-        window.addEventListener('scroll', updateActivity);
-        
-        const checkInactivity = setInterval(() => {
-          const inactiveTime = Date.now() - lastActivity;
-          if (inactiveTime >= 300000) {
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            setCurrentUser(null);
-            setPage('login');
-            showToast('Sessão expirada por inatividade', 'error');
-          }
-        }, 30000);
-        
-        return () => {
-          window.removeEventListener('mousemove', updateActivity);
-          window.removeEventListener('keydown', updateActivity);
-          window.removeEventListener('click', updateActivity);
-          window.removeEventListener('scroll', updateActivity);
-          clearInterval(checkInactivity);
-        };
-      }, [currentUser, lastActivity]);
-
-      const showToast = (message, type) => {
-        if (!type) type = 'success';
-        setToast({ message: message, type: type });
+      const showToast = (message, type = 'success') => {
+        setToast({ message, type });
         setTimeout(() => setToast(null), 3000);
       };
 
       const handleLogout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+        localStorage.clear();
         setCurrentUser(null);
         setPage('login');
-        showToast('Logout realizado com sucesso!');
+        showToast('Logout realizado!');
       };
 
       if (!currentUser) {
-        return h(LoginPage, { 
-          onLogin: (user) => {
-            setCurrentUser(user);
-            setPage(user.role === 'admin' ? 'form' : 'list');
-            showToast('Bem-vindo, ' + user.username + '!');
-          },
-          showToast: showToast
-        });
+        return <LoginPage onLogin={(user) => {
+          setCurrentUser(user);
+          setPage(user.role === 'admin' ? 'form' : 'list');
+          showToast('Bem-vindo, ' + (user.full_name || user.cod_profissional) + '!');
+        }} showToast={showToast} />;
       }
 
-      return h('div', null,
-        toast && h(Toast, { message: toast.message, type: toast.type }),
-        selectedImage && h(ImageModal, { imageUrl: selectedImage, onClose: () => setSelectedImage(null) }),
-        h('div', { className: 'min-h-screen bg-gradient-to-br from-violet-50 to-blue-50' },
-          h('nav', { className: 'bg-white shadow-lg border-b-4 border-violet-600' },
-            h('div', { className: 'max-w-7xl mx-auto px-4 py-4 flex justify-between items-center' },
-              h('h1', { className: 'text-3xl font-bold bg-gradient-to-r from-violet-600 to-blue-600 bg-clip-text text-transparent' }, '🎯 Sistema Tutts'),
-              h('div', { className: 'flex items-center gap-4' },
-                h('span', { className: 'text-gray-700 font-medium' }, '👤 ' + currentUser.username),
-                h('span', { className: 'px-3 py-1 rounded-full text-sm font-semibold ' + (currentUser.role === 'admin' ? 'bg-violet-100 text-violet-700' : 'bg-blue-100 text-blue-700') },
-                  currentUser.role === 'admin' ? '🔑 Admin' : '👁️ Visualizador'
-                ),
-                currentUser.role === 'admin' && h('div', { className: 'flex gap-2' },
-                  h('button', {
-                    onClick: () => setPage('form'),
-                    className: 'px-4 py-2 rounded-lg font-semibold transition-all ' + (page === 'form' ? 'bg-violet-600 text-white shadow-lg' : 'bg-white text-violet-600 hover:bg-violet-50')
-                  }, '📝 Nova Solicitação'),
-                  h('button', {
-                    onClick: () => setPage('list'),
-                    className: 'px-4 py-2 rounded-lg font-semibold transition-all ' + (page === 'list' ? 'bg-violet-600 text-white shadow-lg' : 'bg-white text-violet-600 hover:bg-violet-50')
-                  }, '📋 Ver Solicitações'),
-                  h('button', {
-                    onClick: () => setPage('create-admin'),
-                    className: 'px-4 py-2 rounded-lg font-semibold transition-all ' + (page === 'create-admin' ? 'bg-violet-600 text-white shadow-lg' : 'bg-white text-violet-600 hover:bg-violet-50')
-                  }, '👥 Criar Admin')
-                ),
-                h('button', {
-                  onClick: handleLogout,
-                  className: 'px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all font-semibold shadow-lg hover:shadow-xl'
-                }, '🚪 Sair')
-              )
-            )
-          ),
-          h('div', { className: 'max-w-7xl mx-auto px-4 py-8' },
-            page === 'form' && h(FormPage, { showToast: showToast }),
-            page === 'list' && h(ListPage, { currentUser: currentUser, showToast: showToast, onImageClick: setSelectedImage }),
-            page === 'create-admin' && h(CreateAdminPage, { showToast: showToast })
-          )
-        )
+      return (
+        <>
+          {toast && <Toast message={toast.message} type={toast.type} />}
+          {selectedImage && <ImageModal imageUrl={selectedImage} onClose={() => setSelectedImage(null)} />}
+          
+          <div className="min-h-screen bg-gradient-to-br from-violet-50 to-blue-50">
+            <nav className="bg-white shadow-lg border-b-4 border-violet-600">
+              <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-violet-600 to-blue-600 bg-clip-text text-transparent">🎯 Sistema Tutts</h1>
+                <div className="flex items-center gap-4">
+                  <span className="text-gray-700 font-medium">👤 {currentUser.full_name || currentUser.cod_profissional}</span>
+                  <span className={`px-3 py-1 rounded-full text-sm font-semibold ${currentUser.role === 'admin' ? 'bg-violet-100 text-violet-700' : 'bg-blue-100 text-blue-700'}`}>
+                    {currentUser.role === 'admin' ? '🔑 Admin' : '👁️ Visualizador'}
+                  </span>
+                  {currentUser.role === 'admin' && (
+                    <div className="flex gap-2">
+                      <button onClick={() => setPage('form')} className={`px-4 py-2 rounded-lg font-semibold transition-all ${page === 'form' ? 'bg-violet-600 text-white shadow-lg' : 'bg-white text-violet-600 hover:bg-violet-50'}`}>
+                        📝 Nova Solicitação
+                      </button>
+                      <button onClick={() => setPage('list')} className={`px-4 py-2 rounded-lg font-semibold transition-all ${page === 'list' ? 'bg-violet-600 text-white shadow-lg' : 'bg-white text-violet-600 hover:bg-violet-50'}`}>
+                        📋 Ver Solicitações
+                      </button>
+                      <button onClick={() => setPage('create-admin')} className={`px-4 py-2 rounded-lg font-semibold transition-all ${page === 'create-admin' ? 'bg-violet-600 text-white shadow-lg' : 'bg-white text-violet-600 hover:bg-violet-50'}`}>
+                        👥 Criar Admin
+                      </button>
+                    </div>
+                  )}
+                  <button onClick={handleLogout} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-semibold shadow-lg">🚪 Sair</button>
+                </div>
+              </div>
+            </nav>
+
+            <div className="max-w-7xl mx-auto px-4 py-8">
+              {page === 'form' && <FormPage showToast={showToast} />}
+              {page === 'list' && <ListPage currentUser={currentUser} showToast={showToast} onImageClick={setSelectedImage} />}
+              {page === 'create-admin' && <CreateAdminPage showToast={showToast} />}
+            </div>
+          </div>
+        </>
       );
     }
 
@@ -190,10 +133,9 @@
           });
           const data = await response.json();
           if (response.ok) {
-            const normalizedUser = normalizeUser(data);
             localStorage.setItem('token', 'dummy-token');
-            localStorage.setItem('user', JSON.stringify(normalizedUser));
-            onLogin(normalizedUser);
+            localStorage.setItem('user', JSON.stringify(data));
+            onLogin(data);
           } else {
             showToast(data.error || 'Erro ao fazer login', 'error');
           }
@@ -204,168 +146,102 @@
         }
       };
 
-      return h('div', { className: 'min-h-screen bg-gradient-to-br from-violet-600 to-blue-600 flex items-center justify-center p-4' },
-        h('div', { className: 'bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md' },
-          h('div', { className: 'text-center mb-8' },
-            h('h1', { className: 'text-4xl font-bold bg-gradient-to-r from-violet-600 to-blue-600 bg-clip-text text-transparent mb-2' }, '🎯 Sistema Tutts'),
-            h('p', { className: 'text-gray-600' }, 'Solicitações de Ajustes')
-          ),
-          h('form', { onSubmit: handleSubmit, className: 'space-y-6' },
-            h('div', null,
-              h('label', { className: 'block text-gray-700 font-semibold mb-2' }, 'Usuário'),
-              h('input', {
-                type: 'text',
-                value: username,
-                onChange: (e) => setUsername(e.target.value),
-                className: 'w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none transition-all',
-                required: true
-              })
-            ),
-            h('div', null,
-              h('label', { className: 'block text-gray-700 font-semibold mb-2' }, 'Senha'),
-              h('input', {
-                type: 'password',
-                value: password,
-                onChange: (e) => setPassword(e.target.value),
-                className: 'w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none transition-all',
-                required: true
-              })
-            ),
-            h('button', {
-              type: 'submit',
-              disabled: loading,
-              className: 'w-full bg-gradient-to-r from-violet-600 to-blue-600 text-white py-3 rounded-lg font-bold hover:shadow-xl transition-all disabled:opacity-50'
-            }, loading ? '⏳ Entrando...' : '🔐 Entrar')
-          )
-        )
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-violet-600 to-blue-600 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+            <div className="text-center mb-8">
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-violet-600 to-blue-600 bg-clip-text text-transparent mb-2">🎯 Sistema Tutts</h1>
+              <p className="text-gray-600">Solicitações de Ajustes</p>
+            </div>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div>
+                <label className="block text-gray-700 font-semibold mb-2">Usuário</label>
+                <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none" required />
+              </div>
+              <div>
+                <label className="block text-gray-700 font-semibold mb-2">Senha</label>
+                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none" required />
+              </div>
+              <button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-violet-600 to-blue-600 text-white py-3 rounded-lg font-bold hover:shadow-xl disabled:opacity-50">
+                {loading ? '⏳ Entrando...' : '🔐 Entrar'}
+              </button>
+            </form>
+          </div>
+        </div>
       );
     }
 
     function FormPage({ showToast }) {
       const [formData, setFormData] = useState({
-        nomeTecnico: '',
-        nomeCliente: '',
-        motivoVisita: '',
-        descricao: '',
-        imagens: [],
-        imagemComprovante: null
+        nomeTecnico: '', nomeCliente: '', motivoVisita: '', descricao: '', imagens: [], imagemComprovante: null
       });
       const [loading, setLoading] = useState(false);
       const [showValidation, setShowValidation] = useState(false);
 
-      const motivos = [
-        'Instalação',
-        'Manutenção Preventiva',
-        'Manutenção Corretiva',
-        'Ajuste de Pedágio (Campinas e Recife)',
-        'Treinamento',
-        'Outros'
-      ];
+      const motivos = ['Instalação', 'Manutenção Preventiva', 'Manutenção Corretiva', 'Ajuste de Pedágio (Campinas e Recife)', 'Treinamento', 'Outros'];
 
-      const compressImage = (file) => {
-        return new Promise((resolve) => {
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            const img = new Image();
-            img.onload = () => {
-              const canvas = document.createElement('canvas');
-              let width = img.width;
-              let height = img.height;
-              const maxDimension = 1200;
-              if (width > height && width > maxDimension) {
-                height = height * maxDimension / width;
-                width = maxDimension;
-              } else if (height > maxDimension) {
-                width = width * maxDimension / height;
-                height = maxDimension;
-              }
-              canvas.width = width;
-              canvas.height = height;
-              const ctx = canvas.getContext('2d');
-              ctx.drawImage(img, 0, 0, width, height);
-              let quality = 0.7;
-              let compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
-              while (compressedDataUrl.length > 512000 * 1.37 && quality > 0.1) {
-                quality -= 0.1;
-                compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
-              }
-              resolve(compressedDataUrl);
-            };
-            img.src = e.target.result;
+      const compressImage = (file) => new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            let width = img.width, height = img.height;
+            if (width > 1200) { height *= 1200 / width; width = 1200; }
+            else if (height > 1200) { width *= 1200 / height; height = 1200; }
+            canvas.width = width; canvas.height = height;
+            canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+            let quality = 0.7, compressed = canvas.toDataURL('image/jpeg', quality);
+            while (compressed.length > 512000 * 1.37 && quality > 0.1) {
+              quality -= 0.1;
+              compressed = canvas.toDataURL('image/jpeg', quality);
+            }
+            resolve(compressed);
           };
-          reader.readAsDataURL(file);
-        });
-      };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
 
       const handleImageChange = async (e) => {
         const files = Array.from(e.target.files);
-        if (files.length > 2) {
-          showToast('Máximo de 2 fotos permitidas', 'error');
-          e.target.value = '';
-          return;
-        }
+        if (files.length > 2) { showToast('Máximo de 2 fotos', 'error'); e.target.value = ''; return; }
         const compressed = await Promise.all(files.map(f => compressImage(f)));
         setFormData({ ...formData, imagens: compressed });
       };
 
       const handleComprovanteChange = async (e) => {
         const file = e.target.files[0];
-        if (file) {
-          const compressed = await compressImage(file);
-          setFormData({ ...formData, imagemComprovante: compressed });
-        }
-      };
-
-      const removeImage = (index) => {
-        const newImages = formData.imagens.filter((img, i) => i !== index);
-        setFormData({ ...formData, imagens: newImages });
+        if (file) setFormData({ ...formData, imagemComprovante: await compressImage(file) });
       };
 
       const handleSubmit = async (e) => {
         e.preventDefault();
         setShowValidation(true);
-        
         const isPedagio = formData.motivoVisita === 'Ajuste de Pedágio (Campinas e Recife)';
-        if (isPedagio && formData.imagens.length === 0) {
-          showToast('Foto obrigatória para Ajuste de Pedágio!', 'error');
-          return;
-        }
-
+        if (isPedagio && formData.imagens.length === 0) { showToast('Foto obrigatória para Ajuste de Pedágio!', 'error'); return; }
+        
         setLoading(true);
         try {
           const token = localStorage.getItem('token');
           const response = await fetch(API_URL + '/submissions', {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer ' + token
-            },
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
             body: JSON.stringify({
-              nomeTecnico: formData.nomeTecnico,
-              nomeCliente: formData.nomeCliente,
-              motivoVisita: formData.motivoVisita,
-              descricao: formData.descricao,
-              imagens: formData.imagens.join(','),
-              imagemComprovante: formData.imagemComprovante
+              nomeTecnico: formData.nomeTecnico, nomeCliente: formData.nomeCliente,
+              motivoVisita: formData.motivoVisita, descricao: formData.descricao,
+              imagens: formData.imagens.join(','), imagemComprovante: formData.imagemComprovante
             })
           });
           if (response.ok) {
-            showToast('Solicitação enviada com sucesso!');
-            setFormData({
-              nomeTecnico: '',
-              nomeCliente: '',
-              motivoVisita: '',
-              descricao: '',
-              imagens: [],
-              imagemComprovante: null
-            });
+            showToast('Solicitação enviada!');
+            setFormData({ nomeTecnico: '', nomeCliente: '', motivoVisita: '', descricao: '', imagens: [], imagemComprovante: null });
             setShowValidation(false);
           } else {
-            const data = await response.json();
-            showToast(data.error || 'Erro ao enviar solicitação', 'error');
+            showToast('Erro ao enviar', 'error');
           }
         } catch (error) {
-          showToast('Erro ao conectar ao servidor', 'error');
+          showToast('Erro de conexão', 'error');
         } finally {
           setLoading(false);
         }
@@ -373,108 +249,65 @@
 
       const isPedagio = formData.motivoVisita === 'Ajuste de Pedágio (Campinas e Recife)';
 
-      return h('div', { className: 'max-w-4xl mx-auto' },
-        h('div', { className: 'bg-white rounded-2xl shadow-xl p-8' },
-          h('h2', { className: 'text-3xl font-bold text-gray-800 mb-6 flex items-center gap-3' },
-            h('span', { className: 'text-4xl' }, '📝'),
-            'Nova Solicitação de Ajuste'
-          ),
-          h('form', { onSubmit: handleSubmit, className: 'space-y-6' },
-            h('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-6' },
-              h('div', null,
-                h('label', { className: 'block text-gray-700 font-semibold mb-2' }, 'Nome do Técnico *'),
-                h('input', {
-                  type: 'text',
-                  value: formData.nomeTecnico,
-                  onChange: (e) => setFormData({ ...formData, nomeTecnico: e.target.value }),
-                  className: 'w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none transition-all',
-                  required: true
-                })
-              ),
-              h('div', null,
-                h('label', { className: 'block text-gray-700 font-semibold mb-2' }, 'Nome do Cliente *'),
-                h('input', {
-                  type: 'text',
-                  value: formData.nomeCliente,
-                  onChange: (e) => setFormData({ ...formData, nomeCliente: e.target.value }),
-                  className: 'w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none transition-all',
-                  required: true
-                })
-              )
-            ),
-            h('div', null,
-              h('label', { className: 'block text-gray-700 font-semibold mb-2' }, 'Motivo da Visita *'),
-              h('select', {
-                value: formData.motivoVisita,
-                onChange: (e) => setFormData({ ...formData, motivoVisita: e.target.value }),
-                className: 'w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none transition-all',
-                required: true
-              },
-                h('option', { value: '' }, 'Selecione um motivo'),
-                motivos.map(m => h('option', { key: m, value: m }, m))
-              )
-            ),
-            h('div', null,
-              h('label', { className: 'block text-gray-700 font-semibold mb-2' }, 'Descrição *'),
-              h('textarea', {
-                value: formData.descricao,
-                onChange: (e) => setFormData({ ...formData, descricao: e.target.value }),
-                rows: 4,
-                className: 'w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none transition-all',
-                required: true
-              })
-            ),
-            h('div', null,
-              h('label', { className: 'block text-gray-700 font-semibold mb-2 flex items-center gap-2' },
-                '📸 Fotos da OS (máx. 2) ',
-                isPedagio && h('span', { className: 'text-red-600' }, '*'),
-                isPedagio && h('span', { className: 'text-red-600 text-sm font-normal' }, '(Obrigatório para Pedágio)')
-              ),
-              h('input', {
-                type: 'file',
-                accept: 'image/*',
-                multiple: true,
-                onChange: handleImageChange,
-                className: 'w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none transition-all'
-              }),
-              showValidation && isPedagio && formData.imagens.length === 0 && h('p', { className: 'text-red-600 text-sm mt-2' }, '⚠️ Foto obrigatória para Ajuste de Pedágio!'),
-              formData.imagens.length > 0 && h('div', { className: 'flex gap-4 mt-4' },
-                formData.imagens.map((img, index) =>
-                  h('div', { key: index, className: 'relative' },
-                    h('img', { src: img, alt: 'Preview ' + (index + 1), className: 'w-32 h-32 object-cover rounded-lg border-2 border-gray-300' }),
-                    h('button', {
-                      type: 'button',
-                      onClick: () => removeImage(index),
-                      className: 'absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-700 transition-all'
-                    }, '✕')
-                  )
-                )
-              )
-            ),
-            h('div', null,
-              h('label', { className: 'block text-gray-700 font-semibold mb-2' }, '📄 Comprovante de Deslocamento (opcional)'),
-              h('input', {
-                type: 'file',
-                accept: 'image/*',
-                onChange: handleComprovanteChange,
-                className: 'w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none transition-all'
-              }),
-              formData.imagemComprovante && h('div', { className: 'mt-4 relative inline-block' },
-                h('img', { src: formData.imagemComprovante, alt: 'Preview Comprovante', className: 'w-32 h-32 object-cover rounded-lg border-2 border-gray-300' }),
-                h('button', {
-                  type: 'button',
-                  onClick: () => setFormData({ ...formData, imagemComprovante: null }),
-                  className: 'absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-700 transition-all'
-                }, '✕')
-              )
-            ),
-            h('button', {
-              type: 'submit',
-              disabled: loading,
-              className: 'w-full bg-gradient-to-r from-violet-600 to-blue-600 text-white py-4 rounded-lg font-bold text-lg hover:shadow-xl transition-all disabled:opacity-50'
-            }, loading ? '⏳ Enviando...' : '✅ Enviar Solicitação')
-          )
-        )
+      return (
+        <div className="max-w-4xl mx-auto">
+          <div className="bg-white rounded-2xl shadow-xl p-8">
+            <h2 className="text-3xl font-bold text-gray-800 mb-6 flex items-center gap-3"><span className="text-4xl">📝</span>Nova Solicitação</h2>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-gray-700 font-semibold mb-2">Nome do Técnico *</label>
+                  <input type="text" value={formData.nomeTecnico} onChange={(e) => setFormData({...formData, nomeTecnico: e.target.value})} className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none" required />
+                </div>
+                <div>
+                  <label className="block text-gray-700 font-semibold mb-2">Nome do Cliente *</label>
+                  <input type="text" value={formData.nomeCliente} onChange={(e) => setFormData({...formData, nomeCliente: e.target.value})} className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none" required />
+                </div>
+              </div>
+              <div>
+                <label className="block text-gray-700 font-semibold mb-2">Motivo *</label>
+                <select value={formData.motivoVisita} onChange={(e) => setFormData({...formData, motivoVisita: e.target.value})} className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none" required>
+                  <option value="">Selecione</option>
+                  {motivos.map(m => <option key={m} value={m}>{m}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-gray-700 font-semibold mb-2">Descrição *</label>
+                <textarea value={formData.descricao} onChange={(e) => setFormData({...formData, descricao: e.target.value})} rows="4" className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none" required />
+              </div>
+              <div>
+                <label className="block text-gray-700 font-semibold mb-2 flex items-center gap-2">
+                  📸 Fotos (máx. 2) {isPedagio && <span className="text-red-600">* Obrigatório</span>}
+                </label>
+                <input type="file" accept="image/*" multiple onChange={handleImageChange} className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg" />
+                {showValidation && isPedagio && formData.imagens.length === 0 && <p className="text-red-600 text-sm mt-2">⚠️ Foto obrigatória!</p>}
+                {formData.imagens.length > 0 && (
+                  <div className="flex gap-4 mt-4">
+                    {formData.imagens.map((img, i) => (
+                      <div key={i} className="relative">
+                        <img src={img} className="w-32 h-32 object-cover rounded-lg border-2" />
+                        <button type="button" onClick={() => setFormData({...formData, imagens: formData.imagens.filter((_, idx) => idx !== i)})} className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-6 h-6">✕</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div>
+                <label className="block text-gray-700 font-semibold mb-2">📄 Comprovante (opcional)</label>
+                <input type="file" accept="image/*" onChange={handleComprovanteChange} className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg" />
+                {formData.imagemComprovante && (
+                  <div className="mt-4 relative inline-block">
+                    <img src={formData.imagemComprovante} className="w-32 h-32 object-cover rounded-lg border-2" />
+                    <button type="button" onClick={() => setFormData({...formData, imagemComprovante: null})} className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-6 h-6">✕</button>
+                  </div>
+                )}
+              </div>
+              <button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-violet-600 to-blue-600 text-white py-4 rounded-lg font-bold text-lg hover:shadow-xl disabled:opacity-50">
+                {loading ? '⏳ Enviando...' : '✅ Enviar'}
+              </button>
+            </form>
+          </div>
+        </div>
       );
     }
 
@@ -483,222 +316,144 @@
       const [loading, setLoading] = useState(true);
       const [selectedMotivo, setSelectedMotivo] = useState('');
 
-      const motivos = [
-        'Instalação',
-        'Manutenção Preventiva',
-        'Manutenção Corretiva',
-        'Ajuste de Pedágio (Campinas e Recife)',
-        'Treinamento',
-        'Outros'
-      ];
+      const motivos = ['Instalação', 'Manutenção Preventiva', 'Manutenção Corretiva', 'Ajuste de Pedágio (Campinas e Recife)', 'Treinamento', 'Outros'];
 
       useEffect(() => {
         fetchSubmissions();
-        const interval = setInterval(() => {
-          console.log('Auto-refresh: Atualizando lista');
-          fetchSubmissions();
-        }, 300000);
+        const interval = setInterval(fetchSubmissions, 300000);
         return () => clearInterval(interval);
       }, []);
 
       const fetchSubmissions = async () => {
         try {
           const token = localStorage.getItem('token');
-          const response = await fetch(API_URL + '/submissions', {
-            headers: { 'Authorization': 'Bearer ' + token }
-          });
-          if (response.ok) {
-            const data = await response.json();
-            setSubmissions(data);
-          }
+          const response = await fetch(API_URL + '/submissions', { headers: { 'Authorization': 'Bearer ' + token } });
+          if (response.ok) setSubmissions(await response.json());
         } catch (error) {
-          showToast('Erro ao carregar solicitações', 'error');
+          showToast('Erro ao carregar', 'error');
         } finally {
           setLoading(false);
         }
       };
 
       const handleDelete = async (id) => {
-        if (!confirm('Tem certeza que deseja excluir esta solicitação?')) return;
+        if (!confirm('Excluir?')) return;
         try {
           const token = localStorage.getItem('token');
-          const response = await fetch(API_URL + '/submissions/' + id, {
-            method: 'DELETE',
-            headers: { 'Authorization': 'Bearer ' + token }
-          });
-          if (response.ok) {
-            showToast('Solicitação excluída com sucesso!');
-            fetchSubmissions();
-          } else {
-            showToast('Erro ao excluir solicitação', 'error');
-          }
+          const response = await fetch(API_URL + '/submissions/' + id, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } });
+          if (response.ok) { showToast('Excluído!'); fetchSubmissions(); }
         } catch (error) {
-          showToast('Erro ao conectar ao servidor', 'error');
+          showToast('Erro', 'error');
         }
       };
 
-      const filteredSubmissions = selectedMotivo ? submissions.filter(s => s.motivo === selectedMotivo) : submissions;
+      const filtered = selectedMotivo ? submissions.filter(s => s.motivo === selectedMotivo) : submissions;
 
-      if (loading) {
-        return h('div', { className: 'text-center text-2xl mt-20' }, '⏳ Carregando...');
-      }
+      if (loading) return <div className="text-center text-2xl mt-20">⏳ Carregando...</div>;
 
-      return h('div', null,
-        h('div', { className: 'mb-6 flex gap-4 items-center' },
-          h('label', { className: 'text-gray-700 font-semibold' }, 'Filtrar por Motivo:'),
-          h('select', {
-            value: selectedMotivo,
-            onChange: (e) => setSelectedMotivo(e.target.value),
-            className: 'px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none'
-          },
-            h('option', { value: '' }, 'Todos os motivos'),
-            motivos.map(m => h('option', { key: m, value: m }, m))
-          ),
-          selectedMotivo && h('button', {
-            onClick: () => setSelectedMotivo(''),
-            className: 'px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300'
-          }, '✕ Limpar')
-        ),
-        h('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-6' },
-          filteredSubmissions.map(s => {
-            const imgs = s.imagens ? (typeof s.imagens === 'string' ? s.imagens.split(',').filter(img => img.trim()) : s.imagens) : [];
-            return h('div', { key: s.id, className: 'bg-white rounded-xl shadow-lg p-6 hover:shadow-2xl transition-all' },
-              h('div', { className: 'flex justify-between items-start mb-4' },
-                h('div', null,
-                  h('h3', { className: 'text-xl font-bold text-gray-800' }, s.nome_cliente),
-                  h('p', { className: 'text-gray-600' }, '👤 ' + s.nome_tecnico)
-                ),
-                currentUser.role === 'admin' && h('button', {
-                  onClick: () => handleDelete(s.id),
-                  className: 'text-red-600 hover:text-red-800 font-bold text-xl',
-                  title: 'Excluir'
-                }, '🗑️')
-              ),
-              h('div', { className: 'space-y-2 text-sm' },
-                h('p', null, h('span', { className: 'font-semibold' }, 'Motivo: '), s.motivo),
-                h('p', null, h('span', { className: 'font-semibold' }, 'Descrição: '), s.descricao),
-                h('p', { className: 'text-gray-500 text-xs' }, new Date(s.created_at).toLocaleString('pt-BR'))
-              ),
-              imgs.length > 0 && h('div', { className: 'mt-4' },
-                h('p', { className: 'font-semibold mb-2' }, '📸 Fotos da OS:'),
-                h('div', { className: 'flex gap-2' },
-                  imgs.map((img, i) => h('img', {
-                    key: i,
-                    src: img.trim(),
-                    alt: 'Foto ' + (i + 1),
-                    className: 'w-20 h-20 object-cover rounded-lg border-2 border-gray-300 cursor-pointer hover:scale-110 transition-all',
-                    onClick: () => onImageClick(img.trim())
-                  }))
-                )
-              ),
-              s.imagem_comprovante && h('div', { className: 'mt-4' },
-                h('p', { className: 'font-semibold mb-2' }, '📄 Comprovante:'),
-                h('img', {
-                  src: s.imagem_comprovante,
-                  alt: 'Comprovante',
-                  className: 'w-20 h-20 object-cover rounded-lg border-2 border-gray-300 cursor-pointer hover:scale-110 transition-all',
-                  onClick: () => onImageClick(s.imagem_comprovante)
-                })
-              )
-            );
-          })
-        ),
-        filteredSubmissions.length === 0 && h('div', { className: 'text-center text-gray-500 text-xl mt-20' }, '📭 Nenhuma solicitação encontrada')
+      return (
+        <div>
+          <div className="mb-6 flex gap-4 items-center">
+            <label className="text-gray-700 font-semibold">Filtrar:</label>
+            <select value={selectedMotivo} onChange={(e) => setSelectedMotivo(e.target.value)} className="px-4 py-2 border-2 border-gray-300 rounded-lg">
+              <option value="">Todos</option>
+              {motivos.map(m => <option key={m} value={m}>{m}</option>)}
+            </select>
+            {selectedMotivo && <button onClick={() => setSelectedMotivo('')} className="px-4 py-2 bg-gray-200 rounded-lg">✕ Limpar</button>}
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {filtered.map(s => {
+              const imgs = s.imagens ? (typeof s.imagens === 'string' ? s.imagens.split(',').filter(img => img.trim()) : s.imagens) : [];
+              return (
+                <div key={s.id} className="bg-white rounded-xl shadow-lg p-6 hover:shadow-2xl transition-all">
+                  <div className="flex justify-between mb-4">
+                    <div>
+                      <h3 className="text-xl font-bold">{s.nome_cliente}</h3>
+                      <p className="text-gray-600">👤 {s.nome_tecnico}</p>
+                    </div>
+                    {currentUser.role === 'admin' && <button onClick={() => handleDelete(s.id)} className="text-red-600 text-xl">🗑️</button>}
+                  </div>
+                  <p className="text-sm"><b>Motivo:</b> {s.motivo}</p>
+                  <p className="text-sm"><b>Descrição:</b> {s.descricao}</p>
+                  <p className="text-gray-500 text-xs mt-2">{new Date(s.created_at).toLocaleString('pt-BR')}</p>
+                  {imgs.length > 0 && (
+                    <div className="mt-4">
+                      <p className="font-semibold mb-2">📸 Fotos:</p>
+                      <div className="flex gap-2">
+                        {imgs.map((img, i) => <img key={i} src={img.trim()} className="w-20 h-20 object-cover rounded-lg border-2 cursor-pointer hover:scale-110 transition-all" onClick={() => onImageClick(img.trim())} />)}
+                      </div>
+                    </div>
+                  )}
+                  {s.imagem_comprovante && (
+                    <div className="mt-4">
+                      <p className="font-semibold mb-2">📄 Comprovante:</p>
+                      <img src={s.imagem_comprovante} className="w-20 h-20 object-cover rounded-lg border-2 cursor-pointer hover:scale-110 transition-all" onClick={() => onImageClick(s.imagem_comprovante)} />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          {filtered.length === 0 && <div className="text-center text-gray-500 text-xl mt-20">📭 Nenhuma solicitação</div>}
+        </div>
       );
     }
 
     function CreateAdminPage({ showToast }) {
-      const [formData, setFormData] = useState({
-        username: '',
-        password: '',
-        confirmPassword: ''
-      });
+      const [formData, setFormData] = useState({ username: '', password: '', confirmPassword: '' });
       const [loading, setLoading] = useState(false);
 
       const handleSubmit = async (e) => {
         e.preventDefault();
-        if (formData.password !== formData.confirmPassword) {
-          showToast('As senhas não coincidem!', 'error');
-          return;
-        }
+        if (formData.password !== formData.confirmPassword) { showToast('Senhas não coincidem!', 'error'); return; }
         setLoading(true);
         try {
           const token = localStorage.getItem('token');
           const response = await fetch(API_URL + '/users/register', {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer ' + token
-            },
-            body: JSON.stringify({
-              codProfissional: formData.username,
-              password: formData.password,
-              fullName: formData.username,
-              role: 'admin'
-            })
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify({ codProfissional: formData.username, password: formData.password, fullName: formData.username, role: 'admin' })
           });
           if (response.ok) {
-            showToast('Admin criado com sucesso!');
+            showToast('Admin criado!');
             setFormData({ username: '', password: '', confirmPassword: '' });
           } else {
-            const data = await response.json();
-            showToast(data.error || 'Erro ao criar admin', 'error');
+            showToast('Erro ao criar', 'error');
           }
         } catch (error) {
-          showToast('Erro ao conectar ao servidor', 'error');
+          showToast('Erro de conexão', 'error');
         } finally {
           setLoading(false);
         }
       };
 
-      return h('div', { className: 'max-w-2xl mx-auto' },
-        h('div', { className: 'bg-white rounded-2xl shadow-xl p-8' },
-          h('h2', { className: 'text-3xl font-bold text-gray-800 mb-6 flex items-center gap-3' },
-            h('span', { className: 'text-4xl' }, '👥'),
-            'Criar Novo Admin'
-          ),
-          h('form', { onSubmit: handleSubmit, className: 'space-y-6' },
-            h('div', null,
-              h('label', { className: 'block text-gray-700 font-semibold mb-2' }, 'Nome de Usuário *'),
-              h('input', {
-                type: 'text',
-                value: formData.username,
-                onChange: (e) => setFormData({ ...formData, username: e.target.value }),
-                className: 'w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none transition-all',
-                required: true
-              })
-            ),
-            h('div', null,
-              h('label', { className: 'block text-gray-700 font-semibold mb-2' }, 'Senha *'),
-              h('input', {
-                type: 'password',
-                value: formData.password,
-                onChange: (e) => setFormData({ ...formData, password: e.target.value }),
-                className: 'w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none transition-all',
-                required: true
-              })
-            ),
-            h('div', null,
-              h('label', { className: 'block text-gray-700 font-semibold mb-2' }, 'Confirmar Senha *'),
-              h('input', {
-                type: 'password',
-                value: formData.confirmPassword,
-                onChange: (e) => setFormData({ ...formData, confirmPassword: e.target.value }),
-                className: 'w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none transition-all',
-                required: true
-              })
-            ),
-            h('button', {
-              type: 'submit',
-              disabled: loading,
-              className: 'w-full bg-gradient-to-r from-violet-600 to-blue-600 text-white py-4 rounded-lg font-bold text-lg hover:shadow-xl transition-all disabled:opacity-50'
-            }, loading ? '⏳ Criando...' : '✅ Criar Admin')
-          )
-        )
+      return (
+        <div className="max-w-2xl mx-auto">
+          <div className="bg-white rounded-2xl shadow-xl p-8">
+            <h2 className="text-3xl font-bold mb-6 flex items-center gap-3"><span className="text-4xl">👥</span>Criar Admin</h2>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div>
+                <label className="block text-gray-700 font-semibold mb-2">Usuário *</label>
+                <input type="text" value={formData.username} onChange={(e) => setFormData({...formData, username: e.target.value})} className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none" required />
+              </div>
+              <div>
+                <label className="block text-gray-700 font-semibold mb-2">Senha *</label>
+                <input type="password" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none" required />
+              </div>
+              <div>
+                <label className="block text-gray-700 font-semibold mb-2">Confirmar Senha *</label>
+                <input type="password" value={formData.confirmPassword} onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})} className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none" required />
+              </div>
+              <button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-violet-600 to-blue-600 text-white py-4 rounded-lg font-bold text-lg hover:shadow-xl disabled:opacity-50">
+                {loading ? '⏳ Criando...' : '✅ Criar Admin'}
+              </button>
+            </form>
+          </div>
+        </div>
       );
     }
 
-    ReactDOM.render(h(App), document.getElementById('root'));
+    ReactDOM.render(<App />, document.getElementById('root'));
   </script>
 </body>
 </html>
