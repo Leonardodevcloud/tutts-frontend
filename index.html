@@ -50,1910 +50,737 @@
             src={imageUrl} 
             alt="Comprovante expandido" 
             className="max-w-full max-h-screen rounded-lg shadow-2xl"
-            loading="lazy"
-            decoding="async"
             onClick={(e) => e.stopPropagation()}
           />
         </div>
       </div>
     );
 
-    // Gráfico de Pizza (Motivos)
-    const PieChart = ({ submissions }) => {
-      const motivos = {};
-      submissions.forEach(s => {
-        motivos[s.motivo] = (motivos[s.motivo] || 0) + 1;
-      });
-
-      const colors = ['#7c3aed', '#2563eb', '#059669', '#dc2626', '#ea580c', '#8b5cf6'];
-      const total = submissions.length;
-      const data = Object.entries(motivos).map(([motivo, count], index) => ({
-        motivo,
-        count,
-        percentage: ((count / total) * 100).toFixed(1),
-        color: colors[index % colors.length]
-      }));
-
-      let currentAngle = 0;
-
-      return (
-        <div className="bg-white rounded-xl shadow p-6">
-          <h2 className="text-lg font-semibold mb-4">📊 Distribuição por Motivo</h2>
-          {total === 0 ? (
-            <p className="text-gray-500">Nenhuma solicitação ainda</p>
-          ) : (
-            <div className="flex flex-col md:flex-row items-center gap-6">
-              <svg viewBox="0 0 200 200" className="w-48 h-48">
-                {data.map((item, index) => {
-                  const angle = (item.count / total) * 360;
-                  const startAngle = currentAngle;
-                  currentAngle += angle;
-
-                  const x1 = 100 + 90 * Math.cos((startAngle - 90) * Math.PI / 180);
-                  const y1 = 100 + 90 * Math.sin((startAngle - 90) * Math.PI / 180);
-                  const x2 = 100 + 90 * Math.cos((startAngle + angle - 90) * Math.PI / 180);
-                  const y2 = 100 + 90 * Math.sin((startAngle + angle - 90) * Math.PI / 180);
-                  const largeArc = angle > 180 ? 1 : 0;
-
-                  return (
-                    <path
-                      key={index}
-                      d={`M 100 100 L ${x1} ${y1} A 90 90 0 ${largeArc} 1 ${x2} ${y2} Z`}
-                      fill={item.color}
-                      stroke="white"
-                      strokeWidth="2"
-                    />
-                  );
-                })}
-                <circle cx="100" cy="100" r="50" fill="white" />
-                <text x="100" y="95" textAnchor="middle" className="text-2xl font-bold" fill="#1f2937">
-                  {total}
-                </text>
-                <text x="100" y="110" textAnchor="middle" className="text-xs" fill="#6b7280">
-                  Total
-                </text>
-              </svg>
-              <div className="flex-1 space-y-2">
-                {data.map((item, index) => (
-                  <div key={index} className="flex items-center gap-3">
-                    <div 
-                      className="w-4 h-4 rounded"
-                      style={{ backgroundColor: item.color }}
-                    />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-800 truncate">{item.motivo}</p>
-                      <p className="text-xs text-gray-500">{item.count} solicitações ({item.percentage}%)</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      );
-    };
-
-    // Novo gráfico de Status
-    const StatusPieChart = ({ submissions }) => {
-      const aprovadas = submissions.filter(s => s.status === 'aprovada').length;
-      const rejeitadas = submissions.filter(s => s.status === 'rejeitada').length;
-      const pendentes = submissions.filter(s => s.status === 'pendente').length;
-      const total = submissions.length;
-
-      const data = [
-        { label: 'Aprovadas', count: aprovadas, percentage: ((aprovadas / total) * 100).toFixed(1), color: '#059669' },
-        { label: 'Rejeitadas', count: rejeitadas, percentage: ((rejeitadas / total) * 100).toFixed(1), color: '#dc2626' },
-        { label: 'Pendentes', count: pendentes, percentage: ((pendentes / total) * 100).toFixed(1), color: '#eab308' }
-      ].filter(item => item.count > 0);
-
-      let currentAngle = 0;
-
-      return (
-        <div className="bg-white rounded-xl shadow p-6">
-          <h2 className="text-lg font-semibold mb-4">📈 Distribuição por Status</h2>
-          {total === 0 ? (
-            <p className="text-gray-500">Nenhuma solicitação ainda</p>
-          ) : (
-            <div className="flex flex-col md:flex-row items-center gap-6">
-              <svg viewBox="0 0 200 200" className="w-48 h-48">
-                {data.map((item, index) => {
-                  const angle = (item.count / total) * 360;
-                  const startAngle = currentAngle;
-                  currentAngle += angle;
-
-                  const x1 = 100 + 90 * Math.cos((startAngle - 90) * Math.PI / 180);
-                  const y1 = 100 + 90 * Math.sin((startAngle - 90) * Math.PI / 180);
-                  const x2 = 100 + 90 * Math.cos((startAngle + angle - 90) * Math.PI / 180);
-                  const y2 = 100 + 90 * Math.sin((startAngle + angle - 90) * Math.PI / 180);
-                  const largeArc = angle > 180 ? 1 : 0;
-
-                  return (
-                    <path
-                      key={index}
-                      d={`M 100 100 L ${x1} ${y1} A 90 90 0 ${largeArc} 1 ${x2} ${y2} Z`}
-                      fill={item.color}
-                      stroke="white"
-                      strokeWidth="2"
-                    />
-                  );
-                })}
-                <circle cx="100" cy="100" r="50" fill="white" />
-                <text x="100" y="95" textAnchor="middle" className="text-2xl font-bold" fill="#1f2937">
-                  {total}
-                </text>
-                <text x="100" y="110" textAnchor="middle" className="text-xs" fill="#6b7280">
-                  Total
-                </text>
-              </svg>
-              <div className="flex-1 space-y-2">
-                {data.map((item, index) => (
-                  <div key={index} className="flex items-center gap-3">
-                    <div 
-                      className="w-4 h-4 rounded"
-                      style={{ backgroundColor: item.color }}
-                    />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-800">{item.label}</p>
-                      <p className="text-xs text-gray-500">{item.count} solicitações ({item.percentage}%)</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      );
-    };
-
-    const App = () => {
-      const [view, setView] = useState('login');
-      const [user, setUser] = useState(null);
-      const [loading, setLoading] = useState(false);
-      const [loadingSubmissions, setLoadingSubmissions] = useState(false);
+    function App() {
+      const [currentUser, setCurrentUser] = useState(null);
+      const [page, setPage] = useState('login');
       const [toast, setToast] = useState(null);
-      const [formData, setFormData] = useState({});
-      const [submissions, setSubmissions] = useState([]);
-      const [users, setUsers] = useState([]);
-      const [imageModal, setImageModal] = useState(null);
-      const [images, setImages] = useState([]); // Múltiplas imagens
-      const [loadedImages, setLoadedImages] = useState({}); // Imagens carregadas sob demanda
+      const [selectedImage, setSelectedImage] = useState(null);
+
+      useEffect(() => {
+        const token = localStorage.getItem('token');
+        const user = localStorage.getItem('user');
+        if (token && user) {
+          setCurrentUser(JSON.parse(user));
+          setPage(JSON.parse(user).role === 'admin' ? 'form' : 'list');
+        }
+      }, []);
 
       const showToast = (message, type = 'success') => {
         setToast({ message, type });
         setTimeout(() => setToast(null), 3000);
       };
 
-      // Carregar imagens de uma OS específica
-      // Função para normalizar imagens base64
-      const normalizeBase64Image = (img) => {
-        if (!img) return img;
-        // Se já tem o prefixo, retorna como está
-        if (img.startsWith('data:image/')) return img;
-        // Adiciona o prefixo
-        return `data:image/jpeg;base64,${img}`;
+      const handleLogout = () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        setCurrentUser(null);
+        setPage('login');
+        showToast('Logout realizado com sucesso!');
       };
 
-      const loadImagesForOS = async (id) => {
-        if (loadedImages[id]) {
-          console.log('⏭️ Imagens da OS', id, 'já carregadas (cache)');
-          return;
-        }
-        
-        try {
-          console.log('📸 Carregando imagens da OS:', id);
-          const res = await fetch(`${API_URL}/submissions/${id}/images`);
+      return (
+        <>
+          {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+          {selectedImage && <ImageModal imageUrl={selectedImage} onClose={() => setSelectedImage(null)} />}
           
-          if (!res.ok) {
-            throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-          }
-          
-          const data = await res.json();
-          
-          console.log('📦 Resposta do backend:', {
-            temImagens: !!data.imagens,
-            tipoImagens: Array.isArray(data.imagens) ? 'array' : typeof data.imagens,
-            quantidadeImagens: Array.isArray(data.imagens) ? data.imagens.length : 'N/A',
-            temComprovante: !!data.imagemComprovante
-          });
-          
-          // Garantir que imagens seja sempre um array
-          const imagensArray = Array.isArray(data.imagens) ? data.imagens : [];
-          
-          console.log('✅ Processando', imagensArray.length, 'imagens');
-          
-          // Normalizar todas as imagens
-          const normalizedImages = imagensArray.map(normalizeBase64Image);
-          const normalizedComprovante = normalizeBase64Image(data.imagemComprovante);
-          
-          setLoadedImages(prev => ({
-            ...prev,
-            [id]: {
-              imagens: normalizedImages,
-              imagemComprovante: normalizedComprovante
-            }
-          }));
-          
-          console.log('💾 Imagens armazenadas no estado para OS:', id);
-        } catch (err) {
-          console.error('❌ Erro ao carregar imagens:', err);
-          showToast('Erro ao carregar imagens', 'error');
-        }
-      };
+          {!currentUser ? (
+            <LoginPage onLogin={(user) => {
+              setCurrentUser(user);
+              setPage(user.role === 'admin' ? 'form' : 'list');
+              showToast(\`Bem-vindo, \${user.username}!\`);
+            }} showToast={showToast} />
+          ) : (
+            <div className="min-h-screen bg-gradient-to-br from-violet-50 to-blue-50">
+              <nav className="bg-white shadow-lg border-b-4 border-violet-600">
+                <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+                  <h1 className="text-3xl font-bold bg-gradient-to-r from-violet-600 to-blue-600 bg-clip-text text-transparent">
+                    🎯 Sistema Tutts
+                  </h1>
+                  <div className="flex items-center gap-4">
+                    <span className="text-gray-700 font-medium">👤 {currentUser.username}</span>
+                    <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                      currentUser.role === 'admin' ? 'bg-violet-100 text-violet-700' : 'bg-blue-100 text-blue-700'
+                    }`}>
+                      {currentUser.role === 'admin' ? '🔑 Admin' : '👁️ Visualizador'}
+                    </span>
+                    {currentUser.role === 'admin' && (
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setPage('form')}
+                          className={\`px-4 py-2 rounded-lg font-semibold transition-all \${
+                            page === 'form'
+                              ? 'bg-violet-600 text-white shadow-lg'
+                              : 'bg-white text-violet-600 hover:bg-violet-50'
+                          }\`}
+                        >
+                          📝 Nova Solicitação
+                        </button>
+                        <button
+                          onClick={() => setPage('list')}
+                          className={\`px-4 py-2 rounded-lg font-semibold transition-all \${
+                            page === 'list'
+                              ? 'bg-violet-600 text-white shadow-lg'
+                              : 'bg-white text-violet-600 hover:bg-violet-50'
+                          }\`}
+                        >
+                          📋 Ver Solicitações
+                        </button>
+                        <button
+                          onClick={() => setPage('create-admin')}
+                          className={\`px-4 py-2 rounded-lg font-semibold transition-all \${
+                            page === 'create-admin'
+                              ? 'bg-violet-600 text-white shadow-lg'
+                              : 'bg-white text-violet-600 hover:bg-violet-50'
+                          }\`}
+                        >
+                          👥 Criar Admin
+                        </button>
+                      </div>
+                    )}
+                    <button
+                      onClick={handleLogout}
+                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all font-semibold shadow-lg hover:shadow-xl"
+                    >
+                      🚪 Sair
+                    </button>
+                  </div>
+                </div>
+              </nav>
 
-      const loadSubmissions = async () => {
-        if (loadingSubmissions) return;
-        setLoadingSubmissions(true);
-        try {
-          const query = user.role === 'user' ? `?userId=${user.id}&userCod=${user.cod_profissional}` : '';
-          const res = await fetch(`${API_URL}/submissions${query}`);
-          const data = await res.json();
-          
-          console.log('🔍 DEBUG - Carregando submissões:');
-          console.log('  - Total:', data.length);
-          
-          setSubmissions(data.map(s => {
-            // Parse seguro de imagens
-            let parsedImages = [];
-            if (s.imagens) {
-              try {
-                parsedImages = JSON.parse(s.imagens);
-                console.log(`  - OS ${s.ordem_servico}: ${parsedImages.length} foto(s) no campo imagens`);
-              } catch (e) {
-                console.warn(`  - ⚠️ OS ${s.ordem_servico}: Erro ao parsear imagens:`, e);
-                console.warn('    Conteúdo:', s.imagens.substring(0, 100));
-                parsedImages = [];
-              }
-            } else if (s.imagem_comprovante) {
-              console.log(`  - OS ${s.ordem_servico}: 1 foto no campo imagem_comprovante (antiga)`);
-            } else {
-              console.log(`  - OS ${s.ordem_servico}: Sem fotos`);
-            }
-            
-            return {
-              ...s,
-              ordemServico: s.ordem_servico,
-              codProfissional: s.user_cod,
-              fullName: s.user_name,
-              imagemComprovante: s.imagem_comprovante,
-              imagens: parsedImages,
-              timestamp: new Date(s.created_at).toLocaleString('pt-BR')
-            };
-          }));
-        } catch (err) {
-          console.error('❌ Erro ao carregar:', err);
-          showToast('Erro ao carregar submissões', 'error');
-        } finally {
-          setLoadingSubmissions(false);
-        }
-      };
+              <div className="max-w-7xl mx-auto px-4 py-8">
+                {page === 'form' && <FormPage showToast={showToast} />}
+                {page === 'list' && <ListPage currentUser={currentUser} showToast={showToast} onImageClick={setSelectedImage} />}
+                {page === 'create-admin' && <CreateAdminPage showToast={showToast} />}
+              </div>
+            </div>
+          )}
+        </>
+      );
+    }
 
-      const loadUsers = async () => {
-        try {
-          const res = await fetch(`${API_URL}/users`);
-          const data = await res.json();
-          setUsers(data.map(u => ({
-            codProfissional: u.cod_profissional,
-            fullName: u.full_name,
-            createdAt: new Date(u.created_at).toLocaleString('pt-BR')
-          })));
-        } catch (err) {
-          console.error('Erro:', err);
-        }
-      };
+    // Página de Login
+    function LoginPage({ onLogin, showToast }) {
+      const [username, setUsername] = useState('');
+      const [password, setPassword] = useState('');
+      const [loading, setLoading] = useState(false);
 
-      useEffect(() => {
-        if (user) {
-          loadSubmissions();
-          if (user.role === 'admin') loadUsers();
-        }
-      }, [user]);
-
-      // Polling automático para admin (atualiza a cada 2 minutos)
-      useEffect(() => {
-        if (!user || user.role !== 'admin') return;
-        
-        let isFirstLoad = true;
-        
-        const interval = setInterval(() => {
-          console.log('🔄 Atualizando submissões automaticamente...');
-          loadSubmissions();
-          
-          // Mostrar toast apenas após primeira atualização automática
-          if (!isFirstLoad) {
-            // Toast discreto sem bloquear visualização
-            const toastDiv = document.createElement('div');
-            toastDiv.className = 'fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg text-sm z-50';
-            toastDiv.textContent = '✓ Atualizado';
-            document.body.appendChild(toastDiv);
-            setTimeout(() => toastDiv.remove(), 2000);
-          }
-          isFirstLoad = false;
-        }, 120000); // 2 minutos (120 segundos)
-        
-        return () => clearInterval(interval);
-      }, [user]);
-
-      const handleLogin = async () => {
+      const handleSubmit = async (e) => {
+        e.preventDefault();
         setLoading(true);
+
         try {
-          const res = await fetch(`${API_URL}/users/login`, {
+          const response = await fetch(\`\${API_URL}/login\`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ codProfissional: formData.cod, password: formData.password })
+            body: JSON.stringify({ username, password })
           });
-          if (!res.ok) throw new Error('Credenciais inválidas');
-          const data = await res.json();
-          setUser({ ...data, codProfissional: data.cod_profissional, fullName: data.full_name });
-          setFormData({});
-        } catch (err) {
-          showToast(err.message, 'error');
+
+          const data = await response.json();
+
+          if (response.ok) {
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('user', JSON.stringify(data.user));
+            onLogin(data.user);
+          } else {
+            showToast(data.error || 'Erro ao fazer login', 'error');
+          }
+        } catch (error) {
+          showToast('Erro ao conectar ao servidor', 'error');
         } finally {
           setLoading(false);
         }
       };
 
-      const handleRegister = async () => {
-        setLoading(true);
-        try {
-          const res = await fetch(`${API_URL}/users/register`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ codProfissional: formData.cod, password: formData.password, fullName: formData.name })
-          });
-          if (!res.ok) throw new Error('Erro no cadastro');
-          showToast('Cadastro realizado! Faça login.', 'success');
-          setView('login');
-          setFormData({});
-        } catch (err) {
-          showToast(err.message, 'error');
-        } finally {
-          setLoading(false);
-        }
-      };
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-violet-600 to-blue-600 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+            <div className="text-center mb-8">
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-violet-600 to-blue-600 bg-clip-text text-transparent mb-2">
+                🎯 Sistema Tutts
+              </h1>
+              <p className="text-gray-600">Solicitações de Ajustes</p>
+            </div>
 
-      const handleSubmitOS = async () => {
-        if (!formData.os || !formData.motivo) {
-          showToast('⚠️ Preencha OS e Motivo', 'error');
-          return;
-        }
-        
-        setLoading(true);
-        try {
-          // Preparar dados
-          const imagesJson = images.length > 0 ? JSON.stringify(images) : null;
-          
-          console.log('🔍 DEBUG - Enviando OS:');
-          console.log('  - Número de imagens:', images.length);
-          console.log('  - Tamanho do JSON:', imagesJson ? (imagesJson.length / 1024).toFixed(0) + 'KB' : '0KB');
-          console.log('  - Primeiros 100 chars:', imagesJson ? imagesJson.substring(0, 100) : 'null');
-          
-          // Validar tamanho total
-          const dataSize = new Blob([imagesJson || '']).size;
-          if (dataSize > 10 * 1024 * 1024) {
-            throw new Error('Fotos muito grandes. Tente com fotos menores.');
-          }
-          
-          const payload = {
-            ordemServico: formData.os,
-            motivo: formData.motivo,
-            userId: user.id,
-            userCod: user.codProfissional,
-            userName: user.fullName,
-            imagemComprovante: null,
-            imagens: imagesJson,
-            coordenadas: formData.coordenadas || null
-          };
-          
-          console.log('📦 Payload:', {
-            ...payload,
-            imagens: imagesJson ? `[${images.length} fotos]` : null
-          });
-          
-          const res = await fetch(`${API_URL}/submissions`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          });
-          
-          console.log('📡 Response status:', res.status);
-          
-          if (!res.ok) {
-            const error = await res.json().catch(() => ({ message: `Erro ${res.status}` }));
-            console.error('❌ Erro do servidor:', error);
-            throw new Error(error.message || `Erro ${res.status}`);
-          }
-          
-          const result = await res.json();
-          console.log('✅ Resultado:', result);
-          
-          showToast('✅ OS enviada com sucesso!', 'success');
-          setFormData({});
-          setImages([]);
-          loadSubmissions();
-        } catch (err) {
-          console.error('❌ Erro ao enviar:', err);
-          showToast(`❌ ${err.message}`, 'error');
-        } finally {
-          setLoading(false);
-        }
-      };
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div>
+                <label className="block text-gray-700 font-semibold mb-2">Usuário</label>
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none transition-all"
+                  required
+                />
+              </div>
 
-      // Comprimir imagem antes de adicionar
-      const compressImage = (file) => {
-        return new Promise((resolve, reject) => {
+              <div>
+                <label className="block text-gray-700 font-semibold mb-2">Senha</label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none transition-all"
+                  required
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-gradient-to-r from-violet-600 to-blue-600 text-white py-3 rounded-lg font-bold hover:shadow-xl transition-all disabled:opacity-50"
+              >
+                {loading ? '⏳ Entrando...' : '🔐 Entrar'}
+              </button>
+            </form>
+          </div>
+        </div>
+      );
+    }
+
+    // Página de Formulário
+    function FormPage({ showToast }) {
+      const [formData, setFormData] = useState({
+        nomeTecnico: '',
+        nomeCliente: '',
+        motivoVisita: '',
+        descricao: '',
+        imagens: [],
+        imagemComprovante: null
+      });
+      const [loading, setLoading] = useState(false);
+      const [showValidation, setShowValidation] = useState(false);
+
+      const motivos = [
+        'Instalação',
+        'Manutenção Preventiva',
+        'Manutenção Corretiva',
+        'Ajuste de Pedágio (Campinas e Recife)',
+        'Treinamento',
+        'Outros'
+      ];
+
+      const compressImage = (file, maxSizeMB = 0.5) => {
+        return new Promise((resolve) => {
           const reader = new FileReader();
-          reader.onload = (event) => {
+          reader.onload = (e) => {
             const img = new Image();
             img.onload = () => {
               const canvas = document.createElement('canvas');
               let width = img.width;
               let height = img.height;
-              
-              // Redimensionar se muito grande
-              const MAX_WIDTH = 1200;
-              const MAX_HEIGHT = 1200;
-              
-              if (width > height) {
-                if (width > MAX_WIDTH) {
-                  height *= MAX_WIDTH / width;
-                  width = MAX_WIDTH;
-                }
-              } else {
-                if (height > MAX_HEIGHT) {
-                  width *= MAX_HEIGHT / height;
-                  height = MAX_HEIGHT;
-                }
+              const maxDimension = 1200;
+
+              if (width > height && width > maxDimension) {
+                height = (height * maxDimension) / width;
+                width = maxDimension;
+              } else if (height > maxDimension) {
+                width = (width * maxDimension) / height;
+                height = maxDimension;
               }
-              
+
               canvas.width = width;
               canvas.height = height;
               const ctx = canvas.getContext('2d');
               ctx.drawImage(img, 0, 0, width, height);
-              
-              // Comprimir para JPEG qualidade 70%
-              const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
-              resolve(compressedBase64);
+
+              let quality = 0.7;
+              let compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+
+              while (compressedDataUrl.length > maxSizeMB * 1024 * 1024 * 1.37 && quality > 0.1) {
+                quality -= 0.1;
+                compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+              }
+
+              resolve(compressedDataUrl);
             };
-            img.onerror = reject;
-            img.src = event.target.result;
+            img.src = e.target.result;
           };
-          reader.onerror = reject;
           reader.readAsDataURL(file);
         });
       };
 
-      // Adicionar múltiplas imagens (máximo 2) com compressão
-      const handleAddImages = async (e) => {
+      const handleImageChange = async (e) => {
         const files = Array.from(e.target.files);
-        if (images.length + files.length > 2) {
-          showToast('⚠️ Máximo 2 fotos por OS', 'error');
+        if (files.length > 2) {
+          showToast('Máximo de 2 fotos permitidas', 'error');
+          e.target.value = '';
           return;
         }
-        
-        for (const file of files) {
-          if (file.size > 10 * 1024 * 1024) {
-            showToast('⚠️ Imagem muito grande (máx 10MB)', 'error');
-            continue;
-          }
-          
-          try {
-            showToast('📸 Comprimindo foto...', 'success');
-            const compressedImage = await compressImage(file);
-            setImages(prev => [...prev, compressedImage]);
-            showToast('✅ Foto adicionada!', 'success');
-          } catch (err) {
-            showToast('❌ Erro ao processar imagem', 'error');
-          }
+
+        const compressedImages = await Promise.all(files.map(file => compressImage(file)));
+        setFormData({ ...formData, imagens: compressedImages });
+      };
+
+      const handleComprovanteChange = async (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          const compressed = await compressImage(file);
+          setFormData({ ...formData, imagemComprovante: compressed });
         }
       };
 
-      // Remover imagem específica
-      const handleRemoveImage = (index) => {
-        setImages(prev => prev.filter((_, i) => i !== index));
+      const removeImage = (index) => {
+        const newImages = formData.imagens.filter((_, i) => i !== index);
+        setFormData({ ...formData, imagens: newImages });
       };
 
-      const handleValidate = async (id, isValid) => {
-        const newStatus = isValid ? 'aprovada' : 'rejeitada';
-        const obs = formData[`obs_${id}`] || formData.obs || '';
-        
-        // 🚀 ATUALIZAÇÃO OTIMISTA - Atualiza UI instantaneamente
-        setSubmissions(prev => prev.map(s => 
-          s.id === id ? { 
-            ...s, 
-            status: newStatus, 
-            observacao: obs,
-            validated_by: user.codProfissional,
-            validated_by_name: user.fullName
-          } : s
-        ));
-        
-        // Feedback imediato
-        showToast(isValid ? '✅ Aprovada!' : '❌ Rejeitada!', isValid ? 'success' : 'error');
-        
-        // Limpar formulário
-        setFormData(prev => ({ ...prev, [`obs_${id}`]: '', obs: '' }));
-        
-        // Enviar para servidor em background (sem bloquear UI)
+      const handleSubmit = async (e) => {
+        e.preventDefault();
+        setShowValidation(true);
+
+        // ✅ VALIDAÇÃO: Foto obrigatória APENAS para "Ajuste de Pedágio"
+        const isPedagio = formData.motivoVisita === 'Ajuste de Pedágio (Campinas e Recife)';
+        if (isPedagio && formData.imagens.length === 0) {
+          showToast('⚠️ Foto obrigatória para Ajuste de Pedágio!', 'error');
+          return;
+        }
+
+        setLoading(true);
+
         try {
-          await fetch(`${API_URL}/submissions/${id}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-              status: newStatus, 
-              observacao: obs,
-              validatedBy: user.codProfissional,
-              validatedByName: user.fullName
+          const token = localStorage.getItem('token');
+          const response = await fetch(\`\${API_URL}/submissions\`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': \`Bearer \${token}\`
+            },
+            body: JSON.stringify({
+              nomeTecnico: formData.nomeTecnico,
+              nomeCliente: formData.nomeCliente,
+              motivoVisita: formData.motivoVisita,
+              descricao: formData.descricao,
+              imagens: formData.imagens.join(','),
+              imagemComprovante: formData.imagemComprovante
             })
           });
-        } catch (err) {
-          // Se falhar, reverte e mostra erro
-          showToast('⚠️ Erro ao salvar. Recarregando...', 'error');
-          loadSubmissions();
-        }
-      };
 
-      // 🚀 Função otimizada para editar status (Histórico/Busca)
-      const handleEditStatus = async (id, newStatus) => {
-        // Atualização otimista instantânea
-        setSubmissions(prev => prev.map(s => 
-          s.id === id ? { ...s, status: newStatus, observacao: newStatus === 'pendente' ? null : s.observacao } : s
-        ));
-        
-        // Feedback imediato
-        const msg = newStatus === 'aprovada' ? '✅ Aprovada' : 
-                    newStatus === 'rejeitada' ? '✅ Rejeitada' : 
-                    '✅ Voltou p/ pendente';
-        showToast(msg, 'success');
-        
-        // Enviar para servidor em background
-        try {
-          await fetch(`${API_URL}/submissions/${id}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status: newStatus, observacao: newStatus === 'pendente' ? '' : null })
-          });
-        } catch (err) {
-          showToast('⚠️ Erro ao salvar. Recarregando...', 'error');
-          loadSubmissions();
-        }
-      };
-
-      // 🗑️ Deletar submissão
-      const handleDeleteSubmission = async (id, os) => {
-        if (!confirm(`⚠️ Tem certeza que deseja EXCLUIR permanentemente a OS ${os}?\n\nEsta ação NÃO PODE ser desfeita!`)) {
-          return;
-        }
-        
-        setLoading(true);
-        try {
-          const res = await fetch(`${API_URL}/submissions/${id}`, {
-            method: 'DELETE'
-          });
-          
-          if (!res.ok) throw new Error('Erro ao deletar');
-          
-          // Remove da lista
-          setSubmissions(prev => prev.filter(s => s.id !== id));
-          
-          showToast('🗑️ OS excluída com sucesso!', 'success');
-        } catch (err) {
-          console.error('Erro ao deletar submissão:', err);
-          showToast('❌ Erro ao excluir OS', 'error');
+          if (response.ok) {
+            showToast('✅ Solicitação enviada com sucesso!');
+            setFormData({
+              nomeTecnico: '',
+              nomeCliente: '',
+              motivoVisita: '',
+              descricao: '',
+              imagens: [],
+              imagemComprovante: null
+            });
+            setShowValidation(false);
+          } else {
+            const data = await response.json();
+            showToast(data.error || 'Erro ao enviar solicitação', 'error');
+          }
+        } catch (error) {
+          showToast('Erro ao conectar ao servidor', 'error');
         } finally {
           setLoading(false);
         }
       };
 
-      // 🗑️ Deletar usuário
-      const handleDeleteUser = async (codProfissional, fullName) => {
-        if (!confirm(`⚠️ Tem certeza que deseja EXCLUIR permanentemente o usuário?\n\nNome: ${fullName}\nCOD: ${codProfissional}\n\nEsta ação NÃO PODE ser desfeita!`)) {
-          return;
-        }
-        
-        setLoading(true);
-        try {
-          const res = await fetch(`${API_URL}/users/${codProfissional}`, {
-            method: 'DELETE'
-          });
-          
-          if (!res.ok) throw new Error('Erro ao deletar');
-          
-          // Remove da lista
-          setUsers(prev => prev.filter(u => u.codProfissional !== codProfissional));
-          
-          showToast('🗑️ Usuário excluído com sucesso!', 'success');
-        } catch (err) {
-          console.error('Erro ao deletar usuário:', err);
-          showToast('❌ Erro ao excluir usuário', 'error');
-        } finally {
-          setLoading(false);
-        }
-      };
+      const isPedagio = formData.motivoVisita === 'Ajuste de Pedágio (Campinas e Recife)';
 
-      if (!user) {
-        return (
-          <div className="min-h-screen bg-gradient-to-br from-purple-100 to-purple-200 flex items-center justify-center p-4">
-            {toast && <Toast {...toast} />}
-            <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
-              <div className="text-center mb-8">
-                <div className="w-32 h-32 mx-auto mb-4 bg-purple-900 rounded-xl p-4 shadow-lg flex items-center justify-center">
-                  <div className="text-white text-5xl font-bold">tutts</div>
-                </div>
-                <h1 className="text-3xl font-bold text-gray-800">Sistema de Solicitações</h1>
-                <p className="text-gray-600 mt-2">
-                  {view === 'login' ? 'Entre com suas credenciais' : 
-                   view === 'register' ? 'Cadastre-se' :
-                   'Recuperar senha'}
-                </p>
-              </div>
+      return (
+        <div className="max-w-4xl mx-auto">
+          <div className="bg-white rounded-2xl shadow-xl p-8">
+            <h2 className="text-3xl font-bold text-gray-800 mb-6 flex items-center gap-3">
+              <span className="text-4xl">📝</span>
+              Nova Solicitação de Ajuste
+            </h2>
 
-              {view === 'forgot-password' ? (
-                <div className="space-y-4">
-                  <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">
-                    <div className="flex">
-                      <div className="flex-shrink-0">
-                        <svg className="h-5 w-5 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                        </svg>
-                      </div>
-                      <div className="ml-3">
-                        <p className="text-sm text-blue-700">
-                          <strong>Para recuperar sua senha:</strong><br/>
-                          Entre em contato com o administrador informando seu COD Profissional.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="bg-gray-50 rounded-lg p-4 space-y-2">
-                    <p className="text-sm font-semibold text-gray-700">📞 Contatos:</p>
-                    <p className="text-sm text-gray-600">📧 Email: supervisor@tutts.com.br</p>
-                    <p className="text-sm text-gray-600">📱 WhatsApp: (71) 93300-1635</p>
-                    <p className="text-xs text-gray-500 mt-2">
-                      
-                    </p>
-                  </div>
-
-                  <button 
-                    onClick={() => setView('login')} 
-                    className="w-full bg-purple-900 text-white py-3 rounded-lg font-semibold hover:bg-purple-800"
-                  >
-                    ← Voltar para login
-                  </button>
-                </div>
-              ) : view === 'login' ? (
-                <div className="space-y-4">
-                  <input
-                    type="text"
-                    placeholder="COD Profissional"
-                    value={formData.cod || ''}
-                    onChange={e => setFormData({...formData, cod: e.target.value})}
-                    className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-900"
-                  />
-                  <input
-                    type="password"
-                    placeholder="Senha"
-                    value={formData.password || ''}
-                    onChange={e => setFormData({...formData, password: e.target.value})}
-                    onKeyPress={e => e.key === 'Enter' && handleLogin()}
-                    className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-900"
-                  />
-                  <button
-                    onClick={handleLogin}
-                    disabled={loading}
-                    className="w-full bg-purple-900 text-white py-3 rounded-lg font-semibold hover:bg-purple-800 disabled:opacity-50"
-                  >
-                    {loading ? 'Aguarde...' : 'Entrar'}
-                  </button>
-                  <button onClick={() => setView('register')} className="w-full text-purple-900 text-sm">
-                    Não tem conta? Cadastre-se
-                  </button>
-                  <button 
-                    onClick={() => setView('forgot-password')} 
-                    className="w-full text-purple-700 text-sm hover:text-purple-900 underline"
-                  >
-                    Esqueci minha senha
-                  </button>
-                 
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <input
-                    type="text"
-                    placeholder="Nome Completo"
-                    value={formData.name || ''}
-                    onChange={e => setFormData({...formData, name: e.target.value})}
-                    className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-900"
-                  />
-                  <input
-                    type="text"
-                    placeholder="COD Profissional"
-                    value={formData.cod || ''}
-                    onChange={e => setFormData({...formData, cod: e.target.value})}
-                    className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-900"
-                  />
-                  <input
-                    type="password"
-                    placeholder="Senha"
-                    value={formData.password || ''}
-                    onChange={e => setFormData({...formData, password: e.target.value})}
-                    className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-900"
-                  />
-                  <button
-                    onClick={handleRegister}
-                    disabled={loading}
-                    className="w-full bg-purple-900 text-white py-3 rounded-lg font-semibold hover:bg-purple-800 disabled:opacity-50"
-                  >
-                    {loading ? 'Aguarde...' : 'Criar Conta'}
-                  </button>
-                  <button onClick={() => setView('login')} className="w-full text-purple-900 text-sm">
-                    ← Voltar para login
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        );
-      }
-
-      if (user.role === 'user') {
-        return (
-          <div className="min-h-screen bg-gray-50">
-            {toast && <Toast {...toast} />}
-            {imageModal && <ImageModal imageUrl={imageModal} onClose={() => setImageModal(null)} />}
-            <nav className="bg-white shadow-sm border-b">
-              <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <h1 className="text-xl font-bold">Painel do Usuário</h1>
-                  <p className="text-sm text-gray-600">{user.fullName}</p>
-                </div>
-                <button onClick={() => setUser(null)} className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">
-                  Sair
-                </button>
-              </div>
-            </nav>
-            
-            <div className="max-w-4xl mx-auto p-6">
-              <div className="bg-white rounded-xl shadow p-6 mb-6">
-                <h2 className="text-lg font-semibold mb-4">Enviar OS</h2>
-                <div className="space-y-4">
+                  <label className="block text-gray-700 font-semibold mb-2">Nome do Técnico *</label>
                   <input
                     type="text"
-                    placeholder="Número da OS"
-                    value={formData.os || ''}
-                    onChange={e => setFormData({...formData, os: e.target.value})}
-                    className="w-full px-4 py-3 border rounded-lg"
+                    value={formData.nomeTecnico}
+                    onChange={(e) => setFormData({ ...formData, nomeTecnico: e.target.value })}
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none transition-all"
+                    required
                   />
-                  <select
-                    value={formData.motivo || ''}
-                    onChange={e => {
-                      const motivo = e.target.value;
-                      let coordenadas = '';
-                      
-                      if (motivo === 'Alteração Ponto 1 (Goiânia)') {
-                        coordenadas = '-16.64322218214421, -49.3190143453706';
-                      } else if (motivo === 'Alteração Ponto 1 (Campinas)') {
-                        coordenadas = '-22.850067092813358, -47.08310037116422';
-                      }
-                      
-                      setFormData({...formData, motivo, coordenadas});
-                    }}
-                    className="w-full px-4 py-3 border rounded-lg"
-                  >
-                    <option value="">Selecione o motivo</option>
-                    <option>Alteração Ponto 1 (Campinas)</option>
-                    <option>Alteração Ponto 1 (Goiânia)</option>
-                    <option>Ajuste de Retorno</option>
-                    <option>Ajuste de Pedágio (Campinas e Recife)</option>
-                  </select>
-                  
-                  {/* Coordenadas */}
-                  {formData.coordenadas && (
-                    <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <p className="text-xs text-blue-700 font-semibold mb-1">📍 COORDENADAS</p>
-                          <p className="text-lg font-mono font-bold text-blue-900">{formData.coordenadas}</p>
-                        </div>
-                        <button
-                          onClick={() => {
-                            navigator.clipboard.writeText(formData.coordenadas);
-                            showToast('📋 Coordenadas copiadas!', 'success');
-                          }}
-                          className="ml-3 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2"
-                        >
-                          📋 Copiar
-                        </button>
-                      </div>
-                      <a
-                        href={`https://www.google.com/maps?q=${formData.coordenadas}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-block mt-2 text-sm text-blue-600 hover:text-blue-800 underline"
-                      >
-                        🗺️ Abrir no Google Maps
-                      </a>
-                    </div>
-                  )}
-                  
-                  {/* Upload de Imagem */}
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      📸 Fotos (até 2 imagens)
-                    </label>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={handleAddImages}
-                      className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-900 hover:file:bg-purple-100"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      {images.length}/2 fotos adicionadas {images.length > 0 && '✓'}
-                    </p>
-                    
-                    {/* Grid de Preview das Imagens */}
-                    {images.length > 0 && (
-                      <div className="mt-3 grid grid-cols-2 gap-3">
-                        {images.map((img, index) => (
-                          <div key={index} className="relative group">
-                            <img 
-                              src={img} 
-                              alt={`Foto ${index + 1}`} 
-                              className="w-full h-40 object-cover rounded-lg border-2 border-purple-200 cursor-pointer hover:border-purple-400 transition"
-                              onClick={() => setImageModal(img)}
-                            />
-                            <button
-                              onClick={() => handleRemoveImage(index)}
-                              className="absolute top-2 right-2 bg-red-600 text-white rounded-full w-7 h-7 flex items-center justify-center hover:bg-red-700 opacity-0 group-hover:opacity-100 transition text-sm font-bold"
-                            >
-                              ✕
-                            </button>
-                            <p className="text-xs text-center text-gray-600 mt-1 font-semibold">Foto {index + 1}/2</p>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  
-                  <button
-                    onClick={handleSubmitOS}
-                    disabled={loading || !formData.os || !formData.motivo}
-                    className="w-full bg-purple-900 text-white py-3 rounded-lg font-semibold disabled:opacity-50"
-                  >
-                    Enviar
-                  </button>
+                </div>
+
+                <div>
+                  <label className="block text-gray-700 font-semibold mb-2">Nome do Cliente *</label>
+                  <input
+                    type="text"
+                    value={formData.nomeCliente}
+                    onChange={(e) => setFormData({ ...formData, nomeCliente: e.target.value })}
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none transition-all"
+                    required
+                  />
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl shadow p-6">
-                <h2 className="text-lg font-semibold mb-4">Minhas Submissões</h2>
-                {submissions.length === 0 ? (
-                  <p className="text-gray-500">Nenhuma submissão</p>
-                ) : (
-                  <div className="space-y-3">
-                    {submissions.map(s => (
-                      <div key={s.id} className="border rounded-lg p-4">
-                        <div className="bg-purple-50 p-3 rounded mb-2">
-                          <p className="text-xs text-purple-700 uppercase font-semibold">OS</p>
-                          <p className="text-xl font-bold text-purple-900">{s.ordemServico}</p>
-                        </div>
-                        <div className="bg-blue-50 p-3 rounded mb-2">
-                          <p className="text-xs text-blue-700 uppercase font-semibold">Motivo</p>
-                          <p className="text-sm font-bold text-blue-900">{s.motivo}</p>
-                        </div>
-                        {s.coordenadas && (
-                          <div className="bg-green-50 border border-green-200 p-3 rounded mb-2">
-                            <div className="flex items-center justify-between">
-                              <div className="flex-1">
-                                <p className="text-xs text-green-700 uppercase font-semibold">📍 Coordenadas</p>
-                                <p className="text-sm font-mono font-bold text-green-900">{s.coordenadas}</p>
-                              </div>
-                              <button
-                                onClick={() => {
-                                  navigator.clipboard.writeText(s.coordenadas);
-                                  showToast('📋 Coordenadas copiadas!', 'success');
-                                }}
-                                className="ml-2 px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
-                              >
-                                📋
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                        {/* Botão para carregar fotos sob demanda */}
-                        <div className="mt-2">
-                          {!loadedImages[s.id] ? (
-                            <button
-                              onClick={() => loadImagesForOS(s.id)}
-                              className="text-sm text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1"
-                            >
-                              📸 Ver fotos
-                            </button>
-                          ) : (
-                            <>
-                              {/* Galeria de Múltiplas Imagens */}
-                              {loadedImages[s.id].imagens && loadedImages[s.id].imagens.length > 0 && (
-                                <div>
-                                  <p className="text-xs text-gray-600 mb-2">📸 Fotos ({loadedImages[s.id].imagens.length}):</p>
-                                  <div className="grid grid-cols-2 gap-2">
-                                    {loadedImages[s.id].imagens.map((img, idx) => (
-                                      <div key={idx} className="relative">
-                                        <img 
-                                          src={img} 
-                                          alt={`Foto ${idx + 1}`} 
-                                          className="w-full h-32 object-cover rounded border cursor-pointer hover:opacity-80 transition"
-                                          onClick={() => setImageModal(img)}
-                                        />
-                                        <span className="absolute bottom-1 right-1 bg-black bg-opacity-60 text-white text-xs px-2 py-1 rounded">
-                                          {idx + 1}/{loadedImages[s.id].imagens.length}
-                                        </span>
-                                      </div>
-                                    ))}
-                                  </div>
-                                  <p className="text-xs text-gray-500 mt-1">📷 Clique para expandir</p>
-                                </div>
-                              )}
-                              {/* Foto Antiga (Compatibilidade) */}
-                              {(!loadedImages[s.id].imagens || loadedImages[s.id].imagens.length === 0) && loadedImages[s.id].imagemComprovante && (
-                                <div>
-                                  <p className="text-xs text-gray-600 mb-2">📸 Foto:</p>
-                                  <img 
-                                    src={loadedImages[s.id].imagemComprovante} 
-                                    alt="Comprovante" 
-                                    className="w-full max-h-48 object-contain rounded border cursor-pointer hover:opacity-80 transition"
-                                    onClick={() => setImageModal(loadedImages[s.id].imagemComprovante)}
-                                  />
-                                  <p className="text-xs text-gray-500 mt-1">📷 Clique para expandir</p>
-                                </div>
-                              )}
-                            </>
-                          )}
-                        </div>
-                        {s.observacao && (
-                          <div className="mt-2 bg-gray-50 p-2 rounded">
-                            <p className="text-xs text-gray-600">Observação do admin:</p>
-                            <p className="text-sm text-gray-800">{s.observacao}</p>
-                          </div>
-                        )}
-                        <div className="flex justify-between items-center mt-2">
-                          <p className="text-xs text-gray-500">{s.timestamp}</p>
-                          <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                            s.status === 'aprovada' ? 'bg-green-500 text-white' :
-                            s.status === 'rejeitada' ? 'bg-red-500 text-white' :
-                            'bg-yellow-500 text-white'
-                          }`}>{s.status?.toUpperCase()}</span>
-                        </div>
+              <div>
+                <label className="block text-gray-700 font-semibold mb-2">Motivo da Visita *</label>
+                <select
+                  value={formData.motivoVisita}
+                  onChange={(e) => setFormData({ ...formData, motivoVisita: e.target.value })}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none transition-all"
+                  required
+                >
+                  <option value="">Selecione um motivo</option>
+                  {motivos.map(motivo => (
+                    <option key={motivo} value={motivo}>{motivo}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-gray-700 font-semibold mb-2">Descrição *</label>
+                <textarea
+                  value={formData.descricao}
+                  onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
+                  rows="4"
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none transition-all"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-gray-700 font-semibold mb-2 flex items-center gap-2">
+                  📸 Fotos da OS (máx. 2) 
+                  {isPedagio && <span className="text-red-600">*</span>}
+                  {isPedagio && <span className="text-red-600 text-sm font-normal">(Obrigatório para Pedágio)</span>}
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleImageChange}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none transition-all"
+                />
+                {showValidation && isPedagio && formData.imagens.length === 0 && (
+                  <p className="text-red-600 text-sm mt-2">⚠️ Foto obrigatória para Ajuste de Pedágio!</p>
+                )}
+                {formData.imagens.length > 0 && (
+                  <div className="flex gap-4 mt-4">
+                    {formData.imagens.map((img, index) => (
+                      <div key={index} className="relative">
+                        <img src={img} alt={\`Preview \${index + 1}\`} className="w-32 h-32 object-cover rounded-lg border-2 border-gray-300" />
+                        <button
+                          type="button"
+                          onClick={() => removeImage(index)}
+                          className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-700 transition-all"
+                        >
+                          ✕
+                        </button>
                       </div>
                     ))}
                   </div>
                 )}
               </div>
-            </div>
+
+              <div>
+                <label className="block text-gray-700 font-semibold mb-2">📄 Comprovante de Deslocamento (opcional)</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleComprovanteChange}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none transition-all"
+                />
+                {formData.imagemComprovante && (
+                  <div className="mt-4 relative inline-block">
+                    <img src={formData.imagemComprovante} alt="Preview Comprovante" className="w-32 h-32 object-cover rounded-lg border-2 border-gray-300" />
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, imagemComprovante: null })}
+                      className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-700 transition-all"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-gradient-to-r from-violet-600 to-blue-600 text-white py-4 rounded-lg font-bold text-lg hover:shadow-xl transition-all disabled:opacity-50"
+              >
+                {loading ? '⏳ Enviando...' : '✅ Enviar Solicitação'}
+              </button>
+            </form>
           </div>
-        );
+        </div>
+      );
+    }
+
+    // Página de Listagem (simplificada - SEM lazy loading)
+    function ListPage({ currentUser, showToast, onImageClick }) {
+      const [submissions, setSubmissions] = useState([]);
+      const [loading, setLoading] = useState(true);
+      const [selectedMotivo, setSelectedMotivo] = useState('');
+
+      const motivos = [
+        'Instalação',
+        'Manutenção Preventiva',
+        'Manutenção Corretiva',
+        'Ajuste de Pedágio (Campinas e Recife)',
+        'Treinamento',
+        'Outros'
+      ];
+
+      useEffect(() => {
+        fetchSubmissions();
+      }, []);
+
+      const fetchSubmissions = async () => {
+        try {
+          const token = localStorage.getItem('token');
+          const response = await fetch(\`\${API_URL}/submissions\`, {
+            headers: { 'Authorization': \`Bearer \${token}\` }
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            setSubmissions(data);
+          }
+        } catch (error) {
+          showToast('Erro ao carregar solicitações', 'error');
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      const handleDelete = async (id) => {
+        if (!window.confirm('Tem certeza que deseja excluir esta solicitação?')) return;
+
+        try {
+          const token = localStorage.getItem('token');
+          const response = await fetch(\`\${API_URL}/submissions/\${id}\`, {
+            method: 'DELETE',
+            headers: { 'Authorization': \`Bearer \${token}\` }
+          });
+
+          if (response.ok) {
+            showToast('Solicitação excluída com sucesso!');
+            fetchSubmissions();
+          } else {
+            showToast('Erro ao excluir solicitação', 'error');
+          }
+        } catch (error) {
+          showToast('Erro ao conectar ao servidor', 'error');
+        }
+      };
+
+      const filteredSubmissions = selectedMotivo
+        ? submissions.filter(s => s.motivo === selectedMotivo)
+        : submissions;
+
+      if (loading) {
+        return <div className="text-center text-2xl mt-20">⏳ Carregando...</div>;
       }
 
       return (
-        <div className="min-h-screen bg-gray-50">
-          {toast && <Toast {...toast} />}
-          {imageModal && <ImageModal imageUrl={imageModal} onClose={() => setImageModal(null)} />}
-          <nav className="bg-purple-900 shadow-lg">
-            <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-              <h1 className="text-xl font-bold text-white">Painel Admin</h1>
-              <button onClick={() => setUser(null)} className="px-4 py-2 text-white hover:bg-purple-800 rounded-lg">
-                Sair
+        <div>
+          <div className="mb-6 flex gap-4 items-center">
+            <label className="text-gray-700 font-semibold">Filtrar por Motivo:</label>
+            <select
+              value={selectedMotivo}
+              onChange={(e) => setSelectedMotivo(e.target.value)}
+              className="px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none"
+            >
+              <option value="">Todos os motivos</option>
+              {motivos.map(motivo => (
+                <option key={motivo} value={motivo}>{motivo}</option>
+              ))}
+            </select>
+            {selectedMotivo && (
+              <button
+                onClick={() => setSelectedMotivo('')}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+              >
+                ✕ Limpar
               </button>
-            </div>
-          </nav>
-          
-          {/* Abas de Navegação */}
-          <div className="bg-white border-b sticky top-0 z-10 shadow-sm">
-            <div className="max-w-7xl mx-auto px-4">
-              <div className="flex justify-between items-center">
-                <div className="flex gap-1">
-                  <button
-                    onClick={() => setFormData({...formData, adminTab: 'dashboard'})}
-                    className={`px-6 py-3 font-semibold transition ${
-                      (!formData.adminTab || formData.adminTab === 'dashboard')
-                        ? 'text-purple-900 border-b-2 border-purple-900'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    📊 Dashboard
-                  </button>
-                  <button
-                    onClick={() => setFormData({...formData, adminTab: 'search'})}
-                    className={`px-6 py-3 font-semibold transition ${
-                      formData.adminTab === 'search'
-                        ? 'text-purple-900 border-b-2 border-purple-900'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    🔍 Busca Detalhada
-                  </button>
-                  <button
-                    onClick={() => setFormData({...formData, adminTab: 'users'})}
-                    className={`px-6 py-3 font-semibold transition ${
-                      formData.adminTab === 'users'
-                        ? 'text-purple-900 border-b-2 border-purple-900'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    👥 Gerenciar Usuários
-                  </button>
-                  <button
-                    onClick={() => setFormData({...formData, adminTab: 'ranking'})}
-                    className={`px-6 py-3 font-semibold transition ${
-                      formData.adminTab === 'ranking'
-                        ? 'text-purple-900 border-b-2 border-purple-900'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    🏆 Ranking de Retorno
-                  </button>
-                </div>
-                {/* Indicador de Auto-Atualização */}
-                <div className="flex items-center gap-2 text-sm text-gray-600 py-3">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                  <span>Atualização automática ativa</span>
-                  <button 
-                    onClick={loadSubmissions}
-                    className="ml-2 px-3 py-1 bg-purple-100 text-purple-900 rounded hover:bg-purple-200 transition text-xs font-semibold"
-                  >
-                    🔄 Atualizar agora
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <div className="max-w-7xl mx-auto p-6">
-            {/* ABA DASHBOARD */}
-            {(!formData.adminTab || formData.adminTab === 'dashboard') && (
-              <>
-                <div className="grid md:grid-cols-4 gap-4 mb-6">
-                  <div className="bg-white p-6 rounded-xl shadow">
-                    <p className="text-sm text-gray-600">Total</p>
-                    <p className="text-3xl font-bold text-purple-900">{submissions.length}</p>
-                  </div>
-                  <div className="bg-white p-6 rounded-xl shadow">
-                    <p className="text-sm text-gray-600">Pendentes</p>
-                    <p className="text-3xl font-bold text-yellow-600">{submissions.filter(s => s.status === 'pendente').length}</p>
-                  </div>
-                  <div className="bg-white p-6 rounded-xl shadow">
-                    <p className="text-sm text-gray-600">Aprovadas</p>
-                    <p className="text-3xl font-bold text-green-600">{submissions.filter(s => s.status === 'aprovada').length}</p>
-                  </div>
-                  <div className="bg-white p-6 rounded-xl shadow">
-                    <p className="text-sm text-gray-600">Rejeitadas</p>
-                    <p className="text-3xl font-bold text-red-600">{submissions.filter(s => s.status === 'rejeitada').length}</p>
-                  </div>
-                </div>
-
-                {/* Gráficos lado a lado */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                  <PieChart submissions={submissions} />
-                  <StatusPieChart submissions={submissions} />
-                </div>
-
-                <div className="bg-white rounded-xl shadow p-6 mb-6 mt-6">
-                  <h2 className="text-lg font-semibold mb-4">Aguardando Validação</h2>
-                  
-                  {/* Botões de Filtro por Motivo */}
-                  <div className="mb-4 flex flex-wrap gap-2">
-                    <button
-                      onClick={() => setFormData({...formData, filterMotivo: 'todos'})}
-                      className={`px-4 py-2 rounded-lg font-semibold transition ${
-                        (!formData.filterMotivo || formData.filterMotivo === 'todos') 
-                          ? 'bg-purple-900 text-white' 
-                          : 'bg-gray-100 hover:bg-gray-200'
-                      }`}
-                    >
-                      📋 Todos ({submissions.filter(s => s.status === 'pendente').length})
-                    </button>
-                    <button
-                      onClick={() => setFormData({...formData, filterMotivo: 'retorno'})}
-                      className={`px-4 py-2 rounded-lg font-semibold transition ${
-                        formData.filterMotivo === 'retorno' 
-                          ? 'bg-blue-600 text-white' 
-                          : 'bg-gray-100 hover:bg-gray-200'
-                      }`}
-                    >
-                      🔄 Retorno ({submissions.filter(s => s.status === 'pendente' && s.motivo === 'Ajuste de Retorno').length})
-                    </button>
-                    <button
-                      onClick={() => setFormData({...formData, filterMotivo: 'ponto1'})}
-                      className={`px-4 py-2 rounded-lg font-semibold transition ${
-                        formData.filterMotivo === 'ponto1' 
-                          ? 'bg-green-600 text-white' 
-                          : 'bg-gray-100 hover:bg-gray-200'
-                      }`}
-                    >
-                      📍 Ponto 1 ({submissions.filter(s => 
-                        s.status === 'pendente' && 
-                        (s.motivo === 'Alteração Ponto 1 (Campinas)' || s.motivo === 'Alteração Ponto 1 (Goiânia)')
-                      ).length})
-                    </button>
-                    <button
-                      onClick={() => setFormData({...formData, filterMotivo: 'pedagio'})}
-                      className={`px-4 py-2 rounded-lg font-semibold transition ${
-                        formData.filterMotivo === 'pedagio' 
-                          ? 'bg-orange-600 text-white' 
-                          : 'bg-gray-100 hover:bg-gray-200'
-                      }`}
-                    >
-                      🛣️ Pedágio ({submissions.filter(s => s.status === 'pendente' && s.motivo === 'Ajuste de Pedágio (Campinas e Recife)').length})
-                    </button>
-                  </div>
-
-                  {loadingSubmissions ? (
-                    <div className="text-center py-8">
-                      <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-900"></div>
-                      <p className="text-gray-500 mt-4">Carregando...</p>
-                    </div>
-                  ) : submissions.filter(s => s.status === 'pendente').length === 0 ? (
-                    <p className="text-gray-500">Nenhuma solicitação pendente</p>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {submissions
-                      .filter(s => {
-                        // Filtrar apenas pendentes
-                        if (s.status !== 'pendente') return false;
-                        
-                        // Aplicar filtro de motivo
-                        const filterMotivo = formData.filterMotivo || 'todos';
-                        
-                        if (filterMotivo === 'todos') return true;
-                        
-                        if (filterMotivo === 'retorno') {
-                          return s.motivo === 'Ajuste de Retorno';
-                        }
-                        
-                        if (filterMotivo === 'ponto1') {
-                          return s.motivo === 'Alteração Ponto 1 (Campinas)' || 
-                                 s.motivo === 'Alteração Ponto 1 (Goiânia)';
-                        }
-                        
-                        if (filterMotivo === 'pedagio') {
-                          return s.motivo === 'Ajuste de Pedágio (Campinas e Recife)';
-                        }
-                        
-                        return true;
-                      })
-                      .map(s => (
-                      <div key={s.id} className="border rounded-lg p-3">
-                        <div className="flex items-center justify-between mb-2">
-                          <p className="font-mono text-lg font-bold">OS: {s.ordemServico}</p>
-                          <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded text-xs font-bold">⏳ Pendente</span>
-                        </div>
-                        <p className="text-sm text-gray-700">{s.fullName}</p>
-                        <p className="text-xs text-purple-900 font-semibold">Motivo: {s.motivo}</p>
-                        <p className="text-xs text-gray-500 mt-1">{s.timestamp}</p>
-                        {s.coordenadas && (
-                          <div className="mt-2 bg-green-50 border border-green-200 rounded p-2">
-                            <p className="text-xs text-green-700 font-semibold mb-1">📍 {s.coordenadas}</p>
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => {
-                                  navigator.clipboard.writeText(s.coordenadas);
-                                  showToast('📋 Coordenadas copiadas!', 'success');
-                                }}
-                                className="flex-1 px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
-                              >
-                                📋 Copiar
-                              </button>
-                              <a
-                                href={`https://www.google.com/maps?q=${s.coordenadas}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex-1 px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 text-center"
-                              >
-                                🗺️ Maps
-                              </a>
-                            </div>
-                          </div>
-                        )}
-                        {/* Botão para carregar fotos sob demanda */}
-                        <div className="mt-2">
-                          {!loadedImages[s.id] ? (
-                            <button
-                              onClick={() => loadImagesForOS(s.id)}
-                              className="text-sm text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1"
-                            >
-                              📸 Ver fotos
-                            </button>
-                          ) : (
-                            <>
-                              {/* Galeria de Múltiplas Imagens */}
-                              {loadedImages[s.id].imagens && loadedImages[s.id].imagens.length > 0 && (
-                                <div>
-                                  <p className="text-xs text-gray-600 mb-2">📸 {loadedImages[s.id].imagens.length} foto(s)</p>
-                                  <div className="grid grid-cols-2 gap-2">
-                                    {loadedImages[s.id].imagens.map((img, idx) => (
-                                      <div key={idx} className="relative">
-                                        <img 
-                                          src={img} 
-                                          alt={`Foto ${idx + 1}`} 
-                                          className="w-full h-28 object-cover rounded border cursor-pointer hover:opacity-80 transition"
-                                          onClick={() => setImageModal(img)}
-                                        />
-                                        <span className="absolute bottom-1 right-1 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded font-bold">
-                                          {idx + 1}/{loadedImages[s.id].imagens.length}
-                                        </span>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                              {/* Foto Antiga (Compatibilidade) */}
-                              {(!loadedImages[s.id].imagens || loadedImages[s.id].imagens.length === 0) && loadedImages[s.id].imagemComprovante && (
-                                <div>
-                                  <p className="text-xs text-gray-600 mb-2">📸 Foto:</p>
-                                  <img 
-                                    src={loadedImages[s.id].imagemComprovante} 
-                                    alt="Comprovante" 
-                                    className="w-full h-32 object-cover rounded border cursor-pointer hover:opacity-80 transition"
-                                    onClick={() => setImageModal(loadedImages[s.id].imagemComprovante)}
-                                  />
-                                </div>
-                              )}
-                            </>
-                          )}
-                        </div>
-                        <textarea
-                          placeholder="Observação (opcional)"
-                          value={formData[`obs_${s.id}`] || ''}
-                          onChange={e => setFormData({...formData, [`obs_${s.id}`]: e.target.value, obs: e.target.value})}
-                          className="w-full px-2 py-2 border rounded mt-2 text-sm"
-                          rows="2"
-                        />
-                        <div className="flex gap-2 mt-2">
-                          <button onClick={() => handleValidate(s.id, true)} className="flex-1 bg-green-600 text-white py-2 rounded text-sm hover:bg-green-700">
-                            ✓ Aprovar
-                          </button>
-                          <button onClick={() => handleValidate(s.id, false)} className="flex-1 bg-red-600 text-white py-2 rounded text-sm hover:bg-red-700">
-                            ✗ Rejeitar
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                    {submissions.filter(s => {
-                      if (s.status !== 'pendente') return false;
-                      const filterMotivo = formData.filterMotivo || 'todos';
-                      if (filterMotivo === 'todos') return true;
-                      if (filterMotivo === 'retorno') return s.motivo === 'Ajuste de Retorno';
-                      if (filterMotivo === 'ponto1') return s.motivo === 'Alteração Ponto 1 (Campinas)' || s.motivo === 'Alteração Ponto 1 (Goiânia)';
-                      if (filterMotivo === 'pedagio') return s.motivo === 'Ajuste de Pedágio (Campinas e Recife)';
-                      return true;
-                    }).length === 0 && (
-                      <div className="col-span-2 text-center py-8 text-gray-500">
-                        <p className="text-lg">🔍 Nenhuma OS encontrada neste filtro</p>
-                        <p className="text-sm mt-2">Tente selecionar outro tipo de solicitação</p>
-                      </div>
-                    )}
-                    </div>
-                  )}
-                </div>
-
-              </>
             )}
+          </div>
 
-            {/* ABA BUSCA DETALHADA */}
-            {formData.adminTab === 'search' && (
-              <div className="bg-white rounded-xl shadow p-6">
-                <h2 className="text-lg font-semibold mb-4">🔍 Busca Detalhada</h2>
-                
-                {/* Filtros e Busca */}
-                <div className="mb-4 space-y-3">
-                  {/* Busca por OS e COD */}
-                  <div className="flex gap-2">
-                    <div className="flex-1 relative">
-                      <input
-                        type="text"
-                        placeholder="🔍 Buscar por OS ou COD do usuário..."
-                        value={formData.searchOS || ''}
-                        onChange={e => setFormData({...formData, searchOS: e.target.value})}
-                        className="w-full px-4 py-2 border rounded-lg pl-10"
-                      />
-                      <span className="absolute left-3 top-3 text-gray-400">🔍</span>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {filteredSubmissions.map(submission => {
+              const imagensArray = submission.imagens 
+                ? (typeof submission.imagens === 'string' 
+                    ? submission.imagens.split(',').filter(img => img.trim()) 
+                    : submission.imagens)
+                : [];
+
+              return (
+                <div key={submission.id} className="bg-white rounded-xl shadow-lg p-6 hover:shadow-2xl transition-all">
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-800">{submission.nome_cliente}</h3>
+                      <p className="text-gray-600">👤 {submission.nome_tecnico}</p>
                     </div>
-                    {formData.searchOS && (
+                    {currentUser.role === 'admin' && (
                       <button
-                        onClick={() => setFormData({...formData, searchOS: ''})}
-                        className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
+                        onClick={() => handleDelete(submission.id)}
+                        className="text-red-600 hover:text-red-800 font-bold text-xl"
+                        title="Excluir"
                       >
-                        ✕ Limpar
+                        🗑️
                       </button>
                     )}
                   </div>
 
-                  {/* Filtros - Dropdowns */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Filtro por Data */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">📅 Período:</label>
-                      <select
-                        value={formData.dateFilter || 'all'}
-                        onChange={e => setFormData({...formData, dateFilter: e.target.value, showCustomDate: e.target.value === 'custom'})}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      >
-                        <option value="all">Todas as Datas</option>
-                        <option value="today">Hoje</option>
-                        <option value="week">Esta Semana</option>
-                        <option value="month">Este Mês</option>
-                        <option value="custom">Personalizado</option>
-                      </select>
-                    </div>
-
-                    {/* Filtro por Status */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">📊 Status:</label>
-                      <select
-                        value={formData.filterStatusSearch || 'all'}
-                        onChange={e => setFormData({...formData, filterStatusSearch: e.target.value})}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      >
-                        <option value="all">Todas ({submissions.length})</option>
-                        <option value="aprovada">Aprovadas ({submissions.filter(s => s.status === 'aprovada').length})</option>
-                        <option value="rejeitada">Rejeitadas ({submissions.filter(s => s.status === 'rejeitada').length})</option>
-                        <option value="pendente">Pendentes ({submissions.filter(s => s.status === 'pendente').length})</option>
-                      </select>
-                    </div>
+                  <div className="space-y-2 text-sm">
+                    <p><span className="font-semibold">Motivo:</span> {submission.motivo}</p>
+                    <p><span className="font-semibold">Descrição:</span> {submission.descricao}</p>
+                    <p className="text-gray-500 text-xs">
+                      {new Date(submission.created_at).toLocaleString('pt-BR')}
+                    </p>
                   </div>
 
-                  {/* Data Personalizada */}
-                  {formData.dateFilter === 'custom' && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 bg-blue-50 p-4 rounded-lg">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Data Início:</label>
-                        <input
-                          type="date"
-                          value={formData.startDate || ''}
-                          onChange={e => setFormData({...formData, startDate: e.target.value})}
-                          className="w-full px-3 py-2 border rounded-lg"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Data Fim:</label>
-                        <input
-                          type="date"
-                          value={formData.endDate || ''}
-                          onChange={e => setFormData({...formData, endDate: e.target.value})}
-                          className="w-full px-3 py-2 border rounded-lg"
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
-                
-                {/* Contador de Resultados */}
-                <div className="mb-3 flex items-center justify-between bg-gray-50 px-4 py-2 rounded-lg">
-                  <p className="text-sm text-gray-600">
-                    Exibindo <strong className="text-purple-900">
-                      {submissions.filter(s => {
-                        if (formData.filterStatusSearch && formData.filterStatusSearch !== 'all' && s.status !== formData.filterStatusSearch) return false;
-                        if (formData.searchOS && 
-                            !s.ordemServico.toLowerCase().includes(formData.searchOS.toLowerCase()) &&
-                            !(s.userCod || s.user_cod || '').toLowerCase().includes(formData.searchOS.toLowerCase())) return false;
-                        const submissionDate = new Date(s.created_at);
-                        const today = new Date();
-                        today.setHours(0, 0, 0, 0);
-                        if (formData.dateFilter === 'today') {
-                          const tomorrow = new Date(today);
-                          tomorrow.setDate(tomorrow.getDate() + 1);
-                          if (submissionDate < today || submissionDate >= tomorrow) return false;
-                        } else if (formData.dateFilter === 'week') {
-                          const weekAgo = new Date(today);
-                          weekAgo.setDate(weekAgo.getDate() - 7);
-                          if (submissionDate < weekAgo) return false;
-                        } else if (formData.dateFilter === 'month') {
-                          const monthAgo = new Date(today);
-                          monthAgo.setMonth(monthAgo.getMonth() - 1);
-                          if (submissionDate < monthAgo) return false;
-                        } else if (formData.dateFilter === 'custom' && formData.startDate && formData.endDate) {
-                          const start = new Date(formData.startDate);
-                          const end = new Date(formData.endDate);
-                          end.setHours(23, 59, 59, 999);
-                          if (submissionDate < start || submissionDate > end) return false;
-                        }
-                        return true;
-                      }).length}
-                    </strong> de <strong>{submissions.length}</strong> solicitações
-                  </p>
-                  {(formData.searchOS || formData.dateFilter || formData.filterStatusSearch !== 'all') && (
-                    <button
-                      onClick={() => setFormData({
-                        ...formData,
-                        searchOS: '',
-                        dateFilter: 'all',
-                        filterStatusSearch: 'all',
-                        showCustomDate: false,
-                        startDate: '',
-                        endDate: ''
-                      })}
-                      className="text-sm text-red-600 hover:text-red-800 font-semibold"
-                    >
-                      🔄 Limpar todos os filtros
-                    </button>
-                  )}
-                </div>
-                
-                {/* Resultados - Grid 2 colunas */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-96 overflow-y-auto">
-                  {submissions
-                    .filter(s => {
-                      if (formData.filterStatusSearch && formData.filterStatusSearch !== 'all' && s.status !== formData.filterStatusSearch) return false;
-                      if (formData.searchOS && 
-                          !s.ordemServico.toLowerCase().includes(formData.searchOS.toLowerCase()) &&
-                          !(s.userCod || s.user_cod || '').toLowerCase().includes(formData.searchOS.toLowerCase())) return false;
-                      const submissionDate = new Date(s.created_at);
-                      const today = new Date();
-                      today.setHours(0, 0, 0, 0);
-                      if (formData.dateFilter === 'today') {
-                        const tomorrow = new Date(today);
-                        tomorrow.setDate(tomorrow.getDate() + 1);
-                        if (submissionDate < today || submissionDate >= tomorrow) return false;
-                      } else if (formData.dateFilter === 'week') {
-                        const weekAgo = new Date(today);
-                        weekAgo.setDate(weekAgo.getDate() - 7);
-                        if (submissionDate < weekAgo) return false;
-                      } else if (formData.dateFilter === 'month') {
-                        const monthAgo = new Date(today);
-                        monthAgo.setMonth(monthAgo.getMonth() - 1);
-                        if (submissionDate < monthAgo) return false;
-                      } else if (formData.dateFilter === 'custom' && formData.startDate && formData.endDate) {
-                        const start = new Date(formData.startDate);
-                        const end = new Date(formData.endDate);
-                        end.setHours(23, 59, 59, 999);
-                        if (submissionDate < start || submissionDate > end) return false;
-                      }
-                      return true;
-                    })
-                    .length === 0 ? (
-                      <div className="col-span-2 text-center py-12">
-                        <div className="text-6xl mb-4">🔍</div>
-                        <p className="text-gray-500 text-lg font-semibold">Nenhuma solicitação encontrada</p>
-                        <p className="text-gray-400 text-sm mt-2">Tente ajustar os filtros ou fazer uma nova busca</p>
-                      </div>
-                    ) : (
-                      submissions
-                        .filter(s => {
-                          if (formData.filterStatusSearch && formData.filterStatusSearch !== 'all' && s.status !== formData.filterStatusSearch) return false;
-                          if (formData.searchOS && 
-                              !s.ordemServico.toLowerCase().includes(formData.searchOS.toLowerCase()) &&
-                              !(s.userCod || s.user_cod || '').toLowerCase().includes(formData.searchOS.toLowerCase())) return false;
-                          const submissionDate = new Date(s.created_at);
-                          const today = new Date();
-                          today.setHours(0, 0, 0, 0);
-                          if (formData.dateFilter === 'today') {
-                            const tomorrow = new Date(today);
-                            tomorrow.setDate(tomorrow.getDate() + 1);
-                            if (submissionDate < today || submissionDate >= tomorrow) return false;
-                          } else if (formData.dateFilter === 'week') {
-                            const weekAgo = new Date(today);
-                            weekAgo.setDate(weekAgo.getDate() - 7);
-                            if (submissionDate < weekAgo) return false;
-                          } else if (formData.dateFilter === 'month') {
-                            const monthAgo = new Date(today);
-                            monthAgo.setMonth(monthAgo.getMonth() - 1);
-                            if (submissionDate < monthAgo) return false;
-                          } else if (formData.dateFilter === 'custom' && formData.startDate && formData.endDate) {
-                            const start = new Date(formData.startDate);
-                            const end = new Date(formData.endDate);
-                            end.setHours(23, 59, 59, 999);
-                            if (submissionDate < start || submissionDate > end) return false;
-                          }
-                          return true;
-                        })
-                        .map(s => (
-                          <div key={s.id} className={`border rounded-lg p-3 ${
-                            s.status === 'aprovada' ? 'bg-green-50 border-green-200' :
-                            s.status === 'rejeitada' ? 'bg-red-50 border-red-200' :
-                            s.status === 'pendente' ? 'bg-yellow-50 border-yellow-200' :
-                            'bg-gray-50'
-                          }`}>
-                            <div className="flex justify-between items-start mb-2">
-                              <div>
-                                <p className="font-mono text-base font-bold">OS: {s.ordemServico}</p>
-                                <p className="text-xs text-gray-700">{s.fullName} ({s.userCod || s.user_cod})</p>
-                              </div>
-                              <div className="flex gap-2 items-center">
-                                <span className={`px-2 py-1 rounded text-xs font-bold ${
-                                  s.status === 'aprovada' ? 'bg-green-600 text-white' :
-                                  s.status === 'rejeitada' ? 'bg-red-600 text-white' :
-                                  'bg-yellow-600 text-white'
-                                }`}>
-                                  {s.status === 'aprovada' ? '✓ Aprovada' : s.status === 'rejeitada' ? '✗ Rejeitada' : '⏳ Pendente'}
-                                </span>
-                                <button
-                                  onClick={() => handleDeleteSubmission(s.id, s.ordemServico)}
-                                  className="px-2 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700 transition font-bold"
-                                  title="Excluir OS permanentemente"
-                                >
-                                  🗑️
-                                </button>
-                              </div>
-                            </div>
-                            <p className="text-xs text-gray-600 mb-1">Motivo: {s.motivo}</p>
-                            {s.coordenadas && (
-                              <div className="mt-2 bg-green-50 border border-green-200 rounded p-2">
-                                <div className="flex items-center justify-between">
-                                  <div className="flex-1">
-                                    <p className="text-xs text-green-700 font-semibold">📍 Coordenadas</p>
-                                    <p className="text-xs font-mono text-green-900">{s.coordenadas}</p>
-                                  </div>
-                                  <button
-                                    onClick={() => {
-                                      navigator.clipboard.writeText(s.coordenadas);
-                                      showToast('📋 Coordenadas copiadas!', 'success');
-                                    }}
-                                    className="ml-2 px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
-                                  >
-                                    📋
-                                  </button>
-                                </div>
-                              </div>
-                            )}
-                            {/* Botão para carregar fotos sob demanda */}
-                            <div className="mt-2">
-                              {!loadedImages[s.id] ? (
-                                <button
-                                  onClick={() => loadImagesForOS(s.id)}
-                                  className="text-sm text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1"
-                                >
-                                  📸 Ver fotos
-                                </button>
-                              ) : (
-                                <>
-                                  {/* Galeria de Imagens */}
-                                  {loadedImages[s.id].imagens && loadedImages[s.id].imagens.length > 0 && (
-                                    <div>
-                                      <p className="text-xs text-gray-600 mb-2">📸 {loadedImages[s.id].imagens.length} foto(s)</p>
-                                      <div className="grid grid-cols-2 gap-2">
-                                        {loadedImages[s.id].imagens.map((img, idx) => (
-                                          <div key={idx} className="relative">
-                                            <img 
-                                              src={img} 
-                                              alt={`Foto ${idx + 1}`} 
-                                              className="w-full h-32 object-cover rounded border cursor-pointer hover:opacity-80 transition"
-                                              onClick={() => setImageModal(img)}
-                                            />
-                                            <span className="absolute bottom-1 right-1 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded font-bold">
-                                              {idx + 1}/{loadedImages[s.id].imagens.length}
-                                            </span>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    </div>
-                                  )}
-                                  {/* Foto Antiga (Compatibilidade) */}
-                                  {(!loadedImages[s.id].imagens || loadedImages[s.id].imagens.length === 0) && loadedImages[s.id].imagemComprovante && (
-                                    <div>
-                                      <p className="text-xs text-gray-600 mb-2">📸 Foto:</p>
-                                      <img 
-                                        src={loadedImages[s.id].imagemComprovante} 
-                                        alt="Comprovante" 
-                                        className="w-full h-32 object-cover rounded border cursor-pointer hover:opacity-80 transition"
-                                        onClick={() => setImageModal(loadedImages[s.id].imagemComprovante)}
-                                      />
-                                    </div>
-                                  )}
-                                </>
-                              )}
-                            </div>
-                            {s.observacao && (
-                              <div className="mt-2 bg-white p-2 rounded border">
-                                <p className="text-xs text-gray-600">Observação:</p>
-                                <p className="text-sm">{s.observacao}</p>
-                              </div>
-                            )}
-                            {/* Mostrar quem validou - Apenas para admin */}
-                            {(s.status === 'aprovada' || s.status === 'rejeitada') && s.validated_by_name && (
-                              <div className="mt-2 bg-blue-50 p-2 rounded border border-blue-200">
-                                <p className="text-xs text-blue-900">
-                                  <span className="font-semibold">
-                                    {s.status === 'aprovada' ? '✅ Aprovado' : '❌ Rejeitado'} por:
-                                  </span> {s.validated_by_name} ({s.validated_by})
-                                </p>
-                              </div>
-                            )}
-                            <p className="text-xs text-gray-500 mt-2">{s.timestamp}</p>
-                          </div>
-                        ))
-                    )}
-                </div>
-              </div>
-            )}
-
-            {/* ABA GERENCIAR USUÁRIOS */}
-            {formData.adminTab === 'users' && (
-              <div className="bg-white rounded-xl shadow p-6">
-                <h2 className="text-lg font-semibold mb-6">👥 Gerenciar Usuários</h2>
-                
-                {/* Formulário Criar Admin */}
-                <div className="bg-purple-50 border-2 border-purple-200 rounded-xl p-6 mb-6">
-                  <h3 className="text-md font-semibold text-purple-900 mb-4">➕ Criar Novo Usuário</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                    <input
-                      type="text"
-                      placeholder="Nome Completo"
-                      value={formData.newUserName || ''}
-                      onChange={e => setFormData({...formData, newUserName: e.target.value})}
-                      className="px-3 py-2 border rounded-lg"
-                    />
-                    <input
-                      type="text"
-                      placeholder="COD Profissional"
-                      value={formData.newUserCod || ''}
-                      onChange={e => setFormData({...formData, newUserCod: e.target.value})}
-                      className="px-3 py-2 border rounded-lg"
-                    />
-                    <input
-                      type="password"
-                      placeholder="Senha"
-                      value={formData.newUserPassword || ''}
-                      onChange={e => setFormData({...formData, newUserPassword: e.target.value})}
-                      className="px-3 py-2 border rounded-lg"
-                    />
-                    <select
-                      value={formData.newUserRole || 'user'}
-                      onChange={e => setFormData({...formData, newUserRole: e.target.value})}
-                      className="px-3 py-2 border rounded-lg font-semibold"
-                    >
-                      <option value="user">👤 Usuário Padrão</option>
-                      <option value="admin">👑 Administrador</option>
-                    </select>
-                  </div>
-                  <button
-                    onClick={async () => {
-                      if (!formData.newUserName || !formData.newUserCod || !formData.newUserPassword) {
-                        showToast('Preencha todos os campos', 'error');
-                        return;
-                      }
-                      if (formData.newUserPassword.length < 4) {
-                        showToast('Senha muito curta (mín. 4 caracteres)', 'error');
-                        return;
-                      }
-                      try {
-                        const res = await fetch(`${API_URL}/users/register`, {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({
-                            fullName: formData.newUserName,
-                            codProfissional: formData.newUserCod,
-                            password: formData.newUserPassword,
-                            role: formData.newUserRole || 'user'
-                          })
-                        });
-                        if (!res.ok) {
-                          const error = await res.json();
-                          throw new Error(error.error || 'Erro ao criar usuário');
-                        }
-                        showToast(`✅ ${formData.newUserRole === 'admin' ? 'Admin' : 'Usuário'} criado com sucesso!`, 'success');
-                        setFormData({
-                          ...formData,
-                          newUserName: '',
-                          newUserCod: '',
-                          newUserPassword: '',
-                          newUserRole: 'user'
-                        });
-                        loadUsers();
-                      } catch (err) {
-                        showToast(err.message, 'error');
-                      }
-                    }}
-                    className="mt-3 w-full md:w-auto px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-semibold"
-                  >
-                    ➕ Criar {formData.newUserRole === 'admin' ? 'Admin' : 'Usuário'}
-                  </button>
-                </div>
-
-                {/* Lista de Usuários */}
-                <h3 className="text-md font-semibold text-gray-700 mb-3">Usuários Cadastrados:</h3>
-                <div className="space-y-3">
-                  {users.map(u => (
-                    <div key={u.codProfissional} className="border rounded-lg p-4 flex items-center justify-between hover:bg-gray-50 transition">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <p className="font-semibold text-gray-800">{u.fullName}</p>
-                          {u.role === 'admin' && (
-                            <span className="px-2 py-1 bg-purple-100 text-purple-900 text-xs font-bold rounded">
-                              👑 ADMIN
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-sm text-gray-600">COD: {u.codProfissional}</p>
-                        <p className="text-xs text-gray-500">Cadastrado em: {u.createdAt}</p>
-                      </div>
+                  {imagensArray.length > 0 && (
+                    <div className="mt-4">
+                      <p className="font-semibold mb-2">📸 Fotos da OS:</p>
                       <div className="flex gap-2">
-                        <input
-                          type="password"
-                          placeholder="Nova senha"
-                          value={formData[`newpass_${u.codProfissional}`] || ''}
-                          onChange={e => setFormData({...formData, [`newpass_${u.codProfissional}`]: e.target.value})}
-                          className="px-3 py-2 border rounded text-sm w-32"
-                        />
-                        <button
-                          onClick={async () => {
-                            const newPassword = formData[`newpass_${u.codProfissional}`];
-                            if (!newPassword) {
-                              showToast('Digite uma nova senha', 'error');
-                              return;
-                            }
-                            if (newPassword.length < 4) {
-                              showToast('Senha muito curta (mín. 4 caracteres)', 'error');
-                              return;
-                            }
-                            try {
-                              await fetch(`${API_URL}/users/reset-password`, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ codProfissional: u.codProfissional, newPassword })
-                              });
-                              showToast('✅ Senha alterada com sucesso!', 'success');
-                              setFormData({...formData, [`newpass_${u.codProfissional}`]: ''});
-                            } catch (err) {
-                              showToast('Erro ao alterar senha', 'error');
-                            }
-                          }}
-                          className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 text-sm font-semibold"
-                        >
-                          🔑 Resetar
-                        </button>
-                        <button
-                          onClick={() => handleDeleteUser(u.codProfissional, u.fullName)}
-                          className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm font-semibold"
-                          title="Excluir usuário permanentemente"
-                        >
-                          🗑️ Excluir
-                        </button>
+                        {imagensArray.map((img, index) => (
+                          <img
+                            key={index}
+                            src={img.trim()}
+                            alt={\`Foto \${index + 1}\`}
+                            className="w-20 h-20 object-cover rounded-lg border-2 border-gray-300 cursor-pointer hover:scale-110 transition-all"
+                            onClick={() => onImageClick(img.trim())}
+                          />
+                        ))}
                       </div>
                     </div>
-                  ))}
-                </div>
-              </div>
-            )}
+                  )}
 
-            {/* ABA RANKING DE RETORNO */}
-            {formData.adminTab === 'ranking' && (
-              <div className="bg-white rounded-xl shadow p-6">
-                <h2 className="text-lg font-semibold mb-4">🏆 Ranking de Retorno - Aprovados</h2>
-                
-                {/* Filtros de Período - Dropdown */}
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">📅 Período:</label>
-                  <select
-                    value={formData.rankingPeriod || 'all'}
-                    onChange={e => setFormData({...formData, rankingPeriod: e.target.value})}
-                    className="w-full md:w-64 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  >
-                    <option value="all">Todos os Períodos</option>
-                    <option value="today">Hoje</option>
-                    <option value="week">Última Semana</option>
-                    <option value="month">Último Mês</option>
-                    <option value="custom">Personalizado</option>
-                  </select>
-                </div>
-
-                {/* Filtro Personalizado */}
-                {formData.rankingPeriod === 'custom' && (
-                  <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Data Início:</label>
-                      <input
-                        type="date"
-                        value={formData.rankingStartDate || ''}
-                        onChange={e => setFormData({...formData, rankingStartDate: e.target.value})}
-                        className="w-full px-3 py-2 border rounded-lg"
+                  {submission.imagem_comprovante && (
+                    <div className="mt-4">
+                      <p className="font-semibold mb-2">📄 Comprovante:</p>
+                      <img
+                        src={submission.imagem_comprovante}
+                        alt="Comprovante"
+                        className="w-20 h-20 object-cover rounded-lg border-2 border-gray-300 cursor-pointer hover:scale-110 transition-all"
+                        onClick={() => onImageClick(submission.imagem_comprovante)}
                       />
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Data Fim:</label>
-                      <input
-                        type="date"
-                        value={formData.rankingEndDate || ''}
-                        onChange={e => setFormData({...formData, rankingEndDate: e.target.value})}
-                        className="w-full px-3 py-2 border rounded-lg"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* Ranking */}
-                <div className="space-y-3">
-                  {(() => {
-                    // Filtrar submissões
-                    const filtered = submissions.filter(s => {
-                      // Apenas retornos aprovados
-                      if (s.status !== 'aprovada' || s.motivo !== 'Ajuste de Retorno') return false;
-                      
-                      // Filtrar por período
-                      const period = formData.rankingPeriod || 'all';
-                      const submissionDate = new Date(s.created_at);
-                      const today = new Date();
-                      today.setHours(0, 0, 0, 0);
-                      
-                      if (period === 'today') {
-                        const tomorrow = new Date(today);
-                        tomorrow.setDate(tomorrow.getDate() + 1);
-                        if (submissionDate < today || submissionDate >= tomorrow) return false;
-                      } else if (period === 'week') {
-                        const weekAgo = new Date(today);
-                        weekAgo.setDate(weekAgo.getDate() - 7);
-                        if (submissionDate < weekAgo) return false;
-                      } else if (period === 'month') {
-                        const monthAgo = new Date(today);
-                        monthAgo.setMonth(monthAgo.getMonth() - 1);
-                        if (submissionDate < monthAgo) return false;
-                      } else if (period === 'custom' && formData.rankingStartDate && formData.rankingEndDate) {
-                        const start = new Date(formData.rankingStartDate);
-                        const end = new Date(formData.rankingEndDate);
-                        end.setHours(23, 59, 59, 999);
-                        if (submissionDate < start || submissionDate > end) return false;
-                      }
-                      
-                      return true;
-                    });
-                    
-                    // Agrupar por usuário
-                    const rankingData = {};
-                    filtered.forEach(s => {
-                      const key = s.userCod || s.user_cod;
-                      if (!rankingData[key]) {
-                        rankingData[key] = {
-                          codProfissional: key,
-                          fullName: s.fullName || s.user_name,
-                          count: 0
-                        };
-                      }
-                      rankingData[key].count++;
-                    });
-                    
-                    // Ordenar por quantidade (decrescente)
-                    const ranking = Object.values(rankingData)
-                      .sort((a, b) => b.count - a.count);
-                    
-                    if (ranking.length === 0) {
-                      return (
-                        <div className="text-center py-12">
-                          <div className="text-6xl mb-4">📊</div>
-                          <p className="text-gray-500 text-lg font-semibold">Nenhum retorno aprovado no período selecionado</p>
-                          <p className="text-gray-400 text-sm mt-2">Tente selecionar outro período</p>
-                        </div>
-                      );
-                    }
-                    
-                    return ranking.map((item, index) => (
-                      <div key={item.codProfissional} className="border rounded-lg p-4 flex items-center justify-between hover:bg-gray-50 transition">
-                        <div className="flex items-center gap-4">
-                          <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg ${
-                            index === 0 ? 'bg-yellow-500 text-white' :
-                            index === 1 ? 'bg-gray-400 text-white' :
-                            index === 2 ? 'bg-orange-600 text-white' :
-                            'bg-purple-100 text-purple-900'
-                          }`}>
-                            {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}º`}
-                          </div>
-                          <div>
-                            <p className="font-semibold text-gray-800 text-lg">{item.fullName}</p>
-                            <p className="text-sm text-gray-600">COD: {item.codProfissional}</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-3xl font-bold text-purple-900">{item.count}</p>
-                          <p className="text-sm text-gray-600">retorno{item.count !== 1 ? 's' : ''} aprovado{item.count !== 1 ? 's' : ''}</p>
-                        </div>
-                      </div>
-                    ));
-                  })()}
+                  )}
                 </div>
+              );
+            })}
+          </div>
+
+          {filteredSubmissions.length === 0 && (
+            <div className="text-center text-gray-500 text-xl mt-20">
+              📭 Nenhuma solicitação encontrada
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Página de Criar Admin
+    function CreateAdminPage({ showToast }) {
+      const [formData, setFormData] = useState({
+        username: '',
+        password: '',
+        confirmPassword: ''
+      });
+      const [loading, setLoading] = useState(false);
+
+      const handleSubmit = async (e) => {
+        e.preventDefault();
+
+        if (formData.password !== formData.confirmPassword) {
+          showToast('As senhas não coincidem!', 'error');
+          return;
+        }
+
+        setLoading(true);
+
+        try {
+          const token = localStorage.getItem('token');
+          const response = await fetch(\`\${API_URL}/users\`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': \`Bearer \${token}\`
+            },
+            body: JSON.stringify({
+              username: formData.username,
+              password: formData.password,
+              role: 'admin'
+            })
+          });
+
+          if (response.ok) {
+            showToast('✅ Admin criado com sucesso!');
+            setFormData({ username: '', password: '', confirmPassword: '' });
+          } else {
+            const data = await response.json();
+            showToast(data.error || 'Erro ao criar admin', 'error');
+          }
+        } catch (error) {
+          showToast('Erro ao conectar ao servidor', 'error');
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      return (
+        <div className="max-w-2xl mx-auto">
+          <div className="bg-white rounded-2xl shadow-xl p-8">
+            <h2 className="text-3xl font-bold text-gray-800 mb-6 flex items-center gap-3">
+              <span className="text-4xl">👥</span>
+              Criar Novo Admin
+            </h2>
+
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div>
+                <label className="block text-gray-700 font-semibold mb-2">Nome de Usuário *</label>
+                <input
+                  type="text"
+                  value={formData.username}
+                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none transition-all"
+                  required
+                />
               </div>
-            )}
+
+              <div>
+                <label className="block text-gray-700 font-semibold mb-2">Senha *</label>
+                <input
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none transition-all"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-gray-700 font-semibold mb-2">Confirmar Senha *</label>
+                <input
+                  type="password"
+                  value={formData.confirmPassword}
+                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none transition-all"
+                  required
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-gradient-to-r from-violet-600 to-blue-600 text-white py-4 rounded-lg font-bold text-lg hover:shadow-xl transition-all disabled:opacity-50"
+              >
+                {loading ? '⏳ Criando...' : '✅ Criar Admin'}
+              </button>
+            </form>
           </div>
         </div>
       );
-    };
+    }
 
     ReactDOM.render(<App />, document.getElementById('root'));
   </script>
