@@ -22,6 +22,15 @@
     const { useState, useEffect, createElement: h } = React;
     const API_URL = 'https://tutts-backend-production.up.railway.app/api';
 
+    // Helper para normalizar usuário (backend retorna cod_profissional, frontend usa username)
+    const normalizeUser = (user) => {
+      return {
+        ...user,
+        username: user.cod_profissional || user.username,
+        id: user.id
+      };
+    };
+
     const Toast = ({ message, type }) => {
       const bgColor = type === 'success' ? 'bg-green-600' : 'bg-red-600';
       const icon = type === 'success' ? '✓' : '✗';
@@ -62,7 +71,7 @@
         const token = localStorage.getItem('token');
         const user = localStorage.getItem('user');
         if (token && user) {
-          const userData = JSON.parse(user);
+          const userData = normalizeUser(JSON.parse(user));
           setCurrentUser(userData);
           setPage(userData.role === 'admin' ? 'form' : 'list');
         }
@@ -174,16 +183,17 @@
         e.preventDefault();
         setLoading(true);
         try {
-          const response = await fetch(API_URL + '/login', {
+          const response = await fetch(API_URL + '/users/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: username, password: password })
+            body: JSON.stringify({ codProfissional: username, password: password })
           });
           const data = await response.json();
           if (response.ok) {
-            localStorage.setItem('token', data.token);
-            localStorage.setItem('user', JSON.stringify(data.user));
-            onLogin(data.user);
+            const normalizedUser = normalizeUser(data);
+            localStorage.setItem('token', 'dummy-token');
+            localStorage.setItem('user', JSON.stringify(normalizedUser));
+            onLogin(normalizedUser);
           } else {
             showToast(data.error || 'Erro ao fazer login', 'error');
           }
@@ -614,15 +624,16 @@
         setLoading(true);
         try {
           const token = localStorage.getItem('token');
-          const response = await fetch(API_URL + '/users', {
+          const response = await fetch(API_URL + '/users/register', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
               'Authorization': 'Bearer ' + token
             },
             body: JSON.stringify({
-              username: formData.username,
+              codProfissional: formData.username,
               password: formData.password,
+              fullName: formData.username,
               role: 'admin'
             })
           });
