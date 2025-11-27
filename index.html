@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistema Tutts</title>
+  <title>Sistema Tutts - Solicitações de Ajustes</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     @keyframes slideIn {
@@ -23,435 +23,1167 @@
     const { useState, useEffect } = React;
     const API_URL = 'https://tutts-backend-production.up.railway.app/api';
 
-    const Toast = ({ message, type }) => (
-      <div className={`fixed top-4 right-4 z-50 px-6 py-4 rounded-lg shadow-2xl toast text-white font-semibold flex items-center gap-3 ${type === 'success' ? 'bg-green-600' : 'bg-red-600'}`}>
+    // Toast de notificação
+    const Toast = ({ message, type, onClose }) => (
+      <div className={`fixed top-4 right-4 z-50 px-6 py-4 rounded-lg shadow-2xl toast ${
+        type === 'success' ? 'bg-green-600' : 'bg-red-600'
+      } text-white font-semibold flex items-center gap-3`}>
         <span className="text-2xl">{type === 'success' ? '✓' : '✗'}</span>
         <span>{message}</span>
       </div>
     );
 
+    // Modal de Imagem Expandida
     const ImageModal = ({ imageUrl, onClose }) => (
-      <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div 
+        className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4"
+        onClick={onClose}
+      >
         <div className="relative max-w-4xl max-h-screen">
-          <button onClick={onClose} className="absolute -top-10 right-0 text-white text-3xl hover:text-gray-300">✕</button>
-          <img src={imageUrl} alt="Imagem" className="max-w-full max-h-screen rounded-lg shadow-2xl" onClick={(e) => e.stopPropagation()} />
+          <button 
+            onClick={onClose}
+            className="absolute -top-10 right-0 text-white text-3xl hover:text-gray-300"
+          >
+            ✕
+          </button>
+          <img 
+            src={imageUrl} 
+            alt="Comprovante expandido" 
+            className="max-w-full max-h-screen rounded-lg shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
         </div>
       </div>
     );
 
-    function App() {
-      const [currentUser, setCurrentUser] = useState(null);
-      const [page, setPage] = useState('login');
-      const [toast, setToast] = useState(null);
-      const [selectedImage, setSelectedImage] = useState(null);
+    // Gráfico de Pizza (Motivos)
+    const PieChart = ({ submissions }) => {
+      const motivos = {};
+      submissions.forEach(s => {
+        motivos[s.motivo] = (motivos[s.motivo] || 0) + 1;
+      });
 
-      useEffect(() => {
-        const token = localStorage.getItem('token');
-        const user = localStorage.getItem('user');
-        if (token && user) {
-          const userData = JSON.parse(user);
-          setCurrentUser(userData);
-          setPage(userData.role === 'admin' ? 'form' : 'list');
-        }
-      }, []);
+      const colors = ['#7c3aed', '#2563eb', '#059669', '#dc2626', '#ea580c', '#8b5cf6'];
+      const total = submissions.length;
+      const data = Object.entries(motivos).map(([motivo, count], index) => ({
+        motivo,
+        count,
+        percentage: ((count / total) * 100).toFixed(1),
+        color: colors[index % colors.length]
+      }));
+
+      let currentAngle = 0;
+
+      return (
+        <div className="bg-white rounded-xl shadow p-6">
+          <h2 className="text-lg font-semibold mb-4">📊 Distribuição por Motivo</h2>
+          {total === 0 ? (
+            <p className="text-gray-500">Nenhuma solicitação ainda</p>
+          ) : (
+            <div className="flex flex-col md:flex-row items-center gap-6">
+              <svg viewBox="0 0 200 200" className="w-48 h-48">
+                {data.map((item, index) => {
+                  const angle = (item.count / total) * 360;
+                  const startAngle = currentAngle;
+                  currentAngle += angle;
+
+                  const x1 = 100 + 90 * Math.cos((startAngle - 90) * Math.PI / 180);
+                  const y1 = 100 + 90 * Math.sin((startAngle - 90) * Math.PI / 180);
+                  const x2 = 100 + 90 * Math.cos((startAngle + angle - 90) * Math.PI / 180);
+                  const y2 = 100 + 90 * Math.sin((startAngle + angle - 90) * Math.PI / 180);
+                  const largeArc = angle > 180 ? 1 : 0;
+
+                  return (
+                    <path
+                      key={index}
+                      d={`M 100 100 L ${x1} ${y1} A 90 90 0 ${largeArc} 1 ${x2} ${y2} Z`}
+                      fill={item.color}
+                      stroke="white"
+                      strokeWidth="2"
+                    />
+                  );
+                })}
+                <circle cx="100" cy="100" r="50" fill="white" />
+                <text x="100" y="95" textAnchor="middle" className="text-2xl font-bold" fill="#1f2937">
+                  {total}
+                </text>
+                <text x="100" y="110" textAnchor="middle" className="text-xs" fill="#6b7280">
+                  Total
+                </text>
+              </svg>
+              <div className="flex-1 space-y-2">
+                {data.map((item, index) => (
+                  <div key={index} className="flex items-center gap-3">
+                    <div 
+                      className="w-4 h-4 rounded"
+                      style={{ backgroundColor: item.color }}
+                    />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-800 truncate">{item.motivo}</p>
+                      <p className="text-xs text-gray-500">{item.count} solicitações ({item.percentage}%)</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    const App = () => {
+      const [view, setView] = useState('login');
+      const [user, setUser] = useState(null);
+      const [loading, setLoading] = useState(false);
+      const [toast, setToast] = useState(null);
+      const [formData, setFormData] = useState({});
+      const [submissions, setSubmissions] = useState([]);
+      const [users, setUsers] = useState([]);
+      const [imageModal, setImageModal] = useState(null);
 
       const showToast = (message, type = 'success') => {
         setToast({ message, type });
         setTimeout(() => setToast(null), 3000);
       };
 
-      const handleLogout = () => {
-        localStorage.clear();
-        setCurrentUser(null);
-        setPage('login');
-        showToast('Logout realizado!');
+      const loadSubmissions = async () => {
+        try {
+          const query = user.role === 'user' ? `?userId=${user.id}&userCod=${user.cod_profissional}` : '';
+          const res = await fetch(`${API_URL}/submissions${query}`);
+          const data = await res.json();
+          setSubmissions(data.map(s => ({
+            ...s,
+            ordemServico: s.ordem_servico,
+            codProfissional: s.user_cod,
+            fullName: s.user_name,
+            imagemComprovante: s.imagem_comprovante,
+            timestamp: new Date(s.created_at).toLocaleString('pt-BR')
+          })));
+        } catch (err) {
+          console.error('Erro ao carregar:', err);
+        }
       };
 
-      if (!currentUser) {
-        return <LoginPage onLogin={(user) => {
-          setCurrentUser(user);
-          setPage(user.role === 'admin' ? 'form' : 'list');
-          showToast('Bem-vindo, ' + (user.full_name || user.cod_profissional) + '!');
-        }} showToast={showToast} />;
-      }
+      const loadUsers = async () => {
+        try {
+          const res = await fetch(`${API_URL}/users`);
+          const data = await res.json();
+          setUsers(data.map(u => ({
+            codProfissional: u.cod_profissional,
+            fullName: u.full_name,
+            createdAt: new Date(u.created_at).toLocaleString('pt-BR')
+          })));
+        } catch (err) {
+          console.error('Erro:', err);
+        }
+      };
 
-      return (
-        <>
-          {toast && <Toast message={toast.message} type={toast.type} />}
-          {selectedImage && <ImageModal imageUrl={selectedImage} onClose={() => setSelectedImage(null)} />}
-          
-          <div className="min-h-screen bg-gradient-to-br from-violet-50 to-blue-50">
-            <nav className="bg-white shadow-lg border-b-4 border-violet-600">
-              <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-violet-600 to-blue-600 bg-clip-text text-transparent">🎯 Sistema Tutts</h1>
-                <div className="flex items-center gap-4">
-                  <span className="text-gray-700 font-medium">👤 {currentUser.full_name || currentUser.cod_profissional}</span>
-                  <span className={`px-3 py-1 rounded-full text-sm font-semibold ${currentUser.role === 'admin' ? 'bg-violet-100 text-violet-700' : 'bg-blue-100 text-blue-700'}`}>
-                    {currentUser.role === 'admin' ? '🔑 Admin' : '👁️ Visualizador'}
-                  </span>
-                  {currentUser.role === 'admin' && (
-                    <div className="flex gap-2">
-                      <button onClick={() => setPage('form')} className={`px-4 py-2 rounded-lg font-semibold transition-all ${page === 'form' ? 'bg-violet-600 text-white shadow-lg' : 'bg-white text-violet-600 hover:bg-violet-50'}`}>
-                        📝 Nova Solicitação
-                      </button>
-                      <button onClick={() => setPage('list')} className={`px-4 py-2 rounded-lg font-semibold transition-all ${page === 'list' ? 'bg-violet-600 text-white shadow-lg' : 'bg-white text-violet-600 hover:bg-violet-50'}`}>
-                        📋 Ver Solicitações
-                      </button>
-                      <button onClick={() => setPage('create-admin')} className={`px-4 py-2 rounded-lg font-semibold transition-all ${page === 'create-admin' ? 'bg-violet-600 text-white shadow-lg' : 'bg-white text-violet-600 hover:bg-violet-50'}`}>
-                        👥 Criar Admin
-                      </button>
-                    </div>
-                  )}
-                  <button onClick={handleLogout} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-semibold shadow-lg">🚪 Sair</button>
-                </div>
-              </div>
-            </nav>
+      useEffect(() => {
+        if (user) {
+          loadSubmissions();
+          if (user.role === 'admin') loadUsers();
+        }
+      }, [user]);
 
-            <div className="max-w-7xl mx-auto px-4 py-8">
-              {page === 'form' && <FormPage showToast={showToast} />}
-              {page === 'list' && <ListPage currentUser={currentUser} showToast={showToast} onImageClick={setSelectedImage} />}
-              {page === 'create-admin' && <CreateAdminPage showToast={showToast} />}
-            </div>
-          </div>
-        </>
-      );
-    }
-
-    function LoginPage({ onLogin, showToast }) {
-      const [username, setUsername] = useState('');
-      const [password, setPassword] = useState('');
-      const [loading, setLoading] = useState(false);
-
-      const handleSubmit = async (e) => {
-        e.preventDefault();
+      const handleLogin = async () => {
         setLoading(true);
         try {
-          const response = await fetch(API_URL + '/users/login', {
+          const res = await fetch(`${API_URL}/users/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ codProfissional: username, password: password })
+            body: JSON.stringify({ codProfissional: formData.cod, password: formData.password })
           });
-          const data = await response.json();
-          if (response.ok) {
-            localStorage.setItem('token', 'dummy-token');
-            localStorage.setItem('user', JSON.stringify(data));
-            onLogin(data);
-          } else {
-            showToast(data.error || 'Erro ao fazer login', 'error');
-          }
-        } catch (error) {
-          showToast('Erro ao conectar ao servidor', 'error');
+          if (!res.ok) throw new Error('Credenciais inválidas');
+          const data = await res.json();
+          setUser({ ...data, codProfissional: data.cod_profissional, fullName: data.full_name });
+          setFormData({});
+        } catch (err) {
+          showToast(err.message, 'error');
         } finally {
           setLoading(false);
         }
       };
 
-      return (
-        <div className="min-h-screen bg-gradient-to-br from-violet-600 to-blue-600 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
-            <div className="text-center mb-8">
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-violet-600 to-blue-600 bg-clip-text text-transparent mb-2">🎯 Sistema Tutts</h1>
-              <p className="text-gray-600">Solicitações de Ajustes</p>
-            </div>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div>
-                <label className="block text-gray-700 font-semibold mb-2">Usuário</label>
-                <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none" required />
-              </div>
-              <div>
-                <label className="block text-gray-700 font-semibold mb-2">Senha</label>
-                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none" required />
-              </div>
-              <button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-violet-600 to-blue-600 text-white py-3 rounded-lg font-bold hover:shadow-xl disabled:opacity-50">
-                {loading ? '⏳ Entrando...' : '🔐 Entrar'}
-              </button>
-            </form>
-          </div>
-        </div>
-      );
-    }
-
-    function FormPage({ showToast }) {
-      const [formData, setFormData] = useState({
-        nomeTecnico: '', nomeCliente: '', motivoVisita: '', descricao: '', imagens: [], imagemComprovante: null
-      });
-      const [loading, setLoading] = useState(false);
-      const [showValidation, setShowValidation] = useState(false);
-
-      const motivos = ['Instalação', 'Manutenção Preventiva', 'Manutenção Corretiva', 'Ajuste de Pedágio (Campinas e Recife)', 'Treinamento', 'Outros'];
-
-      const compressImage = (file) => new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const img = new Image();
-          img.onload = () => {
-            const canvas = document.createElement('canvas');
-            let width = img.width, height = img.height;
-            if (width > 1200) { height *= 1200 / width; width = 1200; }
-            else if (height > 1200) { width *= 1200 / height; height = 1200; }
-            canvas.width = width; canvas.height = height;
-            canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-            let quality = 0.7, compressed = canvas.toDataURL('image/jpeg', quality);
-            while (compressed.length > 512000 * 1.37 && quality > 0.1) {
-              quality -= 0.1;
-              compressed = canvas.toDataURL('image/jpeg', quality);
-            }
-            resolve(compressed);
-          };
-          img.src = e.target.result;
-        };
-        reader.readAsDataURL(file);
-      });
-
-      const handleImageChange = async (e) => {
-        const files = Array.from(e.target.files);
-        if (files.length > 2) { showToast('Máximo de 2 fotos', 'error'); e.target.value = ''; return; }
-        const compressed = await Promise.all(files.map(f => compressImage(f)));
-        setFormData({ ...formData, imagens: compressed });
-      };
-
-      const handleComprovanteChange = async (e) => {
-        const file = e.target.files[0];
-        if (file) setFormData({ ...formData, imagemComprovante: await compressImage(file) });
-      };
-
-      const handleSubmit = async (e) => {
-        e.preventDefault();
-        setShowValidation(true);
-        const isPedagio = formData.motivoVisita === 'Ajuste de Pedágio (Campinas e Recife)';
-        if (isPedagio && formData.imagens.length === 0) { showToast('Foto obrigatória para Ajuste de Pedágio!', 'error'); return; }
-        
+      const handleRegister = async () => {
         setLoading(true);
         try {
-          const token = localStorage.getItem('token');
-          const response = await fetch(API_URL + '/submissions', {
+          const res = await fetch(`${API_URL}/users/register`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-            body: JSON.stringify({
-              nomeTecnico: formData.nomeTecnico, nomeCliente: formData.nomeCliente,
-              motivoVisita: formData.motivoVisita, descricao: formData.descricao,
-              imagens: formData.imagens.join(','), imagemComprovante: formData.imagemComprovante
-            })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ codProfissional: formData.cod, password: formData.password, fullName: formData.name })
           });
-          if (response.ok) {
-            showToast('Solicitação enviada!');
-            setFormData({ nomeTecnico: '', nomeCliente: '', motivoVisita: '', descricao: '', imagens: [], imagemComprovante: null });
-            setShowValidation(false);
-          } else {
-            showToast('Erro ao enviar', 'error');
-          }
-        } catch (error) {
-          showToast('Erro de conexão', 'error');
+          if (!res.ok) throw new Error('Erro no cadastro');
+          showToast('Cadastro realizado! Faça login.', 'success');
+          setView('login');
+          setFormData({});
+        } catch (err) {
+          showToast(err.message, 'error');
         } finally {
           setLoading(false);
         }
       };
 
-      const isPedagio = formData.motivoVisita === 'Ajuste de Pedágio (Campinas e Recife)';
+      const handleSubmitOS = async () => {
+        setLoading(true);
+        try {
+          await fetch(`${API_URL}/submissions`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              ordemServico: formData.os,
+              motivo: formData.motivo,
+              userId: user.id,
+              userCod: user.codProfissional,
+              userName: user.fullName,
+              imagemComprovante: formData.imagem || null,
+              coordenadas: formData.coordenadas || null
+            })
+          });
+          showToast('✅ OS enviada com sucesso!', 'success');
+          setFormData({});
+          loadSubmissions();
+        } catch (err) {
+          showToast('Erro ao enviar', 'error');
+        } finally {
+          setLoading(false);
+        }
+      };
 
-      return (
-        <div className="max-w-4xl mx-auto">
-          <div className="bg-white rounded-2xl shadow-xl p-8">
-            <h2 className="text-3xl font-bold text-gray-800 mb-6 flex items-center gap-3"><span className="text-4xl">📝</span>Nova Solicitação</h2>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-gray-700 font-semibold mb-2">Nome do Técnico *</label>
-                  <input type="text" value={formData.nomeTecnico} onChange={(e) => setFormData({...formData, nomeTecnico: e.target.value})} className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none" required />
+      const handleValidate = async (id, isValid) => {
+        try {
+          await fetch(`${API_URL}/submissions/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: isValid ? 'aprovada' : 'rejeitada', observacao: formData.obs || '' })
+          });
+          showToast(isValid ? '✅ Aprovada!' : '❌ Rejeitada!', isValid ? 'success' : 'error');
+          setFormData({});
+          loadSubmissions();
+        } catch (err) {
+          showToast('Erro', 'error');
+        }
+      };
+
+      if (!user) {
+        return (
+          <div className="min-h-screen bg-gradient-to-br from-purple-100 to-purple-200 flex items-center justify-center p-4">
+            {toast && <Toast {...toast} />}
+            <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+              <div className="text-center mb-8">
+                <div className="w-32 h-32 mx-auto mb-4 bg-purple-900 rounded-xl p-4 shadow-lg flex items-center justify-center">
+                  <div className="text-white text-5xl font-bold">tutts</div>
                 </div>
+                <h1 className="text-3xl font-bold text-gray-800">Sistema de Solicitações</h1>
+                <p className="text-gray-600 mt-2">
+                  {view === 'login' ? 'Entre com suas credenciais' : 
+                   view === 'register' ? 'Cadastre-se' :
+                   'Recuperar senha'}
+                </p>
+              </div>
+
+              {view === 'forgot-password' ? (
+                <div className="space-y-4">
+                  <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">
+                    <div className="flex">
+                      <div className="flex-shrink-0">
+                        <svg className="h-5 w-5 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <div className="ml-3">
+                        <p className="text-sm text-blue-700">
+                          <strong>Para recuperar sua senha:</strong><br/>
+                          Entre em contato com o administrador informando seu COD Profissional.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+                    <p className="text-sm font-semibold text-gray-700">📞 Contatos:</p>
+                    <p className="text-sm text-gray-600">📧 Email: supervisor@tutts.com.br</p>
+                    <p className="text-sm text-gray-600">📱 WhatsApp: (71) 93300-1635</p>
+                    <p className="text-xs text-gray-500 mt-2">
+                      
+                    </p>
+                  </div>
+
+                  <button 
+                    onClick={() => setView('login')} 
+                    className="w-full bg-purple-900 text-white py-3 rounded-lg font-semibold hover:bg-purple-800"
+                  >
+                    ← Voltar para login
+                  </button>
+                </div>
+              ) : view === 'login' ? (
+                <div className="space-y-4">
+                  <input
+                    type="text"
+                    placeholder="COD Profissional"
+                    value={formData.cod || ''}
+                    onChange={e => setFormData({...formData, cod: e.target.value})}
+                    className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-900"
+                  />
+                  <input
+                    type="password"
+                    placeholder="Senha"
+                    value={formData.password || ''}
+                    onChange={e => setFormData({...formData, password: e.target.value})}
+                    onKeyPress={e => e.key === 'Enter' && handleLogin()}
+                    className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-900"
+                  />
+                  <button
+                    onClick={handleLogin}
+                    disabled={loading}
+                    className="w-full bg-purple-900 text-white py-3 rounded-lg font-semibold hover:bg-purple-800 disabled:opacity-50"
+                  >
+                    {loading ? 'Aguarde...' : 'Entrar'}
+                  </button>
+                  <button onClick={() => setView('register')} className="w-full text-purple-900 text-sm">
+                    Não tem conta? Cadastre-se
+                  </button>
+                  <button 
+                    onClick={() => setView('forgot-password')} 
+                    className="w-full text-purple-700 text-sm hover:text-purple-900 underline"
+                  >
+                    Esqueci minha senha
+                  </button>
+                 
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <input
+                    type="text"
+                    placeholder="Nome Completo"
+                    value={formData.name || ''}
+                    onChange={e => setFormData({...formData, name: e.target.value})}
+                    className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-900"
+                  />
+                  <input
+                    type="text"
+                    placeholder="COD Profissional"
+                    value={formData.cod || ''}
+                    onChange={e => setFormData({...formData, cod: e.target.value})}
+                    className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-900"
+                  />
+                  <input
+                    type="password"
+                    placeholder="Senha"
+                    value={formData.password || ''}
+                    onChange={e => setFormData({...formData, password: e.target.value})}
+                    className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-900"
+                  />
+                  <button
+                    onClick={handleRegister}
+                    disabled={loading}
+                    className="w-full bg-purple-900 text-white py-3 rounded-lg font-semibold hover:bg-purple-800 disabled:opacity-50"
+                  >
+                    {loading ? 'Aguarde...' : 'Criar Conta'}
+                  </button>
+                  <button onClick={() => setView('login')} className="w-full text-purple-900 text-sm">
+                    ← Voltar para login
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      }
+
+      if (user.role === 'user') {
+        return (
+          <div className="min-h-screen bg-gray-50">
+            {toast && <Toast {...toast} />}
+            {imageModal && <ImageModal imageUrl={imageModal} onClose={() => setImageModal(null)} />}
+            <nav className="bg-white shadow-sm border-b">
+              <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
                 <div>
-                  <label className="block text-gray-700 font-semibold mb-2">Nome do Cliente *</label>
-                  <input type="text" value={formData.nomeCliente} onChange={(e) => setFormData({...formData, nomeCliente: e.target.value})} className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none" required />
+                  <h1 className="text-xl font-bold">Painel do Usuário</h1>
+                  <p className="text-sm text-gray-600">{user.fullName}</p>
+                </div>
+                <button onClick={() => setUser(null)} className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">
+                  Sair
+                </button>
+              </div>
+            </nav>
+            
+            <div className="max-w-4xl mx-auto p-6">
+              <div className="bg-white rounded-xl shadow p-6 mb-6">
+                <h2 className="text-lg font-semibold mb-4">Enviar OS</h2>
+                <div className="space-y-4">
+                  <input
+                    type="text"
+                    placeholder="Número da OS"
+                    value={formData.os || ''}
+                    onChange={e => setFormData({...formData, os: e.target.value})}
+                    className="w-full px-4 py-3 border rounded-lg"
+                  />
+                  <select
+                    value={formData.motivo || ''}
+                    onChange={e => {
+                      const motivo = e.target.value;
+                      let coordenadas = '';
+                      
+                      if (motivo === 'Alteração Ponto 1 (Goiânia)') {
+                        coordenadas = '-16.64322218214421, -49.3190143453706';
+                      } else if (motivo === 'Alteração Ponto 1 (Campinas)') {
+                        coordenadas = '-22.850067092813358, -47.08310037116422';
+                      }
+                      
+                      setFormData({...formData, motivo, coordenadas});
+                    }}
+                    className="w-full px-4 py-3 border rounded-lg"
+                  >
+                    <option value="">Selecione o motivo</option>
+                    <option>Alteração Ponto 1 (Campinas)</option>
+                    <option>Alteração Ponto 1 (Goiânia)</option>
+                    <option>Ajuste de Retorno</option>
+                    <option>Ajuste de Pedágio (Campinas e Recife)</option>
+                  </select>
+                  
+                  {/* Coordenadas */}
+                  {formData.coordenadas && (
+                    <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <p className="text-xs text-blue-700 font-semibold mb-1">📍 COORDENADAS</p>
+                          <p className="text-lg font-mono font-bold text-blue-900">{formData.coordenadas}</p>
+                        </div>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(formData.coordenadas);
+                            showToast('📋 Coordenadas copiadas!', 'success');
+                          }}
+                          className="ml-3 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2"
+                        >
+                          📋 Copiar
+                        </button>
+                      </div>
+                      <a
+                        href={`https://www.google.com/maps?q=${formData.coordenadas}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-block mt-2 text-sm text-blue-600 hover:text-blue-800 underline"
+                      >
+                        🗺️ Abrir no Google Maps
+                      </a>
+                    </div>
+                  )}
+                  
+                  {/* Upload de Imagem */}
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      📎 Comprovante (opcional)
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={async (e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          if (file.size > 5000000) {
+                            showToast('Imagem muito grande! Max 5MB', 'error');
+                            e.target.value = '';
+                            return;
+                          }
+                          const reader = new FileReader();
+                          reader.onload = () => {
+                            setFormData({...formData, imagem: reader.result});
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                      className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-900 hover:file:bg-purple-100"
+                    />
+                    {formData.imagem && (
+                      <div className="mt-3">
+                        <img src={formData.imagem} alt="Preview" className="max-h-40 rounded-lg" />
+                        <button
+                          onClick={() => setFormData({...formData, imagem: null})}
+                          className="mt-2 text-sm text-red-600 hover:text-red-800"
+                        >
+                          ✕ Remover imagem
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <button
+                    onClick={handleSubmitOS}
+                    disabled={loading || !formData.os || !formData.motivo}
+                    className="w-full bg-purple-900 text-white py-3 rounded-lg font-semibold disabled:opacity-50"
+                  >
+                    Enviar
+                  </button>
                 </div>
               </div>
-              <div>
-                <label className="block text-gray-700 font-semibold mb-2">Motivo *</label>
-                <select value={formData.motivoVisita} onChange={(e) => setFormData({...formData, motivoVisita: e.target.value})} className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none" required>
-                  <option value="">Selecione</option>
-                  {motivos.map(m => <option key={m} value={m}>{m}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-gray-700 font-semibold mb-2">Descrição *</label>
-                <textarea value={formData.descricao} onChange={(e) => setFormData({...formData, descricao: e.target.value})} rows="4" className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none" required />
-              </div>
-              <div>
-                <label className="block text-gray-700 font-semibold mb-2 flex items-center gap-2">
-                  📸 Fotos (máx. 2) {isPedagio && <span className="text-red-600">* Obrigatório</span>}
-                </label>
-                <input type="file" accept="image/*" multiple onChange={handleImageChange} className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg" />
-                {showValidation && isPedagio && formData.imagens.length === 0 && <p className="text-red-600 text-sm mt-2">⚠️ Foto obrigatória!</p>}
-                {formData.imagens.length > 0 && (
-                  <div className="flex gap-4 mt-4">
-                    {formData.imagens.map((img, i) => (
-                      <div key={i} className="relative">
-                        <img src={img} className="w-32 h-32 object-cover rounded-lg border-2" />
-                        <button type="button" onClick={() => setFormData({...formData, imagens: formData.imagens.filter((_, idx) => idx !== i)})} className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-6 h-6">✕</button>
+
+              <div className="bg-white rounded-xl shadow p-6">
+                <h2 className="text-lg font-semibold mb-4">Minhas Submissões</h2>
+                {submissions.length === 0 ? (
+                  <p className="text-gray-500">Nenhuma submissão</p>
+                ) : (
+                  <div className="space-y-3">
+                    {submissions.map(s => (
+                      <div key={s.id} className="border rounded-lg p-4">
+                        <div className="bg-purple-50 p-3 rounded mb-2">
+                          <p className="text-xs text-purple-700 uppercase font-semibold">OS</p>
+                          <p className="text-xl font-bold text-purple-900">{s.ordemServico}</p>
+                        </div>
+                        <div className="bg-blue-50 p-3 rounded mb-2">
+                          <p className="text-xs text-blue-700 uppercase font-semibold">Motivo</p>
+                          <p className="text-sm font-bold text-blue-900">{s.motivo}</p>
+                        </div>
+                        {s.coordenadas && (
+                          <div className="bg-green-50 border border-green-200 p-3 rounded mb-2">
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <p className="text-xs text-green-700 uppercase font-semibold">📍 Coordenadas</p>
+                                <p className="text-sm font-mono font-bold text-green-900">{s.coordenadas}</p>
+                              </div>
+                              <button
+                                onClick={() => {
+                                  navigator.clipboard.writeText(s.coordenadas);
+                                  showToast('📋 Coordenadas copiadas!', 'success');
+                                }}
+                                className="ml-2 px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
+                              >
+                                📋
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                        {s.imagemComprovante && (
+                          <div className="mt-2">
+                            <p className="text-xs text-gray-600 mb-1">Comprovante:</p>
+                            <img 
+                              src={s.imagemComprovante} 
+                              alt="Comprovante" 
+                              className="max-h-40 rounded border cursor-pointer hover:opacity-80 transition"
+                              onClick={() => setImageModal(s.imagemComprovante)}
+                            />
+                            <p className="text-xs text-gray-500 mt-1">📷 Clique para expandir</p>
+                          </div>
+                        )}
+                        {s.observacao && (
+                          <div className="mt-2 bg-gray-50 p-2 rounded">
+                            <p className="text-xs text-gray-600">Observação do admin:</p>
+                            <p className="text-sm text-gray-800">{s.observacao}</p>
+                          </div>
+                        )}
+                        <div className="flex justify-between items-center mt-2">
+                          <p className="text-xs text-gray-500">{s.timestamp}</p>
+                          <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                            s.status === 'aprovada' ? 'bg-green-500 text-white' :
+                            s.status === 'rejeitada' ? 'bg-red-500 text-white' :
+                            'bg-yellow-500 text-white'
+                          }`}>{s.status?.toUpperCase()}</span>
+                        </div>
                       </div>
                     ))}
                   </div>
                 )}
               </div>
-              <div>
-                <label className="block text-gray-700 font-semibold mb-2">📄 Comprovante (opcional)</label>
-                <input type="file" accept="image/*" onChange={handleComprovanteChange} className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg" />
-                {formData.imagemComprovante && (
-                  <div className="mt-4 relative inline-block">
-                    <img src={formData.imagemComprovante} className="w-32 h-32 object-cover rounded-lg border-2" />
-                    <button type="button" onClick={() => setFormData({...formData, imagemComprovante: null})} className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-6 h-6">✕</button>
-                  </div>
-                )}
-              </div>
-              <button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-violet-600 to-blue-600 text-white py-4 rounded-lg font-bold text-lg hover:shadow-xl disabled:opacity-50">
-                {loading ? '⏳ Enviando...' : '✅ Enviar'}
-              </button>
-            </form>
+            </div>
           </div>
-        </div>
-      );
-    }
-
-    function ListPage({ currentUser, showToast, onImageClick }) {
-      const [submissions, setSubmissions] = useState([]);
-      const [loading, setLoading] = useState(true);
-      const [selectedMotivo, setSelectedMotivo] = useState('');
-
-      const motivos = ['Instalação', 'Manutenção Preventiva', 'Manutenção Corretiva', 'Ajuste de Pedágio (Campinas e Recife)', 'Treinamento', 'Outros'];
-
-      useEffect(() => {
-        fetchSubmissions();
-        const interval = setInterval(fetchSubmissions, 300000);
-        return () => clearInterval(interval);
-      }, []);
-
-      const fetchSubmissions = async () => {
-        try {
-          const token = localStorage.getItem('token');
-          const response = await fetch(API_URL + '/submissions', { headers: { 'Authorization': 'Bearer ' + token } });
-          if (response.ok) setSubmissions(await response.json());
-        } catch (error) {
-          showToast('Erro ao carregar', 'error');
-        } finally {
-          setLoading(false);
-        }
-      };
-
-      const handleDelete = async (id) => {
-        if (!confirm('Excluir?')) return;
-        try {
-          const token = localStorage.getItem('token');
-          const response = await fetch(API_URL + '/submissions/' + id, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } });
-          if (response.ok) { showToast('Excluído!'); fetchSubmissions(); }
-        } catch (error) {
-          showToast('Erro', 'error');
-        }
-      };
-
-      const filtered = selectedMotivo ? submissions.filter(s => s.motivo === selectedMotivo) : submissions;
-
-      if (loading) return <div className="text-center text-2xl mt-20">⏳ Carregando...</div>;
+        );
+      }
 
       return (
-        <div>
-          <div className="mb-6 flex gap-4 items-center">
-            <label className="text-gray-700 font-semibold">Filtrar:</label>
-            <select value={selectedMotivo} onChange={(e) => setSelectedMotivo(e.target.value)} className="px-4 py-2 border-2 border-gray-300 rounded-lg">
-              <option value="">Todos</option>
-              {motivos.map(m => <option key={m} value={m}>{m}</option>)}
-            </select>
-            {selectedMotivo && <button onClick={() => setSelectedMotivo('')} className="px-4 py-2 bg-gray-200 rounded-lg">✕ Limpar</button>}
+        <div className="min-h-screen bg-gray-50">
+          {toast && <Toast {...toast} />}
+          {imageModal && <ImageModal imageUrl={imageModal} onClose={() => setImageModal(null)} />}
+          <nav className="bg-purple-900 shadow-lg">
+            <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+              <h1 className="text-xl font-bold text-white">Painel Admin</h1>
+              <button onClick={() => setUser(null)} className="px-4 py-2 text-white hover:bg-purple-800 rounded-lg">
+                Sair
+              </button>
+            </div>
+          </nav>
+          
+          {/* Abas de Navegação */}
+          <div className="bg-white border-b sticky top-0 z-10 shadow-sm">
+            <div className="max-w-7xl mx-auto px-4">
+              <div className="flex gap-1">
+                <button
+                  onClick={() => setFormData({...formData, adminTab: 'dashboard'})}
+                  className={`px-6 py-3 font-semibold transition ${
+                    (!formData.adminTab || formData.adminTab === 'dashboard')
+                      ? 'text-purple-900 border-b-2 border-purple-900'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  📊 Dashboard
+                </button>
+                <button
+                  onClick={() => setFormData({...formData, adminTab: 'search'})}
+                  className={`px-6 py-3 font-semibold transition ${
+                    formData.adminTab === 'search'
+                      ? 'text-purple-900 border-b-2 border-purple-900'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  🔍 Busca Detalhada
+                </button>
+                <button
+                  onClick={() => setFormData({...formData, adminTab: 'users'})}
+                  className={`px-6 py-3 font-semibold transition ${
+                    formData.adminTab === 'users'
+                      ? 'text-purple-900 border-b-2 border-purple-900'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  👥 Gerenciar Usuários
+                </button>
+              </div>
+            </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {filtered.map(s => {
-              const imgs = s.imagens ? (typeof s.imagens === 'string' ? s.imagens.split(',').filter(img => img.trim()) : s.imagens) : [];
-              return (
-                <div key={s.id} className="bg-white rounded-xl shadow-lg p-6 hover:shadow-2xl transition-all">
-                  <div className="flex justify-between mb-4">
-                    <div>
-                      <h3 className="text-xl font-bold">{s.nome_cliente}</h3>
-                      <p className="text-gray-600">👤 {s.nome_tecnico}</p>
-                    </div>
-                    {currentUser.role === 'admin' && <button onClick={() => handleDelete(s.id)} className="text-red-600 text-xl">🗑️</button>}
+          
+          <div className="max-w-7xl mx-auto p-6">
+            {/* ABA DASHBOARD */}
+            {(!formData.adminTab || formData.adminTab === 'dashboard') && (
+              <>
+                <div className="grid md:grid-cols-4 gap-4 mb-6">
+                  <div className="bg-white p-6 rounded-xl shadow">
+                    <p className="text-sm text-gray-600">Total</p>
+                    <p className="text-3xl font-bold text-purple-900">{submissions.length}</p>
                   </div>
-                  <p className="text-sm"><b>Motivo:</b> {s.motivo}</p>
-                  <p className="text-sm"><b>Descrição:</b> {s.descricao}</p>
-                  <p className="text-gray-500 text-xs mt-2">{new Date(s.created_at).toLocaleString('pt-BR')}</p>
-                  {imgs.length > 0 && (
-                    <div className="mt-4">
-                      <p className="font-semibold mb-2">📸 Fotos:</p>
-                      <div className="flex gap-2">
-                        {imgs.map((img, i) => <img key={i} src={img.trim()} className="w-20 h-20 object-cover rounded-lg border-2 cursor-pointer hover:scale-110 transition-all" onClick={() => onImageClick(img.trim())} />)}
+                  <div className="bg-white p-6 rounded-xl shadow">
+                    <p className="text-sm text-gray-600">Pendentes</p>
+                    <p className="text-3xl font-bold text-yellow-600">{submissions.filter(s => s.status === 'pendente').length}</p>
+                  </div>
+                  <div className="bg-white p-6 rounded-xl shadow">
+                    <p className="text-sm text-gray-600">Aprovadas</p>
+                    <p className="text-3xl font-bold text-green-600">{submissions.filter(s => s.status === 'aprovada').length}</p>
+                  </div>
+                  <div className="bg-white p-6 rounded-xl shadow">
+                    <p className="text-sm text-gray-600">Rejeitadas</p>
+                    <p className="text-3xl font-bold text-red-600">{submissions.filter(s => s.status === 'rejeitada').length}</p>
+                  </div>
+                </div>
+
+                <PieChart submissions={submissions} />
+
+                <div className="bg-white rounded-xl shadow p-6 mb-6 mt-6">
+                  <h2 className="text-lg font-semibold mb-4">Aguardando Validação</h2>
+                  {submissions.filter(s => s.status === 'pendente').length === 0 ? (
+                    <p className="text-gray-500">Nenhuma solicitação pendente</p>
+                  ) : (
+                    submissions.filter(s => s.status === 'pendente').map(s => (
+                      <div key={s.id} className="border rounded-lg p-4 mb-3">
+                        <p className="font-mono text-xl font-bold">OS: {s.ordemServico}</p>
+                        <p className="text-sm text-gray-700">{s.fullName}</p>
+                        <p className="text-xs text-purple-900 font-semibold">Motivo: {s.motivo}</p>
+                        <p className="text-xs text-gray-500 mt-1">{s.timestamp}</p>
+                        {s.coordenadas && (
+                          <div className="mt-3 bg-green-50 border-2 border-green-200 rounded-lg p-3">
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <p className="text-xs text-green-700 font-semibold mb-1">📍 COORDENADAS</p>
+                                <p className="text-base font-mono font-bold text-green-900">{s.coordenadas}</p>
+                              </div>
+                              <button
+                                onClick={() => {
+                                  navigator.clipboard.writeText(s.coordenadas);
+                                  showToast('📋 Coordenadas copiadas!', 'success');
+                                }}
+                                className="ml-3 px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                              >
+                                📋 Copiar
+                              </button>
+                            </div>
+                            <a
+                              href={`https://www.google.com/maps?q=${s.coordenadas}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-block mt-2 text-sm text-green-700 hover:text-green-900 underline font-semibold"
+                            >
+                              🗺️ Abrir no Google Maps
+                            </a>
+                          </div>
+                        )}
+                        {s.imagemComprovante && (
+                          <div className="mt-3">
+                            <p className="text-xs text-gray-600 mb-1">Comprovante:</p>
+                            <img 
+                              src={s.imagemComprovante} 
+                              alt="Comprovante" 
+                              className="max-h-48 rounded border cursor-pointer hover:opacity-80 transition"
+                              onClick={() => setImageModal(s.imagemComprovante)}
+                            />
+                            <p className="text-xs text-gray-500 mt-1">📷 Clique para expandir</p>
+                          </div>
+                        )}
+                        <textarea
+                          placeholder="Observação (opcional)"
+                          value={formData[`obs_${s.id}`] || ''}
+                          onChange={e => setFormData({...formData, [`obs_${s.id}`]: e.target.value, obs: e.target.value})}
+                          className="w-full px-3 py-2 border rounded-lg mt-2 text-sm"
+                          rows="2"
+                        />
+                        <div className="flex gap-2 mt-2">
+                          <button onClick={() => handleValidate(s.id, true)} className="flex-1 bg-green-600 text-white py-2 rounded-lg">
+                            ✓ Aprovar
+                          </button>
+                          <button onClick={() => handleValidate(s.id, false)} className="flex-1 bg-red-600 text-white py-2 rounded-lg">
+                            ✗ Rejeitar
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  )}
-                  {s.imagem_comprovante && (
-                    <div className="mt-4">
-                      <p className="font-semibold mb-2">📄 Comprovante:</p>
-                      <img src={s.imagem_comprovante} className="w-20 h-20 object-cover rounded-lg border-2 cursor-pointer hover:scale-110 transition-all" onClick={() => onImageClick(s.imagem_comprovante)} />
-                    </div>
+                    ))
                   )}
                 </div>
-              );
-            })}
+
+                <div className="bg-white rounded-xl shadow p-6">
+                  <h2 className="text-lg font-semibold mb-4">Histórico Completo</h2>
+                  <div className="mb-4 flex gap-2">
+                    <button
+                      onClick={() => setFormData({...formData, filterStatus: 'all'})}
+                      className={`px-4 py-2 rounded-lg ${(!formData.filterStatus || formData.filterStatus === 'all') ? 'bg-purple-900 text-white' : 'bg-gray-100'}`}
+                    >
+                      Todas ({submissions.length})
+                    </button>
+                    <button
+                      onClick={() => setFormData({...formData, filterStatus: 'aprovada'})}
+                      className={`px-4 py-2 rounded-lg ${formData.filterStatus === 'aprovada' ? 'bg-green-600 text-white' : 'bg-gray-100'}`}
+                    >
+                      Aprovadas ({submissions.filter(s => s.status === 'aprovada').length})
+                    </button>
+                    <button
+                      onClick={() => setFormData({...formData, filterStatus: 'rejeitada'})}
+                      className={`px-4 py-2 rounded-lg ${formData.filterStatus === 'rejeitada' ? 'bg-red-600 text-white' : 'bg-gray-100'}`}
+                    >
+                      Rejeitadas ({submissions.filter(s => s.status === 'rejeitada').length})
+                    </button>
+                  </div>
+                  
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {submissions
+                      .filter(s => !formData.filterStatus || formData.filterStatus === 'all' || s.status === formData.filterStatus)
+                      .map(s => (
+                        <div key={s.id} className={`border rounded-lg p-4 ${
+                          s.status === 'aprovada' ? 'bg-green-50 border-green-200' :
+                          s.status === 'rejeitada' ? 'bg-red-50 border-red-200' :
+                          'bg-gray-50'
+                        }`}>
+                          <div className="flex justify-between items-start mb-2">
+                            <div>
+                              <p className="font-mono text-lg font-bold">OS: {s.ordemServico}</p>
+                              <p className="text-sm text-gray-700">{s.fullName} ({s.userCod || s.user_cod})</p>
+                            </div>
+                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                              s.status === 'aprovada' ? 'bg-green-600 text-white' :
+                              s.status === 'rejeitada' ? 'bg-red-600 text-white' :
+                              'bg-yellow-600 text-white'
+                            }`}>
+                              {s.status?.toUpperCase()}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-600 mb-1">Motivo: {s.motivo}</p>
+                          {s.coordenadas && (
+                            <div className="mt-2 bg-green-50 border border-green-200 rounded p-2">
+                              <div className="flex items-center justify-between">
+                                <div className="flex-1">
+                                  <p className="text-xs text-green-700 font-semibold">📍 Coordenadas</p>
+                                  <p className="text-sm font-mono text-green-900">{s.coordenadas}</p>
+                                </div>
+                                <button
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(s.coordenadas);
+                                    showToast('📋 Coordenadas copiadas!', 'success');
+                                  }}
+                                  className="ml-2 px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
+                                >
+                                  📋
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                          {s.imagemComprovante && (
+                            <div className="mt-2">
+                              <img 
+                                src={s.imagemComprovante} 
+                                alt="Comprovante" 
+                                className="max-h-32 rounded border cursor-pointer hover:opacity-80 transition"
+                                onClick={() => setImageModal(s.imagemComprovante)}
+                              />
+                              <p className="text-xs text-gray-500 mt-1">📷 Clique para expandir</p>
+                            </div>
+                          )}
+                          {s.observacao && (
+                            <div className="mt-2 bg-white p-2 rounded border">
+                              <p className="text-xs text-gray-600">Observação:</p>
+                              <p className="text-sm">{s.observacao}</p>
+                            </div>
+                          )}
+                          <p className="text-xs text-gray-500 mt-2">{s.timestamp}</p>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* ABA BUSCA DETALHADA */}
+            {formData.adminTab === 'search' && (
+              <div className="bg-white rounded-xl shadow p-6">
+                <h2 className="text-lg font-semibold mb-4">🔍 Busca Detalhada</h2>
+                
+                {/* Filtros e Busca */}
+                <div className="mb-4 space-y-3">
+                  {/* Busca por OS e COD */}
+                  <div className="flex gap-2">
+                    <div className="flex-1 relative">
+                      <input
+                        type="text"
+                        placeholder="🔍 Buscar por OS ou COD do usuário..."
+                        value={formData.searchOS || ''}
+                        onChange={e => setFormData({...formData, searchOS: e.target.value})}
+                        className="w-full px-4 py-2 border rounded-lg pl-10"
+                      />
+                      <span className="absolute left-3 top-3 text-gray-400">🔍</span>
+                    </div>
+                    {formData.searchOS && (
+                      <button
+                        onClick={() => setFormData({...formData, searchOS: ''})}
+                        className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
+                      >
+                        ✕ Limpar
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Filtro por Data */}
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => setFormData({...formData, dateFilter: 'today'})}
+                      className={`px-4 py-2 rounded-lg ${formData.dateFilter === 'today' ? 'bg-blue-600 text-white' : 'bg-gray-100'}`}
+                    >
+                      📅 Hoje
+                    </button>
+                    <button
+                      onClick={() => setFormData({...formData, dateFilter: 'week'})}
+                      className={`px-4 py-2 rounded-lg ${formData.dateFilter === 'week' ? 'bg-blue-600 text-white' : 'bg-gray-100'}`}
+                    >
+                      📅 Esta Semana
+                    </button>
+                    <button
+                      onClick={() => setFormData({...formData, dateFilter: 'month'})}
+                      className={`px-4 py-2 rounded-lg ${formData.dateFilter === 'month' ? 'bg-blue-600 text-white' : 'bg-gray-100'}`}
+                    >
+                      📅 Este Mês
+                    </button>
+                    <button
+                      onClick={() => setFormData({...formData, dateFilter: 'all'})}
+                      className={`px-4 py-2 rounded-lg ${(!formData.dateFilter || formData.dateFilter === 'all') ? 'bg-blue-600 text-white' : 'bg-gray-100'}`}
+                    >
+                      📅 Todas
+                    </button>
+                    <button
+                      onClick={() => setFormData({...formData, dateFilter: 'custom', showCustomDate: !formData.showCustomDate})}
+                      className={`px-4 py-2 rounded-lg ${formData.dateFilter === 'custom' ? 'bg-blue-600 text-white' : 'bg-gray-100'}`}
+                    >
+                      📅 Personalizado
+                    </button>
+                  </div>
+
+                  {/* Data Personalizada */}
+                  {formData.showCustomDate && (
+                    <div className="flex gap-2 items-center bg-blue-50 p-3 rounded-lg">
+                      <span className="text-sm font-semibold">De:</span>
+                      <input
+                        type="date"
+                        value={formData.startDate || ''}
+                        onChange={e => setFormData({...formData, startDate: e.target.value, dateFilter: 'custom'})}
+                        className="px-3 py-2 border rounded"
+                      />
+                      <span className="text-sm font-semibold">Até:</span>
+                      <input
+                        type="date"
+                        value={formData.endDate || ''}
+                        onChange={e => setFormData({...formData, endDate: e.target.value, dateFilter: 'custom'})}
+                        className="px-3 py-2 border rounded"
+                      />
+                      <button
+                        onClick={() => setFormData({...formData, showCustomDate: false, dateFilter: 'all', startDate: '', endDate: ''})}
+                        className="px-3 py-2 bg-red-100 text-red-700 rounded hover:bg-red-200"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Filtro por Status */}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setFormData({...formData, filterStatusSearch: 'all'})}
+                      className={`px-4 py-2 rounded-lg ${(!formData.filterStatusSearch || formData.filterStatusSearch === 'all') ? 'bg-purple-900 text-white' : 'bg-gray-100'}`}
+                    >
+                      Todas ({submissions.length})
+                    </button>
+                    <button
+                      onClick={() => setFormData({...formData, filterStatusSearch: 'aprovada'})}
+                      className={`px-4 py-2 rounded-lg ${formData.filterStatusSearch === 'aprovada' ? 'bg-green-600 text-white' : 'bg-gray-100'}`}
+                    >
+                      Aprovadas ({submissions.filter(s => s.status === 'aprovada').length})
+                    </button>
+                    <button
+                      onClick={() => setFormData({...formData, filterStatusSearch: 'rejeitada'})}
+                      className={`px-4 py-2 rounded-lg ${formData.filterStatusSearch === 'rejeitada' ? 'bg-red-600 text-white' : 'bg-gray-100'}`}
+                    >
+                      Rejeitadas ({submissions.filter(s => s.status === 'rejeitada').length})
+                    </button>
+                    <button
+                      onClick={() => setFormData({...formData, filterStatusSearch: 'pendente'})}
+                      className={`px-4 py-2 rounded-lg ${formData.filterStatusSearch === 'pendente' ? 'bg-yellow-600 text-white' : 'bg-gray-100'}`}
+                    >
+                      Pendentes ({submissions.filter(s => s.status === 'pendente').length})
+                    </button>
+                  </div>
+                </div>
+                
+                {/* Contador de Resultados */}
+                <div className="mb-3 flex items-center justify-between bg-gray-50 px-4 py-2 rounded-lg">
+                  <p className="text-sm text-gray-600">
+                    Exibindo <strong className="text-purple-900">
+                      {submissions.filter(s => {
+                        if (formData.filterStatusSearch && formData.filterStatusSearch !== 'all' && s.status !== formData.filterStatusSearch) return false;
+                        if (formData.searchOS && 
+                            !s.ordemServico.toLowerCase().includes(formData.searchOS.toLowerCase()) &&
+                            !(s.userCod || s.user_cod || '').toLowerCase().includes(formData.searchOS.toLowerCase())) return false;
+                        const submissionDate = new Date(s.created_at);
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        if (formData.dateFilter === 'today') {
+                          const tomorrow = new Date(today);
+                          tomorrow.setDate(tomorrow.getDate() + 1);
+                          if (submissionDate < today || submissionDate >= tomorrow) return false;
+                        } else if (formData.dateFilter === 'week') {
+                          const weekAgo = new Date(today);
+                          weekAgo.setDate(weekAgo.getDate() - 7);
+                          if (submissionDate < weekAgo) return false;
+                        } else if (formData.dateFilter === 'month') {
+                          const monthAgo = new Date(today);
+                          monthAgo.setMonth(monthAgo.getMonth() - 1);
+                          if (submissionDate < monthAgo) return false;
+                        } else if (formData.dateFilter === 'custom' && formData.startDate && formData.endDate) {
+                          const start = new Date(formData.startDate);
+                          const end = new Date(formData.endDate);
+                          end.setHours(23, 59, 59, 999);
+                          if (submissionDate < start || submissionDate > end) return false;
+                        }
+                        return true;
+                      }).length}
+                    </strong> de <strong>{submissions.length}</strong> solicitações
+                  </p>
+                  {(formData.searchOS || formData.dateFilter || formData.filterStatusSearch !== 'all') && (
+                    <button
+                      onClick={() => setFormData({
+                        ...formData,
+                        searchOS: '',
+                        dateFilter: 'all',
+                        filterStatusSearch: 'all',
+                        showCustomDate: false,
+                        startDate: '',
+                        endDate: ''
+                      })}
+                      className="text-sm text-red-600 hover:text-red-800 font-semibold"
+                    >
+                      🔄 Limpar todos os filtros
+                    </button>
+                  )}
+                </div>
+                
+                {/* Resultados */}
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {submissions
+                    .filter(s => {
+                      if (formData.filterStatusSearch && formData.filterStatusSearch !== 'all' && s.status !== formData.filterStatusSearch) return false;
+                      if (formData.searchOS && 
+                          !s.ordemServico.toLowerCase().includes(formData.searchOS.toLowerCase()) &&
+                          !(s.userCod || s.user_cod || '').toLowerCase().includes(formData.searchOS.toLowerCase())) return false;
+                      const submissionDate = new Date(s.created_at);
+                      const today = new Date();
+                      today.setHours(0, 0, 0, 0);
+                      if (formData.dateFilter === 'today') {
+                        const tomorrow = new Date(today);
+                        tomorrow.setDate(tomorrow.getDate() + 1);
+                        if (submissionDate < today || submissionDate >= tomorrow) return false;
+                      } else if (formData.dateFilter === 'week') {
+                        const weekAgo = new Date(today);
+                        weekAgo.setDate(weekAgo.getDate() - 7);
+                        if (submissionDate < weekAgo) return false;
+                      } else if (formData.dateFilter === 'month') {
+                        const monthAgo = new Date(today);
+                        monthAgo.setMonth(monthAgo.getMonth() - 1);
+                        if (submissionDate < monthAgo) return false;
+                      } else if (formData.dateFilter === 'custom' && formData.startDate && formData.endDate) {
+                        const start = new Date(formData.startDate);
+                        const end = new Date(formData.endDate);
+                        end.setHours(23, 59, 59, 999);
+                        if (submissionDate < start || submissionDate > end) return false;
+                      }
+                      return true;
+                    })
+                    .length === 0 ? (
+                      <div className="text-center py-12">
+                        <div className="text-6xl mb-4">🔍</div>
+                        <p className="text-gray-500 text-lg font-semibold">Nenhuma solicitação encontrada</p>
+                        <p className="text-gray-400 text-sm mt-2">Tente ajustar os filtros ou fazer uma nova busca</p>
+                      </div>
+                    ) : (
+                      submissions
+                        .filter(s => {
+                          if (formData.filterStatusSearch && formData.filterStatusSearch !== 'all' && s.status !== formData.filterStatusSearch) return false;
+                          if (formData.searchOS && 
+                              !s.ordemServico.toLowerCase().includes(formData.searchOS.toLowerCase()) &&
+                              !(s.userCod || s.user_cod || '').toLowerCase().includes(formData.searchOS.toLowerCase())) return false;
+                          const submissionDate = new Date(s.created_at);
+                          const today = new Date();
+                          today.setHours(0, 0, 0, 0);
+                          if (formData.dateFilter === 'today') {
+                            const tomorrow = new Date(today);
+                            tomorrow.setDate(tomorrow.getDate() + 1);
+                            if (submissionDate < today || submissionDate >= tomorrow) return false;
+                          } else if (formData.dateFilter === 'week') {
+                            const weekAgo = new Date(today);
+                            weekAgo.setDate(weekAgo.getDate() - 7);
+                            if (submissionDate < weekAgo) return false;
+                          } else if (formData.dateFilter === 'month') {
+                            const monthAgo = new Date(today);
+                            monthAgo.setMonth(monthAgo.getMonth() - 1);
+                            if (submissionDate < monthAgo) return false;
+                          } else if (formData.dateFilter === 'custom' && formData.startDate && formData.endDate) {
+                            const start = new Date(formData.startDate);
+                            const end = new Date(formData.endDate);
+                            end.setHours(23, 59, 59, 999);
+                            if (submissionDate < start || submissionDate > end) return false;
+                          }
+                          return true;
+                        })
+                        .map(s => (
+                          <div key={s.id} className={`border rounded-lg p-4 ${
+                            s.status === 'aprovada' ? 'bg-green-50 border-green-200' :
+                            s.status === 'rejeitada' ? 'bg-red-50 border-red-200' :
+                            s.status === 'pendente' ? 'bg-yellow-50 border-yellow-200' :
+                            'bg-gray-50'
+                          }`}>
+                            <div className="flex justify-between items-start mb-2">
+                              <div>
+                                <p className="font-mono text-lg font-bold">OS: {s.ordemServico}</p>
+                                <p className="text-sm text-gray-700">{s.fullName} ({s.userCod || s.user_cod})</p>
+                              </div>
+                              <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                                s.status === 'aprovada' ? 'bg-green-600 text-white' :
+                                s.status === 'rejeitada' ? 'bg-red-600 text-white' :
+                                'bg-yellow-600 text-white'
+                              }`}>
+                                {s.status?.toUpperCase()}
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-600 mb-1">Motivo: {s.motivo}</p>
+                            {s.coordenadas && (
+                              <div className="mt-2 bg-green-50 border border-green-200 rounded p-2">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex-1">
+                                    <p className="text-xs text-green-700 font-semibold">📍 Coordenadas</p>
+                                    <p className="text-sm font-mono text-green-900">{s.coordenadas}</p>
+                                  </div>
+                                  <button
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(s.coordenadas);
+                                      showToast('📋 Coordenadas copiadas!', 'success');
+                                    }}
+                                    className="ml-2 px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
+                                  >
+                                    📋
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                            {s.imagemComprovante && (
+                              <div className="mt-2">
+                                <img 
+                                  src={s.imagemComprovante} 
+                                  alt="Comprovante" 
+                                  className="max-h-32 rounded border cursor-pointer hover:opacity-80 transition"
+                                  onClick={() => setImageModal(s.imagemComprovante)}
+                                />
+                                <p className="text-xs text-gray-500 mt-1">📷 Clique para expandir</p>
+                              </div>
+                            )}
+                            {s.observacao && (
+                              <div className="mt-2 bg-white p-2 rounded border">
+                                <p className="text-xs text-gray-600">Observação:</p>
+                                <p className="text-sm">{s.observacao}</p>
+                              </div>
+                            )}
+                            <p className="text-xs text-gray-500 mt-2">{s.timestamp}</p>
+                          </div>
+                        ))
+                    )}
+                </div>
+              </div>
+            )}
+
+            {/* ABA GERENCIAR USUÁRIOS */}
+            {formData.adminTab === 'users' && (
+              <div className="bg-white rounded-xl shadow p-6">
+                <h2 className="text-lg font-semibold mb-4">👥 Gerenciar Usuários</h2>
+                <div className="space-y-3">
+                  {users.map(u => (
+                    <div key={u.codProfissional} className="border rounded-lg p-4 flex items-center justify-between hover:bg-gray-50 transition">
+                      <div className="flex-1">
+                        <p className="font-semibold text-gray-800">{u.fullName}</p>
+                        <p className="text-sm text-gray-600">COD: {u.codProfissional}</p>
+                        <p className="text-xs text-gray-500">Cadastrado em: {u.createdAt}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <input
+                          type="password"
+                          placeholder="Nova senha"
+                          value={formData[`newpass_${u.codProfissional}`] || ''}
+                          onChange={e => setFormData({...formData, [`newpass_${u.codProfissional}`]: e.target.value})}
+                          className="px-3 py-2 border rounded text-sm w-32"
+                        />
+                        <button
+                          onClick={async () => {
+                            const newPassword = formData[`newpass_${u.codProfissional}`];
+                            if (!newPassword) {
+                              showToast('Digite uma nova senha', 'error');
+                              return;
+                            }
+                            if (newPassword.length < 4) {
+                              showToast('Senha muito curta (mín. 4 caracteres)', 'error');
+                              return;
+                            }
+                            try {
+                              await fetch(`${API_URL}/users/reset-password`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ codProfissional: u.codProfissional, newPassword })
+                              });
+                              showToast('✅ Senha alterada com sucesso!', 'success');
+                              setFormData({...formData, [`newpass_${u.codProfissional}`]: ''});
+                            } catch (err) {
+                              showToast('Erro ao alterar senha', 'error');
+                            }
+                          }}
+                          className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 text-sm font-semibold"
+                        >
+                          🔑 Resetar
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
-          {filtered.length === 0 && <div className="text-center text-gray-500 text-xl mt-20">📭 Nenhuma solicitação</div>}
         </div>
       );
-    }
-
-    function CreateAdminPage({ showToast }) {
-      const [formData, setFormData] = useState({ username: '', password: '', confirmPassword: '' });
-      const [loading, setLoading] = useState(false);
-
-      const handleSubmit = async (e) => {
-        e.preventDefault();
-        if (formData.password !== formData.confirmPassword) { showToast('Senhas não coincidem!', 'error'); return; }
-        setLoading(true);
-        try {
-          const token = localStorage.getItem('token');
-          const response = await fetch(API_URL + '/users/register', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-            body: JSON.stringify({ codProfissional: formData.username, password: formData.password, fullName: formData.username, role: 'admin' })
-          });
-          if (response.ok) {
-            showToast('Admin criado!');
-            setFormData({ username: '', password: '', confirmPassword: '' });
-          } else {
-            showToast('Erro ao criar', 'error');
-          }
-        } catch (error) {
-          showToast('Erro de conexão', 'error');
-        } finally {
-          setLoading(false);
-        }
-      };
-
-      return (
-        <div className="max-w-2xl mx-auto">
-          <div className="bg-white rounded-2xl shadow-xl p-8">
-            <h2 className="text-3xl font-bold mb-6 flex items-center gap-3"><span className="text-4xl">👥</span>Criar Admin</h2>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div>
-                <label className="block text-gray-700 font-semibold mb-2">Usuário *</label>
-                <input type="text" value={formData.username} onChange={(e) => setFormData({...formData, username: e.target.value})} className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none" required />
-              </div>
-              <div>
-                <label className="block text-gray-700 font-semibold mb-2">Senha *</label>
-                <input type="password" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none" required />
-              </div>
-              <div>
-                <label className="block text-gray-700 font-semibold mb-2">Confirmar Senha *</label>
-                <input type="password" value={formData.confirmPassword} onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})} className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none" required />
-              </div>
-              <button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-violet-600 to-blue-600 text-white py-4 rounded-lg font-bold text-lg hover:shadow-xl disabled:opacity-50">
-                {loading ? '⏳ Criando...' : '✅ Criar Admin'}
-              </button>
-            </form>
-          </div>
-        </div>
-      );
-    }
+    };
 
     ReactDOM.render(<App />, document.getElementById('root'));
   </script>
