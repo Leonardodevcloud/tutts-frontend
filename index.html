@@ -1483,36 +1483,8 @@
                 </div>
               </div>
             )}
-                        weekAgo.setDate(weekAgo.getDate() - 7);
-                        if (submissionDate < weekAgo) return false;
-                      } else if (formData.dateFilter === 'month') {
-                        const monthAgo = new Date(today);
-                        monthAgo.setMonth(monthAgo.getMonth() - 1);
-                        if (submissionDate < monthAgo) return false;
-                      } else if (formData.dateFilter === 'custom' && formData.startDate && formData.endDate) {
-                        const start = new Date(formData.startDate);
-                        const end = new Date(formData.endDate);
-                        end.setHours(23, 59, 59, 999);
-                        if (submissionDate < start || submissionDate > end) return false;
-                      }
-                      return true;
-                    })
-                    .length === 0 ? (
-                      <div className="text-center py-12">
-                        <div className="text-6xl mb-4">🔍</div>
-                        <p className="text-gray-500 text-lg font-semibold">Nenhuma solicitação encontrada</p>
-                        <p className="text-gray-400 text-sm mt-2">Tente ajustar os filtros ou fazer uma nova busca</p>
-                      </div>
-                    ) : (
-                      submissions
-                        .filter(s => {
-                          if (formData.filterStatusSearch && formData.filterStatusSearch !== 'all' && s.status !== formData.filterStatusSearch) return false;
-                          if (formData.searchOS && 
-                              !s.ordemServico.toLowerCase().includes(formData.searchOS.toLowerCase()) &&
-                              !(s.userCod || s.user_cod || '').toLowerCase().includes(formData.searchOS.toLowerCase())) return false;
-                          const submissionDate = new Date(s.created_at);
-                          const today = new Date();
-                          today.setHours(0, 0, 0, 0);
+
+            {/* ABA GERENCIAR USUÁRIOS */}
                           if (formData.dateFilter === 'today') {
                             const tomorrow = new Date(today);
                             tomorrow.setDate(tomorrow.getDate() + 1);
