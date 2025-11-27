@@ -1191,26 +1191,6 @@
                 </div>
               </div>
             )}
-                          if (formData.dateFilter === 'today') {
-                            const tomorrow = new Date(today);
-                            tomorrow.setDate(tomorrow.getDate() + 1);
-                            if (submissionDate < today || submissionDate >= tomorrow) return false;
-                          } else if (formData.dateFilter === 'week') {
-                            const weekAgo = new Date(today);
-                            weekAgo.setDate(weekAgo.getDate() - 7);
-                            if (submissionDate < weekAgo) return false;
-                          } else if (formData.dateFilter === 'month') {
-                            const monthAgo = new Date(today);
-                            monthAgo.setMonth(monthAgo.getMonth() - 1);
-                            if (submissionDate < monthAgo) return false;
-                          } else if (formData.dateFilter === 'custom' && formData.startDate && formData.endDate) {
-                            const start = new Date(formData.startDate);
-                            const end = new Date(formData.endDate);
-                            end.setHours(23, 59, 59, 999);
-                            if (submissionDate < start || submissionDate > end) return false;
-                          }
-                          return true;
-                        })
                         .map(s => (
                           <div key={s.id} className={`border rounded-lg p-3 text-sm ${
                             s.status === 'aprovada' ? 'bg-green-50 border-green-200' :
