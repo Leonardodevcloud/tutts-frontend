@@ -752,16 +752,6 @@
                   👥 Gerenciar Usuários
                 </button>
                 <button
-                  onClick={() => setFormData({...formData, adminTab: 'create-admin'})}
-                  className={`px-6 py-3 font-semibold transition whitespace-nowrap ${
-                    formData.adminTab === 'create-admin'
-                      ? 'text-purple-900 border-b-2 border-purple-900'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  ➕ Criar Admin
-                </button>
-                <button
                   onClick={() => setFormData({...formData, adminTab: 'ranking'})}
                   className={`px-6 py-3 font-semibold transition whitespace-nowrap ${
                     formData.adminTab === 'ranking'
@@ -823,25 +813,25 @@
                       onClick={() => setFormData({...formData, pendingFilter: 'all'})}
                       className={`px-4 py-2 rounded-lg font-semibold ${(!formData.pendingFilter || formData.pendingFilter === 'all') ? 'bg-purple-600 text-white' : 'bg-gray-100 hover:bg-gray-200'}`}
                     >
-                      📋 Todos
+                      📋 Todos ({submissions.filter(s => s.status === 'pendente').length})
                     </button>
                     <button
                       onClick={() => setFormData({...formData, pendingFilter: 'retorno'})}
                       className={`px-4 py-2 rounded-lg font-semibold ${formData.pendingFilter === 'retorno' ? 'bg-blue-600 text-white' : 'bg-gray-100 hover:bg-gray-200'}`}
                     >
-                      🔄 Retorno
+                      🔄 Retorno ({submissions.filter(s => s.status === 'pendente' && s.motivo === 'Ajuste de Retorno').length})
                     </button>
                     <button
                       onClick={() => setFormData({...formData, pendingFilter: 'ponto1'})}
                       className={`px-4 py-2 rounded-lg font-semibold ${formData.pendingFilter === 'ponto1' ? 'bg-green-600 text-white' : 'bg-gray-100 hover:bg-gray-200'}`}
                     >
-                      📍 Ponto 1
+                      📍 Ponto 1 ({submissions.filter(s => s.status === 'pendente' && (s.motivo === 'Alteração Ponto 1 (Campinas)' || s.motivo === 'Alteração Ponto 1 (Goiânia)')).length})
                     </button>
                     <button
                       onClick={() => setFormData({...formData, pendingFilter: 'pedagio'})}
                       className={`px-4 py-2 rounded-lg font-semibold ${formData.pendingFilter === 'pedagio' ? 'bg-orange-600 text-white' : 'bg-gray-100 hover:bg-gray-200'}`}
                     >
-                      🛣️ Pedágio
+                      🛣️ Pedágio ({submissions.filter(s => s.status === 'pendente' && s.motivo === 'Ajuste de Pedágio (Campinas e Recife)').length})
                     </button>
                   </div>
 
@@ -868,9 +858,9 @@
                     return (
                       <div className="grid md:grid-cols-2 gap-4">
                         {filtered.map(s => (
-                          <div key={s.id} className="border rounded-lg p-4">
-                        <p className="font-mono text-xl font-bold">OS: {s.ordemServico}</p>
-                        <p className="text-sm text-gray-700">{s.fullName}</p>
+                          <div key={s.id} className="border rounded-lg p-3 text-sm">
+                        <p className="font-mono text-base font-bold">OS: {s.ordemServico}</p>
+                        <p className="text-xs text-gray-700">{s.fullName}</p>
                         <p className="text-xs text-purple-900 font-semibold">Motivo: {s.motivo}</p>
                         <p className="text-xs text-gray-500 mt-1">{s.timestamp}</p>
                         {s.coordenadas && (
@@ -1222,7 +1212,7 @@
                           return true;
                         })
                         .map(s => (
-                          <div key={s.id} className={`border rounded-lg p-4 ${
+                          <div key={s.id} className={`border rounded-lg p-3 text-sm ${
                             s.status === 'aprovada' ? 'bg-green-50 border-green-200' :
                             s.status === 'rejeitada' ? 'bg-red-50 border-red-200' :
                             s.status === 'pendente' ? 'bg-yellow-50 border-yellow-200' :
@@ -1230,8 +1220,8 @@
                           }`}>
                             <div className="flex justify-between items-start mb-2">
                               <div>
-                                <p className="font-mono text-lg font-bold">OS: {s.ordemServico}</p>
-                                <p className="text-sm text-gray-700">{s.fullName} ({s.userCod || s.user_cod})</p>
+                                <p className="font-mono text-base font-bold">OS: {s.ordemServico}</p>
+                                <p className="text-xs text-gray-700">{s.fullName} ({s.userCod || s.user_cod})</p>
                               </div>
                               <div className="flex items-center gap-2">
                                 <span className={`px-3 py-1 rounded-full text-xs font-bold ${
@@ -1297,6 +1287,15 @@
                               <div className="mt-2 bg-white p-2 rounded border">
                                 <p className="text-xs text-gray-600">Observação:</p>
                                 <p className="text-sm">{s.observacao}</p>
+                              </div>
+                            )}
+                            {(s.status === 'aprovada' || s.status === 'rejeitada') && s.validated_by_name && (
+                              <div className="mt-2 bg-blue-50 border border-blue-200 rounded p-2">
+                                <p className="text-xs text-blue-900">
+                                  <span className="font-semibold">
+                                    {s.status === 'aprovada' ? '✅ Aprovado' : '❌ Rejeitado'} por:
+                                  </span> {s.validated_by_name} ({s.validated_by})
+                                </p>
                               </div>
                             )}
                             <p className="text-xs text-gray-500 mt-2">{s.timestamp}</p>
@@ -1464,6 +1463,94 @@
             {formData.adminTab === 'users' && (
               <div className="bg-white rounded-xl shadow p-6">
                 <h2 className="text-lg font-semibold mb-4">👥 Gerenciar Usuários</h2>
+                
+                {/* FORMULÁRIO CRIAR USUÁRIO */}
+                <div className="bg-purple-50 border-2 border-purple-200 rounded-xl p-6 mb-6">
+                  <h3 className="text-lg font-semibold mb-4">➕ Criar Novo Usuário</h3>
+                  <form onSubmit={async (e) => {
+                    e.preventDefault();
+                    if (formData.newUserPassword !== formData.newUserPasswordConfirm) {
+                      showToast('As senhas não coincidem!', 'error');
+                      return;
+                    }
+                    if (formData.newUserPassword.length < 4) {
+                      showToast('Senha muito curta (mín. 4 caracteres)', 'error');
+                      return;
+                    }
+                    setLoading(true);
+                    try {
+                      await fetch(`${API_URL}/users/register`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          codProfissional: formData.newUserCod,
+                          password: formData.newUserPassword,
+                          fullName: formData.newUserName,
+                          role: formData.newUserRole || 'user'
+                        })
+                      });
+                      showToast('✅ Usuário criado!', 'success');
+                      setFormData({...formData, newUserCod: '', newUserPassword: '', newUserPasswordConfirm: '', newUserName: '', newUserRole: 'user'});
+                      loadUsers();
+                    } catch (err) {
+                      showToast('❌ Erro ao criar usuário', 'error');
+                    } finally {
+                      setLoading(false);
+                    }
+                  }} className="grid md:grid-cols-5 gap-3">
+                    <input
+                      type="text"
+                      placeholder="Nome Completo"
+                      value={formData.newUserName || ''}
+                      onChange={e => setFormData({...formData, newUserName: e.target.value})}
+                      className="px-4 py-2 border rounded-lg"
+                      required
+                    />
+                    <input
+                      type="text"
+                      placeholder="COD Profissional"
+                      value={formData.newUserCod || ''}
+                      onChange={e => setFormData({...formData, newUserCod: e.target.value})}
+                      className="px-4 py-2 border rounded-lg"
+                      required
+                    />
+                    <input
+                      type="password"
+                      placeholder="Senha"
+                      value={formData.newUserPassword || ''}
+                      onChange={e => setFormData({...formData, newUserPassword: e.target.value})}
+                      className="px-4 py-2 border rounded-lg"
+                      required
+                    />
+                    <input
+                      type="password"
+                      placeholder="Confirmar Senha"
+                      value={formData.newUserPasswordConfirm || ''}
+                      onChange={e => setFormData({...formData, newUserPasswordConfirm: e.target.value})}
+                      className="px-4 py-2 border rounded-lg"
+                      required
+                    />
+                    <div className="flex gap-2">
+                      <select
+                        value={formData.newUserRole || 'user'}
+                        onChange={e => setFormData({...formData, newUserRole: e.target.value})}
+                        className="px-4 py-2 border rounded-lg flex-1"
+                      >
+                        <option value="user">👤 Usuário</option>
+                        <option value="admin">👑 Admin</option>
+                      </select>
+                      <button
+                        type="submit"
+                        disabled={loading}
+                        className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-semibold disabled:opacity-50 whitespace-nowrap"
+                      >
+                        {loading ? '⏳' : '➕ Criar'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+
+                <h3 className="text-lg font-semibold mb-4">📋 Usuários Cadastrados</h3>
                 <div className="space-y-3">
                   {users.map(u => (
                     <div key={u.codProfissional} className="border rounded-lg p-4 flex items-center justify-between hover:bg-gray-50 transition">
@@ -1532,95 +1619,6 @@
               </div>
             )}
 
-            {/* ABA CRIAR ADMIN */}
-            {formData.adminTab === 'create-admin' && (
-              <div className="bg-white rounded-xl shadow p-6 max-w-2xl mx-auto">
-                <h2 className="text-lg font-semibold mb-4">➕ Criar Novo Admin</h2>
-                <form onSubmit={async (e) => {
-                  e.preventDefault();
-                  if (formData.newAdminPassword !== formData.newAdminPasswordConfirm) {
-                    showToast('As senhas não coincidem!', 'error');
-                    return;
-                  }
-                  if (formData.newAdminPassword.length < 4) {
-                    showToast('Senha muito curta (mín. 4 caracteres)', 'error');
-                    return;
-                  }
-                  setLoading(true);
-                  try {
-                    const res = await fetch(`${API_URL}/users/register`, {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({
-                        codProfissional: formData.newAdminCod,
-                        password: formData.newAdminPassword,
-                        fullName: formData.newAdminName,
-                        role: 'admin'
-                      })
-                    });
-                    if (!res.ok) throw new Error('Erro ao criar admin');
-                    showToast('✅ Admin criado com sucesso!', 'success');
-                    setFormData({...formData, newAdminCod: '', newAdminPassword: '', newAdminPasswordConfirm: '', newAdminName: ''});
-                    loadUsers();
-                  } catch (err) {
-                    showToast('❌ Erro ao criar admin', 'error');
-                  } finally {
-                    setLoading(false);
-                  }
-                }} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Código do Profissional *</label>
-                    <input
-                      type="text"
-                      value={formData.newAdminCod || ''}
-                      onChange={e => setFormData({...formData, newAdminCod: e.target.value})}
-                      className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Nome Completo *</label>
-                    <input
-                      type="text"
-                      value={formData.newAdminName || ''}
-                      onChange={e => setFormData({...formData, newAdminName: e.target.value})}
-                      className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Senha *</label>
-                    <input
-                      type="password"
-                      value={formData.newAdminPassword || ''}
-                      onChange={e => setFormData({...formData, newAdminPassword: e.target.value})}
-                      className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Confirmar Senha *</label>
-                    <input
-                      type="password"
-                      value={formData.newAdminPasswordConfirm || ''}
-                      onChange={e => setFormData({...formData, newAdminPasswordConfirm: e.target.value})}
-                      className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600"
-                      required
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-semibold disabled:opacity-50"
-                  >
-                    {loading ? '⏳ Criando...' : '✅ Criar Admin'}
-                  </button>
-                </form>
-              </div>
-            )}
-              </div>
-            )}
-
             {/* ABA RANKING DE RETORNO */}
             {formData.adminTab === 'ranking' && (
               <div className="bg-white rounded-xl shadow p-6">
@@ -1667,7 +1665,7 @@
                         return subDate >= monthAgo;
                       }
                       return true;
-                    }).filter(s => s.status === 'aprovada'); // APENAS APROVADAS
+                    }).filter(s => s.status === 'aprovada' && s.motivo === 'Ajuste de Retorno'); // APENAS RETORNO APROVADO
                     
                     // Agrupar por usuário
                     const userStats = {};
