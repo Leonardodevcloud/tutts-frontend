@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistema Tutts - Solicitações de Ajustes</title>
+  <title>Sistema Tutts v4.10.4</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     @keyframes slideIn {
@@ -15,43 +15,30 @@
 </head>
 <body>
   <div id="root"></div>
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   
   <script type="text/babel">
     const { useState, useEffect } = React;
-    const API_URL = 'https://tutts-backend-production.up.railway.app/api';
+    const API_URL = 'https://tutts-production.up.railway.app/api';
 
-    // Toast de notificação
-    const Toast = ({ message, type, onClose }) => (
-      <div className={`fixed top-4 right-4 z-50 px-6 py-4 rounded-lg shadow-2xl toast ${
-        type === 'success' ? 'bg-green-600' : 'bg-red-600'
-      } text-white font-semibold flex items-center gap-3`}>
-        <span className="text-2xl">{type === 'success' ? '✓' : '✗'}</span>
-        <span>{message}</span>
-      </div>
-    );
+    const Toast = ({ message, type }) => {
+      const bgColor = type === 'success' ? 'bg-green-600' : 'bg-red-600';
+      const icon = type === 'success' ? '✓' : '✗';
+      return (
+        <div className={'fixed top-4 right-4 z-50 px-6 py-4 rounded-lg shadow-2xl toast text-white font-semibold flex items-center gap-3 ' + bgColor}>
+          <span className="text-2xl">{icon}</span>
+          <span>{message}</span>
+        </div>
+      );
+    };
 
-    // Modal de Imagem Expandida
     const ImageModal = ({ imageUrl, onClose }) => (
-      <div 
-        className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4"
-        onClick={onClose}
-      >
+      <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4" onClick={onClose}>
         <div className="relative max-w-4xl max-h-screen">
-          <button 
-            onClick={onClose}
-            className="absolute -top-10 right-0 text-white text-3xl hover:text-gray-300"
-          >
-            ✕
-          </button>
-          <img 
-            src={imageUrl} 
-            alt="Comprovante expandido" 
-            className="max-w-full max-h-screen rounded-lg shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          />
+          <button onClick={onClose} className="absolute -top-10 right-0 text-white text-3xl hover:text-gray-300">✕</button>
+          <img src={imageUrl} alt="Imagem" className="max-w-full max-h-screen rounded-lg shadow-2xl" onClick={(e) => e.stopPropagation()} />
         </div>
       </div>
     );
@@ -61,18 +48,51 @@
       const [page, setPage] = useState('login');
       const [toast, setToast] = useState(null);
       const [selectedImage, setSelectedImage] = useState(null);
+      const [lastActivity, setLastActivity] = useState(Date.now());
 
       useEffect(() => {
         const token = localStorage.getItem('token');
         const user = localStorage.getItem('user');
         if (token && user) {
           setCurrentUser(JSON.parse(user));
-          setPage(JSON.parse(user).role === 'admin' ? 'form' : 'list');
+          const userRole = JSON.parse(user).role;
+          setPage(userRole === 'admin' ? 'form' : 'list');
         }
       }, []);
 
-      const showToast = (message, type = 'success') => {
-        setToast({ message, type });
+      useEffect(() => {
+        if (!currentUser) return;
+        
+        const updateActivity = () => setLastActivity(Date.now());
+        
+        window.addEventListener('mousemove', updateActivity);
+        window.addEventListener('keydown', updateActivity);
+        window.addEventListener('click', updateActivity);
+        window.addEventListener('scroll', updateActivity);
+        
+        const checkInactivity = setInterval(() => {
+          const inactiveTime = Date.now() - lastActivity;
+          if (inactiveTime >= 300000) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            setCurrentUser(null);
+            setPage('login');
+            showToast('Sessão expirada por inatividade', 'error');
+          }
+        }, 30000);
+        
+        return () => {
+          window.removeEventListener('mousemove', updateActivity);
+          window.removeEventListener('keydown', updateActivity);
+          window.removeEventListener('click', updateActivity);
+          window.removeEventListener('scroll', updateActivity);
+          clearInterval(checkInactivity);
+        };
+      }, [currentUser, lastActivity]);
+
+      const showToast = (message, type) => {
+        if (!type) type = 'success';
+        setToast({ message: message, type: type });
         setTimeout(() => setToast(null), 3000);
       };
 
@@ -85,74 +105,45 @@
       };
 
       return (
-        <>
-          {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+        <div>
+          {toast && <Toast message={toast.message} type={toast.type} />}
           {selectedImage && <ImageModal imageUrl={selectedImage} onClose={() => setSelectedImage(null)} />}
-          
           {!currentUser ? (
             <LoginPage onLogin={(user) => {
               setCurrentUser(user);
-              setPage(user.role === 'admin' ? 'form' : 'list');
-              showToast(\`Bem-vindo, \${user.username}!\`);
+              const userRole = user.role;
+              setPage(userRole === 'admin' ? 'form' : 'list');
+              showToast('Bem-vindo, ' + user.username + '!');
             }} showToast={showToast} />
           ) : (
             <div className="min-h-screen bg-gradient-to-br from-violet-50 to-blue-50">
               <nav className="bg-white shadow-lg border-b-4 border-violet-600">
                 <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-                  <h1 className="text-3xl font-bold bg-gradient-to-r from-violet-600 to-blue-600 bg-clip-text text-transparent">
-                    🎯 Sistema Tutts
-                  </h1>
+                  <h1 className="text-3xl font-bold bg-gradient-to-r from-violet-600 to-blue-600 bg-clip-text text-transparent">🎯 Sistema Tutts</h1>
                   <div className="flex items-center gap-4">
                     <span className="text-gray-700 font-medium">👤 {currentUser.username}</span>
-                    <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                      currentUser.role === 'admin' ? 'bg-violet-100 text-violet-700' : 'bg-blue-100 text-blue-700'
-                    }`}>
+                    <span className={'px-3 py-1 rounded-full text-sm font-semibold ' + (currentUser.role === 'admin' ? 'bg-violet-100 text-violet-700' : 'bg-blue-100 text-blue-700')}>
                       {currentUser.role === 'admin' ? '🔑 Admin' : '👁️ Visualizador'}
                     </span>
                     {currentUser.role === 'admin' && (
                       <div className="flex gap-2">
-                        <button
-                          onClick={() => setPage('form')}
-                          className={\`px-4 py-2 rounded-lg font-semibold transition-all \${
-                            page === 'form'
-                              ? 'bg-violet-600 text-white shadow-lg'
-                              : 'bg-white text-violet-600 hover:bg-violet-50'
-                          }\`}
-                        >
+                        <button onClick={() => setPage('form')} className={'px-4 py-2 rounded-lg font-semibold transition-all ' + (page === 'form' ? 'bg-violet-600 text-white shadow-lg' : 'bg-white text-violet-600 hover:bg-violet-50')}>
                           📝 Nova Solicitação
                         </button>
-                        <button
-                          onClick={() => setPage('list')}
-                          className={\`px-4 py-2 rounded-lg font-semibold transition-all \${
-                            page === 'list'
-                              ? 'bg-violet-600 text-white shadow-lg'
-                              : 'bg-white text-violet-600 hover:bg-violet-50'
-                          }\`}
-                        >
+                        <button onClick={() => setPage('list')} className={'px-4 py-2 rounded-lg font-semibold transition-all ' + (page === 'list' ? 'bg-violet-600 text-white shadow-lg' : 'bg-white text-violet-600 hover:bg-violet-50')}>
                           📋 Ver Solicitações
                         </button>
-                        <button
-                          onClick={() => setPage('create-admin')}
-                          className={\`px-4 py-2 rounded-lg font-semibold transition-all \${
-                            page === 'create-admin'
-                              ? 'bg-violet-600 text-white shadow-lg'
-                              : 'bg-white text-violet-600 hover:bg-violet-50'
-                          }\`}
-                        >
+                        <button onClick={() => setPage('create-admin')} className={'px-4 py-2 rounded-lg font-semibold transition-all ' + (page === 'create-admin' ? 'bg-violet-600 text-white shadow-lg' : 'bg-white text-violet-600 hover:bg-violet-50')}>
                           👥 Criar Admin
                         </button>
                       </div>
                     )}
-                    <button
-                      onClick={handleLogout}
-                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all font-semibold shadow-lg hover:shadow-xl"
-                    >
+                    <button onClick={handleLogout} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all font-semibold shadow-lg hover:shadow-xl">
                       🚪 Sair
                     </button>
                   </div>
                 </div>
               </nav>
-
               <div className="max-w-7xl mx-auto px-4 py-8">
                 {page === 'form' && <FormPage showToast={showToast} />}
                 {page === 'list' && <ListPage currentUser={currentUser} showToast={showToast} onImageClick={setSelectedImage} />}
@@ -160,29 +151,25 @@
               </div>
             </div>
           )}
-        </>
+        </div>
       );
     }
 
-    // Página de Login
     function LoginPage({ onLogin, showToast }) {
       const [username, setUsername] = useState('');
       const [password, setPassword] = useState('');
       const [loading, setLoading] = useState(false);
-
+      
       const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
-
         try {
-          const response = await fetch(\`\${API_URL}/login\`, {
+          const response = await fetch(API_URL + '/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password })
+            body: JSON.stringify({ username: username, password: password })
           });
-
           const data = await response.json();
-
           if (response.ok) {
             localStorage.setItem('token', data.token);
             localStorage.setItem('user', JSON.stringify(data.user));
@@ -196,7 +183,7 @@
           setLoading(false);
         }
       };
-
+      
       return (
         <div className="min-h-screen bg-gradient-to-br from-violet-600 to-blue-600 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
@@ -206,33 +193,30 @@
               </h1>
               <p className="text-gray-600">Solicitações de Ajustes</p>
             </div>
-
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label className="block text-gray-700 font-semibold mb-2">Usuário</label>
-                <input
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none transition-all"
-                  required
+                <input 
+                  type="text" 
+                  value={username} 
+                  onChange={(e) => setUsername(e.target.value)} 
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none transition-all" 
+                  required 
                 />
               </div>
-
               <div>
                 <label className="block text-gray-700 font-semibold mb-2">Senha</label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none transition-all"
-                  required
+                <input 
+                  type="password" 
+                  value={password} 
+                  onChange={(e) => setPassword(e.target.value)} 
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none transition-all" 
+                  required 
                 />
               </div>
-
-              <button
-                type="submit"
-                disabled={loading}
+              <button 
+                type="submit" 
+                disabled={loading} 
                 className="w-full bg-gradient-to-r from-violet-600 to-blue-600 text-white py-3 rounded-lg font-bold hover:shadow-xl transition-all disabled:opacity-50"
               >
                 {loading ? '⏳ Entrando...' : '🔐 Entrar'}
@@ -243,7 +227,6 @@
       );
     }
 
-    // Página de Formulário
     function FormPage({ showToast }) {
       const [formData, setFormData] = useState({
         nomeTecnico: '',
@@ -255,7 +238,7 @@
       });
       const [loading, setLoading] = useState(false);
       const [showValidation, setShowValidation] = useState(false);
-
+      
       const motivos = [
         'Instalação',
         'Manutenção Preventiva',
@@ -264,8 +247,9 @@
         'Treinamento',
         'Outros'
       ];
-
-      const compressImage = (file, maxSizeMB = 0.5) => {
+      
+      const compressImage = (file, maxSizeMB) => {
+        if (!maxSizeMB) maxSizeMB = 0.5;
         return new Promise((resolve) => {
           const reader = new FileReader();
           reader.onload = (e) => {
@@ -275,7 +259,7 @@
               let width = img.width;
               let height = img.height;
               const maxDimension = 1200;
-
+              
               if (width > height && width > maxDimension) {
                 height = (height * maxDimension) / width;
                 width = maxDimension;
@@ -283,20 +267,20 @@
                 width = (width * maxDimension) / height;
                 height = maxDimension;
               }
-
+              
               canvas.width = width;
               canvas.height = height;
               const ctx = canvas.getContext('2d');
               ctx.drawImage(img, 0, 0, width, height);
-
+              
               let quality = 0.7;
               let compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
-
+              
               while (compressedDataUrl.length > maxSizeMB * 1024 * 1024 * 1.37 && quality > 0.1) {
                 quality -= 0.1;
                 compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
               }
-
+              
               resolve(compressedDataUrl);
             };
             img.src = e.target.result;
@@ -304,7 +288,7 @@
           reader.readAsDataURL(file);
         });
       };
-
+      
       const handleImageChange = async (e) => {
         const files = Array.from(e.target.files);
         if (files.length > 2) {
@@ -312,11 +296,10 @@
           e.target.value = '';
           return;
         }
-
         const compressedImages = await Promise.all(files.map(file => compressImage(file)));
         setFormData({ ...formData, imagens: compressedImages });
       };
-
+      
       const handleComprovanteChange = async (e) => {
         const file = e.target.files[0];
         if (file) {
@@ -324,32 +307,30 @@
           setFormData({ ...formData, imagemComprovante: compressed });
         }
       };
-
+      
       const removeImage = (index) => {
-        const newImages = formData.imagens.filter((_, i) => i !== index);
+        const newImages = formData.imagens.filter((img, i) => i !== index);
         setFormData({ ...formData, imagens: newImages });
       };
-
+      
       const handleSubmit = async (e) => {
         e.preventDefault();
         setShowValidation(true);
-
-        // ✅ VALIDAÇÃO: Foto obrigatória APENAS para "Ajuste de Pedágio"
+        
         const isPedagio = formData.motivoVisita === 'Ajuste de Pedágio (Campinas e Recife)';
         if (isPedagio && formData.imagens.length === 0) {
-          showToast('⚠️ Foto obrigatória para Ajuste de Pedágio!', 'error');
+          showToast('Foto obrigatória para Ajuste de Pedágio!', 'error');
           return;
         }
-
+        
         setLoading(true);
-
         try {
           const token = localStorage.getItem('token');
-          const response = await fetch(\`\${API_URL}/submissions\`, {
+          const response = await fetch(API_URL + '/submissions', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': \`Bearer \${token}\`
+              'Authorization': 'Bearer ' + token
             },
             body: JSON.stringify({
               nomeTecnico: formData.nomeTecnico,
@@ -360,9 +341,9 @@
               imagemComprovante: formData.imagemComprovante
             })
           });
-
+          
           if (response.ok) {
-            showToast('✅ Solicitação enviada com sucesso!');
+            showToast('Solicitação enviada com sucesso!');
             setFormData({
               nomeTecnico: '',
               nomeCliente: '',
@@ -382,9 +363,9 @@
           setLoading(false);
         }
       };
-
+      
       const isPedagio = formData.motivoVisita === 'Ajuste de Pedágio (Campinas e Recife)';
-
+      
       return (
         <div className="max-w-4xl mx-auto">
           <div className="bg-white rounded-2xl shadow-xl p-8">
@@ -392,70 +373,63 @@
               <span className="text-4xl">📝</span>
               Nova Solicitação de Ajuste
             </h2>
-
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-gray-700 font-semibold mb-2">Nome do Técnico *</label>
-                  <input
-                    type="text"
-                    value={formData.nomeTecnico}
-                    onChange={(e) => setFormData({ ...formData, nomeTecnico: e.target.value })}
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none transition-all"
-                    required
+                  <input 
+                    type="text" 
+                    value={formData.nomeTecnico} 
+                    onChange={(e) => setFormData({ ...formData, nomeTecnico: e.target.value })} 
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none transition-all" 
+                    required 
                   />
                 </div>
-
                 <div>
                   <label className="block text-gray-700 font-semibold mb-2">Nome do Cliente *</label>
-                  <input
-                    type="text"
-                    value={formData.nomeCliente}
-                    onChange={(e) => setFormData({ ...formData, nomeCliente: e.target.value })}
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none transition-all"
-                    required
+                  <input 
+                    type="text" 
+                    value={formData.nomeCliente} 
+                    onChange={(e) => setFormData({ ...formData, nomeCliente: e.target.value })} 
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none transition-all" 
+                    required 
                   />
                 </div>
               </div>
-
               <div>
                 <label className="block text-gray-700 font-semibold mb-2">Motivo da Visita *</label>
-                <select
-                  value={formData.motivoVisita}
-                  onChange={(e) => setFormData({ ...formData, motivoVisita: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none transition-all"
+                <select 
+                  value={formData.motivoVisita} 
+                  onChange={(e) => setFormData({ ...formData, motivoVisita: e.target.value })} 
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none transition-all" 
                   required
                 >
                   <option value="">Selecione um motivo</option>
-                  {motivos.map(motivo => (
-                    <option key={motivo} value={motivo}>{motivo}</option>
-                  ))}
+                  {motivos.map(motivo => <option key={motivo} value={motivo}>{motivo}</option>)}
                 </select>
               </div>
-
               <div>
                 <label className="block text-gray-700 font-semibold mb-2">Descrição *</label>
-                <textarea
-                  value={formData.descricao}
-                  onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
-                  rows="4"
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none transition-all"
-                  required
+                <textarea 
+                  value={formData.descricao} 
+                  onChange={(e) => setFormData({ ...formData, descricao: e.target.value })} 
+                  rows="4" 
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none transition-all" 
+                  required 
                 />
               </div>
-
               <div>
                 <label className="block text-gray-700 font-semibold mb-2 flex items-center gap-2">
                   📸 Fotos da OS (máx. 2) 
                   {isPedagio && <span className="text-red-600">*</span>}
                   {isPedagio && <span className="text-red-600 text-sm font-normal">(Obrigatório para Pedágio)</span>}
                 </label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handleImageChange}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none transition-all"
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  multiple 
+                  onChange={handleImageChange} 
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none transition-all" 
                 />
                 {showValidation && isPedagio && formData.imagens.length === 0 && (
                   <p className="text-red-600 text-sm mt-2">⚠️ Foto obrigatória para Ajuste de Pedágio!</p>
@@ -464,10 +438,10 @@
                   <div className="flex gap-4 mt-4">
                     {formData.imagens.map((img, index) => (
                       <div key={index} className="relative">
-                        <img src={img} alt={\`Preview \${index + 1}\`} className="w-32 h-32 object-cover rounded-lg border-2 border-gray-300" />
-                        <button
-                          type="button"
-                          onClick={() => removeImage(index)}
+                        <img src={img} alt={'Preview ' + (index + 1)} className="w-32 h-32 object-cover rounded-lg border-2 border-gray-300" />
+                        <button 
+                          type="button" 
+                          onClick={() => removeImage(index)} 
                           className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-700 transition-all"
                         >
                           ✕
@@ -477,21 +451,20 @@
                   </div>
                 )}
               </div>
-
               <div>
                 <label className="block text-gray-700 font-semibold mb-2">📄 Comprovante de Deslocamento (opcional)</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleComprovanteChange}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none transition-all"
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={handleComprovanteChange} 
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none transition-all" 
                 />
                 {formData.imagemComprovante && (
                   <div className="mt-4 relative inline-block">
                     <img src={formData.imagemComprovante} alt="Preview Comprovante" className="w-32 h-32 object-cover rounded-lg border-2 border-gray-300" />
-                    <button
-                      type="button"
-                      onClick={() => setFormData({ ...formData, imagemComprovante: null })}
+                    <button 
+                      type="button" 
+                      onClick={() => setFormData({ ...formData, imagemComprovante: null })} 
                       className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-700 transition-all"
                     >
                       ✕
@@ -499,10 +472,9 @@
                   </div>
                 )}
               </div>
-
-              <button
-                type="submit"
-                disabled={loading}
+              <button 
+                type="submit" 
+                disabled={loading} 
                 className="w-full bg-gradient-to-r from-violet-600 to-blue-600 text-white py-4 rounded-lg font-bold text-lg hover:shadow-xl transition-all disabled:opacity-50"
               >
                 {loading ? '⏳ Enviando...' : '✅ Enviar Solicitação'}
@@ -513,12 +485,11 @@
       );
     }
 
-    // Página de Listagem (simplificada - SEM lazy loading)
     function ListPage({ currentUser, showToast, onImageClick }) {
       const [submissions, setSubmissions] = useState([]);
       const [loading, setLoading] = useState(true);
       const [selectedMotivo, setSelectedMotivo] = useState('');
-
+      
       const motivos = [
         'Instalação',
         'Manutenção Preventiva',
@@ -527,18 +498,22 @@
         'Treinamento',
         'Outros'
       ];
-
+      
       useEffect(() => {
         fetchSubmissions();
+        const intervalId = setInterval(() => {
+          console.log('Auto-refresh lista');
+          fetchSubmissions();
+        }, 300000);
+        return () => clearInterval(intervalId);
       }, []);
-
+      
       const fetchSubmissions = async () => {
         try {
           const token = localStorage.getItem('token');
-          const response = await fetch(\`\${API_URL}/submissions\`, {
-            headers: { 'Authorization': \`Bearer \${token}\` }
+          const response = await fetch(API_URL + '/submissions', {
+            headers: { 'Authorization': 'Bearer ' + token }
           });
-
           if (response.ok) {
             const data = await response.json();
             setSubmissions(data);
@@ -549,17 +524,15 @@
           setLoading(false);
         }
       };
-
+      
       const handleDelete = async (id) => {
         if (!window.confirm('Tem certeza que deseja excluir esta solicitação?')) return;
-
         try {
           const token = localStorage.getItem('token');
-          const response = await fetch(\`\${API_URL}/submissions/\${id}\`, {
+          const response = await fetch(API_URL + '/submissions/' + id, {
             method: 'DELETE',
-            headers: { 'Authorization': \`Bearer \${token}\` }
+            headers: { 'Authorization': 'Bearer ' + token }
           });
-
           if (response.ok) {
             showToast('Solicitação excluída com sucesso!');
             fetchSubmissions();
@@ -570,39 +543,34 @@
           showToast('Erro ao conectar ao servidor', 'error');
         }
       };
-
-      const filteredSubmissions = selectedMotivo
-        ? submissions.filter(s => s.motivo === selectedMotivo)
-        : submissions;
-
+      
+      const filteredSubmissions = selectedMotivo ? submissions.filter(s => s.motivo === selectedMotivo) : submissions;
+      
       if (loading) {
         return <div className="text-center text-2xl mt-20">⏳ Carregando...</div>;
       }
-
+      
       return (
         <div>
           <div className="mb-6 flex gap-4 items-center">
             <label className="text-gray-700 font-semibold">Filtrar por Motivo:</label>
-            <select
-              value={selectedMotivo}
-              onChange={(e) => setSelectedMotivo(e.target.value)}
+            <select 
+              value={selectedMotivo} 
+              onChange={(e) => setSelectedMotivo(e.target.value)} 
               className="px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none"
             >
               <option value="">Todos os motivos</option>
-              {motivos.map(motivo => (
-                <option key={motivo} value={motivo}>{motivo}</option>
-              ))}
+              {motivos.map(motivo => <option key={motivo} value={motivo}>{motivo}</option>)}
             </select>
             {selectedMotivo && (
-              <button
-                onClick={() => setSelectedMotivo('')}
+              <button 
+                onClick={() => setSelectedMotivo('')} 
                 className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
               >
                 ✕ Limpar
               </button>
             )}
           </div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {filteredSubmissions.map(submission => {
               const imagensArray = submission.imagens 
@@ -610,7 +578,6 @@
                     ? submission.imagens.split(',').filter(img => img.trim()) 
                     : submission.imagens)
                 : [];
-
               return (
                 <div key={submission.id} className="bg-white rounded-xl shadow-lg p-6 hover:shadow-2xl transition-all">
                   <div className="flex justify-between items-start mb-4">
@@ -619,49 +586,44 @@
                       <p className="text-gray-600">👤 {submission.nome_tecnico}</p>
                     </div>
                     {currentUser.role === 'admin' && (
-                      <button
-                        onClick={() => handleDelete(submission.id)}
-                        className="text-red-600 hover:text-red-800 font-bold text-xl"
+                      <button 
+                        onClick={() => handleDelete(submission.id)} 
+                        className="text-red-600 hover:text-red-800 font-bold text-xl" 
                         title="Excluir"
                       >
                         🗑️
                       </button>
                     )}
                   </div>
-
                   <div className="space-y-2 text-sm">
                     <p><span className="font-semibold">Motivo:</span> {submission.motivo}</p>
                     <p><span className="font-semibold">Descrição:</span> {submission.descricao}</p>
-                    <p className="text-gray-500 text-xs">
-                      {new Date(submission.created_at).toLocaleString('pt-BR')}
-                    </p>
+                    <p className="text-gray-500 text-xs">{new Date(submission.created_at).toLocaleString('pt-BR')}</p>
                   </div>
-
                   {imagensArray.length > 0 && (
                     <div className="mt-4">
                       <p className="font-semibold mb-2">📸 Fotos da OS:</p>
                       <div className="flex gap-2">
                         {imagensArray.map((img, index) => (
-                          <img
-                            key={index}
-                            src={img.trim()}
-                            alt={\`Foto \${index + 1}\`}
-                            className="w-20 h-20 object-cover rounded-lg border-2 border-gray-300 cursor-pointer hover:scale-110 transition-all"
-                            onClick={() => onImageClick(img.trim())}
+                          <img 
+                            key={index} 
+                            src={img.trim()} 
+                            alt={'Foto ' + (index + 1)} 
+                            className="w-20 h-20 object-cover rounded-lg border-2 border-gray-300 cursor-pointer hover:scale-110 transition-all" 
+                            onClick={() => onImageClick(img.trim())} 
                           />
                         ))}
                       </div>
                     </div>
                   )}
-
                   {submission.imagem_comprovante && (
                     <div className="mt-4">
                       <p className="font-semibold mb-2">📄 Comprovante:</p>
-                      <img
-                        src={submission.imagem_comprovante}
-                        alt="Comprovante"
-                        className="w-20 h-20 object-cover rounded-lg border-2 border-gray-300 cursor-pointer hover:scale-110 transition-all"
-                        onClick={() => onImageClick(submission.imagem_comprovante)}
+                      <img 
+                        src={submission.imagem_comprovante} 
+                        alt="Comprovante" 
+                        className="w-20 h-20 object-cover rounded-lg border-2 border-gray-300 cursor-pointer hover:scale-110 transition-all" 
+                        onClick={() => onImageClick(submission.imagem_comprovante)} 
                       />
                     </div>
                   )}
@@ -669,17 +631,13 @@
               );
             })}
           </div>
-
           {filteredSubmissions.length === 0 && (
-            <div className="text-center text-gray-500 text-xl mt-20">
-              📭 Nenhuma solicitação encontrada
-            </div>
+            <div className="text-center text-gray-500 text-xl mt-20">📭 Nenhuma solicitação encontrada</div>
           )}
         </div>
       );
     }
 
-    // Página de Criar Admin
     function CreateAdminPage({ showToast }) {
       const [formData, setFormData] = useState({
         username: '',
@@ -687,24 +645,21 @@
         confirmPassword: ''
       });
       const [loading, setLoading] = useState(false);
-
+      
       const handleSubmit = async (e) => {
         e.preventDefault();
-
         if (formData.password !== formData.confirmPassword) {
           showToast('As senhas não coincidem!', 'error');
           return;
         }
-
         setLoading(true);
-
         try {
           const token = localStorage.getItem('token');
-          const response = await fetch(\`\${API_URL}/users\`, {
+          const response = await fetch(API_URL + '/users', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': \`Bearer \${token}\`
+              'Authorization': 'Bearer ' + token
             },
             body: JSON.stringify({
               username: formData.username,
@@ -712,9 +667,8 @@
               role: 'admin'
             })
           });
-
           if (response.ok) {
-            showToast('✅ Admin criado com sucesso!');
+            showToast('Admin criado com sucesso!');
             setFormData({ username: '', password: '', confirmPassword: '' });
           } else {
             const data = await response.json();
@@ -726,7 +680,7 @@
           setLoading(false);
         }
       };
-
+      
       return (
         <div className="max-w-2xl mx-auto">
           <div className="bg-white rounded-2xl shadow-xl p-8">
@@ -734,44 +688,40 @@
               <span className="text-4xl">👥</span>
               Criar Novo Admin
             </h2>
-
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label className="block text-gray-700 font-semibold mb-2">Nome de Usuário *</label>
-                <input
-                  type="text"
-                  value={formData.username}
-                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none transition-all"
-                  required
+                <input 
+                  type="text" 
+                  value={formData.username} 
+                  onChange={(e) => setFormData({ ...formData, username: e.target.value })} 
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none transition-all" 
+                  required 
                 />
               </div>
-
               <div>
                 <label className="block text-gray-700 font-semibold mb-2">Senha *</label>
-                <input
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none transition-all"
-                  required
+                <input 
+                  type="password" 
+                  value={formData.password} 
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })} 
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none transition-all" 
+                  required 
                 />
               </div>
-
               <div>
                 <label className="block text-gray-700 font-semibold mb-2">Confirmar Senha *</label>
-                <input
-                  type="password"
-                  value={formData.confirmPassword}
-                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none transition-all"
-                  required
+                <input 
+                  type="password" 
+                  value={formData.confirmPassword} 
+                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })} 
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-violet-600 focus:outline-none transition-all" 
+                  required 
                 />
               </div>
-
-              <button
-                type="submit"
-                disabled={loading}
+              <button 
+                type="submit" 
+                disabled={loading} 
                 className="w-full bg-gradient-to-r from-violet-600 to-blue-600 text-white py-4 rounded-lg font-bold text-lg hover:shadow-xl transition-all disabled:opacity-50"
               >
                 {loading ? '⏳ Criando...' : '✅ Criar Admin'}
