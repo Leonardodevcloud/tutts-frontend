@@ -222,21 +222,56 @@
       };
 
       // Carregar imagens de uma OS específica
+      // Função para normalizar imagens base64
+      const normalizeBase64Image = (img) => {
+        if (!img) return img;
+        // Se já tem o prefixo, retorna como está
+        if (img.startsWith('data:image/')) return img;
+        // Adiciona o prefixo
+        return `data:image/jpeg;base64,${img}`;
+      };
+
       const loadImagesForOS = async (id) => {
-        if (loadedImages[id]) return; // Já carregou
+        if (loadedImages[id]) {
+          console.log('⏭️ Imagens da OS', id, 'já carregadas (cache)');
+          return;
+        }
         
         try {
           console.log('📸 Carregando imagens da OS:', id);
           const res = await fetch(`${API_URL}/submissions/${id}/images`);
+          
+          if (!res.ok) {
+            throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+          }
+          
           const data = await res.json();
+          
+          console.log('📦 Resposta do backend:', {
+            temImagens: !!data.imagens,
+            tipoImagens: Array.isArray(data.imagens) ? 'array' : typeof data.imagens,
+            quantidadeImagens: Array.isArray(data.imagens) ? data.imagens.length : 'N/A',
+            temComprovante: !!data.imagemComprovante
+          });
+          
+          // Garantir que imagens seja sempre um array
+          const imagensArray = Array.isArray(data.imagens) ? data.imagens : [];
+          
+          console.log('✅ Processando', imagensArray.length, 'imagens');
+          
+          // Normalizar todas as imagens
+          const normalizedImages = imagensArray.map(normalizeBase64Image);
+          const normalizedComprovante = normalizeBase64Image(data.imagemComprovante);
           
           setLoadedImages(prev => ({
             ...prev,
             [id]: {
-              imagens: data.imagens || [],
-              imagemComprovante: data.imagemComprovante
+              imagens: normalizedImages,
+              imagemComprovante: normalizedComprovante
             }
           }));
+          
+          console.log('💾 Imagens armazenadas no estado para OS:', id);
         } catch (err) {
           console.error('❌ Erro ao carregar imagens:', err);
           showToast('Erro ao carregar imagens', 'error');
