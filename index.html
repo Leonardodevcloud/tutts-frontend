@@ -169,7 +169,7 @@
     };
 
     // Gráfico de Pizza (Motivos)
-    const PieChart = ({ submissions }) => {
+    const MotivosPieChart = ({ submissions }) => {
       const motivos = {};
       submissions.forEach(s => {
         motivos[s.motivo] = (motivos[s.motivo] || 0) + 1;
@@ -802,7 +802,7 @@
                   </div>
                 </div>
 
-                <PieChart submissions={submissions} />
+                <MotivosPieChart submissions={submissions} />
 
                 <div className="bg-white rounded-xl shadow p-6 mb-6 mt-6">
                   <h2 className="text-lg font-semibold mb-4">Aguardando Validação</h2>
