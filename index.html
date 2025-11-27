@@ -1331,22 +1331,6 @@
               </div>
             )}
 
-            {/* ABA GERENCIAR USUÁRIOS */}
-            {formData.adminTab === 'users' && (
-              <div className="bg-white rounded-xl shadow p-6">
-                <h2 className="text-lg font-semibold mb-4">👥 Gerenciar Usuários</h2>
-                <div className="space-y-3">
-                  {users.map(u => (
-                    <div key={u.codProfissional} className="border rounded-lg p-4 flex items-center justify-between hover:bg-gray-50 transition">
-                      <div className="flex-1">
-                        <p className="font-semibold text-gray-800">{u.fullName}</p>
-                        <p className="text-sm text-gray-600">COD: {u.codProfissional}</p>
-                        <p className="text-xs text-gray-500">Cadastrado em: {u.createdAt}</p>
-                      </div>
-                      <div className="flex gap-2">
-                        <input
-                          type="password"
-
             {/* ====== ABA: CRIAR ADMIN (NOVA!) ====== */}
             {formData.adminTab === 'create-admin' && (
               <div className="max-w-2xl mx-auto">
@@ -1665,6 +1649,8 @@
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
 
             {/* ABA ESTATÍSTICAS */}
             {formData.adminTab === 'stats' && (
