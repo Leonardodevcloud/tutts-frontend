@@ -363,16 +363,28 @@
 
       const handleValidate = async (id, isValid) => {
         try {
+          // Atualizar estado IMEDIATAMENTE (otimista)
+          setSubmissions(prev => prev.map(s => 
+            s.id === id ? {...s, status: isValid ? 'aprovada' : 'rejeitada'} : s
+          ));
+          
           await fetch(`${API_URL}/submissions/${id}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ status: isValid ? 'aprovada' : 'rejeitada', observacao: formData.obs || '' })
           });
           showToast(isValid ? '✅ Aprovada!' : '❌ Rejeitada!', isValid ? 'success' : 'error');
-          setFormData({});
-          loadSubmissions();
+          
+          // Preservar filtros ao limpar
+          const { pendingFilter, adminTab, ...rest } = formData;
+          setFormData({ pendingFilter, adminTab });
+          
+          // Recarregar do servidor para confirmar
+          await loadSubmissions();
         } catch (err) {
           showToast('Erro', 'error');
+          // Reverter em caso de erro
+          loadSubmissions();
         }
       };
 
