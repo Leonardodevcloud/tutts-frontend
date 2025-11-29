@@ -885,19 +885,58 @@
 
             <div className="max-w-7xl mx-auto p-6">
               {(!formData.finTab || formData.finTab === 'solicitacoes') && (
-                <div className="bg-white rounded-xl shadow overflow-hidden">
-                  <div className="p-4 border-b flex justify-between items-center">
-                    <h2 className="text-lg font-semibold">📋 Solicitações</h2>
-                    <select value={formData.filterStatus || ''} onChange={e => setFormData({...formData, filterStatus: e.target.value})} className="px-3 py-2 border rounded-lg">
-                      <option value="">Todos</option>
-                      <option value="aguardando_aprovacao">Aguardando</option>
-                      <option value="aprovado">Aprovados</option>
-                      <option value="rejeitado">Rejeitados</option>
-                    </select>
+                <>
+                  {/* Cards de estatísticas */}
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+                    <div className="bg-white rounded-xl shadow p-4">
+                      <p className="text-sm text-gray-600">Total</p>
+                      <p className="text-2xl font-bold text-purple-600">{allWithdrawals.length}</p>
+                    </div>
+                    <div className="bg-white rounded-xl shadow p-4">
+                      <p className="text-sm text-gray-600">Aguardando</p>
+                      <p className="text-2xl font-bold text-yellow-600">{allWithdrawals.filter(w => w.status === 'aguardando_aprovacao').length}</p>
+                    </div>
+                    <div className="bg-white rounded-xl shadow p-4">
+                      <p className="text-sm text-gray-600">Aprovadas</p>
+                      <p className="text-2xl font-bold text-green-600">{allWithdrawals.filter(w => w.status === 'aprovado').length}</p>
+                    </div>
+                    <div className="bg-white rounded-xl shadow p-4">
+                      <p className="text-sm text-gray-600">Aprov. Gratuidade</p>
+                      <p className="text-2xl font-bold text-emerald-600">{allWithdrawals.filter(w => w.status === 'aprovado_gratuidade').length}</p>
+                    </div>
+                    <div className="bg-white rounded-xl shadow p-4">
+                      <p className="text-sm text-gray-600">Rejeitadas</p>
+                      <p className="text-2xl font-bold text-red-600">{allWithdrawals.filter(w => w.status === 'rejeitado').length}</p>
+                    </div>
                   </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead className="bg-gray-50"><tr><th className="px-4 py-3 text-left">Data</th><th className="px-4 py-3 text-left">Nome</th><th className="px-4 py-3 text-left">CPF</th><th className="px-4 py-3 text-left">Código</th><th className="px-4 py-3 text-right">Solicitado</th><th className="px-4 py-3 text-right">Debitado</th><th className="px-4 py-3 text-left">PIX</th><th className="px-4 py-3 text-center">Status</th><th className="px-4 py-3 text-left">Alterado por</th></tr></thead>
+
+                  <div className="bg-white rounded-xl shadow overflow-hidden">
+                    {/* Botões de filtro */}
+                    <div className="p-4 border-b">
+                      <div className="flex flex-wrap gap-2">
+                        <button onClick={() => setFormData({...formData, filterStatus: ''})} className={`px-4 py-2 rounded-lg font-semibold text-sm ${!formData.filterStatus ? 'bg-purple-600 text-white' : 'bg-gray-100 hover:bg-gray-200'}`}>
+                          📋 Todas ({allWithdrawals.length})
+                        </button>
+                        <button onClick={() => setFormData({...formData, filterStatus: 'aguardando_aprovacao'})} className={`px-4 py-2 rounded-lg font-semibold text-sm ${formData.filterStatus === 'aguardando_aprovacao' ? 'bg-yellow-500 text-white' : 'bg-gray-100 hover:bg-gray-200'}`}>
+                          ⏳ Aguardando ({allWithdrawals.filter(w => w.status === 'aguardando_aprovacao').length})
+                        </button>
+                        <button onClick={() => setFormData({...formData, filterStatus: 'aprovado'})} className={`px-4 py-2 rounded-lg font-semibold text-sm ${formData.filterStatus === 'aprovado' ? 'bg-green-600 text-white' : 'bg-gray-100 hover:bg-gray-200'}`}>
+                          ✅ Aprovadas ({allWithdrawals.filter(w => w.status === 'aprovado').length})
+                        </button>
+                        <button onClick={() => setFormData({...formData, filterStatus: 'aprovado_gratuidade'})} className={`px-4 py-2 rounded-lg font-semibold text-sm ${formData.filterStatus === 'aprovado_gratuidade' ? 'bg-emerald-600 text-white' : 'bg-gray-100 hover:bg-gray-200'}`}>
+                          🎁 Aprov. Gratuidade ({allWithdrawals.filter(w => w.status === 'aprovado_gratuidade').length})
+                        </button>
+                        <button onClick={() => setFormData({...formData, filterStatus: 'rejeitado'})} className={`px-4 py-2 rounded-lg font-semibold text-sm ${formData.filterStatus === 'rejeitado' ? 'bg-red-600 text-white' : 'bg-gray-100 hover:bg-gray-200'}`}>
+                          ❌ Rejeitadas ({allWithdrawals.filter(w => w.status === 'rejeitado').length})
+                        </button>
+                        <button onClick={() => setFormData({...formData, filterStatus: 'inativo'})} className={`px-4 py-2 rounded-lg font-semibold text-sm ${formData.filterStatus === 'inativo' ? 'bg-orange-500 text-white' : 'bg-gray-100 hover:bg-gray-200'}`}>
+                          ⚠️ Inativo ({allWithdrawals.filter(w => w.status === 'inativo').length})
+                        </button>
+                      </div>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead className="bg-gray-50"><tr><th className="px-4 py-3 text-left">Data</th><th className="px-4 py-3 text-left">Nome</th><th className="px-4 py-3 text-left">CPF</th><th className="px-4 py-3 text-left">Código</th><th className="px-4 py-3 text-right">Solicitado</th><th className="px-4 py-3 text-right">Debitado</th><th className="px-4 py-3 text-left">PIX</th><th className="px-4 py-3 text-center">Status</th><th className="px-4 py-3 text-left">Alterado por</th></tr></thead>
                       <tbody>
                         {allWithdrawals.filter(w => !formData.filterStatus || w.status === formData.filterStatus).map(w => (
                           <tr key={w.id} className={`border-t hover:bg-gray-50 ${w.has_gratuity ? 'row-green' : ''} ${w.is_restricted ? 'row-red' : ''}`}>
@@ -934,6 +973,7 @@
                     </table>
                   </div>
                 </div>
+                </>
               )}
 
               {formData.finTab === 'conciliacao' && (
@@ -967,22 +1007,103 @@
               )}
 
               {formData.finTab === 'resumo' && (
-                <div className="bg-white rounded-xl shadow p-6">
-                  <div className="flex gap-4 mb-6">
-                    <input type="text" placeholder="Código do profissional" value={formData.searchCod || ''} onChange={e => setFormData({...formData, searchCod: e.target.value})} className="flex-1 px-4 py-2 border rounded-lg" />
-                    <button className="px-6 py-2 bg-green-600 text-white rounded-lg font-semibold">🔍 Buscar</button>
+                <>
+                  {/* Campo de busca */}
+                  <div className="bg-white rounded-xl shadow p-4 mb-6">
+                    <div className="flex gap-4">
+                      <input type="text" placeholder="🔍 Buscar por código do profissional..." value={formData.searchCod || ''} onChange={e => setFormData({...formData, searchCod: e.target.value})} className="flex-1 px-4 py-2 border rounded-lg" />
+                      {formData.searchCod && <button onClick={() => setFormData({...formData, searchCod: ''})} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold">✕ Limpar</button>}
+                    </div>
                   </div>
-                  {formData.searchCod && (
-                    <div className="space-y-3">
-                      {allWithdrawals.filter(w => w.user_cod.toLowerCase().includes(formData.searchCod.toLowerCase())).map(w => (
-                        <div key={w.id} className="border rounded-lg p-4 flex justify-between items-center">
-                          <div><p className="font-bold">{formatMoney(w.requested_amount)} → {formatMoney(w.final_amount)}</p><p className="text-sm text-gray-600">{w.user_name}</p><p className="text-xs text-gray-400">{new Date(w.created_at).toLocaleString('pt-BR')}</p></div>
-                          <span className={`px-3 py-1 rounded-full text-xs font-bold ${w.status?.includes('aprovado') ? 'bg-green-500 text-white' : w.status === 'rejeitado' ? 'bg-red-500 text-white' : 'bg-yellow-500 text-white'}`}>{statusLabels[w.status]}</span>
+
+                  {formData.searchCod && (() => {
+                    const filtered = allWithdrawals.filter(w => w.user_cod.toLowerCase().includes(formData.searchCod.toLowerCase()));
+                    return (
+                      <>
+                        {/* Cards de estatísticas do profissional */}
+                        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+                          <div className="bg-white rounded-xl shadow p-4">
+                            <p className="text-sm text-gray-600">Total</p>
+                            <p className="text-2xl font-bold text-purple-600">{filtered.length}</p>
+                          </div>
+                          <div className="bg-white rounded-xl shadow p-4">
+                            <p className="text-sm text-gray-600">Aguardando</p>
+                            <p className="text-2xl font-bold text-yellow-600">{filtered.filter(w => w.status === 'aguardando_aprovacao').length}</p>
+                          </div>
+                          <div className="bg-white rounded-xl shadow p-4">
+                            <p className="text-sm text-gray-600">Aprovadas</p>
+                            <p className="text-2xl font-bold text-green-600">{filtered.filter(w => w.status === 'aprovado').length}</p>
+                          </div>
+                          <div className="bg-white rounded-xl shadow p-4">
+                            <p className="text-sm text-gray-600">Aprov. Gratuidade</p>
+                            <p className="text-2xl font-bold text-emerald-600">{filtered.filter(w => w.status === 'aprovado_gratuidade').length}</p>
+                          </div>
+                          <div className="bg-white rounded-xl shadow p-4">
+                            <p className="text-sm text-gray-600">Rejeitadas</p>
+                            <p className="text-2xl font-bold text-red-600">{filtered.filter(w => w.status === 'rejeitado').length}</p>
+                          </div>
                         </div>
-                      ))}
+
+                        {/* Botões de filtro */}
+                        <div className="bg-white rounded-xl shadow overflow-hidden">
+                          <div className="p-4 border-b">
+                            <div className="flex flex-wrap gap-2">
+                              <button onClick={() => setFormData({...formData, resumoFilter: ''})} className={`px-4 py-2 rounded-lg font-semibold text-sm ${!formData.resumoFilter ? 'bg-purple-600 text-white' : 'bg-gray-100 hover:bg-gray-200'}`}>
+                                📋 Todas ({filtered.length})
+                              </button>
+                              <button onClick={() => setFormData({...formData, resumoFilter: 'aguardando_aprovacao'})} className={`px-4 py-2 rounded-lg font-semibold text-sm ${formData.resumoFilter === 'aguardando_aprovacao' ? 'bg-yellow-500 text-white' : 'bg-gray-100 hover:bg-gray-200'}`}>
+                                ⏳ Aguardando ({filtered.filter(w => w.status === 'aguardando_aprovacao').length})
+                              </button>
+                              <button onClick={() => setFormData({...formData, resumoFilter: 'aprovado'})} className={`px-4 py-2 rounded-lg font-semibold text-sm ${formData.resumoFilter === 'aprovado' ? 'bg-green-600 text-white' : 'bg-gray-100 hover:bg-gray-200'}`}>
+                                ✅ Aprovadas ({filtered.filter(w => w.status === 'aprovado').length})
+                              </button>
+                              <button onClick={() => setFormData({...formData, resumoFilter: 'aprovado_gratuidade'})} className={`px-4 py-2 rounded-lg font-semibold text-sm ${formData.resumoFilter === 'aprovado_gratuidade' ? 'bg-emerald-600 text-white' : 'bg-gray-100 hover:bg-gray-200'}`}>
+                                🎁 Aprov. Gratuidade ({filtered.filter(w => w.status === 'aprovado_gratuidade').length})
+                              </button>
+                              <button onClick={() => setFormData({...formData, resumoFilter: 'rejeitado'})} className={`px-4 py-2 rounded-lg font-semibold text-sm ${formData.resumoFilter === 'rejeitado' ? 'bg-red-600 text-white' : 'bg-gray-100 hover:bg-gray-200'}`}>
+                                ❌ Rejeitadas ({filtered.filter(w => w.status === 'rejeitado').length})
+                              </button>
+                              <button onClick={() => setFormData({...formData, resumoFilter: 'inativo'})} className={`px-4 py-2 rounded-lg font-semibold text-sm ${formData.resumoFilter === 'inativo' ? 'bg-orange-500 text-white' : 'bg-gray-100 hover:bg-gray-200'}`}>
+                                ⚠️ Inativo ({filtered.filter(w => w.status === 'inativo').length})
+                              </button>
+                            </div>
+                          </div>
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                              <thead className="bg-gray-50"><tr><th className="px-4 py-3 text-left">Data</th><th className="px-4 py-3 text-left">Nome</th><th className="px-4 py-3 text-left">CPF</th><th className="px-4 py-3 text-left">Código</th><th className="px-4 py-3 text-right">Solicitado</th><th className="px-4 py-3 text-right">Debitado</th><th className="px-4 py-3 text-left">PIX</th><th className="px-4 py-3 text-center">Status</th><th className="px-4 py-3 text-left">Alterado por</th></tr></thead>
+                              <tbody>
+                                {filtered.filter(w => !formData.resumoFilter || w.status === formData.resumoFilter).map(w => (
+                                  <tr key={w.id} className={`border-t hover:bg-gray-50 ${w.has_gratuity ? 'row-green' : ''} ${w.is_restricted ? 'row-red' : ''}`}>
+                                    <td className="px-4 py-3 whitespace-nowrap">{new Date(w.created_at).toLocaleString('pt-BR')}</td>
+                                    <td className="px-4 py-3">{w.user_name}</td>
+                                    <td className="px-4 py-3">{w.cpf}</td>
+                                    <td className="px-4 py-3 font-mono">{w.user_cod}</td>
+                                    <td className="px-4 py-3 text-right font-semibold">{formatMoney(w.requested_amount)}</td>
+                                    <td className="px-4 py-3 text-right">{formatMoney(w.final_amount)}</td>
+                                    <td className="px-4 py-3 text-xs max-w-[150px] truncate">{w.pix_key}</td>
+                                    <td className="px-4 py-3">
+                                      <span className={`px-2 py-1 rounded text-xs font-bold ${w.status === 'aprovado' ? 'bg-green-500 text-white' : w.status === 'aprovado_gratuidade' ? 'bg-emerald-500 text-white' : w.status === 'rejeitado' ? 'bg-red-500 text-white' : w.status === 'inativo' ? 'bg-orange-500 text-white' : 'bg-yellow-500 text-white'}`}>
+                                        {w.status === 'aguardando_aprovacao' ? '⏳ Aguardando' : w.status === 'aprovado' ? '✅ Aprovado' : w.status === 'aprovado_gratuidade' ? '🎁 c/ Gratuidade' : w.status === 'rejeitado' ? '❌ Rejeitado' : '⚠️ Inativo'}
+                                      </span>
+                                      {w.reject_reason && w.status === 'rejeitado' && <p className="text-xs text-red-600 mt-1">Motivo: {w.reject_reason}</p>}
+                                    </td>
+                                    <td className="px-4 py-3 text-xs text-purple-700 font-semibold">{w.admin_name || '-'}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </>
+                    );
+                  })()}
+
+                  {!formData.searchCod && (
+                    <div className="bg-white rounded-xl shadow p-8 text-center">
+                      <p className="text-gray-500 text-lg">🔍 Digite o código do profissional para ver o resumo</p>
                     </div>
                   )}
-                </div>
+                </>
               )}
 
               {formData.finTab === 'gratuidades' && (
