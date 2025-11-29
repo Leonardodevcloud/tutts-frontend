@@ -718,11 +718,8 @@
                   {!termsAccepted ? (
                     <div className="bg-white rounded-xl shadow p-6">
                       <h2 className="text-2xl font-bold text-purple-900 mb-4 text-center">📋 Termos de Uso</h2>
-                      <div className="bg-gray-50 rounded-lg p-4 mb-6 max-h-80 overflow-y-auto text-sm space-y-3">
-                        <p><strong>1. TAXA:</strong> Saque Emergencial possui taxa de <strong>4,5%</strong>.</p>
-                        <p><strong>2. GRATUIDADES:</strong> Se tiver gratuidades ativas, a taxa será isentada.</p>
-                        <p><strong>3. PRAZO:</strong> Processamento em até 1 hora.</p>
-                        <p><strong>4. DADOS:</strong> Mantenha PIX e CPF atualizados.</p>
+                      <div className="bg-gray-50 rounded-lg p-4 mb-6 max-h-80 overflow-y-auto text-sm">
+                        <p className="text-gray-700 leading-relaxed">Uma taxa administrativa de <strong>4,5%</strong> será aplicada sobre o valor solicitado e deduzida automaticamente na transferência. As solicitações são processadas de <strong>segunda a sexta, das 09:00 às 18:00</strong>, e aos <strong>sábados, das 08:00 às 12:00</strong>. Solicitações feitas fora desse horário serão atendidas no próximo dia útil. É sua responsabilidade garantir que as informações fornecidas estejam corretas, pois não nos responsabilizamos por atrasos ou transferências erradas causadas por dados incorretos. O dinheiro será transferido em até <strong>1 hora</strong> após a confirmação, dentro do horário de funcionamento.</p>
                       </div>
                       <button onClick={handleAcceptTerms} disabled={loading} className="w-full bg-purple-600 text-white py-3 rounded-lg font-bold disabled:opacity-50">
                         {loading ? 'Aguarde...' : '✓ Aceitar e Continuar'}
@@ -868,7 +865,7 @@
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
-                      <thead className="bg-gray-50"><tr><th className="px-4 py-3 text-left">Data</th><th className="px-4 py-3 text-left">Nome</th><th className="px-4 py-3 text-left">CPF</th><th className="px-4 py-3 text-left">Código</th><th className="px-4 py-3 text-right">Solicitado</th><th className="px-4 py-3 text-right">Debitado</th><th className="px-4 py-3 text-left">PIX</th><th className="px-4 py-3 text-center">Status</th></tr></thead>
+                      <thead className="bg-gray-50"><tr><th className="px-4 py-3 text-left">Data</th><th className="px-4 py-3 text-left">Nome</th><th className="px-4 py-3 text-left">CPF</th><th className="px-4 py-3 text-left">Código</th><th className="px-4 py-3 text-right">Solicitado</th><th className="px-4 py-3 text-right">Debitado</th><th className="px-4 py-3 text-left">PIX</th><th className="px-4 py-3 text-center">Status</th><th className="px-4 py-3 text-left">Alterado por</th></tr></thead>
                       <tbody>
                         {allWithdrawals.filter(w => !formData.filterStatus || w.status === formData.filterStatus).map(w => (
                           <tr key={w.id} className={`border-t hover:bg-gray-50 ${w.has_gratuity ? 'row-green' : ''} ${w.is_restricted ? 'row-red' : ''}`}>
@@ -880,6 +877,7 @@
                             <td className="px-4 py-3 text-right">{formatMoney(w.final_amount)}</td>
                             <td className="px-4 py-3 text-xs max-w-[150px] truncate">{w.pix_key}</td>
                             <td className="px-4 py-3"><select value={w.status} onChange={e => handleUpdateWithdrawalStatus(w.id, e.target.value)} className="px-2 py-1 border rounded text-xs"><option value="aguardando_aprovacao">⏳ Aguardando</option><option value="aprovado">✅ Aprovado</option><option value="aprovado_gratuidade">✅ c/ Gratuidade</option><option value="rejeitado">❌ Rejeitado</option><option value="inativo">⚠️ Inativo</option></select></td>
+                            <td className="px-4 py-3 text-xs text-purple-700 font-semibold">{w.admin_name || '-'}</td>
                           </tr>
                         ))}
                       </tbody>
