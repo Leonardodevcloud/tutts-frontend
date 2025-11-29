@@ -450,6 +450,17 @@
         } catch (err) { showToast('Erro', 'error'); }
       };
 
+      const handleUpdateDebito = async (id, checked) => {
+        try {
+          await fetch(`${API_URL}/withdrawals/${id}/debito`, {
+            method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ debito: checked, debitoAt: checked ? new Date().toISOString() : null })
+          });
+          loadAllWithdrawals();
+          showToast(checked ? '✅ Débito registrado!' : '❌ Débito removido', 'success');
+        } catch (err) { showToast('Erro', 'error'); }
+      };
+
       const handleAddGratuity = async () => {
         if (!formData.gratUserCod || !formData.gratQty || !formData.gratValue) { showToast('Preencha todos', 'error'); return; }
         setLoading(true);
@@ -966,7 +977,7 @@
                     </div>
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm">
-                        <thead className="bg-gray-50"><tr><th className="px-4 py-3 text-left">Data</th><th className="px-4 py-3 text-left">Nome</th><th className="px-4 py-3 text-left">CPF</th><th className="px-4 py-3 text-left">Código</th><th className="px-4 py-3 text-right">Solicitado</th><th className="px-4 py-3 text-right">Valor Profissional</th><th className="px-4 py-3 text-left">PIX</th><th className="px-4 py-3 text-center">Status</th><th className="px-4 py-3 text-left">Alterado por</th><th className="px-4 py-3 text-center">Ações</th></tr></thead>
+                        <thead className="bg-gray-50"><tr><th className="px-4 py-3 text-left">Data</th><th className="px-4 py-3 text-left">Nome</th><th className="px-4 py-3 text-left">CPF</th><th className="px-4 py-3 text-left">Código</th><th className="px-4 py-3 text-right">Solicitado</th><th className="px-4 py-3 text-center">Débito</th><th className="px-4 py-3 text-right">Valor Profissional</th><th className="px-4 py-3 text-left">PIX</th><th className="px-4 py-3 text-center">Status</th><th className="px-4 py-3 text-left">Alterado por</th><th className="px-4 py-3 text-center">Ações</th></tr></thead>
                       <tbody>
                         {allWithdrawals.filter(w => !formData.filterStatus || w.status === formData.filterStatus).map(w => (
                           <tr key={w.id} className={`border-t hover:bg-gray-50 ${w.has_gratuity ? 'row-green' : ''} ${w.is_restricted ? 'row-red' : ''}`}>
@@ -975,6 +986,12 @@
                             <td className="px-4 py-3">{w.cpf}</td>
                             <td className="px-4 py-3 font-mono">{w.user_cod}</td>
                             <td className="px-4 py-3 text-right font-semibold">{formatMoney(w.requested_amount)}</td>
+                            <td className="px-4 py-3 text-center">
+                              <div className="flex flex-col items-center">
+                                <input type="checkbox" checked={w.debito || false} onChange={e => handleUpdateDebito(w.id, e.target.checked)} className="w-5 h-5" />
+                                {w.debito && w.debito_at && <span className="text-xs text-gray-500 mt-1">{new Date(w.debito_at).toLocaleString('pt-BR')}</span>}
+                              </div>
+                            </td>
                             <td className="px-4 py-3 text-right">{formatMoney(w.final_amount)}</td>
                             <td className="px-4 py-3 text-xs max-w-[150px] truncate">{w.pix_key}</td>
                             <td className="px-4 py-3">
@@ -1015,12 +1032,10 @@
                     <div className="bg-white rounded-xl shadow p-4"><p className="text-sm text-gray-600">Aprovados</p><p className="text-2xl font-bold text-green-600">{dashboardData.total_aprovados || 0}</p></div>
                     <div className="bg-white rounded-xl shadow p-4"><p className="text-sm text-gray-600">Conciliados</p><p className="text-2xl font-bold text-blue-600">{dashboardData.total_conciliado || 0}</p></div>
                     <div className="bg-white rounded-xl shadow p-4"><p className="text-sm text-gray-600">Pend. Conc.</p><p className="text-2xl font-bold text-yellow-600">{dashboardData.pendente_conciliacao || 0}</p></div>
-                    <div className="bg-white rounded-xl shadow p-4"><p className="text-sm text-gray-600">Debitados</p><p className="text-2xl font-bold text-purple-600">{dashboardData.total_debitado || 0}</p></div>
-                    <div className="bg-white rounded-xl shadow p-4"><p className="text-sm text-gray-600">Pend. Déb.</p><p className="text-2xl font-bold text-orange-600">{dashboardData.pendente_debito || 0}</p></div>
                   </div>
                   <div className="bg-white rounded-xl shadow overflow-hidden">
                     <table className="w-full text-sm">
-                      <thead className="bg-gray-50"><tr><th className="px-4 py-3 text-left">Nome</th><th className="px-4 py-3 text-left">CPF</th><th className="px-4 py-3 text-left">Código</th><th className="px-4 py-3 text-right">Solicitado</th><th className="px-4 py-3 text-right">Debitado</th><th className="px-4 py-3 text-center">OMIE</th><th className="px-4 py-3 text-center">Débito</th></tr></thead>
+                      <thead className="bg-gray-50"><tr><th className="px-4 py-3 text-left">Nome</th><th className="px-4 py-3 text-left">CPF</th><th className="px-4 py-3 text-left">Código</th><th className="px-4 py-3 text-right">Solicitado</th><th className="px-4 py-3 text-right">Valor Profissional</th><th className="px-4 py-3 text-center">OMIE</th></tr></thead>
                       <tbody>
                         {allWithdrawals.filter(w => w.status?.includes('aprovado')).map(w => (
                           <tr key={w.id} className="border-t hover:bg-gray-50">
@@ -1030,7 +1045,6 @@
                             <td className="px-4 py-3 text-right">{formatMoney(w.requested_amount)}</td>
                             <td className="px-4 py-3 text-right font-semibold">{formatMoney(w.final_amount)}</td>
                             <td className="px-4 py-3 text-center"><input type="checkbox" checked={w.conciliacao_omie} onChange={e => handleUpdateConciliacao(w.id, 'conciliacaoOmie', e.target.checked)} className="w-5 h-5" /></td>
-                            <td className="px-4 py-3 text-center"><input type="checkbox" checked={w.debito} onChange={e => handleUpdateConciliacao(w.id, 'debito', e.target.checked)} className="w-5 h-5" /></td>
                           </tr>
                         ))}
                       </tbody>
