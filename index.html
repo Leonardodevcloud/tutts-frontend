@@ -306,11 +306,31 @@
             ordemServico: s.ordem_servico,
             codProfissional: s.user_cod,
             fullName: s.user_name,
-            imagemComprovante: s.imagem_comprovante,
+            temImagem: s.tem_imagem,
+            imagemComprovante: null, // Não vem mais na listagem
             timestamp: new Date(s.created_at).toLocaleString('pt-BR')
           })));
         } catch (err) {
           console.error('Erro ao carregar:', err);
+        }
+      };
+
+      // Função para carregar imagem sob demanda (lazy loading)
+      const loadImagem = async (submissionId) => {
+        try {
+          const res = await fetch(`${API_URL}/submissions/${submissionId}/imagem`);
+          const data = await res.json();
+          
+          // Atualizar a submissão com a imagem carregada
+          setSubmissions(prev => prev.map(s => 
+            s.id === submissionId ? {...s, imagemComprovante: data.imagem} : s
+          ));
+          
+          return data.imagem;
+        } catch (err) {
+          console.error('Erro ao carregar imagem:', err);
+          showToast('Erro ao carregar imagem', 'error');
+          return null;
         }
       };
 
@@ -754,21 +774,35 @@
                             </div>
                           </div>
                         )}
-                        {s.imagemComprovante && (
+                        {s.temImagem && (
                           <div className="mt-2">
-                            <p className="text-xs text-gray-600 mb-1">Comprovante(s):</p>
-                            <div className="flex gap-2 flex-wrap">
-                              {s.imagemComprovante.split('|||').map((img, idx) => (
-                                <img 
-                                  key={idx}
-                                  src={img} 
-                                  alt={`Comprovante ${idx + 1}`}
-                                  className="h-32 rounded border cursor-pointer hover:opacity-80 transition"
-                                  onClick={() => setImageModal(img)}
-                                />
-                              ))}
-                            </div>
-                            <p className="text-xs text-gray-500 mt-1">📷 Clique para expandir</p>
+                            {s.imagemComprovante ? (
+                              <>
+                                <p className="text-xs text-gray-600 mb-1">Comprovante(s):</p>
+                                <div className="flex gap-2 flex-wrap">
+                                  {s.imagemComprovante.split('|||').map((img, idx) => (
+                                    <img 
+                                      key={idx}
+                                      src={img} 
+                                      alt={`Comprovante ${idx + 1}`}
+                                      className="h-32 rounded border cursor-pointer hover:opacity-80 transition"
+                                      onClick={() => setImageModal(img)}
+                                    />
+                                  ))}
+                                </div>
+                                <p className="text-xs text-gray-500 mt-1">📷 Clique para expandir</p>
+                              </>
+                            ) : (
+                              <button
+                                onClick={async () => {
+                                  showToast('🔄 Carregando...', 'success');
+                                  await loadImagem(s.id);
+                                }}
+                                className="flex items-center gap-2 px-3 py-2 bg-blue-100 text-blue-800 rounded-lg hover:bg-blue-200 transition text-sm font-semibold"
+                              >
+                                📷 Ver foto(s)
+                              </button>
+                            )}
                           </div>
                         )}
                         {s.observacao && (
@@ -984,21 +1018,44 @@
                             </a>
                           </div>
                         )}
-                        {s.imagemComprovante && (
+                        {s.temImagem && (
                           <div className="mt-3">
-                            <p className="text-xs text-gray-600 mb-1">Comprovante(s):</p>
-                            <div className="flex gap-2 flex-wrap">
-                              {s.imagemComprovante.split('|||').map((img, idx) => (
-                                <img 
-                                  key={idx}
-                                  src={img} 
-                                  alt={`Comprovante ${idx + 1}`}
-                                  className="h-40 rounded border cursor-pointer hover:opacity-80 transition"
-                                  onClick={() => setImageModal(img)}
-                                />
-                              ))}
-                            </div>
-                            <p className="text-xs text-gray-500 mt-1">📷 Clique para expandir</p>
+                            {s.imagemComprovante ? (
+                              <>
+                                <p className="text-xs text-gray-600 mb-1">Comprovante(s):</p>
+                                <div className="flex gap-2 flex-wrap">
+                                  {s.imagemComprovante.split('|||').map((img, idx) => (
+                                    <img 
+                                      key={idx}
+                                      src={img} 
+                                      alt={`Comprovante ${idx + 1}`}
+                                      className="h-40 rounded border cursor-pointer hover:opacity-80 transition"
+                                      onClick={() => setImageModal(img)}
+                                    />
+                                  ))}
+                                </div>
+                                <button
+                                  onClick={() => {
+                                    setSubmissions(prev => prev.map(sub => 
+                                      sub.id === s.id ? {...sub, imagemComprovante: null} : sub
+                                    ));
+                                  }}
+                                  className="mt-2 text-xs text-gray-500 hover:text-gray-700"
+                                >
+                                  ▲ Ocultar imagens
+                                </button>
+                              </>
+                            ) : (
+                              <button
+                                onClick={async () => {
+                                  showToast('🔄 Carregando imagem...', 'success');
+                                  await loadImagem(s.id);
+                                }}
+                                className="flex items-center gap-2 px-4 py-2 bg-blue-100 text-blue-800 rounded-lg hover:bg-blue-200 transition text-sm font-semibold"
+                              >
+                                📷 Carregar foto(s)
+                              </button>
+                            )}
                           </div>
                         )}
                         <textarea
@@ -1371,20 +1428,43 @@
                                 </div>
                               </div>
                             )}
-                            {s.imagemComprovante && (
+                            {s.temImagem && (
                               <div className="mt-2">
-                                <div className="flex gap-2 flex-wrap">
-                                  {s.imagemComprovante.split('|||').map((img, idx) => (
-                                    <img 
-                                      key={idx}
-                                      src={img} 
-                                      alt={`Comprovante ${idx + 1}`}
-                                      className="h-28 rounded border cursor-pointer hover:opacity-80 transition"
-                                      onClick={() => setImageModal(img)}
-                                    />
-                                  ))}
-                                </div>
-                                <p className="text-xs text-gray-500 mt-1">📷 Clique para expandir</p>
+                                {s.imagemComprovante ? (
+                                  <>
+                                    <div className="flex gap-2 flex-wrap">
+                                      {s.imagemComprovante.split('|||').map((img, idx) => (
+                                        <img 
+                                          key={idx}
+                                          src={img} 
+                                          alt={`Comprovante ${idx + 1}`}
+                                          className="h-28 rounded border cursor-pointer hover:opacity-80 transition"
+                                          onClick={() => setImageModal(img)}
+                                        />
+                                      ))}
+                                    </div>
+                                    <button
+                                      onClick={() => {
+                                        setSubmissions(prev => prev.map(sub => 
+                                          sub.id === s.id ? {...sub, imagemComprovante: null} : sub
+                                        ));
+                                      }}
+                                      className="mt-1 text-xs text-gray-500 hover:text-gray-700"
+                                    >
+                                      ▲ Ocultar
+                                    </button>
+                                  </>
+                                ) : (
+                                  <button
+                                    onClick={async () => {
+                                      showToast('🔄 Carregando...', 'success');
+                                      await loadImagem(s.id);
+                                    }}
+                                    className="flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded hover:bg-blue-200 transition text-xs font-semibold"
+                                  >
+                                    📷 Carregar foto(s)
+                                  </button>
+                                )}
                               </div>
                             )}
                             {s.observacao && (
