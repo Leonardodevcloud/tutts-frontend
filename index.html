@@ -411,15 +411,24 @@
         setLoading(false);
       };
 
-      const handleUpdateWithdrawalStatus = async (id, status) => {
+      const handleUpdateWithdrawalStatus = async (id, status, rejectReason = null) => {
         try {
           await fetch(`${API_URL}/withdrawals/${id}`, {
             method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status, adminId: user.id, adminName: user.fullName || 'Admin Financeiro' })
+            body: JSON.stringify({ status, adminId: user.id, adminName: user.fullName || 'Admin Financeiro', rejectReason })
           });
           showToast('✅ Status atualizado!', 'success');
+          setFormData({...formData, [`reject_${id}`]: '', [`showReject_${id}`]: false});
           loadAllWithdrawals();
         } catch (err) { showToast('Erro', 'error'); }
+      };
+
+      const handleStatusChange = (id, newStatus) => {
+        if (newStatus === 'rejeitado') {
+          setFormData({...formData, [`showReject_${id}`]: true, [`pendingStatus_${id}`]: newStatus});
+        } else {
+          handleUpdateWithdrawalStatus(id, newStatus);
+        }
       };
 
       const handleUpdateConciliacao = async (id, field, value) => {
@@ -769,12 +778,35 @@
                                 <div className="space-y-3">
                                   {withdrawals.map(w => {
                                     const isDelayed = w.status === 'aguardando_aprovacao' && (Date.now() - new Date(w.created_at)) > 3600000;
+                                    
+                                    // Mensagens personalizadas para o usuário
+                                    const getStatusMessage = () => {
+                                      if (isDelayed) return '⚠️ ATRASADO';
+                                      if (w.status === 'aprovado' || w.status === 'aprovado_gratuidade') return '✅ Aprovado';
+                                      if (w.status === 'rejeitado') return '❌ Rejeitado';
+                                      if (w.status === 'inativo') return '⚠️ Inativo';
+                                      return '⏳ Aguardando';
+                                    };
+                                    
+                                    const getStatusDescription = () => {
+                                      if (w.status === 'aprovado' || w.status === 'aprovado_gratuidade') 
+                                        return 'Saque aprovado, em instantes será feito a transferência para o seu banco!';
+                                      if (w.status === 'inativo') 
+                                        return 'Saque temporariamente inativo por questões técnicas';
+                                      if (w.status === 'rejeitado' && w.reject_reason) 
+                                        return `Motivo: ${w.reject_reason}`;
+                                      return null;
+                                    };
+                                    
+                                    const statusDesc = getStatusDescription();
+                                    
                                     return (
-                                      <div key={w.id} className={`border rounded-lg p-4 ${isDelayed ? 'border-red-400 bg-red-50' : ''}`}>
+                                      <div key={w.id} className={`border rounded-lg p-4 ${isDelayed ? 'border-red-400 bg-red-50' : w.status?.includes('aprovado') ? 'border-green-400 bg-green-50' : w.status === 'rejeitado' ? 'border-red-300 bg-red-50' : w.status === 'inativo' ? 'border-orange-300 bg-orange-50' : ''}`}>
                                         <div className="flex justify-between">
                                           <div><p className="font-bold">{formatMoney(w.requested_amount)}</p><p className="text-sm text-gray-600">Receber: {formatMoney(w.final_amount)}</p></div>
-                                          <span className={`px-3 py-1 rounded-full text-xs font-bold h-fit ${w.status?.includes('aprovado') ? 'bg-green-500 text-white' : w.status === 'rejeitado' ? 'bg-red-500 text-white' : 'bg-yellow-500 text-white'}`}>{isDelayed ? '⚠️ ATRASADO' : statusLabels[w.status] || w.status}</span>
+                                          <span className={`px-3 py-1 rounded-full text-xs font-bold h-fit ${w.status?.includes('aprovado') ? 'bg-green-500 text-white' : w.status === 'rejeitado' ? 'bg-red-500 text-white' : w.status === 'inativo' ? 'bg-orange-500 text-white' : 'bg-yellow-500 text-white'}`}>{getStatusMessage()}</span>
                                         </div>
+                                        {statusDesc && <p className={`text-sm mt-2 font-semibold ${w.status?.includes('aprovado') ? 'text-green-700' : w.status === 'rejeitado' ? 'text-red-600' : 'text-orange-600'}`}>{statusDesc}</p>}
                                         {isDelayed && <p className="text-red-600 text-sm mt-2 font-semibold">Entre em contato com o suporte</p>}
                                         <p className="text-xs text-gray-400 mt-2">{new Date(w.created_at).toLocaleString('pt-BR')}</p>
                                       </div>
@@ -876,7 +908,25 @@
                             <td className="px-4 py-3 text-right font-semibold">{formatMoney(w.requested_amount)}</td>
                             <td className="px-4 py-3 text-right">{formatMoney(w.final_amount)}</td>
                             <td className="px-4 py-3 text-xs max-w-[150px] truncate">{w.pix_key}</td>
-                            <td className="px-4 py-3"><select value={w.status} onChange={e => handleUpdateWithdrawalStatus(w.id, e.target.value)} className="px-2 py-1 border rounded text-xs"><option value="aguardando_aprovacao">⏳ Aguardando</option><option value="aprovado">✅ Aprovado</option><option value="aprovado_gratuidade">✅ c/ Gratuidade</option><option value="rejeitado">❌ Rejeitado</option><option value="inativo">⚠️ Inativo</option></select></td>
+                            <td className="px-4 py-3">
+                              <select value={formData[`showReject_${w.id}`] ? 'rejeitado' : w.status} onChange={e => handleStatusChange(w.id, e.target.value)} className="px-2 py-1 border rounded text-xs w-full">
+                                <option value="aguardando_aprovacao">⏳ Aguardando</option>
+                                <option value="aprovado">✅ Aprovado</option>
+                                <option value="aprovado_gratuidade">✅ c/ Gratuidade</option>
+                                <option value="rejeitado">❌ Rejeitado</option>
+                                <option value="inativo">⚠️ Inativo</option>
+                              </select>
+                              {formData[`showReject_${w.id}`] && (
+                                <div className="mt-2 space-y-2">
+                                  <input type="text" placeholder="Motivo da rejeição..." value={formData[`reject_${w.id}`] || ''} onChange={e => setFormData({...formData, [`reject_${w.id}`]: e.target.value})} className="w-full px-2 py-1 border rounded text-xs" />
+                                  <div className="flex gap-1">
+                                    <button onClick={() => { if (!formData[`reject_${w.id}`]) { showToast('Informe o motivo', 'error'); return; } handleUpdateWithdrawalStatus(w.id, 'rejeitado', formData[`reject_${w.id}`]); }} className="flex-1 px-2 py-1 bg-red-600 text-white rounded text-xs">Confirmar</button>
+                                    <button onClick={() => setFormData({...formData, [`showReject_${w.id}`]: false})} className="px-2 py-1 bg-gray-400 text-white rounded text-xs">✕</button>
+                                  </div>
+                                </div>
+                              )}
+                              {w.reject_reason && w.status === 'rejeitado' && <p className="text-xs text-red-600 mt-1">Motivo: {w.reject_reason}</p>}
+                            </td>
                             <td className="px-4 py-3 text-xs text-purple-700 font-semibold">{w.admin_name || '-'}</td>
                           </tr>
                         ))}
