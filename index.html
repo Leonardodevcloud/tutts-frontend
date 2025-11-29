@@ -966,7 +966,7 @@
                     </div>
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm">
-                        <thead className="bg-gray-50"><tr><th className="px-4 py-3 text-left">Data</th><th className="px-4 py-3 text-left">Nome</th><th className="px-4 py-3 text-left">CPF</th><th className="px-4 py-3 text-left">Código</th><th className="px-4 py-3 text-right">Solicitado</th><th className="px-4 py-3 text-right">Debitado</th><th className="px-4 py-3 text-left">PIX</th><th className="px-4 py-3 text-center">Status</th><th className="px-4 py-3 text-left">Alterado por</th><th className="px-4 py-3 text-center">Ações</th></tr></thead>
+                        <thead className="bg-gray-50"><tr><th className="px-4 py-3 text-left">Data</th><th className="px-4 py-3 text-left">Nome</th><th className="px-4 py-3 text-left">CPF</th><th className="px-4 py-3 text-left">Código</th><th className="px-4 py-3 text-right">Solicitado</th><th className="px-4 py-3 text-right">Valor Profissional</th><th className="px-4 py-3 text-left">PIX</th><th className="px-4 py-3 text-center">Status</th><th className="px-4 py-3 text-left">Alterado por</th><th className="px-4 py-3 text-center">Ações</th></tr></thead>
                       <tbody>
                         {allWithdrawals.filter(w => !formData.filterStatus || w.status === formData.filterStatus).map(w => (
                           <tr key={w.id} className={`border-t hover:bg-gray-50 ${w.has_gratuity ? 'row-green' : ''} ${w.is_restricted ? 'row-red' : ''}`}>
@@ -1103,7 +1103,7 @@
                           </div>
                           <div className="overflow-x-auto">
                             <table className="w-full text-sm">
-                              <thead className="bg-gray-50"><tr><th className="px-4 py-3 text-left">Data</th><th className="px-4 py-3 text-left">Nome</th><th className="px-4 py-3 text-left">CPF</th><th className="px-4 py-3 text-left">Código</th><th className="px-4 py-3 text-right">Solicitado</th><th className="px-4 py-3 text-right">Debitado</th><th className="px-4 py-3 text-left">PIX</th><th className="px-4 py-3 text-center">Status</th><th className="px-4 py-3 text-left">Alterado por</th></tr></thead>
+                              <thead className="bg-gray-50"><tr><th className="px-4 py-3 text-left">Data</th><th className="px-4 py-3 text-left">Nome</th><th className="px-4 py-3 text-left">CPF</th><th className="px-4 py-3 text-left">Código</th><th className="px-4 py-3 text-right">Solicitado</th><th className="px-4 py-3 text-right">Valor Profissional</th><th className="px-4 py-3 text-left">PIX</th><th className="px-4 py-3 text-center">Status</th><th className="px-4 py-3 text-left">Alterado por</th></tr></thead>
                               <tbody>
                                 {filtered.filter(w => !formData.resumoFilter || w.status === formData.resumoFilter).map(w => (
                                   <tr key={w.id} className={`border-t hover:bg-gray-50 ${w.has_gratuity ? 'row-green' : ''} ${w.is_restricted ? 'row-red' : ''}`}>
