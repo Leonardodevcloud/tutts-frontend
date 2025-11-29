@@ -7,9 +7,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
     .toast { animation: slideIn 0.3s ease-out; }
-    .pulse { animation: pulse 2s infinite; }
     .row-green { background-color: #dcfce7 !important; border-left: 4px solid #22c55e !important; }
     .row-red { background-color: #fee2e2 !important; border-left: 4px solid #ef4444 !important; }
   </style>
@@ -24,7 +22,7 @@
     const { useState, useEffect } = React;
     const API_URL = 'https://tutts-backend-production.up.railway.app/api';
 
-    // ===================== COMPONENTES UTILITÁRIOS =====================
+    // ========== COMPONENTES UTILITÁRIOS ==========
     const Toast = ({ message, type }) => (
       <div className={`fixed top-4 right-4 z-50 px-6 py-4 rounded-lg shadow-2xl toast ${type === 'success' ? 'bg-green-600' : 'bg-red-600'} text-white font-semibold flex items-center gap-3`}>
         <span className="text-2xl">{type === 'success' ? '✓' : '✗'}</span>
@@ -45,12 +43,152 @@
       <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4" onClick={onClose}>
         <div className="relative max-w-4xl max-h-screen">
           <button onClick={onClose} className="absolute -top-10 right-0 text-white text-3xl hover:text-gray-300">✕</button>
-          <img src={imageUrl} alt="Expandido" className="max-w-full max-h-screen rounded-lg shadow-2xl" onClick={(e) => e.stopPropagation()} />
+          <img src={imageUrl} alt="Expandido" className="max-w-full max-h-screen rounded-lg shadow-2xl" onClick={e => e.stopPropagation()} />
         </div>
       </div>
     );
 
-    // ===================== COMPONENTE PRINCIPAL =====================
+    // ========== GRÁFICO PIE CHART ==========
+    const PieChart = ({ data, title }) => {
+      const total = data.reduce((sum, item) => sum + item.value, 0);
+      if (total === 0) return (
+        <div className="bg-white rounded-xl shadow p-6">
+          <h3 className="text-lg font-semibold mb-4">{title}</h3>
+          <p className="text-gray-500 text-center py-8">Sem dados disponíveis</p>
+        </div>
+      );
+
+      let currentAngle = 0;
+      const slices = data.map((item, index) => {
+        const percentage = (item.value / total) * 100;
+        const angle = (percentage / 100) * 360;
+        const startAngle = currentAngle;
+        currentAngle += angle;
+        const x1 = 100 + 90 * Math.cos((startAngle - 90) * Math.PI / 180);
+        const y1 = 100 + 90 * Math.sin((startAngle - 90) * Math.PI / 180);
+        const x2 = 100 + 90 * Math.cos((currentAngle - 90) * Math.PI / 180);
+        const y2 = 100 + 90 * Math.sin((currentAngle - 90) * Math.PI / 180);
+        const largeArc = angle > 180 ? 1 : 0;
+        return { ...item, path: `M 100 100 L ${x1} ${y1} A 90 90 0 ${largeArc} 1 ${x2} ${y2} Z`, percentage: percentage.toFixed(1) };
+      });
+
+      return (
+        <div className="bg-white rounded-xl shadow p-6">
+          <h3 className="text-lg font-semibold mb-4">{title}</h3>
+          <div className="flex flex-col md:flex-row items-center gap-6">
+            <svg viewBox="0 0 200 200" className="w-48 h-48">
+              {slices.map((s, i) => <path key={i} d={s.path} fill={s.color} className="hover:opacity-80 transition-opacity cursor-pointer" />)}
+            </svg>
+            <div className="flex-1 space-y-2">
+              {slices.map((s, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded" style={{backgroundColor: s.color}}></div>
+                  <span className="text-sm flex-1">{s.label}</span>
+                  <span className="font-semibold">{s.value}</span>
+                  <span className="text-gray-500 text-sm">({s.percentage}%)</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // ========== GRÁFICO DE MOTIVOS ==========
+    const MotivosPieChart = ({ submissions }) => {
+      const motivos = {};
+      submissions.forEach(s => { motivos[s.motivo] = (motivos[s.motivo] || 0) + 1; });
+      const colors = ['#7c3aed', '#2563eb', '#059669', '#dc2626', '#ea580c', '#8b5cf6'];
+      const total = submissions.length;
+      const data = Object.entries(motivos).map(([motivo, count], index) => ({
+        motivo, count, percentage: ((count / total) * 100).toFixed(1), color: colors[index % colors.length]
+      }));
+
+      let currentAngle = 0;
+      return (
+        <div className="bg-white rounded-xl shadow p-6">
+          <h2 className="text-lg font-semibold mb-4">📊 Distribuição por Motivo</h2>
+          {total === 0 ? <p className="text-gray-500">Nenhuma solicitação</p> : (
+            <div className="flex flex-col md:flex-row items-center gap-6">
+              <svg viewBox="0 0 200 200" className="w-48 h-48">
+                {data.map((item, index) => {
+                  const angle = (item.count / total) * 360;
+                  const startAngle = currentAngle;
+                  currentAngle += angle;
+                  const x1 = 100 + 90 * Math.cos((startAngle - 90) * Math.PI / 180);
+                  const y1 = 100 + 90 * Math.sin((startAngle - 90) * Math.PI / 180);
+                  const x2 = 100 + 90 * Math.cos((startAngle + angle - 90) * Math.PI / 180);
+                  const y2 = 100 + 90 * Math.sin((startAngle + angle - 90) * Math.PI / 180);
+                  const largeArc = angle > 180 ? 1 : 0;
+                  return <path key={index} d={`M 100 100 L ${x1} ${y1} A 90 90 0 ${largeArc} 1 ${x2} ${y2} Z`} fill={item.color} stroke="white" strokeWidth="2" />;
+                })}
+                <circle cx="100" cy="100" r="50" fill="white" />
+                <text x="100" y="95" textAnchor="middle" className="text-2xl font-bold" fill="#1f2937">{total}</text>
+                <text x="100" y="110" textAnchor="middle" className="text-xs" fill="#6b7280">Total</text>
+              </svg>
+              <div className="flex-1 space-y-2">
+                {data.map((item, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <div className="w-4 h-4 rounded" style={{ backgroundColor: item.color }} />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-800 truncate">{item.motivo}</p>
+                      <p className="text-xs text-gray-500">{item.count} ({item.percentage}%)</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    // ========== RANKING DE TÉCNICOS ==========
+    const TechRanking = ({ submissions }) => {
+      const stats = {};
+      submissions.forEach(s => {
+        const tech = s.fullName || 'Desconhecido';
+        if (!stats[tech]) stats[tech] = { total: 0, aprovadas: 0, rejeitadas: 0, pendentes: 0 };
+        stats[tech].total++;
+        if (s.status === 'aprovada') stats[tech].aprovadas++;
+        else if (s.status === 'rejeitada') stats[tech].rejeitadas++;
+        else stats[tech].pendentes++;
+      });
+
+      const ranking = Object.entries(stats).map(([name, data]) => ({
+        name, ...data, aprovacao: data.total > 0 ? ((data.aprovadas / data.total) * 100).toFixed(1) : 0
+      })).sort((a, b) => b.total - a.total);
+
+      return (
+        <div className="bg-white rounded-xl shadow p-6">
+          <h3 className="text-lg font-semibold mb-4">🏆 Ranking de Técnicos</h3>
+          {ranking.length === 0 ? <p className="text-gray-500 text-center py-8">Sem dados</p> : (
+            <div className="space-y-3">
+              {ranking.map((tech, i) => (
+                <div key={i} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                  <div className={`text-2xl font-bold w-8 ${i === 0 ? 'text-yellow-500' : i === 1 ? 'text-gray-400' : i === 2 ? 'text-orange-600' : 'text-gray-400'}`}>{i + 1}º</div>
+                  <div className="flex-1">
+                    <p className="font-semibold text-gray-800">{tech.name}</p>
+                    <div className="flex gap-4 text-sm text-gray-600 mt-1">
+                      <span>Total: <b>{tech.total}</b></span>
+                      <span className="text-green-600">✓ {tech.aprovadas}</span>
+                      <span className="text-red-600">✗ {tech.rejeitadas}</span>
+                      <span className="text-yellow-600">⏳ {tech.pendentes}</span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-purple-600">{tech.aprovacao}%</div>
+                    <div className="text-xs text-gray-500">aprovação</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    // ========== COMPONENTE PRINCIPAL ==========
     const App = () => {
       const [user, setUser] = useState(null);
       const [loading, setLoading] = useState(false);
@@ -104,7 +242,7 @@
         if (user.role === 'admin_financeiro') { loadAllWithdrawals(); loadAllGratuities(); loadRestricted(); loadDashboard(); }
       }, [user]);
 
-      // ===================== FUNÇÕES DE CARREGAMENTO =====================
+      // ========== FUNÇÕES DE CARREGAMENTO ==========
       const loadSubmissions = async () => {
         try {
           const query = user.role === 'user' ? `?userId=${user.id}&userCod=${user.cod_profissional}` : '';
@@ -200,7 +338,7 @@
         setGlobalLoading(false);
       };
 
-      // ===================== FUNÇÕES DE AÇÃO =====================
+      // ========== FUNÇÕES DE AÇÃO ==========
       const handleLogin = async () => {
         setLoading(true);
         try {
@@ -244,9 +382,7 @@
       };
 
       const handleSaveFinancial = async () => {
-        if (!formData.finName || !formData.finCpf || !formData.finPix) {
-          showToast('Preencha todos os campos', 'error'); return;
-        }
+        if (!formData.finName || !formData.finCpf || !formData.finPix) { showToast('Preencha todos os campos', 'error'); return; }
         setLoading(true);
         try {
           await fetch(`${API_URL}/financial/data`, {
@@ -270,8 +406,7 @@
           });
           showToast('✅ Saque solicitado!', 'success');
           setFormData({ ...formData, withdrawAmount: '' });
-          loadUserWithdrawals();
-          loadUserGratuities();
+          loadUserWithdrawals(); loadUserGratuities();
         } catch (err) { showToast('Erro', 'error'); }
         setLoading(false);
       };
@@ -293,15 +428,12 @@
             method: 'PATCH', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ [field]: value })
           });
-          loadAllWithdrawals();
-          loadDashboard();
+          loadAllWithdrawals(); loadDashboard();
         } catch (err) { showToast('Erro', 'error'); }
       };
 
       const handleAddGratuity = async () => {
-        if (!formData.gratUserCod || !formData.gratQty || !formData.gratValue) {
-          showToast('Preencha todos os campos', 'error'); return;
-        }
+        if (!formData.gratUserCod || !formData.gratQty || !formData.gratValue) { showToast('Preencha todos', 'error'); return; }
         setLoading(true);
         try {
           await fetch(`${API_URL}/gratuities`, {
@@ -316,9 +448,7 @@
       };
 
       const handleAddRestriction = async () => {
-        if (!formData.restUserCod || !formData.restReason) {
-          showToast('Preencha todos os campos', 'error'); return;
-        }
+        if (!formData.restUserCod || !formData.restReason) { showToast('Preencha todos', 'error'); return; }
         setLoading(true);
         try {
           await fetch(`${API_URL}/restricted`, {
@@ -384,24 +514,25 @@
 
       const handleValidate = async (id, approved) => {
         try {
+          setSubmissions(prev => prev.map(s => s.id === id ? {...s, status: approved ? 'aprovada' : 'rejeitada', validated_by_name: user.fullName} : s));
           await fetch(`${API_URL}/submissions/${id}`, {
             method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status: approved ? 'aprovada' : 'rejeitada', observacao: formData.obs || '', validatedBy: user.id, validatedByName: user.fullName || 'Admin' })
+            body: JSON.stringify({ status: approved ? 'aprovada' : 'rejeitada', observacao: formData[`obs_${id}`] || '', validatedBy: user.id, validatedByName: user.fullName || 'Admin' })
           });
           showToast(approved ? '✅ Aprovada!' : '❌ Rejeitada!', approved ? 'success' : 'error');
-          setFormData({ ...formData, obs: '' });
+          const { pendingFilter, adminTab } = formData;
+          setFormData({ pendingFilter, adminTab });
           loadSubmissions();
-        } catch (err) { showToast('Erro', 'error'); }
+        } catch (err) { showToast('Erro', 'error'); loadSubmissions(); }
       };
 
-      // Cálculo do saque
+      // Helpers
       const calcWithdraw = (amount) => {
         const hasGrat = userGratuities.some(g => g.status === 'ativa' && g.remaining > 0);
         const fee = hasGrat ? 0 : amount * 0.045;
         return { fee, final: amount - fee, hasGrat };
       };
 
-      // Formatar CPF
       const formatCPF = (v) => {
         const n = v.replace(/\D/g, '').slice(0, 11);
         if (n.length <= 3) return n;
@@ -410,10 +541,8 @@
         return `${n.slice(0,3)}.${n.slice(3,6)}.${n.slice(6,9)}-${n.slice(9)}`;
       };
 
-      // Formatar moeda
       const formatMoney = (v) => parseFloat(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-      // Status labels
       const statusLabels = {
         'aguardando_aprovacao': '⏳ Aguardando',
         'aprovado': '✅ Aprovado',
@@ -422,7 +551,7 @@
         'inativo': '⚠️ Inativo'
       };
 
-      // ===================== TELA DE LOGIN =====================
+      // ========== TELA DE LOGIN ==========
       if (!user) {
         return (
           <div className="min-h-screen bg-gradient-to-br from-purple-100 to-purple-200 flex items-center justify-center p-4">
@@ -461,7 +590,7 @@
         );
       }
 
-      // ===================== PAINEL DO USUÁRIO =====================
+      // ========== PAINEL DO USUÁRIO ==========
       if (user.role === 'user') {
         return (
           <div className="min-h-screen bg-gray-50">
@@ -471,31 +600,23 @@
 
             <nav className="bg-white shadow-sm border-b">
               <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-                <div>
-                  <h1 className="text-xl font-bold">Painel do Usuário</h1>
-                  <p className="text-sm text-gray-600">{user.fullName}</p>
-                </div>
+                <div><h1 className="text-xl font-bold">Painel do Usuário</h1><p className="text-sm text-gray-600">{user.fullName}</p></div>
                 <div className="flex gap-2">
-                  <button onClick={refreshAll} className="px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 text-sm font-semibold">🔄 Atualizar</button>
+                  <button onClick={refreshAll} className="px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 text-sm font-semibold">🔄</button>
                   <button onClick={() => setUser(null)} className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">Sair</button>
                 </div>
               </div>
             </nav>
 
-            {/* Abas do Usuário */}
             <div className="bg-white border-b">
               <div className="max-w-7xl mx-auto px-4 flex gap-1">
-                <button onClick={() => setFormData({...formData, userTab: 'solicitacoes'})} className={`px-6 py-3 font-semibold ${(!formData.userTab || formData.userTab === 'solicitacoes') ? 'text-purple-900 border-b-2 border-purple-900' : 'text-gray-600'}`}>
-                  📋 Central de Solicitações
-                </button>
-                <button onClick={() => setFormData({...formData, userTab: 'saque'})} className={`px-6 py-3 font-semibold ${formData.userTab === 'saque' ? 'text-green-700 border-b-2 border-green-600' : 'text-gray-600'}`}>
-                  💰 Saque Emergencial
-                </button>
+                <button onClick={() => setFormData({...formData, userTab: 'solicitacoes'})} className={`px-6 py-3 font-semibold ${(!formData.userTab || formData.userTab === 'solicitacoes') ? 'text-purple-900 border-b-2 border-purple-900' : 'text-gray-600'}`}>📋 Solicitações</button>
+                <button onClick={() => setFormData({...formData, userTab: 'saque'})} className={`px-6 py-3 font-semibold ${formData.userTab === 'saque' ? 'text-green-700 border-b-2 border-green-600' : 'text-gray-600'}`}>💰 Saque Emergencial</button>
               </div>
             </div>
 
             <div className="max-w-4xl mx-auto p-6">
-              {/* ABA: SOLICITAÇÕES */}
+              {/* ABA SOLICITAÇÕES */}
               {(!formData.userTab || formData.userTab === 'solicitacoes') && (
                 <>
                   <div className="bg-white rounded-xl shadow p-6 mb-6">
@@ -520,7 +641,10 @@
                         <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                           <p className="text-xs text-blue-700 font-semibold">📍 COORDENADAS</p>
                           <p className="font-mono text-blue-900">{formData.coordenadas}</p>
-                          <button onClick={() => { navigator.clipboard.writeText(formData.coordenadas); showToast('Copiado!', 'success'); }} className="mt-2 text-sm text-blue-600 hover:underline">📋 Copiar</button>
+                          <div className="flex gap-2 mt-2">
+                            <button onClick={() => { navigator.clipboard.writeText(formData.coordenadas); showToast('Copiado!', 'success'); }} className="text-sm text-blue-600 hover:underline">📋 Copiar</button>
+                            <a href={`https://www.google.com/maps?q=${formData.coordenadas}`} target="_blank" className="text-sm text-blue-600 hover:underline">🗺️ Ver no Maps</a>
+                          </div>
                         </div>
                       )}
 
@@ -533,12 +657,8 @@
                             setLoading(true);
                             try {
                               const compressed = [];
-                              for (const f of files) {
-                                if (f.size > 10000000) continue;
-                                compressed.push(await compressImage(f));
-                              }
-                              const curr = formData.imagens || [];
-                              setFormData({...formData, imagens: [...curr, ...compressed].slice(0, 2)});
+                              for (const f of files) { if (f.size <= 10000000) compressed.push(await compressImage(f)); }
+                              setFormData({...formData, imagens: [...(formData.imagens || []), ...compressed].slice(0, 2)});
                               showToast('✅ Imagem adicionada!', 'success');
                             } catch { showToast('Erro', 'error'); }
                             setLoading(false);
@@ -575,18 +695,12 @@
                                 <p className="font-mono text-lg font-bold">OS: {s.ordemServico}</p>
                                 <p className="text-sm text-gray-600">{s.motivo}</p>
                               </div>
-                              <span className={`px-3 py-1 rounded-full text-xs font-bold ${s.status === 'aprovada' ? 'bg-green-500 text-white' : s.status === 'rejeitada' ? 'bg-red-500 text-white' : 'bg-yellow-500 text-white'}`}>
-                                {s.status?.toUpperCase()}
-                              </span>
+                              <span className={`px-3 py-1 rounded-full text-xs font-bold ${s.status === 'aprovada' ? 'bg-green-500 text-white' : s.status === 'rejeitada' ? 'bg-red-500 text-white' : 'bg-yellow-500 text-white'}`}>{s.status?.toUpperCase()}</span>
                             </div>
-                            {s.temImagem && (
-                              <button onClick={() => loadImagem(s.id)} className="mt-2 text-sm text-blue-600 hover:underline">📷 Ver foto(s)</button>
-                            )}
+                            {s.temImagem && !s.imagemComprovante && <button onClick={() => loadImagem(s.id)} className="mt-2 text-sm text-blue-600 hover:underline">📷 Ver foto(s)</button>}
                             {s.imagemComprovante && (
                               <div className="mt-2 flex gap-2">
-                                {s.imagemComprovante.split('|||').map((img, i) => (
-                                  <img key={i} src={img} className="h-20 rounded cursor-pointer" onClick={() => setImageModal(img)} />
-                                ))}
+                                {s.imagemComprovante.split('|||').map((img, i) => <img key={i} src={img} className="h-20 rounded cursor-pointer" onClick={() => setImageModal(img)} />)}
                               </div>
                             )}
                             <p className="text-xs text-gray-400 mt-2">{s.timestamp}</p>
@@ -598,126 +712,74 @@
                 </>
               )}
 
-              {/* ABA: SAQUE EMERGENCIAL */}
+              {/* ABA SAQUE */}
               {formData.userTab === 'saque' && (
                 <>
-                  {/* Termos de Uso */}
                   {!termsAccepted ? (
                     <div className="bg-white rounded-xl shadow p-6">
-                      <h2 className="text-2xl font-bold text-purple-900 mb-4 text-center">📋 Termos de Uso - Saque Emergencial</h2>
-                      <div className="bg-gray-50 rounded-lg p-4 mb-6 max-h-80 overflow-y-auto text-sm text-gray-700 space-y-3">
-                        <p><strong>1. TAXA DE SERVIÇO:</strong> O Saque Emergencial possui taxa de <strong>4,5%</strong> sobre o valor solicitado.</p>
-                        <p><strong>2. GRATUIDADES:</strong> Se você possuir gratuidades ativas, a taxa será automaticamente isentada.</p>
-                        <p><strong>3. PRAZO:</strong> Solicitações processadas em até 1 hora. Após esse prazo, entre em contato com o suporte.</p>
-                        <p><strong>4. RESPONSABILIDADE:</strong> Mantenha seus dados (PIX, CPF) atualizados.</p>
-                        <p><strong>5. RESTRIÇÕES:</strong> A plataforma pode restringir o acesso em caso de irregularidades.</p>
+                      <h2 className="text-2xl font-bold text-purple-900 mb-4 text-center">📋 Termos de Uso</h2>
+                      <div className="bg-gray-50 rounded-lg p-4 mb-6 max-h-80 overflow-y-auto text-sm space-y-3">
+                        <p><strong>1. TAXA:</strong> Saque Emergencial possui taxa de <strong>4,5%</strong>.</p>
+                        <p><strong>2. GRATUIDADES:</strong> Se tiver gratuidades ativas, a taxa será isentada.</p>
+                        <p><strong>3. PRAZO:</strong> Processamento em até 1 hora.</p>
+                        <p><strong>4. DADOS:</strong> Mantenha PIX e CPF atualizados.</p>
                       </div>
-                      <button onClick={handleAcceptTerms} disabled={loading} className="w-full bg-purple-600 text-white py-3 rounded-lg font-bold hover:bg-purple-700 disabled:opacity-50">
+                      <button onClick={handleAcceptTerms} disabled={loading} className="w-full bg-purple-600 text-white py-3 rounded-lg font-bold disabled:opacity-50">
                         {loading ? 'Aguarde...' : '✓ Aceitar e Continuar'}
                       </button>
                     </div>
                   ) : !financialData?.full_name ? (
-                    /* Cadastro de Dados Financeiros */
                     <div className="bg-white rounded-xl shadow p-6">
-                      <h2 className="text-xl font-bold text-purple-900 mb-4">💳 Cadastrar Dados Financeiros</h2>
+                      <h2 className="text-xl font-bold text-purple-900 mb-4">💳 Cadastrar Dados</h2>
                       <div className="space-y-4">
-                        <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-1">Código Tutts</label>
-                          <input type="text" value={user.codProfissional} disabled className="w-full px-4 py-2 border rounded-lg bg-gray-100" />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-1">Nome Completo *</label>
-                          <input type="text" placeholder="Nome como no banco" value={formData.finName || ''} onChange={e => setFormData({...formData, finName: e.target.value})} className="w-full px-4 py-2 border rounded-lg" />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-1">CPF *</label>
-                          <input type="text" placeholder="000.000.000-00" value={formData.finCpf || ''} onChange={e => setFormData({...formData, finCpf: formatCPF(e.target.value)})} className="w-full px-4 py-2 border rounded-lg" />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-1">Chave PIX *</label>
-                          <input type="text" placeholder="CPF, Email, Telefone ou Aleatória" value={formData.finPix || ''} onChange={e => setFormData({...formData, finPix: e.target.value})} className="w-full px-4 py-2 border rounded-lg" />
-                        </div>
-                        <button onClick={handleSaveFinancial} disabled={loading} className="w-full bg-purple-600 text-white py-3 rounded-lg font-bold disabled:opacity-50">
-                          {loading ? 'Salvando...' : '💾 Salvar Dados'}
-                        </button>
+                        <div><label className="block text-sm font-semibold mb-1">Código</label><input type="text" value={user.codProfissional} disabled className="w-full px-4 py-2 border rounded-lg bg-gray-100" /></div>
+                        <div><label className="block text-sm font-semibold mb-1">Nome *</label><input type="text" value={formData.finName || ''} onChange={e => setFormData({...formData, finName: e.target.value})} className="w-full px-4 py-2 border rounded-lg" /></div>
+                        <div><label className="block text-sm font-semibold mb-1">CPF *</label><input type="text" value={formData.finCpf || ''} onChange={e => setFormData({...formData, finCpf: formatCPF(e.target.value)})} className="w-full px-4 py-2 border rounded-lg" /></div>
+                        <div><label className="block text-sm font-semibold mb-1">Chave PIX *</label><input type="text" value={formData.finPix || ''} onChange={e => setFormData({...formData, finPix: e.target.value})} className="w-full px-4 py-2 border rounded-lg" /></div>
+                        <button onClick={handleSaveFinancial} disabled={loading} className="w-full bg-purple-600 text-white py-3 rounded-lg font-bold disabled:opacity-50">{loading ? 'Salvando...' : '💾 Salvar'}</button>
                       </div>
                     </div>
                   ) : (
-                    /* Tela Principal de Saque */
                     <>
-                      {/* Sub-abas */}
                       <div className="bg-white rounded-xl shadow mb-6">
                         <div className="flex border-b">
-                          <button onClick={() => setFormData({...formData, saqueTab: 'solicitar'})} className={`flex-1 py-3 font-semibold ${(!formData.saqueTab || formData.saqueTab === 'solicitar') ? 'text-green-700 border-b-2 border-green-600' : 'text-gray-500'}`}>
-                            💰 Solicitar Saque
-                          </button>
-                          <button onClick={() => setFormData({...formData, saqueTab: 'dados'})} className={`flex-1 py-3 font-semibold ${formData.saqueTab === 'dados' ? 'text-blue-700 border-b-2 border-blue-600' : 'text-gray-500'}`}>
-                            👤 Meus Dados
-                          </button>
-                          <button onClick={() => setFormData({...formData, saqueTab: 'gratuidades'})} className={`flex-1 py-3 font-semibold ${formData.saqueTab === 'gratuidades' ? 'text-purple-700 border-b-2 border-purple-600' : 'text-gray-500'}`}>
-                            🎁 Gratuidades
-                          </button>
+                          <button onClick={() => setFormData({...formData, saqueTab: 'solicitar'})} className={`flex-1 py-3 font-semibold ${(!formData.saqueTab || formData.saqueTab === 'solicitar') ? 'text-green-700 border-b-2 border-green-600' : 'text-gray-500'}`}>💰 Solicitar</button>
+                          <button onClick={() => setFormData({...formData, saqueTab: 'dados'})} className={`flex-1 py-3 font-semibold ${formData.saqueTab === 'dados' ? 'text-blue-700 border-b-2 border-blue-600' : 'text-gray-500'}`}>👤 Dados</button>
+                          <button onClick={() => setFormData({...formData, saqueTab: 'gratuidades'})} className={`flex-1 py-3 font-semibold ${formData.saqueTab === 'gratuidades' ? 'text-purple-700 border-b-2 border-purple-600' : 'text-gray-500'}`}>🎁 Gratuidades</button>
                         </div>
-
                         <div className="p-6">
-                          {/* Solicitar Saque */}
                           {(!formData.saqueTab || formData.saqueTab === 'solicitar') && (
                             <>
                               <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-4 mb-6">
-                                <p className="text-sm text-yellow-800">
-                                  ⚠️ <strong>Atenção:</strong> Taxa de 4,5% será aplicada. 
-                                  {userGratuities.some(g => g.status === 'ativa' && g.remaining > 0) && (
-                                    <span className="text-green-700 font-bold"> ✅ Você tem gratuidade ativa! Taxa ISENTA.</span>
-                                  )}
-                                </p>
+                                <p className="text-sm text-yellow-800">⚠️ Taxa de 4,5%. {userGratuities.some(g => g.status === 'ativa' && g.remaining > 0) && <span className="text-green-700 font-bold">✅ Gratuidade ativa - ISENTO!</span>}</p>
                               </div>
-
                               <div className="space-y-4">
-                                <div>
-                                  <label className="block text-sm font-semibold text-gray-700 mb-1">Valor Solicitado</label>
-                                  <input type="number" placeholder="0,00" value={formData.withdrawAmount || ''} onChange={e => setFormData({...formData, withdrawAmount: e.target.value})} className="w-full px-4 py-3 border rounded-lg text-lg" />
-                                </div>
-
+                                <div><label className="block text-sm font-semibold mb-1">Valor</label><input type="number" value={formData.withdrawAmount || ''} onChange={e => setFormData({...formData, withdrawAmount: e.target.value})} className="w-full px-4 py-3 border rounded-lg text-lg" /></div>
                                 {formData.withdrawAmount && parseFloat(formData.withdrawAmount) > 0 && (() => {
-                                  const calc = calcWithdraw(parseFloat(formData.withdrawAmount));
+                                  const c = calcWithdraw(parseFloat(formData.withdrawAmount));
                                   return (
                                     <div className="bg-gray-50 rounded-lg p-4 space-y-2">
-                                      <div className="flex justify-between"><span>Valor solicitado:</span><span className="font-bold">{formatMoney(formData.withdrawAmount)}</span></div>
-                                      <div className="flex justify-between"><span>Taxa (4,5%):</span><span className={calc.hasGrat ? 'text-green-600 font-bold' : 'text-red-600'}>{calc.hasGrat ? 'ISENTA' : `-${formatMoney(calc.fee)}`}</span></div>
-                                      <hr />
-                                      <div className="flex justify-between text-lg"><span className="font-bold">Valor a receber:</span><span className="font-bold text-green-700">{formatMoney(calc.final)}</span></div>
+                                      <div className="flex justify-between"><span>Solicitado:</span><span className="font-bold">{formatMoney(formData.withdrawAmount)}</span></div>
+                                      <div className="flex justify-between"><span>Taxa:</span><span className={c.hasGrat ? 'text-green-600 font-bold' : 'text-red-600'}>{c.hasGrat ? 'ISENTA' : `-${formatMoney(c.fee)}`}</span></div>
+                                      <hr /><div className="flex justify-between text-lg"><span className="font-bold">Receber:</span><span className="font-bold text-green-700">{formatMoney(c.final)}</span></div>
                                     </div>
                                   );
                                 })()}
-
-                                <button onClick={handleRequestWithdrawal} disabled={loading || !formData.withdrawAmount} className="w-full bg-green-600 text-white py-3 rounded-lg font-bold hover:bg-green-700 disabled:opacity-50">
-                                  {loading ? 'Processando...' : '💸 Solicitar Saque'}
-                                </button>
+                                <button onClick={handleRequestWithdrawal} disabled={loading || !formData.withdrawAmount} className="w-full bg-green-600 text-white py-3 rounded-lg font-bold disabled:opacity-50">{loading ? '...' : '💸 Solicitar'}</button>
                               </div>
-
-                              {/* Histórico de Saques */}
-                              <h3 className="text-lg font-semibold mt-8 mb-4">📋 Histórico de Saques</h3>
-                              {withdrawals.length === 0 ? <p className="text-gray-500">Nenhum saque realizado</p> : (
+                              <h3 className="text-lg font-semibold mt-8 mb-4">📋 Histórico</h3>
+                              {withdrawals.length === 0 ? <p className="text-gray-500">Nenhum saque</p> : (
                                 <div className="space-y-3">
                                   {withdrawals.map(w => {
-                                    const created = new Date(w.created_at);
-                                    const isDelayed = w.status === 'aguardando_aprovacao' && (Date.now() - created) > 3600000;
+                                    const isDelayed = w.status === 'aguardando_aprovacao' && (Date.now() - new Date(w.created_at)) > 3600000;
                                     return (
                                       <div key={w.id} className={`border rounded-lg p-4 ${isDelayed ? 'border-red-400 bg-red-50' : ''}`}>
-                                        <div className="flex justify-between items-start">
-                                          <div>
-                                            <p className="font-bold text-lg">{formatMoney(w.requested_amount)}</p>
-                                            <p className="text-sm text-gray-600">Receber: {formatMoney(w.final_amount)} {w.has_gratuity && <span className="text-green-600">(c/ gratuidade)</span>}</p>
-                                          </div>
-                                          <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                                            w.status === 'aprovado' || w.status === 'aprovado_gratuidade' ? 'bg-green-500 text-white' :
-                                            w.status === 'rejeitado' ? 'bg-red-500 text-white' : 'bg-yellow-500 text-white'
-                                          }`}>
-                                            {isDelayed ? '⚠️ ATRASADO' : statusLabels[w.status] || w.status}
-                                          </span>
+                                        <div className="flex justify-between">
+                                          <div><p className="font-bold">{formatMoney(w.requested_amount)}</p><p className="text-sm text-gray-600">Receber: {formatMoney(w.final_amount)}</p></div>
+                                          <span className={`px-3 py-1 rounded-full text-xs font-bold h-fit ${w.status?.includes('aprovado') ? 'bg-green-500 text-white' : w.status === 'rejeitado' ? 'bg-red-500 text-white' : 'bg-yellow-500 text-white'}`}>{isDelayed ? '⚠️ ATRASADO' : statusLabels[w.status] || w.status}</span>
                                         </div>
-                                        {isDelayed && <p className="text-red-600 text-sm mt-2 font-semibold">Entre em contato com o suporte financeiro</p>}
-                                        <p className="text-xs text-gray-400 mt-2">{created.toLocaleString('pt-BR')}</p>
+                                        {isDelayed && <p className="text-red-600 text-sm mt-2 font-semibold">Entre em contato com o suporte</p>}
+                                        <p className="text-xs text-gray-400 mt-2">{new Date(w.created_at).toLocaleString('pt-BR')}</p>
                                       </div>
                                     );
                                   })}
@@ -725,45 +787,24 @@
                               )}
                             </>
                           )}
-
-                          {/* Meus Dados */}
                           {formData.saqueTab === 'dados' && (
                             <div className="space-y-4">
-                              <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-1">Nome</label>
-                                <input type="text" value={formData.finName ?? financialData?.full_name ?? ''} onChange={e => setFormData({...formData, finName: e.target.value})} className="w-full px-4 py-2 border rounded-lg" />
-                              </div>
-                              <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-1">CPF</label>
-                                <input type="text" value={formData.finCpf ?? financialData?.cpf ?? ''} onChange={e => setFormData({...formData, finCpf: formatCPF(e.target.value)})} className="w-full px-4 py-2 border rounded-lg" />
-                              </div>
-                              <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-1">Chave PIX</label>
-                                <input type="text" value={formData.finPix ?? financialData?.pix_key ?? ''} onChange={e => setFormData({...formData, finPix: e.target.value})} className="w-full px-4 py-2 border rounded-lg" />
-                              </div>
-                              <button onClick={handleSaveFinancial} disabled={loading} className="w-full bg-blue-600 text-white py-3 rounded-lg font-bold disabled:opacity-50">
-                                {loading ? 'Salvando...' : '💾 Atualizar Dados'}
-                              </button>
+                              <div><label className="block text-sm font-semibold mb-1">Nome</label><input type="text" value={formData.finName ?? financialData?.full_name ?? ''} onChange={e => setFormData({...formData, finName: e.target.value})} className="w-full px-4 py-2 border rounded-lg" /></div>
+                              <div><label className="block text-sm font-semibold mb-1">CPF</label><input type="text" value={formData.finCpf ?? financialData?.cpf ?? ''} onChange={e => setFormData({...formData, finCpf: formatCPF(e.target.value)})} className="w-full px-4 py-2 border rounded-lg" /></div>
+                              <div><label className="block text-sm font-semibold mb-1">PIX</label><input type="text" value={formData.finPix ?? financialData?.pix_key ?? ''} onChange={e => setFormData({...formData, finPix: e.target.value})} className="w-full px-4 py-2 border rounded-lg" /></div>
+                              <button onClick={handleSaveFinancial} disabled={loading} className="w-full bg-blue-600 text-white py-3 rounded-lg font-bold disabled:opacity-50">{loading ? '...' : '💾 Atualizar'}</button>
                             </div>
                           )}
-
-                          {/* Gratuidades */}
                           {formData.saqueTab === 'gratuidades' && (
                             <>
                               <h3 className="font-semibold mb-4">🎁 Minhas Gratuidades</h3>
-                              {userGratuities.length === 0 ? <p className="text-gray-500">Nenhuma gratuidade cadastrada</p> : (
+                              {userGratuities.length === 0 ? <p className="text-gray-500">Nenhuma</p> : (
                                 <div className="space-y-3">
                                   {userGratuities.map(g => (
-                                    <div key={g.id} className={`border rounded-lg p-4 ${g.status === 'ativa' ? 'border-green-300 bg-green-50' : 'border-gray-200 bg-gray-50'}`}>
+                                    <div key={g.id} className={`border rounded-lg p-4 ${g.status === 'ativa' ? 'border-green-300 bg-green-50' : 'bg-gray-50'}`}>
                                       <div className="flex justify-between">
-                                        <div>
-                                          <p className="font-bold">{g.remaining}/{g.quantity} restantes</p>
-                                          <p className="text-sm text-gray-600">Valor: {formatMoney(g.value)}</p>
-                                          {g.reason && <p className="text-xs text-gray-500">Motivo: {g.reason}</p>}
-                                        </div>
-                                        <span className={`px-3 py-1 rounded-full text-xs font-bold h-fit ${g.status === 'ativa' ? 'bg-green-500 text-white' : 'bg-gray-400 text-white'}`}>
-                                          {g.status === 'ativa' ? '✅ Ativa' : '❌ Expirada'}
-                                        </span>
+                                        <div><p className="font-bold">{g.remaining}/{g.quantity} restantes</p><p className="text-sm text-gray-600">Valor: {formatMoney(g.value)}</p></div>
+                                        <span className={`px-3 py-1 rounded-full text-xs font-bold h-fit ${g.status === 'ativa' ? 'bg-green-500 text-white' : 'bg-gray-400 text-white'}`}>{g.status}</span>
                                       </div>
                                     </div>
                                   ))}
@@ -782,7 +823,7 @@
         );
       }
 
-      // ===================== PAINEL ADMIN FINANCEIRO =====================
+      // ========== PAINEL ADMIN FINANCEIRO ==========
       if (user.role === 'admin_financeiro') {
         return (
           <div className="min-h-screen bg-gray-50">
@@ -793,20 +834,19 @@
               <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
                 <h1 className="text-xl font-bold text-white">💰 Painel Financeiro</h1>
                 <div className="flex gap-2">
-                  <button onClick={refreshAll} className="px-4 py-2 bg-green-700 text-white rounded-lg hover:bg-green-600 text-sm font-semibold">🔄 Atualizar</button>
+                  <button onClick={refreshAll} className="px-4 py-2 bg-green-700 text-white rounded-lg hover:bg-green-600 text-sm font-semibold">🔄</button>
                   <button onClick={() => setUser(null)} className="px-4 py-2 text-white hover:bg-green-700 rounded-lg">Sair</button>
                 </div>
               </div>
             </nav>
 
-            {/* Abas */}
-            <div className="bg-white border-b sticky top-0 z-10 shadow-sm">
+            <div className="bg-white border-b sticky top-0 z-10">
               <div className="max-w-7xl mx-auto px-4 flex gap-1 overflow-x-auto">
                 {['solicitacoes', 'conciliacao', 'resumo', 'gratuidades', 'restritos'].map(tab => (
                   <button key={tab} onClick={() => setFormData({...formData, finTab: tab})} className={`px-4 py-3 font-semibold whitespace-nowrap ${(formData.finTab || 'solicitacoes') === tab ? 'text-green-700 border-b-2 border-green-600' : 'text-gray-600'}`}>
                     {tab === 'solicitacoes' && '📋 Solicitações'}
                     {tab === 'conciliacao' && '✅ Conciliação'}
-                    {tab === 'resumo' && '🔍 Resumo Individual'}
+                    {tab === 'resumo' && '🔍 Resumo'}
                     {tab === 'gratuidades' && '🎁 Gratuidades'}
                     {tab === 'restritos' && '🚫 Restritos'}
                   </button>
@@ -815,13 +855,12 @@
             </div>
 
             <div className="max-w-7xl mx-auto p-6">
-              {/* ABA: SOLICITAÇÕES */}
               {(!formData.finTab || formData.finTab === 'solicitacoes') && (
                 <div className="bg-white rounded-xl shadow overflow-hidden">
                   <div className="p-4 border-b flex justify-between items-center">
-                    <h2 className="text-lg font-semibold">📋 Solicitações de Saque</h2>
+                    <h2 className="text-lg font-semibold">📋 Solicitações</h2>
                     <select value={formData.filterStatus || ''} onChange={e => setFormData({...formData, filterStatus: e.target.value})} className="px-3 py-2 border rounded-lg">
-                      <option value="">Todos os status</option>
+                      <option value="">Todos</option>
                       <option value="aguardando_aprovacao">Aguardando</option>
                       <option value="aprovado">Aprovados</option>
                       <option value="rejeitado">Rejeitados</option>
@@ -829,18 +868,7 @@
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-4 py-3 text-left">Data/Hora</th>
-                          <th className="px-4 py-3 text-left">Nome</th>
-                          <th className="px-4 py-3 text-left">CPF</th>
-                          <th className="px-4 py-3 text-left">Código</th>
-                          <th className="px-4 py-3 text-right">Solicitado</th>
-                          <th className="px-4 py-3 text-right">Debitado</th>
-                          <th className="px-4 py-3 text-left">PIX</th>
-                          <th className="px-4 py-3 text-center">Status</th>
-                        </tr>
-                      </thead>
+                      <thead className="bg-gray-50"><tr><th className="px-4 py-3 text-left">Data</th><th className="px-4 py-3 text-left">Nome</th><th className="px-4 py-3 text-left">CPF</th><th className="px-4 py-3 text-left">Código</th><th className="px-4 py-3 text-right">Solicitado</th><th className="px-4 py-3 text-right">Debitado</th><th className="px-4 py-3 text-left">PIX</th><th className="px-4 py-3 text-center">Status</th></tr></thead>
                       <tbody>
                         {allWithdrawals.filter(w => !formData.filterStatus || w.status === formData.filterStatus).map(w => (
                           <tr key={w.id} className={`border-t hover:bg-gray-50 ${w.has_gratuity ? 'row-green' : ''} ${w.is_restricted ? 'row-red' : ''}`}>
@@ -850,144 +878,89 @@
                             <td className="px-4 py-3 font-mono">{w.user_cod}</td>
                             <td className="px-4 py-3 text-right font-semibold">{formatMoney(w.requested_amount)}</td>
                             <td className="px-4 py-3 text-right">{formatMoney(w.final_amount)}</td>
-                            <td className="px-4 py-3 text-xs max-w-[150px] truncate" title={w.pix_key}>{w.pix_key}</td>
-                            <td className="px-4 py-3">
-                              <select value={w.status} onChange={e => handleUpdateWithdrawalStatus(w.id, e.target.value)} className="px-2 py-1 border rounded text-xs">
-                                <option value="aguardando_aprovacao">⏳ Aguardando</option>
-                                <option value="aprovado">✅ Aprovado</option>
-                                <option value="aprovado_gratuidade">✅ Aprov. Gratuidade</option>
-                                <option value="rejeitado">❌ Rejeitado</option>
-                                <option value="inativo">⚠️ Inativo</option>
-                              </select>
-                            </td>
+                            <td className="px-4 py-3 text-xs max-w-[150px] truncate">{w.pix_key}</td>
+                            <td className="px-4 py-3"><select value={w.status} onChange={e => handleUpdateWithdrawalStatus(w.id, e.target.value)} className="px-2 py-1 border rounded text-xs"><option value="aguardando_aprovacao">⏳ Aguardando</option><option value="aprovado">✅ Aprovado</option><option value="aprovado_gratuidade">✅ c/ Gratuidade</option><option value="rejeitado">❌ Rejeitado</option><option value="inativo">⚠️ Inativo</option></select></td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
-                    {allWithdrawals.length === 0 && <p className="text-center py-8 text-gray-500">Nenhuma solicitação</p>}
                   </div>
                 </div>
               )}
 
-              {/* ABA: CONCILIAÇÃO */}
               {formData.finTab === 'conciliacao' && (
                 <>
                   <div className="grid md:grid-cols-5 gap-4 mb-6">
-                    <div className="bg-white rounded-xl shadow p-4"><p className="text-sm text-gray-600">Total Aprovados</p><p className="text-2xl font-bold text-green-600">{dashboardData.total_aprovados || 0}</p></div>
+                    <div className="bg-white rounded-xl shadow p-4"><p className="text-sm text-gray-600">Aprovados</p><p className="text-2xl font-bold text-green-600">{dashboardData.total_aprovados || 0}</p></div>
                     <div className="bg-white rounded-xl shadow p-4"><p className="text-sm text-gray-600">Conciliados</p><p className="text-2xl font-bold text-blue-600">{dashboardData.total_conciliado || 0}</p></div>
-                    <div className="bg-white rounded-xl shadow p-4"><p className="text-sm text-gray-600">Pend. Conciliação</p><p className="text-2xl font-bold text-yellow-600">{dashboardData.pendente_conciliacao || 0}</p></div>
+                    <div className="bg-white rounded-xl shadow p-4"><p className="text-sm text-gray-600">Pend. Conc.</p><p className="text-2xl font-bold text-yellow-600">{dashboardData.pendente_conciliacao || 0}</p></div>
                     <div className="bg-white rounded-xl shadow p-4"><p className="text-sm text-gray-600">Debitados</p><p className="text-2xl font-bold text-purple-600">{dashboardData.total_debitado || 0}</p></div>
-                    <div className="bg-white rounded-xl shadow p-4"><p className="text-sm text-gray-600">Pend. Débito</p><p className="text-2xl font-bold text-orange-600">{dashboardData.pendente_debito || 0}</p></div>
+                    <div className="bg-white rounded-xl shadow p-4"><p className="text-sm text-gray-600">Pend. Déb.</p><p className="text-2xl font-bold text-orange-600">{dashboardData.pendente_debito || 0}</p></div>
                   </div>
-
                   <div className="bg-white rounded-xl shadow overflow-hidden">
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead className="bg-gray-50">
-                          <tr>
-                            <th className="px-4 py-3 text-left">Nome</th>
-                            <th className="px-4 py-3 text-left">CPF</th>
-                            <th className="px-4 py-3 text-left">Código</th>
-                            <th className="px-4 py-3 text-right">Solicitado</th>
-                            <th className="px-4 py-3 text-right">Debitado</th>
-                            <th className="px-4 py-3 text-center">Conciliação OMIE</th>
-                            <th className="px-4 py-3 text-center">Débito</th>
+                    <table className="w-full text-sm">
+                      <thead className="bg-gray-50"><tr><th className="px-4 py-3 text-left">Nome</th><th className="px-4 py-3 text-left">CPF</th><th className="px-4 py-3 text-left">Código</th><th className="px-4 py-3 text-right">Solicitado</th><th className="px-4 py-3 text-right">Debitado</th><th className="px-4 py-3 text-center">OMIE</th><th className="px-4 py-3 text-center">Débito</th></tr></thead>
+                      <tbody>
+                        {allWithdrawals.filter(w => w.status?.includes('aprovado')).map(w => (
+                          <tr key={w.id} className="border-t hover:bg-gray-50">
+                            <td className="px-4 py-3">{w.user_name}</td>
+                            <td className="px-4 py-3">{w.cpf}</td>
+                            <td className="px-4 py-3 font-mono">{w.user_cod}</td>
+                            <td className="px-4 py-3 text-right">{formatMoney(w.requested_amount)}</td>
+                            <td className="px-4 py-3 text-right font-semibold">{formatMoney(w.final_amount)}</td>
+                            <td className="px-4 py-3 text-center"><input type="checkbox" checked={w.conciliacao_omie} onChange={e => handleUpdateConciliacao(w.id, 'conciliacaoOmie', e.target.checked)} className="w-5 h-5" /></td>
+                            <td className="px-4 py-3 text-center"><input type="checkbox" checked={w.debito} onChange={e => handleUpdateConciliacao(w.id, 'debito', e.target.checked)} className="w-5 h-5" /></td>
                           </tr>
-                        </thead>
-                        <tbody>
-                          {allWithdrawals.filter(w => w.status === 'aprovado' || w.status === 'aprovado_gratuidade').map(w => (
-                            <tr key={w.id} className="border-t hover:bg-gray-50">
-                              <td className="px-4 py-3">{w.user_name}</td>
-                              <td className="px-4 py-3">{w.cpf}</td>
-                              <td className="px-4 py-3 font-mono">{w.user_cod}</td>
-                              <td className="px-4 py-3 text-right">{formatMoney(w.requested_amount)}</td>
-                              <td className="px-4 py-3 text-right font-semibold">{formatMoney(w.final_amount)}</td>
-                              <td className="px-4 py-3 text-center">
-                                <input type="checkbox" checked={w.conciliacao_omie} onChange={e => handleUpdateConciliacao(w.id, 'conciliacaoOmie', e.target.checked)} className="w-5 h-5" />
-                              </td>
-                              <td className="px-4 py-3 text-center">
-                                <input type="checkbox" checked={w.debito} onChange={e => handleUpdateConciliacao(w.id, 'debito', e.target.checked)} className="w-5 h-5" />
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 </>
               )}
 
-              {/* ABA: RESUMO INDIVIDUAL */}
               {formData.finTab === 'resumo' && (
                 <div className="bg-white rounded-xl shadow p-6">
                   <div className="flex gap-4 mb-6">
                     <input type="text" placeholder="Código do profissional" value={formData.searchCod || ''} onChange={e => setFormData({...formData, searchCod: e.target.value})} className="flex-1 px-4 py-2 border rounded-lg" />
-                    <button onClick={() => setFormData({...formData, searchCod: formData.searchCod})} className="px-6 py-2 bg-green-600 text-white rounded-lg font-semibold">🔍 Buscar</button>
+                    <button className="px-6 py-2 bg-green-600 text-white rounded-lg font-semibold">🔍 Buscar</button>
                   </div>
                   {formData.searchCod && (
                     <div className="space-y-3">
                       {allWithdrawals.filter(w => w.user_cod.toLowerCase().includes(formData.searchCod.toLowerCase())).map(w => (
                         <div key={w.id} className="border rounded-lg p-4 flex justify-between items-center">
-                          <div>
-                            <p className="font-bold">{formatMoney(w.requested_amount)} → {formatMoney(w.final_amount)}</p>
-                            <p className="text-sm text-gray-600">{w.user_name} • {w.cpf}</p>
-                            <p className="text-xs text-gray-400">{new Date(w.created_at).toLocaleString('pt-BR')}</p>
-                          </div>
-                          <span className={`px-3 py-1 rounded-full text-xs font-bold ${w.status.includes('aprovado') ? 'bg-green-500 text-white' : w.status === 'rejeitado' ? 'bg-red-500 text-white' : 'bg-yellow-500 text-white'}`}>
-                            {statusLabels[w.status] || w.status}
-                          </span>
+                          <div><p className="font-bold">{formatMoney(w.requested_amount)} → {formatMoney(w.final_amount)}</p><p className="text-sm text-gray-600">{w.user_name}</p><p className="text-xs text-gray-400">{new Date(w.created_at).toLocaleString('pt-BR')}</p></div>
+                          <span className={`px-3 py-1 rounded-full text-xs font-bold ${w.status?.includes('aprovado') ? 'bg-green-500 text-white' : w.status === 'rejeitado' ? 'bg-red-500 text-white' : 'bg-yellow-500 text-white'}`}>{statusLabels[w.status]}</span>
                         </div>
                       ))}
-                      {allWithdrawals.filter(w => w.user_cod.toLowerCase().includes(formData.searchCod.toLowerCase())).length === 0 && (
-                        <p className="text-gray-500 text-center py-8">Nenhum resultado encontrado</p>
-                      )}
                     </div>
                   )}
                 </div>
               )}
 
-              {/* ABA: GRATUIDADES */}
               {formData.finTab === 'gratuidades' && (
                 <div className="space-y-6">
                   <div className="bg-white rounded-xl shadow p-6">
                     <h3 className="text-lg font-semibold mb-4">➕ Cadastrar Gratuidade</h3>
                     <div className="grid md:grid-cols-5 gap-4">
-                      <input type="text" placeholder="Código profissional" value={formData.gratUserCod || ''} onChange={e => setFormData({...formData, gratUserCod: e.target.value})} className="px-4 py-2 border rounded-lg" />
+                      <input type="text" placeholder="Código" value={formData.gratUserCod || ''} onChange={e => setFormData({...formData, gratUserCod: e.target.value})} className="px-4 py-2 border rounded-lg" />
                       <input type="number" placeholder="Quantidade" value={formData.gratQty || ''} onChange={e => setFormData({...formData, gratQty: e.target.value})} className="px-4 py-2 border rounded-lg" />
                       <input type="number" placeholder="Valor (R$)" value={formData.gratValue || ''} onChange={e => setFormData({...formData, gratValue: e.target.value})} className="px-4 py-2 border rounded-lg" />
                       <input type="text" placeholder="Motivo" value={formData.gratReason || ''} onChange={e => setFormData({...formData, gratReason: e.target.value})} className="px-4 py-2 border rounded-lg" />
-                      <button onClick={handleAddGratuity} disabled={loading} className="px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold disabled:opacity-50">
-                        {loading ? '...' : '➕ Adicionar'}
-                      </button>
+                      <button onClick={handleAddGratuity} disabled={loading} className="px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold disabled:opacity-50">➕ Adicionar</button>
                     </div>
                   </div>
-
                   <div className="bg-white rounded-xl shadow overflow-hidden">
-                    <div className="p-4 border-b"><h3 className="font-semibold">📋 Gratuidades Cadastradas</h3></div>
                     <table className="w-full text-sm">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-4 py-3 text-left">Código</th>
-                          <th className="px-4 py-3 text-center">Qtd</th>
-                          <th className="px-4 py-3 text-center">Restante</th>
-                          <th className="px-4 py-3 text-right">Valor</th>
-                          <th className="px-4 py-3 text-left">Motivo</th>
-                          <th className="px-4 py-3 text-center">Status</th>
-                        </tr>
-                      </thead>
+                      <thead className="bg-gray-50"><tr><th className="px-4 py-3 text-left">Código</th><th className="px-4 py-3 text-center">Qtd</th><th className="px-4 py-3 text-center">Rest.</th><th className="px-4 py-3 text-right">Valor</th><th className="px-4 py-3 text-left">Motivo</th><th className="px-4 py-3 text-center">Status</th></tr></thead>
                       <tbody>
                         {gratuities.map(g => (
-                          <tr key={g.id} className={`border-t ${g.status === 'ativa' ? 'bg-green-50' : 'bg-gray-50'}`}>
+                          <tr key={g.id} className={`border-t ${g.status === 'ativa' ? 'bg-green-50' : ''}`}>
                             <td className="px-4 py-3 font-mono">{g.user_cod}</td>
                             <td className="px-4 py-3 text-center">{g.quantity}</td>
                             <td className="px-4 py-3 text-center font-bold">{g.remaining}</td>
                             <td className="px-4 py-3 text-right">{formatMoney(g.value)}</td>
                             <td className="px-4 py-3">{g.reason || '-'}</td>
-                            <td className="px-4 py-3 text-center">
-                              <span className={`px-2 py-1 rounded text-xs font-bold ${g.status === 'ativa' ? 'bg-green-500 text-white' : 'bg-gray-400 text-white'}`}>
-                                {g.status}
-                              </span>
-                            </td>
+                            <td className="px-4 py-3 text-center"><span className={`px-2 py-1 rounded text-xs font-bold ${g.status === 'ativa' ? 'bg-green-500 text-white' : 'bg-gray-400 text-white'}`}>{g.status}</span></td>
                           </tr>
                         ))}
                       </tbody>
@@ -996,50 +969,27 @@
                 </div>
               )}
 
-              {/* ABA: RESTRITOS */}
               {formData.finTab === 'restritos' && (
                 <div className="space-y-6">
                   <div className="bg-white rounded-xl shadow p-6">
                     <h3 className="text-lg font-semibold mb-4">➕ Adicionar Restrição</h3>
                     <div className="grid md:grid-cols-3 gap-4">
-                      <input type="text" placeholder="Código profissional" value={formData.restUserCod || ''} onChange={e => setFormData({...formData, restUserCod: e.target.value})} className="px-4 py-2 border rounded-lg" />
-                      <input type="text" placeholder="Motivo da restrição" value={formData.restReason || ''} onChange={e => setFormData({...formData, restReason: e.target.value})} className="px-4 py-2 border rounded-lg" />
-                      <button onClick={handleAddRestriction} disabled={loading} className="px-4 py-2 bg-red-600 text-white rounded-lg font-semibold disabled:opacity-50">
-                        {loading ? '...' : '🚫 Adicionar Restrição'}
-                      </button>
+                      <input type="text" placeholder="Código" value={formData.restUserCod || ''} onChange={e => setFormData({...formData, restUserCod: e.target.value})} className="px-4 py-2 border rounded-lg" />
+                      <input type="text" placeholder="Motivo" value={formData.restReason || ''} onChange={e => setFormData({...formData, restReason: e.target.value})} className="px-4 py-2 border rounded-lg" />
+                      <button onClick={handleAddRestriction} disabled={loading} className="px-4 py-2 bg-red-600 text-white rounded-lg font-semibold disabled:opacity-50">🚫 Adicionar</button>
                     </div>
                   </div>
-
                   <div className="bg-white rounded-xl shadow overflow-hidden">
-                    <div className="p-4 border-b"><h3 className="font-semibold">🚫 Profissionais Restritos</h3></div>
                     <table className="w-full text-sm">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-4 py-3 text-left">Código</th>
-                          <th className="px-4 py-3 text-left">Motivo</th>
-                          <th className="px-4 py-3 text-left">Data</th>
-                          <th className="px-4 py-3 text-center">Status</th>
-                          <th className="px-4 py-3 text-center">Ação</th>
-                        </tr>
-                      </thead>
+                      <thead className="bg-gray-50"><tr><th className="px-4 py-3 text-left">Código</th><th className="px-4 py-3 text-left">Motivo</th><th className="px-4 py-3 text-left">Data</th><th className="px-4 py-3 text-center">Status</th><th className="px-4 py-3 text-center">Ação</th></tr></thead>
                       <tbody>
                         {restrictedList.map(r => (
-                          <tr key={r.id} className={`border-t ${r.status === 'ativo' ? 'bg-red-50' : 'bg-gray-50'}`}>
+                          <tr key={r.id} className={`border-t ${r.status === 'ativo' ? 'bg-red-50' : ''}`}>
                             <td className="px-4 py-3 font-mono">{r.user_cod}</td>
                             <td className="px-4 py-3">{r.reason}</td>
                             <td className="px-4 py-3">{new Date(r.created_at).toLocaleDateString('pt-BR')}</td>
-                            <td className="px-4 py-3 text-center">
-                              <span className={`px-2 py-1 rounded text-xs font-bold ${r.status === 'ativo' ? 'bg-red-500 text-white' : 'bg-gray-400 text-white'}`}>
-                                {r.status}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3 text-center">
-                              {r.status === 'ativo' && (
-                                <button onClick={() => handleRemoveRestriction(r.id)} className="px-3 py-1 bg-green-600 text-white rounded text-xs font-semibold">
-                                  Suspender
-                                </button>
-                              )}
-                            </td>
+                            <td className="px-4 py-3 text-center"><span className={`px-2 py-1 rounded text-xs font-bold ${r.status === 'ativo' ? 'bg-red-500 text-white' : 'bg-gray-400 text-white'}`}>{r.status}</span></td>
+                            <td className="px-4 py-3 text-center">{r.status === 'ativo' && <button onClick={() => handleRemoveRestriction(r.id)} className="px-3 py-1 bg-green-600 text-white rounded text-xs">Suspender</button>}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -1052,8 +1002,7 @@
         );
       }
 
-      // ===================== PAINEL ADMIN NORMAL =====================
-      // (Mantém o código existente do admin de solicitações)
+      // ========== PAINEL ADMIN NORMAL ==========
       return (
         <div className="min-h-screen bg-gray-50">
           {toast && <Toast {...toast} />}
@@ -1072,10 +1021,12 @@
 
           <div className="bg-white border-b sticky top-0 z-10">
             <div className="max-w-7xl mx-auto px-4 flex gap-1 overflow-x-auto">
-              {['dashboard', 'search', 'users'].map(tab => (
-                <button key={tab} onClick={() => setFormData({...formData, adminTab: tab})} className={`px-6 py-3 font-semibold whitespace-nowrap ${(!formData.adminTab || formData.adminTab === 'dashboard') && tab === 'dashboard' ? 'text-purple-900 border-b-2 border-purple-900' : formData.adminTab === tab ? 'text-purple-900 border-b-2 border-purple-900' : 'text-gray-600'}`}>
+              {['dashboard', 'search', 'ranking', 'stats', 'users'].map(tab => (
+                <button key={tab} onClick={() => setFormData({...formData, adminTab: tab})} className={`px-6 py-3 font-semibold whitespace-nowrap ${(!formData.adminTab && tab === 'dashboard') || formData.adminTab === tab ? 'text-purple-900 border-b-2 border-purple-900' : 'text-gray-600'}`}>
                   {tab === 'dashboard' && '📊 Dashboard'}
-                  {tab === 'search' && '🔍 Busca'}
+                  {tab === 'search' && '🔍 Busca Detalhada'}
+                  {tab === 'ranking' && '🏆 Ranking'}
+                  {tab === 'stats' && '📈 Estatísticas'}
                   {tab === 'users' && '👥 Usuários'}
                 </button>
               ))}
@@ -1093,9 +1044,23 @@
                   <div className="bg-white p-6 rounded-xl shadow"><p className="text-sm text-gray-600">Rejeitadas</p><p className="text-3xl font-bold text-red-600">{submissions.filter(s => s.status === 'rejeitada').length}</p></div>
                 </div>
 
+                {/* GRÁFICOS */}
+                <div className="grid md:grid-cols-2 gap-6 mb-6">
+                  <MotivosPieChart submissions={submissions} />
+                  <PieChart 
+                    data={[
+                      { label: '✓ Aprovadas', value: submissions.filter(s => s.status === 'aprovada').length, color: '#22c55e' },
+                      { label: '✗ Rejeitadas', value: submissions.filter(s => s.status === 'rejeitada').length, color: '#ef4444' },
+                      { label: '⏳ Pendentes', value: submissions.filter(s => s.status === 'pendente').length, color: '#fbbf24' }
+                    ]}
+                    title="📈 Status das Solicitações"
+                  />
+                </div>
+
+                {/* VALIDAÇÃO PENDENTES */}
                 <div className="bg-white rounded-xl shadow p-6">
                   <h2 className="text-lg font-semibold mb-4">Aguardando Validação</h2>
-                  <div className="flex flex-wrap gap-2 mb-4">
+                  <div className="mb-4 flex flex-wrap gap-2">
                     {['all', 'retorno', 'ponto1', 'pedagio'].map(f => (
                       <button key={f} onClick={() => setFormData({...formData, pendingFilter: f})} className={`px-4 py-2 rounded-lg font-semibold ${(formData.pendingFilter || 'all') === f ? 'bg-purple-600 text-white' : 'bg-gray-100'}`}>
                         {f === 'all' && `📋 Todos (${submissions.filter(s => s.status === 'pendente').length})`}
@@ -1118,17 +1083,30 @@
                         <p className="font-mono text-lg font-bold">OS: {s.ordemServico}</p>
                         <p className="text-xs text-gray-700">{s.fullName}</p>
                         <p className="text-xs text-purple-900 font-semibold">{s.motivo}</p>
-                        {s.temImagem && !s.imagemComprovante && (
-                          <button onClick={() => loadImagem(s.id)} className="mt-2 text-xs text-blue-600">📷 Ver foto</button>
-                        )}
-                        {s.imagemComprovante && (
-                          <div className="mt-2 flex gap-1">
-                            {s.imagemComprovante.split('|||').map((img, i) => (
-                              <img key={i} src={img} className="h-16 rounded cursor-pointer" onClick={() => setImageModal(img)} />
-                            ))}
+                        {s.coordenadas && (
+                          <div className="mt-2 bg-green-50 border border-green-200 rounded p-2">
+                            <p className="text-xs font-mono text-green-900">{s.coordenadas}</p>
+                            <div className="flex gap-2 mt-1">
+                              <button onClick={() => { navigator.clipboard.writeText(s.coordenadas); showToast('Copiado!', 'success'); }} className="text-xs text-green-600">📋 Copiar</button>
+                              <a href={`https://www.google.com/maps?q=${s.coordenadas}`} target="_blank" className="text-xs text-green-600">🗺️ Maps</a>
+                            </div>
                           </div>
                         )}
-                        <textarea placeholder="Obs (opcional)" value={formData[`obs_${s.id}`] || ''} onChange={e => setFormData({...formData, [`obs_${s.id}`]: e.target.value, obs: e.target.value})} className="w-full px-2 py-1 border rounded mt-2 text-xs" rows="1" />
+                        {s.temImagem && (
+                          <div className="mt-2">
+                            {s.imagemComprovante ? (
+                              <>
+                                <div className="flex gap-2 flex-wrap">
+                                  {s.imagemComprovante.split('|||').map((img, i) => <img key={i} src={img} className="h-20 rounded cursor-pointer" onClick={() => setImageModal(img)} />)}
+                                </div>
+                                <button onClick={() => setSubmissions(prev => prev.map(sub => sub.id === s.id ? {...sub, imagemComprovante: null} : sub))} className="text-xs text-gray-500">▲ Ocultar</button>
+                              </>
+                            ) : (
+                              <button onClick={() => { showToast('🔄 Carregando...', 'success'); loadImagem(s.id); }} className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-semibold">📷 Ver foto(s)</button>
+                            )}
+                          </div>
+                        )}
+                        <textarea placeholder="Obs (opcional)" value={formData[`obs_${s.id}`] || ''} onChange={e => setFormData({...formData, [`obs_${s.id}`]: e.target.value})} className="w-full px-2 py-1 border rounded mt-2 text-xs" rows="1" />
                         <div className="flex gap-2 mt-2">
                           <button onClick={() => handleValidate(s.id, true)} className="flex-1 bg-green-600 text-white py-1 rounded text-xs font-semibold">✓ Aprovar</button>
                           <button onClick={() => handleValidate(s.id, false)} className="flex-1 bg-red-600 text-white py-1 rounded text-xs font-semibold">✗ Rejeitar</button>
@@ -1140,23 +1118,126 @@
               </>
             )}
 
-            {/* BUSCA */}
+            {/* BUSCA DETALHADA */}
             {formData.adminTab === 'search' && (
               <div className="bg-white rounded-xl shadow p-6">
-                <input type="text" placeholder="🔍 Buscar por OS ou código..." value={formData.searchOS || ''} onChange={e => setFormData({...formData, searchOS: e.target.value})} className="w-full px-4 py-2 border rounded-lg mb-4" />
+                <div className="flex flex-wrap gap-4 mb-6">
+                  <input type="text" placeholder="🔍 Buscar por OS ou código..." value={formData.searchOS || ''} onChange={e => setFormData({...formData, searchOS: e.target.value})} className="flex-1 px-4 py-2 border rounded-lg" />
+                  <select value={formData.statusFilter || ''} onChange={e => setFormData({...formData, statusFilter: e.target.value})} className="px-4 py-2 border rounded-lg">
+                    <option value="">Todos status</option>
+                    <option value="pendente">Pendente</option>
+                    <option value="aprovada">Aprovada</option>
+                    <option value="rejeitada">Rejeitada</option>
+                  </select>
+                  <select value={formData.dateFilter || ''} onChange={e => setFormData({...formData, dateFilter: e.target.value})} className="px-4 py-2 border rounded-lg">
+                    <option value="">Todo período</option>
+                    <option value="today">Hoje</option>
+                    <option value="week">Esta semana</option>
+                    <option value="month">Este mês</option>
+                  </select>
+                </div>
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {submissions.filter(s => !formData.searchOS || s.ordemServico?.toLowerCase().includes(formData.searchOS.toLowerCase()) || s.codProfissional?.toLowerCase().includes(formData.searchOS.toLowerCase())).map(s => (
-                    <div key={s.id} className={`border rounded-lg p-3 ${s.status === 'aprovada' ? 'bg-green-50' : s.status === 'rejeitada' ? 'bg-red-50' : 'bg-yellow-50'}`}>
-                      <div className="flex justify-between">
-                        <p className="font-mono font-bold">OS: {s.ordemServico}</p>
-                        <span className={`px-2 py-0.5 rounded text-xs font-bold ${s.status === 'aprovada' ? 'bg-green-500 text-white' : s.status === 'rejeitada' ? 'bg-red-500 text-white' : 'bg-yellow-500 text-white'}`}>{s.status}</span>
+                  {submissions.filter(s => {
+                    if (formData.searchOS && !s.ordemServico?.toLowerCase().includes(formData.searchOS.toLowerCase()) && !s.codProfissional?.toLowerCase().includes(formData.searchOS.toLowerCase())) return false;
+                    if (formData.statusFilter && s.status !== formData.statusFilter) return false;
+                    if (formData.dateFilter) {
+                      const today = new Date(); today.setHours(0,0,0,0);
+                      const subDate = new Date(s.created_at);
+                      if (formData.dateFilter === 'today') { const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate()+1); if (subDate < today || subDate >= tomorrow) return false; }
+                      else if (formData.dateFilter === 'week') { const weekAgo = new Date(today); weekAgo.setDate(weekAgo.getDate()-7); if (subDate < weekAgo) return false; }
+                      else if (formData.dateFilter === 'month') { const monthAgo = new Date(today); monthAgo.setMonth(monthAgo.getMonth()-1); if (subDate < monthAgo) return false; }
+                    }
+                    return true;
+                  }).map(s => (
+                    <div key={s.id} className={`border rounded-lg p-3 text-sm ${s.status === 'aprovada' ? 'bg-green-50' : s.status === 'rejeitada' ? 'bg-red-50' : 'bg-yellow-50'}`}>
+                      <div className="flex justify-between items-start mb-1">
+                        <div><p className="font-mono font-bold">OS: {s.ordemServico}</p><p className="text-xs text-gray-700">{s.fullName}</p></div>
+                        <div className="flex items-center gap-1">
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${s.status === 'aprovada' ? 'bg-green-600 text-white' : s.status === 'rejeitada' ? 'bg-red-600 text-white' : 'bg-yellow-600 text-white'}`}>{s.status?.toUpperCase()}</span>
+                          <button onClick={async () => { if (!confirm(`Excluir OS ${s.ordemServico}?`)) return; await fetch(`${API_URL}/submissions/${s.id}`, { method: 'DELETE' }); showToast('🗑️ Excluída!', 'success'); loadSubmissions(); }} className="px-1.5 py-0.5 bg-red-600 text-white rounded text-xs">🗑️</button>
+                        </div>
                       </div>
-                      <p className="text-xs text-gray-600">{s.fullName}</p>
-                      <p className="text-xs text-gray-500">{s.motivo}</p>
-                      {s.validated_by_name && <p className="text-xs text-purple-600 mt-1">👤 {s.validated_by_name}</p>}
-                      <p className="text-xs text-gray-400 mt-1">{s.timestamp}</p>
+                      <p className="text-xs text-gray-600">{s.motivo}</p>
+                      {s.coordenadas && (
+                        <div className="mt-1 bg-green-50 border border-green-200 rounded p-1.5 flex items-center justify-between">
+                          <p className="text-xs font-mono text-green-900">{s.coordenadas}</p>
+                          <button onClick={() => { navigator.clipboard.writeText(s.coordenadas); showToast('📋 Copiado!', 'success'); }} className="px-1.5 py-0.5 bg-green-600 text-white text-xs rounded">📋</button>
+                        </div>
+                      )}
+                      {s.temImagem && (
+                        <div className="mt-1">
+                          {s.imagemComprovante ? (
+                            <>
+                              <div className="flex gap-1 flex-wrap">{s.imagemComprovante.split('|||').map((img, i) => <img key={i} src={img} className="h-20 rounded cursor-pointer" onClick={() => setImageModal(img)} />)}</div>
+                              <button onClick={() => setSubmissions(prev => prev.map(sub => sub.id === s.id ? {...sub, imagemComprovante: null} : sub))} className="text-xs text-gray-500">▲ Ocultar</button>
+                            </>
+                          ) : (
+                            <button onClick={() => { showToast('🔄 Carregando...', 'success'); loadImagem(s.id); }} className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-xs font-semibold">📷 Ver foto(s)</button>
+                          )}
+                        </div>
+                      )}
+                      {s.observacao && <div className="mt-1 bg-white p-1 rounded border"><p className="text-xs text-gray-600">Obs: {s.observacao}</p></div>}
+                      <div className="flex justify-between items-center mt-1">
+                        <p className="text-xs text-gray-400">{s.timestamp}</p>
+                        {s.validated_by_name && s.status !== 'pendente' && <p className="text-xs text-purple-600 font-semibold">👤 {s.validated_by_name}</p>}
+                      </div>
                     </div>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {/* RANKING */}
+            {formData.adminTab === 'ranking' && (
+              <div className="bg-white rounded-xl shadow p-6">
+                <h2 className="text-lg font-semibold mb-4">🏆 Ranking de Retorno - Aprovações</h2>
+                <div className="mb-6">
+                  <select value={formData.rankingPeriod || 'all'} onChange={e => setFormData({...formData, rankingPeriod: e.target.value})} className="px-4 py-2 border rounded-lg">
+                    <option value="all">📅 Todos os Tempos</option>
+                    <option value="today">📅 Hoje</option>
+                    <option value="week">📅 Esta Semana</option>
+                    <option value="month">📅 Este Mês</option>
+                  </select>
+                </div>
+                <div className="space-y-3">
+                  {(() => {
+                    const today = new Date(); today.setHours(0,0,0,0);
+                    const filtered = submissions.filter(s => {
+                      if (s.status !== 'aprovada' || s.motivo !== 'Ajuste de Retorno') return false;
+                      if (!formData.rankingPeriod || formData.rankingPeriod === 'all') return true;
+                      const subDate = new Date(s.created_at);
+                      if (formData.rankingPeriod === 'today') { const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate()+1); return subDate >= today && subDate < tomorrow; }
+                      if (formData.rankingPeriod === 'week') { const weekAgo = new Date(today); weekAgo.setDate(weekAgo.getDate()-7); return subDate >= weekAgo; }
+                      if (formData.rankingPeriod === 'month') { const monthAgo = new Date(today); monthAgo.setMonth(monthAgo.getMonth()-1); return subDate >= monthAgo; }
+                      return true;
+                    });
+                    const stats = {};
+                    filtered.forEach(s => { const n = s.fullName || 'Desconhecido'; stats[n] = (stats[n] || 0) + 1; });
+                    const ranking = Object.entries(stats).sort((a, b) => b[1] - a[1]);
+                    if (ranking.length === 0) return <p className="text-gray-500 text-center py-8">Sem dados no período</p>;
+                    return ranking.map(([name, count], i) => (
+                      <div key={i} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100">
+                        <div className={`text-3xl font-bold w-12 ${i === 0 ? 'text-yellow-500' : i === 1 ? 'text-gray-400' : i === 2 ? 'text-orange-600' : 'text-gray-400'}`}>{i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i+1}º`}</div>
+                        <div className="flex-1"><p className="font-semibold text-lg text-gray-800">{name}</p></div>
+                        <div className="text-right"><p className="text-3xl font-bold text-purple-600">{count}</p><p className="text-xs text-gray-500">aprovações</p></div>
+                      </div>
+                    ));
+                  })()}
+                </div>
+              </div>
+            )}
+
+            {/* ESTATÍSTICAS */}
+            {formData.adminTab === 'stats' && (
+              <div className="space-y-6">
+                <div className="grid md:grid-cols-2 gap-6">
+                  <TechRanking submissions={submissions} />
+                  <div className="space-y-4">
+                    <div className="bg-white rounded-xl shadow p-6"><p className="text-sm text-gray-600">Taxa de Aprovação</p><p className="text-3xl font-bold text-green-600">{submissions.length > 0 ? ((submissions.filter(s => s.status === 'aprovada').length / submissions.length) * 100).toFixed(1) : 0}%</p></div>
+                    <div className="bg-white rounded-xl shadow p-6"><p className="text-sm text-gray-600">Taxa de Rejeição</p><p className="text-3xl font-bold text-red-600">{submissions.length > 0 ? ((submissions.filter(s => s.status === 'rejeitada').length / submissions.length) * 100).toFixed(1) : 0}%</p></div>
+                    <div className="bg-white rounded-xl shadow p-6"><p className="text-sm text-gray-600">Média por Técnico</p><p className="text-3xl font-bold text-purple-600">{users.length > 0 ? (submissions.length / users.length).toFixed(1) : 0}</p></div>
+                    <div className="bg-white rounded-xl shadow p-6"><p className="text-sm text-gray-600">Total de Técnicos</p><p className="text-3xl font-bold text-blue-600">{users.length}</p></div>
+                  </div>
                 </div>
               </div>
             )}
@@ -1167,44 +1248,49 @@
                 <h2 className="text-lg font-semibold mb-4">👥 Gerenciar Usuários</h2>
                 <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-6">
                   <h3 className="font-semibold mb-3">➕ Criar Usuário</h3>
-                  <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-3">
-                    <input type="text" placeholder="Nome" value={formData.newName || ''} onChange={e => setFormData({...formData, newName: e.target.value})} className="px-3 py-2 border rounded" />
-                    <input type="text" placeholder="Código" value={formData.newCod || ''} onChange={e => setFormData({...formData, newCod: e.target.value})} className="px-3 py-2 border rounded" />
-                    <input type="password" placeholder="Senha" value={formData.newPass || ''} onChange={e => setFormData({...formData, newPass: e.target.value})} className="px-3 py-2 border rounded" />
-                    <select value={formData.newRole || 'user'} onChange={e => setFormData({...formData, newRole: e.target.value})} className="px-3 py-2 border rounded">
-                      <option value="user">👤 Usuário</option>
-                      <option value="admin">👑 Admin</option>
-                      <option value="admin_financeiro">💰 Admin Financeiro</option>
-                    </select>
+                  <div className="space-y-4">
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div><label className="block text-sm font-semibold mb-1">Nome</label><input type="text" value={formData.newName || ''} onChange={e => setFormData({...formData, newName: e.target.value})} className="w-full px-3 py-2 border rounded" /></div>
+                      <div><label className="block text-sm font-semibold mb-1">Código</label><input type="text" value={formData.newCod || ''} onChange={e => setFormData({...formData, newCod: e.target.value})} className="w-full px-3 py-2 border rounded" /></div>
+                    </div>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div><label className="block text-sm font-semibold mb-1">Senha</label><input type="password" value={formData.newPass || ''} onChange={e => setFormData({...formData, newPass: e.target.value})} className="w-full px-3 py-2 border rounded" /></div>
+                      <div><label className="block text-sm font-semibold mb-1">Tipo</label><select value={formData.newRole || 'user'} onChange={e => setFormData({...formData, newRole: e.target.value})} className="w-full px-3 py-2 border rounded bg-white"><option value="user">👤 Usuário</option><option value="admin">👑 Admin</option><option value="admin_financeiro">💰 Admin Financeiro</option></select></div>
+                    </div>
+                    <button onClick={async () => {
+                      if (!formData.newName || !formData.newCod || !formData.newPass) { showToast('Preencha todos', 'error'); return; }
+                      setLoading(true);
+                      try {
+                        await fetch(`${API_URL}/users/register`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fullName: formData.newName, codProfissional: formData.newCod, password: formData.newPass, role: formData.newRole || 'user' }) });
+                        showToast('✅ Criado!', 'success');
+                        setFormData({...formData, newName: '', newCod: '', newPass: '', newRole: 'user'});
+                        loadUsers();
+                      } catch { showToast('Erro', 'error'); }
+                      setLoading(false);
+                    }} className="w-full px-6 py-2 bg-purple-600 text-white rounded font-semibold">➕ Criar Usuário</button>
                   </div>
-                  <button onClick={async () => {
-                    if (!formData.newName || !formData.newCod || !formData.newPass) { showToast('Preencha todos', 'error'); return; }
-                    setLoading(true);
-                    try {
-                      await fetch(`${API_URL}/users/register`, {
-                        method: 'POST', headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ fullName: formData.newName, codProfissional: formData.newCod, password: formData.newPass, role: formData.newRole || 'user' })
-                      });
-                      showToast('✅ Criado!', 'success');
-                      setFormData({...formData, newName: '', newCod: '', newPass: '', newRole: 'user'});
-                      loadUsers();
-                    } catch { showToast('Erro', 'error'); }
-                    setLoading(false);
-                  }} className="mt-3 px-6 py-2 bg-purple-600 text-white rounded font-semibold">➕ Criar</button>
                 </div>
+                <h3 className="font-semibold mb-3">📋 Usuários Cadastrados</h3>
                 <div className="space-y-2">
                   {users.map(u => (
-                    <div key={u.codProfissional} className="border rounded-lg p-3 flex justify-between items-center">
-                      <div>
-                        <p className="font-semibold">{u.fullName}</p>
-                        <p className="text-sm text-gray-600">COD: {u.codProfissional} • {u.role}</p>
+                    <div key={u.codProfissional} className="border rounded-lg p-4 flex items-center justify-between hover:bg-gray-50">
+                      <div className="flex-1"><p className="font-semibold">{u.fullName}</p><p className="text-sm text-gray-600">COD: {u.codProfissional} • {u.role}</p><p className="text-xs text-gray-400">{u.createdAt}</p></div>
+                      <div className="flex gap-2 items-center">
+                        <input type="password" placeholder="Nova senha" value={formData[`newpass_${u.codProfissional}`] || ''} onChange={e => setFormData({...formData, [`newpass_${u.codProfissional}`]: e.target.value})} className="px-3 py-2 border rounded text-sm w-32" />
+                        <button onClick={async () => {
+                          const pw = formData[`newpass_${u.codProfissional}`];
+                          if (!pw || pw.length < 4) { showToast('Senha muito curta', 'error'); return; }
+                          await fetch(`${API_URL}/users/reset-password`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ codProfissional: u.codProfissional, newPassword: pw }) });
+                          showToast('✅ Senha alterada!', 'success');
+                          setFormData({...formData, [`newpass_${u.codProfissional}`]: ''});
+                        }} className="px-4 py-2 bg-purple-600 text-white rounded text-sm font-semibold">🔑 Resetar</button>
+                        <button onClick={async () => {
+                          if (!confirm(`Excluir ${u.fullName}?`)) return;
+                          await fetch(`${API_URL}/users/${u.codProfissional}`, { method: 'DELETE' });
+                          showToast('🗑️ Excluído!', 'success');
+                          loadUsers();
+                        }} className="px-4 py-2 bg-red-600 text-white rounded text-sm font-semibold">🗑️</button>
                       </div>
-                      <button onClick={async () => {
-                        if (!confirm(`Excluir ${u.fullName}?`)) return;
-                        await fetch(`${API_URL}/users/${u.codProfissional}`, { method: 'DELETE' });
-                        showToast('Excluído!', 'success');
-                        loadUsers();
-                      }} className="px-3 py-1 bg-red-600 text-white rounded text-sm">🗑️</button>
                     </div>
                   ))}
                 </div>
