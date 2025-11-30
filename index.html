@@ -889,7 +889,18 @@
       };
 
       const handleSaveFinancial = async () => {
-        if (!formData.finName || !formData.finCpf || !formData.finPix) { showToast('Preencha todos os campos', 'error'); return; }
+        if (!formData.finName || !formData.finCpf || !formData.finPix) { 
+          showToast('Preencha todos os campos', 'error'); 
+          return; 
+        }
+        
+        // Validar chave PIX
+        const validacaoPix = validarChavePix(formData.finPix);
+        if (!validacaoPix.valido) {
+          showToast('❌ Chave PIX inválida! Use CPF, CNPJ, Email, Telefone ou Chave Aleatória', 'error');
+          return;
+        }
+        
         setLoading(true);
         try {
           await fetch(`${API_URL}/financial/data`, {
@@ -897,7 +908,7 @@
             body: JSON.stringify({ userCod: user.codProfissional, fullName: formData.finName, cpf: formData.finCpf, pixKey: formData.finPix })
           });
           setFinancialData({ full_name: formData.finName, cpf: formData.finCpf, pix_key: formData.finPix });
-          showToast('✅ Dados salvos!', 'success');
+          showToast(`✅ Dados salvos! (PIX: ${validacaoPix.tipo})`, 'success');
         } catch (err) { showToast('Erro', 'error'); }
         setLoading(false);
       };
@@ -1092,6 +1103,50 @@
       };
 
       const formatMoney = (v) => parseFloat(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+      // Validar chave PIX
+      const validarChavePix = (chave) => {
+        if (!chave || chave.trim() === '') {
+          return { valido: false, tipo: null, mensagem: '' };
+        }
+        
+        const chaveLimpa = chave.trim();
+        
+        // CPF: 11 dígitos (com ou sem formatação)
+        const cpfLimpo = chaveLimpa.replace(/[\.\-]/g, '');
+        if (/^\d{11}$/.test(cpfLimpo)) {
+          return { valido: true, tipo: 'CPF', mensagem: '✅ CPF válido' };
+        }
+        
+        // CNPJ: 14 dígitos (com ou sem formatação)
+        const cnpjLimpo = chaveLimpa.replace(/[\.\-\/]/g, '');
+        if (/^\d{14}$/.test(cnpjLimpo)) {
+          return { valido: true, tipo: 'CNPJ', mensagem: '✅ CNPJ válido' };
+        }
+        
+        // Telefone: +55 ou 55 + DDD + número (10 ou 11 dígitos)
+        const telLimpo = chaveLimpa.replace(/[\s\(\)\-\+]/g, '');
+        if (/^55\d{10,11}$/.test(telLimpo) || /^\d{10,11}$/.test(telLimpo)) {
+          return { valido: true, tipo: 'Telefone', mensagem: '✅ Telefone válido' };
+        }
+        
+        // Email
+        if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(chaveLimpa)) {
+          return { valido: true, tipo: 'Email', mensagem: '✅ Email válido' };
+        }
+        
+        // Chave aleatória: UUID (32 caracteres hex com hífens)
+        if (/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(chaveLimpa)) {
+          return { valido: true, tipo: 'Aleatória', mensagem: '✅ Chave aleatória válida' };
+        }
+        
+        // Chave aleatória sem hífens (32 caracteres)
+        if (/^[a-f0-9]{32}$/i.test(chaveLimpa)) {
+          return { valido: true, tipo: 'Aleatória', mensagem: '✅ Chave aleatória válida' };
+        }
+        
+        return { valido: false, tipo: null, mensagem: '❌ Formato de chave PIX inválido' };
+      };
 
       const statusLabels = {
         'aguardando_aprovacao': '⏳ Aguardando',
@@ -1637,7 +1692,36 @@
                             <div className="space-y-4">
                               <div><label className="block text-sm font-semibold mb-1">Nome</label><input type="text" value={formData.finName ?? financialData?.full_name ?? ''} onChange={e => setFormData({...formData, finName: e.target.value})} className="w-full px-4 py-2 border rounded-lg" /></div>
                               <div><label className="block text-sm font-semibold mb-1">CPF</label><input type="text" value={formData.finCpf ?? financialData?.cpf ?? ''} onChange={e => setFormData({...formData, finCpf: formatCPF(e.target.value)})} className="w-full px-4 py-2 border rounded-lg" /></div>
-                              <div><label className="block text-sm font-semibold mb-1">PIX</label><input type="text" value={formData.finPix ?? financialData?.pix_key ?? ''} onChange={e => setFormData({...formData, finPix: e.target.value})} className="w-full px-4 py-2 border rounded-lg" /></div>
+                              <div>
+                                <label className="block text-sm font-semibold mb-1">Chave PIX</label>
+                                <input 
+                                  type="text" 
+                                  value={formData.finPix ?? financialData?.pix_key ?? ''} 
+                                  onChange={e => setFormData({...formData, finPix: e.target.value})} 
+                                  placeholder="CPF, CNPJ, Email, Telefone ou Chave Aleatória"
+                                  className={`w-full px-4 py-2 border rounded-lg ${
+                                    (formData.finPix || financialData?.pix_key) 
+                                      ? validarChavePix(formData.finPix ?? financialData?.pix_key).valido 
+                                        ? 'border-green-500 bg-green-50' 
+                                        : 'border-red-500 bg-red-50'
+                                      : ''
+                                  }`}
+                                />
+                                {(formData.finPix || financialData?.pix_key) && (
+                                  <div className={`mt-1 text-sm flex items-center gap-2 ${
+                                    validarChavePix(formData.finPix ?? financialData?.pix_key).valido 
+                                      ? 'text-green-600' 
+                                      : 'text-red-600'
+                                  }`}>
+                                    <span>{validarChavePix(formData.finPix ?? financialData?.pix_key).mensagem}</span>
+                                    {validarChavePix(formData.finPix ?? financialData?.pix_key).tipo && (
+                                      <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
+                                        {validarChavePix(formData.finPix ?? financialData?.pix_key).tipo}
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
                               <button onClick={handleSaveFinancial} disabled={loading} className="w-full bg-blue-600 text-white py-3 rounded-lg font-bold disabled:opacity-50">{loading ? '...' : '💾 Atualizar'}</button>
                             </div>
                           )}
