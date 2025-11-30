@@ -4481,9 +4481,20 @@
                           setFormData({...formData, [`newpass_${u.codProfissional}`]: ''});
                         }} className="px-4 py-2 bg-purple-600 text-white rounded text-sm font-semibold">🔑 Resetar</button>
                         <button onClick={async () => {
-                          if (!confirm(`Excluir ${u.fullName}?`)) return;
-                          await fetch(`${API_URL}/users/${u.codProfissional}`, { method: 'DELETE' });
-                          showToast('🗑️ Excluído!', 'success');
+                          const confirmMsg = `⚠️ ATENÇÃO!\n\nExcluir ${u.fullName} (${u.codProfissional})?\n\nTODOS os dados associados serão excluídos:\n• Solicitações de saque\n• Histórico de saques\n• Gratuidades\n• Indicações\n• Inscrições em promoções\n• Respostas do quiz\n\nEsta ação NÃO pode ser desfeita!`;
+                          if (!confirm(confirmMsg)) return;
+                          try {
+                            const res = await fetch(`${API_URL}/users/${u.codProfissional}`, { method: 'DELETE' });
+                            const data = await res.json();
+                            if (res.ok) {
+                              const deleted = data.deleted;
+                              showToast(`🗑️ Excluído! (${deleted.submissions} solicitações, ${deleted.withdrawals} saques, ${deleted.gratuities} gratuidades, ${deleted.indicacoes} indicações)`, 'success');
+                            } else {
+                              throw new Error(data.error);
+                            }
+                          } catch (err) {
+                            showToast('❌ Erro ao excluir: ' + err.message, 'error');
+                          }
                           loadUsers();
                         }} className="px-4 py-2 bg-red-600 text-white rounded text-sm font-semibold">🗑️</button>
                       </div>
