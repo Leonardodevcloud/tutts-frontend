@@ -211,6 +211,11 @@
       const [userGratuities, setUserGratuities] = useState([]);
       const [restrictedList, setRestrictedList] = useState([]);
       const [dashboardData, setDashboardData] = useState({});
+      
+      // Estados - Indicações
+      const [promocoes, setPromocoes] = useState([]);
+      const [indicacoes, setIndicacoes] = useState([]);
+      const [minhasIndicacoes, setMinhasIndicacoes] = useState([]);
 
       const showToast = (message, type = 'success') => {
         setToast({ message, type });
@@ -238,8 +243,8 @@
         if (!user) return;
         loadSubmissions();
         if (user.role === 'admin') loadUsers();
-        if (user.role === 'user') { checkTerms(); loadUserWithdrawals(); loadUserGratuities(); }
-        if (user.role === 'admin_financeiro') { loadAllWithdrawals(); loadAllGratuities(); loadRestricted(); loadDashboard(); }
+        if (user.role === 'user') { checkTerms(); loadUserWithdrawals(); loadUserGratuities(); loadPromocoesAtivas(); loadMinhasIndicacoes(); }
+        if (user.role === 'admin_financeiro') { loadAllWithdrawals(); loadAllGratuities(); loadRestricted(); loadDashboard(); loadPromocoes(); loadIndicacoes(); }
       }, [user]);
 
       // ========== FUNÇÕES DE CARREGAMENTO ==========
@@ -331,11 +336,129 @@
         try {
           await loadSubmissions();
           if (user.role === 'admin') await loadUsers();
-          if (user.role === 'user') { await loadUserWithdrawals(); await loadUserGratuities(); }
-          if (user.role === 'admin_financeiro') { await loadAllWithdrawals(); await loadAllGratuities(); await loadRestricted(); await loadDashboard(); }
+          if (user.role === 'user') { await loadUserWithdrawals(); await loadUserGratuities(); await loadPromocoesAtivas(); await loadMinhasIndicacoes(); }
+          if (user.role === 'admin_financeiro') { await loadAllWithdrawals(); await loadAllGratuities(); await loadRestricted(); await loadDashboard(); await loadPromocoes(); await loadIndicacoes(); }
           showToast('🔄 Atualizado!', 'success');
         } catch (err) { showToast('Erro', 'error'); }
         setGlobalLoading(false);
+      };
+
+      // ========== FUNÇÕES DE INDICAÇÕES ==========
+      const loadPromocoes = async () => {
+        try {
+          const res = await fetch(`${API_URL}/promocoes`);
+          setPromocoes(await res.json());
+        } catch (err) { console.error('Erro ao carregar promoções:', err); }
+      };
+
+      const loadPromocoesAtivas = async () => {
+        try {
+          const res = await fetch(`${API_URL}/promocoes/ativas`);
+          setPromocoes(await res.json());
+        } catch (err) { console.error('Erro ao carregar promoções ativas:', err); }
+      };
+
+      const loadIndicacoes = async () => {
+        try {
+          const res = await fetch(`${API_URL}/indicacoes`);
+          setIndicacoes(await res.json());
+        } catch (err) { console.error('Erro ao carregar indicações:', err); }
+      };
+
+      const loadMinhasIndicacoes = async () => {
+        try {
+          const res = await fetch(`${API_URL}/indicacoes/usuario/${user.codProfissional}`);
+          setMinhasIndicacoes(await res.json());
+        } catch (err) { console.error('Erro ao carregar minhas indicações:', err); }
+      };
+
+      const handleCriarPromocao = async () => {
+        if (!formData.promoRegiao || !formData.promoValor) {
+          showToast('Preencha todos os campos obrigatórios', 'error');
+          return;
+        }
+        setLoading(true);
+        try {
+          const res = await fetch(`${API_URL}/promocoes`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              regiao: formData.promoRegiao,
+              valor_bonus: parseFloat(formData.promoValor),
+              detalhes: formData.promoDetalhes || null,
+              created_by: user.fullName
+            })
+          });
+          if (!res.ok) throw new Error('Erro ao criar promoção');
+          showToast('✅ Promoção criada!', 'success');
+          setFormData({ ...formData, promoRegiao: '', promoValor: '', promoDetalhes: '' });
+          await loadPromocoes();
+        } catch (err) { showToast(err.message, 'error'); }
+        setLoading(false);
+      };
+
+      const handleEnviarIndicacao = async (promocao) => {
+        if (!formData.indicadoNome || !formData.indicadoContato) {
+          showToast('Nome e contato são obrigatórios', 'error');
+          return;
+        }
+        setLoading(true);
+        try {
+          const res = await fetch(`${API_URL}/indicacoes`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              promocao_id: promocao.id,
+              user_cod: user.codProfissional,
+              user_name: user.fullName,
+              indicado_nome: formData.indicadoNome,
+              indicado_cpf: formData.indicadoCpf || null,
+              indicado_contato: formData.indicadoContato,
+              valor_bonus: promocao.valor_bonus,
+              regiao: promocao.regiao
+            })
+          });
+          if (!res.ok) throw new Error('Erro ao enviar indicação');
+          showToast('✅ Indicação enviada! Válida por 30 dias.', 'success');
+          setFormData({ ...formData, indicadoNome: '', indicadoCpf: '', indicadoContato: '', modalIndicacao: null });
+          await loadMinhasIndicacoes();
+        } catch (err) { showToast(err.message, 'error'); }
+        setLoading(false);
+      };
+
+      const handleAprovarIndicacao = async (id) => {
+        setLoading(true);
+        try {
+          const res = await fetch(`${API_URL}/indicacoes/${id}/aprovar`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ resolved_by: user.fullName })
+          });
+          if (!res.ok) throw new Error('Erro ao aprovar');
+          showToast('✅ Indicação aprovada!', 'success');
+          await loadIndicacoes();
+        } catch (err) { showToast(err.message, 'error'); }
+        setLoading(false);
+      };
+
+      const handleRejeitarIndicacao = async (id) => {
+        if (!formData.motivoRejeicao) {
+          showToast('Informe o motivo da rejeição', 'error');
+          return;
+        }
+        setLoading(true);
+        try {
+          const res = await fetch(`${API_URL}/indicacoes/${id}/rejeitar`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ motivo_rejeicao: formData.motivoRejeicao, resolved_by: user.fullName })
+          });
+          if (!res.ok) throw new Error('Erro ao rejeitar');
+          showToast('❌ Indicação rejeitada', 'success');
+          setFormData({ ...formData, modalRejeitar: null, motivoRejeicao: '' });
+          await loadIndicacoes();
+        } catch (err) { showToast(err.message, 'error'); }
+        setLoading(false);
       };
 
       // ========== FUNÇÕES DE AÇÃO ==========
@@ -662,9 +785,10 @@
             </nav>
 
             <div className="bg-white border-b">
-              <div className="max-w-7xl mx-auto px-4 flex gap-1">
-                <button onClick={() => setFormData({...formData, userTab: 'solicitacoes'})} className={`px-6 py-3 font-semibold ${(!formData.userTab || formData.userTab === 'solicitacoes') ? 'text-purple-900 border-b-2 border-purple-900' : 'text-gray-600'}`}>📋 Solicitações</button>
-                <button onClick={() => setFormData({...formData, userTab: 'saque'})} className={`px-6 py-3 font-semibold ${formData.userTab === 'saque' ? 'text-green-700 border-b-2 border-green-600' : 'text-gray-600'}`}>💰 Saque Emergencial</button>
+              <div className="max-w-7xl mx-auto px-4 flex gap-1 overflow-x-auto">
+                <button onClick={() => setFormData({...formData, userTab: 'solicitacoes'})} className={`px-6 py-3 font-semibold whitespace-nowrap ${(!formData.userTab || formData.userTab === 'solicitacoes') ? 'text-purple-900 border-b-2 border-purple-900' : 'text-gray-600'}`}>📋 Solicitações</button>
+                <button onClick={() => setFormData({...formData, userTab: 'saque'})} className={`px-6 py-3 font-semibold whitespace-nowrap ${formData.userTab === 'saque' ? 'text-green-700 border-b-2 border-green-600' : 'text-gray-600'}`}>💰 Saque</button>
+                <button onClick={() => setFormData({...formData, userTab: 'indicacoes'})} className={`px-6 py-3 font-semibold whitespace-nowrap ${formData.userTab === 'indicacoes' ? 'text-blue-700 border-b-2 border-blue-600' : 'text-gray-600'}`}>👥 Indicações</button>
               </div>
             </div>
 
@@ -1026,6 +1150,160 @@
                   )}
                 </>
               )}
+
+              {/* ========== ABA INDICAÇÕES ========== */}
+              {formData.userTab === 'indicacoes' && (
+                <>
+                  {/* Modal para fazer indicação */}
+                  {formData.modalIndicacao && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+                      <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full">
+                        <h3 className="text-xl font-bold text-blue-700 mb-4">👥 Fazer Indicação</h3>
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                          <p className="text-sm font-semibold text-blue-800">📍 {formData.modalIndicacao.regiao}</p>
+                          <p className="text-2xl font-bold text-green-600">Bônus: {formatMoney(formData.modalIndicacao.valor_bonus)}</p>
+                        </div>
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-sm font-semibold mb-1">Nome Completo do Indicado *</label>
+                            <input 
+                              type="text" 
+                              value={formData.indicadoNome || ''} 
+                              onChange={e => setFormData({...formData, indicadoNome: e.target.value})} 
+                              className="w-full px-4 py-2 border rounded-lg"
+                              placeholder="Nome completo"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-semibold mb-1">CPF (opcional)</label>
+                            <input 
+                              type="text" 
+                              value={formData.indicadoCpf || ''} 
+                              onChange={e => setFormData({...formData, indicadoCpf: formatCPF(e.target.value)})} 
+                              className="w-full px-4 py-2 border rounded-lg"
+                              placeholder="000.000.000-00"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-semibold mb-1">Contato (WhatsApp) *</label>
+                            <input 
+                              type="text" 
+                              value={formData.indicadoContato || ''} 
+                              onChange={e => setFormData({...formData, indicadoContato: e.target.value})} 
+                              className="w-full px-4 py-2 border rounded-lg"
+                              placeholder="(00) 00000-0000"
+                            />
+                          </div>
+                        </div>
+                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mt-4">
+                          <p className="text-xs text-yellow-800">⏰ A indicação será válida por <strong>30 dias</strong>. Se não for aprovada nesse período, irá expirar automaticamente.</p>
+                        </div>
+                        <div className="flex gap-3 mt-4">
+                          <button onClick={() => setFormData({...formData, modalIndicacao: null, indicadoNome: '', indicadoCpf: '', indicadoContato: ''})} className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300">Cancelar</button>
+                          <button onClick={() => handleEnviarIndicacao(formData.modalIndicacao)} disabled={loading} className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50">
+                            {loading ? '...' : '📤 Enviar Indicação'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Promoções Disponíveis */}
+                  <div className="bg-white rounded-xl shadow p-6 mb-6">
+                    <h2 className="text-xl font-bold text-blue-800 mb-4">🎯 Promoções de Indicação Disponíveis</h2>
+                    {promocoes.length === 0 ? (
+                      <div className="text-center py-8 text-gray-500">
+                        <p className="text-4xl mb-2">📢</p>
+                        <p>Nenhuma promoção disponível no momento</p>
+                        <p className="text-sm">Fique atento, novas promoções podem aparecer a qualquer momento!</p>
+                      </div>
+                    ) : (
+                      <div className="grid md:grid-cols-2 gap-4">
+                        {promocoes.map(p => (
+                          <div key={p.id} className="border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white rounded-xl p-6">
+                            <div className="flex justify-between items-start mb-3">
+                              <span className="px-3 py-1 bg-green-500 text-white rounded-full text-xs font-bold">🔥 ATIVA</span>
+                            </div>
+                            <p className="text-lg font-bold text-gray-800 mb-1">📍 {p.regiao}</p>
+                            <p className="text-3xl font-bold text-green-600 mb-3">{formatMoney(p.valor_bonus)}</p>
+                            {p.detalhes ? (
+                              <div className="bg-white border border-blue-200 rounded-lg p-3 mb-4">
+                                <p className="text-sm text-gray-700">{p.detalhes}</p>
+                              </div>
+                            ) : (
+                              <p className="text-sm text-gray-600 mb-4">Indique um amigo para trabalhar nesta região e ganhe este bônus quando ele for aprovado!</p>
+                            )}
+                            <button 
+                              onClick={() => setFormData({...formData, modalIndicacao: p})} 
+                              className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700"
+                            >
+                              👥 Fazer Indicação
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Minhas Indicações */}
+                  <div className="bg-white rounded-xl shadow p-6">
+                    <h2 className="text-lg font-bold text-gray-800 mb-4">📋 Minhas Indicações</h2>
+                    {minhasIndicacoes.length === 0 ? (
+                      <div className="text-center py-8 text-gray-500">
+                        <p className="text-4xl mb-2">👥</p>
+                        <p>Você ainda não fez nenhuma indicação</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {minhasIndicacoes.map(ind => {
+                          const diasRestantes = Math.ceil((new Date(ind.expires_at) - new Date()) / (1000 * 60 * 60 * 24));
+                          return (
+                            <div key={ind.id} className={`border rounded-xl p-4 ${
+                              ind.status === 'aprovada' ? 'border-green-300 bg-green-50' :
+                              ind.status === 'rejeitada' ? 'border-red-300 bg-red-50' :
+                              ind.status === 'expirada' ? 'border-gray-300 bg-gray-50' :
+                              'border-yellow-300 bg-yellow-50'
+                            }`}>
+                              <div className="flex justify-between items-start">
+                                <div>
+                                  <p className="font-bold text-lg">{ind.indicado_nome}</p>
+                                  <p className="text-sm text-gray-600">📍 {ind.regiao}</p>
+                                  <p className="text-sm text-gray-600">📞 {ind.indicado_contato}</p>
+                                  <p className="text-xs text-gray-500 mt-1">Enviado em {new Date(ind.created_at).toLocaleDateString('pt-BR')}</p>
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-xl font-bold text-green-600">{formatMoney(ind.valor_bonus)}</p>
+                                  <span className={`inline-block mt-2 px-3 py-1 rounded-full text-xs font-bold ${
+                                    ind.status === 'pendente' ? 'bg-yellow-500 text-white' :
+                                    ind.status === 'aprovada' ? 'bg-green-500 text-white' :
+                                    ind.status === 'rejeitada' ? 'bg-red-500 text-white' :
+                                    'bg-gray-500 text-white'
+                                  }`}>
+                                    {ind.status === 'pendente' ? `⏳ Pendente (${diasRestantes > 0 ? diasRestantes + ' dias' : 'Expirando'})` :
+                                     ind.status === 'aprovada' ? '✅ Aprovada' :
+                                     ind.status === 'rejeitada' ? '❌ Rejeitada' :
+                                     '⏰ Expirada'}
+                                  </span>
+                                </div>
+                              </div>
+                              {ind.status === 'aprovada' && (
+                                <div className="mt-3 bg-green-100 border border-green-300 rounded-lg p-3">
+                                  <p className="text-green-800 text-sm">🎉 <strong>Parabéns!</strong> Sua indicação foi aprovada! O bônus de {formatMoney(ind.valor_bonus)} será incluído no seu próximo repasse.</p>
+                                </div>
+                              )}
+                              {ind.status === 'rejeitada' && ind.motivo_rejeicao && (
+                                <div className="mt-3 bg-red-100 border border-red-300 rounded-lg p-3">
+                                  <p className="text-red-800 text-sm"><strong>Motivo:</strong> {ind.motivo_rejeicao}</p>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
           </div>
         );
@@ -1071,7 +1349,7 @@
 
             <div className="bg-white border-b sticky top-0 z-10">
               <div className="max-w-7xl mx-auto px-4 flex gap-1 overflow-x-auto">
-                {['solicitacoes', 'validacao', 'conciliacao', 'resumo', 'gratuidades', 'restritos', 'relatorios'].map(tab => (
+                {['solicitacoes', 'validacao', 'conciliacao', 'resumo', 'gratuidades', 'restritos', 'indicacoes', 'relatorios'].map(tab => (
                   <button key={tab} onClick={() => setFormData({...formData, finTab: tab})} className={`px-4 py-3 font-semibold whitespace-nowrap ${(formData.finTab || 'solicitacoes') === tab ? 'text-green-700 border-b-2 border-green-600' : 'text-gray-600'}`}>
                     {tab === 'solicitacoes' && '📋 Solicitações'}
                     {tab === 'validacao' && '📊 Validação Diária'}
@@ -1079,6 +1357,7 @@
                     {tab === 'resumo' && '🔍 Resumo'}
                     {tab === 'gratuidades' && '🎁 Gratuidades'}
                     {tab === 'restritos' && '🚫 Restritos'}
+                    {tab === 'indicacoes' && '👥 Indicações'}
                     {tab === 'relatorios' && '📈 Relatórios'}
                   </button>
                 ))}
@@ -1564,6 +1843,219 @@
                     </table>
                   </div>
                 </div>
+              )}
+
+              {/* ========== ABA INDICAÇÕES ========== */}
+              {formData.finTab === 'indicacoes' && (
+                <>
+                  {/* Modal de rejeição */}
+                  {formData.modalRejeitar && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+                      <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full">
+                        <h3 className="text-xl font-bold text-red-600 mb-4">❌ Rejeitar Indicação</h3>
+                        <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                          <p className="text-sm"><strong>Profissional:</strong> {formData.modalRejeitar.user_name}</p>
+                          <p className="text-sm"><strong>Indicado:</strong> {formData.modalRejeitar.indicado_nome}</p>
+                          <p className="text-sm"><strong>Região:</strong> {formData.modalRejeitar.regiao}</p>
+                        </div>
+                        <div className="mb-4">
+                          <label className="block text-sm font-semibold mb-1">Motivo da Rejeição *</label>
+                          <textarea 
+                            value={formData.motivoRejeicao || ''} 
+                            onChange={e => setFormData({...formData, motivoRejeicao: e.target.value})} 
+                            className="w-full px-4 py-2 border rounded-lg"
+                            rows="3"
+                            placeholder="Informe o motivo..."
+                          />
+                        </div>
+                        <div className="flex gap-3">
+                          <button onClick={() => setFormData({...formData, modalRejeitar: null, motivoRejeicao: ''})} className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300">Cancelar</button>
+                          <button onClick={() => handleRejeitarIndicacao(formData.modalRejeitar.id)} disabled={!formData.motivoRejeicao || loading} className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 disabled:opacity-50">
+                            {loading ? '...' : '❌ Rejeitar'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Cadastrar Promoção */}
+                  <div className="bg-white rounded-xl shadow p-6 mb-6">
+                    <h2 className="text-xl font-bold text-green-800 mb-4">📣 Cadastrar Nova Promoção de Indicação</h2>
+                    <div className="grid md:grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <label className="block text-sm font-semibold mb-1">Região *</label>
+                        <input 
+                          type="text" 
+                          value={formData.promoRegiao || ''} 
+                          onChange={e => setFormData({...formData, promoRegiao: e.target.value})} 
+                          className="w-full px-4 py-2 border rounded-lg"
+                          placeholder="Ex: Salvador - BA"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold mb-1">Valor do Bônus (R$) *</label>
+                        <input 
+                          type="number" 
+                          step="0.01"
+                          value={formData.promoValor || ''} 
+                          onChange={e => setFormData({...formData, promoValor: e.target.value})} 
+                          className="w-full px-4 py-2 border rounded-lg"
+                          placeholder="Ex: 100.00"
+                        />
+                      </div>
+                    </div>
+                    <div className="mb-4">
+                      <label className="block text-sm font-semibold mb-1">Detalhes da Promoção (opcional)</label>
+                      <textarea 
+                        value={formData.promoDetalhes || ''} 
+                        onChange={e => setFormData({...formData, promoDetalhes: e.target.value})} 
+                        className="w-full px-4 py-2 border rounded-lg"
+                        rows="3"
+                        placeholder="Ex: Vaga para instalador com experiência em fibra óptica. Início imediato. Benefícios: vale transporte + alimentação..."
+                      />
+                    </div>
+                    <button onClick={handleCriarPromocao} disabled={loading} className="w-full md:w-auto px-6 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 disabled:opacity-50">
+                      {loading ? '...' : '➕ Criar Promoção'}
+                    </button>
+                  </div>
+
+                  {/* Promoções Ativas */}
+                  <div className="bg-white rounded-xl shadow p-6 mb-6">
+                    <h3 className="font-semibold mb-4">📋 Promoções Cadastradas</h3>
+                    {promocoes.length === 0 ? (
+                      <p className="text-gray-500 text-center py-4">Nenhuma promoção cadastrada</p>
+                    ) : (
+                      <div className="grid md:grid-cols-3 gap-4">
+                        {promocoes.map(p => (
+                          <div key={p.id} className={`border rounded-lg p-4 ${p.status === 'ativa' ? 'border-green-300 bg-green-50' : 'border-gray-300 bg-gray-50'}`}>
+                            <div className="flex justify-between items-start mb-2">
+                              <span className={`px-2 py-1 rounded text-xs font-bold ${p.status === 'ativa' ? 'bg-green-500 text-white' : 'bg-gray-500 text-white'}`}>
+                                {p.status === 'ativa' ? '✅ Ativa' : '⏸️ Inativa'}
+                              </span>
+                              <button 
+                                onClick={async () => {
+                                  await fetch(`${API_URL}/promocoes/${p.id}`, {
+                                    method: 'PATCH',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ status: p.status === 'ativa' ? 'inativa' : 'ativa' })
+                                  });
+                                  loadPromocoes();
+                                }}
+                                className="text-xs text-gray-500 hover:text-gray-700"
+                              >
+                                {p.status === 'ativa' ? '⏸️ Pausar' : '▶️ Ativar'}
+                              </button>
+                            </div>
+                            <p className="font-bold text-lg">📍 {p.regiao}</p>
+                            <p className="text-2xl font-bold text-green-600">{formatMoney(p.valor_bonus)}</p>
+                            {p.detalhes && (
+                              <p className="text-sm text-gray-600 mt-2 bg-white rounded p-2 border">{p.detalhes}</p>
+                            )}
+                            <p className="text-xs text-gray-500 mt-2">Criado em {new Date(p.created_at).toLocaleDateString('pt-BR')}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Cards de estatísticas */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-center">
+                      <p className="text-3xl font-bold text-yellow-600">{indicacoes.filter(i => i.status === 'pendente').length}</p>
+                      <p className="text-sm text-yellow-700">Pendentes</p>
+                    </div>
+                    <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-center">
+                      <p className="text-3xl font-bold text-green-600">{indicacoes.filter(i => i.status === 'aprovada').length}</p>
+                      <p className="text-sm text-green-700">Aprovadas</p>
+                    </div>
+                    <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-center">
+                      <p className="text-3xl font-bold text-red-600">{indicacoes.filter(i => i.status === 'rejeitada').length}</p>
+                      <p className="text-sm text-red-700">Rejeitadas</p>
+                    </div>
+                    <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 text-center">
+                      <p className="text-3xl font-bold text-gray-600">{indicacoes.filter(i => i.status === 'expirada').length}</p>
+                      <p className="text-sm text-gray-700">Expiradas</p>
+                    </div>
+                  </div>
+
+                  {/* Tabela de Indicações */}
+                  <div className="bg-white rounded-xl shadow p-6">
+                    <h3 className="font-semibold mb-4">👥 Indicações Recebidas</h3>
+                    {indicacoes.length === 0 ? (
+                      <p className="text-gray-500 text-center py-8">Nenhuma indicação recebida</p>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead className="bg-gray-50">
+                            <tr>
+                              <th className="px-4 py-3 text-left">Data</th>
+                              <th className="px-4 py-3 text-left">Profissional</th>
+                              <th className="px-4 py-3 text-left">Indicado</th>
+                              <th className="px-4 py-3 text-left">Contato</th>
+                              <th className="px-4 py-3 text-left">Região</th>
+                              <th className="px-4 py-3 text-center">Bônus</th>
+                              <th className="px-4 py-3 text-center">Expira em</th>
+                              <th className="px-4 py-3 text-center">Status</th>
+                              <th className="px-4 py-3 text-center">Ações</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {indicacoes.map(ind => {
+                              const diasRestantes = Math.ceil((new Date(ind.expires_at) - new Date()) / (1000 * 60 * 60 * 24));
+                              return (
+                                <tr key={ind.id} className={`border-t ${ind.status === 'pendente' ? 'bg-yellow-50' : ''}`}>
+                                  <td className="px-4 py-3 whitespace-nowrap">{new Date(ind.created_at).toLocaleDateString('pt-BR')}</td>
+                                  <td className="px-4 py-3">
+                                    <p className="font-semibold">{ind.user_name}</p>
+                                    <p className="text-xs text-gray-500">{ind.user_cod}</p>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <p className="font-semibold">{ind.indicado_nome}</p>
+                                    {ind.indicado_cpf && <p className="text-xs text-gray-500">CPF: {ind.indicado_cpf}</p>}
+                                  </td>
+                                  <td className="px-4 py-3">{ind.indicado_contato}</td>
+                                  <td className="px-4 py-3">{ind.regiao}</td>
+                                  <td className="px-4 py-3 text-center font-bold text-green-600">{formatMoney(ind.valor_bonus)}</td>
+                                  <td className="px-4 py-3 text-center">
+                                    {ind.status === 'pendente' ? (
+                                      <span className={`text-xs font-bold ${diasRestantes <= 5 ? 'text-red-600' : 'text-gray-600'}`}>
+                                        {diasRestantes > 0 ? `${diasRestantes} dias` : 'Expirado'}
+                                      </span>
+                                    ) : '-'}
+                                  </td>
+                                  <td className="px-4 py-3 text-center">
+                                    <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                                      ind.status === 'pendente' ? 'bg-yellow-500 text-white' :
+                                      ind.status === 'aprovada' ? 'bg-green-500 text-white' :
+                                      ind.status === 'rejeitada' ? 'bg-red-500 text-white' :
+                                      'bg-gray-500 text-white'
+                                    }`}>
+                                      {ind.status === 'pendente' ? '⏳ Pendente' :
+                                       ind.status === 'aprovada' ? '✅ Aprovada' :
+                                       ind.status === 'rejeitada' ? '❌ Rejeitada' :
+                                       '⏰ Expirada'}
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-3 text-center">
+                                    {ind.status === 'pendente' && (
+                                      <div className="flex gap-2 justify-center">
+                                        <button onClick={() => handleAprovarIndicacao(ind.id)} className="px-3 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700">✅ Aprovar</button>
+                                        <button onClick={() => setFormData({...formData, modalRejeitar: ind})} className="px-3 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700">❌ Rejeitar</button>
+                                      </div>
+                                    )}
+                                    {ind.status === 'rejeitada' && ind.motivo_rejeicao && (
+                                      <span className="text-xs text-red-600" title={ind.motivo_rejeicao}>📝 {ind.motivo_rejeicao.substring(0, 20)}...</span>
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                </>
               )}
 
               {/* ========== ABA RELATÓRIOS ========== */}
