@@ -211,6 +211,7 @@
       const [userGratuities, setUserGratuities] = useState([]);
       const [restrictedList, setRestrictedList] = useState([]);
       const [dashboardData, setDashboardData] = useState({});
+      const [passwordRecoveries, setPasswordRecoveries] = useState([]);
 
       const showToast = (message, type = 'success') => {
         setToast({ message, type });
@@ -237,7 +238,7 @@
       useEffect(() => {
         if (!user) return;
         loadSubmissions();
-        if (user.role === 'admin') loadUsers();
+        if (user.role === 'admin') { loadUsers(); loadPasswordRecoveries(); }
         if (user.role === 'user') { checkTerms(); loadUserWithdrawals(); loadUserGratuities(); }
         if (user.role === 'admin_financeiro') { loadAllWithdrawals(); loadAllGratuities(); loadRestricted(); loadDashboard(); }
       }, [user]);
@@ -330,12 +331,50 @@
         setGlobalLoading(true);
         try {
           await loadSubmissions();
-          if (user.role === 'admin') await loadUsers();
+          if (user.role === 'admin') { await loadUsers(); await loadPasswordRecoveries(); }
           if (user.role === 'user') { await loadUserWithdrawals(); await loadUserGratuities(); }
           if (user.role === 'admin_financeiro') { await loadAllWithdrawals(); await loadAllGratuities(); await loadRestricted(); await loadDashboard(); }
           showToast('🔄 Atualizado!', 'success');
         } catch (err) { showToast('Erro', 'error'); }
         setGlobalLoading(false);
+      };
+
+      // Carregar solicitações de recuperação de senha
+      const loadPasswordRecoveries = async () => {
+        try {
+          const res = await fetch(`${API_URL}/password-recovery`);
+          const data = await res.json();
+          setPasswordRecoveries(data);
+        } catch (err) { console.error('Erro ao carregar recuperações:', err); }
+      };
+
+      // Resetar senha
+      const handleResetPassword = async (id, newPassword) => {
+        setLoading(true);
+        try {
+          const res = await fetch(`${API_URL}/password-recovery/${id}/reset`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ newPassword, adminName: user.fullName })
+          });
+          if (!res.ok) throw new Error('Erro ao resetar');
+          showToast('✅ Senha resetada com sucesso!', 'success');
+          await loadPasswordRecoveries();
+          setFormData({ ...formData, resetModal: null });
+        } catch (err) { showToast(err.message, 'error'); }
+        setLoading(false);
+      };
+
+      // Cancelar solicitação de recuperação
+      const handleCancelRecovery = async (id) => {
+        setLoading(true);
+        try {
+          const res = await fetch(`${API_URL}/password-recovery/${id}`, { method: 'DELETE' });
+          if (!res.ok) throw new Error('Erro ao cancelar');
+          showToast('🗑️ Solicitação cancelada!', 'success');
+          await loadPasswordRecoveries();
+        } catch (err) { showToast(err.message, 'error'); }
+        setLoading(false);
       };
 
       // ========== FUNÇÕES DE AÇÃO ==========
@@ -606,6 +645,52 @@
                   </button>
                   <button onClick={() => setFormData({view: 'login'})} className="w-full text-purple-700 text-sm">← Voltar</button>
                 </div>
+              ) : formData.view === 'recuperar' ? (
+                <div className="space-y-4">
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                    <p className="text-yellow-800 text-sm">🔐 Informe seu código profissional e nome completo para solicitar a recuperação de senha.</p>
+                  </div>
+                  <input type="text" placeholder="Código Profissional" value={formData.cod || ''} onChange={e => setFormData({...formData, cod: e.target.value})} className="w-full px-4 py-3 border rounded-lg" />
+                  <input type="text" placeholder="Nome Completo (como cadastrado)" value={formData.name || ''} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full px-4 py-3 border rounded-lg" />
+                  <button onClick={async () => {
+                    if (!formData.cod || !formData.name) {
+                      showToast('Preencha todos os campos', 'error');
+                      return;
+                    }
+                    setLoading(true);
+                    try {
+                      const res = await fetch(API + '/password-recovery', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ cod: formData.cod, name: formData.name })
+                      });
+                      const data = await res.json();
+                      if (data.success) {
+                        showToast('✅ Solicitação enviada! Aguarde o admin resetar sua senha.', 'success');
+                        setFormData({ view: 'login' });
+                      } else {
+                        showToast(data.error || 'Erro ao solicitar', 'error');
+                      }
+                    } catch (e) {
+                      showToast('Erro de conexão', 'error');
+                    }
+                    setLoading(false);
+                  }} disabled={loading} className="w-full bg-yellow-500 text-white py-3 rounded-lg font-semibold hover:bg-yellow-600 disabled:opacity-50">
+                    {loading ? 'Enviando...' : '📧 Solicitar Recuperação'}
+                  </button>
+                  <button onClick={() => setFormData({view: 'login'})} className="w-full text-purple-700 text-sm">← Voltar ao Login</button>
+                </div>
+              ) : formData.view === 'recuperado' ? (
+                <div className="space-y-4">
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+                    <p className="text-green-800 text-4xl mb-2">✅</p>
+                    <p className="text-green-800 font-semibold">Solicitação Enviada!</p>
+                    <p className="text-green-700 text-sm mt-2">O administrador irá resetar sua senha em breve. Tente fazer login novamente mais tarde.</p>
+                  </div>
+                  <button onClick={() => setFormData({view: 'login'})} className="w-full bg-purple-900 text-white py-3 rounded-lg font-semibold hover:bg-purple-800">
+                    Voltar ao Login
+                  </button>
+                </div>
               ) : (
                 <div className="space-y-4">
                   <input type="text" placeholder="Código Profissional" value={formData.cod || ''} onChange={e => setFormData({...formData, cod: e.target.value})} className="w-full px-4 py-3 border rounded-lg" />
@@ -613,7 +698,10 @@
                   <button onClick={handleLogin} disabled={loading} className="w-full bg-purple-900 text-white py-3 rounded-lg font-semibold hover:bg-purple-800 disabled:opacity-50">
                     {loading ? 'Entrando...' : 'Entrar'}
                   </button>
-                  <button onClick={() => setFormData({view: 'register'})} className="w-full text-purple-700 text-sm">Criar nova conta</button>
+                  <div className="flex justify-between text-sm">
+                    <button onClick={() => setFormData({view: 'register'})} className="text-purple-700 hover:underline">Criar nova conta</button>
+                    <button onClick={() => setFormData({view: 'recuperar'})} className="text-gray-500 hover:underline">Esqueci minha senha</button>
+                  </div>
                 </div>
               )}
             </div>
@@ -2078,56 +2166,140 @@
 
             {/* USUÁRIOS */}
             {formData.adminTab === 'users' && (
-              <div className="bg-white rounded-xl shadow p-6">
-                <h2 className="text-lg font-semibold mb-4">👥 Gerenciar Usuários</h2>
-                <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-6">
-                  <h3 className="font-semibold mb-3">➕ Criar Usuário</h3>
-                  <div className="space-y-4">
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div><label className="block text-sm font-semibold mb-1">Nome</label><input type="text" value={formData.newName || ''} onChange={e => setFormData({...formData, newName: e.target.value})} className="w-full px-3 py-2 border rounded" /></div>
-                      <div><label className="block text-sm font-semibold mb-1">Código</label><input type="text" value={formData.newCod || ''} onChange={e => setFormData({...formData, newCod: e.target.value})} className="w-full px-3 py-2 border rounded" /></div>
-                    </div>
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div><label className="block text-sm font-semibold mb-1">Senha</label><input type="password" value={formData.newPass || ''} onChange={e => setFormData({...formData, newPass: e.target.value})} className="w-full px-3 py-2 border rounded" /></div>
-                      <div><label className="block text-sm font-semibold mb-1">Tipo</label><select value={formData.newRole || 'user'} onChange={e => setFormData({...formData, newRole: e.target.value})} className="w-full px-3 py-2 border rounded bg-white"><option value="user">👤 Usuário</option><option value="admin">👑 Admin</option><option value="admin_financeiro">💰 Admin Financeiro</option></select></div>
-                    </div>
-                    <button onClick={async () => {
-                      if (!formData.newName || !formData.newCod || !formData.newPass) { showToast('Preencha todos', 'error'); return; }
-                      setLoading(true);
-                      try {
-                        await fetch(`${API_URL}/users/register`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fullName: formData.newName, codProfissional: formData.newCod, password: formData.newPass, role: formData.newRole || 'user' }) });
-                        showToast('✅ Criado!', 'success');
-                        setFormData({...formData, newName: '', newCod: '', newPass: '', newRole: 'user'});
-                        loadUsers();
-                      } catch { showToast('Erro', 'error'); }
-                      setLoading(false);
-                    }} className="w-full px-6 py-2 bg-purple-600 text-white rounded font-semibold">➕ Criar Usuário</button>
-                  </div>
-                </div>
-                <h3 className="font-semibold mb-3">📋 Usuários Cadastrados</h3>
-                <div className="space-y-2">
-                  {users.map(u => (
-                    <div key={u.codProfissional} className="border rounded-lg p-4 flex items-center justify-between hover:bg-gray-50">
-                      <div className="flex-1"><p className="font-semibold">{u.fullName}</p><p className="text-sm text-gray-600">COD: {u.codProfissional} • {u.role}</p><p className="text-xs text-gray-400">{u.createdAt}</p></div>
-                      <div className="flex gap-2 items-center">
-                        <input type="password" placeholder="Nova senha" value={formData[`newpass_${u.codProfissional}`] || ''} onChange={e => setFormData({...formData, [`newpass_${u.codProfissional}`]: e.target.value})} className="px-3 py-2 border rounded text-sm w-32" />
-                        <button onClick={async () => {
-                          const pw = formData[`newpass_${u.codProfissional}`];
-                          if (!pw || pw.length < 4) { showToast('Senha muito curta', 'error'); return; }
-                          await fetch(`${API_URL}/users/reset-password`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ codProfissional: u.codProfissional, newPassword: pw }) });
-                          showToast('✅ Senha alterada!', 'success');
-                          setFormData({...formData, [`newpass_${u.codProfissional}`]: ''});
-                        }} className="px-4 py-2 bg-purple-600 text-white rounded text-sm font-semibold">🔑 Resetar</button>
-                        <button onClick={async () => {
-                          if (!confirm(`Excluir ${u.fullName}?`)) return;
-                          await fetch(`${API_URL}/users/${u.codProfissional}`, { method: 'DELETE' });
-                          showToast('🗑️ Excluído!', 'success');
-                          loadUsers();
-                        }} className="px-4 py-2 bg-red-600 text-white rounded text-sm font-semibold">🗑️</button>
+              <div className="space-y-6">
+                {/* Modal de reset de senha */}
+                {formData.resetModal && (
+                  <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full">
+                      <h3 className="text-xl font-bold text-purple-700 mb-4">🔐 Resetar Senha</h3>
+                      <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                        <p className="text-sm"><strong>Profissional:</strong> {formData.resetModal.user_name}</p>
+                        <p className="text-sm"><strong>Código:</strong> {formData.resetModal.user_cod}</p>
+                        <p className="text-sm"><strong>Solicitado em:</strong> {new Date(formData.resetModal.created_at).toLocaleString('pt-BR')}</p>
+                      </div>
+                      <div className="mb-4">
+                        <label className="block text-sm font-semibold mb-1">Nova Senha</label>
+                        <input 
+                          type="text" 
+                          value={formData.newPassword || ''} 
+                          onChange={e => setFormData({...formData, newPassword: e.target.value})} 
+                          className="w-full px-4 py-2 border rounded-lg"
+                          placeholder="Digite a nova senha"
+                        />
+                      </div>
+                      <div className="flex gap-3">
+                        <button onClick={() => setFormData({...formData, resetModal: null, newPassword: ''})} className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300">Cancelar</button>
+                        <button onClick={() => handleResetPassword(formData.resetModal.id, formData.newPassword)} disabled={!formData.newPassword || loading} className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 disabled:opacity-50">
+                          {loading ? '...' : '✅ Resetar'}
+                        </button>
                       </div>
                     </div>
-                  ))}
+                  </div>
+                )}
+
+                {/* Solicitações de Recuperação de Senha */}
+                {passwordRecoveries.filter(p => p.status === 'pendente').length > 0 && (
+                  <div className="bg-yellow-50 border-2 border-yellow-400 rounded-xl p-4 animate-pulse">
+                    <h3 className="font-bold text-yellow-800 mb-3">🔐 Solicitações de Recuperação de Senha ({passwordRecoveries.filter(p => p.status === 'pendente').length} pendente(s))</h3>
+                    <div className="space-y-2">
+                      {passwordRecoveries.filter(p => p.status === 'pendente').map(p => (
+                        <div key={p.id} className="bg-white rounded-lg p-3 flex items-center justify-between">
+                          <div>
+                            <p className="font-semibold">{p.user_name}</p>
+                            <p className="text-sm text-gray-600">Código: {p.user_cod} • {new Date(p.created_at).toLocaleString('pt-BR')}</p>
+                          </div>
+                          <div className="flex gap-2">
+                            <button onClick={() => setFormData({...formData, resetModal: p, newPassword: ''})} className="px-3 py-1 bg-green-600 text-white rounded text-sm font-semibold hover:bg-green-700">🔑 Resetar</button>
+                            <button onClick={() => handleCancelRecovery(p.id)} className="px-3 py-1 bg-red-600 text-white rounded text-sm font-semibold hover:bg-red-700">🗑️</button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="bg-white rounded-xl shadow p-6">
+                  <h2 className="text-lg font-semibold mb-4">👥 Gerenciar Usuários</h2>
+                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-6">
+                    <h3 className="font-semibold mb-3">➕ Criar Usuário</h3>
+                    <div className="space-y-4">
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div><label className="block text-sm font-semibold mb-1">Nome</label><input type="text" value={formData.newName || ''} onChange={e => setFormData({...formData, newName: e.target.value})} className="w-full px-3 py-2 border rounded" /></div>
+                        <div><label className="block text-sm font-semibold mb-1">Código</label><input type="text" value={formData.newCod || ''} onChange={e => setFormData({...formData, newCod: e.target.value})} className="w-full px-3 py-2 border rounded" /></div>
+                      </div>
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div><label className="block text-sm font-semibold mb-1">Senha</label><input type="password" value={formData.newPass || ''} onChange={e => setFormData({...formData, newPass: e.target.value})} className="w-full px-3 py-2 border rounded" /></div>
+                        <div><label className="block text-sm font-semibold mb-1">Tipo</label><select value={formData.newRole || 'user'} onChange={e => setFormData({...formData, newRole: e.target.value})} className="w-full px-3 py-2 border rounded bg-white"><option value="user">👤 Usuário</option><option value="admin">👑 Admin</option><option value="admin_financeiro">💰 Admin Financeiro</option></select></div>
+                      </div>
+                      <button onClick={async () => {
+                        if (!formData.newName || !formData.newCod || !formData.newPass) { showToast('Preencha todos', 'error'); return; }
+                        setLoading(true);
+                        try {
+                          await fetch(`${API_URL}/users/register`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fullName: formData.newName, codProfissional: formData.newCod, password: formData.newPass, role: formData.newRole || 'user' }) });
+                          showToast('✅ Criado!', 'success');
+                          setFormData({...formData, newName: '', newCod: '', newPass: '', newRole: 'user'});
+                          loadUsers();
+                        } catch { showToast('Erro', 'error'); }
+                        setLoading(false);
+                      }} className="w-full px-6 py-2 bg-purple-600 text-white rounded font-semibold">➕ Criar Usuário</button>
+                    </div>
+                  </div>
+                  <h3 className="font-semibold mb-3">📋 Usuários Cadastrados ({users.length})</h3>
+                  <div className="space-y-2">
+                    {users.map(u => (
+                      <div key={u.codProfissional} className="border rounded-lg p-4 flex items-center justify-between hover:bg-gray-50">
+                        <div className="flex-1"><p className="font-semibold">{u.fullName}</p><p className="text-sm text-gray-600">COD: {u.codProfissional} • {u.role}</p><p className="text-xs text-gray-400">{u.createdAt}</p></div>
+                        <div className="flex gap-2 items-center">
+                          <input type="password" placeholder="Nova senha" value={formData[`newpass_${u.codProfissional}`] || ''} onChange={e => setFormData({...formData, [`newpass_${u.codProfissional}`]: e.target.value})} className="px-3 py-2 border rounded text-sm w-32" />
+                          <button onClick={async () => {
+                            const pw = formData[`newpass_${u.codProfissional}`];
+                            if (!pw || pw.length < 4) { showToast('Senha muito curta', 'error'); return; }
+                            await fetch(`${API_URL}/users/reset-password`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ codProfissional: u.codProfissional, newPassword: pw }) });
+                            showToast('✅ Senha alterada!', 'success');
+                            setFormData({...formData, [`newpass_${u.codProfissional}`]: ''});
+                          }} className="px-4 py-2 bg-purple-600 text-white rounded text-sm font-semibold">🔑 Resetar</button>
+                          <button onClick={async () => {
+                            if (!confirm(`Excluir ${u.fullName}?`)) return;
+                            await fetch(`${API_URL}/users/${u.codProfissional}`, { method: 'DELETE' });
+                            showToast('🗑️ Excluído!', 'success');
+                            loadUsers();
+                          }} className="px-4 py-2 bg-red-600 text-white rounded text-sm font-semibold">🗑️</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
+
+                {/* Histórico de Recuperações */}
+                {passwordRecoveries.filter(p => p.status === 'resolvido').length > 0 && (
+                  <div className="bg-white rounded-xl shadow p-6">
+                    <h3 className="font-semibold mb-3">📜 Histórico de Recuperações de Senha</h3>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-4 py-2 text-left">Data</th>
+                            <th className="px-4 py-2 text-left">Usuário</th>
+                            <th className="px-4 py-2 text-left">Código</th>
+                            <th className="px-4 py-2 text-left">Resolvido por</th>
+                            <th className="px-4 py-2 text-left">Data Resolução</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {passwordRecoveries.filter(p => p.status === 'resolvido').slice(0, 10).map(p => (
+                            <tr key={p.id} className="border-t">
+                              <td className="px-4 py-2">{new Date(p.created_at).toLocaleDateString('pt-BR')}</td>
+                              <td className="px-4 py-2 font-semibold">{p.user_name}</td>
+                              <td className="px-4 py-2 font-mono">{p.user_cod}</td>
+                              <td className="px-4 py-2 text-purple-700">{p.resolved_by}</td>
+                              <td className="px-4 py-2">{new Date(p.resolved_at).toLocaleString('pt-BR')}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
