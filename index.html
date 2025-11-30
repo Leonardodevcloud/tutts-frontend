@@ -770,12 +770,121 @@
                   ) : (
                     <>
                       <div className="bg-white rounded-xl shadow mb-6">
-                        <div className="flex border-b">
-                          <button onClick={() => setFormData({...formData, saqueTab: 'solicitar'})} className={`flex-1 py-3 font-semibold ${(!formData.saqueTab || formData.saqueTab === 'solicitar') ? 'text-green-700 border-b-2 border-green-600' : 'text-gray-500'}`}>💰 Solicitar</button>
-                          <button onClick={() => setFormData({...formData, saqueTab: 'dados'})} className={`flex-1 py-3 font-semibold ${formData.saqueTab === 'dados' ? 'text-blue-700 border-b-2 border-blue-600' : 'text-gray-500'}`}>👤 Dados</button>
-                          <button onClick={() => setFormData({...formData, saqueTab: 'gratuidades'})} className={`flex-1 py-3 font-semibold ${formData.saqueTab === 'gratuidades' ? 'text-purple-700 border-b-2 border-purple-600' : 'text-gray-500'}`}>🎁 Gratuidades</button>
+                        <div className="flex border-b overflow-x-auto">
+                          <button onClick={() => setFormData({...formData, saqueTab: 'dashboard'})} className={`flex-1 py-3 font-semibold whitespace-nowrap px-2 ${formData.saqueTab === 'dashboard' ? 'text-purple-700 border-b-2 border-purple-600' : 'text-gray-500'}`}>📊 Dashboard</button>
+                          <button onClick={() => setFormData({...formData, saqueTab: 'solicitar'})} className={`flex-1 py-3 font-semibold whitespace-nowrap px-2 ${(!formData.saqueTab || formData.saqueTab === 'solicitar') ? 'text-green-700 border-b-2 border-green-600' : 'text-gray-500'}`}>💰 Solicitar</button>
+                          <button onClick={() => setFormData({...formData, saqueTab: 'dados'})} className={`flex-1 py-3 font-semibold whitespace-nowrap px-2 ${formData.saqueTab === 'dados' ? 'text-blue-700 border-b-2 border-blue-600' : 'text-gray-500'}`}>👤 Dados</button>
+                          <button onClick={() => setFormData({...formData, saqueTab: 'gratuidades'})} className={`flex-1 py-3 font-semibold whitespace-nowrap px-2 ${formData.saqueTab === 'gratuidades' ? 'text-pink-700 border-b-2 border-pink-600' : 'text-gray-500'}`}>🎁 Gratuidades</button>
+                          <button onClick={() => setFormData({...formData, saqueTab: 'relatorios'})} className={`flex-1 py-3 font-semibold whitespace-nowrap px-2 ${formData.saqueTab === 'relatorios' ? 'text-orange-700 border-b-2 border-orange-600' : 'text-gray-500'}`}>📈 Relatórios</button>
                         </div>
                         <div className="p-6">
+                          {/* ========== ABA DASHBOARD ========== */}
+                          {formData.saqueTab === 'dashboard' && (
+                            <>
+                              {(() => {
+                                const now = new Date();
+                                const mesAtual = now.getMonth();
+                                const anoAtual = now.getFullYear();
+                                
+                                // Saques do mês atual
+                                const saquesMesAtual = withdrawals.filter(w => {
+                                  const d = new Date(w.created_at);
+                                  return d.getMonth() === mesAtual && d.getFullYear() === anoAtual;
+                                });
+                                
+                                // Saques aprovados do mês
+                                const aprovadosMes = saquesMesAtual.filter(w => w.status === 'aprovado' || w.status === 'aprovado_gratuidade');
+                                const totalSacadoMes = aprovadosMes.reduce((acc, w) => acc + parseFloat(w.final_amount || 0), 0);
+                                const totalSolicitadoMes = saquesMesAtual.reduce((acc, w) => acc + parseFloat(w.requested_amount || 0), 0);
+                                
+                                // Gratuidades usadas
+                                const gratuidadesUsadas = userGratuities.reduce((acc, g) => acc + (g.quantity - g.remaining), 0);
+                                const gratuidadesTotal = userGratuities.reduce((acc, g) => acc + g.quantity, 0);
+                                
+                                // Histórico últimos 6 meses para gráfico
+                                const ultimos6Meses = [];
+                                for (let i = 5; i >= 0; i--) {
+                                  const d = new Date(anoAtual, mesAtual - i, 1);
+                                  const mes = d.getMonth();
+                                  const ano = d.getFullYear();
+                                  const saquesMes = withdrawals.filter(w => {
+                                    const dw = new Date(w.created_at);
+                                    return dw.getMonth() === mes && dw.getFullYear() === ano && (w.status === 'aprovado' || w.status === 'aprovado_gratuidade');
+                                  });
+                                  const valor = saquesMes.reduce((acc, w) => acc + parseFloat(w.final_amount || 0), 0);
+                                  ultimos6Meses.push({
+                                    mes: d.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', ''),
+                                    valor,
+                                    qtd: saquesMes.length
+                                  });
+                                }
+                                const maxValor = Math.max(...ultimos6Meses.map(m => m.valor), 1);
+                                
+                                // Estatísticas gerais
+                                const totalGeral = withdrawals.filter(w => w.status === 'aprovado' || w.status === 'aprovado_gratuidade').reduce((acc, w) => acc + parseFloat(w.final_amount || 0), 0);
+                                const mediaSaque = aprovadosMes.length > 0 ? totalSacadoMes / aprovadosMes.length : 0;
+                                
+                                return (
+                                  <div className="space-y-6">
+                                    {/* Cards Resumo */}
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                      <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl p-4 text-white">
+                                        <p className="text-xs opacity-80">💰 Sacado este mês</p>
+                                        <p className="text-2xl font-bold mt-1">{formatMoney(totalSacadoMes)}</p>
+                                        <p className="text-xs opacity-70 mt-1">{aprovadosMes.length} saque(s)</p>
+                                      </div>
+                                      <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl p-4 text-white">
+                                        <p className="text-xs opacity-80">📊 Solicitado este mês</p>
+                                        <p className="text-2xl font-bold mt-1">{formatMoney(totalSolicitadoMes)}</p>
+                                        <p className="text-xs opacity-70 mt-1">{saquesMesAtual.length} solicitação(ões)</p>
+                                      </div>
+                                      <div className="bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl p-4 text-white">
+                                        <p className="text-xs opacity-80">🎁 Gratuidades</p>
+                                        <p className="text-2xl font-bold mt-1">{gratuidadesUsadas}/{gratuidadesTotal}</p>
+                                        <p className="text-xs opacity-70 mt-1">usadas/total</p>
+                                      </div>
+                                      <div className="bg-gradient-to-br from-orange-500 to-red-500 rounded-xl p-4 text-white">
+                                        <p className="text-xs opacity-80">📈 Total Histórico</p>
+                                        <p className="text-2xl font-bold mt-1">{formatMoney(totalGeral)}</p>
+                                        <p className="text-xs opacity-70 mt-1">todos os tempos</p>
+                                      </div>
+                                    </div>
+                                    
+                                    {/* Gráfico de Barras - Últimos 6 meses */}
+                                    <div className="bg-white border rounded-xl p-4">
+                                      <h3 className="font-semibold mb-4">📊 Histórico de Saques (Últimos 6 meses)</h3>
+                                      <div className="flex items-end justify-between gap-2 h-48">
+                                        {ultimos6Meses.map((m, i) => (
+                                          <div key={i} className="flex-1 flex flex-col items-center">
+                                            <span className="text-xs text-gray-600 mb-1">{formatMoney(m.valor)}</span>
+                                            <div 
+                                              className="w-full bg-gradient-to-t from-green-500 to-emerald-400 rounded-t-lg transition-all duration-500"
+                                              style={{ height: `${Math.max((m.valor / maxValor) * 100, 5)}%`, minHeight: '20px' }}
+                                            />
+                                            <span className="text-xs font-semibold mt-2 text-gray-700">{m.mes}</span>
+                                            <span className="text-xs text-gray-500">{m.qtd} saque(s)</span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                    
+                                    {/* Resumo Rápido */}
+                                    <div className="bg-gray-50 rounded-xl p-4">
+                                      <h3 className="font-semibold mb-3">📋 Resumo do Mês</h3>
+                                      <div className="grid grid-cols-2 gap-4 text-sm">
+                                        <div className="flex justify-between"><span className="text-gray-600">Média por saque:</span><span className="font-semibold">{formatMoney(mediaSaque)}</span></div>
+                                        <div className="flex justify-between"><span className="text-gray-600">Pendentes:</span><span className="font-semibold text-yellow-600">{saquesMesAtual.filter(w => w.status === 'aguardando_aprovacao').length}</span></div>
+                                        <div className="flex justify-between"><span className="text-gray-600">Aprovados:</span><span className="font-semibold text-green-600">{aprovadosMes.length}</span></div>
+                                        <div className="flex justify-between"><span className="text-gray-600">Rejeitados:</span><span className="font-semibold text-red-600">{saquesMesAtual.filter(w => w.status === 'rejeitado').length}</span></div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })()}
+                            </>
+                          )}
+                          
+                          {/* ========== ABA SOLICITAR ========== */}
                           {(!formData.saqueTab || formData.saqueTab === 'solicitar') && (
                             <>
                               {/* Verifica se tem gratuidade ativa */}
@@ -894,6 +1003,234 @@
                                   ))}
                                 </div>
                               )}
+                            </>
+                          )}
+                          
+                          {/* ========== ABA RELATÓRIOS ========== */}
+                          {formData.saqueTab === 'relatorios' && (
+                            <>
+                              {(() => {
+                                const now = new Date();
+                                const mesAtual = now.getMonth();
+                                const anoAtual = now.getFullYear();
+                                
+                                // Mês selecionado para relatório
+                                const mesSelecionado = formData.relMes !== undefined ? parseInt(formData.relMes) : mesAtual;
+                                const anoSelecionado = formData.relAno !== undefined ? parseInt(formData.relAno) : anoAtual;
+                                
+                                // Filtrar saques do período selecionado
+                                const saquesDoMes = withdrawals.filter(w => {
+                                  const d = new Date(w.created_at);
+                                  return d.getMonth() === mesSelecionado && d.getFullYear() === anoSelecionado;
+                                });
+                                
+                                const aprovados = saquesDoMes.filter(w => w.status === 'aprovado' || w.status === 'aprovado_gratuidade');
+                                const rejeitados = saquesDoMes.filter(w => w.status === 'rejeitado');
+                                const pendentes = saquesDoMes.filter(w => w.status === 'aguardando_aprovacao');
+                                
+                                const totalSolicitado = saquesDoMes.reduce((acc, w) => acc + parseFloat(w.requested_amount || 0), 0);
+                                const totalRecebido = aprovados.reduce((acc, w) => acc + parseFloat(w.final_amount || 0), 0);
+                                const totalTaxas = aprovados.filter(w => w.status === 'aprovado').reduce((acc, w) => acc + (parseFloat(w.requested_amount || 0) - parseFloat(w.final_amount || 0)), 0);
+                                
+                                // Dados para gráfico semanal
+                                const semanas = [
+                                  { nome: 'Sem 1', dias: [1,7] },
+                                  { nome: 'Sem 2', dias: [8,14] },
+                                  { nome: 'Sem 3', dias: [15,21] },
+                                  { nome: 'Sem 4', dias: [22,31] }
+                                ];
+                                
+                                const dadosSemanas = semanas.map(s => {
+                                  const saquesSemana = aprovados.filter(w => {
+                                    const dia = new Date(w.created_at).getDate();
+                                    return dia >= s.dias[0] && dia <= s.dias[1];
+                                  });
+                                  return {
+                                    nome: s.nome,
+                                    valor: saquesSemana.reduce((acc, w) => acc + parseFloat(w.final_amount || 0), 0),
+                                    qtd: saquesSemana.length
+                                  };
+                                });
+                                const maxSemana = Math.max(...dadosSemanas.map(s => s.valor), 1);
+                                
+                                // Comparativo com mês anterior
+                                const mesAnterior = mesSelecionado === 0 ? 11 : mesSelecionado - 1;
+                                const anoMesAnterior = mesSelecionado === 0 ? anoSelecionado - 1 : anoSelecionado;
+                                const saquesMesAnterior = withdrawals.filter(w => {
+                                  const d = new Date(w.created_at);
+                                  return d.getMonth() === mesAnterior && d.getFullYear() === anoMesAnterior && (w.status === 'aprovado' || w.status === 'aprovado_gratuidade');
+                                });
+                                const totalMesAnterior = saquesMesAnterior.reduce((acc, w) => acc + parseFloat(w.final_amount || 0), 0);
+                                const variacaoPercent = totalMesAnterior > 0 ? ((totalRecebido - totalMesAnterior) / totalMesAnterior * 100) : 0;
+                                
+                                // Função para gerar PDF
+                                const gerarPDF = () => {
+                                  const nomeMes = new Date(anoSelecionado, mesSelecionado).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+                                  const conteudo = `
+                                    <html>
+                                    <head>
+                                      <title>Relatório ${nomeMes}</title>
+                                      <style>
+                                        body { font-family: Arial, sans-serif; padding: 40px; }
+                                        h1 { color: #1e40af; border-bottom: 2px solid #1e40af; padding-bottom: 10px; }
+                                        h2 { color: #374151; margin-top: 30px; }
+                                        .card { background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 10px 0; }
+                                        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+                                        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                                        th, td { border: 1px solid #d1d5db; padding: 10px; text-align: left; }
+                                        th { background: #1e40af; color: white; }
+                                        tr:nth-child(even) { background: #f9fafb; }
+                                        .green { color: #059669; }
+                                        .red { color: #dc2626; }
+                                        .footer { margin-top: 40px; text-align: center; color: #6b7280; font-size: 12px; }
+                                      </style>
+                                    </head>
+                                    <body>
+                                      <h1>📊 Relatório de Saques - ${nomeMes.charAt(0).toUpperCase() + nomeMes.slice(1)}</h1>
+                                      <p><strong>Profissional:</strong> ${user.codProfissional}</p>
+                                      <p><strong>Gerado em:</strong> ${new Date().toLocaleString('pt-BR')}</p>
+                                      
+                                      <h2>📈 Resumo do Período</h2>
+                                      <div class="grid">
+                                        <div class="card"><strong>Total Solicitado:</strong><br>R$ ${totalSolicitado.toFixed(2)}</div>
+                                        <div class="card"><strong>Total Recebido:</strong><br>R$ ${totalRecebido.toFixed(2)}</div>
+                                        <div class="card"><strong>Taxas Pagas:</strong><br>R$ ${totalTaxas.toFixed(2)}</div>
+                                        <div class="card"><strong>Qtd. Saques:</strong><br>${aprovados.length} aprovado(s)</div>
+                                      </div>
+                                      
+                                      <h2>📊 Comparativo</h2>
+                                      <div class="card">
+                                        <p>Mês anterior: R$ ${totalMesAnterior.toFixed(2)}</p>
+                                        <p>Mês atual: R$ ${totalRecebido.toFixed(2)}</p>
+                                        <p class="${variacaoPercent >= 0 ? 'green' : 'red'}">Variação: ${variacaoPercent >= 0 ? '+' : ''}${variacaoPercent.toFixed(1)}%</p>
+                                      </div>
+                                      
+                                      <h2>📋 Detalhamento</h2>
+                                      <table>
+                                        <thead>
+                                          <tr><th>Data</th><th>Solicitado</th><th>Recebido</th><th>Status</th></tr>
+                                        </thead>
+                                        <tbody>
+                                          ${saquesDoMes.map(w => `
+                                            <tr>
+                                              <td>${new Date(w.created_at).toLocaleDateString('pt-BR')}</td>
+                                              <td>R$ ${parseFloat(w.requested_amount).toFixed(2)}</td>
+                                              <td>R$ ${parseFloat(w.final_amount).toFixed(2)}</td>
+                                              <td>${w.status === 'aprovado' ? '✅ Aprovado' : w.status === 'aprovado_gratuidade' ? '🎁 c/ Gratuidade' : w.status === 'rejeitado' ? '❌ Rejeitado' : '⏳ Pendente'}</td>
+                                            </tr>
+                                          `).join('')}
+                                        </tbody>
+                                      </table>
+                                      
+                                      <div class="footer">
+                                        <p>Sistema Tutts - Relatório gerado automaticamente</p>
+                                      </div>
+                                    </body>
+                                    </html>
+                                  `;
+                                  
+                                  const janela = window.open('', '_blank');
+                                  janela.document.write(conteudo);
+                                  janela.document.close();
+                                  janela.print();
+                                };
+                                
+                                const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+                                
+                                return (
+                                  <div className="space-y-6">
+                                    {/* Seletor de Período */}
+                                    <div className="flex flex-wrap gap-4 items-end">
+                                      <div>
+                                        <label className="block text-sm font-semibold mb-1">Mês</label>
+                                        <select value={mesSelecionado} onChange={e => setFormData({...formData, relMes: e.target.value})} className="px-4 py-2 border rounded-lg">
+                                          {meses.map((m, i) => <option key={i} value={i}>{m}</option>)}
+                                        </select>
+                                      </div>
+                                      <div>
+                                        <label className="block text-sm font-semibold mb-1">Ano</label>
+                                        <select value={anoSelecionado} onChange={e => setFormData({...formData, relAno: e.target.value})} className="px-4 py-2 border rounded-lg">
+                                          {[anoAtual - 1, anoAtual, anoAtual + 1].map(a => <option key={a} value={a}>{a}</option>)}
+                                        </select>
+                                      </div>
+                                      <button onClick={gerarPDF} className="px-6 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700">
+                                        📄 Gerar PDF
+                                      </button>
+                                    </div>
+                                    
+                                    {/* Cards Resumo do Período */}
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                      <div className="bg-white border rounded-xl p-4">
+                                        <p className="text-xs text-gray-500">💰 Solicitado</p>
+                                        <p className="text-xl font-bold text-gray-800">{formatMoney(totalSolicitado)}</p>
+                                      </div>
+                                      <div className="bg-white border rounded-xl p-4">
+                                        <p className="text-xs text-gray-500">✅ Recebido</p>
+                                        <p className="text-xl font-bold text-green-600">{formatMoney(totalRecebido)}</p>
+                                      </div>
+                                      <div className="bg-white border rounded-xl p-4">
+                                        <p className="text-xs text-gray-500">💸 Taxas Pagas</p>
+                                        <p className="text-xl font-bold text-red-600">{formatMoney(totalTaxas)}</p>
+                                      </div>
+                                      <div className="bg-white border rounded-xl p-4">
+                                        <p className="text-xs text-gray-500">📊 Qtd. Saques</p>
+                                        <p className="text-xl font-bold text-blue-600">{saquesDoMes.length}</p>
+                                      </div>
+                                    </div>
+                                    
+                                    {/* Comparativo com Mês Anterior */}
+                                    <div className={`rounded-xl p-4 ${variacaoPercent >= 0 ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+                                      <h3 className="font-semibold mb-2">📊 Comparativo com Mês Anterior</h3>
+                                      <div className="flex items-center gap-4">
+                                        <div>
+                                          <p className="text-sm text-gray-600">Mês anterior: <strong>{formatMoney(totalMesAnterior)}</strong></p>
+                                          <p className="text-sm text-gray-600">Mês selecionado: <strong>{formatMoney(totalRecebido)}</strong></p>
+                                        </div>
+                                        <div className={`text-2xl font-bold ${variacaoPercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                          {variacaoPercent >= 0 ? '📈' : '📉'} {variacaoPercent >= 0 ? '+' : ''}{variacaoPercent.toFixed(1)}%
+                                        </div>
+                                      </div>
+                                    </div>
+                                    
+                                    {/* Gráfico por Semana */}
+                                    <div className="bg-white border rounded-xl p-4">
+                                      <h3 className="font-semibold mb-4">📅 Evolução por Semana</h3>
+                                      <div className="flex items-end justify-between gap-4 h-40">
+                                        {dadosSemanas.map((s, i) => (
+                                          <div key={i} className="flex-1 flex flex-col items-center">
+                                            <span className="text-xs text-gray-600 mb-1">{formatMoney(s.valor)}</span>
+                                            <div 
+                                              className="w-full bg-gradient-to-t from-blue-500 to-indigo-400 rounded-t-lg"
+                                              style={{ height: `${Math.max((s.valor / maxSemana) * 100, 5)}%`, minHeight: '20px' }}
+                                            />
+                                            <span className="text-xs font-semibold mt-2">{s.nome}</span>
+                                            <span className="text-xs text-gray-500">{s.qtd} saque(s)</span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                    
+                                    {/* Status do Período */}
+                                    <div className="bg-gray-50 rounded-xl p-4">
+                                      <h3 className="font-semibold mb-3">📋 Status das Solicitações</h3>
+                                      <div className="flex gap-4">
+                                        <div className="flex-1 text-center p-3 bg-green-100 rounded-lg">
+                                          <p className="text-2xl font-bold text-green-600">{aprovados.length}</p>
+                                          <p className="text-xs text-green-700">Aprovados</p>
+                                        </div>
+                                        <div className="flex-1 text-center p-3 bg-red-100 rounded-lg">
+                                          <p className="text-2xl font-bold text-red-600">{rejeitados.length}</p>
+                                          <p className="text-xs text-red-700">Rejeitados</p>
+                                        </div>
+                                        <div className="flex-1 text-center p-3 bg-yellow-100 rounded-lg">
+                                          <p className="text-2xl font-bold text-yellow-600">{pendentes.length}</p>
+                                          <p className="text-xs text-yellow-700">Pendentes</p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })()}
                             </>
                           )}
                         </div>
