@@ -197,6 +197,8 @@
       const [formData, setFormData] = useState({});
       const [imageModal, setImageModal] = useState(null);
       const [lastActivity, setLastActivity] = useState(Date.now());
+      const [lastUpdate, setLastUpdate] = useState(null);
+      const [isPolling, setIsPolling] = useState(false);
 
       // Estados - Solicitações
       const [submissions, setSubmissions] = useState([]);
@@ -282,6 +284,80 @@
         if (user.role === 'admin') loadUsers();
         if (user.role === 'user') { checkTerms(); loadUserWithdrawals(); loadUserGratuities(); loadPromocoesAtivas(); loadMinhasIndicacoes(); loadPromocoesNovatosAtivas(); loadMinhasInscricoesNovatos(); loadQuizConfig(); verificarQuizRespondido(); }
         if (user.role === 'admin_financeiro') { loadAllWithdrawals(); loadAllGratuities(); loadRestricted(); loadDashboard(); loadPromocoes(); loadIndicacoes(); loadPromocoesNovatos(); loadInscricoesNovatos(); loadQuizConfig(); loadQuizRespostas(); loadUsers(); }
+      }, [user]);
+
+      // ========== POLLING INTELIGENTE - APENAS ABA ATIVA ==========
+      useEffect(() => {
+        if (!user || user.role !== 'admin_financeiro') return;
+        
+        const POLLING_INTERVAL = 60000; // 60 segundos
+        
+        const pollActiveTab = async () => {
+          const activeTab = formData.finTab || 'solicitacoes';
+          setIsPolling(true);
+          
+          try {
+            switch(activeTab) {
+              case 'solicitacoes':
+                await loadAllWithdrawals();
+                break;
+              case 'validacao':
+                await loadAllWithdrawals();
+                break;
+              case 'gratuidades':
+                await loadAllGratuities();
+                break;
+              case 'restritos':
+                await loadRestricted();
+                break;
+              case 'indicacoes':
+                await loadPromocoes();
+                await loadIndicacoes();
+                break;
+              case 'promo-novatos':
+                await loadPromocoesNovatos();
+                await loadInscricoesNovatos();
+                await loadQuizRespostas();
+                break;
+              case 'resumo':
+                await loadDashboard();
+                break;
+              default:
+                break;
+            }
+            setLastUpdate(new Date());
+          } catch (err) {
+            console.error('Erro no polling:', err);
+          }
+          setIsPolling(false);
+        };
+        
+        const interval = setInterval(pollActiveTab, POLLING_INTERVAL);
+        
+        // Cleanup ao desmontar ou trocar de aba
+        return () => clearInterval(interval);
+      }, [user, formData.finTab]);
+
+      // ========== POLLING PARA ADMIN MASTER (Submissões de Ajuste) ==========
+      useEffect(() => {
+        if (!user || user.role !== 'admin') return;
+        
+        const POLLING_INTERVAL = 60000; // 60 segundos
+        
+        const pollSubmissions = async () => {
+          setIsPolling(true);
+          try {
+            await loadSubmissions();
+            setLastUpdate(new Date());
+          } catch (err) {
+            console.error('Erro no polling:', err);
+          }
+          setIsPolling(false);
+        };
+        
+        const interval = setInterval(pollSubmissions, POLLING_INTERVAL);
+        
+        return () => clearInterval(interval);
       }, [user]);
 
       // Carregar pixTipo quando financialData mudar
@@ -2610,7 +2686,16 @@
 
             <nav className="bg-green-800 shadow-lg">
               <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-                <h1 className="text-xl font-bold text-white">💰 Painel Financeiro</h1>
+                <div className="flex items-center gap-3">
+                  <h1 className="text-xl font-bold text-white">💰 Painel Financeiro</h1>
+                  {/* Indicador de atualização automática */}
+                  <div className="flex items-center gap-2 bg-green-900/50 px-3 py-1 rounded-full">
+                    <span className={`w-2 h-2 rounded-full ${isPolling ? 'bg-yellow-400 animate-pulse' : 'bg-green-400'}`}></span>
+                    <span className="text-xs text-green-200">
+                      {isPolling ? 'Atualizando...' : lastUpdate ? `Atualizado ${lastUpdate.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}` : 'Auto-refresh: 60s'}
+                    </span>
+                  </div>
+                </div>
                 <div className="flex gap-2">
                   <button onClick={refreshAll} className="px-4 py-2 bg-green-700 text-white rounded-lg hover:bg-green-600 text-sm font-semibold">🔄</button>
                   <button onClick={() => setUser(null)} className="px-4 py-2 text-white hover:bg-green-700 rounded-lg">Sair</button>
@@ -4330,7 +4415,16 @@
 
           <nav className="bg-purple-900 shadow-lg">
             <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-              <h1 className="text-xl font-bold text-white">Painel Admin</h1>
+              <div className="flex items-center gap-3">
+                <h1 className="text-xl font-bold text-white">Painel Admin</h1>
+                {/* Indicador de atualização automática */}
+                <div className="flex items-center gap-2 bg-purple-800/50 px-3 py-1 rounded-full">
+                  <span className={`w-2 h-2 rounded-full ${isPolling ? 'bg-yellow-400 animate-pulse' : 'bg-green-400'}`}></span>
+                  <span className="text-xs text-purple-200">
+                    {isPolling ? 'Atualizando...' : lastUpdate ? `Atualizado ${lastUpdate.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}` : 'Auto-refresh: 60s'}
+                  </span>
+                </div>
+              </div>
               <div className="flex gap-2">
                 <button onClick={refreshAll} className="px-4 py-2 bg-purple-700 text-white rounded-lg hover:bg-purple-600 text-sm font-semibold">🔄 Atualizar</button>
                 <button onClick={() => setUser(null)} className="px-4 py-2 text-white hover:bg-purple-800 rounded-lg">Sair</button>
