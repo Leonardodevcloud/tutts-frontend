@@ -216,6 +216,18 @@
       const [promocoes, setPromocoes] = useState([]);
       const [indicacoes, setIndicacoes] = useState([]);
       const [minhasIndicacoes, setMinhasIndicacoes] = useState([]);
+      
+      // Estados - Promoções Novatos
+      const [promocoesNovatos, setPromocoesNovatos] = useState([]);
+      const [inscricoesNovatos, setInscricoesNovatos] = useState([]);
+      const [minhasInscricoesNovatos, setMinhasInscricoesNovatos] = useState([]);
+
+      // Verifica se usuário é novato (COD >= 1200)
+      const isNovato = () => {
+        if (!user || !user.codProfissional) return false;
+        const numCod = parseInt(user.codProfissional.replace(/\D/g, ''));
+        return numCod >= 1200;
+      };
 
       const showToast = (message, type = 'success') => {
         setToast({ message, type });
@@ -243,8 +255,8 @@
         if (!user) return;
         loadSubmissions();
         if (user.role === 'admin') loadUsers();
-        if (user.role === 'user') { checkTerms(); loadUserWithdrawals(); loadUserGratuities(); loadPromocoesAtivas(); loadMinhasIndicacoes(); }
-        if (user.role === 'admin_financeiro') { loadAllWithdrawals(); loadAllGratuities(); loadRestricted(); loadDashboard(); loadPromocoes(); loadIndicacoes(); loadUsers(); }
+        if (user.role === 'user') { checkTerms(); loadUserWithdrawals(); loadUserGratuities(); loadPromocoesAtivas(); loadMinhasIndicacoes(); loadPromocoesNovatosAtivas(); loadMinhasInscricoesNovatos(); }
+        if (user.role === 'admin_financeiro') { loadAllWithdrawals(); loadAllGratuities(); loadRestricted(); loadDashboard(); loadPromocoes(); loadIndicacoes(); loadPromocoesNovatos(); loadInscricoesNovatos(); loadUsers(); }
       }, [user]);
 
       // ========== FUNÇÕES DE CARREGAMENTO ==========
@@ -370,6 +382,178 @@
           const res = await fetch(`${API_URL}/indicacoes/usuario/${user.codProfissional}`);
           setMinhasIndicacoes(await res.json());
         } catch (err) { console.error('Erro ao carregar minhas indicações:', err); }
+      };
+
+      // === FUNÇÕES PROMOÇÕES NOVATOS ===
+      const loadPromocoesNovatos = async () => {
+        try {
+          const res = await fetch(`${API_URL}/promocoes-novatos`);
+          setPromocoesNovatos(await res.json());
+        } catch (err) { console.error('Erro ao carregar promoções novatos:', err); }
+      };
+
+      const loadPromocoesNovatosAtivas = async () => {
+        try {
+          const res = await fetch(`${API_URL}/promocoes-novatos/ativas`);
+          setPromocoesNovatos(await res.json());
+        } catch (err) { console.error('Erro ao carregar promoções novatos ativas:', err); }
+      };
+
+      const loadInscricoesNovatos = async () => {
+        try {
+          // Verificar expiradas primeiro
+          await fetch(`${API_URL}/inscricoes-novatos/verificar-expiradas`, { method: 'POST' });
+          const res = await fetch(`${API_URL}/inscricoes-novatos`);
+          setInscricoesNovatos(await res.json());
+        } catch (err) { console.error('Erro ao carregar inscrições novatos:', err); }
+      };
+
+      const loadMinhasInscricoesNovatos = async () => {
+        try {
+          const res = await fetch(`${API_URL}/inscricoes-novatos/usuario/${user.codProfissional}`);
+          setMinhasInscricoesNovatos(await res.json());
+        } catch (err) { console.error('Erro ao carregar minhas inscrições novatos:', err); }
+      };
+
+      const handleCriarPromocaoNovatos = async () => {
+        if (!formData.novatosRegiao || !formData.novatosCliente || !formData.novatosValor) {
+          showToast('Preencha todos os campos obrigatórios', 'error');
+          return;
+        }
+        setLoading(true);
+        try {
+          const res = await fetch(`${API_URL}/promocoes-novatos`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              regiao: formData.novatosRegiao,
+              cliente: formData.novatosCliente,
+              valor_bonus: parseFloat(formData.novatosValor),
+              detalhes: formData.novatosDetalhes || null,
+              created_by: user.fullName
+            })
+          });
+          if (!res.ok) throw new Error('Erro ao criar promoção');
+          showToast('✅ Promoção Novatos criada!', 'success');
+          setFormData({ ...formData, novatosRegiao: '', novatosCliente: '', novatosValor: '', novatosDetalhes: '', editPromoNovatos: null });
+          await loadPromocoesNovatos();
+        } catch (err) {
+          showToast(err.message, 'error');
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      const handleEditarPromocaoNovatos = async () => {
+        setLoading(true);
+        try {
+          const res = await fetch(`${API_URL}/promocoes-novatos/${formData.editPromoNovatos.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              regiao: formData.novatosRegiao,
+              cliente: formData.novatosCliente,
+              valor_bonus: parseFloat(formData.novatosValor),
+              detalhes: formData.novatosDetalhes || null
+            })
+          });
+          if (!res.ok) throw new Error('Erro ao editar promoção');
+          showToast('✅ Promoção atualizada!', 'success');
+          setFormData({ ...formData, novatosRegiao: '', novatosCliente: '', novatosValor: '', novatosDetalhes: '', editPromoNovatos: null });
+          await loadPromocoesNovatos();
+        } catch (err) {
+          showToast(err.message, 'error');
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      const handleInscreverNovatos = async (promocao) => {
+        setLoading(true);
+        try {
+          const res = await fetch(`${API_URL}/inscricoes-novatos`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              promocao_id: promocao.id,
+              user_cod: user.codProfissional,
+              user_name: user.fullName,
+              valor_bonus: promocao.valor_bonus,
+              regiao: promocao.regiao,
+              cliente: promocao.cliente
+            })
+          });
+          if (!res.ok) {
+            const error = await res.json();
+            throw new Error(error.error || 'Erro ao se inscrever');
+          }
+          showToast('✅ Inscrição realizada! Válida por 10 dias.', 'success');
+          await loadMinhasInscricoesNovatos();
+          await loadPromocoesNovatosAtivas();
+        } catch (err) {
+          showToast(err.message, 'error');
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      const handleAprovarInscricaoNovatos = async (id) => {
+        setLoading(true);
+        try {
+          await fetch(`${API_URL}/inscricoes-novatos/${id}/aprovar`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ resolved_by: user.fullName })
+          });
+          showToast('✅ Inscrição aprovada!', 'success');
+          await loadInscricoesNovatos();
+        } catch (err) {
+          showToast('Erro ao aprovar', 'error');
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      const handleRejeitarInscricaoNovatos = async (id) => {
+        setLoading(true);
+        try {
+          await fetch(`${API_URL}/inscricoes-novatos/${id}/rejeitar`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              motivo_rejeicao: formData.motivoRejeicaoNovatos,
+              resolved_by: user.fullName 
+            })
+          });
+          showToast('❌ Inscrição rejeitada', 'success');
+          setFormData({ ...formData, modalRejeitarNovatos: null, motivoRejeicaoNovatos: '' });
+          await loadInscricoesNovatos();
+        } catch (err) {
+          showToast('Erro ao rejeitar', 'error');
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      const handleCreditarBonusNovato = async (inscricao) => {
+        setLoading(true);
+        try {
+          const res = await fetch(`${API_URL}/inscricoes-novatos/${inscricao.id}/credito`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              credito_lancado: true,
+              lancado_por: user.fullName 
+            })
+          });
+          if (!res.ok) throw new Error('Erro ao creditar');
+          showToast('✅ Crédito lançado!', 'success');
+          await loadInscricoesNovatos();
+        } catch (err) {
+          showToast('Erro ao creditar', 'error');
+        } finally {
+          setLoading(false);
+        }
       };
 
       const handleCriarPromocao = async () => {
@@ -890,6 +1074,28 @@
                     </div>
                     <span className="text-blue-400 text-2xl">›</span>
                   </button>
+
+                  {/* Botão Promoções Novatos - Apenas para COD >= 1200 */}
+                  {isNovato() && (
+                    <button 
+                      onClick={() => setFormData({...formData, userTab: 'promo-novatos'})}
+                      className="w-full bg-white rounded-2xl shadow-lg p-6 flex items-center gap-4 hover:shadow-xl transition-all hover:scale-[1.02] border-l-4 border-orange-500"
+                    >
+                      <div className="w-16 h-16 bg-orange-100 rounded-xl flex items-center justify-center text-3xl">
+                        🚀
+                      </div>
+                      <div className="text-left flex-1">
+                        <h3 className="text-lg font-bold text-gray-800">Promoções Novatos</h3>
+                        <p className="text-sm text-gray-500">Vagas especiais para novos profissionais</p>
+                        {promocoesNovatos.length > 0 && (
+                          <span className="inline-block mt-1 px-2 py-0.5 bg-orange-500 text-white text-xs rounded-full">
+                            {promocoesNovatos.length} vaga(s) disponível(is)
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-orange-400 text-2xl">›</span>
+                    </button>
+                  )}
                 </div>
 
                 {/* Mini resumo */}
@@ -925,6 +1131,7 @@
                     {formData.userTab === 'solicitacoes' && '📋 Solicitar Ajuste'}
                     {formData.userTab === 'saque' && '💰 Saque Emergencial'}
                     {formData.userTab === 'indicacoes' && '👥 Promoção de Indicação'}
+                    {formData.userTab === 'promo-novatos' && '🚀 Promoções Novatos'}
                   </h1>
                 </div>
 
@@ -1442,6 +1649,119 @@
                   </div>
                 </>
               )}
+
+              {/* ========== ABA PROMOÇÕES NOVATOS (USUÁRIO) ========== */}
+              {formData.userTab === 'promo-novatos' && (
+                <>
+                  {/* Vagas Disponíveis */}
+                  <div className="bg-white rounded-xl shadow p-6 mb-6">
+                    <h2 className="text-lg font-bold text-orange-700 mb-4">🚀 Vagas Disponíveis para Novatos</h2>
+                    {promocoesNovatos.length === 0 ? (
+                      <div className="text-center py-8">
+                        <p className="text-6xl mb-4">😕</p>
+                        <p className="text-gray-500 font-semibold">Nenhuma vaga disponível no momento</p>
+                        <p className="text-gray-400 text-sm">Volte mais tarde para verificar novas oportunidades</p>
+                      </div>
+                    ) : (
+                      <div className="grid md:grid-cols-2 gap-4">
+                        {promocoesNovatos.map(promo => {
+                          const jaInscrito = minhasInscricoesNovatos.some(i => i.promocao_id === promo.id);
+                          return (
+                            <div key={promo.id} className="border-2 border-orange-200 bg-orange-50 rounded-xl p-4">
+                              <div className="flex justify-between items-start mb-2">
+                                <div>
+                                  <p className="text-sm text-gray-600">📍 {promo.regiao}</p>
+                                  <p className="font-bold text-lg text-gray-800">🏢 {promo.cliente}</p>
+                                </div>
+                                <span className="px-3 py-1 bg-green-500 text-white rounded-full text-sm font-bold">
+                                  {formatMoney(promo.valor_bonus)}
+                                </span>
+                              </div>
+                              {promo.detalhes && (
+                                <p className="text-sm text-gray-600 mb-3 whitespace-pre-wrap">{promo.detalhes}</p>
+                              )}
+                              <div className="bg-yellow-100 border border-yellow-300 rounded-lg p-2 mb-3">
+                                <p className="text-xs text-yellow-800">⏱️ Ao se inscrever, você terá <strong>10 dias</strong> para ser contemplado</p>
+                              </div>
+                              {jaInscrito ? (
+                                <button disabled className="w-full py-2 bg-gray-300 text-gray-600 rounded-lg font-semibold cursor-not-allowed">
+                                  ✅ Já inscrito
+                                </button>
+                              ) : (
+                                <button 
+                                  onClick={() => handleInscreverNovatos(promo)}
+                                  disabled={loading}
+                                  className="w-full py-2 bg-orange-500 text-white rounded-lg font-semibold hover:bg-orange-600 disabled:opacity-50"
+                                >
+                                  {loading ? '...' : '🚀 Quero me inscrever!'}
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Minhas Inscrições */}
+                  <div className="bg-white rounded-xl shadow p-6">
+                    <h2 className="text-lg font-bold text-gray-800 mb-4">📋 Minhas Inscrições</h2>
+                    {minhasInscricoesNovatos.length === 0 ? (
+                      <p className="text-gray-500 text-center py-4">Você ainda não se inscreveu em nenhuma vaga</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {minhasInscricoesNovatos.map(ins => {
+                          const dataExpira = ins.expires_at ? new Date(ins.expires_at) : null;
+                          const expirado = dataExpira && new Date() > dataExpira;
+                          return (
+                            <div key={ins.id} className={`border rounded-lg p-4 ${
+                              ins.status === 'aprovada' ? 'border-green-300 bg-green-50' :
+                              ins.status === 'rejeitada' ? 'border-red-300 bg-red-50' :
+                              expirado ? 'border-gray-300 bg-gray-50' :
+                              'border-yellow-300 bg-yellow-50'
+                            }`}>
+                              <div className="flex justify-between items-start">
+                                <div>
+                                  <p className="font-semibold text-gray-800">🏢 {ins.cliente}</p>
+                                  <p className="text-sm text-gray-600">📍 {ins.regiao}</p>
+                                  <p className="text-sm text-gray-500">Inscrito em: {new Date(ins.created_at).toLocaleDateString('pt-BR')}</p>
+                                  {dataExpira && ins.status === 'pendente' && !expirado && (
+                                    <p className="text-xs text-orange-600">⏱️ Expira em: {dataExpira.toLocaleDateString('pt-BR')}</p>
+                                  )}
+                                </div>
+                                <div className="text-right">
+                                  <p className="font-bold text-green-600">{formatMoney(ins.valor_bonus)}</p>
+                                  <span className={`inline-block mt-1 px-2 py-1 rounded-full text-xs font-bold ${
+                                    ins.status === 'pendente' && !expirado ? 'bg-yellow-200 text-yellow-800' :
+                                    ins.status === 'aprovada' ? 'bg-green-200 text-green-800' :
+                                    ins.status === 'rejeitada' ? 'bg-red-200 text-red-800' :
+                                    'bg-gray-200 text-gray-800'
+                                  }`}>
+                                    {ins.status === 'pendente' && expirado ? '⏰ Expirada' :
+                                     ins.status === 'pendente' ? '⏳ Pendente' :
+                                     ins.status === 'aprovada' ? '✅ Aprovada' :
+                                     ins.status === 'rejeitada' ? '❌ Rejeitada' : ins.status}
+                                  </span>
+                                </div>
+                              </div>
+                              {ins.status === 'aprovada' && (
+                                <div className="mt-3 bg-green-100 border border-green-300 rounded-lg p-3">
+                                  <p className="text-green-800 text-sm">🎉 <strong>Parabéns!</strong> Você foi contemplado! O bônus de {formatMoney(ins.valor_bonus)} será incluído no seu próximo repasse.</p>
+                                </div>
+                              )}
+                              {ins.status === 'rejeitada' && ins.motivo_rejeicao && (
+                                <div className="mt-3 bg-red-100 border border-red-300 rounded-lg p-3">
+                                  <p className="text-red-800 text-sm"><strong>Motivo:</strong> {ins.motivo_rejeicao}</p>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
               </div>
             )}
           </div>
@@ -1488,7 +1808,7 @@
 
             <div className="bg-white border-b sticky top-0 z-10">
               <div className="max-w-7xl mx-auto px-4 flex gap-1 overflow-x-auto">
-                {['solicitacoes', 'validacao', 'conciliacao', 'resumo', 'gratuidades', 'restritos', 'indicacoes', 'relatorios'].map(tab => (
+                {['solicitacoes', 'validacao', 'conciliacao', 'resumo', 'gratuidades', 'restritos', 'indicacoes', 'promo-novatos', 'relatorios'].map(tab => (
                   <button key={tab} onClick={() => setFormData({...formData, finTab: tab})} className={`px-4 py-3 font-semibold whitespace-nowrap ${(formData.finTab || 'solicitacoes') === tab ? 'text-green-700 border-b-2 border-green-600' : 'text-gray-600'}`}>
                     {tab === 'solicitacoes' && '📋 Solicitações'}
                     {tab === 'validacao' && '📊 Validação Diária'}
@@ -1497,6 +1817,7 @@
                     {tab === 'gratuidades' && '🎁 Gratuidades'}
                     {tab === 'restritos' && '🚫 Restritos'}
                     {tab === 'indicacoes' && '👥 Indicações'}
+                    {tab === 'promo-novatos' && '🚀 PROMO Novatos'}
                     {tab === 'relatorios' && '📈 Relatórios'}
                   </button>
                 ))}
@@ -2283,6 +2604,517 @@
                                     )}
                                     {ind.status === 'rejeitada' && ind.motivo_rejeicao && (
                                       <span className="text-xs text-red-600" title={ind.motivo_rejeicao}>📝 {ind.motivo_rejeicao.substring(0, 20)}...</span>
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {/* ========== ABA PROMO NOVATOS ========== */}
+              {formData.finTab === 'promo-novatos' && (
+                <>
+                  {/* Modal de Rejeição */}
+                  {formData.modalRejeitarNovato && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+                      <div className="bg-white rounded-xl p-6 w-full max-w-md">
+                        <h3 className="text-lg font-bold mb-4">❌ Rejeitar Inscrição</h3>
+                        <p className="text-sm text-gray-600 mb-3">
+                          Profissional: <strong>{formData.modalRejeitarNovato.user_name}</strong><br/>
+                          Cliente: <strong>{formData.modalRejeitarNovato.cliente}</strong>
+                        </p>
+                        <div className="mb-4">
+                          <label className="block text-sm font-semibold mb-1">Motivo da Rejeição *</label>
+                          <textarea 
+                            value={formData.motivoRejeicaoNovato || ''} 
+                            onChange={e => setFormData({...formData, motivoRejeicaoNovato: e.target.value})} 
+                            className="w-full px-4 py-2 border rounded-lg"
+                            rows="3"
+                            placeholder="Informe o motivo..."
+                          />
+                        </div>
+                        <div className="flex gap-3">
+                          <button onClick={() => setFormData({...formData, modalRejeitarNovato: null, motivoRejeicaoNovato: ''})} className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300">Cancelar</button>
+                          <button onClick={() => handleRejeitarInscricaoNovato(formData.modalRejeitarNovato.id)} disabled={!formData.motivoRejeicaoNovato || loading} className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 disabled:opacity-50">
+                            {loading ? '...' : '❌ Rejeitar'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Cadastrar/Editar Promoção Novatos */}
+                  <div className="bg-white rounded-xl shadow p-6 mb-6">
+                    <div className="flex justify-between items-center mb-4">
+                      <h2 className="text-xl font-bold text-green-800">
+                        {formData.editPromoNovato ? '✏️ Editar Promoção Novatos' : '🚀 Cadastrar Nova Promoção Novatos'}
+                      </h2>
+                      {formData.editPromoNovato && (
+                        <button 
+                          onClick={() => setFormData({...formData, editPromoNovato: null, novatoRegiao: '', novatoCliente: '', novatoValor: '', novatoDetalhes: ''})}
+                          className="text-sm text-gray-500 hover:text-gray-700"
+                        >
+                          ✕ Cancelar edição
+                        </button>
+                      )}
+                    </div>
+                    <div className="grid md:grid-cols-3 gap-4 mb-4">
+                      <div>
+                        <label className="block text-sm font-semibold mb-1">Região *</label>
+                        <input 
+                          type="text" 
+                          value={formData.novatoRegiao || ''} 
+                          onChange={e => setFormData({...formData, novatoRegiao: e.target.value})} 
+                          className="w-full px-4 py-2 border rounded-lg"
+                          placeholder="Ex: Salvador - BA"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold mb-1">Cliente *</label>
+                        <input 
+                          type="text" 
+                          value={formData.novatoCliente || ''} 
+                          onChange={e => setFormData({...formData, novatoCliente: e.target.value})} 
+                          className="w-full px-4 py-2 border rounded-lg"
+                          placeholder="Ex: Magazine Luiza"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold mb-1">Valor do Bônus (R$) *</label>
+                        <input 
+                          type="number" 
+                          step="0.01"
+                          value={formData.novatoValor || ''} 
+                          onChange={e => setFormData({...formData, novatoValor: e.target.value})} 
+                          className="w-full px-4 py-2 border rounded-lg"
+                          placeholder="Ex: 150.00"
+                        />
+                      </div>
+                    </div>
+                    <div className="mb-4">
+                      <label className="block text-sm font-semibold mb-1">Detalhes da Promoção (opcional)</label>
+                      <textarea 
+                        value={formData.novatoDetalhes || ''} 
+                        onChange={e => setFormData({...formData, novatoDetalhes: e.target.value})} 
+                        className="w-full px-4 py-2 border rounded-lg"
+                        rows="3"
+                        placeholder="Ex: Vaga para motoboy com moto própria. Início imediato..."
+                      />
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <button onClick={formData.editPromoNovato ? handleEditarPromoNovato : handleCriarPromoNovato} disabled={loading} className={`px-6 py-2 text-white rounded-lg font-semibold disabled:opacity-50 ${formData.editPromoNovato ? 'bg-blue-600 hover:bg-blue-700' : 'bg-green-600 hover:bg-green-700'}`}>
+                        {loading ? '...' : formData.editPromoNovato ? '💾 Salvar Alterações' : '➕ Criar Promoção'}
+                      </button>
+                      <p className="text-xs text-gray-500">⏱️ Inscrições expiram automaticamente em 10 dias</p>
+                    </div>
+                  </div>
+
+                  {/* Promoções Novatos Cadastradas */}
+                  <div className="bg-white rounded-xl shadow p-6 mb-6">
+                    <h3 className="font-semibold mb-4">📋 Promoções Novatos Cadastradas</h3>
+                    {promocoesNovatos.length === 0 ? (
+                      <p className="text-gray-500 text-center py-4">Nenhuma promoção cadastrada</p>
+                    ) : (
+                      <div className="grid md:grid-cols-3 gap-3">
+                        {promocoesNovatos.map(p => (
+                          <div key={p.id} className={`border rounded-lg p-3 ${p.status === 'ativa' ? 'border-green-300 bg-green-50' : 'border-gray-300 bg-gray-50'}`}>
+                            <div className="flex justify-between items-center mb-1">
+                              <span className={`px-2 py-0.5 rounded text-xs font-bold ${p.status === 'ativa' ? 'bg-green-500 text-white' : 'bg-gray-500 text-white'}`}>
+                                {p.status === 'ativa' ? '✅' : '⏸️'}
+                              </span>
+                              <div className="flex gap-1">
+                                <button 
+                                  onClick={() => setFormData({...formData, editPromoNovato: p, novatoRegiao: p.regiao, novatoCliente: p.cliente, novatoValor: p.valor_bonus, novatoDetalhes: p.detalhes || ''})}
+                                  className="text-xs text-blue-500 hover:text-blue-700"
+                                >✏️</button>
+                                <button 
+                                  onClick={async () => {
+                                    await fetch(`${API_URL}/promo-novatos/${p.id}`, {
+                                      method: 'PATCH',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({ status: p.status === 'ativa' ? 'inativa' : 'ativa' })
+                                    });
+                                    loadPromoNovatos();
+                                  }}
+                                  className="text-xs text-gray-500 hover:text-gray-700"
+                                >
+                                  {p.status === 'ativa' ? '⏸️' : '▶️'}
+                                </button>
+                              </div>
+                            </div>
+                            <p className="font-semibold text-sm">📍 {p.regiao}</p>
+                            <p className="text-sm text-gray-700">🏢 {p.cliente}</p>
+                            <p className="text-lg font-bold text-green-600">{formatMoney(p.valor_bonus)}</p>
+                            {p.detalhes && (
+                              <p className="text-xs text-gray-600 mt-1 whitespace-pre-wrap line-clamp-2" title={p.detalhes}>{p.detalhes}</p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Cards de estatísticas */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-center">
+                      <p className="text-3xl font-bold text-yellow-600">{inscricoesNovatos.filter(i => i.status === 'pendente').length}</p>
+                      <p className="text-sm text-yellow-700">Pendentes</p>
+                    </div>
+                    <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-center">
+                      <p className="text-3xl font-bold text-green-600">{inscricoesNovatos.filter(i => i.status === 'aprovada').length}</p>
+                      <p className="text-sm text-green-700">Aprovadas</p>
+                    </div>
+                    <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-center">
+                      <p className="text-3xl font-bold text-red-600">{inscricoesNovatos.filter(i => i.status === 'rejeitada').length}</p>
+                      <p className="text-sm text-red-700">Rejeitadas</p>
+                    </div>
+                    <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 text-center">
+                      <p className="text-3xl font-bold text-gray-600">{inscricoesNovatos.filter(i => i.status === 'expirada').length}</p>
+                      <p className="text-sm text-gray-700">Expiradas</p>
+                    </div>
+                  </div>
+
+                  {/* Tabela de Inscrições */}
+                  <div className="bg-white rounded-xl shadow p-6">
+                    <h3 className="font-semibold mb-4">🚀 Inscrições de Novatos</h3>
+                    {inscricoesNovatos.length === 0 ? (
+                      <p className="text-gray-500 text-center py-8">Nenhuma inscrição recebida</p>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead className="bg-gray-50">
+                            <tr>
+                              <th className="px-2 py-3 text-left text-xs">Data</th>
+                              <th className="px-2 py-3 text-left text-xs">Profissional</th>
+                              <th className="px-2 py-3 text-left text-xs">COD</th>
+                              <th className="px-2 py-3 text-left text-xs">Região</th>
+                              <th className="px-2 py-3 text-left text-xs">Cliente</th>
+                              <th className="px-2 py-3 text-center text-xs">Bônus</th>
+                              <th className="px-2 py-3 text-center text-xs">Expira</th>
+                              <th className="px-2 py-3 text-center text-xs">Crédito</th>
+                              <th className="px-3 py-3 text-center">Status</th>
+                              <th className="px-2 py-3 text-center text-xs">Ações</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {inscricoesNovatos.map(i => {
+                              const dataExpira = i.expires_at ? new Date(i.expires_at) : null;
+                              const expirado = dataExpira && new Date() > dataExpira;
+                              return (
+                                <tr key={i.id} className={`border-b ${i.status === 'aprovada' ? 'bg-green-50' : i.status === 'rejeitada' ? 'bg-red-50' : expirado && i.status === 'pendente' ? 'bg-gray-100' : ''}`}>
+                                  <td className="px-2 py-3 text-xs">{new Date(i.created_at).toLocaleDateString('pt-BR')}</td>
+                                  <td className="px-2 py-3 text-xs font-medium">{i.user_name}</td>
+                                  <td className="px-2 py-3 text-xs">{i.user_cod}</td>
+                                  <td className="px-2 py-3 text-xs">{i.regiao}</td>
+                                  <td className="px-2 py-3 text-xs">{i.cliente}</td>
+                                  <td className="px-2 py-3 text-center text-xs font-bold text-green-600">{formatMoney(i.valor_bonus)}</td>
+                                  <td className="px-2 py-3 text-center text-xs">
+                                    {dataExpira ? (
+                                      <span className={expirado ? 'text-red-500' : 'text-gray-600'}>
+                                        {dataExpira.toLocaleDateString('pt-BR')}
+                                      </span>
+                                    ) : '-'}
+                                  </td>
+                                  <td className="px-2 py-3 text-center">
+                                    {i.status === 'aprovada' ? (
+                                      i.credito_lancado ? (
+                                        <span className="text-xs text-green-600 font-bold">✅ Lançado</span>
+                                      ) : (
+                                        <button 
+                                          onClick={() => handleCreditarBonusNovato(i)}
+                                          className="px-2 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600"
+                                          disabled={loading}
+                                        >
+                                          💰 Lançar
+                                        </button>
+                                      )
+                                    ) : '-'}
+                                  </td>
+                                  <td className="px-3 py-3 text-center">
+                                    <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                                      i.status === 'pendente' ? (expirado ? 'bg-gray-200 text-gray-700' : 'bg-yellow-100 text-yellow-700') :
+                                      i.status === 'aprovada' ? 'bg-green-100 text-green-700' :
+                                      i.status === 'rejeitada' ? 'bg-red-100 text-red-700' :
+                                      'bg-gray-100 text-gray-700'
+                                    }`}>
+                                      {i.status === 'pendente' && expirado ? '⏰ Expirada' : 
+                                       i.status === 'pendente' ? '⏳ Pendente' : 
+                                       i.status === 'aprovada' ? '✅ Aprovada' : 
+                                       i.status === 'rejeitada' ? '❌ Rejeitada' : i.status}
+                                    </span>
+                                  </td>
+                                  <td className="px-2 py-3 text-center">
+                                    {i.status === 'pendente' && !expirado && (
+                                      <div className="flex gap-1 justify-center">
+                                        <button onClick={() => handleAprovarInscricaoNovato(i.id)} className="p-1 bg-green-500 text-white rounded text-xs hover:bg-green-600" disabled={loading}>✓</button>
+                                        <button onClick={() => setFormData({...formData, modalRejeitarNovato: i})} className="p-1 bg-red-500 text-white rounded text-xs hover:bg-red-600">✗</button>
+                                      </div>
+                                    )}
+                                    {i.status === 'rejeitada' && i.motivo_rejeicao && (
+                                      <span className="text-xs text-red-500" title={i.motivo_rejeicao}>📝</span>
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {/* ========== ABA PROMO NOVATOS ========== */}
+              {formData.finTab === 'promo-novatos' && (
+                <>
+                  {/* Modal de rejeição */}
+                  {formData.modalRejeitarNovatos && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+                      <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full">
+                        <h3 className="text-xl font-bold text-red-600 mb-4">❌ Rejeitar Inscrição</h3>
+                        <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                          <p className="text-sm"><strong>Profissional:</strong> {formData.modalRejeitarNovatos.user_name}</p>
+                          <p className="text-sm"><strong>Cliente:</strong> {formData.modalRejeitarNovatos.cliente}</p>
+                          <p className="text-sm"><strong>Região:</strong> {formData.modalRejeitarNovatos.regiao}</p>
+                        </div>
+                        <div className="mb-4">
+                          <label className="block text-sm font-semibold mb-1">Motivo da Rejeição *</label>
+                          <textarea 
+                            value={formData.motivoRejeicaoNovatos || ''} 
+                            onChange={e => setFormData({...formData, motivoRejeicaoNovatos: e.target.value})} 
+                            className="w-full px-4 py-2 border rounded-lg"
+                            rows="3"
+                            placeholder="Informe o motivo..."
+                          />
+                        </div>
+                        <div className="flex gap-3">
+                          <button onClick={() => setFormData({...formData, modalRejeitarNovatos: null, motivoRejeicaoNovatos: ''})} className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300">Cancelar</button>
+                          <button onClick={() => handleRejeitarInscricaoNovatos(formData.modalRejeitarNovatos.id)} disabled={!formData.motivoRejeicaoNovatos || loading} className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 disabled:opacity-50">
+                            {loading ? '...' : '❌ Rejeitar'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Cadastrar/Editar Promoção Novatos */}
+                  <div className="bg-white rounded-xl shadow p-6 mb-6">
+                    <div className="flex justify-between items-center mb-4">
+                      <h2 className="text-xl font-bold text-blue-800">
+                        {formData.editPromoNovatos ? '✏️ Editar Promoção' : '🚀 Cadastrar Nova Promoção Novatos'}
+                      </h2>
+                      {formData.editPromoNovatos && (
+                        <button 
+                          onClick={() => setFormData({...formData, editPromoNovatos: null, novatosRegiao: '', novatosCliente: '', novatosValor: '', novatosDetalhes: ''})}
+                          className="text-sm text-gray-500 hover:text-gray-700"
+                        >
+                          ✕ Cancelar edição
+                        </button>
+                      )}
+                    </div>
+                    <div className="grid md:grid-cols-3 gap-4 mb-4">
+                      <div>
+                        <label className="block text-sm font-semibold mb-1">Região *</label>
+                        <input 
+                          type="text" 
+                          value={formData.novatosRegiao || ''} 
+                          onChange={e => setFormData({...formData, novatosRegiao: e.target.value})} 
+                          className="w-full px-4 py-2 border rounded-lg"
+                          placeholder="Ex: Salvador - BA"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold mb-1">Cliente *</label>
+                        <input 
+                          type="text" 
+                          value={formData.novatosCliente || ''} 
+                          onChange={e => setFormData({...formData, novatosCliente: e.target.value})} 
+                          className="w-full px-4 py-2 border rounded-lg"
+                          placeholder="Ex: Magazine Luiza"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold mb-1">Valor do Bônus (R$) *</label>
+                        <input 
+                          type="number" 
+                          step="0.01"
+                          value={formData.novatosValor || ''} 
+                          onChange={e => setFormData({...formData, novatosValor: e.target.value})} 
+                          className="w-full px-4 py-2 border rounded-lg"
+                          placeholder="Ex: 100.00"
+                        />
+                      </div>
+                    </div>
+                    <div className="mb-4">
+                      <label className="block text-sm font-semibold mb-1">Detalhes da Promoção (opcional)</label>
+                      <textarea 
+                        value={formData.novatosDetalhes || ''} 
+                        onChange={e => setFormData({...formData, novatosDetalhes: e.target.value})} 
+                        className="w-full px-4 py-2 border rounded-lg"
+                        rows="3"
+                        placeholder="Ex: Vaga para entregador com moto própria. Início imediato..."
+                      />
+                    </div>
+                    <button onClick={formData.editPromoNovatos ? handleEditarPromocaoNovatos : handleCriarPromocaoNovatos} disabled={loading} className={`w-full md:w-auto px-6 py-2 text-white rounded-lg font-semibold disabled:opacity-50 ${formData.editPromoNovatos ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-600 hover:bg-blue-700'}`}>
+                      {loading ? '...' : formData.editPromoNovatos ? '💾 Salvar Alterações' : '➕ Criar Promoção'}
+                    </button>
+                  </div>
+
+                  {/* Promoções Ativas */}
+                  <div className="bg-white rounded-xl shadow p-6 mb-6">
+                    <h3 className="font-semibold mb-4">📋 Promoções Novatos Cadastradas</h3>
+                    {promocoesNovatos.length === 0 ? (
+                      <p className="text-gray-500 text-center py-4">Nenhuma promoção cadastrada</p>
+                    ) : (
+                      <div className="grid md:grid-cols-3 gap-3">
+                        {promocoesNovatos.map(p => (
+                          <div key={p.id} className={`border rounded-lg p-3 ${p.status === 'ativa' ? 'border-blue-300 bg-blue-50' : 'border-gray-300 bg-gray-50'}`}>
+                            <div className="flex justify-between items-center mb-1">
+                              <span className={`px-2 py-0.5 rounded text-xs font-bold ${p.status === 'ativa' ? 'bg-blue-500 text-white' : 'bg-gray-500 text-white'}`}>
+                                {p.status === 'ativa' ? '✅' : '⏸️'}
+                              </span>
+                              <div className="flex gap-1">
+                                <button 
+                                  onClick={() => setFormData({...formData, editPromoNovatos: p, novatosRegiao: p.regiao, novatosCliente: p.cliente, novatosValor: p.valor_bonus, novatosDetalhes: p.detalhes || ''})}
+                                  className="text-xs text-blue-500 hover:text-blue-700"
+                                >✏️</button>
+                                <button 
+                                  onClick={async () => {
+                                    await fetch(`${API_URL}/promocoes-novatos/${p.id}`, {
+                                      method: 'PATCH',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({ status: p.status === 'ativa' ? 'inativa' : 'ativa' })
+                                    });
+                                    loadPromocoesNovatos();
+                                  }}
+                                  className="text-xs text-gray-500 hover:text-gray-700"
+                                >
+                                  {p.status === 'ativa' ? '⏸️' : '▶️'}
+                                </button>
+                              </div>
+                            </div>
+                            <p className="font-semibold text-sm">{p.regiao}</p>
+                            <p className="text-xs text-gray-600">🏢 {p.cliente}</p>
+                            <p className="text-blue-600 font-bold">R$ {parseFloat(p.valor_bonus).toFixed(2)}</p>
+                            {p.detalhes && <p className="text-xs text-gray-500 mt-1 line-clamp-2">{p.detalhes}</p>}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Cards de estatísticas */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div className="bg-white rounded-xl shadow p-4">
+                      <p className="text-sm text-gray-600">Total Inscrições</p>
+                      <p className="text-3xl font-bold text-blue-600">{inscricoesNovatos.length}</p>
+                    </div>
+                    <div className="bg-white rounded-xl shadow p-4">
+                      <p className="text-sm text-gray-600">Pendentes</p>
+                      <p className="text-3xl font-bold text-yellow-600">{inscricoesNovatos.filter(i => i.status === 'pendente').length}</p>
+                    </div>
+                    <div className="bg-white rounded-xl shadow p-4">
+                      <p className="text-sm text-gray-600">Aprovadas</p>
+                      <p className="text-3xl font-bold text-green-600">{inscricoesNovatos.filter(i => i.status === 'aprovada').length}</p>
+                    </div>
+                    <div className="bg-white rounded-xl shadow p-4">
+                      <p className="text-sm text-gray-600">Expiradas</p>
+                      <p className="text-3xl font-bold text-gray-600">{inscricoesNovatos.filter(i => i.status === 'expirada').length}</p>
+                    </div>
+                  </div>
+
+                  {/* Tabela de Inscrições */}
+                  <div className="bg-white rounded-xl shadow p-6">
+                    <h3 className="font-semibold mb-4">🚀 Inscrições Recebidas</h3>
+                    {inscricoesNovatos.length === 0 ? (
+                      <p className="text-gray-500 text-center py-4">Nenhuma inscrição ainda</p>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead className="bg-gray-100">
+                            <tr>
+                              <th className="px-3 py-2 text-left">Profissional</th>
+                              <th className="px-3 py-2 text-left">Cliente</th>
+                              <th className="px-3 py-2 text-left">Região</th>
+                              <th className="px-3 py-2 text-left">Bônus</th>
+                              <th className="px-3 py-2 text-left">Status</th>
+                              <th className="px-3 py-2 text-left">Expira em</th>
+                              <th className="px-3 py-2 text-left">Crédito</th>
+                              <th className="px-3 py-2 text-left">Ações</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {inscricoesNovatos.map(insc => {
+                              const expiresAt = new Date(insc.expires_at);
+                              const diasRestantes = Math.ceil((expiresAt - new Date()) / (1000 * 60 * 60 * 24));
+                              return (
+                                <tr key={insc.id} className={`border-b ${
+                                  insc.status === 'aprovada' ? 'bg-green-50' :
+                                  insc.status === 'rejeitada' ? 'bg-red-50' :
+                                  insc.status === 'expirada' ? 'bg-gray-100' : ''
+                                }`}>
+                                  <td className="px-3 py-2">
+                                    <p className="font-semibold">{insc.user_name}</p>
+                                    <p className="text-xs text-gray-500">{insc.user_cod}</p>
+                                  </td>
+                                  <td className="px-3 py-2">{insc.cliente}</td>
+                                  <td className="px-3 py-2">{insc.regiao}</td>
+                                  <td className="px-3 py-2 font-bold text-blue-600">R$ {parseFloat(insc.valor_bonus).toFixed(2)}</td>
+                                  <td className="px-3 py-2">
+                                    <span className={`px-2 py-1 rounded text-xs font-bold ${
+                                      insc.status === 'pendente' ? 'bg-yellow-200 text-yellow-800' :
+                                      insc.status === 'aprovada' ? 'bg-green-200 text-green-800' :
+                                      insc.status === 'rejeitada' ? 'bg-red-200 text-red-800' :
+                                      'bg-gray-200 text-gray-800'
+                                    }`}>
+                                      {insc.status.toUpperCase()}
+                                    </span>
+                                    {insc.motivo_rejeicao && (
+                                      <p className="text-xs text-red-600 mt-1">{insc.motivo_rejeicao}</p>
+                                    )}
+                                  </td>
+                                  <td className="px-3 py-2">
+                                    {insc.status === 'pendente' && (
+                                      <span className={`text-xs font-semibold ${diasRestantes <= 2 ? 'text-red-600' : 'text-gray-600'}`}>
+                                        {diasRestantes > 0 ? `${diasRestantes} dias` : 'Expirando...'}
+                                      </span>
+                                    )}
+                                    {insc.status !== 'pendente' && '-'}
+                                  </td>
+                                  <td className="px-3 py-2">
+                                    {insc.status === 'aprovada' && (
+                                      <button
+                                        onClick={async () => {
+                                          await fetch(`${API_URL}/inscricoes-novatos/${insc.id}/credito`, {
+                                            method: 'PATCH',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ credito_lancado: !insc.credito_lancado, lancado_por: user.fullName })
+                                          });
+                                          loadInscricoesNovatos();
+                                        }}
+                                        className={`px-2 py-1 rounded text-xs font-bold ${
+                                          insc.credito_lancado 
+                                            ? 'bg-green-600 text-white' 
+                                            : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                                        }`}
+                                      >
+                                        {insc.credito_lancado ? '✅ Lançado' : '💰 Lançar'}
+                                      </button>
+                                    )}
+                                  </td>
+                                  <td className="px-3 py-2">
+                                    {insc.status === 'pendente' && (
+                                      <div className="flex gap-1">
+                                        <button onClick={() => handleAprovarInscricaoNovatos(insc.id)} className="px-2 py-1 bg-green-500 text-white rounded text-xs hover:bg-green-600">✓</button>
+                                        <button onClick={() => setFormData({...formData, modalRejeitarNovatos: insc})} className="px-2 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600">✗</button>
+                                      </div>
                                     )}
                                   </td>
                                 </tr>
