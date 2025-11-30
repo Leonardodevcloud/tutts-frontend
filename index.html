@@ -1970,9 +1970,9 @@
                             const cod = e.target.value;
                             setFormData({...formData, restUserCod: cod, restUserName: ''});
                             if (cod.length >= 3) {
-                              const userFound = users.find(u => u.cod_profissional?.toLowerCase() === cod.toLowerCase());
+                              const userFound = users.find(u => u.codProfissional?.toLowerCase() === cod.toLowerCase());
                               if (userFound) {
-                                setFormData(prev => ({...prev, restUserCod: cod, restUserName: userFound.full_name}));
+                                setFormData(prev => ({...prev, restUserCod: cod, restUserName: userFound.fullName}));
                               }
                             }
                           }} 
