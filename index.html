@@ -2210,9 +2210,9 @@
             )}
 
             <div className="bg-white border-b sticky top-0 z-10">
-              <div className="max-w-7xl mx-auto px-3 flex gap-0 overflow-x-auto">
+              <div className="max-w-7xl mx-auto px-4 flex gap-1 overflow-x-auto">
                 {['solicitacoes', 'validacao', 'conciliacao', 'resumo', 'gratuidades', 'restritos', 'indicacoes', 'promo-novatos', 'relatorios'].map(tab => (
-                  <button key={tab} onClick={() => setFormData({...formData, finTab: tab})} className={`px-3 py-2 text-sm font-semibold whitespace-nowrap ${(formData.finTab || 'solicitacoes') === tab ? 'text-green-700 border-b-2 border-green-600 bg-green-50' : 'text-gray-600 hover:bg-gray-50'}`}>
+                  <button key={tab} onClick={() => setFormData({...formData, finTab: tab})} className={`px-4 py-2.5 text-sm font-semibold whitespace-nowrap rounded-t-lg ${(formData.finTab || 'solicitacoes') === tab ? 'text-green-700 border-b-2 border-green-600 bg-green-50' : 'text-gray-600 hover:bg-gray-100'}`}>
                     {tab === 'solicitacoes' && '📋 Solicitações'}
                     {tab === 'validacao' && '📊 Validação'}
                     {tab === 'conciliacao' && '✅ Conciliação'}
@@ -3446,7 +3446,6 @@
                               <th className="px-2 py-3 text-center text-xs">Bônus</th>
                               <th className="px-2 py-3 text-center text-xs">Expira</th>
                               <th className="px-2 py-3 text-center text-xs">Crédito</th>
-                              <th className="px-2 py-3 text-center text-xs">Debitado</th>
                               <th className="px-3 py-3 text-center">Status</th>
                               <th className="px-2 py-3 text-center text-xs">Admin</th>
                               <th className="px-2 py-3 text-center text-xs">Ações</th>
@@ -3487,19 +3486,6 @@
                                           💰 Lançar
                                         </button>
                                       )
-                                    ) : '-'}
-                                  </td>
-                                  <td className="px-2 py-3 text-center">
-                                    {i.status === 'aprovada' && i.credito_lancado ? (
-                                      <div>
-                                        <input 
-                                          type="checkbox"
-                                          checked={i.debito || false}
-                                          onChange={(e) => handleDebitarNovatos(i, e.target.checked)}
-                                          className="w-4 h-4 cursor-pointer accent-green-600"
-                                        />
-                                        {i.debito && i.debitado_por && <p className="text-xs text-gray-400">{i.debitado_por}</p>}
-                                      </div>
                                     ) : '-'}
                                   </td>
                                   <td className="px-3 py-3 text-center">
