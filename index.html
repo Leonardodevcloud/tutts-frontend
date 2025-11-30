@@ -1107,6 +1107,9 @@
                     const valorAprovadoComGrat = filtrados.filter(w => w.status === 'aprovado_gratuidade').reduce((acc, w) => acc + parseFloat(w.requested_amount || 0), 0);
                     const deixouArrecadar = valorAprovadoComGrat * 0.045;
                     
+                    // Valor total das aprovações (com + sem gratuidade)
+                    const valorTotalAprovado = valorAprovadoSemGrat + valorAprovadoComGrat;
+                    
                     return (
                       <>
                         {/* Período selecionado */}
@@ -1144,7 +1147,12 @@
                         </div>
 
                         {/* Cards de métricas - Linha 2 (valores) */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl shadow p-6 text-white">
+                            <p className="text-sm opacity-90">💵 Valor Total Aprovado</p>
+                            <p className="text-4xl font-bold mt-2">{formatMoney(valorTotalAprovado)}</p>
+                            <p className="text-xs opacity-75 mt-2">Soma de {aprovadasTotal} aprovações (com + sem gratuidade)</p>
+                          </div>
                           <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl shadow p-6 text-white">
                             <p className="text-sm opacity-90">💰 Lucro com Saque (4,5%)</p>
                             <p className="text-4xl font-bold mt-2">{formatMoney(lucroComSaque)}</p>
