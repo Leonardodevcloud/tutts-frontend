@@ -161,7 +161,7 @@
 
       return (
         <div className="bg-white rounded-xl shadow p-6">
-          <h3 className="text-lg font-semibold mb-4">🏆 Ranking de Técnicos</h3>
+          <h3 className="text-lg font-semibold mb-4">🏆 Ranking de Profissionais</h3>
           {ranking.length === 0 ? <p className="text-gray-500 text-center py-8">Sem dados</p> : (
             <div className="space-y-3">
               {ranking.map((tech, i) => (
@@ -2112,7 +2112,7 @@
                 if (s.status === 'pendente') porMotivo[motivo].pendentes++;
               });
               
-              // Por técnico
+              // Por profissional
               const porTecnico = {};
               submissoesMes.forEach(s => {
                 const tec = s.user_name || s.cod_profissional || 'Desconhecido';
@@ -2122,7 +2122,7 @@
                 if (s.status === 'rejeitada') porTecnico[tec].rejeitadas++;
               });
               
-              // Top 5 técnicos
+              // Top 5 profissionais
               const topTecnicos = Object.entries(porTecnico)
                 .map(([nome, dados]) => ({ nome, ...dados, taxa: dados.total > 0 ? ((dados.aprovadas / dados.total) * 100).toFixed(0) : 0 }))
                 .sort((a, b) => b.total - a.total)
@@ -2220,8 +2220,8 @@
                     <div class="cards">
                       <div class="card"><div class="card-value green">${taxaAprovacao}%</div><div>Taxa Aprovação</div></div>
                       <div class="card"><div class="card-value red">${taxaRejeicao}%</div><div>Taxa Rejeição</div></div>
-                      <div class="card"><div class="card-value purple">${users.length}</div><div>Técnicos</div></div>
-                      <div class="card"><div class="card-value purple">${users.length > 0 ? (submissoesMes.length / users.length).toFixed(1) : 0}</div><div>Média/Técnico</div></div>
+                      <div class="card"><div class="card-value purple">${users.length}</div><div>Profissionais</div></div>
+                      <div class="card"><div class="card-value purple">${users.length > 0 ? (submissoesMes.length / users.length).toFixed(1) : 0}</div><div>Média/Profissional</div></div>
                     </div>
                     
                     <div class="comparativo">
@@ -2247,9 +2247,9 @@
                       </tbody>
                     </table>
                     
-                    <h2>👷 Top 10 Técnicos</h2>
+                    <h2>👷 Top 10 Profissionais</h2>
                     <table>
-                      <thead><tr><th>#</th><th>Técnico</th><th>Código</th><th>Total</th><th>Aprovadas</th><th>Rejeitadas</th><th>Taxa</th></tr></thead>
+                      <thead><tr><th>#</th><th>Profissional</th><th>Código</th><th>Total</th><th>Aprovadas</th><th>Rejeitadas</th><th>Taxa</th></tr></thead>
                       <tbody>
                         ${topTecnicos.map((t, i) => `
                           <tr>
@@ -2343,11 +2343,11 @@
                     </div>
                     <div className="bg-purple-50 rounded-xl p-4 text-center border border-purple-200">
                       <p className="text-3xl font-bold text-purple-600">{users.length}</p>
-                      <p className="text-xs text-purple-700">Total Técnicos</p>
+                      <p className="text-xs text-purple-700">Total Profissionais</p>
                     </div>
                     <div className="bg-blue-50 rounded-xl p-4 text-center border border-blue-200">
                       <p className="text-3xl font-bold text-blue-600">{users.length > 0 ? (submissoesMes.length / users.length).toFixed(1) : 0}</p>
-                      <p className="text-xs text-blue-700">Média por Técnico</p>
+                      <p className="text-xs text-blue-700">Média por Profissional</p>
                     </div>
                   </div>
                   
@@ -2435,15 +2435,15 @@
                     </div>
                   </div>
                   
-                  {/* Top 10 Técnicos */}
+                  {/* Top 10 Profissionais */}
                   <div className="bg-white rounded-xl shadow p-6">
-                    <h3 className="font-semibold mb-4">👷 Top 10 Técnicos do Mês</h3>
+                    <h3 className="font-semibold mb-4">👷 Top 10 Profissionais do Mês</h3>
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm">
                         <thead className="bg-gray-50">
                           <tr>
                             <th className="px-4 py-3 text-center">#</th>
-                            <th className="px-4 py-3 text-left">Técnico</th>
+                            <th className="px-4 py-3 text-left">Profissional</th>
                             <th className="px-4 py-3 text-left">Código</th>
                             <th className="px-4 py-3 text-center">Total</th>
                             <th className="px-4 py-3 text-center">✅</th>
