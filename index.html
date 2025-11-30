@@ -1662,32 +1662,6 @@
                       janela.print();
                     };
                     
-                    // Função gerar Excel (CSV)
-                    const gerarExcel = () => {
-                      const headers = ['Data', 'Profissional', 'Código', 'CPF', 'PIX', 'Solicitado', 'Pago', 'Status', 'Admin'];
-                      const rows = saquesDoMes.map(w => [
-                        new Date(w.created_at).toLocaleDateString('pt-BR'),
-                        w.user_name || '',
-                        w.user_cod,
-                        w.cpf || '',
-                        w.pix_key || '',
-                        parseFloat(w.requested_amount).toFixed(2),
-                        parseFloat(w.final_amount).toFixed(2),
-                        w.status === 'aprovado' ? 'Aprovado' : w.status === 'aprovado_gratuidade' ? 'Aprovado c/ Gratuidade' : w.status === 'rejeitado' ? 'Rejeitado' : 'Pendente',
-                        w.admin_name || ''
-                      ]);
-                      
-                      const csvContent = [headers, ...rows].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
-                      const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-                      const url = URL.createObjectURL(blob);
-                      const link = document.createElement('a');
-                      link.href = url;
-                      link.download = `relatorio_${nomeMes.toLowerCase()}_${anoSelecionado}.csv`;
-                      link.click();
-                      URL.revokeObjectURL(url);
-                      showToast('✅ Excel exportado!', 'success');
-                    };
-                    
                     return (
                       <div className="space-y-6">
                         {/* Seletor de Período e Botões */}
@@ -1707,9 +1681,6 @@
                             </div>
                             <button onClick={gerarPDF} className="px-6 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700">
                               📄 Gerar PDF
-                            </button>
-                            <button onClick={gerarExcel} className="px-6 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700">
-                              📊 Gerar Excel
                             </button>
                           </div>
                         </div>
