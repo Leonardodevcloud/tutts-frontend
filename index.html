@@ -1877,12 +1877,12 @@
 
           <div className="bg-white border-b sticky top-0 z-10">
             <div className="max-w-7xl mx-auto px-4 flex gap-1 overflow-x-auto">
-              {['dashboard', 'search', 'ranking', 'stats', 'users'].map(tab => (
+              {['dashboard', 'search', 'ranking', 'relatorios', 'users'].map(tab => (
                 <button key={tab} onClick={() => setFormData({...formData, adminTab: tab})} className={`px-6 py-3 font-semibold whitespace-nowrap ${(!formData.adminTab && tab === 'dashboard') || formData.adminTab === tab ? 'text-purple-900 border-b-2 border-purple-900' : 'text-gray-600'}`}>
                   {tab === 'dashboard' && '📊 Dashboard'}
                   {tab === 'search' && '🔍 Busca Detalhada'}
                   {tab === 'ranking' && '🏆 Ranking'}
-                  {tab === 'stats' && '📈 Estatísticas'}
+                  {tab === 'relatorios' && '📈 Relatórios'}
                   {tab === 'users' && '👥 Usuários'}
                 </button>
               ))}
@@ -2084,19 +2084,398 @@
             )}
 
             {/* ESTATÍSTICAS */}
-            {formData.adminTab === 'stats' && (
-              <div className="space-y-6">
-                <div className="grid md:grid-cols-2 gap-6">
-                  <TechRanking submissions={submissions} />
-                  <div className="space-y-4">
-                    <div className="bg-white rounded-xl shadow p-6"><p className="text-sm text-gray-600">Taxa de Aprovação</p><p className="text-3xl font-bold text-green-600">{submissions.length > 0 ? ((submissions.filter(s => s.status === 'aprovada').length / submissions.length) * 100).toFixed(1) : 0}%</p></div>
-                    <div className="bg-white rounded-xl shadow p-6"><p className="text-sm text-gray-600">Taxa de Rejeição</p><p className="text-3xl font-bold text-red-600">{submissions.length > 0 ? ((submissions.filter(s => s.status === 'rejeitada').length / submissions.length) * 100).toFixed(1) : 0}%</p></div>
-                    <div className="bg-white rounded-xl shadow p-6"><p className="text-sm text-gray-600">Média por Técnico</p><p className="text-3xl font-bold text-purple-600">{users.length > 0 ? (submissions.length / users.length).toFixed(1) : 0}</p></div>
-                    <div className="bg-white rounded-xl shadow p-6"><p className="text-sm text-gray-600">Total de Técnicos</p><p className="text-3xl font-bold text-blue-600">{users.length}</p></div>
+            {formData.adminTab === 'relatorios' && (() => {
+              // Cálculos para o relatório
+              const mesAtual = formData.relMes !== undefined ? parseInt(formData.relMes) : new Date().getMonth();
+              const anoAtual = formData.relAno !== undefined ? parseInt(formData.relAno) : new Date().getFullYear();
+              
+              const submissoesMes = submissions.filter(s => {
+                const d = new Date(s.created_at);
+                return d.getMonth() === mesAtual && d.getFullYear() === anoAtual;
+              });
+              
+              const aprovadas = submissoesMes.filter(s => s.status === 'aprovada');
+              const rejeitadas = submissoesMes.filter(s => s.status === 'rejeitada');
+              const pendentes = submissoesMes.filter(s => s.status === 'pendente');
+              
+              const taxaAprovacao = submissoesMes.length > 0 ? ((aprovadas.length / submissoesMes.length) * 100).toFixed(1) : 0;
+              const taxaRejeicao = submissoesMes.length > 0 ? ((rejeitadas.length / submissoesMes.length) * 100).toFixed(1) : 0;
+              
+              // Por motivo
+              const porMotivo = {};
+              submissoesMes.forEach(s => {
+                const motivo = s.motivo || 'Outros';
+                if (!porMotivo[motivo]) porMotivo[motivo] = { total: 0, aprovadas: 0, rejeitadas: 0, pendentes: 0 };
+                porMotivo[motivo].total++;
+                if (s.status === 'aprovada') porMotivo[motivo].aprovadas++;
+                if (s.status === 'rejeitada') porMotivo[motivo].rejeitadas++;
+                if (s.status === 'pendente') porMotivo[motivo].pendentes++;
+              });
+              
+              // Por técnico
+              const porTecnico = {};
+              submissoesMes.forEach(s => {
+                const tec = s.user_name || s.cod_profissional || 'Desconhecido';
+                if (!porTecnico[tec]) porTecnico[tec] = { total: 0, aprovadas: 0, rejeitadas: 0, cod: s.cod_profissional };
+                porTecnico[tec].total++;
+                if (s.status === 'aprovada') porTecnico[tec].aprovadas++;
+                if (s.status === 'rejeitada') porTecnico[tec].rejeitadas++;
+              });
+              
+              // Top 5 técnicos
+              const topTecnicos = Object.entries(porTecnico)
+                .map(([nome, dados]) => ({ nome, ...dados, taxa: dados.total > 0 ? ((dados.aprovadas / dados.total) * 100).toFixed(0) : 0 }))
+                .sort((a, b) => b.total - a.total)
+                .slice(0, 10);
+              
+              // Por semana
+              const porSemana = [
+                { label: 'Semana 1', dias: [1,7], total: 0, aprovadas: 0 },
+                { label: 'Semana 2', dias: [8,14], total: 0, aprovadas: 0 },
+                { label: 'Semana 3', dias: [15,21], total: 0, aprovadas: 0 },
+                { label: 'Semana 4', dias: [22,31], total: 0, aprovadas: 0 }
+              ];
+              submissoesMes.forEach(s => {
+                const dia = new Date(s.created_at).getDate();
+                const semana = porSemana.find(sem => dia >= sem.dias[0] && dia <= sem.dias[1]);
+                if (semana) {
+                  semana.total++;
+                  if (s.status === 'aprovada') semana.aprovadas++;
+                }
+              });
+              const maxSemana = Math.max(...porSemana.map(s => s.total), 1);
+              
+              // Últimos 6 meses
+              const ultimos6Meses = [];
+              for (let i = 5; i >= 0; i--) {
+                const d = new Date(anoAtual, mesAtual - i, 1);
+                const mes = d.getMonth();
+                const ano = d.getFullYear();
+                const subs = submissions.filter(s => {
+                  const sd = new Date(s.created_at);
+                  return sd.getMonth() === mes && sd.getFullYear() === ano;
+                });
+                ultimos6Meses.push({
+                  label: d.toLocaleDateString('pt-BR', { month: 'short' }),
+                  total: subs.length,
+                  aprovadas: subs.filter(s => s.status === 'aprovada').length
+                });
+              }
+              const maxMes = Math.max(...ultimos6Meses.map(m => m.total), 1);
+              
+              // Mês anterior para comparativo
+              const mesAnteriorData = new Date(anoAtual, mesAtual - 1, 1);
+              const submissoesMesAnterior = submissions.filter(s => {
+                const d = new Date(s.created_at);
+                return d.getMonth() === mesAnteriorData.getMonth() && d.getFullYear() === mesAnteriorData.getFullYear();
+              });
+              const variacaoTotal = submissoesMesAnterior.length > 0 
+                ? (((submissoesMes.length - submissoesMesAnterior.length) / submissoesMesAnterior.length) * 100).toFixed(1) 
+                : 0;
+              
+              const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+              
+              // Função gerar PDF
+              const gerarPDF = () => {
+                const conteudo = `
+                  <html>
+                  <head>
+                    <title>Relatório Tutts - ${meses[mesAtual]}/${anoAtual}</title>
+                    <style>
+                      body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
+                      h1 { color: #581c87; border-bottom: 2px solid #581c87; padding-bottom: 10px; }
+                      h2 { color: #7c3aed; margin-top: 30px; }
+                      .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+                      .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin: 20px 0; }
+                      .card { background: #f3f4f6; padding: 15px; border-radius: 8px; text-align: center; }
+                      .card-value { font-size: 28px; font-weight: bold; }
+                      .green { color: #16a34a; }
+                      .red { color: #dc2626; }
+                      .yellow { color: #ca8a04; }
+                      .purple { color: #7c3aed; }
+                      table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+                      th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+                      th { background: #f3f4f6; }
+                      .footer { margin-top: 40px; text-align: center; color: #666; font-size: 12px; border-top: 1px solid #ddd; padding-top: 20px; }
+                      .comparativo { background: ${parseFloat(variacaoTotal) >= 0 ? '#dcfce7' : '#fee2e2'}; padding: 15px; border-radius: 8px; margin: 20px 0; }
+                    </style>
+                  </head>
+                  <body>
+                    <div class="header">
+                      <h1>📊 Relatório Tutts</h1>
+                      <div>
+                        <strong>${meses[mesAtual]} / ${anoAtual}</strong><br>
+                        <small>Gerado em: ${new Date().toLocaleString('pt-BR')}</small>
+                      </div>
+                    </div>
+                    
+                    <h2>📋 Resumo Geral</h2>
+                    <div class="cards">
+                      <div class="card"><div class="card-value purple">${submissoesMes.length}</div><div>Total</div></div>
+                      <div class="card"><div class="card-value green">${aprovadas.length}</div><div>Aprovadas</div></div>
+                      <div class="card"><div class="card-value red">${rejeitadas.length}</div><div>Rejeitadas</div></div>
+                      <div class="card"><div class="card-value yellow">${pendentes.length}</div><div>Pendentes</div></div>
+                    </div>
+                    
+                    <div class="cards">
+                      <div class="card"><div class="card-value green">${taxaAprovacao}%</div><div>Taxa Aprovação</div></div>
+                      <div class="card"><div class="card-value red">${taxaRejeicao}%</div><div>Taxa Rejeição</div></div>
+                      <div class="card"><div class="card-value purple">${users.length}</div><div>Técnicos</div></div>
+                      <div class="card"><div class="card-value purple">${users.length > 0 ? (submissoesMes.length / users.length).toFixed(1) : 0}</div><div>Média/Técnico</div></div>
+                    </div>
+                    
+                    <div class="comparativo">
+                      <strong>📊 Comparativo com Mês Anterior:</strong> 
+                      ${parseFloat(variacaoTotal) >= 0 ? '📈' : '📉'} ${parseFloat(variacaoTotal) >= 0 ? '+' : ''}${variacaoTotal}% 
+                      (${submissoesMesAnterior.length} → ${submissoesMes.length} solicitações)
+                    </div>
+                    
+                    <h2>📁 Por Motivo</h2>
+                    <table>
+                      <thead><tr><th>Motivo</th><th>Total</th><th>Aprovadas</th><th>Rejeitadas</th><th>Pendentes</th><th>Taxa</th></tr></thead>
+                      <tbody>
+                        ${Object.entries(porMotivo).map(([motivo, dados]) => `
+                          <tr>
+                            <td>${motivo}</td>
+                            <td>${dados.total}</td>
+                            <td class="green">${dados.aprovadas}</td>
+                            <td class="red">${dados.rejeitadas}</td>
+                            <td class="yellow">${dados.pendentes}</td>
+                            <td>${dados.total > 0 ? ((dados.aprovadas / dados.total) * 100).toFixed(0) : 0}%</td>
+                          </tr>
+                        `).join('')}
+                      </tbody>
+                    </table>
+                    
+                    <h2>👷 Top 10 Técnicos</h2>
+                    <table>
+                      <thead><tr><th>#</th><th>Técnico</th><th>Código</th><th>Total</th><th>Aprovadas</th><th>Rejeitadas</th><th>Taxa</th></tr></thead>
+                      <tbody>
+                        ${topTecnicos.map((t, i) => `
+                          <tr>
+                            <td>${i + 1}</td>
+                            <td>${t.nome}</td>
+                            <td>${t.cod || '-'}</td>
+                            <td>${t.total}</td>
+                            <td class="green">${t.aprovadas}</td>
+                            <td class="red">${t.rejeitadas}</td>
+                            <td>${t.taxa}%</td>
+                          </tr>
+                        `).join('')}
+                      </tbody>
+                    </table>
+                    
+                    <h2>📅 Por Semana</h2>
+                    <table>
+                      <thead><tr><th>Semana</th><th>Total</th><th>Aprovadas</th><th>Taxa</th></tr></thead>
+                      <tbody>
+                        ${porSemana.map(s => `
+                          <tr>
+                            <td>${s.label} (dias ${s.dias[0]}-${s.dias[1]})</td>
+                            <td>${s.total}</td>
+                            <td class="green">${s.aprovadas}</td>
+                            <td>${s.total > 0 ? ((s.aprovadas / s.total) * 100).toFixed(0) : 0}%</td>
+                          </tr>
+                        `).join('')}
+                      </tbody>
+                    </table>
+                    
+                    <div class="footer">
+                      <strong>Sistema Tutts</strong> - Relatório Gerado Automaticamente<br>
+                      ${new Date().toLocaleString('pt-BR')}
+                    </div>
+                  </body>
+                  </html>
+                `;
+                const janela = window.open('', '_blank');
+                janela.document.write(conteudo);
+                janela.document.close();
+                janela.print();
+              };
+              
+              return (
+                <>
+                  {/* Seletor de Período */}
+                  <div className="bg-white rounded-xl shadow p-4 mb-6 flex flex-wrap items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <label className="font-semibold">📅 Período:</label>
+                      <select value={mesAtual} onChange={e => setFormData({...formData, relMes: e.target.value})} className="px-3 py-2 border rounded-lg">
+                        {meses.map((m, i) => <option key={i} value={i}>{m}</option>)}
+                      </select>
+                      <select value={anoAtual} onChange={e => setFormData({...formData, relAno: e.target.value})} className="px-3 py-2 border rounded-lg">
+                        {[2024, 2025, 2026].map(a => <option key={a} value={a}>{a}</option>)}
+                      </select>
+                    </div>
+                    <button onClick={gerarPDF} className="ml-auto px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 flex items-center gap-2">
+                      📄 Gerar PDF
+                    </button>
                   </div>
-                </div>
-              </div>
-            )}
+                  
+                  {/* Cards Principais */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div className="bg-white rounded-xl shadow p-4 border-l-4 border-purple-500">
+                      <p className="text-xs text-gray-500">📋 Total Solicitações</p>
+                      <p className="text-3xl font-bold text-purple-600">{submissoesMes.length}</p>
+                    </div>
+                    <div className="bg-white rounded-xl shadow p-4 border-l-4 border-green-500">
+                      <p className="text-xs text-gray-500">✅ Aprovadas</p>
+                      <p className="text-3xl font-bold text-green-600">{aprovadas.length}</p>
+                    </div>
+                    <div className="bg-white rounded-xl shadow p-4 border-l-4 border-red-500">
+                      <p className="text-xs text-gray-500">❌ Rejeitadas</p>
+                      <p className="text-3xl font-bold text-red-600">{rejeitadas.length}</p>
+                    </div>
+                    <div className="bg-white rounded-xl shadow p-4 border-l-4 border-yellow-500">
+                      <p className="text-xs text-gray-500">⏳ Pendentes</p>
+                      <p className="text-3xl font-bold text-yellow-600">{pendentes.length}</p>
+                    </div>
+                  </div>
+                  
+                  {/* Cards de Taxas */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div className="bg-green-50 rounded-xl p-4 text-center border border-green-200">
+                      <p className="text-3xl font-bold text-green-600">{taxaAprovacao}%</p>
+                      <p className="text-xs text-green-700">Taxa de Aprovação</p>
+                    </div>
+                    <div className="bg-red-50 rounded-xl p-4 text-center border border-red-200">
+                      <p className="text-3xl font-bold text-red-600">{taxaRejeicao}%</p>
+                      <p className="text-xs text-red-700">Taxa de Rejeição</p>
+                    </div>
+                    <div className="bg-purple-50 rounded-xl p-4 text-center border border-purple-200">
+                      <p className="text-3xl font-bold text-purple-600">{users.length}</p>
+                      <p className="text-xs text-purple-700">Total Técnicos</p>
+                    </div>
+                    <div className="bg-blue-50 rounded-xl p-4 text-center border border-blue-200">
+                      <p className="text-3xl font-bold text-blue-600">{users.length > 0 ? (submissoesMes.length / users.length).toFixed(1) : 0}</p>
+                      <p className="text-xs text-blue-700">Média por Técnico</p>
+                    </div>
+                  </div>
+                  
+                  {/* Comparativo */}
+                  <div className={`rounded-xl p-4 mb-6 ${parseFloat(variacaoTotal) >= 0 ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+                    <h3 className="font-semibold mb-2">📊 Comparativo com Mês Anterior</h3>
+                    <div className="flex items-center gap-6">
+                      <div>
+                        <p className="text-sm text-gray-600">Mês anterior: <strong>{submissoesMesAnterior.length}</strong> solicitações</p>
+                        <p className="text-sm text-gray-600">Mês atual: <strong>{submissoesMes.length}</strong> solicitações</p>
+                      </div>
+                      <div className={`text-3xl font-bold ${parseFloat(variacaoTotal) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {parseFloat(variacaoTotal) >= 0 ? '📈' : '📉'} {parseFloat(variacaoTotal) >= 0 ? '+' : ''}{variacaoTotal}%
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Gráficos */}
+                  <div className="grid md:grid-cols-2 gap-6 mb-6">
+                    {/* Evolução 6 meses */}
+                    <div className="bg-white rounded-xl shadow p-6">
+                      <h3 className="font-semibold mb-4">📈 Evolução (Últimos 6 meses)</h3>
+                      <div className="flex items-end justify-between h-40 gap-2">
+                        {ultimos6Meses.map((m, i) => (
+                          <div key={i} className="flex-1 flex flex-col items-center">
+                            <div className="w-full bg-gray-100 rounded-t relative" style={{height: `${(m.total / maxMes) * 100}%`, minHeight: '20px'}}>
+                              <div className="absolute inset-0 bg-gradient-to-t from-purple-600 to-purple-400 rounded-t"></div>
+                            </div>
+                            <p className="text-xs font-bold mt-1">{m.total}</p>
+                            <p className="text-xs text-gray-500">{m.label}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    {/* Por Semana */}
+                    <div className="bg-white rounded-xl shadow p-6">
+                      <h3 className="font-semibold mb-4">📅 Por Semana ({meses[mesAtual]})</h3>
+                      <div className="flex items-end justify-between h-40 gap-2">
+                        {porSemana.map((s, i) => (
+                          <div key={i} className="flex-1 flex flex-col items-center">
+                            <div className="w-full bg-gray-100 rounded-t relative" style={{height: `${(s.total / maxSemana) * 100}%`, minHeight: '20px'}}>
+                              <div className="absolute inset-0 bg-gradient-to-t from-blue-600 to-blue-400 rounded-t"></div>
+                            </div>
+                            <p className="text-xs font-bold mt-1">{s.total}</p>
+                            <p className="text-xs text-gray-500">Sem {i+1}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Por Motivo */}
+                  <div className="bg-white rounded-xl shadow p-6 mb-6">
+                    <h3 className="font-semibold mb-4">📁 Por Motivo</h3>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-4 py-3 text-left">Motivo</th>
+                            <th className="px-4 py-3 text-center">Total</th>
+                            <th className="px-4 py-3 text-center">✅ Aprovadas</th>
+                            <th className="px-4 py-3 text-center">❌ Rejeitadas</th>
+                            <th className="px-4 py-3 text-center">⏳ Pendentes</th>
+                            <th className="px-4 py-3 text-center">Taxa</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {Object.entries(porMotivo).sort((a,b) => b[1].total - a[1].total).map(([motivo, dados]) => (
+                            <tr key={motivo} className="border-t hover:bg-gray-50">
+                              <td className="px-4 py-3 font-semibold">{motivo}</td>
+                              <td className="px-4 py-3 text-center font-bold">{dados.total}</td>
+                              <td className="px-4 py-3 text-center text-green-600 font-semibold">{dados.aprovadas}</td>
+                              <td className="px-4 py-3 text-center text-red-600 font-semibold">{dados.rejeitadas}</td>
+                              <td className="px-4 py-3 text-center text-yellow-600 font-semibold">{dados.pendentes}</td>
+                              <td className="px-4 py-3 text-center">
+                                <span className={`px-2 py-1 rounded text-xs font-bold ${dados.total > 0 && (dados.aprovadas / dados.total) >= 0.7 ? 'bg-green-100 text-green-700' : dados.total > 0 && (dados.aprovadas / dados.total) >= 0.4 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}`}>
+                                  {dados.total > 0 ? ((dados.aprovadas / dados.total) * 100).toFixed(0) : 0}%
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                  
+                  {/* Top 10 Técnicos */}
+                  <div className="bg-white rounded-xl shadow p-6">
+                    <h3 className="font-semibold mb-4">👷 Top 10 Técnicos do Mês</h3>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-4 py-3 text-center">#</th>
+                            <th className="px-4 py-3 text-left">Técnico</th>
+                            <th className="px-4 py-3 text-left">Código</th>
+                            <th className="px-4 py-3 text-center">Total</th>
+                            <th className="px-4 py-3 text-center">✅</th>
+                            <th className="px-4 py-3 text-center">❌</th>
+                            <th className="px-4 py-3 text-center">Taxa</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {topTecnicos.map((t, i) => (
+                            <tr key={i} className={`border-t hover:bg-gray-50 ${i < 3 ? 'bg-yellow-50' : ''}`}>
+                              <td className="px-4 py-3 text-center">
+                                {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}
+                              </td>
+                              <td className="px-4 py-3 font-semibold">{t.nome}</td>
+                              <td className="px-4 py-3 font-mono text-gray-600">{t.cod || '-'}</td>
+                              <td className="px-4 py-3 text-center font-bold">{t.total}</td>
+                              <td className="px-4 py-3 text-center text-green-600 font-semibold">{t.aprovadas}</td>
+                              <td className="px-4 py-3 text-center text-red-600 font-semibold">{t.rejeitadas}</td>
+                              <td className="px-4 py-3 text-center">
+                                <span className={`px-2 py-1 rounded text-xs font-bold ${parseInt(t.taxa) >= 70 ? 'bg-green-100 text-green-700' : parseInt(t.taxa) >= 40 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}`}>
+                                  {t.taxa}%
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
 
             {/* USUÁRIOS */}
             {formData.adminTab === 'users' && (
