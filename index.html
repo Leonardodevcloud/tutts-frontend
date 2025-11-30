@@ -814,27 +814,122 @@
             {globalLoading && <LoadingOverlay />}
             {imageModal && <ImageModal imageUrl={imageModal} onClose={() => setImageModal(null)} />}
 
-            <nav className="bg-white shadow-sm border-b">
+            <nav className="bg-gradient-to-r from-purple-800 to-purple-900 shadow-lg">
               <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-                <div><h1 className="text-xl font-bold">Painel do Usuário</h1><p className="text-sm text-gray-600">{user.fullName}</p></div>
+                <div>
+                  <h1 className="text-xl font-bold text-white">Sistema Tutts</h1>
+                  <p className="text-sm text-purple-200">{user.fullName}</p>
+                </div>
                 <div className="flex gap-2">
-                  <button onClick={refreshAll} className="px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 text-sm font-semibold">🔄</button>
-                  <button onClick={() => setUser(null)} className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">Sair</button>
+                  {formData.userTab && (
+                    <button onClick={() => setFormData({...formData, userTab: null})} className="px-4 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 text-sm font-semibold">
+                      🏠 Menu
+                    </button>
+                  )}
+                  <button onClick={refreshAll} className="px-4 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 text-sm font-semibold">🔄</button>
+                  <button onClick={() => setUser(null)} className="px-4 py-2 bg-white/10 text-white hover:bg-white/20 rounded-lg">Sair</button>
                 </div>
               </div>
             </nav>
 
-            <div className="bg-white border-b">
-              <div className="max-w-7xl mx-auto px-4 flex gap-1 overflow-x-auto">
-                <button onClick={() => setFormData({...formData, userTab: 'solicitacoes'})} className={`px-6 py-3 font-semibold whitespace-nowrap ${(!formData.userTab || formData.userTab === 'solicitacoes') ? 'text-purple-900 border-b-2 border-purple-900' : 'text-gray-600'}`}>📋 Solicitações</button>
-                <button onClick={() => setFormData({...formData, userTab: 'saque'})} className={`px-6 py-3 font-semibold whitespace-nowrap ${formData.userTab === 'saque' ? 'text-green-700 border-b-2 border-green-600' : 'text-gray-600'}`}>💰 Saque</button>
-                <button onClick={() => setFormData({...formData, userTab: 'indicacoes'})} className={`px-6 py-3 font-semibold whitespace-nowrap ${formData.userTab === 'indicacoes' ? 'text-blue-700 border-b-2 border-blue-600' : 'text-gray-600'}`}>👥 Indicações</button>
-              </div>
-            </div>
+            {/* MENU INICIAL */}
+            {!formData.userTab && (
+              <div className="max-w-2xl mx-auto p-6">
+                <div className="text-center mb-8">
+                  <h2 className="text-2xl font-bold text-gray-800">Olá, {user.fullName?.split(' ')[0]}! 👋</h2>
+                  <p className="text-gray-600 mt-1">O que você precisa fazer hoje?</p>
+                </div>
+                
+                <div className="space-y-4">
+                  {/* Botão Ajustes */}
+                  <button 
+                    onClick={() => setFormData({...formData, userTab: 'solicitacoes'})}
+                    className="w-full bg-white rounded-2xl shadow-lg p-6 flex items-center gap-4 hover:shadow-xl transition-all hover:scale-[1.02] border-l-4 border-purple-600"
+                  >
+                    <div className="w-16 h-16 bg-purple-100 rounded-xl flex items-center justify-center text-3xl">
+                      📋
+                    </div>
+                    <div className="text-left flex-1">
+                      <h3 className="text-lg font-bold text-gray-800">Solicitar Ajuste</h3>
+                      <p className="text-sm text-gray-500">Retornos, Pedágios e Ponto 1</p>
+                    </div>
+                    <span className="text-purple-400 text-2xl">›</span>
+                  </button>
 
-            <div className="max-w-4xl mx-auto p-6">
+                  {/* Botão Saque */}
+                  <button 
+                    onClick={() => setFormData({...formData, userTab: 'saque'})}
+                    className="w-full bg-white rounded-2xl shadow-lg p-6 flex items-center gap-4 hover:shadow-xl transition-all hover:scale-[1.02] border-l-4 border-green-600"
+                  >
+                    <div className="w-16 h-16 bg-green-100 rounded-xl flex items-center justify-center text-3xl">
+                      💰
+                    </div>
+                    <div className="text-left flex-1">
+                      <h3 className="text-lg font-bold text-gray-800">Saque Emergencial</h3>
+                      <p className="text-sm text-gray-500">Solicitar adiantamento</p>
+                    </div>
+                    <span className="text-green-400 text-2xl">›</span>
+                  </button>
+
+                  {/* Botão Indicações */}
+                  <button 
+                    onClick={() => setFormData({...formData, userTab: 'indicacoes'})}
+                    className="w-full bg-white rounded-2xl shadow-lg p-6 flex items-center gap-4 hover:shadow-xl transition-all hover:scale-[1.02] border-l-4 border-blue-600"
+                  >
+                    <div className="w-16 h-16 bg-blue-100 rounded-xl flex items-center justify-center text-3xl">
+                      👥
+                    </div>
+                    <div className="text-left flex-1">
+                      <h3 className="text-lg font-bold text-gray-800">Promoção de Indicação</h3>
+                      <p className="text-sm text-gray-500">Indique amigos e ganhe bônus</p>
+                      {promocoes.length > 0 && (
+                        <span className="inline-block mt-1 px-2 py-0.5 bg-blue-500 text-white text-xs rounded-full">
+                          {promocoes.length} promoção(ões) ativa(s)
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-blue-400 text-2xl">›</span>
+                  </button>
+                </div>
+
+                {/* Mini resumo */}
+                <div className="mt-8 grid grid-cols-3 gap-4">
+                  <div className="bg-white rounded-xl p-4 text-center shadow">
+                    <p className="text-2xl font-bold text-purple-600">{submissions.filter(s => s.status === 'pendente').length}</p>
+                    <p className="text-xs text-gray-500">Ajustes Pendentes</p>
+                  </div>
+                  <div className="bg-white rounded-xl p-4 text-center shadow">
+                    <p className="text-2xl font-bold text-green-600">{withdrawals.filter(w => w.status === 'aguardando_aprovacao').length}</p>
+                    <p className="text-xs text-gray-500">Saques Pendentes</p>
+                  </div>
+                  <div className="bg-white rounded-xl p-4 text-center shadow">
+                    <p className="text-2xl font-bold text-blue-600">{minhasIndicacoes.filter(i => i.status === 'pendente').length}</p>
+                    <p className="text-xs text-gray-500">Indicações Pendentes</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* CONTEÚDO DAS ABAS */}
+            {formData.userTab && (
+              <div className="max-w-4xl mx-auto p-6">
+                {/* Header de navegação */}
+                <div className="flex items-center gap-4 mb-6">
+                  <button 
+                    onClick={() => setFormData({...formData, userTab: null})}
+                    className="p-2 bg-white rounded-lg shadow hover:bg-gray-50"
+                  >
+                    ← Voltar
+                  </button>
+                  <h1 className="text-xl font-bold text-gray-800">
+                    {formData.userTab === 'solicitacoes' && '📋 Solicitar Ajuste'}
+                    {formData.userTab === 'saque' && '💰 Saque Emergencial'}
+                    {formData.userTab === 'indicacoes' && '👥 Promoção de Indicação'}
+                  </h1>
+                </div>
+
               {/* ABA SOLICITAÇÕES */}
-              {(!formData.userTab || formData.userTab === 'solicitacoes') && (
+              {formData.userTab === 'solicitacoes' && (
                 <>
                   <div className="bg-white rounded-xl shadow p-6 mb-6">
                     <h2 className="text-lg font-semibold mb-4">📝 Enviar OS</h2>
@@ -1347,7 +1442,8 @@
                   </div>
                 </>
               )}
-            </div>
+              </div>
+            )}
           </div>
         );
       }
