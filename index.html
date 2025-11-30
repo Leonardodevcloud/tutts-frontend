@@ -205,6 +205,8 @@
       // Estados - Saque Emergencial
       const [termsAccepted, setTermsAccepted] = useState(false);
       const [financialData, setFinancialData] = useState(null);
+      const [financialLogs, setFinancialLogs] = useState([]);
+      const [editandoDados, setEditandoDados] = useState(false);
       const [withdrawals, setWithdrawals] = useState([]);
       const [allWithdrawals, setAllWithdrawals] = useState([]);
       const [gratuities, setGratuities] = useState([]);
@@ -333,7 +335,17 @@
             const finRes = await fetch(`${API_URL}/financial/data/${user.cod_profissional}`);
             const finData = await finRes.json();
             setFinancialData(finData.data);
+            // Carregar logs de alterações
+            loadFinancialLogs();
           }
+        } catch (err) { console.error(err); }
+      };
+
+      const loadFinancialLogs = async () => {
+        try {
+          const res = await fetch(`${API_URL}/financial/logs/${user.cod_profissional}`);
+          const data = await res.json();
+          setFinancialLogs(data);
         } catch (err) { console.error(err); }
       };
 
@@ -932,6 +944,8 @@
             })
           });
           setFinancialData({ full_name: formData.finName, cpf: formData.finCpf, pix_key: formData.finPix, pix_tipo: formData.pixTipo });
+          setEditandoDados(false); // Sair do modo edição
+          loadFinancialLogs(); // Recarregar logs
           
           const tipoLabel = {cpf: 'CPF', cnpj: 'CNPJ', telefone: 'Telefone', email: 'Email', aleatoria: 'Chave Aleatória'}[formData.pixTipo];
           showToast(`✅ Dados salvos! (PIX: ${tipoLabel})`, 'success');
@@ -1753,81 +1767,187 @@
                           )}
                           {formData.saqueTab === 'dados' && (
                             <div className="space-y-4">
-                              <div><label className="block text-sm font-semibold mb-1">Nome Completo</label><input type="text" value={formData.finName ?? financialData?.full_name ?? ''} onChange={e => setFormData({...formData, finName: e.target.value})} className="w-full px-4 py-2 border rounded-lg" placeholder="Seu nome completo" /></div>
-                              <div><label className="block text-sm font-semibold mb-1">CPF</label><input type="text" value={formData.finCpf ?? financialData?.cpf ?? ''} onChange={e => setFormData({...formData, finCpf: formatCPF(e.target.value)})} className="w-full px-4 py-2 border rounded-lg" placeholder="000.000.000-00" maxLength={14} /></div>
-                              
-                              {/* Tipo da Chave PIX */}
-                              <div>
-                                <label className="block text-sm font-semibold mb-2">Tipo da Chave PIX</label>
-                                <div className="grid grid-cols-5 gap-2">
-                                  {[
-                                    { id: 'cpf', label: 'CPF', icon: '🪪' },
-                                    { id: 'cnpj', label: 'CNPJ', icon: '🏢' },
-                                    { id: 'telefone', label: 'Telefone', icon: '📱' },
-                                    { id: 'email', label: 'Email', icon: '📧' },
-                                    { id: 'aleatoria', label: 'Aleatória', icon: '🔑' }
-                                  ].map(tipo => (
-                                    <button
-                                      key={tipo.id}
-                                      type="button"
-                                      onClick={() => setFormData({...formData, pixTipo: tipo.id, finPix: ''})}
-                                      className={`p-2 rounded-lg border-2 text-center transition-all ${
-                                        formData.pixTipo === tipo.id 
-                                          ? 'border-blue-500 bg-blue-50 text-blue-700' 
-                                          : 'border-gray-200 hover:border-gray-300'
-                                      }`}
+                              {/* MODO VISUALIZAÇÃO - Dados já cadastrados */}
+                              {financialData && !editandoDados ? (
+                                <>
+                                  {/* Card verde com dados confirmados */}
+                                  <div className="bg-green-50 border-2 border-green-300 rounded-xl p-5">
+                                    <div className="flex items-center gap-2 mb-4">
+                                      <span className="text-2xl">✅</span>
+                                      <h3 className="font-bold text-green-800">Dados Validados</h3>
+                                    </div>
+                                    
+                                    <div className="space-y-3">
+                                      <div className="flex justify-between items-center py-2 border-b border-green-200">
+                                        <span className="text-gray-600 text-sm">Nome Completo</span>
+                                        <span className="font-semibold text-gray-800">{financialData.full_name}</span>
+                                      </div>
+                                      <div className="flex justify-between items-center py-2 border-b border-green-200">
+                                        <span className="text-gray-600 text-sm">CPF</span>
+                                        <span className="font-semibold text-gray-800">{financialData.cpf}</span>
+                                      </div>
+                                      <div className="flex justify-between items-center py-2 border-b border-green-200">
+                                        <span className="text-gray-600 text-sm">Tipo da Chave PIX</span>
+                                        <span className="px-2 py-1 bg-green-200 text-green-800 rounded-full text-xs font-bold">
+                                          {{cpf: '🪪 CPF', cnpj: '🏢 CNPJ', telefone: '📱 Telefone', email: '📧 Email', aleatoria: '🔑 Aleatória'}[financialData.pix_tipo] || financialData.pix_tipo}
+                                        </span>
+                                      </div>
+                                      <div className="flex justify-between items-center py-2">
+                                        <span className="text-gray-600 text-sm">Chave PIX</span>
+                                        <span className="font-semibold text-gray-800">{financialData.pix_key}</span>
+                                      </div>
+                                    </div>
+                                    
+                                    <button 
+                                      onClick={() => setEditandoDados(true)}
+                                      className="w-full mt-4 bg-white border-2 border-green-500 text-green-700 py-3 rounded-lg font-bold hover:bg-green-100 transition"
                                     >
-                                      <span className="text-xl">{tipo.icon}</span>
-                                      <p className="text-xs font-semibold mt-1">{tipo.label}</p>
+                                      ✏️ Editar Dados
                                     </button>
-                                  ))}
-                                </div>
-                              </div>
-                              
-                              {/* Campo da Chave PIX */}
-                              <div>
-                                <label className="block text-sm font-semibold mb-1">Chave PIX</label>
-                                <input 
-                                  type={formData.pixTipo === 'email' ? 'email' : 'text'}
-                                  value={formData.finPix ?? financialData?.pix_key ?? ''} 
-                                  onChange={e => setFormData({
-                                    ...formData, 
-                                    finPix: formatarChavePix(e.target.value, formData.pixTipo)
-                                  })} 
-                                  placeholder={getPixPlaceholder(formData.pixTipo)}
-                                  disabled={!formData.pixTipo}
-                                  maxLength={formData.pixTipo === 'cpf' ? 14 : formData.pixTipo === 'cnpj' ? 18 : formData.pixTipo === 'telefone' ? 15 : 100}
-                                  className={`w-full px-4 py-2 border rounded-lg transition-all ${
-                                    !formData.pixTipo 
-                                      ? 'bg-gray-100 cursor-not-allowed' 
-                                      : formData.finPix
-                                        ? validarChavePix(formData.finPix, formData.pixTipo).valido 
-                                          ? 'border-green-500 bg-green-50' 
-                                          : 'border-red-500 bg-red-50'
-                                        : ''
-                                  }`}
-                                />
-                                {formData.finPix && formData.pixTipo && (
-                                  <p className={`mt-1 text-sm ${
-                                    validarChavePix(formData.finPix, formData.pixTipo).valido 
-                                      ? 'text-green-600' 
-                                      : 'text-red-600'
-                                  }`}>
-                                    {validarChavePix(formData.finPix, formData.pixTipo).mensagem}
-                                  </p>
-                                )}
-                                {!formData.pixTipo && (
-                                  <p className="mt-1 text-sm text-gray-500">👆 Selecione o tipo da chave acima</p>
-                                )}
-                              </div>
-                              
-                              <button 
-                                onClick={handleSaveFinancial} 
-                                disabled={loading || !formData.pixTipo} 
-                                className="w-full bg-blue-600 text-white py-3 rounded-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                {loading ? '...' : '💾 Atualizar Dados'}
-                              </button>
+                                  </div>
+                                  
+                                  {/* Histórico de alterações */}
+                                  {financialLogs.length > 0 && (
+                                    <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                                      <h4 className="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                                        <span>📋</span> Histórico de Alterações
+                                      </h4>
+                                      <div className="space-y-2 max-h-48 overflow-y-auto">
+                                        {financialLogs.map((log, idx) => (
+                                          <div key={idx} className="bg-white border border-gray-200 rounded-lg p-3 text-sm">
+                                            <div className="flex justify-between items-start">
+                                              <div>
+                                                <span className="font-semibold text-gray-700">
+                                                  {log.action === 'ALTERACAO_NOME' && '👤 Nome alterado'}
+                                                  {log.action === 'ALTERACAO_CPF' && '🪪 CPF alterado'}
+                                                  {log.action === 'ALTERACAO_PIX' && '💳 Chave PIX alterada'}
+                                                  {log.action === 'CADASTRO_DADOS' && '✅ Cadastro inicial'}
+                                                </span>
+                                                {log.old_value && log.new_value && (
+                                                  <p className="text-gray-500 text-xs mt-1">
+                                                    De: <span className="line-through text-red-500">{log.old_value}</span>
+                                                    <br/>Para: <span className="text-green-600 font-medium">{log.new_value}</span>
+                                                  </p>
+                                                )}
+                                              </div>
+                                              <span className="text-xs text-gray-400">
+                                                {new Date(log.created_at).toLocaleDateString('pt-BR')} {new Date(log.created_at).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}
+                                              </span>
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                </>
+                              ) : (
+                                /* MODO EDIÇÃO - Formulário */
+                                <>
+                                  {financialData && editandoDados && (
+                                    <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-3 mb-2">
+                                      <p className="text-yellow-800 text-sm flex items-center gap-2">
+                                        <span>⚠️</span> Você está editando seus dados. As alterações serão registradas no histórico.
+                                      </p>
+                                    </div>
+                                  )}
+                                  
+                                  <div><label className="block text-sm font-semibold mb-1">Nome Completo</label><input type="text" value={formData.finName ?? financialData?.full_name ?? ''} onChange={e => setFormData({...formData, finName: e.target.value})} className="w-full px-4 py-2 border rounded-lg" placeholder="Seu nome completo" /></div>
+                                  <div><label className="block text-sm font-semibold mb-1">CPF</label><input type="text" value={formData.finCpf ?? financialData?.cpf ?? ''} onChange={e => setFormData({...formData, finCpf: formatCPF(e.target.value)})} className="w-full px-4 py-2 border rounded-lg" placeholder="000.000.000-00" maxLength={14} /></div>
+                                  
+                                  {/* Tipo da Chave PIX */}
+                                  <div>
+                                    <label className="block text-sm font-semibold mb-2">Tipo da Chave PIX</label>
+                                    <div className="grid grid-cols-5 gap-2">
+                                      {[
+                                        { id: 'cpf', label: 'CPF', icon: '🪪' },
+                                        { id: 'cnpj', label: 'CNPJ', icon: '🏢' },
+                                        { id: 'telefone', label: 'Telefone', icon: '📱' },
+                                        { id: 'email', label: 'Email', icon: '📧' },
+                                        { id: 'aleatoria', label: 'Aleatória', icon: '🔑' }
+                                      ].map(tipo => (
+                                        <button
+                                          key={tipo.id}
+                                          type="button"
+                                          onClick={() => setFormData({...formData, pixTipo: tipo.id, finPix: ''})}
+                                          className={`p-2 rounded-lg border-2 text-center transition-all ${
+                                            formData.pixTipo === tipo.id 
+                                              ? 'border-blue-500 bg-blue-50 text-blue-700' 
+                                              : 'border-gray-200 hover:border-gray-300'
+                                          }`}
+                                        >
+                                          <span className="text-xl">{tipo.icon}</span>
+                                          <p className="text-xs font-semibold mt-1">{tipo.label}</p>
+                                        </button>
+                                      ))}
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Campo da Chave PIX */}
+                                  <div>
+                                    <label className="block text-sm font-semibold mb-1">Chave PIX</label>
+                                    <input 
+                                      type={formData.pixTipo === 'email' ? 'email' : 'text'}
+                                      value={formData.finPix ?? financialData?.pix_key ?? ''} 
+                                      onChange={e => setFormData({
+                                        ...formData, 
+                                        finPix: formatarChavePix(e.target.value, formData.pixTipo)
+                                      })} 
+                                      placeholder={getPixPlaceholder(formData.pixTipo)}
+                                      disabled={!formData.pixTipo}
+                                      maxLength={formData.pixTipo === 'cpf' ? 14 : formData.pixTipo === 'cnpj' ? 18 : formData.pixTipo === 'telefone' ? 15 : 100}
+                                      className={`w-full px-4 py-2 border rounded-lg transition-all ${
+                                        !formData.pixTipo 
+                                          ? 'bg-gray-100 cursor-not-allowed' 
+                                          : formData.finPix
+                                            ? validarChavePix(formData.finPix, formData.pixTipo).valido 
+                                              ? 'border-green-500 bg-green-50' 
+                                              : 'border-red-500 bg-red-50'
+                                            : ''
+                                      }`}
+                                    />
+                                    {formData.finPix && formData.pixTipo && (
+                                      <p className={`mt-1 text-sm ${
+                                        validarChavePix(formData.finPix, formData.pixTipo).valido 
+                                          ? 'text-green-600' 
+                                          : 'text-red-600'
+                                      }`}>
+                                        {validarChavePix(formData.finPix, formData.pixTipo).mensagem}
+                                      </p>
+                                    )}
+                                    {!formData.pixTipo && (
+                                      <p className="mt-1 text-sm text-gray-500">👆 Selecione o tipo da chave acima</p>
+                                    )}
+                                  </div>
+                                  
+                                  <div className="flex gap-2">
+                                    {editandoDados && (
+                                      <button 
+                                        onClick={() => {
+                                          setEditandoDados(false);
+                                          // Restaurar dados originais
+                                          setFormData(prev => ({
+                                            ...prev,
+                                            finName: financialData?.full_name || '',
+                                            finCpf: financialData?.cpf || '',
+                                            finPix: financialData?.pix_key || '',
+                                            pixTipo: financialData?.pix_tipo || ''
+                                          }));
+                                        }}
+                                        className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-bold hover:bg-gray-300 transition"
+                                      >
+                                        ✕ Cancelar
+                                      </button>
+                                    )}
+                                    <button 
+                                      onClick={handleSaveFinancial} 
+                                      disabled={loading || !formData.pixTipo} 
+                                      className={`${editandoDados ? 'flex-1' : 'w-full'} bg-blue-600 text-white py-3 rounded-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-700 transition`}
+                                    >
+                                      {loading ? '...' : '💾 Salvar Dados'}
+                                    </button>
+                                  </div>
+                                </>
+                              )}
                             </div>
                           )}
                           {formData.saqueTab === 'gratuidades' && (
