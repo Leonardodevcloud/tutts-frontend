@@ -282,6 +282,19 @@
         if (user.role === 'admin_financeiro') { loadAllWithdrawals(); loadAllGratuities(); loadRestricted(); loadDashboard(); loadPromocoes(); loadIndicacoes(); loadPromocoesNovatos(); loadInscricoesNovatos(); loadQuizConfig(); loadQuizRespostas(); loadUsers(); }
       }, [user]);
 
+      // Carregar pixTipo quando financialData mudar
+      useEffect(() => {
+        if (financialData && financialData.pix_tipo) {
+          setFormData(prev => ({
+            ...prev, 
+            pixTipo: financialData.pix_tipo,
+            finPix: financialData.pix_key || '',
+            finName: financialData.full_name || '',
+            finCpf: financialData.cpf || ''
+          }));
+        }
+      }, [financialData]);
+
       // ========== FUNÇÕES DE CARREGAMENTO ==========
       const loadSubmissions = async () => {
         try {
@@ -894,10 +907,15 @@
           return; 
         }
         
+        if (!formData.pixTipo) {
+          showToast('❌ Selecione o tipo da chave PIX', 'error');
+          return;
+        }
+        
         // Validar chave PIX
-        const validacaoPix = validarChavePix(formData.finPix);
+        const validacaoPix = validarChavePix(formData.finPix, formData.pixTipo);
         if (!validacaoPix.valido) {
-          showToast('❌ Chave PIX inválida! Use CPF, CNPJ, Email, Telefone ou Chave Aleatória', 'error');
+          showToast(`❌ ${validacaoPix.mensagem}`, 'error');
           return;
         }
         
@@ -905,11 +923,19 @@
         try {
           await fetch(`${API_URL}/financial/data`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userCod: user.codProfissional, fullName: formData.finName, cpf: formData.finCpf, pixKey: formData.finPix })
+            body: JSON.stringify({ 
+              userCod: user.codProfissional, 
+              fullName: formData.finName, 
+              cpf: formData.finCpf, 
+              pixKey: formData.finPix,
+              pixTipo: formData.pixTipo
+            })
           });
-          setFinancialData({ full_name: formData.finName, cpf: formData.finCpf, pix_key: formData.finPix });
-          showToast(`✅ Dados salvos! (PIX: ${validacaoPix.tipo})`, 'success');
-        } catch (err) { showToast('Erro', 'error'); }
+          setFinancialData({ full_name: formData.finName, cpf: formData.finCpf, pix_key: formData.finPix, pix_tipo: formData.pixTipo });
+          
+          const tipoLabel = {cpf: 'CPF', cnpj: 'CNPJ', telefone: 'Telefone', email: 'Email', aleatoria: 'Chave Aleatória'}[formData.pixTipo];
+          showToast(`✅ Dados salvos! (PIX: ${tipoLabel})`, 'success');
+        } catch (err) { showToast('Erro ao salvar', 'error'); }
         setLoading(false);
       };
 
@@ -1104,48 +1130,85 @@
 
       const formatMoney = (v) => parseFloat(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-      // Validar chave PIX
-      const validarChavePix = (chave) => {
+      // Máscara para CNPJ: XX.XXX.XXX/XXXX-XX
+      const formatCNPJ = (v) => {
+        const nums = v.replace(/\D/g, '').slice(0, 14);
+        if (nums.length <= 2) return nums;
+        if (nums.length <= 5) return `${nums.slice(0,2)}.${nums.slice(2)}`;
+        if (nums.length <= 8) return `${nums.slice(0,2)}.${nums.slice(2,5)}.${nums.slice(5)}`;
+        if (nums.length <= 12) return `${nums.slice(0,2)}.${nums.slice(2,5)}.${nums.slice(5,8)}/${nums.slice(8)}`;
+        return `${nums.slice(0,2)}.${nums.slice(2,5)}.${nums.slice(5,8)}/${nums.slice(8,12)}-${nums.slice(12)}`;
+      };
+
+      // Validar chave PIX por tipo selecionado
+      const validarChavePix = (chave, tipo) => {
         if (!chave || chave.trim() === '') {
-          return { valido: false, tipo: null, mensagem: '' };
+          return { valido: false, mensagem: '' };
         }
         
         const chaveLimpa = chave.trim();
         
-        // CPF: 11 dígitos (com ou sem formatação)
-        const cpfLimpo = chaveLimpa.replace(/[\.\-]/g, '');
-        if (/^\d{11}$/.test(cpfLimpo)) {
-          return { valido: true, tipo: 'CPF', mensagem: '✅ CPF válido' };
+        switch(tipo) {
+          case 'cpf':
+            const cpfLimpo = chaveLimpa.replace(/\D/g, '');
+            if (cpfLimpo.length === 11) {
+              return { valido: true, mensagem: '✅ CPF válido' };
+            }
+            return { valido: false, mensagem: '❌ CPF deve ter 11 dígitos' };
+            
+          case 'cnpj':
+            const cnpjLimpo = chaveLimpa.replace(/\D/g, '');
+            if (cnpjLimpo.length === 14) {
+              return { valido: true, mensagem: '✅ CNPJ válido' };
+            }
+            return { valido: false, mensagem: '❌ CNPJ deve ter 14 dígitos' };
+            
+          case 'telefone':
+            const telLimpo = chaveLimpa.replace(/\D/g, '');
+            if (telLimpo.length === 10 || telLimpo.length === 11) {
+              return { valido: true, mensagem: '✅ Telefone válido' };
+            }
+            return { valido: false, mensagem: '❌ Telefone deve ter 10 ou 11 dígitos' };
+            
+          case 'email':
+            if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(chaveLimpa)) {
+              return { valido: true, mensagem: '✅ Email válido' };
+            }
+            return { valido: false, mensagem: '❌ Formato de email inválido' };
+            
+          case 'aleatoria':
+            // UUID com ou sem hífens
+            if (/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(chaveLimpa) ||
+                /^[a-f0-9]{32}$/i.test(chaveLimpa)) {
+              return { valido: true, mensagem: '✅ Chave aleatória válida' };
+            }
+            return { valido: false, mensagem: '❌ Formato de chave aleatória inválido' };
+            
+          default:
+            return { valido: false, mensagem: 'Selecione o tipo da chave' };
         }
-        
-        // CNPJ: 14 dígitos (com ou sem formatação)
-        const cnpjLimpo = chaveLimpa.replace(/[\.\-\/]/g, '');
-        if (/^\d{14}$/.test(cnpjLimpo)) {
-          return { valido: true, tipo: 'CNPJ', mensagem: '✅ CNPJ válido' };
+      };
+
+      // Aplicar máscara baseado no tipo de PIX
+      const formatarChavePix = (valor, tipo) => {
+        switch(tipo) {
+          case 'cpf': return formatCPF(valor);
+          case 'cnpj': return formatCNPJ(valor);
+          case 'telefone': return formatTelefone(valor);
+          default: return valor;
         }
-        
-        // Telefone: +55 ou 55 + DDD + número (10 ou 11 dígitos)
-        const telLimpo = chaveLimpa.replace(/[\s\(\)\-\+]/g, '');
-        if (/^55\d{10,11}$/.test(telLimpo) || /^\d{10,11}$/.test(telLimpo)) {
-          return { valido: true, tipo: 'Telefone', mensagem: '✅ Telefone válido' };
+      };
+
+      // Placeholder baseado no tipo
+      const getPixPlaceholder = (tipo) => {
+        switch(tipo) {
+          case 'cpf': return '000.000.000-00';
+          case 'cnpj': return '00.000.000/0000-00';
+          case 'telefone': return '(00) 00000-0000';
+          case 'email': return 'seu@email.com';
+          case 'aleatoria': return 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx';
+          default: return 'Selecione o tipo acima';
         }
-        
-        // Email
-        if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(chaveLimpa)) {
-          return { valido: true, tipo: 'Email', mensagem: '✅ Email válido' };
-        }
-        
-        // Chave aleatória: UUID (32 caracteres hex com hífens)
-        if (/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(chaveLimpa)) {
-          return { valido: true, tipo: 'Aleatória', mensagem: '✅ Chave aleatória válida' };
-        }
-        
-        // Chave aleatória sem hífens (32 caracteres)
-        if (/^[a-f0-9]{32}$/i.test(chaveLimpa)) {
-          return { valido: true, tipo: 'Aleatória', mensagem: '✅ Chave aleatória válida' };
-        }
-        
-        return { valido: false, tipo: null, mensagem: '❌ Formato de chave PIX inválido' };
       };
 
       const statusLabels = {
@@ -1690,39 +1753,81 @@
                           )}
                           {formData.saqueTab === 'dados' && (
                             <div className="space-y-4">
-                              <div><label className="block text-sm font-semibold mb-1">Nome</label><input type="text" value={formData.finName ?? financialData?.full_name ?? ''} onChange={e => setFormData({...formData, finName: e.target.value})} className="w-full px-4 py-2 border rounded-lg" /></div>
-                              <div><label className="block text-sm font-semibold mb-1">CPF</label><input type="text" value={formData.finCpf ?? financialData?.cpf ?? ''} onChange={e => setFormData({...formData, finCpf: formatCPF(e.target.value)})} className="w-full px-4 py-2 border rounded-lg" /></div>
+                              <div><label className="block text-sm font-semibold mb-1">Nome Completo</label><input type="text" value={formData.finName ?? financialData?.full_name ?? ''} onChange={e => setFormData({...formData, finName: e.target.value})} className="w-full px-4 py-2 border rounded-lg" placeholder="Seu nome completo" /></div>
+                              <div><label className="block text-sm font-semibold mb-1">CPF</label><input type="text" value={formData.finCpf ?? financialData?.cpf ?? ''} onChange={e => setFormData({...formData, finCpf: formatCPF(e.target.value)})} className="w-full px-4 py-2 border rounded-lg" placeholder="000.000.000-00" maxLength={14} /></div>
+                              
+                              {/* Tipo da Chave PIX */}
+                              <div>
+                                <label className="block text-sm font-semibold mb-2">Tipo da Chave PIX</label>
+                                <div className="grid grid-cols-5 gap-2">
+                                  {[
+                                    { id: 'cpf', label: 'CPF', icon: '🪪' },
+                                    { id: 'cnpj', label: 'CNPJ', icon: '🏢' },
+                                    { id: 'telefone', label: 'Telefone', icon: '📱' },
+                                    { id: 'email', label: 'Email', icon: '📧' },
+                                    { id: 'aleatoria', label: 'Aleatória', icon: '🔑' }
+                                  ].map(tipo => (
+                                    <button
+                                      key={tipo.id}
+                                      type="button"
+                                      onClick={() => setFormData({...formData, pixTipo: tipo.id, finPix: ''})}
+                                      className={`p-2 rounded-lg border-2 text-center transition-all ${
+                                        formData.pixTipo === tipo.id 
+                                          ? 'border-blue-500 bg-blue-50 text-blue-700' 
+                                          : 'border-gray-200 hover:border-gray-300'
+                                      }`}
+                                    >
+                                      <span className="text-xl">{tipo.icon}</span>
+                                      <p className="text-xs font-semibold mt-1">{tipo.label}</p>
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                              
+                              {/* Campo da Chave PIX */}
                               <div>
                                 <label className="block text-sm font-semibold mb-1">Chave PIX</label>
                                 <input 
-                                  type="text" 
+                                  type={formData.pixTipo === 'email' ? 'email' : 'text'}
                                   value={formData.finPix ?? financialData?.pix_key ?? ''} 
-                                  onChange={e => setFormData({...formData, finPix: e.target.value})} 
-                                  placeholder="CPF, CNPJ, Email, Telefone ou Chave Aleatória"
-                                  className={`w-full px-4 py-2 border rounded-lg ${
-                                    (formData.finPix || financialData?.pix_key) 
-                                      ? validarChavePix(formData.finPix ?? financialData?.pix_key).valido 
-                                        ? 'border-green-500 bg-green-50' 
-                                        : 'border-red-500 bg-red-50'
-                                      : ''
+                                  onChange={e => setFormData({
+                                    ...formData, 
+                                    finPix: formatarChavePix(e.target.value, formData.pixTipo)
+                                  })} 
+                                  placeholder={getPixPlaceholder(formData.pixTipo)}
+                                  disabled={!formData.pixTipo}
+                                  maxLength={formData.pixTipo === 'cpf' ? 14 : formData.pixTipo === 'cnpj' ? 18 : formData.pixTipo === 'telefone' ? 15 : 100}
+                                  className={`w-full px-4 py-2 border rounded-lg transition-all ${
+                                    !formData.pixTipo 
+                                      ? 'bg-gray-100 cursor-not-allowed' 
+                                      : formData.finPix
+                                        ? validarChavePix(formData.finPix, formData.pixTipo).valido 
+                                          ? 'border-green-500 bg-green-50' 
+                                          : 'border-red-500 bg-red-50'
+                                        : ''
                                   }`}
                                 />
-                                {(formData.finPix || financialData?.pix_key) && (
-                                  <div className={`mt-1 text-sm flex items-center gap-2 ${
-                                    validarChavePix(formData.finPix ?? financialData?.pix_key).valido 
+                                {formData.finPix && formData.pixTipo && (
+                                  <p className={`mt-1 text-sm ${
+                                    validarChavePix(formData.finPix, formData.pixTipo).valido 
                                       ? 'text-green-600' 
                                       : 'text-red-600'
                                   }`}>
-                                    <span>{validarChavePix(formData.finPix ?? financialData?.pix_key).mensagem}</span>
-                                    {validarChavePix(formData.finPix ?? financialData?.pix_key).tipo && (
-                                      <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
-                                        {validarChavePix(formData.finPix ?? financialData?.pix_key).tipo}
-                                      </span>
-                                    )}
-                                  </div>
+                                    {validarChavePix(formData.finPix, formData.pixTipo).mensagem}
+                                  </p>
+                                )}
+                                {!formData.pixTipo && (
+                                  <p className="mt-1 text-sm text-gray-500">👆 Selecione o tipo da chave acima</p>
                                 )}
                               </div>
-                              <button onClick={handleSaveFinancial} disabled={loading} className="w-full bg-blue-600 text-white py-3 rounded-lg font-bold disabled:opacity-50">{loading ? '...' : '💾 Atualizar'}</button>
+                              
+                              <button 
+                                onClick={handleSaveFinancial} 
+                                disabled={loading || !formData.pixTipo} 
+                                className="w-full bg-blue-600 text-white py-3 rounded-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                {loading ? '...' : '💾 Atualizar Dados'}
+                              </button>
                             </div>
                           )}
                           {formData.saqueTab === 'gratuidades' && (
