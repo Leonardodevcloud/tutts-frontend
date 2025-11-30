@@ -2653,11 +2653,11 @@
                   <div className="bg-white rounded-xl shadow p-6 mb-6">
                     <div className="flex justify-between items-center mb-4">
                       <h2 className="text-xl font-bold text-green-800">
-                        {formData.editPromoNovato ? '✏️ Editar Promoção Novatos' : '🚀 Cadastrar Nova Promoção Novatos'}
+                        {formData.editPromoNovatos ? '✏️ Editar Promoção Novatos' : '🚀 Cadastrar Nova Promoção Novatos'}
                       </h2>
-                      {formData.editPromoNovato && (
+                      {formData.editPromoNovatos && (
                         <button 
-                          onClick={() => setFormData({...formData, editPromoNovato: null, novatoRegiao: '', novatoCliente: '', novatoValor: '', novatoDetalhes: ''})}
+                          onClick={() => setFormData({...formData, editPromoNovatos: null, novatosRegiao: '', novatosCliente: '', novatosValor: '', novatosDetalhes: ''})}
                           className="text-sm text-gray-500 hover:text-gray-700"
                         >
                           ✕ Cancelar edição
@@ -2669,8 +2669,8 @@
                         <label className="block text-sm font-semibold mb-1">Região *</label>
                         <input 
                           type="text" 
-                          value={formData.novatoRegiao || ''} 
-                          onChange={e => setFormData({...formData, novatoRegiao: e.target.value})} 
+                          value={formData.novatosRegiao || ''} 
+                          onChange={e => setFormData({...formData, novatosRegiao: e.target.value})} 
                           className="w-full px-4 py-2 border rounded-lg"
                           placeholder="Ex: Salvador - BA"
                         />
@@ -2679,8 +2679,8 @@
                         <label className="block text-sm font-semibold mb-1">Cliente *</label>
                         <input 
                           type="text" 
-                          value={formData.novatoCliente || ''} 
-                          onChange={e => setFormData({...formData, novatoCliente: e.target.value})} 
+                          value={formData.novatosCliente || ''} 
+                          onChange={e => setFormData({...formData, novatosCliente: e.target.value})} 
                           className="w-full px-4 py-2 border rounded-lg"
                           placeholder="Ex: Magazine Luiza"
                         />
@@ -2690,8 +2690,8 @@
                         <input 
                           type="number" 
                           step="0.01"
-                          value={formData.novatoValor || ''} 
-                          onChange={e => setFormData({...formData, novatoValor: e.target.value})} 
+                          value={formData.novatosValor || ''} 
+                          onChange={e => setFormData({...formData, novatosValor: e.target.value})} 
                           className="w-full px-4 py-2 border rounded-lg"
                           placeholder="Ex: 150.00"
                         />
@@ -2700,16 +2700,16 @@
                     <div className="mb-4">
                       <label className="block text-sm font-semibold mb-1">Detalhes da Promoção (opcional)</label>
                       <textarea 
-                        value={formData.novatoDetalhes || ''} 
-                        onChange={e => setFormData({...formData, novatoDetalhes: e.target.value})} 
+                        value={formData.novatosDetalhes || ''} 
+                        onChange={e => setFormData({...formData, novatosDetalhes: e.target.value})} 
                         className="w-full px-4 py-2 border rounded-lg"
                         rows="3"
                         placeholder="Ex: Vaga para motoboy com moto própria. Início imediato..."
                       />
                     </div>
                     <div className="flex items-center gap-4">
-                      <button onClick={formData.editPromoNovato ? handleEditarPromoNovato : handleCriarPromoNovato} disabled={loading} className={`px-6 py-2 text-white rounded-lg font-semibold disabled:opacity-50 ${formData.editPromoNovato ? 'bg-blue-600 hover:bg-blue-700' : 'bg-green-600 hover:bg-green-700'}`}>
-                        {loading ? '...' : formData.editPromoNovato ? '💾 Salvar Alterações' : '➕ Criar Promoção'}
+                      <button onClick={formData.editPromoNovatos ? handleEditarPromocaoNovatos : handleCriarPromocaoNovatos} disabled={loading} className={`px-6 py-2 text-white rounded-lg font-semibold disabled:opacity-50 ${formData.editPromoNovatos ? 'bg-blue-600 hover:bg-blue-700' : 'bg-green-600 hover:bg-green-700'}`}>
+                        {loading ? '...' : formData.editPromoNovatos ? '💾 Salvar Alterações' : '➕ Criar Promoção'}
                       </button>
                       <p className="text-xs text-gray-500">⏱️ Inscrições expiram automaticamente em 10 dias</p>
                     </div>
@@ -2730,7 +2730,7 @@
                               </span>
                               <div className="flex gap-1">
                                 <button 
-                                  onClick={() => setFormData({...formData, editPromoNovato: p, novatoRegiao: p.regiao, novatoCliente: p.cliente, novatoValor: p.valor_bonus, novatoDetalhes: p.detalhes || ''})}
+                                  onClick={() => setFormData({...formData, editPromoNovatos: p, novatosRegiao: p.regiao, novatosCliente: p.cliente, novatosValor: p.valor_bonus, novatosDetalhes: p.detalhes || ''})}
                                   className="text-xs text-blue-500 hover:text-blue-700"
                                 >✏️</button>
                                 <button 
@@ -2871,262 +2871,6 @@
                 </>
               )}
 
-              {/* ========== ABA PROMO NOVATOS ========== */}
-              {formData.finTab === 'promo-novatos' && (
-                <>
-                  {/* Modal de rejeição */}
-                  {formData.modalRejeitarNovatos && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-                      <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full">
-                        <h3 className="text-xl font-bold text-red-600 mb-4">❌ Rejeitar Inscrição</h3>
-                        <div className="bg-gray-50 rounded-lg p-4 mb-4">
-                          <p className="text-sm"><strong>Profissional:</strong> {formData.modalRejeitarNovatos.user_name}</p>
-                          <p className="text-sm"><strong>Cliente:</strong> {formData.modalRejeitarNovatos.cliente}</p>
-                          <p className="text-sm"><strong>Região:</strong> {formData.modalRejeitarNovatos.regiao}</p>
-                        </div>
-                        <div className="mb-4">
-                          <label className="block text-sm font-semibold mb-1">Motivo da Rejeição *</label>
-                          <textarea 
-                            value={formData.motivoRejeicaoNovatos || ''} 
-                            onChange={e => setFormData({...formData, motivoRejeicaoNovatos: e.target.value})} 
-                            className="w-full px-4 py-2 border rounded-lg"
-                            rows="3"
-                            placeholder="Informe o motivo..."
-                          />
-                        </div>
-                        <div className="flex gap-3">
-                          <button onClick={() => setFormData({...formData, modalRejeitarNovatos: null, motivoRejeicaoNovatos: ''})} className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300">Cancelar</button>
-                          <button onClick={() => handleRejeitarInscricaoNovatos(formData.modalRejeitarNovatos.id)} disabled={!formData.motivoRejeicaoNovatos || loading} className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 disabled:opacity-50">
-                            {loading ? '...' : '❌ Rejeitar'}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Cadastrar/Editar Promoção Novatos */}
-                  <div className="bg-white rounded-xl shadow p-6 mb-6">
-                    <div className="flex justify-between items-center mb-4">
-                      <h2 className="text-xl font-bold text-blue-800">
-                        {formData.editPromoNovatos ? '✏️ Editar Promoção' : '🚀 Cadastrar Nova Promoção Novatos'}
-                      </h2>
-                      {formData.editPromoNovatos && (
-                        <button 
-                          onClick={() => setFormData({...formData, editPromoNovatos: null, novatosRegiao: '', novatosCliente: '', novatosValor: '', novatosDetalhes: ''})}
-                          className="text-sm text-gray-500 hover:text-gray-700"
-                        >
-                          ✕ Cancelar edição
-                        </button>
-                      )}
-                    </div>
-                    <div className="grid md:grid-cols-3 gap-4 mb-4">
-                      <div>
-                        <label className="block text-sm font-semibold mb-1">Região *</label>
-                        <input 
-                          type="text" 
-                          value={formData.novatosRegiao || ''} 
-                          onChange={e => setFormData({...formData, novatosRegiao: e.target.value})} 
-                          className="w-full px-4 py-2 border rounded-lg"
-                          placeholder="Ex: Salvador - BA"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-semibold mb-1">Cliente *</label>
-                        <input 
-                          type="text" 
-                          value={formData.novatosCliente || ''} 
-                          onChange={e => setFormData({...formData, novatosCliente: e.target.value})} 
-                          className="w-full px-4 py-2 border rounded-lg"
-                          placeholder="Ex: Magazine Luiza"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-semibold mb-1">Valor do Bônus (R$) *</label>
-                        <input 
-                          type="number" 
-                          step="0.01"
-                          value={formData.novatosValor || ''} 
-                          onChange={e => setFormData({...formData, novatosValor: e.target.value})} 
-                          className="w-full px-4 py-2 border rounded-lg"
-                          placeholder="Ex: 100.00"
-                        />
-                      </div>
-                    </div>
-                    <div className="mb-4">
-                      <label className="block text-sm font-semibold mb-1">Detalhes da Promoção (opcional)</label>
-                      <textarea 
-                        value={formData.novatosDetalhes || ''} 
-                        onChange={e => setFormData({...formData, novatosDetalhes: e.target.value})} 
-                        className="w-full px-4 py-2 border rounded-lg"
-                        rows="3"
-                        placeholder="Ex: Vaga para entregador com moto própria. Início imediato..."
-                      />
-                    </div>
-                    <button onClick={formData.editPromoNovatos ? handleEditarPromocaoNovatos : handleCriarPromocaoNovatos} disabled={loading} className={`w-full md:w-auto px-6 py-2 text-white rounded-lg font-semibold disabled:opacity-50 ${formData.editPromoNovatos ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-600 hover:bg-blue-700'}`}>
-                      {loading ? '...' : formData.editPromoNovatos ? '💾 Salvar Alterações' : '➕ Criar Promoção'}
-                    </button>
-                  </div>
-
-                  {/* Promoções Ativas */}
-                  <div className="bg-white rounded-xl shadow p-6 mb-6">
-                    <h3 className="font-semibold mb-4">📋 Promoções Novatos Cadastradas</h3>
-                    {promocoesNovatos.length === 0 ? (
-                      <p className="text-gray-500 text-center py-4">Nenhuma promoção cadastrada</p>
-                    ) : (
-                      <div className="grid md:grid-cols-3 gap-3">
-                        {promocoesNovatos.map(p => (
-                          <div key={p.id} className={`border rounded-lg p-3 ${p.status === 'ativa' ? 'border-blue-300 bg-blue-50' : 'border-gray-300 bg-gray-50'}`}>
-                            <div className="flex justify-between items-center mb-1">
-                              <span className={`px-2 py-0.5 rounded text-xs font-bold ${p.status === 'ativa' ? 'bg-blue-500 text-white' : 'bg-gray-500 text-white'}`}>
-                                {p.status === 'ativa' ? '✅' : '⏸️'}
-                              </span>
-                              <div className="flex gap-1">
-                                <button 
-                                  onClick={() => setFormData({...formData, editPromoNovatos: p, novatosRegiao: p.regiao, novatosCliente: p.cliente, novatosValor: p.valor_bonus, novatosDetalhes: p.detalhes || ''})}
-                                  className="text-xs text-blue-500 hover:text-blue-700"
-                                >✏️</button>
-                                <button 
-                                  onClick={async () => {
-                                    await fetch(`${API_URL}/promocoes-novatos/${p.id}`, {
-                                      method: 'PATCH',
-                                      headers: { 'Content-Type': 'application/json' },
-                                      body: JSON.stringify({ status: p.status === 'ativa' ? 'inativa' : 'ativa' })
-                                    });
-                                    loadPromocoesNovatos();
-                                  }}
-                                  className="text-xs text-gray-500 hover:text-gray-700"
-                                >
-                                  {p.status === 'ativa' ? '⏸️' : '▶️'}
-                                </button>
-                              </div>
-                            </div>
-                            <p className="font-semibold text-sm">{p.regiao}</p>
-                            <p className="text-xs text-gray-600">🏢 {p.cliente}</p>
-                            <p className="text-blue-600 font-bold">R$ {parseFloat(p.valor_bonus).toFixed(2)}</p>
-                            {p.detalhes && <p className="text-xs text-gray-500 mt-1 line-clamp-2">{p.detalhes}</p>}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Cards de estatísticas */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                    <div className="bg-white rounded-xl shadow p-4">
-                      <p className="text-sm text-gray-600">Total Inscrições</p>
-                      <p className="text-3xl font-bold text-blue-600">{inscricoesNovatos.length}</p>
-                    </div>
-                    <div className="bg-white rounded-xl shadow p-4">
-                      <p className="text-sm text-gray-600">Pendentes</p>
-                      <p className="text-3xl font-bold text-yellow-600">{inscricoesNovatos.filter(i => i.status === 'pendente').length}</p>
-                    </div>
-                    <div className="bg-white rounded-xl shadow p-4">
-                      <p className="text-sm text-gray-600">Aprovadas</p>
-                      <p className="text-3xl font-bold text-green-600">{inscricoesNovatos.filter(i => i.status === 'aprovada').length}</p>
-                    </div>
-                    <div className="bg-white rounded-xl shadow p-4">
-                      <p className="text-sm text-gray-600">Expiradas</p>
-                      <p className="text-3xl font-bold text-gray-600">{inscricoesNovatos.filter(i => i.status === 'expirada').length}</p>
-                    </div>
-                  </div>
-
-                  {/* Tabela de Inscrições */}
-                  <div className="bg-white rounded-xl shadow p-6">
-                    <h3 className="font-semibold mb-4">🚀 Inscrições Recebidas</h3>
-                    {inscricoesNovatos.length === 0 ? (
-                      <p className="text-gray-500 text-center py-4">Nenhuma inscrição ainda</p>
-                    ) : (
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                          <thead className="bg-gray-100">
-                            <tr>
-                              <th className="px-3 py-2 text-left">Profissional</th>
-                              <th className="px-3 py-2 text-left">Cliente</th>
-                              <th className="px-3 py-2 text-left">Região</th>
-                              <th className="px-3 py-2 text-left">Bônus</th>
-                              <th className="px-3 py-2 text-left">Status</th>
-                              <th className="px-3 py-2 text-left">Expira em</th>
-                              <th className="px-3 py-2 text-left">Crédito</th>
-                              <th className="px-3 py-2 text-left">Ações</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {inscricoesNovatos.map(insc => {
-                              const expiresAt = new Date(insc.expires_at);
-                              const diasRestantes = Math.ceil((expiresAt - new Date()) / (1000 * 60 * 60 * 24));
-                              return (
-                                <tr key={insc.id} className={`border-b ${
-                                  insc.status === 'aprovada' ? 'bg-green-50' :
-                                  insc.status === 'rejeitada' ? 'bg-red-50' :
-                                  insc.status === 'expirada' ? 'bg-gray-100' : ''
-                                }`}>
-                                  <td className="px-3 py-2">
-                                    <p className="font-semibold">{insc.user_name}</p>
-                                    <p className="text-xs text-gray-500">{insc.user_cod}</p>
-                                  </td>
-                                  <td className="px-3 py-2">{insc.cliente}</td>
-                                  <td className="px-3 py-2">{insc.regiao}</td>
-                                  <td className="px-3 py-2 font-bold text-blue-600">R$ {parseFloat(insc.valor_bonus).toFixed(2)}</td>
-                                  <td className="px-3 py-2">
-                                    <span className={`px-2 py-1 rounded text-xs font-bold ${
-                                      insc.status === 'pendente' ? 'bg-yellow-200 text-yellow-800' :
-                                      insc.status === 'aprovada' ? 'bg-green-200 text-green-800' :
-                                      insc.status === 'rejeitada' ? 'bg-red-200 text-red-800' :
-                                      'bg-gray-200 text-gray-800'
-                                    }`}>
-                                      {insc.status.toUpperCase()}
-                                    </span>
-                                    {insc.motivo_rejeicao && (
-                                      <p className="text-xs text-red-600 mt-1">{insc.motivo_rejeicao}</p>
-                                    )}
-                                  </td>
-                                  <td className="px-3 py-2">
-                                    {insc.status === 'pendente' && (
-                                      <span className={`text-xs font-semibold ${diasRestantes <= 2 ? 'text-red-600' : 'text-gray-600'}`}>
-                                        {diasRestantes > 0 ? `${diasRestantes} dias` : 'Expirando...'}
-                                      </span>
-                                    )}
-                                    {insc.status !== 'pendente' && '-'}
-                                  </td>
-                                  <td className="px-3 py-2">
-                                    {insc.status === 'aprovada' && (
-                                      <button
-                                        onClick={async () => {
-                                          await fetch(`${API_URL}/inscricoes-novatos/${insc.id}/credito`, {
-                                            method: 'PATCH',
-                                            headers: { 'Content-Type': 'application/json' },
-                                            body: JSON.stringify({ credito_lancado: !insc.credito_lancado, lancado_por: user.fullName })
-                                          });
-                                          loadInscricoesNovatos();
-                                        }}
-                                        className={`px-2 py-1 rounded text-xs font-bold ${
-                                          insc.credito_lancado 
-                                            ? 'bg-green-600 text-white' 
-                                            : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-                                        }`}
-                                      >
-                                        {insc.credito_lancado ? '✅ Lançado' : '💰 Lançar'}
-                                      </button>
-                                    )}
-                                  </td>
-                                  <td className="px-3 py-2">
-                                    {insc.status === 'pendente' && (
-                                      <div className="flex gap-1">
-                                        <button onClick={() => handleAprovarInscricaoNovatos(insc.id)} className="px-2 py-1 bg-green-500 text-white rounded text-xs hover:bg-green-600">✓</button>
-                                        <button onClick={() => setFormData({...formData, modalRejeitarNovatos: insc})} className="px-2 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600">✗</button>
-                                      </div>
-                                    )}
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
 
               {/* ========== ABA RELATÓRIOS ========== */}
               {formData.finTab === 'relatorios' && (
