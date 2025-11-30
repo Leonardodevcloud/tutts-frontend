@@ -526,7 +526,7 @@
             })
           });
           showToast('❌ Inscrição rejeitada', 'success');
-          setFormData({ ...formData, modalRejeitarNovatos: null, motivoRejeicaoNovatos: '' });
+          setFormData({ ...formData, modalRejeitarNovatoss: null, motivoRejeicaoNovatos: '' });
           await loadInscricoesNovatos();
         } catch (err) {
           showToast('Erro ao rejeitar', 'error');
@@ -535,7 +535,7 @@
         }
       };
 
-      const handleCreditarBonusNovato = async (inscricao) => {
+      const handleCreditarBonusNovatos = async (inscricao) => {
         setLoading(true);
         try {
           const res = await fetch(`${API_URL}/inscricoes-novatos/${inscricao.id}/credito`, {
@@ -551,6 +551,43 @@
           await loadInscricoesNovatos();
         } catch (err) {
           showToast('Erro ao creditar', 'error');
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      const handleDebitarNovatos = async (inscricao, debitado) => {
+        try {
+          await fetch(`${API_URL}/inscricoes-novatos/${inscricao.id}/debito`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              debito: debitado,
+              debitado_por: user.fullName 
+            })
+          });
+          showToast(debitado ? '✅ Marcado como debitado' : '↩️ Desmarcado', 'success');
+          await loadInscricoesNovatos();
+        } catch (err) {
+          showToast('Erro ao atualizar débito', 'error');
+        }
+      };
+
+      const handleExcluirPromocaoNovatos = async (id) => {
+        if (!confirm('Tem certeza que deseja excluir esta promoção?')) return;
+        setLoading(true);
+        try {
+          const res = await fetch(`${API_URL}/promocoes-novatos/${id}`, {
+            method: 'DELETE'
+          });
+          if (!res.ok) {
+            const error = await res.json();
+            throw new Error(error.error || 'Erro ao excluir');
+          }
+          showToast('🗑️ Promoção excluída!', 'success');
+          await loadPromocoesNovatos();
+        } catch (err) {
+          showToast(err.message, 'error');
         } finally {
           setLoading(false);
         }
@@ -1086,10 +1123,10 @@
                       </div>
                       <div className="text-left flex-1">
                         <h3 className="text-lg font-bold text-gray-800">Promoções Novatos</h3>
-                        <p className="text-sm text-gray-500">Vagas especiais para novos profissionais</p>
+                        <p className="text-sm text-gray-500">Promoções especiais para novos profissionais</p>
                         {promocoesNovatos.length > 0 && (
                           <span className="inline-block mt-1 px-2 py-0.5 bg-orange-500 text-white text-xs rounded-full">
-                            {promocoesNovatos.length} vaga(s) disponível(is)
+                            {promocoesNovatos.length} promoção(ões) disponível(is)
                           </span>
                         )}
                       </div>
@@ -1653,14 +1690,14 @@
               {/* ========== ABA PROMOÇÕES NOVATOS (USUÁRIO) ========== */}
               {formData.userTab === 'promo-novatos' && (
                 <>
-                  {/* Vagas Disponíveis */}
+                  {/* Promoções Disponíveis */}
                   <div className="bg-white rounded-xl shadow p-6 mb-6">
-                    <h2 className="text-lg font-bold text-orange-700 mb-4">🚀 Vagas Disponíveis para Novatos</h2>
+                    <h2 className="text-lg font-bold text-orange-700 mb-4">🚀 Promoções Disponíveis para Novatos</h2>
                     {promocoesNovatos.length === 0 ? (
                       <div className="text-center py-8">
                         <p className="text-6xl mb-4">😕</p>
-                        <p className="text-gray-500 font-semibold">Nenhuma vaga disponível no momento</p>
-                        <p className="text-gray-400 text-sm">Volte mais tarde para verificar novas oportunidades</p>
+                        <p className="text-gray-500 font-semibold">Nenhuma promoção disponível no momento</p>
+                        <p className="text-gray-400 text-sm">Volte mais tarde para verificar novas promoções</p>
                       </div>
                     ) : (
                       <div className="grid md:grid-cols-2 gap-4">
@@ -1707,7 +1744,7 @@
                   <div className="bg-white rounded-xl shadow p-6">
                     <h2 className="text-lg font-bold text-gray-800 mb-4">📋 Minhas Inscrições</h2>
                     {minhasInscricoesNovatos.length === 0 ? (
-                      <p className="text-gray-500 text-center py-4">Você ainda não se inscreveu em nenhuma vaga</p>
+                      <p className="text-gray-500 text-center py-4">Você ainda não se inscreveu em nenhuma promoção</p>
                     ) : (
                       <div className="space-y-3">
                         {minhasInscricoesNovatos.map(ins => {
@@ -2621,13 +2658,13 @@
               {formData.finTab === 'promo-novatos' && (
                 <>
                   {/* Modal de Rejeição */}
-                  {formData.modalRejeitarNovato && (
+                  {formData.modalRejeitarNovatos && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
                       <div className="bg-white rounded-xl p-6 w-full max-w-md">
                         <h3 className="text-lg font-bold mb-4">❌ Rejeitar Inscrição</h3>
                         <p className="text-sm text-gray-600 mb-3">
-                          Profissional: <strong>{formData.modalRejeitarNovato.user_name}</strong><br/>
-                          Cliente: <strong>{formData.modalRejeitarNovato.cliente}</strong>
+                          Profissional: <strong>{formData.modalRejeitarNovatos.user_name}</strong><br/>
+                          Cliente: <strong>{formData.modalRejeitarNovatos.cliente}</strong>
                         </p>
                         <div className="mb-4">
                           <label className="block text-sm font-semibold mb-1">Motivo da Rejeição *</label>
@@ -2640,8 +2677,8 @@
                           />
                         </div>
                         <div className="flex gap-3">
-                          <button onClick={() => setFormData({...formData, modalRejeitarNovato: null, motivoRejeicaoNovato: ''})} className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300">Cancelar</button>
-                          <button onClick={() => handleRejeitarInscricaoNovato(formData.modalRejeitarNovato.id)} disabled={!formData.motivoRejeicaoNovato || loading} className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 disabled:opacity-50">
+                          <button onClick={() => setFormData({...formData, modalRejeitarNovatos: null, motivoRejeicaoNovato: ''})} className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300">Cancelar</button>
+                          <button onClick={() => handleRejeitarInscricaoNovato(formData.modalRejeitarNovatos.id)} disabled={!formData.motivoRejeicaoNovato || loading} className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 disabled:opacity-50">
                             {loading ? '...' : '❌ Rejeitar'}
                           </button>
                         </div>
@@ -2732,20 +2769,27 @@
                                 <button 
                                   onClick={() => setFormData({...formData, editPromoNovatos: p, novatosRegiao: p.regiao, novatosCliente: p.cliente, novatosValor: p.valor_bonus, novatosDetalhes: p.detalhes || ''})}
                                   className="text-xs text-blue-500 hover:text-blue-700"
+                                  title="Editar"
                                 >✏️</button>
                                 <button 
                                   onClick={async () => {
-                                    await fetch(`${API_URL}/promo-novatos/${p.id}`, {
+                                    await fetch(`${API_URL}/promocoes-novatos/${p.id}`, {
                                       method: 'PATCH',
                                       headers: { 'Content-Type': 'application/json' },
                                       body: JSON.stringify({ status: p.status === 'ativa' ? 'inativa' : 'ativa' })
                                     });
-                                    loadPromoNovatos();
+                                    loadPromocoesNovatos();
                                   }}
                                   className="text-xs text-gray-500 hover:text-gray-700"
+                                  title={p.status === 'ativa' ? 'Desativar' : 'Ativar'}
                                 >
                                   {p.status === 'ativa' ? '⏸️' : '▶️'}
                                 </button>
+                                <button 
+                                  onClick={() => handleExcluirPromocaoNovatos(p.id)}
+                                  className="text-xs text-red-500 hover:text-red-700"
+                                  title="Excluir"
+                                >🗑️</button>
                               </div>
                             </div>
                             <p className="font-semibold text-sm">📍 {p.regiao}</p>
@@ -2798,7 +2842,9 @@
                               <th className="px-2 py-3 text-center text-xs">Bônus</th>
                               <th className="px-2 py-3 text-center text-xs">Expira</th>
                               <th className="px-2 py-3 text-center text-xs">Crédito</th>
+                              <th className="px-2 py-3 text-center text-xs">Debitado</th>
                               <th className="px-3 py-3 text-center">Status</th>
+                              <th className="px-2 py-3 text-center text-xs">Admin</th>
                               <th className="px-2 py-3 text-center text-xs">Ações</th>
                             </tr>
                           </thead>
@@ -2824,16 +2870,32 @@
                                   <td className="px-2 py-3 text-center">
                                     {i.status === 'aprovada' ? (
                                       i.credito_lancado ? (
-                                        <span className="text-xs text-green-600 font-bold">✅ Lançado</span>
+                                        <div>
+                                          <span className="text-xs text-green-600 font-bold">✅ Lançado</span>
+                                          {i.lancado_por && <p className="text-xs text-gray-400">{i.lancado_por}</p>}
+                                        </div>
                                       ) : (
                                         <button 
-                                          onClick={() => handleCreditarBonusNovato(i)}
+                                          onClick={() => handleCreditarBonusNovatos(i)}
                                           className="px-2 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600"
                                           disabled={loading}
                                         >
                                           💰 Lançar
                                         </button>
                                       )
+                                    ) : '-'}
+                                  </td>
+                                  <td className="px-2 py-3 text-center">
+                                    {i.status === 'aprovada' && i.credito_lancado ? (
+                                      <div>
+                                        <input 
+                                          type="checkbox"
+                                          checked={i.debito || false}
+                                          onChange={(e) => handleDebitarNovatos(i, e.target.checked)}
+                                          className="w-4 h-4 cursor-pointer accent-green-600"
+                                        />
+                                        {i.debito && i.debitado_por && <p className="text-xs text-gray-400">{i.debitado_por}</p>}
+                                      </div>
                                     ) : '-'}
                                   </td>
                                   <td className="px-3 py-3 text-center">
@@ -2849,11 +2911,14 @@
                                        i.status === 'rejeitada' ? '❌ Rejeitada' : i.status}
                                     </span>
                                   </td>
+                                  <td className="px-2 py-3 text-center text-xs text-gray-500">
+                                    {i.resolved_by || '-'}
+                                  </td>
                                   <td className="px-2 py-3 text-center">
                                     {i.status === 'pendente' && !expirado && (
                                       <div className="flex gap-1 justify-center">
-                                        <button onClick={() => handleAprovarInscricaoNovato(i.id)} className="p-1 bg-green-500 text-white rounded text-xs hover:bg-green-600" disabled={loading}>✓</button>
-                                        <button onClick={() => setFormData({...formData, modalRejeitarNovato: i})} className="p-1 bg-red-500 text-white rounded text-xs hover:bg-red-600">✗</button>
+                                        <button onClick={() => handleAprovarInscricaoNovatos(i.id)} className="p-1 bg-green-500 text-white rounded text-xs hover:bg-green-600" disabled={loading}>✓</button>
+                                        <button onClick={() => setFormData({...formData, modalRejeitarNovatos: i})} className="p-1 bg-red-500 text-white rounded text-xs hover:bg-red-600">✗</button>
                                       </div>
                                     )}
                                     {i.status === 'rejeitada' && i.motivo_rejeicao && (
