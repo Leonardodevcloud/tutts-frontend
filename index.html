@@ -1550,13 +1550,109 @@
                     </div>
                   ) : !financialData?.full_name ? (
                     <div className="bg-white rounded-xl shadow p-6">
-                      <h2 className="text-xl font-bold text-purple-900 mb-4">💳 Cadastrar Dados</h2>
+                      <h2 className="text-xl font-bold text-purple-900 mb-4">💳 Cadastrar Dados Financeiros</h2>
+                      <p className="text-sm text-gray-600 mb-4">Preencha seus dados para receber os saques via PIX.</p>
                       <div className="space-y-4">
-                        <div><label className="block text-sm font-semibold mb-1">Código</label><input type="text" value={user.codProfissional} disabled className="w-full px-4 py-2 border rounded-lg bg-gray-100" /></div>
-                        <div><label className="block text-sm font-semibold mb-1">Nome *</label><input type="text" value={formData.finName || ''} onChange={e => setFormData({...formData, finName: e.target.value})} className="w-full px-4 py-2 border rounded-lg" /></div>
-                        <div><label className="block text-sm font-semibold mb-1">CPF *</label><input type="text" value={formData.finCpf || ''} onChange={e => setFormData({...formData, finCpf: formatCPF(e.target.value)})} className="w-full px-4 py-2 border rounded-lg" /></div>
-                        <div><label className="block text-sm font-semibold mb-1">Chave PIX *</label><input type="text" value={formData.finPix || ''} onChange={e => setFormData({...formData, finPix: e.target.value})} className="w-full px-4 py-2 border rounded-lg" /></div>
-                        <button onClick={handleSaveFinancial} disabled={loading} className="w-full bg-purple-600 text-white py-3 rounded-lg font-bold disabled:opacity-50">{loading ? 'Salvando...' : '💾 Salvar'}</button>
+                        <div>
+                          <label className="block text-sm font-semibold mb-1">Código do Profissional</label>
+                          <input type="text" value={user.codProfissional} disabled className="w-full px-4 py-2 border rounded-lg bg-gray-100 text-gray-600" />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-semibold mb-1">Nome Completo *</label>
+                          <input 
+                            type="text" 
+                            value={formData.finName || ''} 
+                            onChange={e => setFormData({...formData, finName: e.target.value})} 
+                            className="w-full px-4 py-2 border rounded-lg" 
+                            placeholder="Seu nome completo"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-semibold mb-1">CPF *</label>
+                          <input 
+                            type="text" 
+                            value={formData.finCpf || ''} 
+                            onChange={e => setFormData({...formData, finCpf: formatCPF(e.target.value)})} 
+                            className="w-full px-4 py-2 border rounded-lg" 
+                            placeholder="000.000.000-00"
+                            maxLength={14}
+                          />
+                        </div>
+                        
+                        {/* Tipo da Chave PIX */}
+                        <div>
+                          <label className="block text-sm font-semibold mb-2">Tipo da Chave PIX *</label>
+                          <div className="grid grid-cols-5 gap-2">
+                            {[
+                              { id: 'cpf', label: 'CPF', icon: '🪪' },
+                              { id: 'cnpj', label: 'CNPJ', icon: '🏢' },
+                              { id: 'telefone', label: 'Telefone', icon: '📱' },
+                              { id: 'email', label: 'Email', icon: '📧' },
+                              { id: 'aleatoria', label: 'Aleatória', icon: '🔑' }
+                            ].map(tipo => (
+                              <button
+                                key={tipo.id}
+                                type="button"
+                                onClick={() => setFormData({...formData, pixTipo: tipo.id, finPix: ''})}
+                                className={`p-2 rounded-lg border-2 text-center transition-all ${
+                                  formData.pixTipo === tipo.id 
+                                    ? 'border-purple-500 bg-purple-50 text-purple-700' 
+                                    : 'border-gray-200 hover:border-gray-300'
+                                }`}
+                              >
+                                <span className="text-xl">{tipo.icon}</span>
+                                <p className="text-xs font-semibold mt-1">{tipo.label}</p>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        
+                        {/* Campo da Chave PIX */}
+                        <div>
+                          <label className="block text-sm font-semibold mb-1">Chave PIX *</label>
+                          <input 
+                            type={formData.pixTipo === 'email' ? 'email' : 'text'}
+                            value={formData.finPix || ''} 
+                            onChange={e => setFormData({
+                              ...formData, 
+                              finPix: formatarChavePix(e.target.value, formData.pixTipo)
+                            })} 
+                            placeholder={getPixPlaceholder(formData.pixTipo)}
+                            disabled={!formData.pixTipo}
+                            maxLength={formData.pixTipo === 'cpf' ? 14 : formData.pixTipo === 'cnpj' ? 18 : formData.pixTipo === 'telefone' ? 15 : 100}
+                            className={`w-full px-4 py-2 border rounded-lg transition-all ${
+                              !formData.pixTipo 
+                                ? 'bg-gray-100 cursor-not-allowed' 
+                                : formData.finPix
+                                  ? validarChavePix(formData.finPix, formData.pixTipo).valido 
+                                    ? 'border-green-500 bg-green-50' 
+                                    : 'border-red-500 bg-red-50'
+                                  : ''
+                            }`}
+                          />
+                          {formData.finPix && formData.pixTipo && (
+                            <p className={`mt-1 text-sm ${
+                              validarChavePix(formData.finPix, formData.pixTipo).valido 
+                                ? 'text-green-600' 
+                                : 'text-red-600'
+                            }`}>
+                              {validarChavePix(formData.finPix, formData.pixTipo).mensagem}
+                            </p>
+                          )}
+                          {!formData.pixTipo && (
+                            <p className="mt-1 text-sm text-gray-500">👆 Selecione o tipo da chave acima</p>
+                          )}
+                        </div>
+                        
+                        <button 
+                          onClick={handleSaveFinancial} 
+                          disabled={loading || !formData.pixTipo || !formData.finName || !formData.finCpf || !formData.finPix} 
+                          className="w-full bg-purple-600 text-white py-3 rounded-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-purple-700 transition"
+                        >
+                          {loading ? '⏳ Salvando...' : '💾 Salvar Dados'}
+                        </button>
                       </div>
                     </div>
                   ) : (
