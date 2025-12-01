@@ -1521,9 +1521,28 @@
                     />
                   </div>
                   
+                  {/* Campo Confirmar Senha */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Confirmar Senha</label>
+                    <input 
+                      type="password" 
+                      placeholder="Digite a senha novamente" 
+                      value={formData.confirmPassword || ''} 
+                      onChange={e => setFormData({...formData, confirmPassword: e.target.value})} 
+                      className={`w-full px-4 py-3 border rounded-lg ${formData.confirmPassword ? (formData.password === formData.confirmPassword ? 'border-green-500 bg-green-50' : 'border-red-500 bg-red-50') : ''}`}
+                      disabled={!formData.codValido || !formData.password}
+                    />
+                    {formData.confirmPassword && formData.password !== formData.confirmPassword && (
+                      <p className="text-red-600 text-sm mt-1">❌ As senhas não coincidem</p>
+                    )}
+                    {formData.confirmPassword && formData.password === formData.confirmPassword && (
+                      <p className="text-green-600 text-sm mt-1">✅ Senhas conferem!</p>
+                    )}
+                  </div>
+                  
                   <button 
                     onClick={handleRegister} 
-                    disabled={loading || !formData.codValido || !formData.password} 
+                    disabled={loading || !formData.codValido || !formData.password || !formData.confirmPassword || formData.password !== formData.confirmPassword} 
                     className="w-full bg-purple-900 text-white py-3 rounded-lg font-semibold hover:bg-purple-800 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {loading ? 'Aguarde...' : 'Criar Conta'}
