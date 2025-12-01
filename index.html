@@ -1051,6 +1051,33 @@
       const handleRequestWithdrawal = async () => {
         const amount = parseFloat(formData.withdrawAmount);
         if (!amount || amount <= 0) { showToast('Valor inválido', 'error'); return; }
+        
+        // ========== VALIDAÇÃO: Máximo 2 saques por hora, valores diferentes ==========
+        const agora = new Date();
+        const umaHoraAtras = new Date(agora.getTime() - 60 * 60 * 1000); // 1 hora atrás
+        
+        // Filtrar saques da última hora
+        const saquesUltimaHora = withdrawals.filter(w => {
+          const dataSaque = new Date(w.created_at);
+          return dataSaque >= umaHoraAtras;
+        });
+        
+        // Regra 1: Máximo 2 saques por hora
+        if (saquesUltimaHora.length >= 2) {
+          const proximoPermitido = new Date(new Date(saquesUltimaHora[0].created_at).getTime() + 60 * 60 * 1000);
+          const minutosRestantes = Math.ceil((proximoPermitido - agora) / (60 * 1000));
+          showToast(`⚠️ Limite atingido! Você já fez 2 saques na última hora. Aguarde ${minutosRestantes} minutos para solicitar novamente.`, 'error');
+          return;
+        }
+        
+        // Regra 2: Não pode repetir o mesmo valor na última hora
+        const mesmoValorNaHora = saquesUltimaHora.find(w => parseFloat(w.requested_amount) === amount);
+        if (mesmoValorNaHora) {
+          showToast(`⚠️ Valor repetido! Você já solicitou um saque de R$ ${amount.toFixed(2)} na última hora. Escolha um valor diferente.`, 'error');
+          return;
+        }
+        // ========== FIM DA VALIDAÇÃO ==========
+        
         setLoading(true);
         try {
           await fetch(`${API_URL}/withdrawals`, {
@@ -1903,8 +1930,58 @@
                                 const valorDigitado = parseFloat(formData.withdrawAmount) || 0;
                                 const valorExcedido = temGratuidade && valorDigitado > valorMaxGratuidade;
                                 
+                                // Calcular saques na última hora
+                                const agora = new Date();
+                                const umaHoraAtras = new Date(agora.getTime() - 60 * 60 * 1000);
+                                const saquesUltimaHora = withdrawals.filter(w => new Date(w.created_at) >= umaHoraAtras);
+                                const saquesRestantes = Math.max(0, 2 - saquesUltimaHora.length);
+                                const valoresUsados = saquesUltimaHora.map(w => parseFloat(w.requested_amount));
+                                const valorRepetido = valoresUsados.includes(valorDigitado) && valorDigitado > 0;
+                                
+                                // Calcular tempo para liberar próximo saque
+                                let tempoRestante = null;
+                                if (saquesUltimaHora.length >= 2) {
+                                  const maisAntigo = new Date(Math.min(...saquesUltimaHora.map(w => new Date(w.created_at).getTime())));
+                                  const liberaEm = new Date(maisAntigo.getTime() + 60 * 60 * 1000);
+                                  const diffMs = liberaEm - agora;
+                                  if (diffMs > 0) {
+                                    tempoRestante = Math.ceil(diffMs / (60 * 1000));
+                                  }
+                                }
+                                
                                 return (
                                   <div className="space-y-4">
+                                    {/* INDICADOR DE LIMITE DE SAQUES */}
+                                    <div className={`rounded-lg p-4 border ${saquesRestantes === 0 ? 'bg-red-50 border-red-300' : saquesRestantes === 1 ? 'bg-orange-50 border-orange-300' : 'bg-blue-50 border-blue-300'}`}>
+                                      <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-2xl">{saquesRestantes === 0 ? '🚫' : saquesRestantes === 1 ? '⚠️' : '✅'}</span>
+                                          <div>
+                                            <p className={`font-semibold ${saquesRestantes === 0 ? 'text-red-800' : saquesRestantes === 1 ? 'text-orange-800' : 'text-blue-800'}`}>
+                                              {saquesRestantes === 0 ? 'Limite atingido' : `${saquesRestantes} saque(s) disponível(is)`}
+                                            </p>
+                                            <p className={`text-xs ${saquesRestantes === 0 ? 'text-red-600' : saquesRestantes === 1 ? 'text-orange-600' : 'text-blue-600'}`}>
+                                              {saquesRestantes === 0 
+                                                ? `Aguarde ${tempoRestante || '?'} min para solicitar novamente` 
+                                                : 'Máximo 2 saques por hora com valores diferentes'}
+                                            </p>
+                                          </div>
+                                        </div>
+                                        <div className="flex gap-1">
+                                          {[0, 1].map(i => (
+                                            <div key={i} className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${i < saquesUltimaHora.length ? 'bg-gray-400 text-white' : 'bg-green-500 text-white'}`}>
+                                              {i < saquesUltimaHora.length ? '✓' : i + 1 - saquesUltimaHora.length}
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                      {valoresUsados.length > 0 && (
+                                        <p className="text-xs mt-2 text-gray-600">
+                                          Valores já usados na última hora: {valoresUsados.map(v => `R$ ${v.toFixed(2)}`).join(', ')}
+                                        </p>
+                                      )}
+                                    </div>
+                                    
                                     {/* Alerta para quem TEM gratuidade */}
                                     {temGratuidade && (
                                       <div className="bg-green-50 border border-green-300 rounded-lg p-4">
@@ -1924,13 +2001,16 @@
                                     
                                     <div>
                                       <label className="block text-sm font-semibold mb-1">Valor {temGratuidade && <span className="text-green-600 text-xs">(máx: {formatMoney(valorMaxGratuidade)})</span>}</label>
-                                      <input type="number" value={formData.withdrawAmount || ''} onChange={e => setFormData({...formData, withdrawAmount: e.target.value})} className={`w-full px-4 py-3 border rounded-lg text-lg ${valorExcedido ? 'border-red-500 bg-red-50' : ''}`} />
+                                      <input type="number" value={formData.withdrawAmount || ''} onChange={e => setFormData({...formData, withdrawAmount: e.target.value})} className={`w-full px-4 py-3 border rounded-lg text-lg ${valorExcedido || valorRepetido ? 'border-red-500 bg-red-50' : ''}`} disabled={saquesRestantes === 0} />
                                       {valorExcedido && (
                                         <p className="text-red-600 text-sm mt-1 font-semibold">❌ Valor excede o limite da gratuidade ({formatMoney(valorMaxGratuidade)})</p>
                                       )}
+                                      {valorRepetido && !valorExcedido && (
+                                        <p className="text-red-600 text-sm mt-1 font-semibold">❌ Você já solicitou R$ {valorDigitado.toFixed(2)} na última hora. Escolha outro valor.</p>
+                                      )}
                                     </div>
                                     
-                                    {formData.withdrawAmount && parseFloat(formData.withdrawAmount) > 0 && !valorExcedido && (() => {
+                                    {formData.withdrawAmount && parseFloat(formData.withdrawAmount) > 0 && !valorExcedido && !valorRepetido && (() => {
                                       const c = calcWithdraw(parseFloat(formData.withdrawAmount));
                                       return (
                                         <div className="bg-gray-50 rounded-lg p-4 space-y-2">
@@ -1941,7 +2021,7 @@
                                       );
                                     })()}
                                     
-                                    <button onClick={handleRequestWithdrawal} disabled={loading || !formData.withdrawAmount || valorExcedido} className="w-full bg-green-600 text-white py-3 rounded-lg font-bold disabled:opacity-50">{loading ? '...' : '💸 Solicitar'}</button>
+                                    <button onClick={handleRequestWithdrawal} disabled={loading || !formData.withdrawAmount || valorExcedido || valorRepetido || saquesRestantes === 0} className="w-full bg-green-600 text-white py-3 rounded-lg font-bold disabled:opacity-50">{loading ? '...' : saquesRestantes === 0 ? '🚫 Limite Atingido' : '💸 Solicitar'}</button>
                                   </div>
                                 );
                               })()}
