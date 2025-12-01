@@ -226,6 +226,12 @@
       const [inscricoesNovatos, setInscricoesNovatos] = useState([]);
       const [minhasInscricoesNovatos, setMinhasInscricoesNovatos] = useState([]);
       
+      // Estados - Planilha Google Sheets (Profissionais)
+      const [profissionaisSheet, setProfissionaisSheet] = useState([]);
+      const [sheetLoading, setSheetLoading] = useState(false);
+      const [sheetError, setSheetError] = useState(null);
+      const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQTbc5J8j85MlYGrjWajG33cTDd6TEpYur5hgNcYUwmtra8jh3Nfsrzm-0GNJO6wCYEZAGEHxw807o7/pub?gid=0&single=true&output=tsv';
+      
       // Estados - Quiz de Procedimentos
       const [quizConfig, setQuizConfig] = useState({
         titulo: 'Acerte os procedimentos e ganhe saque gratuito de R$ 500,00',
@@ -295,6 +301,25 @@
         }, 30000);
         return () => { events.forEach(e => window.removeEventListener(e, reset)); clearInterval(check); };
       }, [user, lastActivity]);
+
+      // Carregar planilha quando abrir tela de cadastro
+      useEffect(() => {
+        if (!user && formData.view === 'register' && profissionaisSheet.length === 0) {
+          loadProfissionaisSheet();
+        }
+      }, [formData.view]);
+
+      // Auto-preencher nome quando digitar código na tela de cadastro
+      useEffect(() => {
+        if (formData.view === 'register' && formData.cod && profissionaisSheet.length > 0) {
+          const nome = buscarNomePorCodigo(formData.cod);
+          if (nome) {
+            setFormData(prev => ({ ...prev, name: nome, codValido: true }));
+          } else {
+            setFormData(prev => ({ ...prev, name: '', codValido: false }));
+          }
+        }
+      }, [formData.cod, formData.view, profissionaisSheet]);
 
       // Carregar dados ao logar
       useEffect(() => {
@@ -393,6 +418,43 @@
       }, [financialData]);
 
       // ========== FUNÇÕES DE CARREGAMENTO ==========
+      
+      // Carregar profissionais da planilha Google Sheets
+      const loadProfissionaisSheet = async () => {
+        setSheetLoading(true);
+        setSheetError(null);
+        try {
+          const res = await fetch(SHEET_URL);
+          const text = await res.text();
+          const lines = text.split('\n').filter(l => l.trim());
+          const profissionais = [];
+          
+          // Pular header (primeira linha)
+          for (let i = 1; i < lines.length; i++) {
+            const cols = lines[i].split('\t');
+            const codigo = cols[0]?.trim();
+            const nome = cols[1]?.trim();
+            if (codigo && nome) {
+              profissionais.push({ codigo, nome });
+            }
+          }
+          
+          setProfissionaisSheet(profissionais);
+          console.log(`📊 Planilha carregada: ${profissionais.length} profissionais`);
+        } catch (err) {
+          console.error('Erro ao carregar planilha:', err);
+          setSheetError('Erro ao carregar lista de profissionais');
+        }
+        setSheetLoading(false);
+      };
+      
+      // Buscar nome pelo código na planilha
+      const buscarNomePorCodigo = (codigo) => {
+        if (!codigo || profissionaisSheet.length === 0) return null;
+        const prof = profissionaisSheet.find(p => p.codigo === codigo.toString());
+        return prof ? prof.nome : null;
+      };
+      
       const loadSubmissions = async () => {
         try {
           const query = user.role === 'user' ? `?userId=${user.id}&userCod=${user.cod_profissional}` : '';
@@ -1398,10 +1460,72 @@
 
               {formData.view === 'register' ? (
                 <div className="space-y-4">
-                  <input type="text" placeholder="Nome Completo" value={formData.name || ''} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full px-4 py-3 border rounded-lg" />
-                  <input type="text" placeholder="Código Profissional" value={formData.cod || ''} onChange={e => setFormData({...formData, cod: e.target.value})} className="w-full px-4 py-3 border rounded-lg" />
-                  <input type="password" placeholder="Senha" value={formData.password || ''} onChange={e => setFormData({...formData, password: e.target.value})} className="w-full px-4 py-3 border rounded-lg" />
-                  <button onClick={handleRegister} disabled={loading} className="w-full bg-purple-900 text-white py-3 rounded-lg font-semibold hover:bg-purple-800 disabled:opacity-50">
+                  {/* Loading da planilha */}
+                  {sheetLoading && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
+                      <p className="text-blue-700 text-sm">📊 Carregando lista de profissionais...</p>
+                    </div>
+                  )}
+                  
+                  {/* Erro ao carregar planilha */}
+                  {sheetError && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-center">
+                      <p className="text-red-700 text-sm">❌ {sheetError}</p>
+                      <button onClick={loadProfissionaisSheet} className="text-red-600 text-xs underline mt-1">Tentar novamente</button>
+                    </div>
+                  )}
+                  
+                  {/* Campo Código - PRIMEIRO */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Código Profissional</label>
+                    <input 
+                      type="text" 
+                      placeholder="Digite seu código" 
+                      value={formData.cod || ''} 
+                      onChange={e => setFormData({...formData, cod: e.target.value})} 
+                      className={`w-full px-4 py-3 border rounded-lg ${formData.cod && !sheetLoading ? (formData.codValido ? 'border-green-500 bg-green-50' : 'border-red-500 bg-red-50') : ''}`}
+                    />
+                    {formData.cod && !sheetLoading && !formData.codValido && (
+                      <p className="text-red-600 text-sm mt-1">❌ Código não encontrado na base</p>
+                    )}
+                    {formData.cod && formData.codValido && (
+                      <p className="text-green-600 text-sm mt-1">✅ Código válido!</p>
+                    )}
+                  </div>
+                  
+                  {/* Campo Nome - BLOQUEADO (vem da planilha) */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Nome Completo</label>
+                    <input 
+                      type="text" 
+                      placeholder={formData.codValido ? "Nome carregado automaticamente" : "Digite o código primeiro"} 
+                      value={formData.name || ''} 
+                      readOnly
+                      className={`w-full px-4 py-3 border rounded-lg bg-gray-100 cursor-not-allowed ${formData.name ? 'border-green-500 bg-green-50' : ''}`}
+                    />
+                    {formData.name && (
+                      <p className="text-green-600 text-xs mt-1">🔒 Nome vinculado ao código</p>
+                    )}
+                  </div>
+                  
+                  {/* Campo Senha */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Senha</label>
+                    <input 
+                      type="password" 
+                      placeholder="Crie sua senha" 
+                      value={formData.password || ''} 
+                      onChange={e => setFormData({...formData, password: e.target.value})} 
+                      className="w-full px-4 py-3 border rounded-lg"
+                      disabled={!formData.codValido}
+                    />
+                  </div>
+                  
+                  <button 
+                    onClick={handleRegister} 
+                    disabled={loading || !formData.codValido || !formData.password} 
+                    className="w-full bg-purple-900 text-white py-3 rounded-lg font-semibold hover:bg-purple-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
                     {loading ? 'Aguarde...' : 'Criar Conta'}
                   </button>
                   <button onClick={() => setFormData({view: 'login'})} className="w-full text-purple-700 text-sm">← Voltar</button>
