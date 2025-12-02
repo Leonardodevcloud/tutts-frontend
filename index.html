@@ -5654,22 +5654,29 @@
                     novasLinhas[idx] = { ...novasLinhas[idx], [campo]: valor };
                     
                     // Se digitou código, buscar nome automaticamente na planilha do Google Sheets
+                    // Se apagou o código, limpar o nome também
                     let nomeProfissional = novasLinhas[idx].nome_profissional;
-                    if (campo === 'cod_profissional' && valor.length >= 1) {
-                      // Primeiro tenta na planilha do Google Sheets
-                      const profSheet = profissionaisSheet.find(p => p.codigo === valor.toString());
-                      if (profSheet) {
-                        nomeProfissional = profSheet.nome;
-                        novasLinhas[idx].nome_profissional = profSheet.nome;
-                      } else {
-                        // Se não encontrar na planilha, tenta na base de usuários
-                        const user = users.find(u => u.codProfissional?.toLowerCase() === valor.toLowerCase());
-                        if (user) {
-                          nomeProfissional = user.fullName;
-                          novasLinhas[idx].nome_profissional = user.fullName;
+                    if (campo === 'cod_profissional') {
+                      if (!valor || valor.trim() === '') {
+                        // Código foi apagado, limpar nome
+                        nomeProfissional = '';
+                        novasLinhas[idx].nome_profissional = '';
+                      } else if (valor.length >= 1) {
+                        // Primeiro tenta na planilha do Google Sheets
+                        const profSheet = profissionaisSheet.find(p => p.codigo === valor.toString());
+                        if (profSheet) {
+                          nomeProfissional = profSheet.nome;
+                          novasLinhas[idx].nome_profissional = profSheet.nome;
                         } else {
-                          nomeProfissional = '';
-                          novasLinhas[idx].nome_profissional = '';
+                          // Se não encontrar na planilha, tenta na base de usuários
+                          const user = users.find(u => u.codProfissional?.toLowerCase() === valor.toLowerCase());
+                          if (user) {
+                            nomeProfissional = user.fullName;
+                            novasLinhas[idx].nome_profissional = user.fullName;
+                          } else {
+                            nomeProfissional = '';
+                            novasLinhas[idx].nome_profissional = '';
+                          }
                         }
                       }
                     }
@@ -5684,8 +5691,8 @@
                           method: 'PUT',
                           headers: { 'Content-Type': 'application/json' },
                           body: JSON.stringify({
-                            cod_profissional: novasLinhas[idx].cod_profissional,
-                            nome_profissional: campo === 'cod_profissional' ? nomeProfissional : novasLinhas[idx].nome_profissional,
+                            cod_profissional: novasLinhas[idx].cod_profissional || null,
+                            nome_profissional: campo === 'cod_profissional' ? (nomeProfissional || null) : (novasLinhas[idx].nome_profissional || null),
                             status: novasLinhas[idx].status,
                             observacao: novasLinhas[idx].observacao
                           })
@@ -5760,7 +5767,7 @@
                       });
                       
                       // 3. Criar linha de reposição
-                      await fetch(`${API_URL}/disponibilidade/linha-reposicao`, {
+                      const reposicaoRes = await fetch(`${API_URL}/disponibilidade/linha-reposicao`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -5768,10 +5775,30 @@
                           after_linha_id: linha.id
                         })
                       });
+                      const novaReposicao = await reposicaoRes.json();
                       
-                      setFormData(f => ({...f, modalFaltando: false, faltandoLinha: null, faltandoMotivo: ''}));
+                      // 4. Atualizar estado local (sem reload!)
+                      const novasLinhas = [...(dispData.linhas || [])];
+                      const idx = novasLinhas.findIndex(l => l.id === linha.id);
+                      if (idx !== -1) {
+                        novasLinhas[idx] = {
+                          ...novasLinhas[idx],
+                          status: 'FALTANDO',
+                          observacao: motivo
+                        };
+                      }
+                      // Adicionar nova linha de reposição
+                      novasLinhas.push(novaReposicao);
+                      
+                      setFormData(f => ({
+                        ...f, 
+                        modalFaltando: false, 
+                        faltandoLinha: null, 
+                        faltandoMotivo: '',
+                        dispData: { ...dispData, linhas: novasLinhas }
+                      }));
+                      
                       showToast('⚠️ Falta registrada e linha de reposição criada!', 'success');
-                      loadDisponibilidade();
                     } catch (err) {
                       console.error('Erro ao registrar falta:', err);
                       showToast('Erro ao registrar falta', 'error');
