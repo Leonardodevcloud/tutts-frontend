@@ -256,6 +256,22 @@
             .substring(0, max);
         };
         
+        // Limpa a chave PIX (remove pontuação de CPF/CNPJ/Telefone)
+        const limparChave = (ch) => {
+          if (!ch) return '';
+          // Se parece ser CPF (11 dígitos) ou CNPJ (14 dígitos), remove pontuação
+          const apenasNumeros = ch.replace(/[^0-9]/g, '');
+          if (apenasNumeros.length === 11 || apenasNumeros.length === 14) {
+            return apenasNumeros; // CPF ou CNPJ - retorna só números
+          }
+          // Se começa com + e tem números, é telefone
+          if (ch.startsWith('+')) {
+            return '+' + ch.replace(/[^0-9]/g, '');
+          }
+          // Senão retorna como está (email, chave aleatória)
+          return ch;
+        };
+        
         // Formata o valor com ponto como separador decimal
         const formatarValor = (v) => {
           if (!v || v <= 0) return '';
@@ -282,9 +298,12 @@
           return crc.toString(16).toUpperCase().padStart(4, '0');
         };
         
+        // Limpa a chave antes de usar
+        const chaveLimpa = limparChave(chave);
+        
         // Monta Merchant Account Info (ID 26)
         const gui = emv('00', 'br.gov.bcb.pix');  // GUI em minúsculas (padrão BACEN)
-        const chaveField = emv('01', chave);
+        const chaveField = emv('01', chaveLimpa);
         const merchantAccount = emv('26', gui + chaveField);
         
         // Monta payload
