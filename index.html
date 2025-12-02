@@ -5331,11 +5331,12 @@
 
           <div className="bg-white border-b sticky top-0 z-10">
             <div className="max-w-7xl mx-auto px-4 flex gap-1 overflow-x-auto">
-              {['dashboard', 'search', 'ranking', 'relatorios', 'users'].map(tab => (
-                <button key={tab} onClick={() => setFormData({...formData, adminTab: tab})} className={`px-6 py-3 font-semibold whitespace-nowrap ${(!formData.adminTab && tab === 'dashboard') || formData.adminTab === tab ? 'text-purple-900 border-b-2 border-purple-900' : 'text-gray-600'}`}>
+              {['dashboard', 'search', 'ranking', 'disponibilidade', 'relatorios', 'users'].map(tab => (
+                <button key={tab} onClick={() => setFormData({...formData, adminTab: tab})} className={`px-4 py-2.5 text-sm font-semibold whitespace-nowrap ${(!formData.adminTab && tab === 'dashboard') || formData.adminTab === tab ? 'text-purple-900 border-b-2 border-purple-900' : 'text-gray-600'}`}>
                   {tab === 'dashboard' && '📊 Dashboard'}
                   {tab === 'search' && '🔍 Busca Detalhada'}
                   {tab === 'ranking' && '🏆 Ranking'}
+                  {tab === 'disponibilidade' && '📅 Disponibilidade'}
                   {tab === 'relatorios' && '📈 Relatórios'}
                   {tab === 'users' && '👥 Usuários'}
                 </button>
@@ -5535,6 +5536,486 @@
                   })()}
                 </div>
               </div>
+            )}
+
+            {/* ========== DISPONIBILIDADE ========== */}
+            {formData.adminTab === 'disponibilidade' && (
+              <>
+                {(() => {
+                  // Estado local para disponibilidade
+                  const dispData = formData.dispData || { regioes: [], lojas: [], linhas: [] };
+                  const dispSubTab = formData.dispSubTab || 'principal';
+                  const dispLoading = formData.dispLoading;
+                  
+                  // Carregar dados da API
+                  const loadDisponibilidade = async () => {
+                    try {
+                      setFormData(f => ({...f, dispLoading: true}));
+                      const res = await fetch(`${API_URL}/disponibilidade`);
+                      if (!res.ok) throw new Error('Erro ao carregar');
+                      const data = await res.json();
+                      setFormData(f => ({...f, dispData: data, dispLoading: false, dispLoaded: true}));
+                    } catch (err) {
+                      console.error('Erro ao carregar disponibilidade:', err);
+                      showToast('Erro ao carregar dados', 'error');
+                      setFormData(f => ({...f, dispLoading: false, dispLoaded: true}));
+                    }
+                  };
+                  
+                  // Carregar ao abrir a aba
+                  if (!formData.dispLoaded && !dispLoading) {
+                    loadDisponibilidade();
+                  }
+                  
+                  // Adicionar região
+                  const addRegiao = async () => {
+                    const nome = formData.novaRegiao?.trim();
+                    if (!nome) { showToast('Digite o nome da região', 'error'); return; }
+                    
+                    try {
+                      const res = await fetch(`${API_URL}/disponibilidade/regioes`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ nome })
+                      });
+                      if (!res.ok) {
+                        const err = await res.json();
+                        throw new Error(err.error || 'Erro ao criar');
+                      }
+                      setFormData(f => ({...f, novaRegiao: ''}));
+                      showToast(`✅ Região "${nome}" adicionada!`, 'success');
+                      loadDisponibilidade();
+                    } catch (err) {
+                      showToast(err.message, 'error');
+                    }
+                  };
+                  
+                  // Remover região
+                  const removeRegiao = async (id, nome) => {
+                    if (!window.confirm(`Remover região "${nome}" e todas suas lojas?`)) return;
+                    try {
+                      await fetch(`${API_URL}/disponibilidade/regioes/${id}`, { method: 'DELETE' });
+                      showToast(`🗑️ Região "${nome}" removida!`, 'success');
+                      loadDisponibilidade();
+                    } catch (err) {
+                      showToast('Erro ao remover região', 'error');
+                    }
+                  };
+                  
+                  // Adicionar loja
+                  const addLoja = async () => {
+                    const codigo = formData.novaCodLoja?.trim();
+                    const nome = formData.novaNomeLoja?.trim();
+                    const regiao_id = formData.novaLojaRegiaoId;
+                    const qtd_linhas = parseInt(formData.novaQtdLinhas) || 1;
+                    
+                    if (!codigo || !nome || !regiao_id) { showToast('Preencha todos os campos', 'error'); return; }
+                    
+                    try {
+                      const res = await fetch(`${API_URL}/disponibilidade/lojas`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ regiao_id, codigo, nome, qtd_linhas })
+                      });
+                      if (!res.ok) throw new Error('Erro ao criar loja');
+                      setFormData(f => ({...f, novaCodLoja: '', novaNomeLoja: '', novaQtdLinhas: '', novaLojaRegiaoId: ''}));
+                      showToast(`✅ Loja "${nome}" adicionada com ${qtd_linhas} linha(s)!`, 'success');
+                      loadDisponibilidade();
+                    } catch (err) {
+                      showToast('Erro ao criar loja', 'error');
+                    }
+                  };
+                  
+                  // Remover loja
+                  const removeLoja = async (id, nome) => {
+                    if (!window.confirm(`Remover loja "${nome}"?`)) return;
+                    try {
+                      await fetch(`${API_URL}/disponibilidade/lojas/${id}`, { method: 'DELETE' });
+                      showToast(`🗑️ Loja removida!`, 'success');
+                      loadDisponibilidade();
+                    } catch (err) {
+                      showToast('Erro ao remover loja', 'error');
+                    }
+                  };
+                  
+                  // Atualizar linha
+                  const updateLinha = async (linhaId, campo, valor) => {
+                    // Atualizar local primeiro para UI responsiva
+                    const novasLinhas = [...(dispData.linhas || [])];
+                    const idx = novasLinhas.findIndex(l => l.id === linhaId);
+                    if (idx === -1) return;
+                    
+                    novasLinhas[idx] = { ...novasLinhas[idx], [campo]: valor };
+                    
+                    // Se digitou código, buscar nome automaticamente
+                    let nomeProfissional = novasLinhas[idx].nome_profissional;
+                    if (campo === 'cod_profissional' && valor.length >= 3) {
+                      const user = users.find(u => u.codProfissional?.toLowerCase() === valor.toLowerCase());
+                      if (user) {
+                        nomeProfissional = user.fullName;
+                        novasLinhas[idx].nome_profissional = user.fullName;
+                      } else {
+                        nomeProfissional = '';
+                        novasLinhas[idx].nome_profissional = '';
+                      }
+                    }
+                    
+                    setFormData(f => ({...f, dispData: {...dispData, linhas: novasLinhas}}));
+                    
+                    // Salvar no banco (debounce)
+                    clearTimeout(window.dispDebounce);
+                    window.dispDebounce = setTimeout(async () => {
+                      try {
+                        await fetch(`${API_URL}/disponibilidade/linhas/${linhaId}`, {
+                          method: 'PUT',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            cod_profissional: novasLinhas[idx].cod_profissional,
+                            nome_profissional: campo === 'cod_profissional' ? nomeProfissional : novasLinhas[idx].nome_profissional,
+                            status: novasLinhas[idx].status,
+                            observacao: novasLinhas[idx].observacao
+                          })
+                        });
+                      } catch (err) {
+                        console.error('Erro ao salvar linha:', err);
+                      }
+                    }, 500);
+                  };
+                  
+                  // Adicionar mais linhas a uma loja
+                  const addLinhasLoja = async (lojaId, qtd) => {
+                    try {
+                      await fetch(`${API_URL}/disponibilidade/linhas`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ loja_id: lojaId, quantidade: qtd })
+                      });
+                      showToast(`✅ ${qtd} linha(s) adicionada(s)!`, 'success');
+                      loadDisponibilidade();
+                    } catch (err) {
+                      showToast('Erro ao adicionar linhas', 'error');
+                    }
+                  };
+                  
+                  // Remover linha
+                  const removeLinha = async (linhaId) => {
+                    try {
+                      await fetch(`${API_URL}/disponibilidade/linhas/${linhaId}`, { method: 'DELETE' });
+                      loadDisponibilidade();
+                    } catch (err) {
+                      showToast('Erro ao remover linha', 'error');
+                    }
+                  };
+                  
+                  // Limpar todas as linhas
+                  const limparLinhas = async () => {
+                    if (!window.confirm('Limpar TODAS as linhas? (mantém a estrutura de regiões e lojas)')) return;
+                    try {
+                      await fetch(`${API_URL}/disponibilidade/limpar-linhas`, { method: 'DELETE' });
+                      showToast('✅ Todas as linhas foram resetadas!', 'success');
+                      loadDisponibilidade();
+                    } catch (err) {
+                      showToast('Erro ao limpar linhas', 'error');
+                    }
+                  };
+                  
+                  // Cores dos status
+                  const statusColors = {
+                    'A CONFIRMAR': 'bg-yellow-100 text-yellow-800 border-yellow-300',
+                    'CONFIRMADO': 'bg-green-100 text-green-800 border-green-300',
+                    'EM LOJA': 'bg-blue-100 text-blue-800 border-blue-300',
+                    'FALTANDO': 'bg-red-100 text-red-800 border-red-300'
+                  };
+                  
+                  // Cores das linhas por status
+                  const rowColors = {
+                    'A CONFIRMAR': 'bg-yellow-50',
+                    'CONFIRMADO': 'bg-green-50',
+                    'EM LOJA': 'bg-blue-50',
+                    'FALTANDO': 'bg-red-50'
+                  };
+                  
+                  if (dispLoading) {
+                    return (
+                      <div className="flex items-center justify-center py-12">
+                        <div className="text-center">
+                          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
+                          <p className="mt-4 text-gray-600">Carregando...</p>
+                        </div>
+                      </div>
+                    );
+                  }
+                  
+                  return (
+                    <div className="space-y-4">
+                      {/* Sub-abas */}
+                      <div className="bg-white rounded-xl shadow">
+                        <div className="flex border-b">
+                          <button 
+                            onClick={() => setFormData({...formData, dispSubTab: 'principal'})} 
+                            className={`flex-1 px-4 py-3 font-semibold ${dispSubTab === 'principal' ? 'text-purple-700 border-b-2 border-purple-600 bg-purple-50' : 'text-gray-600'}`}
+                          >
+                            📋 Painel Principal
+                          </button>
+                          <button 
+                            onClick={() => setFormData({...formData, dispSubTab: 'config'})} 
+                            className={`flex-1 px-4 py-3 font-semibold ${dispSubTab === 'config' ? 'text-purple-700 border-b-2 border-purple-600 bg-purple-50' : 'text-gray-600'}`}
+                          >
+                            ⚙️ Configurar Estrutura
+                          </button>
+                        </div>
+                      </div>
+                      
+                      {/* ===== SUB-ABA CONFIG ===== */}
+                      {dispSubTab === 'config' && (
+                        <div className="space-y-4">
+                          {/* Adicionar Região */}
+                          <div className="bg-white rounded-xl shadow p-4">
+                            <h3 className="font-bold text-gray-800 mb-3">🌍 Regiões</h3>
+                            <div className="flex gap-2 mb-4">
+                              <input 
+                                type="text" 
+                                placeholder="Nome da região (ex: ARACAJU)" 
+                                value={formData.novaRegiao || ''} 
+                                onChange={e => setFormData({...formData, novaRegiao: e.target.value.toUpperCase()})}
+                                className="flex-1 px-3 py-2 border rounded-lg"
+                                onKeyPress={e => e.key === 'Enter' && addRegiao()}
+                              />
+                              <button onClick={addRegiao} className="px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700">
+                                + Adicionar
+                              </button>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              {(dispData.regioes || []).map(r => (
+                                <span key={r.id} className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full flex items-center gap-2">
+                                  {r.nome}
+                                  <button onClick={() => removeRegiao(r.id, r.nome)} className="text-red-600 hover:text-red-800 font-bold">×</button>
+                                </span>
+                              ))}
+                              {(dispData.regioes || []).length === 0 && <p className="text-gray-500 text-sm">Nenhuma região cadastrada</p>}
+                            </div>
+                          </div>
+                          
+                          {/* Adicionar Loja */}
+                          <div className="bg-white rounded-xl shadow p-4">
+                            <h3 className="font-bold text-gray-800 mb-3">🏪 Adicionar Loja</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+                              <select 
+                                value={formData.novaLojaRegiaoId || ''} 
+                                onChange={e => setFormData({...formData, novaLojaRegiaoId: e.target.value})}
+                                className="px-3 py-2 border rounded-lg"
+                              >
+                                <option value="">Selecione a Região</option>
+                                {(dispData.regioes || []).map(r => <option key={r.id} value={r.id}>{r.nome}</option>)}
+                              </select>
+                              <input 
+                                type="text" 
+                                placeholder="Código (ex: 249)" 
+                                value={formData.novaCodLoja || ''} 
+                                onChange={e => setFormData({...formData, novaCodLoja: e.target.value})}
+                                className="px-3 py-2 border rounded-lg"
+                              />
+                              <input 
+                                type="text" 
+                                placeholder="Nome da Loja" 
+                                value={formData.novaNomeLoja || ''} 
+                                onChange={e => setFormData({...formData, novaNomeLoja: e.target.value.toUpperCase()})}
+                                className="px-3 py-2 border rounded-lg"
+                              />
+                              <input 
+                                type="number" 
+                                placeholder="Qtd Linhas" 
+                                min="1"
+                                value={formData.novaQtdLinhas || ''} 
+                                onChange={e => setFormData({...formData, novaQtdLinhas: e.target.value})}
+                                className="px-3 py-2 border rounded-lg"
+                              />
+                              <button onClick={addLoja} className="px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700">
+                                + Adicionar Loja
+                              </button>
+                            </div>
+                          </div>
+                          
+                          {/* Lista de Lojas por Região */}
+                          {(dispData.regioes || []).map(regiao => {
+                            const lojasRegiao = (dispData.lojas || []).filter(l => l.regiao_id === regiao.id);
+                            if (lojasRegiao.length === 0) return null;
+                            return (
+                              <div key={regiao.id} className="bg-white rounded-xl shadow p-4">
+                                <h3 className="font-bold text-gray-800 mb-3">📍 {regiao.nome}</h3>
+                                <div className="overflow-x-auto">
+                                  <table className="w-full text-sm">
+                                    <thead className="bg-gray-100">
+                                      <tr>
+                                        <th className="px-3 py-2 text-left">Código</th>
+                                        <th className="px-3 py-2 text-left">Nome da Loja</th>
+                                        <th className="px-3 py-2 text-center">Linhas</th>
+                                        <th className="px-3 py-2 text-center">Ações</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {lojasRegiao.map(loja => {
+                                        const linhasLoja = (dispData.linhas || []).filter(l => l.loja_id === loja.id);
+                                        return (
+                                          <tr key={loja.id} className="border-t">
+                                            <td className="px-3 py-2 font-mono font-bold">{loja.codigo}</td>
+                                            <td className="px-3 py-2">{loja.nome}</td>
+                                            <td className="px-3 py-2 text-center">{linhasLoja.length}</td>
+                                            <td className="px-3 py-2 text-center">
+                                              <button onClick={() => addLinhasLoja(loja.id, 1)} className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs mr-1" title="Adicionar linha">+1</button>
+                                              <button onClick={() => removeLoja(loja.id, loja.nome)} className="px-2 py-1 bg-red-100 text-red-700 rounded text-xs" title="Remover loja">🗑️</button>
+                                            </td>
+                                          </tr>
+                                        );
+                                      })}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              </div>
+                            );
+                          })}
+                          
+                          {/* Botão Limpar Linhas */}
+                          {(dispData.linhas || []).length > 0 && (
+                            <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <h4 className="font-semibold text-red-800">🧹 Limpar Todas as Linhas</h4>
+                                  <p className="text-sm text-red-600">Reseta todos os entregadores, mantém a estrutura de regiões e lojas.</p>
+                                </div>
+                                <button onClick={limparLinhas} className="px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700">
+                                  Limpar Linhas
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      {/* ===== SUB-ABA PRINCIPAL ===== */}
+                      {dispSubTab === 'principal' && (
+                        <div className="space-y-6">
+                          {/* Botão Atualizar */}
+                          <div className="flex justify-end">
+                            <button onClick={loadDisponibilidade} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 flex items-center gap-2">
+                              🔄 Atualizar
+                            </button>
+                          </div>
+                          
+                          {(dispData.regioes || []).length === 0 ? (
+                            <div className="bg-white rounded-xl shadow p-8 text-center">
+                              <p className="text-gray-500 text-lg">Nenhuma estrutura configurada.</p>
+                              <button 
+                                onClick={() => setFormData({...formData, dispSubTab: 'config'})} 
+                                className="mt-4 px-6 py-2 bg-purple-600 text-white rounded-lg font-semibold"
+                              >
+                                ⚙️ Configurar Estrutura
+                              </button>
+                            </div>
+                          ) : (
+                            (dispData.regioes || []).map(regiao => {
+                              const lojasRegiao = (dispData.lojas || []).filter(l => l.regiao_id === regiao.id);
+                              if (lojasRegiao.length === 0) return null;
+                              return (
+                                <div key={regiao.id} className="bg-white rounded-xl shadow overflow-hidden">
+                                  <div className="bg-gradient-to-r from-purple-600 to-indigo-600 px-4 py-3">
+                                    <h3 className="text-lg font-bold text-white">📍 {regiao.nome}</h3>
+                                  </div>
+                                  <div className="overflow-x-auto">
+                                    <table className="w-full text-sm">
+                                      <thead className="bg-gray-100">
+                                        <tr>
+                                          <th className="px-3 py-2 text-left w-20">COD</th>
+                                          <th className="px-3 py-2 text-left">EMPRESA</th>
+                                          <th className="px-3 py-2 text-left">ENTREGADOR</th>
+                                          <th className="px-3 py-2 text-center w-24">COD</th>
+                                          <th className="px-3 py-2 text-center w-32">STATUS</th>
+                                          <th className="px-3 py-2 text-left">OBSERVAÇÃO</th>
+                                          <th className="px-3 py-2 text-center w-10"></th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {lojasRegiao.map(loja => {
+                                          const linhasLoja = (dispData.linhas || []).filter(l => l.loja_id === loja.id);
+                                          return linhasLoja.map((linha, idx) => (
+                                            <tr key={linha.id} className={`border-t ${rowColors[linha.status] || ''}`}>
+                                              {idx === 0 && (
+                                                <>
+                                                  <td className="px-3 py-2 font-mono font-bold text-purple-700" rowSpan={linhasLoja.length}>{loja.codigo}</td>
+                                                  <td className="px-3 py-2 font-semibold" rowSpan={linhasLoja.length}>{loja.nome}</td>
+                                                </>
+                                              )}
+                                              <td className="px-3 py-2">
+                                                {linha.nome_profissional || <span className="text-gray-400 italic">-</span>}
+                                              </td>
+                                              <td className="px-3 py-2">
+                                                <input 
+                                                  type="text" 
+                                                  value={linha.cod_profissional || ''} 
+                                                  onChange={e => updateLinha(linha.id, 'cod_profissional', e.target.value)}
+                                                  placeholder="Código"
+                                                  className="w-full px-2 py-1 border rounded text-center font-mono text-xs"
+                                                />
+                                              </td>
+                                              <td className="px-3 py-2">
+                                                <select 
+                                                  value={linha.status || 'A CONFIRMAR'} 
+                                                  onChange={e => updateLinha(linha.id, 'status', e.target.value)}
+                                                  className={`w-full px-2 py-1 border rounded text-xs font-semibold ${statusColors[linha.status] || ''}`}
+                                                >
+                                                  <option value="A CONFIRMAR">A CONFIRMAR</option>
+                                                  <option value="CONFIRMADO">CONFIRMADO</option>
+                                                  <option value="EM LOJA">EM LOJA</option>
+                                                  <option value="FALTANDO">FALTANDO</option>
+                                                </select>
+                                              </td>
+                                              <td className="px-3 py-2">
+                                                <input 
+                                                  type="text" 
+                                                  value={linha.observacao || ''} 
+                                                  onChange={e => updateLinha(linha.id, 'observacao', e.target.value)}
+                                                  placeholder="Observação..."
+                                                  className="w-full px-2 py-1 border rounded text-xs"
+                                                />
+                                              </td>
+                                              <td className="px-3 py-2 text-center">
+                                                <button 
+                                                  onClick={() => removeLinha(linha.id)} 
+                                                  className="text-red-500 hover:text-red-700"
+                                                  title="Remover linha"
+                                                >
+                                                  ×
+                                                </button>
+                                              </td>
+                                            </tr>
+                                          ));
+                                        })}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                </div>
+                              );
+                            })
+                          )}
+                          
+                          {/* Legenda */}
+                          {(dispData.regioes || []).length > 0 && (
+                            <div className="bg-white rounded-xl shadow p-4">
+                              <h4 className="font-semibold text-gray-700 mb-2">📊 Legenda de Status</h4>
+                              <div className="flex flex-wrap gap-3">
+                                <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded text-sm font-semibold">A CONFIRMAR</span>
+                                <span className="px-3 py-1 bg-green-100 text-green-800 rounded text-sm font-semibold">CONFIRMADO</span>
+                                <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded text-sm font-semibold">EM LOJA</span>
+                                <span className="px-3 py-1 bg-red-100 text-red-800 rounded text-sm font-semibold">FALTANDO</span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+              </>
             )}
 
             {/* ESTATÍSTICAS */}
