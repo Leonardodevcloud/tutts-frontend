@@ -256,20 +256,47 @@
             .substring(0, max);
         };
         
-        // Limpa a chave PIX (remove pontuação de CPF/CNPJ/Telefone)
+        // Limpa a chave PIX conforme o tipo
         const limparChave = (ch) => {
           if (!ch) return '';
-          // Se parece ser CPF (11 dígitos) ou CNPJ (14 dígitos), remove pontuação
-          const apenasNumeros = ch.replace(/[^0-9]/g, '');
-          if (apenasNumeros.length === 11 || apenasNumeros.length === 14) {
-            return apenasNumeros; // CPF ou CNPJ - retorna só números
+          const chTrim = ch.trim();
+          
+          // Detecta o tipo de chave e formata corretamente
+          const apenasNumeros = chTrim.replace(/[^0-9]/g, '');
+          
+          // CPF: 11 dígitos numéricos (com ou sem pontuação)
+          if (apenasNumeros.length === 11 && !chTrim.includes('@')) {
+            return apenasNumeros;
           }
-          // Se começa com + e tem números, é telefone
-          if (ch.startsWith('+')) {
-            return '+' + ch.replace(/[^0-9]/g, '');
+          
+          // CNPJ: 14 dígitos numéricos (com ou sem pontuação)
+          if (apenasNumeros.length === 14 && !chTrim.includes('@')) {
+            return apenasNumeros;
           }
-          // Senão retorna como está (email, chave aleatória)
-          return ch;
+          
+          // Telefone: começa com + ou tem 10-13 dígitos
+          if (chTrim.startsWith('+')) {
+            return '+' + apenasNumeros;
+          }
+          // Telefone brasileiro sem +55 (10 ou 11 dígitos: DDD + número)
+          if ((apenasNumeros.length === 10 || apenasNumeros.length === 11) && 
+              !chTrim.includes('@') && !chTrim.includes('-') && 
+              /^[1-9][0-9]9?[0-9]{8}$/.test(apenasNumeros)) {
+            return '+55' + apenasNumeros;
+          }
+          
+          // Email: contém @
+          if (chTrim.includes('@')) {
+            return chTrim.toLowerCase();
+          }
+          
+          // Chave aleatória (EVP): formato UUID - remove hífens
+          if (/^[a-f0-9-]{36}$/i.test(chTrim)) {
+            return chTrim.toLowerCase();
+          }
+          
+          // Outros casos: retorna como está (sem espaços extras)
+          return chTrim;
         };
         
         // Formata o valor com ponto como separador decimal
