@@ -6294,7 +6294,14 @@
                                                   </tr>
                                                 </thead>
                                                 <tbody>
-                                                  {linhasLoja.map(linha => (
+                                                  {/* Ordenar: Reposição primeiro, depois Titulares, depois Excedentes */}
+                                                  {[...linhasLoja].sort((a, b) => {
+                                                    if (a.is_reposicao && !b.is_reposicao) return -1;
+                                                    if (!a.is_reposicao && b.is_reposicao) return 1;
+                                                    if (a.is_excedente && !b.is_excedente) return 1;
+                                                    if (!a.is_excedente && b.is_excedente) return -1;
+                                                    return 0;
+                                                  }).map(linha => (
                                                     <tr key={linha.id} className={`border-t ${linha.is_reposicao ? 'bg-blue-50/50' : linha.is_excedente ? 'bg-red-50/50' : ''} ${!linha.is_excedente && !linha.is_reposicao && rowColors[linha.status] ? rowColors[linha.status] : ''} hover:bg-gray-50`}>
                                                       <td className={`w-1 ${linha.is_reposicao ? 'bg-blue-400' : linha.is_excedente ? 'bg-red-400' : ''}`}></td>
                                                       <td className="px-1 py-0.5">
@@ -6307,9 +6314,13 @@
                                                         />
                                                       </td>
                                                       <td className="px-1 py-0.5">
-                                                        <span className={`text-xs ${linha.nome_profissional ? 'text-gray-800' : 'text-gray-400 italic'}`}>
-                                                          {linha.nome_profissional || '-'}
-                                                        </span>
+                                                        <div className="flex items-center gap-1">
+                                                          {linha.is_reposicao && <span className="text-[9px] text-blue-400 italic">reposição</span>}
+                                                          {linha.is_excedente && <span className="text-[9px] text-red-400 italic">excedente</span>}
+                                                          <span className={`text-xs ${linha.nome_profissional ? 'text-gray-800' : 'text-gray-400 italic'}`}>
+                                                            {linha.nome_profissional || (!linha.is_reposicao && !linha.is_excedente ? '-' : '')}
+                                                          </span>
+                                                        </div>
                                                       </td>
                                                       <td className="px-1 py-0.5">
                                                         <select 
@@ -6538,11 +6549,17 @@
                                   className="w-full px-3 py-2 border rounded-lg text-sm"
                                 >
                                   <option value="">Selecione uma data...</option>
-                                  {(formData.espelhoDatas || []).map(e => (
-                                    <option key={e.id} value={e.data_registro}>
-                                      {new Date(e.data_registro + 'T12:00:00').toLocaleDateString('pt-BR')} 
-                                    </option>
-                                  ))}
+                                  {(formData.espelhoDatas || []).map(e => {
+                                    // Formatar data corretamente (vem como "2024-12-02" ou "2024-12-02T00:00:00.000Z")
+                                    const dataStr = e.data_registro?.split('T')[0] || e.data_registro;
+                                    const [ano, mes, dia] = (dataStr || '').split('-');
+                                    const dataFormatada = ano && mes && dia ? `${dia}/${mes}/${ano}` : dataStr;
+                                    return (
+                                      <option key={e.id} value={dataStr}>
+                                        {dataFormatada}
+                                      </option>
+                                    );
+                                  })}
                                 </select>
                               </div>
                               <button 
@@ -6605,11 +6622,23 @@
                                             </div>
                                             <table className="w-full text-xs">
                                               <tbody>
-                                                {linhasLoja.map(linha => (
+                                                {[...linhasLoja].sort((a, b) => {
+                                                  if (a.is_reposicao && !b.is_reposicao) return -1;
+                                                  if (!a.is_reposicao && b.is_reposicao) return 1;
+                                                  if (a.is_excedente && !b.is_excedente) return 1;
+                                                  if (!a.is_excedente && b.is_excedente) return -1;
+                                                  return 0;
+                                                }).map(linha => (
                                                   <tr key={linha.id} className={`border-t ${linha.is_excedente ? 'bg-red-50' : ''} ${linha.is_reposicao ? 'bg-blue-50' : ''}`}>
                                                     <td className={`w-1 ${linha.is_excedente ? 'bg-red-400' : ''} ${linha.is_reposicao ? 'bg-blue-400' : ''}`}></td>
                                                     <td className="px-2 py-1 font-mono w-20">{linha.cod_profissional || '-'}</td>
-                                                    <td className="px-2 py-1">{linha.nome_profissional || '-'}</td>
+                                                    <td className="px-2 py-1">
+                                                      <div className="flex items-center gap-1">
+                                                        {linha.is_reposicao && <span className="text-[9px] text-blue-400 italic">reposição</span>}
+                                                        {linha.is_excedente && <span className="text-[9px] text-red-400 italic">excedente</span>}
+                                                        <span>{linha.nome_profissional || (!linha.is_reposicao && !linha.is_excedente ? '-' : '')}</span>
+                                                      </div>
+                                                    </td>
                                                     <td className="px-2 py-1 w-28">
                                                       <span className={`px-1 py-0.5 rounded text-xs ${
                                                         linha.status === 'EM LOJA' ? 'bg-blue-100 text-blue-800' :
