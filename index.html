@@ -5894,9 +5894,10 @@
                       
                       {/* ===== SUB-ABA PRINCIPAL ===== */}
                       {dispSubTab === 'principal' && (
-                        <div className="space-y-6">
-                          {/* Botão Atualizar */}
-                          <div className="flex justify-end">
+                        <div className="space-y-4">
+                          {/* Header com botão atualizar */}
+                          <div className="flex justify-between items-center">
+                            <h2 className="text-lg font-bold text-gray-800">📅 Disponibilidade de Entregadores</h2>
                             <button onClick={loadDisponibilidade} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 flex items-center gap-2">
                               🔄 Atualizar
                             </button>
@@ -5913,89 +5914,185 @@
                               </button>
                             </div>
                           ) : (
-                            (dispData.regioes || []).map(regiao => {
-                              const lojasRegiao = (dispData.lojas || []).filter(l => l.regiao_id === regiao.id);
-                              if (lojasRegiao.length === 0) return null;
-                              return (
-                                <div key={regiao.id} className="bg-white rounded-xl shadow overflow-hidden">
-                                  <div className="bg-gradient-to-r from-purple-600 to-indigo-600 px-4 py-3">
-                                    <h3 className="text-lg font-bold text-white">📍 {regiao.nome}</h3>
-                                  </div>
-                                  <div className="overflow-x-auto">
-                                    <table className="w-full text-sm">
-                                      <thead className="bg-gray-100">
-                                        <tr>
-                                          <th className="px-3 py-2 text-left w-20">COD</th>
-                                          <th className="px-3 py-2 text-left">EMPRESA</th>
-                                          <th className="px-3 py-2 text-left">ENTREGADOR</th>
-                                          <th className="px-3 py-2 text-center w-24">COD</th>
-                                          <th className="px-3 py-2 text-center w-32">STATUS</th>
-                                          <th className="px-3 py-2 text-left">OBSERVAÇÃO</th>
-                                          <th className="px-3 py-2 text-center w-10"></th>
-                                        </tr>
-                                      </thead>
-                                      <tbody>
-                                        {lojasRegiao.map(loja => {
-                                          const linhasLoja = (dispData.linhas || []).filter(l => l.loja_id === loja.id);
-                                          return linhasLoja.map((linha, idx) => (
-                                            <tr key={linha.id} className={`border-t ${rowColors[linha.status] || ''}`}>
-                                              {idx === 0 && (
-                                                <>
-                                                  <td className="px-3 py-2 font-mono font-bold text-purple-700" rowSpan={linhasLoja.length}>{loja.codigo}</td>
-                                                  <td className="px-3 py-2 font-semibold" rowSpan={linhasLoja.length}>{loja.nome}</td>
-                                                </>
+                            <>
+                              {/* Botões de Regiões */}
+                              <div className="flex flex-wrap gap-2">
+                                {(dispData.regioes || []).map(regiao => {
+                                  const lojasRegiao = (dispData.lojas || []).filter(l => l.regiao_id === regiao.id);
+                                  const linhasRegiao = (dispData.linhas || []).filter(l => lojasRegiao.some(lj => lj.id === l.loja_id));
+                                  const confirmados = linhasRegiao.filter(l => l.status === 'CONFIRMADO' || l.status === 'EM LOJA').length;
+                                  const total = linhasRegiao.length;
+                                  
+                                  return (
+                                    <button 
+                                      key={regiao.id}
+                                      onClick={() => setFormData({...formData, dispRegiaoAtiva: formData.dispRegiaoAtiva === regiao.id ? null : regiao.id})}
+                                      className={`px-4 py-2 rounded-lg font-semibold transition-all flex items-center gap-2 ${
+                                        formData.dispRegiaoAtiva === regiao.id 
+                                          ? 'bg-purple-600 text-white shadow-lg' 
+                                          : 'bg-white text-gray-700 border hover:bg-purple-50 hover:border-purple-300'
+                                      }`}
+                                    >
+                                      📍 {regiao.nome}
+                                      <span className={`text-xs px-2 py-0.5 rounded-full ${
+                                        formData.dispRegiaoAtiva === regiao.id 
+                                          ? 'bg-white/20 text-white' 
+                                          : 'bg-gray-100 text-gray-600'
+                                      }`}>
+                                        {confirmados}/{total}
+                                      </span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                              
+                              {/* Conteúdo da Região Selecionada */}
+                              {formData.dispRegiaoAtiva && (() => {
+                                const regiao = (dispData.regioes || []).find(r => r.id === formData.dispRegiaoAtiva);
+                                if (!regiao) return null;
+                                
+                                const lojasRegiao = (dispData.lojas || []).filter(l => l.regiao_id === regiao.id);
+                                
+                                return (
+                                  <div className="space-y-2">
+                                    {/* Lojas como Dropdown/Acordeão */}
+                                    {lojasRegiao.map(loja => {
+                                      const linhasLoja = (dispData.linhas || []).filter(l => l.loja_id === loja.id);
+                                      const isOpen = (formData.dispLojasAbertas || []).includes(loja.id);
+                                      const confirmados = linhasLoja.filter(l => l.status === 'CONFIRMADO' || l.status === 'EM LOJA').length;
+                                      const faltando = linhasLoja.filter(l => l.status === 'FALTANDO').length;
+                                      
+                                      // Cor do header baseada no status geral
+                                      let headerColor = 'bg-gray-100 hover:bg-gray-200';
+                                      if (faltando > 0) headerColor = 'bg-red-100 hover:bg-red-200';
+                                      else if (confirmados === linhasLoja.length && linhasLoja.length > 0) headerColor = 'bg-green-100 hover:bg-green-200';
+                                      else if (confirmados > 0) headerColor = 'bg-yellow-100 hover:bg-yellow-200';
+                                      
+                                      return (
+                                        <div key={loja.id} className="bg-white rounded-lg shadow overflow-hidden">
+                                          {/* Header da Loja (clicável) */}
+                                          <button 
+                                            onClick={() => {
+                                              const abertas = formData.dispLojasAbertas || [];
+                                              if (isOpen) {
+                                                setFormData({...formData, dispLojasAbertas: abertas.filter(id => id !== loja.id)});
+                                              } else {
+                                                setFormData({...formData, dispLojasAbertas: [...abertas, loja.id]});
+                                              }
+                                            }}
+                                            className={`w-full px-4 py-3 flex items-center justify-between ${headerColor} transition-colors`}
+                                          >
+                                            <div className="flex items-center gap-3">
+                                              <span className={`transform transition-transform ${isOpen ? 'rotate-90' : ''}`}>▶</span>
+                                              <span className="font-mono font-bold text-purple-700">{loja.codigo}</span>
+                                              <span className="font-semibold text-gray-800">{loja.nome}</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                              {faltando > 0 && (
+                                                <span className="px-2 py-0.5 bg-red-500 text-white text-xs rounded-full font-semibold">
+                                                  {faltando} faltando
+                                                </span>
                                               )}
-                                              <td className="px-3 py-2">
-                                                {linha.nome_profissional || <span className="text-gray-400 italic">-</span>}
-                                              </td>
-                                              <td className="px-3 py-2">
-                                                <input 
-                                                  type="text" 
-                                                  value={linha.cod_profissional || ''} 
-                                                  onChange={e => updateLinha(linha.id, 'cod_profissional', e.target.value)}
-                                                  placeholder="Código"
-                                                  className="w-full px-2 py-1 border rounded text-center font-mono text-xs"
-                                                />
-                                              </td>
-                                              <td className="px-3 py-2">
-                                                <select 
-                                                  value={linha.status || 'A CONFIRMAR'} 
-                                                  onChange={e => updateLinha(linha.id, 'status', e.target.value)}
-                                                  className={`w-full px-2 py-1 border rounded text-xs font-semibold ${statusColors[linha.status] || ''}`}
-                                                >
-                                                  <option value="A CONFIRMAR">A CONFIRMAR</option>
-                                                  <option value="CONFIRMADO">CONFIRMADO</option>
-                                                  <option value="EM LOJA">EM LOJA</option>
-                                                  <option value="FALTANDO">FALTANDO</option>
-                                                </select>
-                                              </td>
-                                              <td className="px-3 py-2">
-                                                <input 
-                                                  type="text" 
-                                                  value={linha.observacao || ''} 
-                                                  onChange={e => updateLinha(linha.id, 'observacao', e.target.value)}
-                                                  placeholder="Observação..."
-                                                  className="w-full px-2 py-1 border rounded text-xs"
-                                                />
-                                              </td>
-                                              <td className="px-3 py-2 text-center">
-                                                <button 
-                                                  onClick={() => removeLinha(linha.id)} 
-                                                  className="text-red-500 hover:text-red-700"
-                                                  title="Remover linha"
-                                                >
-                                                  ×
-                                                </button>
-                                              </td>
-                                            </tr>
-                                          ));
-                                        })}
-                                      </tbody>
-                                    </table>
+                                              <span className="text-sm text-gray-600">
+                                                {confirmados}/{linhasLoja.length} confirmados
+                                              </span>
+                                            </div>
+                                          </button>
+                                          
+                                          {/* Conteúdo Expandido (Linhas) */}
+                                          {isOpen && (
+                                            <div className="border-t">
+                                              <table className="w-full text-sm">
+                                                <thead className="bg-gray-50">
+                                                  <tr>
+                                                    <th className="px-3 py-2 text-left">ENTREGADOR</th>
+                                                    <th className="px-3 py-2 text-center w-28">COD</th>
+                                                    <th className="px-3 py-2 text-center w-36">STATUS</th>
+                                                    <th className="px-3 py-2 text-left">OBSERVAÇÃO</th>
+                                                    <th className="px-3 py-2 text-center w-10"></th>
+                                                  </tr>
+                                                </thead>
+                                                <tbody>
+                                                  {linhasLoja.map(linha => (
+                                                    <tr key={linha.id} className={`border-t ${rowColors[linha.status] || ''}`}>
+                                                      <td className="px-3 py-2">
+                                                        {linha.nome_profissional || <span className="text-gray-400 italic">-</span>}
+                                                      </td>
+                                                      <td className="px-3 py-2">
+                                                        <input 
+                                                          type="text" 
+                                                          value={linha.cod_profissional || ''} 
+                                                          onChange={e => updateLinha(linha.id, 'cod_profissional', e.target.value)}
+                                                          placeholder="Código"
+                                                          className="w-full px-2 py-1 border rounded text-center font-mono text-xs"
+                                                        />
+                                                      </td>
+                                                      <td className="px-3 py-2">
+                                                        <select 
+                                                          value={linha.status || 'A CONFIRMAR'} 
+                                                          onChange={e => updateLinha(linha.id, 'status', e.target.value)}
+                                                          className={`w-full px-2 py-1 border rounded text-xs font-semibold ${statusColors[linha.status] || ''}`}
+                                                        >
+                                                          <option value="A CONFIRMAR">A CONFIRMAR</option>
+                                                          <option value="CONFIRMADO">CONFIRMADO</option>
+                                                          <option value="EM LOJA">EM LOJA</option>
+                                                          <option value="FALTANDO">FALTANDO</option>
+                                                        </select>
+                                                      </td>
+                                                      <td className="px-3 py-2">
+                                                        <input 
+                                                          type="text" 
+                                                          value={linha.observacao || ''} 
+                                                          onChange={e => updateLinha(linha.id, 'observacao', e.target.value)}
+                                                          placeholder="Observação..."
+                                                          className="w-full px-2 py-1 border rounded text-xs"
+                                                        />
+                                                      </td>
+                                                      <td className="px-3 py-2 text-center">
+                                                        <button 
+                                                          onClick={() => removeLinha(linha.id)} 
+                                                          className="text-red-500 hover:text-red-700"
+                                                          title="Remover linha"
+                                                        >
+                                                          ×
+                                                        </button>
+                                                      </td>
+                                                    </tr>
+                                                  ))}
+                                                </tbody>
+                                              </table>
+                                            </div>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
+                                    
+                                    {/* Botão Expandir/Recolher Todas */}
+                                    <div className="flex gap-2 pt-2">
+                                      <button 
+                                        onClick={() => setFormData({...formData, dispLojasAbertas: lojasRegiao.map(l => l.id)})}
+                                        className="px-3 py-1 text-xs bg-gray-100 text-gray-600 rounded hover:bg-gray-200"
+                                      >
+                                        📂 Expandir Todas
+                                      </button>
+                                      <button 
+                                        onClick={() => setFormData({...formData, dispLojasAbertas: []})}
+                                        className="px-3 py-1 text-xs bg-gray-100 text-gray-600 rounded hover:bg-gray-200"
+                                      >
+                                        📁 Recolher Todas
+                                      </button>
+                                    </div>
                                   </div>
+                                );
+                              })()}
+                              
+                              {/* Mensagem se nenhuma região selecionada */}
+                              {!formData.dispRegiaoAtiva && (
+                                <div className="bg-white rounded-xl shadow p-8 text-center">
+                                  <p className="text-gray-500">👆 Selecione uma região acima para ver as lojas</p>
                                 </div>
-                              );
-                            })
+                              )}
+                            </>
                           )}
                           
                           {/* Legenda */}
