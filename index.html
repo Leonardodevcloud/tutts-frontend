@@ -5607,19 +5607,21 @@
                     const codigo = formData.novaCodLoja?.trim();
                     const nome = formData.novaNomeLoja?.trim();
                     const regiao_id = formData.novaLojaRegiaoId;
-                    const qtd_linhas = parseInt(formData.novaQtdLinhas) || 1;
+                    const qtd_titulares = parseInt(formData.novaQtdTitulares) || 0;
+                    const qtd_excedentes = parseInt(formData.novaQtdExcedentes) || 0;
                     
                     if (!codigo || !nome || !regiao_id) { showToast('Preencha todos os campos', 'error'); return; }
+                    if (qtd_titulares === 0 && qtd_excedentes === 0) { showToast('Adicione pelo menos 1 linha', 'error'); return; }
                     
                     try {
                       const res = await fetch(`${API_URL}/disponibilidade/lojas`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ regiao_id, codigo, nome, qtd_linhas })
+                        body: JSON.stringify({ regiao_id, codigo, nome, qtd_titulares, qtd_excedentes })
                       });
                       if (!res.ok) throw new Error('Erro ao criar loja');
-                      setFormData(f => ({...f, novaCodLoja: '', novaNomeLoja: '', novaQtdLinhas: '', novaLojaRegiaoId: ''}));
-                      showToast(`✅ Loja "${nome}" adicionada com ${qtd_linhas} linha(s)!`, 'success');
+                      setFormData(f => ({...f, novaCodLoja: '', novaNomeLoja: '', novaQtdTitulares: '', novaQtdExcedentes: '', novaLojaRegiaoId: ''}));
+                      showToast(`✅ Loja "${nome}" adicionada com ${qtd_titulares} titular(es) e ${qtd_excedentes} excedente(s)!`, 'success');
                       loadDisponibilidade();
                     } catch (err) {
                       showToast('Erro ao criar loja', 'error');
@@ -5683,14 +5685,14 @@
                   };
                   
                   // Adicionar mais linhas a uma loja
-                  const addLinhasLoja = async (lojaId, qtd) => {
+                  const addLinhasLoja = async (lojaId, qtd, isExcedente = false) => {
                     try {
                       await fetch(`${API_URL}/disponibilidade/linhas`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ loja_id: lojaId, quantidade: qtd })
+                        body: JSON.stringify({ loja_id: lojaId, quantidade: qtd, is_excedente: isExcedente })
                       });
-                      showToast(`✅ ${qtd} linha(s) adicionada(s)!`, 'success');
+                      showToast(`✅ ${qtd} ${isExcedente ? 'excedente(s)' : 'titular(es)'} adicionado(s)!`, 'success');
                       loadDisponibilidade();
                     } catch (err) {
                       showToast('Erro ao adicionar linhas', 'error');
@@ -5799,7 +5801,7 @@
                           {/* Adicionar Loja */}
                           <div className="bg-white rounded-xl shadow p-4">
                             <h3 className="font-bold text-gray-800 mb-3">🏪 Adicionar Loja</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+                            <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
                               <select 
                                 value={formData.novaLojaRegiaoId || ''} 
                                 onChange={e => setFormData({...formData, novaLojaRegiaoId: e.target.value})}
@@ -5824,16 +5826,27 @@
                               />
                               <input 
                                 type="number" 
-                                placeholder="Qtd Linhas" 
-                                min="1"
-                                value={formData.novaQtdLinhas || ''} 
-                                onChange={e => setFormData({...formData, novaQtdLinhas: e.target.value})}
+                                placeholder="Titulares" 
+                                min="0"
+                                value={formData.novaQtdTitulares || ''} 
+                                onChange={e => setFormData({...formData, novaQtdTitulares: e.target.value})}
                                 className="px-3 py-2 border rounded-lg"
+                                title="Quantidade de linhas titulares"
+                              />
+                              <input 
+                                type="number" 
+                                placeholder="Excedentes" 
+                                min="0"
+                                value={formData.novaQtdExcedentes || ''} 
+                                onChange={e => setFormData({...formData, novaQtdExcedentes: e.target.value})}
+                                className="px-3 py-2 border rounded-lg bg-red-50"
+                                title="Quantidade de linhas excedentes"
                               />
                               <button onClick={addLoja} className="px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700">
                                 + Adicionar Loja
                               </button>
                             </div>
+                            <p className="text-xs text-gray-500 mt-2">💡 Titulares = linhas principais | Excedentes = linhas extras (aparecem em vermelho claro)</p>
                           </div>
                           
                           {/* Lista de Lojas por Região */}
@@ -5849,21 +5862,98 @@
                                       <tr>
                                         <th className="px-3 py-2 text-left">Código</th>
                                         <th className="px-3 py-2 text-left">Nome da Loja</th>
-                                        <th className="px-3 py-2 text-center">Linhas</th>
+                                        <th className="px-3 py-2 text-center">Titulares</th>
+                                        <th className="px-3 py-2 text-center">Excedentes</th>
+                                        <th className="px-3 py-2 text-center">Total</th>
                                         <th className="px-3 py-2 text-center">Ações</th>
                                       </tr>
                                     </thead>
                                     <tbody>
                                       {lojasRegiao.map(loja => {
                                         const linhasLoja = (dispData.linhas || []).filter(l => l.loja_id === loja.id);
+                                        const titulares = linhasLoja.filter(l => !l.is_excedente).length;
+                                        const excedentes = linhasLoja.filter(l => l.is_excedente).length;
+                                        const editando = formData.editandoLoja === loja.id;
+                                        
                                         return (
                                           <tr key={loja.id} className="border-t">
-                                            <td className="px-3 py-2 font-mono font-bold">{loja.codigo}</td>
-                                            <td className="px-3 py-2">{loja.nome}</td>
-                                            <td className="px-3 py-2 text-center">{linhasLoja.length}</td>
+                                            <td className="px-3 py-2">
+                                              {editando ? (
+                                                <input 
+                                                  type="text" 
+                                                  value={formData.editLojaCodigo || ''} 
+                                                  onChange={e => setFormData({...formData, editLojaCodigo: e.target.value})}
+                                                  className="w-20 px-2 py-1 border rounded text-xs"
+                                                />
+                                              ) : (
+                                                <span className="font-mono font-bold">{loja.codigo}</span>
+                                              )}
+                                            </td>
+                                            <td className="px-3 py-2">
+                                              {editando ? (
+                                                <input 
+                                                  type="text" 
+                                                  value={formData.editLojaNome || ''} 
+                                                  onChange={e => setFormData({...formData, editLojaNome: e.target.value.toUpperCase()})}
+                                                  className="w-full px-2 py-1 border rounded text-xs"
+                                                />
+                                              ) : (
+                                                loja.nome
+                                              )}
+                                            </td>
                                             <td className="px-3 py-2 text-center">
-                                              <button onClick={() => addLinhasLoja(loja.id, 1)} className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs mr-1" title="Adicionar linha">+1</button>
-                                              <button onClick={() => removeLoja(loja.id, loja.nome)} className="px-2 py-1 bg-red-100 text-red-700 rounded text-xs" title="Remover loja">🗑️</button>
+                                              <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">{titulares}</span>
+                                            </td>
+                                            <td className="px-3 py-2 text-center">
+                                              <span className="px-2 py-0.5 bg-red-100 text-red-700 rounded text-xs">{excedentes}</span>
+                                            </td>
+                                            <td className="px-3 py-2 text-center font-semibold">{linhasLoja.length}</td>
+                                            <td className="px-3 py-2 text-center">
+                                              {editando ? (
+                                                <>
+                                                  <button 
+                                                    onClick={async () => {
+                                                      try {
+                                                        await fetch(`${API_URL}/disponibilidade/lojas/${loja.id}`, {
+                                                          method: 'PUT',
+                                                          headers: { 'Content-Type': 'application/json' },
+                                                          body: JSON.stringify({ 
+                                                            codigo: formData.editLojaCodigo, 
+                                                            nome: formData.editLojaNome 
+                                                          })
+                                                        });
+                                                        setFormData({...formData, editandoLoja: null});
+                                                        showToast('✅ Loja atualizada!', 'success');
+                                                        loadDisponibilidade();
+                                                      } catch (err) {
+                                                        showToast('Erro ao atualizar', 'error');
+                                                      }
+                                                    }} 
+                                                    className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs mr-1"
+                                                  >
+                                                    ✓
+                                                  </button>
+                                                  <button 
+                                                    onClick={() => setFormData({...formData, editandoLoja: null})} 
+                                                    className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs"
+                                                  >
+                                                    ✕
+                                                  </button>
+                                                </>
+                                              ) : (
+                                                <>
+                                                  <button 
+                                                    onClick={() => setFormData({...formData, editandoLoja: loja.id, editLojaCodigo: loja.codigo, editLojaNome: loja.nome})} 
+                                                    className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded text-xs mr-1" 
+                                                    title="Editar loja"
+                                                  >
+                                                    ✏️
+                                                  </button>
+                                                  <button onClick={() => addLinhasLoja(loja.id, 1, false)} className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs mr-1" title="Adicionar titular">+T</button>
+                                                  <button onClick={() => addLinhasLoja(loja.id, 1, true)} className="px-2 py-1 bg-red-100 text-red-700 rounded text-xs mr-1" title="Adicionar excedente">+E</button>
+                                                  <button onClick={() => removeLoja(loja.id, loja.nome)} className="px-2 py-1 bg-red-100 text-red-700 rounded text-xs" title="Remover loja">🗑️</button>
+                                                </>
+                                              )}
                                             </td>
                                           </tr>
                                         );
@@ -6014,9 +6104,12 @@
                                                 </thead>
                                                 <tbody>
                                                   {linhasLoja.map(linha => (
-                                                    <tr key={linha.id} className={`border-t ${rowColors[linha.status] || ''}`}>
+                                                    <tr key={linha.id} className={`border-t ${linha.is_excedente ? 'bg-red-50' : ''} ${!linha.is_excedente && rowColors[linha.status] ? rowColors[linha.status] : ''}`}>
                                                       <td className="px-3 py-2">
-                                                        {linha.nome_profissional || <span className="text-gray-400 italic">-</span>}
+                                                        <div className="flex items-center gap-2">
+                                                          {linha.is_excedente && <span className="px-1 py-0.5 bg-red-200 text-red-700 text-[10px] rounded font-semibold">EXC</span>}
+                                                          {linha.nome_profissional || <span className="text-gray-400 italic">-</span>}
+                                                        </div>
                                                       </td>
                                                       <td className="px-3 py-2">
                                                         <input 
@@ -6024,7 +6117,7 @@
                                                           value={linha.cod_profissional || ''} 
                                                           onChange={e => updateLinha(linha.id, 'cod_profissional', e.target.value)}
                                                           placeholder="Código"
-                                                          className="w-full px-2 py-1 border rounded text-center font-mono text-xs"
+                                                          className={`w-full px-2 py-1 border rounded text-center font-mono text-xs ${linha.is_excedente ? 'bg-red-50' : ''}`}
                                                         />
                                                       </td>
                                                       <td className="px-3 py-2">
@@ -6045,7 +6138,7 @@
                                                           value={linha.observacao || ''} 
                                                           onChange={e => updateLinha(linha.id, 'observacao', e.target.value)}
                                                           placeholder="Observação..."
-                                                          className="w-full px-2 py-1 border rounded text-xs"
+                                                          className={`w-full px-2 py-1 border rounded text-xs ${linha.is_excedente ? 'bg-red-50' : ''}`}
                                                         />
                                                       </td>
                                                       <td className="px-3 py-2 text-center">
@@ -6098,12 +6191,13 @@
                           {/* Legenda */}
                           {(dispData.regioes || []).length > 0 && (
                             <div className="bg-white rounded-xl shadow p-4">
-                              <h4 className="font-semibold text-gray-700 mb-2">📊 Legenda de Status</h4>
+                              <h4 className="font-semibold text-gray-700 mb-2">📊 Legenda</h4>
                               <div className="flex flex-wrap gap-3">
                                 <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded text-sm font-semibold">A CONFIRMAR</span>
                                 <span className="px-3 py-1 bg-green-100 text-green-800 rounded text-sm font-semibold">CONFIRMADO</span>
                                 <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded text-sm font-semibold">EM LOJA</span>
                                 <span className="px-3 py-1 bg-red-100 text-red-800 rounded text-sm font-semibold">FALTANDO</span>
+                                <span className="px-3 py-1 bg-red-50 text-red-700 rounded text-sm font-semibold border border-red-200">🔴 EXCEDENTE</span>
                               </div>
                             </div>
                           )}
