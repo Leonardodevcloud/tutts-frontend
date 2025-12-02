@@ -5711,6 +5711,87 @@
                     }
                   };
                   
+                  // Marcar como faltando (abre modal de motivo)
+                  const marcarFaltando = (linha) => {
+                    setFormData(f => ({
+                      ...f, 
+                      modalFaltando: true,
+                      faltandoLinha: linha,
+                      faltandoMotivo: ''
+                    }));
+                  };
+                  
+                  // Confirmar falta com motivo
+                  const confirmarFalta = async () => {
+                    const linha = formData.faltandoLinha;
+                    const motivo = formData.faltandoMotivo?.trim();
+                    
+                    if (!motivo) {
+                      showToast('Digite o motivo da falta', 'error');
+                      return;
+                    }
+                    
+                    try {
+                      // 1. Atualizar status para FALTANDO
+                      await fetch(`${API_URL}/disponibilidade/linhas/${linha.id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          cod_profissional: linha.cod_profissional,
+                          nome_profissional: linha.nome_profissional,
+                          status: 'FALTANDO',
+                          observacao: motivo
+                        })
+                      });
+                      
+                      // 2. Registrar na tabela de faltosos
+                      await fetch(`${API_URL}/disponibilidade/faltosos`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          loja_id: linha.loja_id,
+                          cod_profissional: linha.cod_profissional,
+                          nome_profissional: linha.nome_profissional,
+                          motivo
+                        })
+                      });
+                      
+                      // 3. Criar linha de reposição
+                      await fetch(`${API_URL}/disponibilidade/linha-reposicao`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          loja_id: linha.loja_id,
+                          after_linha_id: linha.id
+                        })
+                      });
+                      
+                      setFormData(f => ({...f, modalFaltando: false, faltandoLinha: null, faltandoMotivo: ''}));
+                      showToast('⚠️ Falta registrada e linha de reposição criada!', 'success');
+                      loadDisponibilidade();
+                    } catch (err) {
+                      console.error('Erro ao registrar falta:', err);
+                      showToast('Erro ao registrar falta', 'error');
+                    }
+                  };
+                  
+                  // Resetar status (salva espelho e limpa tudo)
+                  const resetarStatus = async () => {
+                    if (!window.confirm('⚠️ ATENÇÃO!\n\nIsso irá:\n• Salvar a planilha atual no Espelho\n• Limpar todos os códigos e nomes\n• Resetar todos os status para "A CONFIRMAR"\n• Converter linhas de reposição em excedentes\n\nDeseja continuar?')) {
+                      return;
+                    }
+                    
+                    try {
+                      setFormData(f => ({...f, dispLoading: true}));
+                      await fetch(`${API_URL}/disponibilidade/resetar`, { method: 'POST' });
+                      showToast('✅ Status resetado! Espelho salvo.', 'success');
+                      loadDisponibilidade();
+                    } catch (err) {
+                      showToast('Erro ao resetar', 'error');
+                      setFormData(f => ({...f, dispLoading: false}));
+                    }
+                  };
+                  
                   // Remover linha
                   const removeLinha = async (linhaId) => {
                     try {
@@ -5764,18 +5845,30 @@
                     <div className="space-y-4">
                       {/* Sub-abas */}
                       <div className="bg-white rounded-xl shadow">
-                        <div className="flex border-b">
+                        <div className="flex border-b overflow-x-auto">
                           <button 
                             onClick={() => setFormData({...formData, dispSubTab: 'principal'})} 
-                            className={`flex-1 px-4 py-3 font-semibold ${dispSubTab === 'principal' ? 'text-purple-700 border-b-2 border-purple-600 bg-purple-50' : 'text-gray-600'}`}
+                            className={`px-3 py-2 font-semibold text-sm whitespace-nowrap ${dispSubTab === 'principal' ? 'text-purple-700 border-b-2 border-purple-600 bg-purple-50' : 'text-gray-600'}`}
                           >
-                            📋 Painel Principal
+                            📋 Painel
+                          </button>
+                          <button 
+                            onClick={() => setFormData({...formData, dispSubTab: 'faltosos'})} 
+                            className={`px-3 py-2 font-semibold text-sm whitespace-nowrap ${dispSubTab === 'faltosos' ? 'text-purple-700 border-b-2 border-purple-600 bg-purple-50' : 'text-gray-600'}`}
+                          >
+                            ⚠️ Faltosos
+                          </button>
+                          <button 
+                            onClick={() => setFormData({...formData, dispSubTab: 'espelho'})} 
+                            className={`px-3 py-2 font-semibold text-sm whitespace-nowrap ${dispSubTab === 'espelho' ? 'text-purple-700 border-b-2 border-purple-600 bg-purple-50' : 'text-gray-600'}`}
+                          >
+                            🪞 Espelho
                           </button>
                           <button 
                             onClick={() => setFormData({...formData, dispSubTab: 'config'})} 
-                            className={`flex-1 px-4 py-3 font-semibold ${dispSubTab === 'config' ? 'text-purple-700 border-b-2 border-purple-600 bg-purple-50' : 'text-gray-600'}`}
+                            className={`px-3 py-2 font-semibold text-sm whitespace-nowrap ${dispSubTab === 'config' ? 'text-purple-700 border-b-2 border-purple-600 bg-purple-50' : 'text-gray-600'}`}
                           >
-                            ⚙️ Configurar Estrutura
+                            ⚙️ Config
                           </button>
                         </div>
                       </div>
@@ -5997,13 +6090,55 @@
                       {/* ===== SUB-ABA PRINCIPAL ===== */}
                       {dispSubTab === 'principal' && (
                         <div className="space-y-4">
-                          {/* Header com botão atualizar */}
-                          <div className="flex justify-between items-center">
+                          {/* Header com botões */}
+                          <div className="flex justify-between items-center flex-wrap gap-2">
                             <h2 className="text-lg font-bold text-gray-800">📅 Disponibilidade de Entregadores</h2>
-                            <button onClick={loadDisponibilidade} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 flex items-center gap-2">
-                              🔄 Atualizar
-                            </button>
+                            <div className="flex gap-2">
+                              <button onClick={loadDisponibilidade} className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 flex items-center gap-1 text-sm">
+                                🔄 Atualizar
+                              </button>
+                              <button onClick={resetarStatus} className="px-3 py-1.5 bg-orange-100 text-orange-700 rounded-lg font-semibold hover:bg-orange-200 flex items-center gap-1 text-sm">
+                                🔄 Resetar Status
+                              </button>
+                            </div>
                           </div>
+                          
+                          {/* Modal de Falta */}
+                          {formData.modalFaltando && (
+                            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                              <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4">
+                                <h3 className="text-lg font-bold text-red-600 mb-4">⚠️ Registrar Falta</h3>
+                                <div className="mb-4">
+                                  <p className="text-sm text-gray-600 mb-2">
+                                    <strong>Profissional:</strong> {formData.faltandoLinha?.nome_profissional || formData.faltandoLinha?.cod_profissional || 'Não identificado'}
+                                  </p>
+                                  <label className="text-sm font-semibold text-gray-700">Motivo da falta *</label>
+                                  <textarea 
+                                    value={formData.faltandoMotivo || ''} 
+                                    onChange={e => setFormData({...formData, faltandoMotivo: e.target.value})}
+                                    placeholder="Digite o motivo da falta..."
+                                    className="w-full px-3 py-2 border rounded-lg mt-1 text-sm"
+                                    rows={3}
+                                    autoFocus
+                                  />
+                                </div>
+                                <div className="flex gap-2">
+                                  <button 
+                                    onClick={() => setFormData({...formData, modalFaltando: false, faltandoLinha: null, faltandoMotivo: ''})}
+                                    className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200"
+                                  >
+                                    Cancelar
+                                  </button>
+                                  <button 
+                                    onClick={confirmarFalta}
+                                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700"
+                                  >
+                                    ✓ Confirmar Falta
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          )}
                           
                           {(dispData.regioes || []).length === 0 ? (
                             <div className="bg-white rounded-xl shadow p-8 text-center">
@@ -6023,7 +6158,7 @@
                                   const lojasRegiao = (dispData.lojas || []).filter(l => l.regiao_id === regiao.id);
                                   const linhasRegiao = (dispData.linhas || []).filter(l => lojasRegiao.some(lj => lj.id === l.loja_id));
                                   const emLoja = linhasRegiao.filter(l => l.status === 'EM LOJA').length;
-                                  const titulares = linhasRegiao.filter(l => !l.is_excedente).length;
+                                  const titulares = linhasRegiao.filter(l => !l.is_excedente && !l.is_reposicao).length;
                                   
                                   return (
                                     <button 
@@ -6062,8 +6197,9 @@
                                       const linhasLoja = (dispData.linhas || []).filter(l => l.loja_id === loja.id);
                                       const isOpen = (formData.dispLojasAbertas || []).includes(loja.id);
                                       const emLoja = linhasLoja.filter(l => l.status === 'EM LOJA').length;
-                                      const titulares = linhasLoja.filter(l => !l.is_excedente).length;
+                                      const titulares = linhasLoja.filter(l => !l.is_excedente && !l.is_reposicao).length;
                                       const faltando = linhasLoja.filter(l => l.status === 'FALTANDO').length;
+                                      const reposicoes = linhasLoja.filter(l => l.is_reposicao).length;
                                       
                                       // Cor do header baseada no status geral
                                       let headerColor = 'bg-gray-100 hover:bg-gray-200';
@@ -6118,15 +6254,15 @@
                                                 </thead>
                                                 <tbody>
                                                   {linhasLoja.map(linha => (
-                                                    <tr key={linha.id} className={`border-t ${linha.is_excedente ? 'bg-red-50/50' : ''} ${!linha.is_excedente && rowColors[linha.status] ? rowColors[linha.status] : ''} hover:bg-gray-50`}>
-                                                      <td className={`w-1 ${linha.is_excedente ? 'bg-red-400' : ''}`}></td>
+                                                    <tr key={linha.id} className={`border-t ${linha.is_reposicao ? 'bg-blue-50/50' : linha.is_excedente ? 'bg-red-50/50' : ''} ${!linha.is_excedente && !linha.is_reposicao && rowColors[linha.status] ? rowColors[linha.status] : ''} hover:bg-gray-50`}>
+                                                      <td className={`w-1 ${linha.is_reposicao ? 'bg-blue-400' : linha.is_excedente ? 'bg-red-400' : ''}`}></td>
                                                       <td className="px-1 py-0.5">
                                                         <input 
                                                           type="text" 
                                                           value={linha.cod_profissional || ''} 
                                                           onChange={e => updateLinha(linha.id, 'cod_profissional', e.target.value)}
                                                           placeholder="..."
-                                                          className={`w-full px-1 py-0.5 border border-gray-200 rounded text-center font-mono text-xs ${linha.is_excedente ? 'bg-red-50/50' : 'bg-white'}`}
+                                                          className={`w-full px-1 py-0.5 border border-gray-200 rounded text-center font-mono text-xs ${linha.is_reposicao ? 'bg-blue-50/50' : linha.is_excedente ? 'bg-red-50/50' : 'bg-white'}`}
                                                         />
                                                       </td>
                                                       <td className="px-1 py-0.5">
@@ -6137,7 +6273,13 @@
                                                       <td className="px-1 py-0.5">
                                                         <select 
                                                           value={linha.status || 'A CONFIRMAR'} 
-                                                          onChange={e => updateLinha(linha.id, 'status', e.target.value)}
+                                                          onChange={e => {
+                                                            if (e.target.value === 'FALTANDO') {
+                                                              marcarFaltando(linha);
+                                                            } else {
+                                                              updateLinha(linha.id, 'status', e.target.value);
+                                                            }
+                                                          }}
                                                           className={`w-full px-1 py-0.5 border border-gray-200 rounded text-xs font-semibold ${statusColors[linha.status] || ''}`}
                                                         >
                                                           <option value="A CONFIRMAR">A CONFIRMAR</option>
@@ -6152,7 +6294,7 @@
                                                           value={linha.observacao || ''} 
                                                           onChange={e => updateLinha(linha.id, 'observacao', e.target.value)}
                                                           placeholder="..."
-                                                          className={`w-full px-1 py-0.5 border border-gray-200 rounded text-xs ${linha.is_excedente ? 'bg-red-50/50' : 'bg-white'}`}
+                                                          className={`w-full px-1 py-0.5 border border-gray-200 rounded text-xs ${linha.is_excedente ? 'bg-red-50/50' : linha.is_reposicao ? 'bg-blue-50/50' : 'bg-white'}`}
                                                         />
                                                       </td>
                                                       <td className="px-1 py-0.5 text-center">
@@ -6212,7 +6354,228 @@
                                 <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded font-semibold">EM LOJA</span>
                                 <span className="px-2 py-1 bg-red-100 text-red-800 rounded font-semibold">FALTANDO</span>
                                 <span className="px-2 py-1 bg-red-50 text-red-700 rounded font-semibold border-l-4 border-red-400">EXCEDENTE</span>
+                                <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded font-semibold border-l-4 border-blue-400">REPOSIÇÃO</span>
                               </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      {/* ===== SUB-ABA FALTOSOS ===== */}
+                      {dispSubTab === 'faltosos' && (
+                        <div className="space-y-4">
+                          {/* Filtros */}
+                          <div className="bg-white rounded-xl shadow p-4">
+                            <h3 className="font-bold text-gray-800 mb-3">🔍 Filtros</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                              <div>
+                                <label className="text-xs text-gray-600">Data Início</label>
+                                <input 
+                                  type="date" 
+                                  value={formData.faltososDataInicio || ''} 
+                                  onChange={e => setFormData({...formData, faltososDataInicio: e.target.value})}
+                                  className="w-full px-3 py-2 border rounded-lg text-sm"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-xs text-gray-600">Data Fim</label>
+                                <input 
+                                  type="date" 
+                                  value={formData.faltososDataFim || ''} 
+                                  onChange={e => setFormData({...formData, faltososDataFim: e.target.value})}
+                                  className="w-full px-3 py-2 border rounded-lg text-sm"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-xs text-gray-600">Loja</label>
+                                <select 
+                                  value={formData.faltososLojaId || ''} 
+                                  onChange={e => setFormData({...formData, faltososLojaId: e.target.value})}
+                                  className="w-full px-3 py-2 border rounded-lg text-sm"
+                                >
+                                  <option value="">Todas as lojas</option>
+                                  {(dispData.lojas || []).map(l => (
+                                    <option key={l.id} value={l.id}>{l.codigo} - {l.nome}</option>
+                                  ))}
+                                </select>
+                              </div>
+                              <div className="flex items-end">
+                                <button 
+                                  onClick={async () => {
+                                    try {
+                                      let url = `${API_URL}/disponibilidade/faltosos?`;
+                                      if (formData.faltososDataInicio) url += `data_inicio=${formData.faltososDataInicio}&`;
+                                      if (formData.faltososDataFim) url += `data_fim=${formData.faltososDataFim}&`;
+                                      if (formData.faltososLojaId) url += `loja_id=${formData.faltososLojaId}`;
+                                      const res = await fetch(url);
+                                      const data = await res.json();
+                                      setFormData(f => ({...f, faltososLista: data}));
+                                    } catch (err) {
+                                      showToast('Erro ao buscar faltosos', 'error');
+                                    }
+                                  }}
+                                  className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
+                                >
+                                  🔍 Buscar
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Lista de Faltosos */}
+                          <div className="bg-white rounded-xl shadow overflow-hidden">
+                            <div className="px-4 py-3 bg-gray-50 border-b">
+                              <h3 className="font-bold text-gray-800">📋 Registro de Faltas</h3>
+                            </div>
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-xs">
+                                <thead className="bg-gray-100">
+                                  <tr>
+                                    <th className="px-3 py-2 text-left">DATA</th>
+                                    <th className="px-3 py-2 text-left">REGIÃO</th>
+                                    <th className="px-3 py-2 text-left">LOJA</th>
+                                    <th className="px-3 py-2 text-left">COD</th>
+                                    <th className="px-3 py-2 text-left">PROFISSIONAL</th>
+                                    <th className="px-3 py-2 text-left">MOTIVO</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {(formData.faltososLista || []).length === 0 ? (
+                                    <tr>
+                                      <td colSpan="6" className="px-3 py-8 text-center text-gray-500">
+                                        Nenhum registro de falta encontrado. Use os filtros acima para buscar.
+                                      </td>
+                                    </tr>
+                                  ) : (
+                                    (formData.faltososLista || []).map(f => (
+                                      <tr key={f.id} className="border-t hover:bg-gray-50">
+                                        <td className="px-3 py-2">{new Date(f.data_falta).toLocaleDateString('pt-BR')}</td>
+                                        <td className="px-3 py-2">{f.regiao_nome}</td>
+                                        <td className="px-3 py-2 font-mono">{f.loja_codigo} - {f.loja_nome}</td>
+                                        <td className="px-3 py-2 font-mono">{f.cod_profissional || '-'}</td>
+                                        <td className="px-3 py-2">{f.nome_profissional || '-'}</td>
+                                        <td className="px-3 py-2 text-red-600">{f.motivo}</td>
+                                      </tr>
+                                    ))
+                                  )}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* ===== SUB-ABA ESPELHO ===== */}
+                      {dispSubTab === 'espelho' && (
+                        <div className="space-y-4">
+                          {/* Seletor de Data */}
+                          <div className="bg-white rounded-xl shadow p-4">
+                            <h3 className="font-bold text-gray-800 mb-3">🪞 Histórico de Planilhas</h3>
+                            <div className="flex gap-3 items-end">
+                              <div className="flex-1">
+                                <label className="text-xs text-gray-600">Selecione a data</label>
+                                <select 
+                                  value={formData.espelhoDataSelecionada || ''} 
+                                  onChange={async (e) => {
+                                    const data = e.target.value;
+                                    setFormData(f => ({...f, espelhoDataSelecionada: data, espelhoCarregando: true}));
+                                    if (data) {
+                                      try {
+                                        const res = await fetch(`${API_URL}/disponibilidade/espelho/${data}`);
+                                        const espelho = await res.json();
+                                        setFormData(f => ({...f, espelhoDados: espelho.dados, espelhoCarregando: false}));
+                                      } catch (err) {
+                                        showToast('Erro ao carregar espelho', 'error');
+                                        setFormData(f => ({...f, espelhoCarregando: false}));
+                                      }
+                                    }
+                                  }}
+                                  className="w-full px-3 py-2 border rounded-lg text-sm"
+                                >
+                                  <option value="">Selecione uma data...</option>
+                                  {(formData.espelhoDatas || []).map(e => (
+                                    <option key={e.id} value={e.data_registro}>
+                                      {new Date(e.data_registro).toLocaleDateString('pt-BR')} 
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                              <button 
+                                onClick={async () => {
+                                  try {
+                                    const res = await fetch(`${API_URL}/disponibilidade/espelho`);
+                                    const datas = await res.json();
+                                    setFormData(f => ({...f, espelhoDatas: datas}));
+                                    showToast('Datas atualizadas!', 'success');
+                                  } catch (err) {
+                                    showToast('Erro ao carregar datas', 'error');
+                                  }
+                                }}
+                                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200"
+                              >
+                                🔄 Atualizar
+                              </button>
+                            </div>
+                          </div>
+                          
+                          {/* Visualização do Espelho */}
+                          {formData.espelhoCarregando ? (
+                            <div className="bg-white rounded-xl shadow p-8 text-center">
+                              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
+                              <p className="mt-2 text-gray-500">Carregando...</p>
+                            </div>
+                          ) : formData.espelhoDados ? (
+                            <div className="space-y-4">
+                              {(() => {
+                                const dados = typeof formData.espelhoDados === 'string' ? JSON.parse(formData.espelhoDados) : formData.espelhoDados;
+                                return (dados.regioes || []).map(regiao => {
+                                  const lojasRegiao = (dados.lojas || []).filter(l => l.regiao_id === regiao.id);
+                                  if (lojasRegiao.length === 0) return null;
+                                  return (
+                                    <div key={regiao.id} className="bg-white rounded-xl shadow overflow-hidden">
+                                      <div className="bg-gradient-to-r from-purple-600 to-indigo-600 px-4 py-2">
+                                        <h3 className="font-bold text-white text-sm">📍 {regiao.nome}</h3>
+                                      </div>
+                                      {lojasRegiao.map(loja => {
+                                        const linhasLoja = (dados.linhas || []).filter(l => l.loja_id === loja.id);
+                                        return (
+                                          <div key={loja.id} className="border-t">
+                                            <div className="px-3 py-2 bg-gray-50 font-semibold text-sm">
+                                              {loja.codigo} - {loja.nome}
+                                            </div>
+                                            <table className="w-full text-xs">
+                                              <tbody>
+                                                {linhasLoja.map(linha => (
+                                                  <tr key={linha.id} className={`border-t ${linha.is_excedente ? 'bg-red-50' : ''} ${linha.is_reposicao ? 'bg-blue-50' : ''}`}>
+                                                    <td className={`w-1 ${linha.is_excedente ? 'bg-red-400' : ''} ${linha.is_reposicao ? 'bg-blue-400' : ''}`}></td>
+                                                    <td className="px-2 py-1 font-mono w-20">{linha.cod_profissional || '-'}</td>
+                                                    <td className="px-2 py-1">{linha.nome_profissional || '-'}</td>
+                                                    <td className="px-2 py-1 w-28">
+                                                      <span className={`px-1 py-0.5 rounded text-xs ${
+                                                        linha.status === 'EM LOJA' ? 'bg-blue-100 text-blue-800' :
+                                                        linha.status === 'CONFIRMADO' ? 'bg-green-100 text-green-800' :
+                                                        linha.status === 'FALTANDO' ? 'bg-red-100 text-red-800' :
+                                                        'bg-yellow-100 text-yellow-800'
+                                                      }`}>
+                                                        {linha.status}
+                                                      </span>
+                                                    </td>
+                                                    <td className="px-2 py-1 text-gray-500">{linha.observacao || ''}</td>
+                                                  </tr>
+                                                ))}
+                                              </tbody>
+                                            </table>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  );
+                                });
+                              })()}
+                            </div>
+                          ) : (
+                            <div className="bg-white rounded-xl shadow p-8 text-center">
+                              <p className="text-gray-500">Selecione uma data para visualizar o histórico</p>
                             </div>
                           )}
                         </div>
