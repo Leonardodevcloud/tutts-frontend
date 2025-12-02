@@ -244,45 +244,78 @@
     const PixQRCodeModal = ({ data, onClose }) => {
       if (!data) return null;
       
-      // Gera o payload PIX (BR Code)
+      // Gera o payload PIX (BR Code) - Padrão EMV
       const gerarPayloadPix = (chave, valor, nome, cidade) => {
-        const pad = (id, val) => {
-          const len = val.length.toString().padStart(2, '0');
-          return id + len + val;
+        // Remove caracteres especiais do nome e cidade
+        const normalizar = (str) => str
+          .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^a-zA-Z0-9 ]/g, '')
+          .substring(0, 25)
+          .toUpperCase();
+        
+        const nomeNorm = normalizar(nome || 'PROFISSIONAL');
+        const cidadeNorm = normalizar(cidade || 'SAO PAULO').substring(0, 15);
+        
+        // Função para criar campo TLV (Tag-Length-Value)
+        const tlv = (tag, value) => {
+          const len = value.length.toString().padStart(2, '0');
+          return tag + len + value;
         };
         
-        // Campos do PIX
-        const gui = pad('00', 'br.gov.bcb.pix');
-        const chaveFormatada = pad('01', chave);
-        const merchantAccountInfo = pad('26', gui + chaveFormatada);
+        // ID 00 - Payload Format Indicator (fixo)
+        const id00 = tlv('00', '01');
         
-        const mcc = pad('52', '0000');
-        const currency = pad('53', '986'); // BRL
-        const amount = valor ? pad('54', valor.toFixed(2)) : '';
-        const countryCode = pad('58', 'BR');
-        const merchantName = pad('59', nome.substring(0, 25).toUpperCase());
-        const merchantCity = pad('60', cidade.substring(0, 15).toUpperCase());
+        // ID 26 - Merchant Account Information (PIX)
+        const gui = tlv('00', 'BR.GOV.BCB.PIX'); // GUI do PIX
+        const chavePixField = tlv('01', chave); // Chave PIX
+        const id26 = tlv('26', gui + chavePixField);
         
-        // Payload sem CRC
-        const payloadSemCRC = pad('00', '01') + merchantAccountInfo + mcc + currency + amount + countryCode + merchantName + merchantCity + '6304';
+        // ID 52 - Merchant Category Code (0000 = não informado)
+        const id52 = tlv('52', '0000');
         
-        // Calcula CRC16-CCITT
-        const crc16 = (str) => {
+        // ID 53 - Transaction Currency (986 = BRL)
+        const id53 = tlv('53', '986');
+        
+        // ID 54 - Transaction Amount (valor)
+        const valorStr = valor ? valor.toFixed(2) : '';
+        const id54 = valorStr ? tlv('54', valorStr) : '';
+        
+        // ID 58 - Country Code
+        const id58 = tlv('58', 'BR');
+        
+        // ID 59 - Merchant Name
+        const id59 = tlv('59', nomeNorm);
+        
+        // ID 60 - Merchant City
+        const id60 = tlv('60', cidadeNorm);
+        
+        // ID 62 - Additional Data Field (txid)
+        const txid = tlv('05', '***'); // txid dinâmico
+        const id62 = tlv('62', txid);
+        
+        // Monta payload sem CRC
+        const payloadSemCRC = id00 + id26 + id52 + id53 + id54 + id58 + id59 + id60 + id62 + '6304';
+        
+        // Calcula CRC16-CCITT-FALSE (polinômio 0x1021)
+        const calcularCRC16 = (str) => {
           let crc = 0xFFFF;
           for (let i = 0; i < str.length; i++) {
-            crc ^= str.charCodeAt(i) << 8;
+            crc ^= (str.charCodeAt(i) << 8);
             for (let j = 0; j < 8; j++) {
-              if (crc & 0x8000) crc = (crc << 1) ^ 0x1021;
-              else crc <<= 1;
+              if ((crc & 0x8000) !== 0) {
+                crc = ((crc << 1) ^ 0x1021) & 0xFFFF;
+              } else {
+                crc = (crc << 1) & 0xFFFF;
+              }
             }
           }
-          return (crc & 0xFFFF).toString(16).toUpperCase().padStart(4, '0');
+          return crc.toString(16).toUpperCase().padStart(4, '0');
         };
         
-        return payloadSemCRC + crc16(payloadSemCRC);
+        return payloadSemCRC + calcularCRC16(payloadSemCRC);
       };
       
-      const payload = gerarPayloadPix(data.pix_key, data.valor, data.nome || 'PROFISSIONAL', 'SAO PAULO');
+      const payload = gerarPayloadPix(data.pix_key, data.valor, data.nome, 'SAO PAULO');
       
       // URL do QR Code via API pública
       const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(payload)}`;
