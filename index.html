@@ -5731,6 +5731,8 @@
                       return;
                     }
                     
+                    const dataPlanilha = formData.dispDataPlanilha || new Date().toISOString().split('T')[0];
+                    
                     try {
                       // 1. Atualizar status para FALTANDO
                       await fetch(`${API_URL}/disponibilidade/linhas/${linha.id}`, {
@@ -5744,7 +5746,7 @@
                         })
                       });
                       
-                      // 2. Registrar na tabela de faltosos
+                      // 2. Registrar na tabela de faltosos (com data da planilha)
                       await fetch(`${API_URL}/disponibilidade/faltosos`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -5752,7 +5754,8 @@
                           loja_id: linha.loja_id,
                           cod_profissional: linha.cod_profissional,
                           nome_profissional: linha.nome_profissional,
-                          motivo
+                          motivo,
+                          data_falta: dataPlanilha
                         })
                       });
                       
@@ -5777,16 +5780,25 @@
                   
                   // Resetar status (salva espelho e limpa tudo)
                   const resetarStatus = async () => {
-                    if (!window.confirm('⚠️ ATENÇÃO!\n\nIsso irá:\n• Salvar a planilha atual no Espelho\n• Resetar todos os status para "A CONFIRMAR"\n• Limpar todas as observações\n• Converter linhas de reposição em excedentes\n\n✅ Os códigos e nomes serão MANTIDOS!\n\nDeseja continuar?')) {
+                    const dataPlanilha = formData.dispDataPlanilha || new Date().toISOString().split('T')[0];
+                    const dataFormatada = new Date(dataPlanilha + 'T12:00:00').toLocaleDateString('pt-BR');
+                    
+                    if (!window.confirm(`⚠️ ATENÇÃO!\n\n📅 Data da planilha: ${dataFormatada}\n\nIsso irá:\n• Salvar a planilha atual no Espelho (${dataFormatada})\n• Resetar todos os status para "A CONFIRMAR"\n• Limpar todas as observações\n• Converter linhas de reposição em excedentes\n\n✅ Os códigos e nomes serão MANTIDOS!\n\nDeseja continuar?`)) {
                       return;
                     }
                     
                     try {
                       setFormData(f => ({...f, dispLoading: true}));
-                      const res = await fetch(`${API_URL}/disponibilidade/resetar`, { method: 'POST' });
+                      const res = await fetch(`${API_URL}/disponibilidade/resetar`, { 
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ data_planilha: dataPlanilha })
+                      });
                       const data = await res.json();
                       if (data.success) {
-                        showToast(`✅ Status resetado! Espelho salvo em ${data.espelho_data}`, 'success');
+                        showToast(`✅ Status resetado! Espelho salvo em ${dataFormatada}`, 'success');
+                        // Atualiza a data para o dia seguinte automaticamente (opcional)
+                        // setFormData(f => ({...f, dispDataPlanilha: new Date().toISOString().split('T')[0]}));
                       } else {
                         showToast('Erro ao resetar', 'error');
                       }
@@ -6106,16 +6118,29 @@
                       {/* ===== SUB-ABA PRINCIPAL ===== */}
                       {dispSubTab === 'principal' && (
                         <div className="space-y-4">
-                          {/* Header com botões */}
-                          <div className="flex justify-between items-center flex-wrap gap-2">
-                            <h2 className="text-lg font-bold text-gray-800">📅 Disponibilidade de Entregadores</h2>
-                            <div className="flex gap-2">
-                              <button onClick={loadDisponibilidade} className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 flex items-center gap-1 text-sm">
-                                🔄 Atualizar
-                              </button>
-                              <button onClick={resetarStatus} className="px-3 py-1.5 bg-orange-100 text-orange-700 rounded-lg font-semibold hover:bg-orange-200 flex items-center gap-1 text-sm">
-                                🔄 Resetar Status
-                              </button>
+                          {/* Header com data e botões */}
+                          <div className="bg-white rounded-xl shadow p-3">
+                            <div className="flex justify-between items-center flex-wrap gap-3">
+                              <div className="flex items-center gap-3">
+                                <h2 className="text-lg font-bold text-gray-800">📅 Disponibilidade</h2>
+                                <div className="flex items-center gap-2 bg-purple-50 px-3 py-1.5 rounded-lg border border-purple-200">
+                                  <span className="text-sm font-semibold text-purple-700">Data:</span>
+                                  <input 
+                                    type="date" 
+                                    value={formData.dispDataPlanilha || new Date().toISOString().split('T')[0]} 
+                                    onChange={e => setFormData({...formData, dispDataPlanilha: e.target.value})}
+                                    className="px-2 py-1 border border-purple-300 rounded text-sm font-semibold text-purple-800 bg-white"
+                                  />
+                                </div>
+                              </div>
+                              <div className="flex gap-2">
+                                <button onClick={loadDisponibilidade} className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 flex items-center gap-1 text-sm">
+                                  🔄 Atualizar
+                                </button>
+                                <button onClick={resetarStatus} className="px-3 py-1.5 bg-orange-100 text-orange-700 rounded-lg font-semibold hover:bg-orange-200 flex items-center gap-1 text-sm">
+                                  🔄 Resetar Status
+                                </button>
+                              </div>
                             </div>
                           </div>
                           
