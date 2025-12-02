@@ -3259,7 +3259,7 @@
 
             <div className="bg-white border-b sticky top-0 z-10">
               <div className="max-w-7xl mx-auto px-4 flex gap-1 overflow-x-auto">
-                {['solicitacoes', 'validacao', 'conciliacao', 'resumo', 'gratuidades', 'restritos', 'indicacoes', 'promo-novatos', 'relatorios'].map(tab => (
+                {['solicitacoes', 'validacao', 'conciliacao', 'resumo', 'gratuidades', 'restritos', 'indicacoes', 'promo-novatos', 'relatorios', 'backup'].map(tab => (
                   <button key={tab} onClick={() => setFormData({...formData, finTab: tab})} className={`px-4 py-2.5 text-sm font-semibold whitespace-nowrap rounded-t-lg ${(formData.finTab || 'solicitacoes') === tab ? 'text-green-700 border-b-2 border-green-600 bg-green-50' : 'text-gray-600 hover:bg-gray-100'}`}>
                     {tab === 'solicitacoes' && '📋 Solicitações'}
                     {tab === 'validacao' && '📊 Validação'}
@@ -3270,6 +3270,7 @@
                     {tab === 'indicacoes' && '👥 Indicações'}
                     {tab === 'promo-novatos' && '🚀 Promo Novatos'}
                     {tab === 'relatorios' && '📈 Relatórios'}
+                    {tab === 'backup' && '💾 Backup'}
                   </button>
                 ))}
               </div>
@@ -4975,6 +4976,291 @@
                               </div>
                             ))}
                           </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </>
+              )}
+
+              {/* ========== ABA BACKUP ========== */}
+              {formData.finTab === 'backup' && (
+                <>
+                  {(() => {
+                    // Função para exportar dados como JSON
+                    const exportarJSON = (dados, nomeArquivo) => {
+                      const json = JSON.stringify(dados, null, 2);
+                      const blob = new Blob([json], { type: 'application/json' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = nomeArquivo;
+                      a.click();
+                      URL.revokeObjectURL(url);
+                      showToast(`✅ ${nomeArquivo} exportado com sucesso!`, 'success');
+                    };
+
+                    // Função para exportar como CSV
+                    const exportarCSV = (dados, colunas, nomeArquivo) => {
+                      const header = colunas.map(c => c.label).join(';');
+                      const rows = dados.map(item => 
+                        colunas.map(c => {
+                          let val = item[c.key] || '';
+                          if (typeof val === 'string' && val.includes(';')) val = `"${val}"`;
+                          return val;
+                        }).join(';')
+                      );
+                      const csv = [header, ...rows].join('\n');
+                      const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = nomeArquivo;
+                      a.click();
+                      URL.revokeObjectURL(url);
+                      showToast(`✅ ${nomeArquivo} exportado com sucesso!`, 'success');
+                    };
+
+                    const dataAtual = new Date().toISOString().split('T')[0];
+
+                    // Definição das colunas para cada tipo de dado
+                    const colunasWithdrawals = [
+                      { key: 'id', label: 'ID' },
+                      { key: 'user_cod', label: 'Código' },
+                      { key: 'user_name', label: 'Nome' },
+                      { key: 'cpf', label: 'CPF' },
+                      { key: 'pix_key', label: 'Chave PIX' },
+                      { key: 'requested_amount', label: 'Valor Solicitado' },
+                      { key: 'final_amount', label: 'Valor Final' },
+                      { key: 'status', label: 'Status' },
+                      { key: 'reject_reason', label: 'Motivo Rejeição' },
+                      { key: 'admin_name', label: 'Admin' },
+                      { key: 'created_at', label: 'Data Criação' },
+                      { key: 'updated_at', label: 'Data Atualização' }
+                    ];
+
+                    const colunasUsers = [
+                      { key: 'id', label: 'ID' },
+                      { key: 'codProfissional', label: 'Código' },
+                      { key: 'fullName', label: 'Nome' },
+                      { key: 'role', label: 'Tipo' },
+                      { key: 'createdAt', label: 'Data Cadastro' }
+                    ];
+
+                    const colunasGratuities = [
+                      { key: 'id', label: 'ID' },
+                      { key: 'user_cod', label: 'Código' },
+                      { key: 'user_name', label: 'Nome' },
+                      { key: 'reason', label: 'Motivo' },
+                      { key: 'created_at', label: 'Data' }
+                    ];
+
+                    const colunasRestricted = [
+                      { key: 'id', label: 'ID' },
+                      { key: 'user_cod', label: 'Código' },
+                      { key: 'user_name', label: 'Nome' },
+                      { key: 'reason', label: 'Motivo' },
+                      { key: 'created_at', label: 'Data' }
+                    ];
+
+                    const colunasIndicacoes = [
+                      { key: 'id', label: 'ID' },
+                      { key: 'indicador_cod', label: 'Cód Indicador' },
+                      { key: 'indicador_nome', label: 'Nome Indicador' },
+                      { key: 'indicado_nome', label: 'Nome Indicado' },
+                      { key: 'indicado_contato', label: 'Contato' },
+                      { key: 'status', label: 'Status' },
+                      { key: 'created_at', label: 'Data' }
+                    ];
+
+                    // Backup completo
+                    const backupCompleto = {
+                      data_backup: new Date().toISOString(),
+                      versao: '1.0',
+                      dados: {
+                        withdrawals: allWithdrawals,
+                        users: users,
+                        gratuities: allGratuities,
+                        restricted: restrictedList,
+                        indicacoes: indicacoes
+                      },
+                      estatisticas: {
+                        total_withdrawals: allWithdrawals.length,
+                        total_users: users.length,
+                        total_gratuities: allGratuities.length,
+                        total_restricted: restrictedList.length,
+                        total_indicacoes: indicacoes.length
+                      }
+                    };
+
+                    return (
+                      <div className="space-y-6">
+                        {/* Header */}
+                        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-6 text-white">
+                          <h2 className="text-2xl font-bold flex items-center gap-2">💾 Backup e Exportação de Dados</h2>
+                          <p className="text-blue-100 mt-2">Exporte seus dados para manter backups seguros ou analisar em outras ferramentas.</p>
+                        </div>
+
+                        {/* Backup Completo */}
+                        <div className="bg-white rounded-xl shadow p-6">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">🗄️ Backup Completo</h3>
+                              <p className="text-sm text-gray-600 mt-1">Exporta todos os dados do sistema em um único arquivo JSON.</p>
+                              <div className="flex gap-4 mt-2 text-xs text-gray-500">
+                                <span>📋 {allWithdrawals.length} solicitações</span>
+                                <span>👥 {users.length} usuários</span>
+                                <span>🎁 {allGratuities.length} gratuidades</span>
+                                <span>🚫 {restrictedList.length} restritos</span>
+                                <span>🤝 {indicacoes.length} indicações</span>
+                              </div>
+                            </div>
+                            <button 
+                              onClick={() => exportarJSON(backupCompleto, `backup_completo_${dataAtual}.json`)}
+                              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-semibold hover:from-blue-700 hover:to-indigo-700 flex items-center gap-2"
+                            >
+                              ⬇️ Baixar Backup Completo
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Exportações Individuais */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {/* Solicitações de Saque */}
+                          <div className="bg-white rounded-xl shadow p-5">
+                            <h3 className="font-bold text-gray-800 flex items-center gap-2 mb-3">📋 Solicitações de Saque</h3>
+                            <p className="text-sm text-gray-600 mb-3">{allWithdrawals.length} registros</p>
+                            <div className="flex gap-2">
+                              <button 
+                                onClick={() => exportarCSV(allWithdrawals, colunasWithdrawals, `solicitacoes_${dataAtual}.csv`)}
+                                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 text-sm"
+                              >
+                                📊 CSV
+                              </button>
+                              <button 
+                                onClick={() => exportarJSON(allWithdrawals, `solicitacoes_${dataAtual}.json`)}
+                                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 text-sm"
+                              >
+                                📄 JSON
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Usuários */}
+                          <div className="bg-white rounded-xl shadow p-5">
+                            <h3 className="font-bold text-gray-800 flex items-center gap-2 mb-3">👥 Usuários</h3>
+                            <p className="text-sm text-gray-600 mb-3">{users.length} registros</p>
+                            <div className="flex gap-2">
+                              <button 
+                                onClick={() => exportarCSV(users, colunasUsers, `usuarios_${dataAtual}.csv`)}
+                                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 text-sm"
+                              >
+                                📊 CSV
+                              </button>
+                              <button 
+                                onClick={() => exportarJSON(users, `usuarios_${dataAtual}.json`)}
+                                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 text-sm"
+                              >
+                                📄 JSON
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Gratuidades */}
+                          <div className="bg-white rounded-xl shadow p-5">
+                            <h3 className="font-bold text-gray-800 flex items-center gap-2 mb-3">🎁 Gratuidades</h3>
+                            <p className="text-sm text-gray-600 mb-3">{allGratuities.length} registros</p>
+                            <div className="flex gap-2">
+                              <button 
+                                onClick={() => exportarCSV(allGratuities, colunasGratuities, `gratuidades_${dataAtual}.csv`)}
+                                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 text-sm"
+                              >
+                                📊 CSV
+                              </button>
+                              <button 
+                                onClick={() => exportarJSON(allGratuities, `gratuidades_${dataAtual}.json`)}
+                                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 text-sm"
+                              >
+                                📄 JSON
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Restritos */}
+                          <div className="bg-white rounded-xl shadow p-5">
+                            <h3 className="font-bold text-gray-800 flex items-center gap-2 mb-3">🚫 Lista de Restritos</h3>
+                            <p className="text-sm text-gray-600 mb-3">{restrictedList.length} registros</p>
+                            <div className="flex gap-2">
+                              <button 
+                                onClick={() => exportarCSV(restrictedList, colunasRestricted, `restritos_${dataAtual}.csv`)}
+                                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 text-sm"
+                              >
+                                📊 CSV
+                              </button>
+                              <button 
+                                onClick={() => exportarJSON(restrictedList, `restritos_${dataAtual}.json`)}
+                                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 text-sm"
+                              >
+                                📄 JSON
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Indicações */}
+                          <div className="bg-white rounded-xl shadow p-5">
+                            <h3 className="font-bold text-gray-800 flex items-center gap-2 mb-3">🤝 Indicações</h3>
+                            <p className="text-sm text-gray-600 mb-3">{indicacoes.length} registros</p>
+                            <div className="flex gap-2">
+                              <button 
+                                onClick={() => exportarCSV(indicacoes, colunasIndicacoes, `indicacoes_${dataAtual}.csv`)}
+                                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 text-sm"
+                              >
+                                📊 CSV
+                              </button>
+                              <button 
+                                onClick={() => exportarJSON(indicacoes, `indicacoes_${dataAtual}.json`)}
+                                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 text-sm"
+                              >
+                                📄 JSON
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Solicitações Filtradas */}
+                          <div className="bg-white rounded-xl shadow p-5">
+                            <h3 className="font-bold text-gray-800 flex items-center gap-2 mb-3">🔍 Solicitações por Status</h3>
+                            <div className="space-y-2">
+                              <button 
+                                onClick={() => exportarCSV(allWithdrawals.filter(w => w.status === 'aprovado' || w.status === 'aprovado_gratuidade'), colunasWithdrawals, `aprovados_${dataAtual}.csv`)}
+                                className="w-full px-4 py-2 bg-green-100 text-green-700 rounded-lg font-semibold hover:bg-green-200 text-sm text-left"
+                              >
+                                ✅ Aprovados ({allWithdrawals.filter(w => w.status === 'aprovado' || w.status === 'aprovado_gratuidade').length})
+                              </button>
+                              <button 
+                                onClick={() => exportarCSV(allWithdrawals.filter(w => w.status === 'aguardando_aprovacao'), colunasWithdrawals, `pendentes_${dataAtual}.csv`)}
+                                className="w-full px-4 py-2 bg-yellow-100 text-yellow-700 rounded-lg font-semibold hover:bg-yellow-200 text-sm text-left"
+                              >
+                                ⏳ Pendentes ({allWithdrawals.filter(w => w.status === 'aguardando_aprovacao').length})
+                              </button>
+                              <button 
+                                onClick={() => exportarCSV(allWithdrawals.filter(w => w.status === 'rejeitado'), colunasWithdrawals, `rejeitados_${dataAtual}.csv`)}
+                                className="w-full px-4 py-2 bg-red-100 text-red-700 rounded-lg font-semibold hover:bg-red-200 text-sm text-left"
+                              >
+                                ❌ Rejeitados ({allWithdrawals.filter(w => w.status === 'rejeitado').length})
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Dicas */}
+                        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                          <h4 className="font-semibold text-amber-800 flex items-center gap-2">💡 Dicas de Backup</h4>
+                          <ul className="text-sm text-amber-700 mt-2 space-y-1">
+                            <li>• Faça backups regularmente (recomendado: semanalmente)</li>
+                            <li>• O arquivo JSON pode ser usado para restaurar dados</li>
+                            <li>• O arquivo CSV pode ser aberto no Excel ou Google Sheets</li>
+                            <li>• Guarde os backups em local seguro (Google Drive, OneDrive, etc.)</li>
+                          </ul>
                         </div>
                       </div>
                     );
