@@ -244,75 +244,71 @@
     const PixQRCodeModal = ({ data, onClose }) => {
       if (!data) return null;
       
-      // Gera o payload PIX (BR Code) - Padrão EMV
+      // Gera o payload PIX (BR Code) - Padrão EMV/BACEN
       const gerarPayloadPix = (chave, valor, nome, cidade) => {
-        // Remove caracteres especiais do nome e cidade
-        const normalizar = (str) => str
-          .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-          .replace(/[^a-zA-Z0-9 ]/g, '')
-          .substring(0, 25)
-          .toUpperCase();
-        
-        const nomeNorm = normalizar(nome || 'PROFISSIONAL');
-        const cidadeNorm = normalizar(cidade || 'SAO PAULO').substring(0, 15);
-        
-        // Função para criar campo TLV (Tag-Length-Value)
-        const tlv = (tag, value) => {
-          const len = value.length.toString().padStart(2, '0');
-          return tag + len + value;
+        // Normaliza removendo acentos e caracteres especiais
+        const normalizar = (str, max) => {
+          return (str || '')
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-zA-Z0-9 ]/g, '')
+            .toUpperCase()
+            .substring(0, max);
         };
         
-        // ID 00 - Payload Format Indicator (fixo)
-        const id00 = tlv('00', '01');
+        // Formata o valor com ponto como separador decimal
+        const formatarValor = (v) => {
+          if (!v || v <= 0) return '';
+          return v.toFixed(2);
+        };
         
-        // ID 26 - Merchant Account Information (PIX)
-        const gui = tlv('00', 'BR.GOV.BCB.PIX'); // GUI do PIX
-        const chavePixField = tlv('01', chave); // Chave PIX
-        const id26 = tlv('26', gui + chavePixField);
+        // Cria campo EMV (ID + Tamanho + Valor)
+        const emv = (id, valor) => {
+          if (!valor) return '';
+          const tamanho = valor.length.toString().padStart(2, '0');
+          return id + tamanho + valor;
+        };
         
-        // ID 52 - Merchant Category Code (0000 = não informado)
-        const id52 = tlv('52', '0000');
-        
-        // ID 53 - Transaction Currency (986 = BRL)
-        const id53 = tlv('53', '986');
-        
-        // ID 54 - Transaction Amount (valor)
-        const valorStr = valor ? valor.toFixed(2) : '';
-        const id54 = valorStr ? tlv('54', valorStr) : '';
-        
-        // ID 58 - Country Code
-        const id58 = tlv('58', 'BR');
-        
-        // ID 59 - Merchant Name
-        const id59 = tlv('59', nomeNorm);
-        
-        // ID 60 - Merchant City
-        const id60 = tlv('60', cidadeNorm);
-        
-        // ID 62 - Additional Data Field (txid)
-        const txid = tlv('05', '***'); // txid dinâmico
-        const id62 = tlv('62', txid);
-        
-        // Monta payload sem CRC
-        const payloadSemCRC = id00 + id26 + id52 + id53 + id54 + id58 + id59 + id60 + id62 + '6304';
-        
-        // Calcula CRC16-CCITT-FALSE (polinômio 0x1021)
-        const calcularCRC16 = (str) => {
+        // Calcula CRC16 CCITT-FALSE
+        const crc16 = (payload) => {
           let crc = 0xFFFF;
-          for (let i = 0; i < str.length; i++) {
-            crc ^= (str.charCodeAt(i) << 8);
+          for (let i = 0; i < payload.length; i++) {
+            crc ^= payload.charCodeAt(i) << 8;
             for (let j = 0; j < 8; j++) {
-              if ((crc & 0x8000) !== 0) {
-                crc = ((crc << 1) ^ 0x1021) & 0xFFFF;
-              } else {
-                crc = (crc << 1) & 0xFFFF;
-              }
+              crc = (crc & 0x8000) ? ((crc << 1) ^ 0x1021) : (crc << 1);
+              crc &= 0xFFFF;
             }
           }
           return crc.toString(16).toUpperCase().padStart(4, '0');
         };
         
-        return payloadSemCRC + calcularCRC16(payloadSemCRC);
+        // Monta Merchant Account Info (ID 26)
+        const gui = emv('00', 'br.gov.bcb.pix');  // GUI em minúsculas (padrão BACEN)
+        const chaveField = emv('01', chave);
+        const merchantAccount = emv('26', gui + chaveField);
+        
+        // Monta payload
+        let payload = '';
+        payload += emv('00', '01');                           // Payload Format Indicator
+        payload += merchantAccount;                            // Merchant Account (PIX)
+        payload += emv('52', '0000');                         // MCC
+        payload += emv('53', '986');                          // Currency (BRL)
+        
+        const valorFormatado = formatarValor(valor);
+        if (valorFormatado) {
+          payload += emv('54', valorFormatado);               // Amount
+        }
+        
+        payload += emv('58', 'BR');                           // Country
+        payload += emv('59', normalizar(nome, 25));           // Merchant Name
+        payload += emv('60', normalizar(cidade, 15));         // Merchant City
+        payload += emv('62', emv('05', '***'));               // Additional Data (TXID)
+        payload += '6304';                                     // CRC placeholder
+        
+        // Adiciona CRC
+        payload += crc16(payload);
+        
+        return payload;
       };
       
       const payload = gerarPayloadPix(data.pix_key, data.valor, data.nome, 'SAO PAULO');
