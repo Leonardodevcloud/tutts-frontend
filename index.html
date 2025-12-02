@@ -5565,6 +5565,10 @@
                   // Carregar ao abrir a aba
                   if (!formData.dispLoaded && !dispLoading) {
                     loadDisponibilidade();
+                    // Carregar planilha do Google Sheets se ainda não foi carregada
+                    if (profissionaisSheet.length === 0) {
+                      loadProfissionaisSheet();
+                    }
                   }
                   
                   // Adicionar região
@@ -5649,16 +5653,24 @@
                     
                     novasLinhas[idx] = { ...novasLinhas[idx], [campo]: valor };
                     
-                    // Se digitou código, buscar nome automaticamente
+                    // Se digitou código, buscar nome automaticamente na planilha do Google Sheets
                     let nomeProfissional = novasLinhas[idx].nome_profissional;
-                    if (campo === 'cod_profissional' && valor.length >= 3) {
-                      const user = users.find(u => u.codProfissional?.toLowerCase() === valor.toLowerCase());
-                      if (user) {
-                        nomeProfissional = user.fullName;
-                        novasLinhas[idx].nome_profissional = user.fullName;
+                    if (campo === 'cod_profissional' && valor.length >= 1) {
+                      // Primeiro tenta na planilha do Google Sheets
+                      const profSheet = profissionaisSheet.find(p => p.codigo === valor.toString());
+                      if (profSheet) {
+                        nomeProfissional = profSheet.nome;
+                        novasLinhas[idx].nome_profissional = profSheet.nome;
                       } else {
-                        nomeProfissional = '';
-                        novasLinhas[idx].nome_profissional = '';
+                        // Se não encontrar na planilha, tenta na base de usuários
+                        const user = users.find(u => u.codProfissional?.toLowerCase() === valor.toLowerCase());
+                        if (user) {
+                          nomeProfissional = user.fullName;
+                          novasLinhas[idx].nome_profissional = user.fullName;
+                        } else {
+                          nomeProfissional = '';
+                          novasLinhas[idx].nome_profissional = '';
+                        }
                       }
                     }
                     
