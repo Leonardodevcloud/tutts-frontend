@@ -256,46 +256,54 @@
             .substring(0, max);
         };
         
+        // Detecta se número é telefone brasileiro (DDD + 8 ou 9 dígitos)
+        const ehTelefone = (num) => {
+          if (num.length === 10 || num.length === 11) {
+            const ddd = parseInt(num.substring(0, 2));
+            if (ddd >= 11 && ddd <= 99) {
+              if (num.length === 11 && num[2] === '9') return true;
+              if (num.length === 10) return true;
+            }
+          }
+          return false;
+        };
+        
         // Limpa a chave PIX conforme o tipo
         const limparChave = (ch) => {
           if (!ch) return '';
           const chTrim = ch.trim();
-          
-          // Detecta o tipo de chave e formata corretamente
           const apenasNumeros = chTrim.replace(/[^0-9]/g, '');
-          
-          // CPF: 11 dígitos numéricos (com ou sem pontuação)
-          if (apenasNumeros.length === 11 && !chTrim.includes('@')) {
-            return apenasNumeros;
-          }
-          
-          // CNPJ: 14 dígitos numéricos (com ou sem pontuação)
-          if (apenasNumeros.length === 14 && !chTrim.includes('@')) {
-            return apenasNumeros;
-          }
-          
-          // Telefone: começa com + ou tem 10-13 dígitos
-          if (chTrim.startsWith('+')) {
-            return '+' + apenasNumeros;
-          }
-          // Telefone brasileiro sem +55 (10 ou 11 dígitos: DDD + número)
-          if ((apenasNumeros.length === 10 || apenasNumeros.length === 11) && 
-              !chTrim.includes('@') && !chTrim.includes('-') && 
-              /^[1-9][0-9]9?[0-9]{8}$/.test(apenasNumeros)) {
-            return '+55' + apenasNumeros;
-          }
           
           // Email: contém @
           if (chTrim.includes('@')) {
             return chTrim.toLowerCase();
           }
           
-          // Chave aleatória (EVP): formato UUID - remove hífens
+          // Telefone com +55 já incluso
+          if (chTrim.startsWith('+')) {
+            return '+' + apenasNumeros;
+          }
+          
+          // Telefone brasileiro (com parênteses, hífen, ou formato 10-11 dígitos)
+          if (chTrim.includes('(') || chTrim.includes(')') || ehTelefone(apenasNumeros)) {
+            return '+55' + apenasNumeros;
+          }
+          
+          // CPF: 11 dígitos mas NÃO é telefone
+          if (apenasNumeros.length === 11 && !ehTelefone(apenasNumeros)) {
+            return apenasNumeros;
+          }
+          
+          // CNPJ: 14 dígitos
+          if (apenasNumeros.length === 14) {
+            return apenasNumeros;
+          }
+          
+          // Chave aleatória UUID (mantém hífens)
           if (/^[a-f0-9-]{36}$/i.test(chTrim)) {
             return chTrim.toLowerCase();
           }
           
-          // Outros casos: retorna como está (sem espaços extras)
           return chTrim;
         };
         
