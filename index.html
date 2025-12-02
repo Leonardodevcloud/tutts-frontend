@@ -5080,14 +5080,14 @@
                       dados: {
                         withdrawals: allWithdrawals,
                         users: users,
-                        gratuities: allGratuities,
+                        gratuities: gratuities,
                         restricted: restrictedList,
                         indicacoes: indicacoes
                       },
                       estatisticas: {
                         total_withdrawals: allWithdrawals.length,
                         total_users: users.length,
-                        total_gratuities: allGratuities.length,
+                        total_gratuities: gratuities.length,
                         total_restricted: restrictedList.length,
                         total_indicacoes: indicacoes.length
                       }
@@ -5110,7 +5110,7 @@
                               <div className="flex gap-4 mt-2 text-xs text-gray-500">
                                 <span>📋 {allWithdrawals.length} solicitações</span>
                                 <span>👥 {users.length} usuários</span>
-                                <span>🎁 {allGratuities.length} gratuidades</span>
+                                <span>🎁 {gratuities.length} gratuidades</span>
                                 <span>🚫 {restrictedList.length} restritos</span>
                                 <span>🤝 {indicacoes.length} indicações</span>
                               </div>
@@ -5169,16 +5169,16 @@
                           {/* Gratuidades */}
                           <div className="bg-white rounded-xl shadow p-5">
                             <h3 className="font-bold text-gray-800 flex items-center gap-2 mb-3">🎁 Gratuidades</h3>
-                            <p className="text-sm text-gray-600 mb-3">{allGratuities.length} registros</p>
+                            <p className="text-sm text-gray-600 mb-3">{gratuities.length} registros</p>
                             <div className="flex gap-2">
                               <button 
-                                onClick={() => exportarCSV(allGratuities, colunasGratuities, `gratuidades_${dataAtual}.csv`)}
+                                onClick={() => exportarCSV(gratuities, colunasGratuities, `gratuidades_${dataAtual}.csv`)}
                                 className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 text-sm"
                               >
                                 📊 CSV
                               </button>
                               <button 
-                                onClick={() => exportarJSON(allGratuities, `gratuidades_${dataAtual}.json`)}
+                                onClick={() => exportarJSON(gratuities, `gratuidades_${dataAtual}.json`)}
                                 className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 text-sm"
                               >
                                 📄 JSON
