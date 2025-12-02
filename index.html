@@ -240,6 +240,103 @@
       );
     };
 
+    // ========== MODAL QR CODE PIX ==========
+    const PixQRCodeModal = ({ data, onClose }) => {
+      if (!data) return null;
+      
+      // Gera o payload PIX (BR Code)
+      const gerarPayloadPix = (chave, valor, nome, cidade) => {
+        const pad = (id, val) => {
+          const len = val.length.toString().padStart(2, '0');
+          return id + len + val;
+        };
+        
+        // Campos do PIX
+        const gui = pad('00', 'br.gov.bcb.pix');
+        const chaveFormatada = pad('01', chave);
+        const merchantAccountInfo = pad('26', gui + chaveFormatada);
+        
+        const mcc = pad('52', '0000');
+        const currency = pad('53', '986'); // BRL
+        const amount = valor ? pad('54', valor.toFixed(2)) : '';
+        const countryCode = pad('58', 'BR');
+        const merchantName = pad('59', nome.substring(0, 25).toUpperCase());
+        const merchantCity = pad('60', cidade.substring(0, 15).toUpperCase());
+        
+        // Payload sem CRC
+        const payloadSemCRC = pad('00', '01') + merchantAccountInfo + mcc + currency + amount + countryCode + merchantName + merchantCity + '6304';
+        
+        // Calcula CRC16-CCITT
+        const crc16 = (str) => {
+          let crc = 0xFFFF;
+          for (let i = 0; i < str.length; i++) {
+            crc ^= str.charCodeAt(i) << 8;
+            for (let j = 0; j < 8; j++) {
+              if (crc & 0x8000) crc = (crc << 1) ^ 0x1021;
+              else crc <<= 1;
+            }
+          }
+          return (crc & 0xFFFF).toString(16).toUpperCase().padStart(4, '0');
+        };
+        
+        return payloadSemCRC + crc16(payloadSemCRC);
+      };
+      
+      const payload = gerarPayloadPix(data.pix_key, data.valor, data.nome || 'PROFISSIONAL', 'SAO PAULO');
+      
+      // URL do QR Code via API pública
+      const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(payload)}`;
+      
+      const copiarPayload = () => {
+        navigator.clipboard.writeText(payload);
+        alert('✅ Código PIX copiado!');
+      };
+      
+      return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onClick={onClose}>
+          <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold text-gray-800">📱 QR Code PIX</h3>
+              <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
+            </div>
+            
+            {/* Dados do pagamento */}
+            <div className="bg-gray-50 rounded-lg p-4 mb-4 space-y-2">
+              <p className="text-sm"><span className="text-gray-600">Nome:</span> <strong>{data.nome}</strong></p>
+              <p className="text-sm"><span className="text-gray-600">Chave PIX:</span> <strong className="font-mono">{data.pix_key}</strong></p>
+              <p className="text-sm"><span className="text-gray-600">Valor:</span> <strong className="text-green-600 text-lg">R$ {data.valor?.toFixed(2)}</strong></p>
+            </div>
+            
+            {/* QR Code */}
+            <div className="flex justify-center mb-4">
+              <img src={qrCodeUrl} alt="QR Code PIX" className="w-64 h-64 border-4 border-gray-200 rounded-lg" />
+            </div>
+            
+            {/* Botões */}
+            <div className="flex gap-3">
+              <button 
+                onClick={copiarPayload} 
+                className="flex-1 px-4 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 flex items-center justify-center gap-2"
+              >
+                📋 Copiar Código
+              </button>
+              <button 
+                onClick={() => navigator.clipboard.writeText(data.pix_key)} 
+                className="px-4 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700"
+                title="Copiar chave PIX"
+              >
+                🔑
+              </button>
+            </div>
+            
+            <p className="text-xs text-gray-500 text-center mt-4">
+              Escaneie o QR Code ou copie o código para pagar via PIX
+            </p>
+          </div>
+        </div>
+      );
+    };
+
     // ========== COMPONENTE PRINCIPAL ==========
     const App = () => {
       const [user, setUser] = useState(null);
@@ -248,6 +345,7 @@
       const [toast, setToast] = useState(null);
       const [formData, setFormData] = useState({});
       const [imageModal, setImageModal] = useState(null);
+      const [pixQRModal, setPixQRModal] = useState(null); // Estado para modal QR Code PIX
       const [lastActivity, setLastActivity] = useState(Date.now());
       const [lastUpdate, setLastUpdate] = useState(null);
       const [isPolling, setIsPolling] = useState(false);
@@ -3004,6 +3102,7 @@
           <div className="min-h-screen bg-gray-50">
             {toast && <Toast {...toast} />}
             {globalLoading && <LoadingOverlay />}
+            {pixQRModal && <PixQRCodeModal data={pixQRModal} onClose={() => setPixQRModal(null)} />}
 
             {isAdminMaster ? (
               /* Navbar Admin Master */
@@ -3232,7 +3331,18 @@
                               </div>
                             </td>
                             <td className={`px-2 py-3 text-right text-xs ${isRejeitado ? 'text-red-800' : isAprovadoGratuidade ? 'text-emerald-800' : isAprovado ? 'text-green-800' : ''}`}>{formatMoney(w.final_amount)}</td>
-                            <td className={`px-2 py-3 text-[10px] truncate ${isRejeitado ? 'text-red-800' : isAprovadoGratuidade ? 'text-emerald-800' : isAprovado ? 'text-green-800' : ''}`} title={w.pix_key}>{w.pix_key}</td>
+                            <td className={`px-2 py-3 ${isRejeitado ? 'text-red-800' : isAprovadoGratuidade ? 'text-emerald-800' : isAprovado ? 'text-green-800' : ''}`}>
+                              <div className="flex items-center gap-1">
+                                <span className="text-[10px] truncate flex-1" title={w.pix_key}>{w.pix_key}</span>
+                                <button 
+                                  onClick={() => setPixQRModal({ pix_key: w.pix_key, valor: parseFloat(w.final_amount), nome: w.user_name })} 
+                                  className="px-1.5 py-1 bg-green-600 text-white rounded text-[10px] hover:bg-green-700 flex-shrink-0" 
+                                  title="Gerar QR Code PIX"
+                                >
+                                  📱
+                                </button>
+                              </div>
+                            </td>
                             <td className="px-2 py-3">
                               <select value={formData[`showReject_${w.id}`] ? 'rejeitado' : w.status} onChange={e => handleStatusChange(w.id, e.target.value)} className="px-1 py-1 border rounded text-xs w-full">
                                 <option value="aguardando_aprovacao">⏳ Aguardando</option>
@@ -3510,7 +3620,18 @@
                                     <td className="px-4 py-3 font-mono">{w.user_cod}</td>
                                     <td className="px-4 py-3 text-right font-semibold">{formatMoney(w.requested_amount)}</td>
                                     <td className="px-4 py-3 text-right">{formatMoney(w.final_amount)}</td>
-                                    <td className="px-4 py-3 text-xs max-w-[150px] truncate">{w.pix_key}</td>
+                                    <td className="px-4 py-3">
+                                      <div className="flex items-center gap-1">
+                                        <span className="text-xs max-w-[120px] truncate">{w.pix_key}</span>
+                                        <button 
+                                          onClick={() => setPixQRModal({ pix_key: w.pix_key, valor: parseFloat(w.final_amount), nome: w.user_name })} 
+                                          className="px-1.5 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 flex-shrink-0" 
+                                          title="Gerar QR Code PIX"
+                                        >
+                                          📱
+                                        </button>
+                                      </div>
+                                    </td>
                                     <td className="px-4 py-3">
                                       <span className={`px-2 py-1 rounded text-xs font-bold ${w.status === 'aprovado' ? 'bg-green-500 text-white' : w.status === 'aprovado_gratuidade' ? 'bg-emerald-500 text-white' : w.status === 'rejeitado' ? 'bg-red-500 text-white' : w.status === 'inativo' ? 'bg-orange-500 text-white' : 'bg-yellow-500 text-white'}`}>
                                         {w.status === 'aguardando_aprovacao' ? '⏳ Aguardando' : w.status === 'aprovado' ? '✅ Aprovado' : w.status === 'aprovado_gratuidade' ? '🎁 c/ Gratuidade' : w.status === 'rejeitado' ? '❌ Rejeitado' : '⚠️ Inativo'}
