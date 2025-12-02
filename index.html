@@ -5777,16 +5777,22 @@
                   
                   // Resetar status (salva espelho e limpa tudo)
                   const resetarStatus = async () => {
-                    if (!window.confirm('⚠️ ATENÇÃO!\n\nIsso irá:\n• Salvar a planilha atual no Espelho\n• Limpar todos os códigos e nomes\n• Resetar todos os status para "A CONFIRMAR"\n• Converter linhas de reposição em excedentes\n\nDeseja continuar?')) {
+                    if (!window.confirm('⚠️ ATENÇÃO!\n\nIsso irá:\n• Salvar a planilha atual no Espelho\n• Resetar todos os status para "A CONFIRMAR"\n• Limpar todas as observações\n• Converter linhas de reposição em excedentes\n\n✅ Os códigos e nomes serão MANTIDOS!\n\nDeseja continuar?')) {
                       return;
                     }
                     
                     try {
                       setFormData(f => ({...f, dispLoading: true}));
-                      await fetch(`${API_URL}/disponibilidade/resetar`, { method: 'POST' });
-                      showToast('✅ Status resetado! Espelho salvo.', 'success');
+                      const res = await fetch(`${API_URL}/disponibilidade/resetar`, { method: 'POST' });
+                      const data = await res.json();
+                      if (data.success) {
+                        showToast(`✅ Status resetado! Espelho salvo em ${data.espelho_data}`, 'success');
+                      } else {
+                        showToast('Erro ao resetar', 'error');
+                      }
                       loadDisponibilidade();
                     } catch (err) {
+                      console.error('Erro ao resetar:', err);
                       showToast('Erro ao resetar', 'error');
                       setFormData(f => ({...f, dispLoading: false}));
                     }
@@ -5859,7 +5865,17 @@
                             ⚠️ Faltosos
                           </button>
                           <button 
-                            onClick={() => setFormData({...formData, dispSubTab: 'espelho'})} 
+                            onClick={async () => {
+                              setFormData(f => ({...f, dispSubTab: 'espelho'}));
+                              // Carregar datas do espelho
+                              try {
+                                const res = await fetch(`${API_URL}/disponibilidade/espelho`);
+                                const datas = await res.json();
+                                setFormData(f => ({...f, espelhoDatas: datas}));
+                              } catch (err) {
+                                console.error('Erro ao carregar datas espelho:', err);
+                              }
+                            }} 
                             className={`px-3 py-2 font-semibold text-sm whitespace-nowrap ${dispSubTab === 'espelho' ? 'text-purple-700 border-b-2 border-purple-600 bg-purple-50' : 'text-gray-600'}`}
                           >
                             🪞 Espelho
@@ -6483,11 +6499,15 @@
                                       try {
                                         const res = await fetch(`${API_URL}/disponibilidade/espelho/${data}`);
                                         const espelho = await res.json();
+                                        console.log('Espelho carregado:', espelho);
                                         setFormData(f => ({...f, espelhoDados: espelho.dados, espelhoCarregando: false}));
                                       } catch (err) {
+                                        console.error('Erro ao carregar espelho:', err);
                                         showToast('Erro ao carregar espelho', 'error');
                                         setFormData(f => ({...f, espelhoCarregando: false}));
                                       }
+                                    } else {
+                                      setFormData(f => ({...f, espelhoDados: null, espelhoCarregando: false}));
                                     }
                                   }}
                                   className="w-full px-3 py-2 border rounded-lg text-sm"
@@ -6495,7 +6515,7 @@
                                   <option value="">Selecione uma data...</option>
                                   {(formData.espelhoDatas || []).map(e => (
                                     <option key={e.id} value={e.data_registro}>
-                                      {new Date(e.data_registro).toLocaleDateString('pt-BR')} 
+                                      {new Date(e.data_registro + 'T12:00:00').toLocaleDateString('pt-BR')} 
                                     </option>
                                   ))}
                                 </select>
@@ -6505,8 +6525,9 @@
                                   try {
                                     const res = await fetch(`${API_URL}/disponibilidade/espelho`);
                                     const datas = await res.json();
+                                    console.log('Datas espelho:', datas);
                                     setFormData(f => ({...f, espelhoDatas: datas}));
-                                    showToast('Datas atualizadas!', 'success');
+                                    showToast(`${datas.length} data(s) encontrada(s)!`, 'success');
                                   } catch (err) {
                                     showToast('Erro ao carregar datas', 'error');
                                   }
@@ -6516,6 +6537,12 @@
                                 🔄 Atualizar
                               </button>
                             </div>
+                            {/* Info de datas disponíveis */}
+                            <p className="text-xs text-gray-500 mt-2">
+                              {(formData.espelhoDatas || []).length === 0 
+                                ? 'Nenhum espelho salvo ainda. Use "Resetar Status" para criar o primeiro.' 
+                                : `${(formData.espelhoDatas || []).length} espelho(s) disponível(is)`}
+                            </p>
                           </div>
                           
                           {/* Visualização do Espelho */}
@@ -6528,6 +6555,14 @@
                             <div className="space-y-4">
                               {(() => {
                                 const dados = typeof formData.espelhoDados === 'string' ? JSON.parse(formData.espelhoDados) : formData.espelhoDados;
+                                console.log('Dados do espelho:', dados);
+                                if (!dados || !dados.regioes || dados.regioes.length === 0) {
+                                  return (
+                                    <div className="bg-white rounded-xl shadow p-8 text-center">
+                                      <p className="text-gray-500">Espelho vazio ou sem dados</p>
+                                    </div>
+                                  );
+                                }
                                 return (dados.regioes || []).map(regiao => {
                                   const lojasRegiao = (dados.lojas || []).filter(l => l.regiao_id === regiao.id);
                                   if (lojasRegiao.length === 0) return null;
