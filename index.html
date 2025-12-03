@@ -446,31 +446,17 @@
               Escaneie o QR Code ou use o botão "Copiar Copia e Cola"
             </p>
             
-            {/* Debug - Payload */}
-            <details className="mt-3">
-              <summary className="text-xs text-gray-400 cursor-pointer">🔍 Debug: Ver payload PIX</summary>
-              <div className="bg-gray-100 p-2 rounded mt-1">
-                <pre className="text-[9px] break-all whitespace-pre-wrap font-mono">{payload}</pre>
-                <div className="mt-2 flex gap-2">
-                  <a 
-                    href={`https://openpix.com.br/qrcode/debug/?brcode=${encodeURIComponent(payload)}`} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-[10px] text-blue-600 underline"
-                  >
-                    Validar no OpenPIX
-                  </a>
-                  <a 
-                    href={`https://pix.nascent.com.br/tools/pix-qr-decoder/?code=${encodeURIComponent(payload)}`} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-[10px] text-blue-600 underline"
-                  >
-                    Decodificar
-                  </a>
-                </div>
-              </div>
-            </details>
+            {/* Debug - Payload - SEMPRE VISÍVEL */}
+            <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-xs font-semibold text-yellow-800 mb-2">🔍 Payload PIX (para debug):</p>
+              <pre className="text-[10px] break-all whitespace-pre-wrap font-mono bg-white p-2 rounded border">{payload}</pre>
+              <button 
+                onClick={() => { navigator.clipboard.writeText(payload); alert('Payload copiado!'); }}
+                className="mt-2 text-xs bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600"
+              >
+                📋 Copiar Payload
+              </button>
+            </div>
           </div>
         </div>
       );
