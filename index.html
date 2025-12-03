@@ -6308,7 +6308,7 @@
                                           
                                           {/* Conteúdo Expandido (Linhas) */}
                                           {isOpen && (
-                                            <div className="border-t">
+                                            <div className="border-t" data-loja-id={loja.id}>
                                               <table className="w-full text-xs">
                                                 <thead className="bg-gray-50">
                                                   <tr>
@@ -6322,13 +6322,16 @@
                                                 </thead>
                                                 <tbody>
                                                   {/* Ordenar: Reposição primeiro, depois Titulares, depois Excedentes */}
-                                                  {[...linhasLoja].sort((a, b) => {
-                                                    if (a.is_reposicao && !b.is_reposicao) return -1;
-                                                    if (!a.is_reposicao && b.is_reposicao) return 1;
-                                                    if (a.is_excedente && !b.is_excedente) return 1;
-                                                    if (!a.is_excedente && b.is_excedente) return -1;
-                                                    return 0;
-                                                  }).map(linha => (
+                                                  {(() => {
+                                                    const linhasOrdenadas = [...linhasLoja].sort((a, b) => {
+                                                      if (a.is_reposicao && !b.is_reposicao) return -1;
+                                                      if (!a.is_reposicao && b.is_reposicao) return 1;
+                                                      if (a.is_excedente && !b.is_excedente) return 1;
+                                                      if (!a.is_excedente && b.is_excedente) return -1;
+                                                      return 0;
+                                                    });
+                                                    
+                                                    return linhasOrdenadas.map((linha, indexLinha) => (
                                                     <tr key={linha.id} className={`border-t ${linha.is_reposicao ? 'bg-blue-50/50' : linha.is_excedente ? 'bg-red-50/50' : ''} ${!linha.is_excedente && !linha.is_reposicao && rowColors[linha.status] ? rowColors[linha.status] : ''} hover:bg-gray-50`}>
                                                       <td className={`w-1 ${linha.is_reposicao ? 'bg-blue-400' : linha.is_excedente ? 'bg-red-400' : ''}`}></td>
                                                       <td className="px-1 py-0.5">
@@ -6336,6 +6339,30 @@
                                                           type="text" 
                                                           value={linha.cod_profissional || ''} 
                                                           onChange={e => updateLinha(linha.id, 'cod_profissional', e.target.value)}
+                                                          onKeyDown={e => {
+                                                            // Navegação por setas
+                                                            if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                                                              e.preventDefault();
+                                                              const inputs = document.querySelectorAll(`[data-loja-id="${loja.id}"] input[data-cod-input]`);
+                                                              const currentIndex = Array.from(inputs).findIndex(inp => inp === e.target);
+                                                              let nextIndex = e.key === 'ArrowDown' ? currentIndex + 1 : currentIndex - 1;
+                                                              if (nextIndex >= 0 && nextIndex < inputs.length) {
+                                                                inputs[nextIndex].focus();
+                                                                inputs[nextIndex].select();
+                                                              }
+                                                            }
+                                                            // Enter vai para próxima linha
+                                                            if (e.key === 'Enter') {
+                                                              e.preventDefault();
+                                                              const inputs = document.querySelectorAll(`[data-loja-id="${loja.id}"] input[data-cod-input]`);
+                                                              const currentIndex = Array.from(inputs).findIndex(inp => inp === e.target);
+                                                              if (currentIndex + 1 < inputs.length) {
+                                                                inputs[currentIndex + 1].focus();
+                                                                inputs[currentIndex + 1].select();
+                                                              }
+                                                            }
+                                                          }}
+                                                          data-cod-input={linha.id}
                                                           placeholder="..."
                                                           className={`w-full px-1 py-0.5 border border-gray-200 rounded text-center font-mono text-xs ${linha.is_reposicao ? 'bg-blue-50/50' : linha.is_excedente ? 'bg-red-50/50' : 'bg-white'}`}
                                                         />
@@ -6386,7 +6413,8 @@
                                                         </button>
                                                       </td>
                                                     </tr>
-                                                  ))}
+                                                  ));
+                                                  })()}
                                                 </tbody>
                                               </table>
                                             </div>
