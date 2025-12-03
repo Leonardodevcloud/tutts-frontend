@@ -5940,48 +5940,42 @@
                       
                       {/* ===== SUB-ABA PANORAMA ===== */}
                       {dispSubTab === 'panorama' && (
-                        <div className="space-y-4">
-                          {/* Header */}
-                          <div className="bg-gray-800 text-white rounded-t-xl p-3 flex justify-between items-center">
-                            <h2 className="text-lg font-bold">📊 PANORAMA DIÁRIO OPERACIONAL</h2>
-                            <div className="flex items-center gap-3">
-                              <div className="flex items-center gap-2 bg-gray-700 px-3 py-1.5 rounded-lg">
-                                <span className="text-sm font-semibold">Data:</span>
-                                <input 
-                                  type="date" 
-                                  value={formData.dispDataPlanilha || new Date().toISOString().split('T')[0]} 
-                                  onChange={e => setFormData({...formData, dispDataPlanilha: e.target.value})}
-                                  className="px-2 py-1 border border-gray-600 rounded text-sm font-semibold text-white bg-gray-600"
-                                />
-                              </div>
-                              <button onClick={loadDisponibilidade} className="px-3 py-1.5 bg-gray-700 text-white rounded-lg font-semibold hover:bg-gray-600 flex items-center gap-1 text-sm">
-                                🔄 Atualizar
+                        <div className="space-y-2">
+                          {/* Header compacto */}
+                          <div className="bg-gray-800 text-white px-3 py-2 flex justify-between items-center text-xs">
+                            <span className="font-bold">PANORAMA DIÁRIO OPERACIONAL</span>
+                            <div className="flex items-center gap-2">
+                              <input 
+                                type="date" 
+                                value={formData.dispDataPlanilha || new Date().toISOString().split('T')[0]} 
+                                onChange={e => setFormData({...formData, dispDataPlanilha: e.target.value})}
+                                className="px-2 py-0.5 border border-gray-600 rounded text-xs text-white bg-gray-700"
+                              />
+                              <button onClick={loadDisponibilidade} className="px-2 py-0.5 bg-gray-700 text-white rounded hover:bg-gray-600 text-xs">
+                                🔄
                               </button>
                             </div>
                           </div>
                           
-                          {/* Tabela Panorama */}
-                          <div className="bg-white rounded-b-xl shadow overflow-x-auto">
-                            <table className="w-full text-xs border-collapse">
+                          {/* Tabela Panorama Compacta */}
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-[10px] border-collapse">
                               <thead>
-                                <tr className="bg-gray-800 text-white">
-                                  <th className="px-3 py-2 text-left font-bold border border-gray-600">LOJAS</th>
-                                  <th className="px-2 py-2 text-center font-bold bg-orange-600 border border-gray-600">A CAMINHO</th>
-                                  <th className="px-2 py-2 text-center font-bold bg-green-600 border border-gray-600">CONFIR.</th>
-                                  <th className="px-2 py-2 text-center font-bold bg-blue-600 border border-gray-600">EM LOJA</th>
-                                  <th className="px-2 py-2 text-center font-bold bg-purple-600 border border-gray-600">IDEAL</th>
-                                  <th className="px-2 py-2 text-center font-bold bg-red-600 border border-gray-600">FALTA</th>
-                                  <th className="px-2 py-2 text-center font-bold bg-gray-500 border border-gray-600">SEM CONTATO</th>
-                                  <th className="px-2 py-2 text-center font-bold bg-teal-600 border border-gray-600">% EM OPERAÇÃO</th>
+                                <tr className="bg-gray-700 text-white">
+                                  <th className="px-2 py-1 text-left font-bold border border-gray-600 w-40">LOJAS</th>
+                                  <th className="px-1 py-1 text-center font-bold bg-orange-600 border border-gray-600 w-16">A CAMINHO</th>
+                                  <th className="px-1 py-1 text-center font-bold bg-green-600 border border-gray-600 w-12">CONFIR.</th>
+                                  <th className="px-1 py-1 text-center font-bold bg-blue-600 border border-gray-600 w-14">EM LOJA</th>
+                                  <th className="px-1 py-1 text-center font-bold bg-purple-600 border border-gray-600 w-12">IDEAL</th>
+                                  <th className="px-1 py-1 text-center font-bold bg-red-600 border border-gray-600 w-12">FALTA</th>
+                                  <th className="px-1 py-1 text-center font-bold bg-gray-500 border border-gray-600 w-20">SEM CONTATO</th>
+                                  <th className="px-1 py-1 text-center font-bold bg-teal-600 border border-gray-600 w-20">% EM OPERAÇÃO</th>
                                 </tr>
                               </thead>
                               <tbody>
                                 {(dispData.regioes || []).map(regiao => {
                                   const lojasRegiao = (dispData.lojas || []).filter(l => l.regiao_id === regiao.id);
                                   if (lojasRegiao.length === 0) return null;
-                                  
-                                  // Calcular totais da região
-                                  let totalACaminho = 0, totalConfirmado = 0, totalEmLoja = 0, totalIdeal = 0, totalSemContato = 0;
                                   
                                   const lojasRows = lojasRegiao.map(loja => {
                                     const linhasLoja = (dispData.linhas || []).filter(l => l.loja_id === loja.id);
@@ -5996,109 +5990,38 @@
                                     const falta = Math.max(0, ideal - emOperacao);
                                     const percOperacao = ideal > 0 ? ((emOperacao / ideal) * 100) : 0;
                                     
-                                    totalACaminho += aCaminho;
-                                    totalConfirmado += confirmado;
-                                    totalEmLoja += emLoja;
-                                    totalIdeal += ideal;
-                                    totalSemContato += semContato;
-                                    
                                     return (
-                                      <tr key={loja.id} className="border border-gray-300 hover:bg-gray-50">
-                                        <td className="px-3 py-1.5 font-medium text-gray-800 bg-gray-100 border border-gray-300">{loja.nome}</td>
-                                        <td className="px-2 py-1.5 text-center border border-gray-300 bg-orange-50">
-                                          <span className={`font-bold ${aCaminho > 0 ? 'text-orange-700' : 'text-gray-400'}`}>
-                                            {aCaminho}
-                                          </span>
-                                        </td>
-                                        <td className="px-2 py-1.5 text-center border border-gray-300 bg-green-50">
-                                          <span className={`font-bold ${confirmado > 0 ? 'text-green-700' : 'text-gray-400'}`}>
-                                            {confirmado}
-                                          </span>
-                                        </td>
-                                        <td className="px-2 py-1.5 text-center border border-gray-300 bg-blue-50">
-                                          <span className={`font-bold ${emLoja > 0 ? 'text-blue-700' : 'text-gray-400'}`}>
-                                            {emLoja}
-                                          </span>
-                                        </td>
-                                        <td className="px-2 py-1.5 text-center border border-gray-300 bg-purple-50">
-                                          <span className="font-bold text-purple-700">{ideal}</span>
-                                        </td>
-                                        <td className="px-2 py-1.5 text-center border border-gray-300">
-                                          <span className={`inline-block min-w-[24px] px-1.5 py-0.5 rounded font-bold ${falta > 0 ? 'bg-red-500 text-white' : 'bg-green-100 text-green-700'}`}>
-                                            {falta > 0 ? `-${falta}` : '0'}
-                                          </span>
-                                        </td>
-                                        <td className="px-2 py-1.5 text-center border border-gray-300 bg-gray-50">
-                                          <span className={`font-bold ${semContato > 0 ? 'text-gray-700' : 'text-gray-400'}`}>
-                                            {semContato}
-                                          </span>
-                                        </td>
-                                        <td className="px-2 py-1.5 text-center border border-gray-300">
-                                          <span className={`inline-block min-w-[50px] px-2 py-0.5 rounded font-bold ${
-                                            percOperacao >= 100 ? 'bg-green-500 text-white' :
-                                            percOperacao >= 80 ? 'bg-yellow-400 text-yellow-900' :
-                                            percOperacao >= 50 ? 'bg-orange-400 text-white' :
-                                            'bg-red-500 text-white'
-                                          }`}>
-                                            {percOperacao.toFixed(2).replace('.', ',')}%
-                                          </span>
-                                        </td>
+                                      <tr key={loja.id} className="border border-gray-300 hover:bg-gray-100">
+                                        <td className="px-2 py-0.5 font-medium bg-gray-100 border border-gray-300 truncate">{loja.nome}</td>
+                                        <td className={`px-1 py-0.5 text-center border border-gray-300 font-bold ${aCaminho > 0 ? 'bg-orange-200 text-orange-800' : 'text-gray-400'}`}>{aCaminho}</td>
+                                        <td className={`px-1 py-0.5 text-center border border-gray-300 font-bold ${confirmado > 0 ? 'bg-green-200 text-green-800' : 'text-gray-400'}`}>{confirmado}</td>
+                                        <td className={`px-1 py-0.5 text-center border border-gray-300 font-bold ${emLoja > 0 ? 'bg-blue-200 text-blue-800' : 'text-gray-400'}`}>{emLoja}</td>
+                                        <td className="px-1 py-0.5 text-center border border-gray-300 font-bold bg-purple-100 text-purple-800">{ideal}</td>
+                                        <td className={`px-1 py-0.5 text-center border border-gray-300 font-bold ${falta > 0 ? 'bg-red-500 text-white' : 'text-gray-400'}`}>{falta > 0 ? -falta : 0}</td>
+                                        <td className={`px-1 py-0.5 text-center border border-gray-300 font-bold ${semContato > 0 ? 'bg-yellow-200 text-yellow-800' : 'text-gray-400'}`}>{semContato}</td>
+                                        <td className={`px-1 py-0.5 text-center border border-gray-300 font-bold ${
+                                          percOperacao >= 100 ? 'bg-green-500 text-white' :
+                                          percOperacao >= 80 ? 'bg-yellow-400 text-gray-900' :
+                                          percOperacao >= 50 ? 'bg-orange-400 text-white' :
+                                          'bg-red-500 text-white'
+                                        }`}>{percOperacao.toFixed(2).replace('.', ',')}%</td>
                                       </tr>
                                     );
                                   });
                                   
                                   return (
                                     <React.Fragment key={regiao.id}>
-                                      {/* Header da Região com gestores */}
                                       <tr className="bg-yellow-400">
-                                        <td colSpan="8" className="px-3 py-2 font-bold text-gray-900 text-center border border-yellow-500">
-                                          {regiao.nome.toUpperCase()}
-                                          {regiao.gestores && (
-                                            <span className="ml-2 font-normal">({regiao.gestores})</span>
-                                          )}
+                                        <td colSpan="8" className="px-2 py-1 font-bold text-gray-900 text-center border border-yellow-500 text-[11px]">
+                                          {regiao.nome.toUpperCase()}{regiao.gestores ? ` (${regiao.gestores})` : ''}
                                         </td>
                                       </tr>
-                                      {/* Lojas da região */}
                                       {lojasRows}
                                     </React.Fragment>
                                   );
                                 })}
                               </tbody>
                             </table>
-                          </div>
-                          
-                          {/* Legenda */}
-                          <div className="bg-white rounded-xl shadow p-4">
-                            <h4 className="font-bold text-gray-700 mb-2">📋 Legenda</h4>
-                            <div className="flex flex-wrap gap-4 text-xs">
-                              <div className="flex items-center gap-1">
-                                <span className="w-4 h-4 rounded bg-orange-400"></span>
-                                <span>A Caminho</span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <span className="w-4 h-4 rounded bg-green-500"></span>
-                                <span>Confirmado</span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <span className="w-4 h-4 rounded bg-blue-500"></span>
-                                <span>Em Loja</span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <span className="w-4 h-4 rounded bg-purple-500"></span>
-                                <span>Ideal (Titulares)</span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <span className="w-4 h-4 rounded bg-red-500"></span>
-                                <span>Falta</span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <span className="w-4 h-4 rounded bg-gray-400"></span>
-                                <span>Sem Contato (inclui A Confirmar)</span>
-                              </div>
-                            </div>
-                            <p className="text-xs text-gray-500 mt-2">
-                              <strong>% Em Operação</strong> = (A Caminho + Confirmado + Em Loja) / Ideal × 100
-                            </p>
                           </div>
                         </div>
                       )}
