@@ -5348,20 +5348,22 @@
             </nav>
           ) : null}
 
-          <div className="bg-white border-b sticky top-0 z-10">
-            <div className="max-w-7xl mx-auto px-4 flex gap-1 overflow-x-auto">
-              {['dashboard', 'search', 'ranking', 'disponibilidade', 'relatorios', 'users'].map(tab => (
-                <button key={tab} onClick={() => setFormData({...formData, adminTab: tab})} className={`px-4 py-2.5 text-sm font-semibold whitespace-nowrap ${(!formData.adminTab && tab === 'dashboard') || formData.adminTab === tab ? 'text-purple-900 border-b-2 border-purple-900' : 'text-gray-600'}`}>
-                  {tab === 'dashboard' && '📊 Dashboard'}
-                  {tab === 'search' && '🔍 Busca Detalhada'}
-                  {tab === 'ranking' && '🏆 Ranking'}
-                  {tab === 'disponibilidade' && '📅 Disponibilidade'}
-                  {tab === 'relatorios' && '📈 Relatórios'}
-                  {tab === 'users' && '👥 Usuários'}
-                </button>
-              ))}
+          {/* Abas internas - só mostra quando NÃO está em disponibilidade */}
+          {formData.adminTab !== 'disponibilidade' && (
+            <div className="bg-white border-b sticky top-0 z-10">
+              <div className="max-w-7xl mx-auto px-4 flex gap-1 overflow-x-auto">
+                {['dashboard', 'search', 'ranking', 'relatorios', 'users'].map(tab => (
+                  <button key={tab} onClick={() => setFormData({...formData, adminTab: tab})} className={`px-4 py-2.5 text-sm font-semibold whitespace-nowrap ${(!formData.adminTab && tab === 'dashboard') || formData.adminTab === tab ? 'text-purple-900 border-b-2 border-purple-900' : 'text-gray-600'}`}>
+                    {tab === 'dashboard' && '📊 Dashboard'}
+                    {tab === 'search' && '🔍 Busca Detalhada'}
+                    {tab === 'ranking' && '🏆 Ranking'}
+                    {tab === 'relatorios' && '📈 Relatórios'}
+                    {tab === 'users' && '👥 Usuários'}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="max-w-7xl mx-auto p-6">
             {/* DASHBOARD */}
