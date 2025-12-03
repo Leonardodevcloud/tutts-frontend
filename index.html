@@ -323,19 +323,23 @@
           return id + tamanho + valor;
         };
         
-        // Calcula CRC16 CCITT-FALSE (polinômio 0x1021)
-        const crc16 = (payload) => {
+        // Calcula CRC16 conforme especificação PIX/BACEN
+        const crc16 = (str) => {
           let crc = 0xFFFF;
-          for (let i = 0; i < payload.length; i++) {
-            crc ^= payload.charCodeAt(i) << 8;
+          const polynomial = 0x1021;
+          
+          for (let i = 0; i < str.length; i++) {
+            const b = str.charCodeAt(i);
             for (let j = 0; j < 8; j++) {
-              if (crc & 0x8000) {
-                crc = ((crc << 1) ^ 0x1021) & 0xFFFF;
-              } else {
-                crc = (crc << 1) & 0xFFFF;
+              const bit = ((b >> (7 - j)) & 1) === 1;
+              const c15 = ((crc >> 15) & 1) === 1;
+              crc <<= 1;
+              if (c15 ^ bit) {
+                crc ^= polynomial;
               }
             }
           }
+          crc &= 0xFFFF;
           return crc.toString(16).toUpperCase().padStart(4, '0');
         };
         
@@ -362,11 +366,11 @@
         payload += emv('58', 'BR');                           // Country
         payload += emv('59', normalizar(nome, 25));           // Merchant Name
         payload += emv('60', normalizar(cidade, 15));         // Merchant City
-        payload += '6304';                                     // CRC placeholder
+        payload += '6304';                                     // CRC placeholder (ID 63, tamanho 04)
         
-        // Adiciona CRC
+        // Calcula e adiciona CRC no final
         const crcValue = crc16(payload);
-        payload = payload.slice(0, -4) + '6304' + crcValue;
+        payload += crcValue;
         
         return payload;
       };
@@ -374,7 +378,11 @@
       const payload = gerarPayloadPix(data.pix_key, data.valor, data.nome, 'SAO PAULO');
       
       // URL do QR Code via API pública com timestamp para evitar cache
-      const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&ecc=M&data=${encodeURIComponent(payload)}&t=${qrTimestamp}`;
+      // Usando qrserver com correção de erro alta (H) para melhor leitura
+      const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&ecc=H&margin=10&data=${encodeURIComponent(payload)}&t=${qrTimestamp}`;
+      
+      // URL alternativa (Google Charts - backup)
+      const qrCodeUrlAlt = `https://chart.googleapis.com/chart?chs=300x300&cht=qr&chl=${encodeURIComponent(payload)}&choe=UTF-8`;
       
       const copiarPayload = () => {
         navigator.clipboard.writeText(payload);
@@ -407,8 +415,9 @@
               <img 
                 src={qrCodeUrl} 
                 alt="QR Code PIX" 
-                className="w-64 h-64 border-4 border-gray-200 rounded-lg"
+                className="w-64 h-64 border-4 border-gray-200 rounded-lg bg-white"
                 key={qrTimestamp}
+                onError={(e) => { e.target.src = qrCodeUrlAlt; }}
               />
             </div>
             
@@ -423,7 +432,7 @@
                 onClick={copiarPayload} 
                 className="flex-1 px-4 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 flex items-center justify-center gap-2"
               >
-                📋 Copiar Código
+                📋 Copiar Copia e Cola
               </button>
               <button 
                 onClick={() => navigator.clipboard.writeText(data.pix_key)} 
@@ -443,13 +452,33 @@
             </button>
             
             <p className="text-xs text-gray-500 text-center mt-4">
-              Escaneie o QR Code ou copie o código para pagar via PIX
+              Escaneie o QR Code ou use o botão "Copiar Copia e Cola"
             </p>
             
-            {/* Debug - Payload (pode remover em produção) */}
+            {/* Debug - Payload */}
             <details className="mt-3">
-              <summary className="text-xs text-gray-400 cursor-pointer">Ver payload PIX</summary>
-              <pre className="text-[8px] bg-gray-100 p-2 rounded mt-1 break-all whitespace-pre-wrap">{payload}</pre>
+              <summary className="text-xs text-gray-400 cursor-pointer">🔍 Debug: Ver payload PIX</summary>
+              <div className="bg-gray-100 p-2 rounded mt-1">
+                <pre className="text-[9px] break-all whitespace-pre-wrap font-mono">{payload}</pre>
+                <div className="mt-2 flex gap-2">
+                  <a 
+                    href={`https://openpix.com.br/qrcode/debug/?brcode=${encodeURIComponent(payload)}`} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-[10px] text-blue-600 underline"
+                  >
+                    Validar no OpenPIX
+                  </a>
+                  <a 
+                    href={`https://pix.nascent.com.br/tools/pix-qr-decoder/?code=${encodeURIComponent(payload)}`} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-[10px] text-blue-600 underline"
+                  >
+                    Decodificar
+                  </a>
+                </div>
+              </div>
             </details>
           </div>
         </div>
