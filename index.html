@@ -468,7 +468,7 @@
       const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQTbc5J8j85MlYGrjWajG33cTDd6TEpYur5hgNcYUwmtra8jh3Nfsrzm-0GNJO6wCYEZAGEHxw807o7/pub?gid=0&single=true&output=tsv';
       
       // Estado - Admin Master (módulo ativo)
-      const [adminMasterModule, setAdminMasterModule] = useState('solicitacoes'); // 'solicitacoes' ou 'financeiro'
+      const [adminMasterModule, setAdminMasterModule] = useState('solicitacoes'); // 'solicitacoes', 'financeiro' ou 'disponibilidade'
       
       // Estados - Quiz de Procedimentos
       const [quizConfig, setQuizConfig] = useState({
@@ -3205,6 +3205,9 @@
                       <button onClick={() => setAdminMasterModule('financeiro')} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${adminMasterModule === 'financeiro' ? 'bg-white text-green-800' : 'text-white hover:bg-white/10'}`}>
                         💰 Financeiro
                       </button>
+                      <button onClick={() => setAdminMasterModule('disponibilidade')} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${adminMasterModule === 'disponibilidade' ? 'bg-white text-blue-800' : 'text-white hover:bg-white/10'}`}>
+                        📅 Disponibilidade
+                      </button>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
@@ -5272,9 +5275,14 @@
         );
       }
 
-      // ========== PAINEL ADMIN NORMAL (e Admin Master no módulo Solicitações) ==========
-      // Admin Master no módulo solicitações OU admin normal
-      const isAdminMasterSolicitacoes = user.role === 'admin_master' && adminMasterModule === 'solicitacoes';
+      // ========== MÓDULO DISPONIBILIDADE ==========
+      // Quando "Disponibilidade" é selecionado, mostrar interface dedicada
+      // A lógica completa já está na aba 'disponibilidade' dentro do painel admin
+      // Aqui apenas garantimos que quando o módulo é 'disponibilidade', mostramos o painel admin com essa aba
+
+      // ========== PAINEL ADMIN NORMAL (e Admin Master no módulo Solicitações/Disponibilidade) ==========
+      const isAdminMasterSolicitacoes = user.role === 'admin_master' && (adminMasterModule === 'solicitacoes' || adminMasterModule === 'disponibilidade');
+      const isAdminNormal = user.role === 'admin';
       
       return (
         <div className="min-h-screen bg-gray-50">
@@ -5292,11 +5300,14 @@
                     <p className="text-xs text-indigo-200">{user.fullName}</p>
                   </div>
                   <div className="flex bg-white/10 rounded-lg p-1">
-                    <button onClick={() => setAdminMasterModule('solicitacoes')} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${adminMasterModule === 'solicitacoes' ? 'bg-white text-purple-900' : 'text-white hover:bg-white/10'}`}>
+                    <button onClick={() => { setAdminMasterModule('solicitacoes'); setFormData(f => ({...f, adminTab: 'saques'})); }} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${adminMasterModule === 'solicitacoes' && formData.adminTab !== 'disponibilidade' ? 'bg-white text-purple-900' : 'text-white hover:bg-white/10'}`}>
                       📋 Solicitações
                     </button>
                     <button onClick={() => setAdminMasterModule('financeiro')} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${adminMasterModule === 'financeiro' ? 'bg-white text-green-800' : 'text-white hover:bg-white/10'}`}>
                       💰 Financeiro
+                    </button>
+                    <button onClick={() => { setAdminMasterModule('solicitacoes'); setFormData(f => ({...f, adminTab: 'disponibilidade'})); }} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${adminMasterModule === 'solicitacoes' && formData.adminTab === 'disponibilidade' ? 'bg-white text-blue-800' : 'text-white hover:bg-white/10'}`}>
+                      📅 Disponibilidade
                     </button>
                   </div>
                 </div>
@@ -5310,15 +5321,23 @@
                 </div>
               </div>
             </nav>
-          ) : (
-            /* Navbar Admin Normal */
+          ) : isAdminNormal ? (
+            /* Navbar Admin Normal com alternância de módulos */
             <nav className="bg-purple-900 shadow-lg">
               <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
                 <div className="flex items-center gap-3">
                   <h1 className="text-xl font-bold text-white">Painel Admin</h1>
+                  <div className="flex bg-purple-800/50 rounded-lg p-1">
+                    <button onClick={() => { setAdminMasterModule('solicitacoes'); setFormData(f => ({...f, adminTab: 'saques'})); }} className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${formData.adminTab !== 'disponibilidade' ? 'bg-white text-purple-900' : 'text-white hover:bg-white/10'}`}>
+                      📋 Solicitações
+                    </button>
+                    <button onClick={() => { setAdminMasterModule('solicitacoes'); setFormData(f => ({...f, adminTab: 'disponibilidade'})); }} className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${formData.adminTab === 'disponibilidade' ? 'bg-white text-blue-800' : 'text-white hover:bg-white/10'}`}>
+                      📅 Disponibilidade
+                    </button>
+                  </div>
                   <div className="flex items-center gap-2 bg-purple-800/50 px-3 py-1 rounded-full">
                     <span className={`w-2 h-2 rounded-full ${isPolling ? 'bg-yellow-400 animate-pulse' : 'bg-green-400'}`}></span>
-                    <span className="text-xs text-purple-200">{isPolling ? 'Atualizando...' : lastUpdate ? `Atualizado ${lastUpdate.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}` : 'Auto-refresh: 60s'}</span>
+                    <span className="text-xs text-purple-200">{isPolling ? 'Atualizando...' : lastUpdate ? `${lastUpdate.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}` : '60s'}</span>
                   </div>
                 </div>
                 <div className="flex gap-2">
