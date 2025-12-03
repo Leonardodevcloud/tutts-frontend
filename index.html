@@ -6020,9 +6020,12 @@
                               </button>
                               {/* Link Público */}
                               <button 
-                                onClick={() => window.open(`${API_URL}/disponibilidade/publico`, '_blank')}
+                                onClick={() => {
+                                  navigator.clipboard.writeText(`${API_URL}/disponibilidade/publico`);
+                                  showToast('✅ Link copiado!', 'success');
+                                }}
                                 className="px-1.5 py-0.5 bg-blue-600 text-white rounded hover:bg-blue-700 text-[10px]"
-                                title="Abrir link público (somente leitura)"
+                                title="Copiar link público (somente leitura)"
                               >
                                 🔗 Link Público
                               </button>
