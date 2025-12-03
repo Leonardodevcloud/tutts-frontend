@@ -323,23 +323,19 @@
           return id + tamanho + valor;
         };
         
-        // Calcula CRC16 conforme especificação PIX/BACEN
+        // Calcula CRC16 CCITT-FALSE para PIX
         const crc16 = (str) => {
           let crc = 0xFFFF;
-          const polynomial = 0x1021;
-          
           for (let i = 0; i < str.length; i++) {
-            const b = str.charCodeAt(i);
+            crc ^= str.charCodeAt(i) << 8;
             for (let j = 0; j < 8; j++) {
-              const bit = ((b >> (7 - j)) & 1) === 1;
-              const c15 = ((crc >> 15) & 1) === 1;
-              crc <<= 1;
-              if (c15 ^ bit) {
-                crc ^= polynomial;
+              if (crc & 0x8000) {
+                crc = ((crc << 1) ^ 0x1021) & 0xFFFF;
+              } else {
+                crc = (crc << 1) & 0xFFFF;
               }
             }
           }
-          crc &= 0xFFFF;
           return crc.toString(16).toUpperCase().padStart(4, '0');
         };
         
@@ -347,7 +343,7 @@
         const chaveLimpa = limparChave(chave);
         
         // Monta Merchant Account Info (ID 26)
-        const gui = emv('00', 'br.gov.bcb.pix');
+        const gui = emv('00', 'BR.GOV.BCB.PIX');
         const chaveField = emv('01', chaveLimpa);
         const merchantAccount = emv('26', gui + chaveField);
         
@@ -377,12 +373,8 @@
       
       const payload = gerarPayloadPix(data.pix_key, data.valor, data.nome, 'SAO PAULO');
       
-      // URL do QR Code via API pública com timestamp para evitar cache
-      // Usando qrserver com correção de erro alta (H) para melhor leitura
-      const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&ecc=H&margin=10&data=${encodeURIComponent(payload)}&t=${qrTimestamp}`;
-      
-      // URL alternativa (Google Charts - backup)
-      const qrCodeUrlAlt = `https://chart.googleapis.com/chart?chs=300x300&cht=qr&chl=${encodeURIComponent(payload)}&choe=UTF-8`;
+      // URL do QR Code via Google Charts (mais confiável)
+      const qrCodeUrl = `https://chart.googleapis.com/chart?chs=300x300&cht=qr&chl=${encodeURIComponent(payload)}&choe=UTF-8&t=${qrTimestamp}`;
       
       const copiarPayload = () => {
         navigator.clipboard.writeText(payload);
