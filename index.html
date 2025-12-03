@@ -5968,17 +5968,54 @@
                       {/* ===== SUB-ABA PANORAMA ===== */}
                       {dispSubTab === 'panorama' && (
                         <div>
-                          {/* Header compacto */}
-                          <div className="bg-gray-800 text-white px-2 py-1 flex justify-between items-center text-[10px]">
-                            <span className="font-bold">PANORAMA DIÁRIO OPERACIONAL</span>
-                            <div className="flex items-center gap-1">
+                          {/* Header com controles */}
+                          <div className="bg-gray-800 text-white px-2 py-1.5 flex justify-between items-center text-[10px] flex-wrap gap-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold">PANORAMA DIÁRIO</span>
+                              {/* Contador em tempo real */}
+                              {(() => {
+                                const linhas = dispData.linhas || [];
+                                const titulares = linhas.filter(l => !l.is_excedente && !l.is_reposicao).length;
+                                const emOp = linhas.filter(l => ['A CAMINHO', 'CONFIRMADO', 'EM LOJA'].includes(l.status)).length;
+                                const faltam = Math.max(0, titulares - emOp);
+                                const perc = titulares > 0 ? ((emOp / titulares) * 100).toFixed(0) : 0;
+                                return (
+                                  <div className="flex items-center gap-2">
+                                    <span className={`px-2 py-0.5 rounded text-xs font-bold ${perc >= 80 ? 'bg-green-500' : perc >= 50 ? 'bg-yellow-500 text-black' : 'bg-red-500'}`}>
+                                      {perc}% GERAL
+                                    </span>
+                                    {faltam > 0 && (
+                                      <span className="px-2 py-0.5 rounded text-xs font-bold bg-red-600 animate-pulse">
+                                        ⚠️ FALTAM {faltam} P/ 100%
+                                      </span>
+                                    )}
+                                  </div>
+                                );
+                              })()}
+                            </div>
+                            <div className="flex items-center gap-1 flex-wrap">
+                              {/* Horário última atualização */}
+                              <span className="text-gray-400 text-[9px]">
+                                Atualizado: {new Date().toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}
+                              </span>
+                              {/* Ordenação */}
+                              <select 
+                                value={formData.panoramaOrdem || 'regiao'}
+                                onChange={e => setFormData({...formData, panoramaOrdem: e.target.value})}
+                                className="px-1 py-0 bg-gray-700 border border-gray-600 rounded text-[9px]"
+                              >
+                                <option value="regiao">Por Região</option>
+                                <option value="pior">Pior → Melhor</option>
+                                <option value="melhor">Melhor → Pior</option>
+                                <option value="alfa">A → Z</option>
+                              </select>
                               <input 
                                 type="date" 
                                 value={formData.dispDataPlanilha || new Date().toISOString().split('T')[0]} 
                                 onChange={e => setFormData({...formData, dispDataPlanilha: e.target.value})}
                                 className="px-1 py-0 border border-gray-600 rounded text-[10px] text-white bg-gray-700"
                               />
-                              <button onClick={loadDisponibilidade} className="px-1 py-0 bg-gray-700 text-white rounded hover:bg-gray-600 text-[10px]">
+                              <button onClick={loadDisponibilidade} className="px-1.5 py-0.5 bg-gray-700 text-white rounded hover:bg-gray-600 text-[10px]">
                                 🔄
                               </button>
                               <button 
@@ -5993,8 +6030,7 @@
                                           showToast('✅ Copiado! Cole no WhatsApp', 'success');
                                         } catch (err) {
                                           const url = canvas.toDataURL('image/png');
-                                          const win = window.open();
-                                          win.document.write(`<img src="${url}"/><p>Botão direito → Copiar</p>`);
+                                          window.open().document.write(`<img src="${url}"/>`);
                                         }
                                       }, 'image/png');
                                     } else {
@@ -6005,27 +6041,75 @@
                                         canvas.toBlob(async (blob) => {
                                           try {
                                             await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-                                            showToast('✅ Copiado! Cole no WhatsApp', 'success');
+                                            showToast('✅ Copiado!', 'success');
                                           } catch (err) {
-                                            const url = canvas.toDataURL('image/png');
-                                            const win = window.open();
-                                            win.document.write(`<img src="${url}"/>`);
+                                            window.open().document.write(`<img src="${canvas.toDataURL('image/png')}"/>`);
                                           }
                                         }, 'image/png');
                                       };
                                       document.head.appendChild(script);
                                       showToast('⏳ Preparando...', 'info');
                                     }
-                                  } catch (err) { showToast('Erro ao copiar', 'error'); }
+                                  } catch (err) { showToast('Erro', 'error'); }
                                 }}
-                                className="px-2 py-0.5 bg-green-600 text-white rounded hover:bg-green-700 text-xs"
+                                className="px-1.5 py-0.5 bg-green-600 text-white rounded hover:bg-green-700 text-[10px]"
                               >
                                 📋 Copiar
+                              </button>
+                              {/* Botão Enviar WhatsApp */}
+                              <button 
+                                onClick={() => {
+                                  const linhas = dispData.linhas || [];
+                                  const regioes = dispData.regioes || [];
+                                  const lojas = dispData.lojas || [];
+                                  const dataHoje = new Date().toLocaleDateString('pt-BR');
+                                  const hora = new Date().toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'});
+                                  
+                                  let msg = `📊 *PANORAMA DIÁRIO*\n📅 ${dataHoje} às ${hora}\n\n`;
+                                  
+                                  let totalGeral = { titulares: 0, emOp: 0, falta: 0 };
+                                  
+                                  regioes.forEach(regiao => {
+                                    const lojasReg = lojas.filter(l => l.regiao_id === regiao.id);
+                                    if (lojasReg.length === 0) return;
+                                    
+                                    msg += `*${regiao.nome}*${regiao.gestores ? ` (${regiao.gestores})` : ''}\n`;
+                                    
+                                    lojasReg.forEach(loja => {
+                                      const linhasLoja = linhas.filter(l => l.loja_id === loja.id);
+                                      const titulares = linhasLoja.filter(l => !l.is_excedente && !l.is_reposicao).length;
+                                      const emOp = linhasLoja.filter(l => ['A CAMINHO', 'CONFIRMADO', 'EM LOJA'].includes(l.status)).length;
+                                      const falta = Math.max(0, titulares - emOp);
+                                      const perc = titulares > 0 ? ((emOp / titulares) * 100).toFixed(0) : 0;
+                                      
+                                      totalGeral.titulares += titulares;
+                                      totalGeral.emOp += emOp;
+                                      
+                                      const emoji = perc >= 100 ? '🟢' : perc >= 80 ? '🟡' : perc >= 50 ? '🟠' : '🔴';
+                                      msg += `${emoji} ${loja.nome}: ${perc}%${falta > 0 ? ` (-${falta})` : ''}\n`;
+                                    });
+                                    msg += '\n';
+                                  });
+                                  
+                                  const percGeral = totalGeral.titulares > 0 ? ((totalGeral.emOp / totalGeral.titulares) * 100).toFixed(0) : 0;
+                                  const faltaGeral = Math.max(0, totalGeral.titulares - totalGeral.emOp);
+                                  msg += `━━━━━━━━━━━━━━━\n`;
+                                  msg += `*TOTAL GERAL: ${percGeral}%*\n`;
+                                  msg += `Em operação: ${totalGeral.emOp}/${totalGeral.titulares}\n`;
+                                  if (faltaGeral > 0) msg += `⚠️ Faltam ${faltaGeral} para 100%`;
+                                  
+                                  const encoded = encodeURIComponent(msg);
+                                  window.open(`https://wa.me/?text=${encoded}`, '_blank');
+                                }}
+                                className="px-1.5 py-0.5 bg-green-500 text-white rounded hover:bg-green-600 text-[10px]"
+                                title="Enviar resumo via WhatsApp"
+                              >
+                                📤 WhatsApp
                               </button>
                             </div>
                           </div>
                           
-                          {/* Tabela Ultra Compacta */}
+                          {/* Tabela Panorama */}
                           <div className="overflow-x-auto">
                             <table id="panorama-table" style={{fontSize: '9px', borderCollapse: 'collapse', width: '100%'}}>
                               <thead>
@@ -6041,12 +6125,15 @@
                                 </tr>
                               </thead>
                               <tbody>
-                                {(dispData.regioes || []).map(regiao => {
-                                  const lojasRegiao = (dispData.lojas || []).filter(l => l.regiao_id === regiao.id);
-                                  if (lojasRegiao.length === 0) return null;
+                                {(() => {
+                                  const ordem = formData.panoramaOrdem || 'regiao';
+                                  const regioes = dispData.regioes || [];
+                                  const lojas = dispData.lojas || [];
+                                  const linhas = dispData.linhas || [];
                                   
-                                  const lojasRows = lojasRegiao.map(loja => {
-                                    const linhasLoja = (dispData.linhas || []).filter(l => l.loja_id === loja.id);
+                                  // Calcular dados de cada loja
+                                  const lojasComDados = lojas.map(loja => {
+                                    const linhasLoja = linhas.filter(l => l.loja_id === loja.id);
                                     const titulares = linhasLoja.filter(l => !l.is_excedente && !l.is_reposicao).length;
                                     const aCaminho = linhasLoja.filter(l => l.status === 'A CAMINHO').length;
                                     const confirmado = linhasLoja.filter(l => l.status === 'CONFIRMADO').length;
@@ -6055,32 +6142,139 @@
                                     const emOperacao = aCaminho + confirmado + emLoja;
                                     const falta = Math.max(0, titulares - emOperacao);
                                     const perc = titulares > 0 ? ((emOperacao / titulares) * 100) : 0;
-                                    
-                                    return (
-                                      <tr key={loja.id}>
-                                        <td style={{padding: '1px 4px', border: '1px solid #ccc', backgroundColor: '#f3f4f6', fontWeight: '500', whiteSpace: 'nowrap'}}>{loja.nome}</td>
-                                        <td style={{padding: '1px 3px', border: '1px solid #ccc', textAlign: 'center', fontWeight: 'bold', backgroundColor: aCaminho > 0 ? '#fed7aa' : '', color: aCaminho > 0 ? '#9a3412' : '#999'}}>{aCaminho}</td>
-                                        <td style={{padding: '1px 3px', border: '1px solid #ccc', textAlign: 'center', fontWeight: 'bold', backgroundColor: confirmado > 0 ? '#bbf7d0' : '', color: confirmado > 0 ? '#166534' : '#999'}}>{confirmado}</td>
-                                        <td style={{padding: '1px 3px', border: '1px solid #ccc', textAlign: 'center', fontWeight: 'bold', backgroundColor: emLoja > 0 ? '#bfdbfe' : '', color: emLoja > 0 ? '#1e40af' : '#999'}}>{emLoja}</td>
-                                        <td style={{padding: '1px 3px', border: '1px solid #ccc', textAlign: 'center', fontWeight: 'bold', backgroundColor: '#f3e8ff', color: '#7e22ce'}}>{titulares}</td>
-                                        <td style={{padding: '1px 3px', border: '1px solid #ccc', textAlign: 'center', fontWeight: 'bold', backgroundColor: falta > 0 ? '#ef4444' : '', color: falta > 0 ? 'white' : '#999'}}>{falta > 0 ? -falta : 0}</td>
-                                        <td style={{padding: '1px 3px', border: '1px solid #ccc', textAlign: 'center', fontWeight: 'bold', backgroundColor: semContato > 0 ? '#fef08a' : '', color: semContato > 0 ? '#854d0e' : '#999'}}>{semContato}</td>
-                                        <td style={{padding: '1px 3px', border: '1px solid #ccc', textAlign: 'center', fontWeight: 'bold', backgroundColor: perc >= 100 ? '#22c55e' : perc >= 80 ? '#facc15' : perc >= 50 ? '#fb923c' : '#ef4444', color: perc >= 80 && perc < 100 ? '#000' : 'white'}}>{perc.toFixed(0)}%</td>
-                                      </tr>
-                                    );
+                                    const regiao = regioes.find(r => r.id === loja.regiao_id);
+                                    return { ...loja, titulares, aCaminho, confirmado, emLoja, semContato, emOperacao, falta, perc, regiao };
                                   });
                                   
-                                  return (
-                                    <React.Fragment key={regiao.id}>
-                                      <tr>
-                                        <td colSpan="8" style={{padding: '2px 4px', border: '1px solid #ca8a04', backgroundColor: '#facc15', fontWeight: 'bold', textAlign: 'center', fontSize: '9px'}}>
-                                          {regiao.nome}{regiao.gestores ? ` (${regiao.gestores})` : ''}
-                                        </td>
-                                      </tr>
-                                      {lojasRows}
-                                    </React.Fragment>
-                                  );
-                                })}
+                                  // Totais gerais
+                                  let totalGeral = { aCaminho: 0, confirmado: 0, emLoja: 0, titulares: 0, falta: 0, semContato: 0, emOperacao: 0 };
+                                  lojasComDados.forEach(l => {
+                                    totalGeral.aCaminho += l.aCaminho;
+                                    totalGeral.confirmado += l.confirmado;
+                                    totalGeral.emLoja += l.emLoja;
+                                    totalGeral.titulares += l.titulares;
+                                    totalGeral.falta += l.falta;
+                                    totalGeral.semContato += l.semContato;
+                                    totalGeral.emOperacao += l.emOperacao;
+                                  });
+                                  const percGeral = totalGeral.titulares > 0 ? ((totalGeral.emOperacao / totalGeral.titulares) * 100) : 0;
+                                  
+                                  // Ordenar conforme seleção
+                                  if (ordem === 'pior') {
+                                    lojasComDados.sort((a, b) => a.perc - b.perc);
+                                  } else if (ordem === 'melhor') {
+                                    lojasComDados.sort((a, b) => b.perc - a.perc);
+                                  } else if (ordem === 'alfa') {
+                                    lojasComDados.sort((a, b) => a.nome.localeCompare(b.nome));
+                                  }
+                                  
+                                  // Renderizar por região ou flat
+                                  if (ordem === 'regiao') {
+                                    return (
+                                      <>
+                                        {regioes.map(regiao => {
+                                          const lojasReg = lojasComDados.filter(l => l.regiao_id === regiao.id);
+                                          if (lojasReg.length === 0) return null;
+                                          
+                                          // Subtotal da região
+                                          const subTotal = lojasReg.reduce((acc, l) => ({
+                                            aCaminho: acc.aCaminho + l.aCaminho,
+                                            confirmado: acc.confirmado + l.confirmado,
+                                            emLoja: acc.emLoja + l.emLoja,
+                                            titulares: acc.titulares + l.titulares,
+                                            falta: acc.falta + l.falta,
+                                            semContato: acc.semContato + l.semContato,
+                                            emOperacao: acc.emOperacao + l.emOperacao
+                                          }), { aCaminho: 0, confirmado: 0, emLoja: 0, titulares: 0, falta: 0, semContato: 0, emOperacao: 0 });
+                                          const subPerc = subTotal.titulares > 0 ? ((subTotal.emOperacao / subTotal.titulares) * 100) : 0;
+                                          
+                                          return (
+                                            <React.Fragment key={regiao.id}>
+                                              {/* Header região */}
+                                              <tr>
+                                                <td colSpan="8" style={{padding: '2px 4px', border: '1px solid #ca8a04', backgroundColor: '#facc15', fontWeight: 'bold', textAlign: 'center', fontSize: '9px'}}>
+                                                  {regiao.nome}{regiao.gestores ? ` (${regiao.gestores})` : ''}
+                                                </td>
+                                              </tr>
+                                              {/* Lojas */}
+                                              {lojasReg.map(loja => (
+                                                <tr key={loja.id} style={{backgroundColor: loja.perc < 50 ? '#fef2f2' : ''}}>
+                                                  <td style={{padding: '1px 4px', border: '1px solid #ccc', backgroundColor: loja.perc < 50 ? '#fee2e2' : '#f3f4f6', fontWeight: '500', whiteSpace: 'nowrap'}}>
+                                                    {loja.perc < 50 && <span style={{color: '#ef4444', marginRight: '2px'}}>🔴</span>}
+                                                    {loja.nome}
+                                                  </td>
+                                                  <td style={{padding: '1px 3px', border: '1px solid #ccc', textAlign: 'center', fontWeight: 'bold', backgroundColor: loja.aCaminho > 0 ? '#fed7aa' : '', color: loja.aCaminho > 0 ? '#9a3412' : '#999'}}>{loja.aCaminho}</td>
+                                                  <td style={{padding: '1px 3px', border: '1px solid #ccc', textAlign: 'center', fontWeight: 'bold', backgroundColor: loja.confirmado > 0 ? '#bbf7d0' : '', color: loja.confirmado > 0 ? '#166534' : '#999'}}>{loja.confirmado}</td>
+                                                  <td style={{padding: '1px 3px', border: '1px solid #ccc', textAlign: 'center', fontWeight: 'bold', backgroundColor: loja.emLoja > 0 ? '#bfdbfe' : '', color: loja.emLoja > 0 ? '#1e40af' : '#999'}}>{loja.emLoja}</td>
+                                                  <td style={{padding: '1px 3px', border: '1px solid #ccc', textAlign: 'center', fontWeight: 'bold', backgroundColor: '#f3e8ff', color: '#7e22ce'}}>{loja.titulares}</td>
+                                                  <td style={{padding: '1px 3px', border: '1px solid #ccc', textAlign: 'center', fontWeight: 'bold', backgroundColor: loja.falta > 0 ? '#ef4444' : '', color: loja.falta > 0 ? 'white' : '#999'}}>{loja.falta > 0 ? -loja.falta : 0}</td>
+                                                  <td style={{padding: '1px 3px', border: '1px solid #ccc', textAlign: 'center', fontWeight: 'bold', backgroundColor: loja.semContato > 0 ? '#fef08a' : '', color: loja.semContato > 0 ? '#854d0e' : '#999'}}>{loja.semContato}</td>
+                                                  <td style={{padding: '1px 3px', border: '1px solid #ccc', textAlign: 'center', fontWeight: 'bold', backgroundColor: loja.perc >= 100 ? '#22c55e' : loja.perc >= 80 ? '#facc15' : loja.perc >= 50 ? '#fb923c' : '#ef4444', color: loja.perc >= 80 && loja.perc < 100 ? '#000' : 'white'}}>{loja.perc.toFixed(0)}%</td>
+                                                </tr>
+                                              ))}
+                                              {/* Subtotal região */}
+                                              <tr style={{backgroundColor: '#e5e7eb'}}>
+                                                <td style={{padding: '1px 4px', border: '1px solid #999', fontWeight: 'bold', fontSize: '8px', textAlign: 'right'}}>SUBTOTAL {regiao.nome}:</td>
+                                                <td style={{padding: '1px 3px', border: '1px solid #999', textAlign: 'center', fontWeight: 'bold', fontSize: '8px'}}>{subTotal.aCaminho}</td>
+                                                <td style={{padding: '1px 3px', border: '1px solid #999', textAlign: 'center', fontWeight: 'bold', fontSize: '8px'}}>{subTotal.confirmado}</td>
+                                                <td style={{padding: '1px 3px', border: '1px solid #999', textAlign: 'center', fontWeight: 'bold', fontSize: '8px'}}>{subTotal.emLoja}</td>
+                                                <td style={{padding: '1px 3px', border: '1px solid #999', textAlign: 'center', fontWeight: 'bold', fontSize: '8px'}}>{subTotal.titulares}</td>
+                                                <td style={{padding: '1px 3px', border: '1px solid #999', textAlign: 'center', fontWeight: 'bold', fontSize: '8px', color: '#dc2626'}}>{subTotal.falta > 0 ? -subTotal.falta : 0}</td>
+                                                <td style={{padding: '1px 3px', border: '1px solid #999', textAlign: 'center', fontWeight: 'bold', fontSize: '8px'}}>{subTotal.semContato}</td>
+                                                <td style={{padding: '1px 3px', border: '1px solid #999', textAlign: 'center', fontWeight: 'bold', fontSize: '8px', backgroundColor: subPerc >= 100 ? '#22c55e' : subPerc >= 80 ? '#facc15' : '#ef4444', color: subPerc >= 80 && subPerc < 100 ? '#000' : 'white'}}>{subPerc.toFixed(0)}%</td>
+                                              </tr>
+                                            </React.Fragment>
+                                          );
+                                        })}
+                                        {/* TOTAL GERAL */}
+                                        <tr style={{backgroundColor: '#1f2937', color: 'white'}}>
+                                          <td style={{padding: '2px 4px', border: '1px solid #555', fontWeight: 'bold', fontSize: '9px'}}>TOTAL GERAL</td>
+                                          <td style={{padding: '2px 3px', border: '1px solid #555', textAlign: 'center', fontWeight: 'bold'}}>{totalGeral.aCaminho}</td>
+                                          <td style={{padding: '2px 3px', border: '1px solid #555', textAlign: 'center', fontWeight: 'bold'}}>{totalGeral.confirmado}</td>
+                                          <td style={{padding: '2px 3px', border: '1px solid #555', textAlign: 'center', fontWeight: 'bold'}}>{totalGeral.emLoja}</td>
+                                          <td style={{padding: '2px 3px', border: '1px solid #555', textAlign: 'center', fontWeight: 'bold'}}>{totalGeral.titulares}</td>
+                                          <td style={{padding: '2px 3px', border: '1px solid #555', textAlign: 'center', fontWeight: 'bold', color: '#fca5a5'}}>{totalGeral.falta > 0 ? -totalGeral.falta : 0}</td>
+                                          <td style={{padding: '2px 3px', border: '1px solid #555', textAlign: 'center', fontWeight: 'bold'}}>{totalGeral.semContato}</td>
+                                          <td style={{padding: '2px 3px', border: '1px solid #555', textAlign: 'center', fontWeight: 'bold', backgroundColor: percGeral >= 100 ? '#22c55e' : percGeral >= 80 ? '#facc15' : '#ef4444', color: percGeral >= 80 && percGeral < 100 ? '#000' : 'white'}}>{percGeral.toFixed(0)}%</td>
+                                        </tr>
+                                      </>
+                                    );
+                                  } else {
+                                    // Ordenação flat (sem agrupar por região)
+                                    return (
+                                      <>
+                                        {lojasComDados.map((loja, idx) => (
+                                          <tr key={loja.id} style={{backgroundColor: loja.perc < 50 ? '#fef2f2' : ''}}>
+                                            <td style={{padding: '1px 4px', border: '1px solid #ccc', backgroundColor: loja.perc < 50 ? '#fee2e2' : '#f3f4f6', fontWeight: '500', whiteSpace: 'nowrap'}}>
+                                              <span style={{color: '#666', fontSize: '8px', marginRight: '3px'}}>{idx + 1}.</span>
+                                              {loja.perc < 50 && <span style={{color: '#ef4444', marginRight: '2px'}}>🔴</span>}
+                                              {loja.nome}
+                                              <span style={{color: '#999', fontSize: '7px', marginLeft: '3px'}}>({loja.regiao?.nome || ''})</span>
+                                            </td>
+                                            <td style={{padding: '1px 3px', border: '1px solid #ccc', textAlign: 'center', fontWeight: 'bold', backgroundColor: loja.aCaminho > 0 ? '#fed7aa' : '', color: loja.aCaminho > 0 ? '#9a3412' : '#999'}}>{loja.aCaminho}</td>
+                                            <td style={{padding: '1px 3px', border: '1px solid #ccc', textAlign: 'center', fontWeight: 'bold', backgroundColor: loja.confirmado > 0 ? '#bbf7d0' : '', color: loja.confirmado > 0 ? '#166534' : '#999'}}>{loja.confirmado}</td>
+                                            <td style={{padding: '1px 3px', border: '1px solid #ccc', textAlign: 'center', fontWeight: 'bold', backgroundColor: loja.emLoja > 0 ? '#bfdbfe' : '', color: loja.emLoja > 0 ? '#1e40af' : '#999'}}>{loja.emLoja}</td>
+                                            <td style={{padding: '1px 3px', border: '1px solid #ccc', textAlign: 'center', fontWeight: 'bold', backgroundColor: '#f3e8ff', color: '#7e22ce'}}>{loja.titulares}</td>
+                                            <td style={{padding: '1px 3px', border: '1px solid #ccc', textAlign: 'center', fontWeight: 'bold', backgroundColor: loja.falta > 0 ? '#ef4444' : '', color: loja.falta > 0 ? 'white' : '#999'}}>{loja.falta > 0 ? -loja.falta : 0}</td>
+                                            <td style={{padding: '1px 3px', border: '1px solid #ccc', textAlign: 'center', fontWeight: 'bold', backgroundColor: loja.semContato > 0 ? '#fef08a' : '', color: loja.semContato > 0 ? '#854d0e' : '#999'}}>{loja.semContato}</td>
+                                            <td style={{padding: '1px 3px', border: '1px solid #ccc', textAlign: 'center', fontWeight: 'bold', backgroundColor: loja.perc >= 100 ? '#22c55e' : loja.perc >= 80 ? '#facc15' : loja.perc >= 50 ? '#fb923c' : '#ef4444', color: loja.perc >= 80 && loja.perc < 100 ? '#000' : 'white'}}>{loja.perc.toFixed(0)}%</td>
+                                          </tr>
+                                        ))}
+                                        {/* TOTAL GERAL */}
+                                        <tr style={{backgroundColor: '#1f2937', color: 'white'}}>
+                                          <td style={{padding: '2px 4px', border: '1px solid #555', fontWeight: 'bold', fontSize: '9px'}}>TOTAL GERAL</td>
+                                          <td style={{padding: '2px 3px', border: '1px solid #555', textAlign: 'center', fontWeight: 'bold'}}>{totalGeral.aCaminho}</td>
+                                          <td style={{padding: '2px 3px', border: '1px solid #555', textAlign: 'center', fontWeight: 'bold'}}>{totalGeral.confirmado}</td>
+                                          <td style={{padding: '2px 3px', border: '1px solid #555', textAlign: 'center', fontWeight: 'bold'}}>{totalGeral.emLoja}</td>
+                                          <td style={{padding: '2px 3px', border: '1px solid #555', textAlign: 'center', fontWeight: 'bold'}}>{totalGeral.titulares}</td>
+                                          <td style={{padding: '2px 3px', border: '1px solid #555', textAlign: 'center', fontWeight: 'bold', color: '#fca5a5'}}>{totalGeral.falta > 0 ? -totalGeral.falta : 0}</td>
+                                          <td style={{padding: '2px 3px', border: '1px solid #555', textAlign: 'center', fontWeight: 'bold'}}>{totalGeral.semContato}</td>
+                                          <td style={{padding: '2px 3px', border: '1px solid #555', textAlign: 'center', fontWeight: 'bold', backgroundColor: percGeral >= 100 ? '#22c55e' : percGeral >= 80 ? '#facc15' : '#ef4444', color: percGeral >= 80 && percGeral < 100 ? '#000' : 'white'}}>{percGeral.toFixed(0)}%</td>
+                                        </tr>
+                                      </>
+                                    );
+                                  }
+                                })()}
                               </tbody>
                             </table>
                           </div>
@@ -6330,6 +6524,38 @@
                       {/* ===== SUB-ABA CONFIG ===== */}
                       {dispSubTab === 'config' && (
                         <div className="space-y-4">
+                          {/* Link Público */}
+                          <div className="bg-white rounded-xl shadow p-4">
+                            <h3 className="font-bold text-gray-800 mb-3">🔗 Link Público (Somente Leitura)</h3>
+                            <p className="text-sm text-gray-600 mb-3">
+                              Compartilhe este link com gestores para visualizar o panorama em tempo real, sem precisar de login.
+                              A página atualiza automaticamente a cada 2 minutos.
+                            </p>
+                            <div className="flex gap-2 flex-wrap">
+                              <input 
+                                type="text" 
+                                readOnly
+                                value={`${API_URL}/disponibilidade/publico`}
+                                className="flex-1 px-3 py-2 bg-gray-100 border rounded-lg text-sm font-mono"
+                              />
+                              <button 
+                                onClick={() => {
+                                  navigator.clipboard.writeText(`${API_URL}/disponibilidade/publico`);
+                                  showToast('✅ Link copiado!', 'success');
+                                }}
+                                className="px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700"
+                              >
+                                📋 Copiar Link
+                              </button>
+                              <button 
+                                onClick={() => window.open(`${API_URL}/disponibilidade/publico`, '_blank')}
+                                className="px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700"
+                              >
+                                🔗 Abrir
+                              </button>
+                            </div>
+                          </div>
+                          
                           {/* Adicionar Região */}
                           <div className="bg-white rounded-xl shadow p-4">
                             <h3 className="font-bold text-gray-800 mb-3">🌍 Regiões</h3>
@@ -6593,6 +6819,23 @@
                                     className="px-2 py-1 border border-purple-300 rounded text-sm font-semibold text-purple-800 bg-white"
                                   />
                                 </div>
+                                {/* Campo de busca */}
+                                <div className="flex items-center gap-2 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-200">
+                                  <span className="text-blue-500">🔍</span>
+                                  <input 
+                                    type="text" 
+                                    placeholder="Buscar código ou nome..."
+                                    value={formData.buscaEntregador || ''}
+                                    onChange={e => setFormData({...formData, buscaEntregador: e.target.value})}
+                                    className="px-2 py-1 border border-blue-300 rounded text-sm bg-white w-48"
+                                  />
+                                  {formData.buscaEntregador && (
+                                    <button 
+                                      onClick={() => setFormData({...formData, buscaEntregador: ''})}
+                                      className="text-blue-400 hover:text-blue-600"
+                                    >×</button>
+                                  )}
+                                </div>
                               </div>
                               <div className="flex gap-2">
                                 <button onClick={loadDisponibilidade} className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 flex items-center gap-1 text-sm">
@@ -6603,6 +6846,46 @@
                                 </button>
                               </div>
                             </div>
+                            
+                            {/* Resultados da busca */}
+                            {formData.buscaEntregador && formData.buscaEntregador.length >= 2 && (
+                              <div className="mt-3 p-3 bg-blue-50 rounded-lg">
+                                <p className="text-xs font-semibold text-blue-700 mb-2">Resultados para "{formData.buscaEntregador}":</p>
+                                <div className="space-y-1 max-h-40 overflow-y-auto">
+                                  {(() => {
+                                    const termo = formData.buscaEntregador.toLowerCase();
+                                    const resultados = (dispData.linhas || []).filter(l => 
+                                      (l.cod_profissional && l.cod_profissional.toLowerCase().includes(termo)) ||
+                                      (l.nome_profissional && l.nome_profissional.toLowerCase().includes(termo))
+                                    );
+                                    if (resultados.length === 0) {
+                                      return <p className="text-gray-500 text-sm">Nenhum resultado encontrado</p>;
+                                    }
+                                    return resultados.slice(0, 10).map(linha => {
+                                      const loja = (dispData.lojas || []).find(l => l.id === linha.loja_id);
+                                      return (
+                                        <div key={linha.id} className="flex items-center justify-between p-2 bg-white rounded text-xs">
+                                          <div className="flex items-center gap-2">
+                                            <span className="font-mono font-bold">{linha.cod_profissional || '-'}</span>
+                                            <span>{linha.nome_profissional || 'Sem nome'}</span>
+                                          </div>
+                                          <div className="flex items-center gap-2">
+                                            <span className="text-gray-500">{loja?.nome || ''}</span>
+                                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                              linha.status === 'EM LOJA' ? 'bg-blue-100 text-blue-700' :
+                                              linha.status === 'CONFIRMADO' ? 'bg-green-100 text-green-700' :
+                                              linha.status === 'A CAMINHO' ? 'bg-orange-100 text-orange-700' :
+                                              linha.status === 'FALTANDO' ? 'bg-red-100 text-red-700' :
+                                              'bg-gray-100 text-gray-700'
+                                            }`}>{linha.status}</span>
+                                          </div>
+                                        </div>
+                                      );
+                                    });
+                                  })()}
+                                </div>
+                              </div>
+                            )}
                           </div>
                           
                           {/* Modal de Falta */}
