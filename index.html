@@ -351,6 +351,7 @@
         // Monta payload PIX Estático
         let payload = '';
         payload += emv('00', '01');                           // Payload Format Indicator
+        payload += emv('01', '11');                           // Point of Initiation Method (11 = estático)
         payload += merchantAccount;                            // Merchant Account (PIX)
         payload += emv('52', '0000');                         // MCC (não informado)
         payload += emv('53', '986');                          // Currency (BRL)
@@ -363,6 +364,7 @@
         payload += emv('58', 'BR');                           // Country
         payload += emv('59', normalizar(nome, 25));           // Merchant Name
         payload += emv('60', normalizar(cidade, 15));         // Merchant City
+        payload += emv('62', emv('05', '***'));               // Additional Data (TXID = ***)
         payload += '6304';                                     // CRC placeholder (ID 63, tamanho 04)
         
         // Calcula e adiciona CRC no final
