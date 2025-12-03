@@ -6100,15 +6100,15 @@
                           <div className="overflow-x-auto">
                             <table id="panorama-table" style={{fontSize: '9px', borderCollapse: 'collapse', width: '100%'}}>
                               <thead>
-                                <tr style={{backgroundColor: '#374151', color: 'white'}}>
-                                  <th style={{padding: '2px 4px', border: '1px solid #555', textAlign: 'left', fontWeight: 'bold'}}>LOJAS</th>
-                                  <th style={{padding: '2px 3px', border: '1px solid #555', backgroundColor: '#ea580c', fontWeight: 'bold', whiteSpace: 'nowrap'}}>A CAMINHO</th>
-                                  <th style={{padding: '2px 3px', border: '1px solid #555', backgroundColor: '#16a34a', fontWeight: 'bold'}}>CONFIR.</th>
-                                  <th style={{padding: '2px 3px', border: '1px solid #555', backgroundColor: '#2563eb', fontWeight: 'bold', whiteSpace: 'nowrap'}}>EM LOJA</th>
-                                  <th style={{padding: '2px 3px', border: '1px solid #555', backgroundColor: '#9333ea', fontWeight: 'bold'}}>IDEAL</th>
-                                  <th style={{padding: '2px 3px', border: '1px solid #555', backgroundColor: '#dc2626', fontWeight: 'bold'}}>FALTA</th>
-                                  <th style={{padding: '2px 3px', border: '1px solid #555', backgroundColor: '#6b7280', fontWeight: 'bold', whiteSpace: 'nowrap'}}>S/ CONTATO</th>
-                                  <th style={{padding: '2px 3px', border: '1px solid #555', backgroundColor: '#0d9488', fontWeight: 'bold'}}>% OPERAÇÃO</th>
+                                <tr style={{backgroundColor: '#f8fafc', borderBottom: '2px solid #e2e8f0'}}>
+                                  <th style={{padding: '4px 6px', border: '1px solid #e2e8f0', textAlign: 'left', fontWeight: '600', color: '#475569'}}>LOJAS</th>
+                                  <th style={{padding: '4px 4px', border: '1px solid #e2e8f0', fontWeight: '600', color: '#475569', whiteSpace: 'nowrap'}}>A CAMINHO</th>
+                                  <th style={{padding: '4px 4px', border: '1px solid #e2e8f0', fontWeight: '600', color: '#475569'}}>CONFIR.</th>
+                                  <th style={{padding: '4px 4px', border: '1px solid #e2e8f0', fontWeight: '600', color: '#475569', whiteSpace: 'nowrap'}}>EM LOJA</th>
+                                  <th style={{padding: '4px 4px', border: '1px solid #e2e8f0', fontWeight: '600', color: '#475569'}}>IDEAL</th>
+                                  <th style={{padding: '4px 4px', border: '1px solid #e2e8f0', fontWeight: '600', color: '#475569'}}>FALTA</th>
+                                  <th style={{padding: '4px 4px', border: '1px solid #e2e8f0', fontWeight: '600', color: '#475569', whiteSpace: 'nowrap'}}>S/ CONTATO</th>
+                                  <th style={{padding: '4px 4px', border: '1px solid #e2e8f0', fontWeight: '600', color: '#475569'}}>%</th>
                                 </tr>
                               </thead>
                               <tbody>
@@ -6167,39 +6167,39 @@
                                             <React.Fragment key={regiao.id}>
                                               {/* Header região */}
                                               <tr>
-                                                <td colSpan="8" style={{padding: '2px 4px', border: '1px solid #ca8a04', backgroundColor: '#facc15', fontWeight: 'bold', textAlign: 'center', fontSize: '9px'}}>
+                                                <td colSpan="8" style={{padding: '4px 6px', border: '1px solid #e2e8f0', backgroundColor: '#f1f5f9', fontWeight: '600', color: '#334155', fontSize: '9px'}}>
                                                   {regiao.nome}{regiao.gestores ? ` (${regiao.gestores})` : ''}
                                                 </td>
                                               </tr>
                                               {/* Lojas */}
                                               {lojasReg.map(loja => (
-                                                <tr key={loja.id} style={{backgroundColor: loja.perc < 50 ? '#fef2f2' : ''}}>
-                                                  <td style={{padding: '1px 4px', border: '1px solid #ccc', backgroundColor: loja.perc < 50 ? '#fee2e2' : '#f3f4f6', fontWeight: '500', whiteSpace: 'nowrap'}}>
+                                                <tr key={loja.id} style={{backgroundColor: loja.perc < 50 ? '#fef2f2' : 'white'}}>
+                                                  <td style={{padding: '2px 6px', border: '1px solid #e2e8f0', backgroundColor: loja.perc < 50 ? '#fef2f2' : '#fafafa', fontWeight: '500', whiteSpace: 'nowrap'}}>
                                                     {loja.perc < 50 && <span style={{color: '#ef4444', marginRight: '2px'}}>🔴</span>}
                                                     {loja.nome}
                                                   </td>
-                                                  <td style={{padding: '1px 3px', border: '1px solid #ccc', textAlign: 'center', fontWeight: 'bold', backgroundColor: loja.aCaminho > 0 ? '#fed7aa' : '', color: loja.aCaminho > 0 ? '#9a3412' : '#999'}}>{loja.aCaminho}</td>
-                                                  <td style={{padding: '1px 3px', border: '1px solid #ccc', textAlign: 'center', fontWeight: 'bold', backgroundColor: loja.confirmado > 0 ? '#bbf7d0' : '', color: loja.confirmado > 0 ? '#166534' : '#999'}}>{loja.confirmado}</td>
-                                                  <td style={{padding: '1px 3px', border: '1px solid #ccc', textAlign: 'center', fontWeight: 'bold', backgroundColor: loja.emLoja > 0 ? '#bfdbfe' : '', color: loja.emLoja > 0 ? '#1e40af' : '#999'}}>{loja.emLoja}</td>
-                                                  <td style={{padding: '1px 3px', border: '1px solid #ccc', textAlign: 'center', fontWeight: 'bold', backgroundColor: '#f3e8ff', color: '#7e22ce'}}>{loja.titulares}</td>
-                                                  <td style={{padding: '1px 3px', border: '1px solid #ccc', textAlign: 'center', fontWeight: 'bold', backgroundColor: loja.falta > 0 ? '#ef4444' : '', color: loja.falta > 0 ? 'white' : '#999'}}>{loja.falta > 0 ? -loja.falta : 0}</td>
-                                                  <td style={{padding: '1px 3px', border: '1px solid #ccc', textAlign: 'center', fontWeight: 'bold', backgroundColor: loja.semContato > 0 ? '#fef08a' : '', color: loja.semContato > 0 ? '#854d0e' : '#999'}}>{loja.semContato}</td>
-                                                  <td style={{padding: '1px 3px', border: '1px solid #ccc', textAlign: 'center', fontWeight: 'bold', backgroundColor: loja.perc >= 100 ? '#22c55e' : loja.perc >= 80 ? '#facc15' : loja.perc >= 50 ? '#fb923c' : '#ef4444', color: loja.perc >= 80 && loja.perc < 100 ? '#000' : 'white'}}>{loja.perc.toFixed(0)}%</td>
+                                                  <td style={{padding: '2px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '500', color: loja.aCaminho > 0 ? '#ea580c' : '#cbd5e1'}}>{loja.aCaminho}</td>
+                                                  <td style={{padding: '2px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '500', color: loja.confirmado > 0 ? '#16a34a' : '#cbd5e1'}}>{loja.confirmado}</td>
+                                                  <td style={{padding: '2px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '500', color: loja.emLoja > 0 ? '#2563eb' : '#cbd5e1'}}>{loja.emLoja}</td>
+                                                  <td style={{padding: '2px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '500', color: '#64748b'}}>{loja.titulares}</td>
+                                                  <td style={{padding: '2px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '600', color: loja.falta > 0 ? '#dc2626' : '#cbd5e1'}}>{loja.falta > 0 ? -loja.falta : 0}</td>
+                                                  <td style={{padding: '2px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '500', color: loja.semContato > 0 ? '#d97706' : '#cbd5e1'}}>{loja.semContato}</td>
+                                                  <td style={{padding: '2px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '600', backgroundColor: loja.perc < 50 ? '#fee2e2' : loja.perc < 80 ? '#fef3c7' : loja.perc >= 100 ? '#dcfce7' : '', color: loja.perc < 50 ? '#dc2626' : loja.perc < 80 ? '#d97706' : loja.perc >= 100 ? '#16a34a' : '#64748b'}}>{loja.perc.toFixed(0)}%</td>
                                                 </tr>
                                               ))}
                                             </React.Fragment>
                                           );
                                         })}
                                         {/* TOTAL GERAL */}
-                                        <tr style={{backgroundColor: '#1f2937', color: 'white'}}>
-                                          <td style={{padding: '2px 4px', border: '1px solid #555', fontWeight: 'bold', fontSize: '9px'}}>TOTAL GERAL</td>
-                                          <td style={{padding: '2px 3px', border: '1px solid #555', textAlign: 'center', fontWeight: 'bold'}}>{totalGeral.aCaminho}</td>
-                                          <td style={{padding: '2px 3px', border: '1px solid #555', textAlign: 'center', fontWeight: 'bold'}}>{totalGeral.confirmado}</td>
-                                          <td style={{padding: '2px 3px', border: '1px solid #555', textAlign: 'center', fontWeight: 'bold'}}>{totalGeral.emLoja}</td>
-                                          <td style={{padding: '2px 3px', border: '1px solid #555', textAlign: 'center', fontWeight: 'bold'}}>{totalGeral.titulares}</td>
-                                          <td style={{padding: '2px 3px', border: '1px solid #555', textAlign: 'center', fontWeight: 'bold', color: '#fca5a5'}}>{totalGeral.falta > 0 ? -totalGeral.falta : 0}</td>
-                                          <td style={{padding: '2px 3px', border: '1px solid #555', textAlign: 'center', fontWeight: 'bold'}}>{totalGeral.semContato}</td>
-                                          <td style={{padding: '2px 3px', border: '1px solid #555', textAlign: 'center', fontWeight: 'bold', backgroundColor: percGeral >= 100 ? '#22c55e' : percGeral >= 80 ? '#facc15' : '#ef4444', color: percGeral >= 80 && percGeral < 100 ? '#000' : 'white'}}>{percGeral.toFixed(0)}%</td>
+                                        <tr style={{backgroundColor: '#f8fafc', borderTop: '2px solid #cbd5e1'}}>
+                                          <td style={{padding: '4px 6px', border: '1px solid #e2e8f0', fontWeight: '700', fontSize: '9px', color: '#1e293b'}}>TOTAL GERAL</td>
+                                          <td style={{padding: '3px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '600', color: '#ea580c'}}>{totalGeral.aCaminho}</td>
+                                          <td style={{padding: '3px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '600', color: '#16a34a'}}>{totalGeral.confirmado}</td>
+                                          <td style={{padding: '3px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '600', color: '#2563eb'}}>{totalGeral.emLoja}</td>
+                                          <td style={{padding: '3px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '600', color: '#64748b'}}>{totalGeral.titulares}</td>
+                                          <td style={{padding: '3px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '700', color: totalGeral.falta > 0 ? '#dc2626' : '#cbd5e1'}}>{totalGeral.falta > 0 ? -totalGeral.falta : 0}</td>
+                                          <td style={{padding: '3px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '600', color: totalGeral.semContato > 0 ? '#d97706' : '#cbd5e1'}}>{totalGeral.semContato}</td>
+                                          <td style={{padding: '3px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '700', backgroundColor: percGeral < 50 ? '#fee2e2' : percGeral < 80 ? '#fef3c7' : percGeral >= 100 ? '#dcfce7' : '', color: percGeral < 50 ? '#dc2626' : percGeral < 80 ? '#d97706' : percGeral >= 100 ? '#16a34a' : '#64748b'}}>{percGeral.toFixed(0)}%</td>
                                         </tr>
                                       </>
                                     );
@@ -6208,32 +6208,32 @@
                                     return (
                                       <>
                                         {lojasComDados.map((loja, idx) => (
-                                          <tr key={loja.id} style={{backgroundColor: loja.perc < 50 ? '#fef2f2' : ''}}>
-                                            <td style={{padding: '1px 4px', border: '1px solid #ccc', backgroundColor: loja.perc < 50 ? '#fee2e2' : '#f3f4f6', fontWeight: '500', whiteSpace: 'nowrap'}}>
-                                              <span style={{color: '#666', fontSize: '8px', marginRight: '3px'}}>{idx + 1}.</span>
+                                          <tr key={loja.id} style={{backgroundColor: loja.perc < 50 ? '#fef2f2' : 'white'}}>
+                                            <td style={{padding: '2px 6px', border: '1px solid #e2e8f0', backgroundColor: loja.perc < 50 ? '#fef2f2' : '#fafafa', fontWeight: '500', whiteSpace: 'nowrap'}}>
+                                              <span style={{color: '#94a3b8', fontSize: '8px', marginRight: '3px'}}>{idx + 1}.</span>
                                               {loja.perc < 50 && <span style={{color: '#ef4444', marginRight: '2px'}}>🔴</span>}
                                               {loja.nome}
-                                              <span style={{color: '#999', fontSize: '7px', marginLeft: '3px'}}>({loja.regiao?.nome || ''})</span>
+                                              <span style={{color: '#94a3b8', fontSize: '7px', marginLeft: '3px'}}>({loja.regiao?.nome || ''})</span>
                                             </td>
-                                            <td style={{padding: '1px 3px', border: '1px solid #ccc', textAlign: 'center', fontWeight: 'bold', backgroundColor: loja.aCaminho > 0 ? '#fed7aa' : '', color: loja.aCaminho > 0 ? '#9a3412' : '#999'}}>{loja.aCaminho}</td>
-                                            <td style={{padding: '1px 3px', border: '1px solid #ccc', textAlign: 'center', fontWeight: 'bold', backgroundColor: loja.confirmado > 0 ? '#bbf7d0' : '', color: loja.confirmado > 0 ? '#166534' : '#999'}}>{loja.confirmado}</td>
-                                            <td style={{padding: '1px 3px', border: '1px solid #ccc', textAlign: 'center', fontWeight: 'bold', backgroundColor: loja.emLoja > 0 ? '#bfdbfe' : '', color: loja.emLoja > 0 ? '#1e40af' : '#999'}}>{loja.emLoja}</td>
-                                            <td style={{padding: '1px 3px', border: '1px solid #ccc', textAlign: 'center', fontWeight: 'bold', backgroundColor: '#f3e8ff', color: '#7e22ce'}}>{loja.titulares}</td>
-                                            <td style={{padding: '1px 3px', border: '1px solid #ccc', textAlign: 'center', fontWeight: 'bold', backgroundColor: loja.falta > 0 ? '#ef4444' : '', color: loja.falta > 0 ? 'white' : '#999'}}>{loja.falta > 0 ? -loja.falta : 0}</td>
-                                            <td style={{padding: '1px 3px', border: '1px solid #ccc', textAlign: 'center', fontWeight: 'bold', backgroundColor: loja.semContato > 0 ? '#fef08a' : '', color: loja.semContato > 0 ? '#854d0e' : '#999'}}>{loja.semContato}</td>
-                                            <td style={{padding: '1px 3px', border: '1px solid #ccc', textAlign: 'center', fontWeight: 'bold', backgroundColor: loja.perc >= 100 ? '#22c55e' : loja.perc >= 80 ? '#facc15' : loja.perc >= 50 ? '#fb923c' : '#ef4444', color: loja.perc >= 80 && loja.perc < 100 ? '#000' : 'white'}}>{loja.perc.toFixed(0)}%</td>
+                                            <td style={{padding: '2px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '500', color: loja.aCaminho > 0 ? '#ea580c' : '#cbd5e1'}}>{loja.aCaminho}</td>
+                                            <td style={{padding: '2px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '500', color: loja.confirmado > 0 ? '#16a34a' : '#cbd5e1'}}>{loja.confirmado}</td>
+                                            <td style={{padding: '2px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '500', color: loja.emLoja > 0 ? '#2563eb' : '#cbd5e1'}}>{loja.emLoja}</td>
+                                            <td style={{padding: '2px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '500', color: '#64748b'}}>{loja.titulares}</td>
+                                            <td style={{padding: '2px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '600', color: loja.falta > 0 ? '#dc2626' : '#cbd5e1'}}>{loja.falta > 0 ? -loja.falta : 0}</td>
+                                            <td style={{padding: '2px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '500', color: loja.semContato > 0 ? '#d97706' : '#cbd5e1'}}>{loja.semContato}</td>
+                                            <td style={{padding: '2px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '600', backgroundColor: loja.perc < 50 ? '#fee2e2' : loja.perc < 80 ? '#fef3c7' : loja.perc >= 100 ? '#dcfce7' : '', color: loja.perc < 50 ? '#dc2626' : loja.perc < 80 ? '#d97706' : loja.perc >= 100 ? '#16a34a' : '#64748b'}}>{loja.perc.toFixed(0)}%</td>
                                           </tr>
                                         ))}
                                         {/* TOTAL GERAL */}
-                                        <tr style={{backgroundColor: '#1f2937', color: 'white'}}>
-                                          <td style={{padding: '2px 4px', border: '1px solid #555', fontWeight: 'bold', fontSize: '9px'}}>TOTAL GERAL</td>
-                                          <td style={{padding: '2px 3px', border: '1px solid #555', textAlign: 'center', fontWeight: 'bold'}}>{totalGeral.aCaminho}</td>
-                                          <td style={{padding: '2px 3px', border: '1px solid #555', textAlign: 'center', fontWeight: 'bold'}}>{totalGeral.confirmado}</td>
-                                          <td style={{padding: '2px 3px', border: '1px solid #555', textAlign: 'center', fontWeight: 'bold'}}>{totalGeral.emLoja}</td>
-                                          <td style={{padding: '2px 3px', border: '1px solid #555', textAlign: 'center', fontWeight: 'bold'}}>{totalGeral.titulares}</td>
-                                          <td style={{padding: '2px 3px', border: '1px solid #555', textAlign: 'center', fontWeight: 'bold', color: '#fca5a5'}}>{totalGeral.falta > 0 ? -totalGeral.falta : 0}</td>
-                                          <td style={{padding: '2px 3px', border: '1px solid #555', textAlign: 'center', fontWeight: 'bold'}}>{totalGeral.semContato}</td>
-                                          <td style={{padding: '2px 3px', border: '1px solid #555', textAlign: 'center', fontWeight: 'bold', backgroundColor: percGeral >= 100 ? '#22c55e' : percGeral >= 80 ? '#facc15' : '#ef4444', color: percGeral >= 80 && percGeral < 100 ? '#000' : 'white'}}>{percGeral.toFixed(0)}%</td>
+                                        <tr style={{backgroundColor: '#f8fafc', borderTop: '2px solid #cbd5e1'}}>
+                                          <td style={{padding: '4px 6px', border: '1px solid #e2e8f0', fontWeight: '700', fontSize: '9px', color: '#1e293b'}}>TOTAL GERAL</td>
+                                          <td style={{padding: '3px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '600', color: '#ea580c'}}>{totalGeral.aCaminho}</td>
+                                          <td style={{padding: '3px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '600', color: '#16a34a'}}>{totalGeral.confirmado}</td>
+                                          <td style={{padding: '3px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '600', color: '#2563eb'}}>{totalGeral.emLoja}</td>
+                                          <td style={{padding: '3px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '600', color: '#64748b'}}>{totalGeral.titulares}</td>
+                                          <td style={{padding: '3px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '700', color: totalGeral.falta > 0 ? '#dc2626' : '#cbd5e1'}}>{totalGeral.falta > 0 ? -totalGeral.falta : 0}</td>
+                                          <td style={{padding: '3px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '600', color: totalGeral.semContato > 0 ? '#d97706' : '#cbd5e1'}}>{totalGeral.semContato}</td>
+                                          <td style={{padding: '3px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '700', backgroundColor: percGeral < 50 ? '#fee2e2' : percGeral < 80 ? '#fef3c7' : percGeral >= 100 ? '#dcfce7' : '', color: percGeral < 50 ? '#dc2626' : percGeral < 80 ? '#d97706' : percGeral >= 100 ? '#16a34a' : '#64748b'}}>{percGeral.toFixed(0)}%</td>
                                         </tr>
                                       </>
                                     );
