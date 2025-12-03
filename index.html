@@ -6018,93 +6018,13 @@
                               <button onClick={loadDisponibilidade} className="px-1.5 py-0.5 bg-gray-700 text-white rounded hover:bg-gray-600 text-[10px]">
                                 🔄
                               </button>
+                              {/* Link Público */}
                               <button 
-                                onClick={async () => {
-                                  try {
-                                    const tabela = document.getElementById('panorama-table');
-                                    if (typeof html2canvas !== 'undefined') {
-                                      const canvas = await html2canvas(tabela, { backgroundColor: '#ffffff', scale: 2 });
-                                      canvas.toBlob(async (blob) => {
-                                        try {
-                                          await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-                                          showToast('✅ Copiado! Cole no WhatsApp', 'success');
-                                        } catch (err) {
-                                          const url = canvas.toDataURL('image/png');
-                                          window.open().document.write(`<img src="${url}"/>`);
-                                        }
-                                      }, 'image/png');
-                                    } else {
-                                      const script = document.createElement('script');
-                                      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
-                                      script.onload = async () => {
-                                        const canvas = await html2canvas(tabela, { backgroundColor: '#ffffff', scale: 2 });
-                                        canvas.toBlob(async (blob) => {
-                                          try {
-                                            await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-                                            showToast('✅ Copiado!', 'success');
-                                          } catch (err) {
-                                            window.open().document.write(`<img src="${canvas.toDataURL('image/png')}"/>`);
-                                          }
-                                        }, 'image/png');
-                                      };
-                                      document.head.appendChild(script);
-                                      showToast('⏳ Preparando...', 'info');
-                                    }
-                                  } catch (err) { showToast('Erro', 'error'); }
-                                }}
-                                className="px-1.5 py-0.5 bg-green-600 text-white rounded hover:bg-green-700 text-[10px]"
+                                onClick={() => window.open(`${API_URL}/disponibilidade/publico`, '_blank')}
+                                className="px-1.5 py-0.5 bg-blue-600 text-white rounded hover:bg-blue-700 text-[10px]"
+                                title="Abrir link público (somente leitura)"
                               >
-                                📋 Copiar
-                              </button>
-                              {/* Botão Enviar WhatsApp */}
-                              <button 
-                                onClick={() => {
-                                  const linhas = dispData.linhas || [];
-                                  const regioes = dispData.regioes || [];
-                                  const lojas = dispData.lojas || [];
-                                  const dataHoje = new Date().toLocaleDateString('pt-BR');
-                                  const hora = new Date().toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'});
-                                  
-                                  let msg = `📊 *PANORAMA DIÁRIO*\n📅 ${dataHoje} às ${hora}\n\n`;
-                                  
-                                  let totalGeral = { titulares: 0, emOp: 0, falta: 0 };
-                                  
-                                  regioes.forEach(regiao => {
-                                    const lojasReg = lojas.filter(l => l.regiao_id === regiao.id);
-                                    if (lojasReg.length === 0) return;
-                                    
-                                    msg += `*${regiao.nome}*${regiao.gestores ? ` (${regiao.gestores})` : ''}\n`;
-                                    
-                                    lojasReg.forEach(loja => {
-                                      const linhasLoja = linhas.filter(l => l.loja_id === loja.id);
-                                      const titulares = linhasLoja.filter(l => !l.is_excedente && !l.is_reposicao).length;
-                                      const emOp = linhasLoja.filter(l => ['A CAMINHO', 'CONFIRMADO', 'EM LOJA'].includes(l.status)).length;
-                                      const falta = Math.max(0, titulares - emOp);
-                                      const perc = titulares > 0 ? ((emOp / titulares) * 100).toFixed(0) : 0;
-                                      
-                                      totalGeral.titulares += titulares;
-                                      totalGeral.emOp += emOp;
-                                      
-                                      const emoji = perc >= 100 ? '🟢' : perc >= 80 ? '🟡' : perc >= 50 ? '🟠' : '🔴';
-                                      msg += `${emoji} ${loja.nome}: ${perc}%${falta > 0 ? ` (-${falta})` : ''}\n`;
-                                    });
-                                    msg += '\n';
-                                  });
-                                  
-                                  const percGeral = totalGeral.titulares > 0 ? ((totalGeral.emOp / totalGeral.titulares) * 100).toFixed(0) : 0;
-                                  const faltaGeral = Math.max(0, totalGeral.titulares - totalGeral.emOp);
-                                  msg += `━━━━━━━━━━━━━━━\n`;
-                                  msg += `*TOTAL GERAL: ${percGeral}%*\n`;
-                                  msg += `Em operação: ${totalGeral.emOp}/${totalGeral.titulares}\n`;
-                                  if (faltaGeral > 0) msg += `⚠️ Faltam ${faltaGeral} para 100%`;
-                                  
-                                  const encoded = encodeURIComponent(msg);
-                                  window.open(`https://wa.me/?text=${encoded}`, '_blank');
-                                }}
-                                className="px-1.5 py-0.5 bg-green-500 text-white rounded hover:bg-green-600 text-[10px]"
-                                title="Enviar resumo via WhatsApp"
-                              >
-                                📤 WhatsApp
+                                🔗 Link Público
                               </button>
                             </div>
                           </div>
@@ -6176,18 +6096,6 @@
                                           const lojasReg = lojasComDados.filter(l => l.regiao_id === regiao.id);
                                           if (lojasReg.length === 0) return null;
                                           
-                                          // Subtotal da região
-                                          const subTotal = lojasReg.reduce((acc, l) => ({
-                                            aCaminho: acc.aCaminho + l.aCaminho,
-                                            confirmado: acc.confirmado + l.confirmado,
-                                            emLoja: acc.emLoja + l.emLoja,
-                                            titulares: acc.titulares + l.titulares,
-                                            falta: acc.falta + l.falta,
-                                            semContato: acc.semContato + l.semContato,
-                                            emOperacao: acc.emOperacao + l.emOperacao
-                                          }), { aCaminho: 0, confirmado: 0, emLoja: 0, titulares: 0, falta: 0, semContato: 0, emOperacao: 0 });
-                                          const subPerc = subTotal.titulares > 0 ? ((subTotal.emOperacao / subTotal.titulares) * 100) : 0;
-                                          
                                           return (
                                             <React.Fragment key={regiao.id}>
                                               {/* Header região */}
@@ -6212,17 +6120,6 @@
                                                   <td style={{padding: '1px 3px', border: '1px solid #ccc', textAlign: 'center', fontWeight: 'bold', backgroundColor: loja.perc >= 100 ? '#22c55e' : loja.perc >= 80 ? '#facc15' : loja.perc >= 50 ? '#fb923c' : '#ef4444', color: loja.perc >= 80 && loja.perc < 100 ? '#000' : 'white'}}>{loja.perc.toFixed(0)}%</td>
                                                 </tr>
                                               ))}
-                                              {/* Subtotal região */}
-                                              <tr style={{backgroundColor: '#e5e7eb'}}>
-                                                <td style={{padding: '1px 4px', border: '1px solid #999', fontWeight: 'bold', fontSize: '8px', textAlign: 'right'}}>SUBTOTAL {regiao.nome}:</td>
-                                                <td style={{padding: '1px 3px', border: '1px solid #999', textAlign: 'center', fontWeight: 'bold', fontSize: '8px'}}>{subTotal.aCaminho}</td>
-                                                <td style={{padding: '1px 3px', border: '1px solid #999', textAlign: 'center', fontWeight: 'bold', fontSize: '8px'}}>{subTotal.confirmado}</td>
-                                                <td style={{padding: '1px 3px', border: '1px solid #999', textAlign: 'center', fontWeight: 'bold', fontSize: '8px'}}>{subTotal.emLoja}</td>
-                                                <td style={{padding: '1px 3px', border: '1px solid #999', textAlign: 'center', fontWeight: 'bold', fontSize: '8px'}}>{subTotal.titulares}</td>
-                                                <td style={{padding: '1px 3px', border: '1px solid #999', textAlign: 'center', fontWeight: 'bold', fontSize: '8px', color: '#dc2626'}}>{subTotal.falta > 0 ? -subTotal.falta : 0}</td>
-                                                <td style={{padding: '1px 3px', border: '1px solid #999', textAlign: 'center', fontWeight: 'bold', fontSize: '8px'}}>{subTotal.semContato}</td>
-                                                <td style={{padding: '1px 3px', border: '1px solid #999', textAlign: 'center', fontWeight: 'bold', fontSize: '8px', backgroundColor: subPerc >= 100 ? '#22c55e' : subPerc >= 80 ? '#facc15' : '#ef4444', color: subPerc >= 80 && subPerc < 100 ? '#000' : 'white'}}>{subPerc.toFixed(0)}%</td>
-                                              </tr>
                                             </React.Fragment>
                                           );
                                         })}
