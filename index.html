@@ -244,6 +244,9 @@
     const PixQRCodeModal = ({ data, onClose }) => {
       if (!data) return null;
       
+      // State para forçar regeneração do QR Code
+      const [qrTimestamp, setQrTimestamp] = React.useState(Date.now());
+      
       // Gera o payload PIX (BR Code) - Padrão EMV/BACEN
       const gerarPayloadPix = (chave, valor, nome, cidade) => {
         // Normaliza removendo acentos e caracteres especiais
@@ -254,18 +257,6 @@
             .replace(/[^a-zA-Z0-9 ]/g, '')
             .toUpperCase()
             .substring(0, max);
-        };
-        
-        // Detecta se número é telefone brasileiro (DDD + 8 ou 9 dígitos)
-        const ehTelefone = (num) => {
-          if (num.length === 10 || num.length === 11) {
-            const ddd = parseInt(num.substring(0, 2));
-            if (ddd >= 11 && ddd <= 99) {
-              if (num.length === 11 && num[2] === '9') return true;
-              if (num.length === 10) return true;
-            }
-          }
-          return false;
         };
         
         // Limpa a chave PIX conforme o tipo
@@ -280,18 +271,23 @@
           }
           
           // Telefone com +55 já incluso
+          if (chTrim.startsWith('+55')) {
+            return chTrim;
+          }
+          
+          // Telefone com + mas sem 55
           if (chTrim.startsWith('+')) {
-            return '+' + apenasNumeros;
+            return chTrim;
           }
           
-          // Telefone brasileiro (com parênteses, hífen, ou formato 10-11 dígitos)
-          if (chTrim.includes('(') || chTrim.includes(')') || ehTelefone(apenasNumeros)) {
-            return '+55' + apenasNumeros;
-          }
-          
-          // CPF: 11 dígitos mas NÃO é telefone
-          if (apenasNumeros.length === 11 && !ehTelefone(apenasNumeros)) {
-            return apenasNumeros;
+          // CPF: 11 dígitos (sem formatação)
+          if (apenasNumeros.length === 11) {
+            // Verifica se parece telefone (começa com DDD válido e 9)
+            const ddd = parseInt(apenasNumeros.substring(0, 2));
+            if (ddd >= 11 && ddd <= 99 && apenasNumeros[2] === '9') {
+              return '+55' + apenasNumeros;
+            }
+            return apenasNumeros; // CPF
           }
           
           // CNPJ: 14 dígitos
@@ -299,8 +295,15 @@
             return apenasNumeros;
           }
           
-          // Chave aleatória UUID (mantém hífens)
-          if (/^[a-f0-9-]{36}$/i.test(chTrim)) {
+          // Telefone: 10 ou 11 dígitos com formatação (parênteses, hífen)
+          if (chTrim.includes('(') || chTrim.includes(')') || chTrim.includes('-')) {
+            if (apenasNumeros.length === 10 || apenasNumeros.length === 11) {
+              return '+55' + apenasNumeros;
+            }
+          }
+          
+          // Chave aleatória UUID
+          if (/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(chTrim)) {
             return chTrim.toLowerCase();
           }
           
@@ -320,14 +323,17 @@
           return id + tamanho + valor;
         };
         
-        // Calcula CRC16 CCITT-FALSE
+        // Calcula CRC16 CCITT-FALSE (polinômio 0x1021)
         const crc16 = (payload) => {
           let crc = 0xFFFF;
           for (let i = 0; i < payload.length; i++) {
             crc ^= payload.charCodeAt(i) << 8;
             for (let j = 0; j < 8; j++) {
-              crc = (crc & 0x8000) ? ((crc << 1) ^ 0x1021) : (crc << 1);
-              crc &= 0xFFFF;
+              if (crc & 0x8000) {
+                crc = ((crc << 1) ^ 0x1021) & 0xFFFF;
+              } else {
+                crc = (crc << 1) & 0xFFFF;
+              }
             }
           }
           return crc.toString(16).toUpperCase().padStart(4, '0');
@@ -337,11 +343,11 @@
         const chaveLimpa = limparChave(chave);
         
         // Monta Merchant Account Info (ID 26)
-        const gui = emv('00', 'br.gov.bcb.pix');  // GUI em minúsculas (padrão BACEN)
+        const gui = emv('00', 'br.gov.bcb.pix');
         const chaveField = emv('01', chaveLimpa);
         const merchantAccount = emv('26', gui + chaveField);
         
-        // Monta payload PIX Estático (sem data de vencimento)
+        // Monta payload PIX Estático
         let payload = '';
         payload += emv('00', '01');                           // Payload Format Indicator
         payload += merchantAccount;                            // Merchant Account (PIX)
@@ -356,23 +362,27 @@
         payload += emv('58', 'BR');                           // Country
         payload += emv('59', normalizar(nome, 25));           // Merchant Name
         payload += emv('60', normalizar(cidade, 15));         // Merchant City
-        // Removido campo 62 - alguns bancos interpretam errado e adicionam vencimento
         payload += '6304';                                     // CRC placeholder
         
         // Adiciona CRC
-        payload += crc16(payload);
+        const crcValue = crc16(payload);
+        payload = payload.slice(0, -4) + '6304' + crcValue;
         
         return payload;
       };
       
       const payload = gerarPayloadPix(data.pix_key, data.valor, data.nome, 'SAO PAULO');
       
-      // URL do QR Code via API pública
-      const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(payload)}`;
+      // URL do QR Code via API pública com timestamp para evitar cache
+      const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&ecc=M&data=${encodeURIComponent(payload)}&t=${qrTimestamp}`;
       
       const copiarPayload = () => {
         navigator.clipboard.writeText(payload);
         alert('✅ Código PIX copiado!');
+      };
+      
+      const regenerarQRCode = () => {
+        setQrTimestamp(Date.now());
       };
       
       return (
@@ -388,17 +398,27 @@
             {/* Dados do pagamento */}
             <div className="bg-gray-50 rounded-lg p-4 mb-4 space-y-2">
               <p className="text-sm"><span className="text-gray-600">Nome:</span> <strong>{data.nome}</strong></p>
-              <p className="text-sm"><span className="text-gray-600">Chave PIX:</span> <strong className="font-mono">{data.pix_key}</strong></p>
+              <p className="text-sm"><span className="text-gray-600">Chave PIX:</span> <strong className="font-mono text-xs break-all">{data.pix_key}</strong></p>
               <p className="text-sm"><span className="text-gray-600">Valor:</span> <strong className="text-green-600 text-lg">R$ {data.valor?.toFixed(2)}</strong></p>
             </div>
             
             {/* QR Code */}
             <div className="flex justify-center mb-4">
-              <img src={qrCodeUrl} alt="QR Code PIX" className="w-64 h-64 border-4 border-gray-200 rounded-lg" />
+              <img 
+                src={qrCodeUrl} 
+                alt="QR Code PIX" 
+                className="w-64 h-64 border-4 border-gray-200 rounded-lg"
+                key={qrTimestamp}
+              />
             </div>
             
+            {/* Timestamp da geração */}
+            <p className="text-xs text-gray-400 text-center mb-3">
+              Gerado em: {new Date(qrTimestamp).toLocaleString('pt-BR')}
+            </p>
+            
             {/* Botões */}
-            <div className="flex gap-3">
+            <div className="flex gap-2 mb-3">
               <button 
                 onClick={copiarPayload} 
                 className="flex-1 px-4 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 flex items-center justify-center gap-2"
@@ -414,9 +434,23 @@
               </button>
             </div>
             
+            {/* Botão Regenerar */}
+            <button 
+              onClick={regenerarQRCode} 
+              className="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 flex items-center justify-center gap-2"
+            >
+              🔄 Gerar Novo QR Code
+            </button>
+            
             <p className="text-xs text-gray-500 text-center mt-4">
               Escaneie o QR Code ou copie o código para pagar via PIX
             </p>
+            
+            {/* Debug - Payload (pode remover em produção) */}
+            <details className="mt-3">
+              <summary className="text-xs text-gray-400 cursor-pointer">Ver payload PIX</summary>
+              <pre className="text-[8px] bg-gray-100 p-2 rounded mt-1 break-all whitespace-pre-wrap">{payload}</pre>
+            </details>
           </div>
         </div>
       );
