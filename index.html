@@ -5940,98 +5940,77 @@
                       
                       {/* ===== SUB-ABA PANORAMA ===== */}
                       {dispSubTab === 'panorama' && (
-                        <div className="space-y-2">
+                        <div>
                           {/* Header compacto */}
-                          <div className="bg-gray-800 text-white px-3 py-2 flex justify-between items-center text-xs">
+                          <div className="bg-gray-800 text-white px-2 py-1 flex justify-between items-center text-[10px]">
                             <span className="font-bold">PANORAMA DIÁRIO OPERACIONAL</span>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1">
                               <input 
                                 type="date" 
                                 value={formData.dispDataPlanilha || new Date().toISOString().split('T')[0]} 
                                 onChange={e => setFormData({...formData, dispDataPlanilha: e.target.value})}
-                                className="px-2 py-0.5 border border-gray-600 rounded text-xs text-white bg-gray-700"
+                                className="px-1 py-0 border border-gray-600 rounded text-[10px] text-white bg-gray-700"
                               />
-                              <button onClick={loadDisponibilidade} className="px-2 py-0.5 bg-gray-700 text-white rounded hover:bg-gray-600 text-xs">
+                              <button onClick={loadDisponibilidade} className="px-1 py-0 bg-gray-700 text-white rounded hover:bg-gray-600 text-[10px]">
                                 🔄
                               </button>
                               <button 
                                 onClick={async () => {
                                   try {
-                                    // Criar canvas com a tabela
                                     const tabela = document.getElementById('panorama-table');
-                                    const dataAtual = formData.dispDataPlanilha || new Date().toISOString().split('T')[0];
-                                    const [ano, mes, dia] = dataAtual.split('-');
-                                    
-                                    // Usar html2canvas se disponível, senão fallback
                                     if (typeof html2canvas !== 'undefined') {
-                                      const canvas = await html2canvas(tabela, { 
-                                        backgroundColor: '#ffffff',
-                                        scale: 2 
-                                      });
+                                      const canvas = await html2canvas(tabela, { backgroundColor: '#ffffff', scale: 2 });
                                       canvas.toBlob(async (blob) => {
                                         try {
-                                          await navigator.clipboard.write([
-                                            new ClipboardItem({ 'image/png': blob })
-                                          ]);
-                                          showToast('✅ Tabela copiada! Cole no WhatsApp (Ctrl+V)', 'success');
+                                          await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+                                          showToast('✅ Copiado! Cole no WhatsApp', 'success');
                                         } catch (err) {
-                                          // Fallback: abrir imagem em nova aba
                                           const url = canvas.toDataURL('image/png');
                                           const win = window.open();
-                                          win.document.write(`<img src="${url}" style="max-width:100%"/><p>Clique com botão direito → Copiar imagem</p>`);
+                                          win.document.write(`<img src="${url}"/><p>Botão direito → Copiar</p>`);
                                         }
                                       }, 'image/png');
                                     } else {
-                                      // Carregar html2canvas dinamicamente
                                       const script = document.createElement('script');
                                       script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
                                       script.onload = async () => {
-                                        const canvas = await html2canvas(tabela, { 
-                                          backgroundColor: '#ffffff',
-                                          scale: 2 
-                                        });
+                                        const canvas = await html2canvas(tabela, { backgroundColor: '#ffffff', scale: 2 });
                                         canvas.toBlob(async (blob) => {
                                           try {
-                                            await navigator.clipboard.write([
-                                              new ClipboardItem({ 'image/png': blob })
-                                            ]);
-                                            showToast('✅ Tabela copiada! Cole no WhatsApp (Ctrl+V)', 'success');
+                                            await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+                                            showToast('✅ Copiado! Cole no WhatsApp', 'success');
                                           } catch (err) {
                                             const url = canvas.toDataURL('image/png');
                                             const win = window.open();
-                                            win.document.write(`<img src="${url}" style="max-width:100%"/><p>Clique com botão direito → Copiar imagem</p>`);
+                                            win.document.write(`<img src="${url}"/>`);
                                           }
                                         }, 'image/png');
                                       };
                                       document.head.appendChild(script);
-                                      showToast('⏳ Preparando imagem...', 'info');
+                                      showToast('⏳ Preparando...', 'info');
                                     }
-                                  } catch (err) {
-                                    console.error('Erro ao copiar:', err);
-                                    showToast('Erro ao copiar tabela', 'error');
-                                  }
+                                  } catch (err) { showToast('Erro ao copiar', 'error'); }
                                 }}
                                 className="px-2 py-0.5 bg-green-600 text-white rounded hover:bg-green-700 text-xs"
-                                title="Copiar tabela como imagem"
                               >
                                 📋 Copiar
                               </button>
                             </div>
                           </div>
                           
-                          {/* Tabela Panorama Compacta */}
+                          {/* Tabela Ultra Compacta */}
                           <div className="overflow-x-auto">
-                            <table id="panorama-table" className="w-full text-[10px] border-collapse">
+                            <table id="panorama-table" style={{fontSize: '9px', borderCollapse: 'collapse', width: '100%'}}>
                               <thead>
-                                <tr className="bg-gray-700 text-white">
-                                  <th className="px-2 py-1 text-left font-bold border border-gray-600">LOJAS</th>
-                                  <th className="px-1 py-1 text-center font-bold bg-orange-600 border border-gray-600">A CAMINHO</th>
-                                  <th className="px-1 py-1 text-center font-bold bg-green-600 border border-gray-600">CONFIR.</th>
-                                  <th className="px-1 py-1 text-center font-bold bg-blue-600 border border-gray-600">EM LOJA</th>
-                                  <th className="px-1 py-1 text-center font-bold bg-purple-600 border border-gray-600">IDEAL</th>
-                                  <th className="px-1 py-1 text-center font-bold bg-red-600 border border-gray-600">FALTA</th>
-                                  <th className="px-1 py-1 text-center font-bold bg-gray-500 border border-gray-600">S/ CONTATO</th>
-                                  <th className="px-1 py-1 text-center font-bold bg-teal-600 border border-gray-600">% OPERAÇÃO</th>
+                                <tr style={{backgroundColor: '#374151', color: 'white'}}>
+                                  <th style={{padding: '2px 4px', border: '1px solid #555', textAlign: 'left', fontWeight: 'bold'}}>LOJAS</th>
+                                  <th style={{padding: '2px 3px', border: '1px solid #555', backgroundColor: '#ea580c', fontWeight: 'bold', whiteSpace: 'nowrap'}}>A CAMINHO</th>
+                                  <th style={{padding: '2px 3px', border: '1px solid #555', backgroundColor: '#16a34a', fontWeight: 'bold'}}>CONFIR.</th>
+                                  <th style={{padding: '2px 3px', border: '1px solid #555', backgroundColor: '#2563eb', fontWeight: 'bold', whiteSpace: 'nowrap'}}>EM LOJA</th>
+                                  <th style={{padding: '2px 3px', border: '1px solid #555', backgroundColor: '#9333ea', fontWeight: 'bold'}}>IDEAL</th>
+                                  <th style={{padding: '2px 3px', border: '1px solid #555', backgroundColor: '#dc2626', fontWeight: 'bold'}}>FALTA</th>
+                                  <th style={{padding: '2px 3px', border: '1px solid #555', backgroundColor: '#6b7280', fontWeight: 'bold', whiteSpace: 'nowrap'}}>S/ CONTATO</th>
+                                  <th style={{padding: '2px 3px', border: '1px solid #555', backgroundColor: '#0d9488', fontWeight: 'bold'}}>% OPERAÇÃO</th>
                                 </tr>
                               </thead>
                               <tbody>
@@ -6042,40 +6021,33 @@
                                   const lojasRows = lojasRegiao.map(loja => {
                                     const linhasLoja = (dispData.linhas || []).filter(l => l.loja_id === loja.id);
                                     const titulares = linhasLoja.filter(l => !l.is_excedente && !l.is_reposicao).length;
-                                    
                                     const aCaminho = linhasLoja.filter(l => l.status === 'A CAMINHO').length;
                                     const confirmado = linhasLoja.filter(l => l.status === 'CONFIRMADO').length;
                                     const emLoja = linhasLoja.filter(l => l.status === 'EM LOJA').length;
-                                    const ideal = titulares;
                                     const semContato = linhasLoja.filter(l => l.status === 'SEM CONTATO').length;
                                     const emOperacao = aCaminho + confirmado + emLoja;
-                                    const falta = Math.max(0, ideal - emOperacao);
-                                    const percOperacao = ideal > 0 ? ((emOperacao / ideal) * 100) : 0;
+                                    const falta = Math.max(0, titulares - emOperacao);
+                                    const perc = titulares > 0 ? ((emOperacao / titulares) * 100) : 0;
                                     
                                     return (
-                                      <tr key={loja.id} className="border border-gray-300">
-                                        <td className="px-2 py-0.5 font-medium bg-gray-100 border border-gray-300 text-left">{loja.nome}</td>
-                                        <td className={`px-1 py-0.5 text-center border border-gray-300 font-bold ${aCaminho > 0 ? 'bg-orange-200' : 'text-gray-400'}`}>{aCaminho}</td>
-                                        <td className={`px-1 py-0.5 text-center border border-gray-300 font-bold ${confirmado > 0 ? 'bg-green-200' : 'text-gray-400'}`}>{confirmado}</td>
-                                        <td className={`px-1 py-0.5 text-center border border-gray-300 font-bold ${emLoja > 0 ? 'bg-blue-200' : 'text-gray-400'}`}>{emLoja}</td>
-                                        <td className="px-1 py-0.5 text-center border border-gray-300 font-bold bg-purple-100">{ideal}</td>
-                                        <td className={`px-1 py-0.5 text-center border border-gray-300 font-bold ${falta > 0 ? 'bg-red-500 text-white' : 'text-gray-400'}`}>{falta > 0 ? -falta : 0}</td>
-                                        <td className={`px-1 py-0.5 text-center border border-gray-300 font-bold ${semContato > 0 ? 'bg-yellow-200' : 'text-gray-400'}`}>{semContato}</td>
-                                        <td className={`px-1 py-0.5 text-center border border-gray-300 font-bold ${
-                                          percOperacao >= 100 ? 'bg-green-500 text-white' :
-                                          percOperacao >= 80 ? 'bg-yellow-400-cell' :
-                                          percOperacao >= 50 ? 'bg-orange-400' :
-                                          'bg-red-500 text-white'
-                                        }`}>{percOperacao.toFixed(2).replace('.', ',')}%</td>
+                                      <tr key={loja.id}>
+                                        <td style={{padding: '1px 4px', border: '1px solid #ccc', backgroundColor: '#f3f4f6', fontWeight: '500', whiteSpace: 'nowrap'}}>{loja.nome}</td>
+                                        <td style={{padding: '1px 3px', border: '1px solid #ccc', textAlign: 'center', fontWeight: 'bold', backgroundColor: aCaminho > 0 ? '#fed7aa' : '', color: aCaminho > 0 ? '#9a3412' : '#999'}}>{aCaminho}</td>
+                                        <td style={{padding: '1px 3px', border: '1px solid #ccc', textAlign: 'center', fontWeight: 'bold', backgroundColor: confirmado > 0 ? '#bbf7d0' : '', color: confirmado > 0 ? '#166534' : '#999'}}>{confirmado}</td>
+                                        <td style={{padding: '1px 3px', border: '1px solid #ccc', textAlign: 'center', fontWeight: 'bold', backgroundColor: emLoja > 0 ? '#bfdbfe' : '', color: emLoja > 0 ? '#1e40af' : '#999'}}>{emLoja}</td>
+                                        <td style={{padding: '1px 3px', border: '1px solid #ccc', textAlign: 'center', fontWeight: 'bold', backgroundColor: '#f3e8ff', color: '#7e22ce'}}>{titulares}</td>
+                                        <td style={{padding: '1px 3px', border: '1px solid #ccc', textAlign: 'center', fontWeight: 'bold', backgroundColor: falta > 0 ? '#ef4444' : '', color: falta > 0 ? 'white' : '#999'}}>{falta > 0 ? -falta : 0}</td>
+                                        <td style={{padding: '1px 3px', border: '1px solid #ccc', textAlign: 'center', fontWeight: 'bold', backgroundColor: semContato > 0 ? '#fef08a' : '', color: semContato > 0 ? '#854d0e' : '#999'}}>{semContato}</td>
+                                        <td style={{padding: '1px 3px', border: '1px solid #ccc', textAlign: 'center', fontWeight: 'bold', backgroundColor: perc >= 100 ? '#22c55e' : perc >= 80 ? '#facc15' : perc >= 50 ? '#fb923c' : '#ef4444', color: perc >= 80 && perc < 100 ? '#000' : 'white'}}>{perc.toFixed(0)}%</td>
                                       </tr>
                                     );
                                   });
                                   
                                   return (
                                     <React.Fragment key={regiao.id}>
-                                      <tr className="bg-yellow-400">
-                                        <td colSpan="8" className="px-2 py-1 font-bold text-gray-900 text-center border border-yellow-500 text-[11px]">
-                                          {regiao.nome.toUpperCase()}{regiao.gestores ? ` (${regiao.gestores})` : ''}
+                                      <tr>
+                                        <td colSpan="8" style={{padding: '2px 4px', border: '1px solid #ca8a04', backgroundColor: '#facc15', fontWeight: 'bold', textAlign: 'center', fontSize: '9px'}}>
+                                          {regiao.nome}{regiao.gestores ? ` (${regiao.gestores})` : ''}
                                         </td>
                                       </tr>
                                       {lojasRows}
