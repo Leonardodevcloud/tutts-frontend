@@ -6167,7 +6167,7 @@
                                             <React.Fragment key={regiao.id}>
                                               {/* Header região */}
                                               <tr>
-                                                <td colSpan="8" style={{padding: '4px 6px', border: '1px solid #e2e8f0', backgroundColor: '#f1f5f9', fontWeight: '600', color: '#334155', fontSize: '9px'}}>
+                                                <td colSpan="8" style={{padding: '4px 6px', border: '1px solid #cbd5e1', backgroundColor: '#e2e8f0', fontWeight: '700', color: '#1e293b', fontSize: '9px', textAlign: 'center'}}>
                                                   {regiao.nome}{regiao.gestores ? ` (${regiao.gestores})` : ''}
                                                 </td>
                                               </tr>
@@ -6184,7 +6184,7 @@
                                                   <td style={{padding: '2px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '500', color: '#64748b'}}>{loja.titulares}</td>
                                                   <td style={{padding: '2px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '600', color: loja.falta > 0 ? '#dc2626' : '#cbd5e1'}}>{loja.falta > 0 ? -loja.falta : 0}</td>
                                                   <td style={{padding: '2px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '500', color: loja.semContato > 0 ? '#d97706' : '#cbd5e1'}}>{loja.semContato}</td>
-                                                  <td style={{padding: '2px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '600', backgroundColor: loja.perc < 50 ? '#fee2e2' : loja.perc < 80 ? '#fef3c7' : loja.perc >= 100 ? '#dcfce7' : '', color: loja.perc < 50 ? '#dc2626' : loja.perc < 80 ? '#d97706' : loja.perc >= 100 ? '#16a34a' : '#64748b'}}>{loja.perc.toFixed(0)}%</td>
+                                                  <td style={{padding: '2px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '700', backgroundColor: loja.perc < 50 ? '#fecaca' : loja.perc < 80 ? '#fde68a' : loja.perc >= 100 ? '#bbf7d0' : '#f1f5f9', color: loja.perc < 50 ? '#b91c1c' : loja.perc < 80 ? '#a16207' : loja.perc >= 100 ? '#15803d' : '#475569'}}>{loja.perc.toFixed(0)}%</td>
                                                 </tr>
                                               ))}
                                             </React.Fragment>
@@ -6199,7 +6199,7 @@
                                           <td style={{padding: '3px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '600', color: '#64748b'}}>{totalGeral.titulares}</td>
                                           <td style={{padding: '3px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '700', color: totalGeral.falta > 0 ? '#dc2626' : '#cbd5e1'}}>{totalGeral.falta > 0 ? -totalGeral.falta : 0}</td>
                                           <td style={{padding: '3px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '600', color: totalGeral.semContato > 0 ? '#d97706' : '#cbd5e1'}}>{totalGeral.semContato}</td>
-                                          <td style={{padding: '3px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '700', backgroundColor: percGeral < 50 ? '#fee2e2' : percGeral < 80 ? '#fef3c7' : percGeral >= 100 ? '#dcfce7' : '', color: percGeral < 50 ? '#dc2626' : percGeral < 80 ? '#d97706' : percGeral >= 100 ? '#16a34a' : '#64748b'}}>{percGeral.toFixed(0)}%</td>
+                                          <td style={{padding: '3px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '800', backgroundColor: percGeral < 50 ? '#fecaca' : percGeral < 80 ? '#fde68a' : percGeral >= 100 ? '#bbf7d0' : '#f1f5f9', color: percGeral < 50 ? '#b91c1c' : percGeral < 80 ? '#a16207' : percGeral >= 100 ? '#15803d' : '#475569'}}>{percGeral.toFixed(0)}%</td>
                                         </tr>
                                       </>
                                     );
@@ -6221,7 +6221,7 @@
                                             <td style={{padding: '2px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '500', color: '#64748b'}}>{loja.titulares}</td>
                                             <td style={{padding: '2px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '600', color: loja.falta > 0 ? '#dc2626' : '#cbd5e1'}}>{loja.falta > 0 ? -loja.falta : 0}</td>
                                             <td style={{padding: '2px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '500', color: loja.semContato > 0 ? '#d97706' : '#cbd5e1'}}>{loja.semContato}</td>
-                                            <td style={{padding: '2px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '600', backgroundColor: loja.perc < 50 ? '#fee2e2' : loja.perc < 80 ? '#fef3c7' : loja.perc >= 100 ? '#dcfce7' : '', color: loja.perc < 50 ? '#dc2626' : loja.perc < 80 ? '#d97706' : loja.perc >= 100 ? '#16a34a' : '#64748b'}}>{loja.perc.toFixed(0)}%</td>
+                                            <td style={{padding: '2px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '700', backgroundColor: loja.perc < 50 ? '#fecaca' : loja.perc < 80 ? '#fde68a' : loja.perc >= 100 ? '#bbf7d0' : '#f1f5f9', color: loja.perc < 50 ? '#b91c1c' : loja.perc < 80 ? '#a16207' : loja.perc >= 100 ? '#15803d' : '#475569'}}>{loja.perc.toFixed(0)}%</td>
                                           </tr>
                                         ))}
                                         {/* TOTAL GERAL */}
@@ -6233,7 +6233,7 @@
                                           <td style={{padding: '3px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '600', color: '#64748b'}}>{totalGeral.titulares}</td>
                                           <td style={{padding: '3px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '700', color: totalGeral.falta > 0 ? '#dc2626' : '#cbd5e1'}}>{totalGeral.falta > 0 ? -totalGeral.falta : 0}</td>
                                           <td style={{padding: '3px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '600', color: totalGeral.semContato > 0 ? '#d97706' : '#cbd5e1'}}>{totalGeral.semContato}</td>
-                                          <td style={{padding: '3px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '700', backgroundColor: percGeral < 50 ? '#fee2e2' : percGeral < 80 ? '#fef3c7' : percGeral >= 100 ? '#dcfce7' : '', color: percGeral < 50 ? '#dc2626' : percGeral < 80 ? '#d97706' : percGeral >= 100 ? '#16a34a' : '#64748b'}}>{percGeral.toFixed(0)}%</td>
+                                          <td style={{padding: '3px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '800', backgroundColor: percGeral < 50 ? '#fecaca' : percGeral < 80 ? '#fde68a' : percGeral >= 100 ? '#bbf7d0' : '#f1f5f9', color: percGeral < 50 ? '#b91c1c' : percGeral < 80 ? '#a16207' : percGeral >= 100 ? '#15803d' : '#475569'}}>{percGeral.toFixed(0)}%</td>
                                         </tr>
                                       </>
                                     );
