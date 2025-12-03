@@ -373,8 +373,8 @@
       
       const payload = gerarPayloadPix(data.pix_key, data.valor, data.nome, 'SAO PAULO');
       
-      // URL do QR Code via Google Charts (mais confiável)
-      const qrCodeUrl = `https://chart.googleapis.com/chart?chs=300x300&cht=qr&chl=${encodeURIComponent(payload)}&choe=UTF-8&t=${qrTimestamp}`;
+      // URL do QR Code via qrserver API
+      const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(payload)}`;
       
       const copiarPayload = () => {
         navigator.clipboard.writeText(payload);
