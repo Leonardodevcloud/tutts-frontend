@@ -343,7 +343,8 @@
         const chaveLimpa = limparChave(chave);
         
         // Monta Merchant Account Info (ID 26)
-        const gui = emv('00', 'BR.GOV.BCB.PIX');
+        // GUI em minúsculas conforme padrão oficial BACEN
+        const gui = emv('00', 'br.gov.bcb.pix');
         const chaveField = emv('01', chaveLimpa);
         const merchantAccount = emv('26', gui + chaveField);
         
