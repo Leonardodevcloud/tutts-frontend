@@ -341,11 +341,11 @@
         const chaveField = emv('01', chaveLimpa);
         const merchantAccount = emv('26', gui + chaveField);
         
-        // Monta payload
+        // Monta payload PIX Estático (sem data de vencimento)
         let payload = '';
         payload += emv('00', '01');                           // Payload Format Indicator
         payload += merchantAccount;                            // Merchant Account (PIX)
-        payload += emv('52', '0000');                         // MCC
+        payload += emv('52', '0000');                         // MCC (não informado)
         payload += emv('53', '986');                          // Currency (BRL)
         
         const valorFormatado = formatarValor(valor);
@@ -356,7 +356,7 @@
         payload += emv('58', 'BR');                           // Country
         payload += emv('59', normalizar(nome, 25));           // Merchant Name
         payload += emv('60', normalizar(cidade, 15));         // Merchant City
-        payload += emv('62', emv('05', '***'));               // Additional Data (TXID)
+        // Removido campo 62 - alguns bancos interpretam errado e adicionam vencimento
         payload += '6304';                                     // CRC placeholder
         
         // Adiciona CRC
