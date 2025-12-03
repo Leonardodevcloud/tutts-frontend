@@ -6931,7 +6931,7 @@
                                                   <tr>
                                                     <th className="w-1"></th>
                                                     <th className="px-2 py-1 text-center w-20">COD</th>
-                                                    <th className="px-2 py-1 text-left w-36">ENTREGADOR</th>
+                                                    <th className="px-2 py-1 text-left">ENTREGADOR</th>
                                                     <th className="px-2 py-1 text-center w-36">STATUS</th>
                                                     <th className="px-2 py-1 text-left">OBS</th>
                                                     <th className="px-1 py-1 text-center w-6"></th>
@@ -6984,11 +6984,11 @@
                                                           className={`w-full px-1 py-0.5 border border-gray-200 rounded text-center font-mono text-xs ${linha.is_reposicao ? 'bg-blue-50/50' : linha.is_excedente ? 'bg-red-50/50' : 'bg-white'}`}
                                                         />
                                                       </td>
-                                                      <td className="px-1 py-0.5 max-w-36">
-                                                        <div className="flex items-center gap-1 truncate">
+                                                      <td className="px-1 py-0.5">
+                                                        <div className="flex items-center gap-1">
                                                           {linha.is_reposicao && <span className="text-[9px] text-blue-400 italic">reposição</span>}
                                                           {linha.is_excedente && <span className="text-[9px] text-red-400 italic">excedente</span>}
-                                                          <span className={`text-xs truncate ${linha.nome_profissional ? 'text-gray-800' : 'text-gray-400 italic'}`}>
+                                                          <span className={`text-xs ${linha.nome_profissional ? 'text-gray-800' : 'text-gray-400 italic'}`}>
                                                             {linha.nome_profissional || (!linha.is_reposicao && !linha.is_excedente ? '-' : '')}
                                                           </span>
                                                         </div>
