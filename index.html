@@ -5872,7 +5872,7 @@
                     const dataPlanilha = formData.dispDataPlanilha || new Date().toISOString().split('T')[0];
                     const dataFormatada = new Date(dataPlanilha + 'T12:00:00').toLocaleDateString('pt-BR');
                     
-                    if (!window.confirm(`⚠️ ATENÇÃO!\n\n📅 Data da planilha: ${dataFormatada}\n\nIsso irá:\n• Salvar a planilha atual no Espelho (${dataFormatada})\n• Resetar todos os status para "A CONFIRMAR"\n• Limpar todas as observações\n• Converter linhas de reposição em excedentes\n\n✅ Os códigos e nomes serão MANTIDOS!\n\nDeseja continuar?`)) {
+                    if (!window.confirm(`⚠️ ATENÇÃO!\n\n📅 Data da planilha: ${dataFormatada}\n\nIsso irá:\n• Salvar a planilha atual no Espelho (${dataFormatada})\n• Registrar motoboys EM LOJA e SEM CONTATO\n• Remover motoboys com 3+ dias SEM CONTATO\n• Resetar todos os status para "A CONFIRMAR"\n• Limpar todas as observações\n• Converter linhas de reposição em excedentes\n\n✅ Os códigos e nomes serão MANTIDOS!\n\nDeseja continuar?`)) {
                       return;
                     }
                     
@@ -5885,9 +5885,27 @@
                       });
                       const data = await res.json();
                       if (data.success) {
-                        showToast(`✅ Status resetado! Espelho salvo em ${dataFormatada}`, 'success');
-                        // Atualiza a data para o dia seguinte automaticamente (opcional)
-                        // setFormData(f => ({...f, dispDataPlanilha: new Date().toISOString().split('T')[0]}));
+                        let msg = `✅ Status resetado! Espelho salvo em ${dataFormatada}`;
+                        if (data.em_loja_registrados > 0) {
+                          msg += `\n🏪 ${data.em_loja_registrados} motoboy(s) EM LOJA registrado(s)`;
+                        }
+                        if (data.sem_contato_registrados > 0) {
+                          msg += `\n📵 ${data.sem_contato_registrados} motoboy(s) SEM CONTATO registrado(s)`;
+                        }
+                        if (data.removidos_por_sem_contato && data.removidos_por_sem_contato.length > 0) {
+                          msg += `\n\n🚫 REMOVIDOS POR 3 DIAS SEM CONTATO:`;
+                          data.removidos_por_sem_contato.forEach(r => {
+                            msg += `\n• ${r.cod} - ${r.nome}`;
+                          });
+                        }
+                        showToast(msg, 'success');
+                        
+                        // Se houve remoções, mostrar alerta adicional
+                        if (data.removidos_por_sem_contato && data.removidos_por_sem_contato.length > 0) {
+                          setTimeout(() => {
+                            alert(`🚫 MOTOBOYS REMOVIDOS POR 3 DIAS SEM CONTATO:\n\n${data.removidos_por_sem_contato.map(r => `${r.cod} - ${r.nome}`).join('\n')}`);
+                          }, 500);
+                        }
                       } else {
                         showToast('Erro ao resetar', 'error');
                       }
