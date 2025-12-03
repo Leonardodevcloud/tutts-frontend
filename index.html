@@ -567,10 +567,10 @@
         setTimeout(() => setToast(null), 3000);
       };
 
-      // Auto-logout 5 min
+      // Auto-logout 15 min
       useEffect(() => {
         if (!user) return;
-        const TIMEOUT = 5 * 60 * 1000;
+        const TIMEOUT = 15 * 60 * 1000;
         const reset = () => setLastActivity(Date.now());
         const events = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart', 'click'];
         events.forEach(e => window.addEventListener(e, reset));
@@ -6180,7 +6180,7 @@
                                                   </td>
                                                   <td style={{padding: '2px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '500', color: loja.aCaminho > 0 ? '#ea580c' : '#cbd5e1'}}>{loja.aCaminho}</td>
                                                   <td style={{padding: '2px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '500', color: loja.confirmado > 0 ? '#16a34a' : '#cbd5e1'}}>{loja.confirmado}</td>
-                                                  <td style={{padding: '2px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '500', color: loja.emLoja > 0 ? '#2563eb' : '#cbd5e1'}}>{loja.emLoja}</td>
+                                                  <td style={{padding: '2px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '700', color: loja.emLoja > 0 ? '#2563eb' : '#cbd5e1'}}>{loja.emLoja}</td>
                                                   <td style={{padding: '2px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '500', color: '#64748b'}}>{loja.titulares}</td>
                                                   <td style={{padding: '2px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '600', color: loja.falta > 0 ? '#dc2626' : '#cbd5e1'}}>{loja.falta > 0 ? -loja.falta : 0}</td>
                                                   <td style={{padding: '2px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '500', color: loja.semContato > 0 ? '#d97706' : '#cbd5e1'}}>{loja.semContato}</td>
@@ -6217,7 +6217,7 @@
                                             </td>
                                             <td style={{padding: '2px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '500', color: loja.aCaminho > 0 ? '#ea580c' : '#cbd5e1'}}>{loja.aCaminho}</td>
                                             <td style={{padding: '2px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '500', color: loja.confirmado > 0 ? '#16a34a' : '#cbd5e1'}}>{loja.confirmado}</td>
-                                            <td style={{padding: '2px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '500', color: loja.emLoja > 0 ? '#2563eb' : '#cbd5e1'}}>{loja.emLoja}</td>
+                                            <td style={{padding: '2px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '700', color: loja.emLoja > 0 ? '#2563eb' : '#cbd5e1'}}>{loja.emLoja}</td>
                                             <td style={{padding: '2px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '500', color: '#64748b'}}>{loja.titulares}</td>
                                             <td style={{padding: '2px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '600', color: loja.falta > 0 ? '#dc2626' : '#cbd5e1'}}>{loja.falta > 0 ? -loja.falta : 0}</td>
                                             <td style={{padding: '2px 4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '500', color: loja.semContato > 0 ? '#d97706' : '#cbd5e1'}}>{loja.semContato}</td>
