@@ -5544,7 +5544,7 @@
                 {(() => {
                   // Estado local para disponibilidade
                   const dispData = formData.dispData || { regioes: [], lojas: [], linhas: [] };
-                  const dispSubTab = formData.dispSubTab || 'principal';
+                  const dispSubTab = formData.dispSubTab || 'panorama';
                   const dispLoading = formData.dispLoading;
                   
                   // Carregar dados da API
@@ -5863,16 +5863,20 @@
                   const statusColors = {
                     'A CONFIRMAR': 'bg-yellow-100 text-yellow-800 border-yellow-300',
                     'CONFIRMADO': 'bg-green-100 text-green-800 border-green-300',
+                    'A CAMINHO': 'bg-orange-100 text-orange-800 border-orange-300',
                     'EM LOJA': 'bg-blue-100 text-blue-800 border-blue-300',
-                    'FALTANDO': 'bg-red-100 text-red-800 border-red-300'
+                    'FALTANDO': 'bg-red-100 text-red-800 border-red-300',
+                    'SEM CONTATO': 'bg-gray-100 text-gray-800 border-gray-300'
                   };
                   
                   // Cores das linhas por status
                   const rowColors = {
                     'A CONFIRMAR': 'bg-yellow-50',
                     'CONFIRMADO': 'bg-green-50',
+                    'A CAMINHO': 'bg-orange-50',
                     'EM LOJA': 'bg-blue-50',
-                    'FALTANDO': 'bg-red-50'
+                    'FALTANDO': 'bg-red-50',
+                    'SEM CONTATO': 'bg-gray-50'
                   };
                   
                   if (dispLoading) {
@@ -5891,6 +5895,12 @@
                       {/* Sub-abas */}
                       <div className="bg-white rounded-xl shadow">
                         <div className="flex border-b overflow-x-auto">
+                          <button 
+                            onClick={() => setFormData({...formData, dispSubTab: 'panorama'})} 
+                            className={`px-3 py-2 font-semibold text-sm whitespace-nowrap ${dispSubTab === 'panorama' ? 'text-purple-700 border-b-2 border-purple-600 bg-purple-50' : 'text-gray-600'}`}
+                          >
+                            📊 Panorama
+                          </button>
                           <button 
                             onClick={() => setFormData({...formData, dispSubTab: 'principal'})} 
                             className={`px-3 py-2 font-semibold text-sm whitespace-nowrap ${dispSubTab === 'principal' ? 'text-purple-700 border-b-2 border-purple-600 bg-purple-50' : 'text-gray-600'}`}
@@ -5928,6 +5938,171 @@
                         </div>
                       </div>
                       
+                      {/* ===== SUB-ABA PANORAMA ===== */}
+                      {dispSubTab === 'panorama' && (
+                        <div className="space-y-4">
+                          {/* Header */}
+                          <div className="bg-gray-800 text-white rounded-t-xl p-3 flex justify-between items-center">
+                            <h2 className="text-lg font-bold">📊 PANORAMA DIÁRIO OPERACIONAL</h2>
+                            <div className="flex items-center gap-3">
+                              <div className="flex items-center gap-2 bg-gray-700 px-3 py-1.5 rounded-lg">
+                                <span className="text-sm font-semibold">Data:</span>
+                                <input 
+                                  type="date" 
+                                  value={formData.dispDataPlanilha || new Date().toISOString().split('T')[0]} 
+                                  onChange={e => setFormData({...formData, dispDataPlanilha: e.target.value})}
+                                  className="px-2 py-1 border border-gray-600 rounded text-sm font-semibold text-white bg-gray-600"
+                                />
+                              </div>
+                              <button onClick={loadDisponibilidade} className="px-3 py-1.5 bg-gray-700 text-white rounded-lg font-semibold hover:bg-gray-600 flex items-center gap-1 text-sm">
+                                🔄 Atualizar
+                              </button>
+                            </div>
+                          </div>
+                          
+                          {/* Tabela Panorama */}
+                          <div className="bg-white rounded-b-xl shadow overflow-x-auto">
+                            <table className="w-full text-xs border-collapse">
+                              <thead>
+                                <tr className="bg-gray-800 text-white">
+                                  <th className="px-3 py-2 text-left font-bold border border-gray-600">LOJAS</th>
+                                  <th className="px-2 py-2 text-center font-bold bg-orange-600 border border-gray-600">A CAMINHO</th>
+                                  <th className="px-2 py-2 text-center font-bold bg-green-600 border border-gray-600">CONFIR.</th>
+                                  <th className="px-2 py-2 text-center font-bold bg-blue-600 border border-gray-600">EM LOJA</th>
+                                  <th className="px-2 py-2 text-center font-bold bg-purple-600 border border-gray-600">IDEAL</th>
+                                  <th className="px-2 py-2 text-center font-bold bg-red-600 border border-gray-600">FALTA</th>
+                                  <th className="px-2 py-2 text-center font-bold bg-gray-500 border border-gray-600">SEM CONTATO</th>
+                                  <th className="px-2 py-2 text-center font-bold bg-teal-600 border border-gray-600">% EM OPERAÇÃO</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {(dispData.regioes || []).map(regiao => {
+                                  const lojasRegiao = (dispData.lojas || []).filter(l => l.regiao_id === regiao.id);
+                                  if (lojasRegiao.length === 0) return null;
+                                  
+                                  // Calcular totais da região
+                                  let totalACaminho = 0, totalConfirmado = 0, totalEmLoja = 0, totalIdeal = 0, totalSemContato = 0;
+                                  
+                                  const lojasRows = lojasRegiao.map(loja => {
+                                    const linhasLoja = (dispData.linhas || []).filter(l => l.loja_id === loja.id);
+                                    const titulares = linhasLoja.filter(l => !l.is_excedente && !l.is_reposicao).length;
+                                    
+                                    const aCaminho = linhasLoja.filter(l => l.status === 'A CAMINHO').length;
+                                    const confirmado = linhasLoja.filter(l => l.status === 'CONFIRMADO').length;
+                                    const emLoja = linhasLoja.filter(l => l.status === 'EM LOJA').length;
+                                    const ideal = titulares;
+                                    const semContato = linhasLoja.filter(l => l.status === 'SEM CONTATO' || l.status === 'A CONFIRMAR').length;
+                                    const emOperacao = aCaminho + confirmado + emLoja;
+                                    const falta = Math.max(0, ideal - emOperacao);
+                                    const percOperacao = ideal > 0 ? ((emOperacao / ideal) * 100) : 0;
+                                    
+                                    totalACaminho += aCaminho;
+                                    totalConfirmado += confirmado;
+                                    totalEmLoja += emLoja;
+                                    totalIdeal += ideal;
+                                    totalSemContato += semContato;
+                                    
+                                    return (
+                                      <tr key={loja.id} className="border border-gray-300 hover:bg-gray-50">
+                                        <td className="px-3 py-1.5 font-medium text-gray-800 bg-gray-100 border border-gray-300">{loja.nome}</td>
+                                        <td className="px-2 py-1.5 text-center border border-gray-300 bg-orange-50">
+                                          <span className={`font-bold ${aCaminho > 0 ? 'text-orange-700' : 'text-gray-400'}`}>
+                                            {aCaminho}
+                                          </span>
+                                        </td>
+                                        <td className="px-2 py-1.5 text-center border border-gray-300 bg-green-50">
+                                          <span className={`font-bold ${confirmado > 0 ? 'text-green-700' : 'text-gray-400'}`}>
+                                            {confirmado}
+                                          </span>
+                                        </td>
+                                        <td className="px-2 py-1.5 text-center border border-gray-300 bg-blue-50">
+                                          <span className={`font-bold ${emLoja > 0 ? 'text-blue-700' : 'text-gray-400'}`}>
+                                            {emLoja}
+                                          </span>
+                                        </td>
+                                        <td className="px-2 py-1.5 text-center border border-gray-300 bg-purple-50">
+                                          <span className="font-bold text-purple-700">{ideal}</span>
+                                        </td>
+                                        <td className="px-2 py-1.5 text-center border border-gray-300">
+                                          <span className={`inline-block min-w-[24px] px-1.5 py-0.5 rounded font-bold ${falta > 0 ? 'bg-red-500 text-white' : 'bg-green-100 text-green-700'}`}>
+                                            {falta > 0 ? `-${falta}` : '0'}
+                                          </span>
+                                        </td>
+                                        <td className="px-2 py-1.5 text-center border border-gray-300 bg-gray-50">
+                                          <span className={`font-bold ${semContato > 0 ? 'text-gray-700' : 'text-gray-400'}`}>
+                                            {semContato}
+                                          </span>
+                                        </td>
+                                        <td className="px-2 py-1.5 text-center border border-gray-300">
+                                          <span className={`inline-block min-w-[50px] px-2 py-0.5 rounded font-bold ${
+                                            percOperacao >= 100 ? 'bg-green-500 text-white' :
+                                            percOperacao >= 80 ? 'bg-yellow-400 text-yellow-900' :
+                                            percOperacao >= 50 ? 'bg-orange-400 text-white' :
+                                            'bg-red-500 text-white'
+                                          }`}>
+                                            {percOperacao.toFixed(2).replace('.', ',')}%
+                                          </span>
+                                        </td>
+                                      </tr>
+                                    );
+                                  });
+                                  
+                                  return (
+                                    <React.Fragment key={regiao.id}>
+                                      {/* Header da Região com gestores */}
+                                      <tr className="bg-yellow-400">
+                                        <td colSpan="8" className="px-3 py-2 font-bold text-gray-900 text-center border border-yellow-500">
+                                          {regiao.nome.toUpperCase()}
+                                          {regiao.gestores && (
+                                            <span className="ml-2 font-normal">({regiao.gestores})</span>
+                                          )}
+                                        </td>
+                                      </tr>
+                                      {/* Lojas da região */}
+                                      {lojasRows}
+                                    </React.Fragment>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                          
+                          {/* Legenda */}
+                          <div className="bg-white rounded-xl shadow p-4">
+                            <h4 className="font-bold text-gray-700 mb-2">📋 Legenda</h4>
+                            <div className="flex flex-wrap gap-4 text-xs">
+                              <div className="flex items-center gap-1">
+                                <span className="w-4 h-4 rounded bg-orange-400"></span>
+                                <span>A Caminho</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <span className="w-4 h-4 rounded bg-green-500"></span>
+                                <span>Confirmado</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <span className="w-4 h-4 rounded bg-blue-500"></span>
+                                <span>Em Loja</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <span className="w-4 h-4 rounded bg-purple-500"></span>
+                                <span>Ideal (Titulares)</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <span className="w-4 h-4 rounded bg-red-500"></span>
+                                <span>Falta</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <span className="w-4 h-4 rounded bg-gray-400"></span>
+                                <span>Sem Contato (inclui A Confirmar)</span>
+                              </div>
+                            </div>
+                            <p className="text-xs text-gray-500 mt-2">
+                              <strong>% Em Operação</strong> = (A Caminho + Confirmado + Em Loja) / Ideal × 100
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                      
                       {/* ===== SUB-ABA CONFIG ===== */}
                       {dispSubTab === 'config' && (
                         <div className="space-y-4">
@@ -5937,7 +6112,7 @@
                             <div className="flex gap-2 mb-4">
                               <input 
                                 type="text" 
-                                placeholder="Nome da região (ex: ARACAJU)" 
+                                placeholder="Nome da região (ex: GOIÂNIA)" 
                                 value={formData.novaRegiao || ''} 
                                 onChange={e => setFormData({...formData, novaRegiao: e.target.value.toUpperCase()})}
                                 className="flex-1 px-3 py-2 border rounded-lg"
@@ -5947,12 +6122,47 @@
                                 + Adicionar
                               </button>
                             </div>
-                            <div className="flex flex-wrap gap-2">
+                            
+                            {/* Lista de Regiões com gestores */}
+                            <div className="space-y-2">
                               {(dispData.regioes || []).map(r => (
-                                <span key={r.id} className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full flex items-center gap-2">
-                                  {r.nome}
-                                  <button onClick={() => removeRegiao(r.id, r.nome)} className="text-red-600 hover:text-red-800 font-bold">×</button>
-                                </span>
+                                <div key={r.id} className="flex items-center gap-2 p-2 bg-purple-50 rounded-lg">
+                                  <span className="font-semibold text-purple-800 min-w-[150px]">{r.nome}</span>
+                                  <input 
+                                    type="text"
+                                    placeholder="Gestores (ex: LIS / LEO / ERICK)"
+                                    value={r.gestores || ''}
+                                    onChange={async (e) => {
+                                      const novoGestores = e.target.value;
+                                      // Atualizar localmente
+                                      const novasRegioes = dispData.regioes.map(reg => 
+                                        reg.id === r.id ? {...reg, gestores: novoGestores} : reg
+                                      );
+                                      setFormData(f => ({...f, dispData: {...dispData, regioes: novasRegioes}}));
+                                      // Salvar no banco (debounce)
+                                      clearTimeout(window.gestoresDebounce);
+                                      window.gestoresDebounce = setTimeout(async () => {
+                                        try {
+                                          await fetch(`${API_URL}/disponibilidade/regioes/${r.id}`, {
+                                            method: 'PUT',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ gestores: novoGestores })
+                                          });
+                                        } catch (err) {
+                                          console.error('Erro ao salvar gestores:', err);
+                                        }
+                                      }, 500);
+                                    }}
+                                    className="flex-1 px-2 py-1 border border-purple-200 rounded text-sm"
+                                  />
+                                  <button 
+                                    onClick={() => removeRegiao(r.id, r.nome)} 
+                                    className="text-red-600 hover:text-red-800 font-bold px-2"
+                                    title="Remover região"
+                                  >
+                                    ×
+                                  </button>
+                                </div>
                               ))}
                               {(dispData.regioes || []).length === 0 && <p className="text-gray-500 text-sm">Nenhuma região cadastrada</p>}
                             </div>
@@ -6015,7 +6225,7 @@
                             if (lojasRegiao.length === 0) return null;
                             return (
                               <div key={regiao.id} className="bg-white rounded-xl shadow p-4">
-                                <h3 className="font-bold text-gray-800 mb-3">📍 {regiao.nome}</h3>
+                                <h3 className="font-bold text-gray-800 mb-3">📍 {regiao.nome} {regiao.gestores && <span className="font-normal text-gray-500">({regiao.gestores})</span>}</h3>
                                 <div className="overflow-x-auto">
                                   <table className="w-full text-sm">
                                     <thead className="bg-gray-100">
@@ -6390,8 +6600,10 @@
                                                         >
                                                           <option value="A CONFIRMAR">A CONFIRMAR</option>
                                                           <option value="CONFIRMADO">CONFIRMADO</option>
+                                                          <option value="A CAMINHO">A CAMINHO</option>
                                                           <option value="EM LOJA">EM LOJA</option>
                                                           <option value="FALTANDO">FALTANDO</option>
+                                                          <option value="SEM CONTATO">SEM CONTATO</option>
                                                         </select>
                                                       </td>
                                                       <td className="px-1 py-0.5">
