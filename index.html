@@ -5988,7 +5988,17 @@
                             📋 Painel
                           </button>
                           <button 
-                            onClick={() => setFormData({...formData, dispSubTab: 'faltosos'})} 
+                            onClick={async () => {
+                              setFormData(f => ({...f, dispSubTab: 'faltosos'}));
+                              // Carregar todas as faltas automaticamente
+                              try {
+                                const res = await fetch(`${API_URL}/disponibilidade/faltosos`);
+                                const data = await res.json();
+                                setFormData(f => ({...f, faltososLista: data}));
+                              } catch (err) {
+                                console.error('Erro ao carregar faltosos:', err);
+                              }
+                            }} 
                             className={`px-3 py-2 font-semibold text-sm whitespace-nowrap ${dispSubTab === 'faltosos' ? 'text-purple-700 border-b-2 border-purple-600 bg-purple-50' : 'text-gray-600'}`}
                           >
                             ⚠️ Faltosos
@@ -7205,7 +7215,7 @@
                                   ))}
                                 </select>
                               </div>
-                              <div className="flex items-end">
+                              <div className="flex items-end gap-2">
                                 <button 
                                   onClick={async () => {
                                     try {
@@ -7220,9 +7230,24 @@
                                       showToast('Erro ao buscar faltosos', 'error');
                                     }
                                   }}
-                                  className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
+                                  className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
                                 >
                                   🔍 Buscar
+                                </button>
+                                <button 
+                                  onClick={async () => {
+                                    setFormData(f => ({...f, faltososDataInicio: '', faltososDataFim: '', faltososLojaId: ''}));
+                                    try {
+                                      const res = await fetch(`${API_URL}/disponibilidade/faltosos`);
+                                      const data = await res.json();
+                                      setFormData(f => ({...f, faltososLista: data}));
+                                    } catch (err) {
+                                      showToast('Erro ao buscar faltosos', 'error');
+                                    }
+                                  }}
+                                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300"
+                                >
+                                  🔄 Limpar
                                 </button>
                               </div>
                             </div>
@@ -7230,8 +7255,8 @@
                           
                           {/* Lista de Faltosos */}
                           <div className="bg-white rounded-xl shadow overflow-hidden">
-                            <div className="px-4 py-3 bg-gray-50 border-b">
-                              <h3 className="font-bold text-gray-800">📋 Registro de Faltas</h3>
+                            <div className="px-4 py-3 bg-gray-50 border-b flex justify-between items-center">
+                              <h3 className="font-bold text-gray-800">📋 Registro de Faltas ({(formData.faltososLista || []).length})</h3>
                             </div>
                             <div className="overflow-x-auto">
                               <table className="w-full text-xs">
@@ -7243,13 +7268,14 @@
                                     <th className="px-3 py-2 text-left">COD</th>
                                     <th className="px-3 py-2 text-left">PROFISSIONAL</th>
                                     <th className="px-3 py-2 text-left">MOTIVO</th>
+                                    <th className="px-3 py-2 text-center w-16">AÇÃO</th>
                                   </tr>
                                 </thead>
                                 <tbody>
                                   {(formData.faltososLista || []).length === 0 ? (
                                     <tr>
-                                      <td colSpan="6" className="px-3 py-8 text-center text-gray-500">
-                                        Nenhum registro de falta encontrado. Use os filtros acima para buscar.
+                                      <td colSpan="7" className="px-3 py-8 text-center text-gray-500">
+                                        Nenhum registro de falta encontrado.
                                       </td>
                                     </tr>
                                   ) : (
@@ -7261,6 +7287,27 @@
                                         <td className="px-3 py-2 font-mono">{f.cod_profissional || '-'}</td>
                                         <td className="px-3 py-2">{f.nome_profissional || '-'}</td>
                                         <td className="px-3 py-2 text-red-600">{f.motivo}</td>
+                                        <td className="px-3 py-2 text-center">
+                                          <button 
+                                            onClick={async () => {
+                                              if (!window.confirm(`Excluir registro de falta de ${f.nome_profissional || f.cod_profissional}?`)) return;
+                                              try {
+                                                await fetch(`${API_URL}/disponibilidade/faltosos/${f.id}`, { method: 'DELETE' });
+                                                setFormData(prev => ({
+                                                  ...prev, 
+                                                  faltososLista: prev.faltososLista.filter(x => x.id !== f.id)
+                                                }));
+                                                showToast('✅ Falta excluída', 'success');
+                                              } catch (err) {
+                                                showToast('Erro ao excluir', 'error');
+                                              }
+                                            }}
+                                            className="text-red-500 hover:text-red-700 hover:bg-red-50 px-2 py-1 rounded"
+                                            title="Excluir falta"
+                                          >
+                                            🗑️
+                                          </button>
+                                        </td>
                                       </tr>
                                     ))
                                   )}
@@ -7332,6 +7379,40 @@
                               >
                                 🔄 Atualizar
                               </button>
+                              {/* Botão Excluir Espelho */}
+                              {formData.espelhoDataSelecionada && (
+                                <button 
+                                  onClick={async () => {
+                                    const espelhoSelecionado = (formData.espelhoDatas || []).find(e => {
+                                      const dataStr = e.data_registro?.split('T')[0] || e.data_registro;
+                                      return dataStr === formData.espelhoDataSelecionada;
+                                    });
+                                    if (!espelhoSelecionado) return;
+                                    
+                                    const dataFormatada = formData.espelhoDataSelecionada.split('-').reverse().join('/');
+                                    if (!window.confirm(`⚠️ Excluir espelho de ${dataFormatada}?\n\nEssa ação não pode ser desfeita.`)) return;
+                                    
+                                    try {
+                                      await fetch(`${API_URL}/disponibilidade/espelho/${espelhoSelecionado.id}`, { method: 'DELETE' });
+                                      // Atualizar lista de datas
+                                      const res = await fetch(`${API_URL}/disponibilidade/espelho`);
+                                      const datas = await res.json();
+                                      setFormData(f => ({
+                                        ...f, 
+                                        espelhoDatas: datas, 
+                                        espelhoDataSelecionada: '', 
+                                        espelhoDados: null
+                                      }));
+                                      showToast(`✅ Espelho de ${dataFormatada} excluído`, 'success');
+                                    } catch (err) {
+                                      showToast('Erro ao excluir espelho', 'error');
+                                    }
+                                  }}
+                                  className="px-4 py-2 bg-red-100 text-red-700 rounded-lg font-semibold hover:bg-red-200"
+                                >
+                                  🗑️ Excluir
+                                </button>
+                              )}
                             </div>
                             {/* Info de datas disponíveis */}
                             <p className="text-xs text-gray-500 mt-2">
