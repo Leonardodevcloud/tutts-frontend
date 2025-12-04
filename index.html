@@ -702,6 +702,30 @@
         return () => clearInterval(interval);
       }, [user]);
 
+      // ========== POLLING PARA DISPONIBILIDADE (tempo real para todos admins) ==========
+      useEffect(() => {
+        if (!user || !['admin', 'admin_master'].includes(user.role)) return;
+        if (formData.adminTab !== 'disponibilidade') return;
+        
+        const POLLING_INTERVAL = 10000; // 10 segundos - mais frequente para tempo real
+        
+        const pollDisponibilidade = async () => {
+          try {
+            const res = await fetch(`${API_URL}/disponibilidade`);
+            if (!res.ok) return;
+            const data = await res.json();
+            setFormData(f => ({...f, dispData: data}));
+            console.log('🔄 Disponibilidade atualizada em tempo real');
+          } catch (err) {
+            console.error('Erro no polling disponibilidade:', err);
+          }
+        };
+        
+        const interval = setInterval(pollDisponibilidade, POLLING_INTERVAL);
+        
+        return () => clearInterval(interval);
+      }, [user, formData.adminTab]);
+
       // Carregar pixTipo quando financialData mudar
       useEffect(() => {
         if (financialData && financialData.pix_tipo) {
@@ -6197,6 +6221,14 @@
                   
                   return (
                     <div className="space-y-4">
+                      {/* Indicador de Sincronização em Tempo Real */}
+                      <div className="flex items-center justify-end gap-2 text-xs text-gray-500">
+                        <span className="flex items-center gap-1">
+                          <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                          Sincronização automática ativa (10s)
+                        </span>
+                      </div>
+                      
                       {/* Sub-abas */}
                       <div className="bg-white rounded-xl shadow">
                         <div className="flex border-b overflow-x-auto">
