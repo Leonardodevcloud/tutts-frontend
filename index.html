@@ -6367,7 +6367,13 @@
                                   return (
                                     <div className="h-48 flex items-end gap-2 justify-around bg-gray-50 rounded-lg p-4">
                                       {metricas.slice(0, 7).reverse().map((dia, idx) => {
-                                        const dataFormatada = dia.data ? new Date(dia.data).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : '-';
+                                        // Extrair data sem problema de timezone
+                                        let dataFormatada = '-';
+                                        if (dia.data) {
+                                          const dataStr = dia.data.split('T')[0]; // "2025-12-03"
+                                          const [ano, mes, diaNum] = dataStr.split('-');
+                                          dataFormatada = `${diaNum}/${mes}`;
+                                        }
                                         const perc = dia.percOperacao || 0;
                                         const altura = Math.max(10, perc);
                                         return (
