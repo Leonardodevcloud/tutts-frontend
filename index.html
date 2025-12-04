@@ -1965,6 +1965,21 @@
                     <span className="text-blue-400 text-2xl">›</span>
                   </button>
 
+                  {/* Botão Seguro de Vida IZA */}
+                  <button 
+                    onClick={() => setFormData({...formData, userTab: 'seguro-iza'})}
+                    className="w-full bg-white rounded-2xl shadow-lg p-6 flex items-center gap-4 hover:shadow-xl transition-all hover:scale-[1.02] border-l-4 border-cyan-500"
+                  >
+                    <div className="w-16 h-16 bg-cyan-100 rounded-xl flex items-center justify-center text-3xl">
+                      🛡️
+                    </div>
+                    <div className="text-left flex-1">
+                      <h3 className="text-lg font-bold text-gray-800">Seguro de Vida - IZA</h3>
+                      <p className="text-sm text-gray-500">Coberturas, valores e como acionar</p>
+                    </div>
+                    <span className="text-cyan-400 text-2xl">›</span>
+                  </button>
+
                   {/* Botão Promoções Novatos - Apenas para COD >= 14000 e dentro de 30 dias */}
                   {isNovato() && (
                     <button 
@@ -2027,6 +2042,7 @@
                     {formData.userTab === 'saque' && '💰 Saque Emergencial'}
                     {formData.userTab === 'indicacoes' && '👥 Promoção de Indicação'}
                     {formData.userTab === 'promo-novatos' && '🚀 Promoções Novatos'}
+                    {formData.userTab === 'seguro-iza' && '🛡️ Seguro de Vida - IZA'}
                   </h1>
                 </div>
 
@@ -3213,6 +3229,198 @@
                     )}
                   </div>
                 </>
+              )}
+
+              {/* ABA SEGURO DE VIDA IZA */}
+              {formData.userTab === 'seguro-iza' && (
+                <div className="max-w-lg mx-auto">
+                  {/* Card Principal com visual similar à imagem */}
+                  <div className="bg-gradient-to-b from-sky-100 to-white rounded-2xl shadow-xl overflow-hidden">
+                    
+                    {/* Header */}
+                    <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white text-center py-4 px-4">
+                      <h2 className="text-xl font-bold tracking-wide">🛡️ SEGURO DE VIDA PARA</h2>
+                      <h2 className="text-xl font-bold tracking-wide">ENTREGADORES TUTTS</h2>
+                    </div>
+
+                    <div className="p-4 space-y-4">
+                      
+                      {/* Quando está ativo */}
+                      <div className="bg-white rounded-xl shadow border-l-4 border-yellow-400 overflow-hidden">
+                        <div className="bg-yellow-400 text-yellow-900 font-bold text-center py-2 text-sm italic">
+                          QUANDO ESTÁ ATIVO?
+                        </div>
+                        <div className="p-4 space-y-2 text-sm text-gray-700">
+                          <p>🕐 Durante a entrega (aceite à finalização)</p>
+                          <p>⏳ <strong>Limite:</strong> 60 min por entrega (encerra após)</p>
+                          <p>❌ <strong>Não cobre:</strong> Trajeto casa/pessoal</p>
+                        </div>
+                      </div>
+
+                      {/* Coberturas e Valores */}
+                      <div className="bg-white rounded-xl shadow border-l-4 border-green-500 overflow-hidden">
+                        <div className="bg-green-500 text-white font-bold text-center py-2 text-sm">
+                          COBERTURAS E VALORES
+                        </div>
+                        <div className="p-4 space-y-2 text-sm text-gray-700">
+                          <p>☠️ <strong>Morte Acidental:</strong> R$ 20.000</p>
+                          <p>💰 <strong>Invalidez Perm.:</strong> R$ 20.000</p>
+                          <p>🏥 <strong>Desp. Médicas/Hosp.:</strong> Até R$ 5.000</p>
+                          <p>📅 <strong>Diária Incapacidade:</strong> R$ 80/dia (30 dias)</p>
+                          <p>⚰️ <strong>Funeral:</strong> R$ 5.000</p>
+                        </div>
+                      </div>
+
+                      {/* Quando NÃO cobre */}
+                      <div className="bg-white rounded-xl shadow border-l-4 border-red-500 overflow-hidden">
+                        <div className="bg-red-500 text-white font-bold text-center py-2 text-sm">
+                          QUANDO NÃO COBRE?
+                        </div>
+                        <div className="p-4 space-y-2 text-sm text-gray-700">
+                          <p>⚠️ Cadastro/CPF incorreto</p>
+                          <p>⚠️ Sem CNH válida</p>
+                          <p>⚠️ Veículo errado</p>
+                          <p>⚠️ Fora de entrega ativa</p>
+                          <p>⚠️ Fraude/Má-fé</p>
+                        </div>
+                      </div>
+
+                      {/* Como Acionar */}
+                      <div className="bg-white rounded-xl shadow border-l-4 border-gray-500 overflow-hidden">
+                        <div className="bg-gray-600 text-white font-bold text-center py-2 text-sm">
+                          COMO ACIONAR? (IZA Seguros)
+                        </div>
+                        <div className="p-4 space-y-2 text-sm text-gray-700">
+                          <p>📱 <strong>Baixar</strong> App IZA</p>
+                          <p>📋 <strong>Informar</strong> Data/Hora/Local</p>
+                          <p>📄 <strong>Anexar Documentos</strong> (B.O., atestado)</p>
+                          <p>📞 <strong>Suporte:</strong> Tel (11) 4673-2002</p>
+                          <p>
+                            💬 <strong>WhatsApp:</strong>{' '}
+                            <a 
+                              href="https://wa.me/551146732004" 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-green-600 font-bold underline hover:text-green-700"
+                            >
+                              (11) 4673-2004
+                            </a>
+                          </p>
+                          <p>🌐 <strong>Site:</strong>{' '}
+                            <a 
+                              href="https://www.iza.com.vc" 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-blue-600 underline hover:text-blue-700"
+                            >
+                              www.iza.com.vc
+                            </a>
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Outras Informações */}
+                      <div className="bg-white rounded-xl shadow border-l-4 border-orange-400 overflow-hidden">
+                        <div className="bg-orange-400 text-white font-bold text-center py-2 text-sm">
+                          OUTRAS INFORMAÇÕES
+                        </div>
+                        <div className="p-4 space-y-2 text-sm text-gray-700">
+                          <p>ℹ️ <strong>Sem carência</strong> (desde 1ª entrega)</p>
+                          <p>ℹ️ <strong>Renova</strong> a cada entrega aceita</p>
+                          <p>💵 <strong>Contribuição:</strong> R$ 0,10 por entrega</p>
+                        </div>
+                      </div>
+
+                      {/* Botão Ver Mais Detalhes */}
+                      <button 
+                        onClick={() => setFormData({...formData, seguroDetalhes: !formData.seguroDetalhes})}
+                        className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all flex items-center justify-center gap-2"
+                      >
+                        📄 {formData.seguroDetalhes ? 'Ocultar Detalhes' : 'Ver Texto com Mais Detalhes'}
+                      </button>
+
+                      {/* Texto Completo (expandível) */}
+                      {formData.seguroDetalhes && (
+                        <div className="bg-white rounded-xl shadow p-4 text-sm text-gray-700 space-y-4 border border-blue-200">
+                          <h3 className="font-bold text-blue-800 text-lg">📋 Informações Completas do Seguro</h3>
+                          
+                          <div>
+                            <h4 className="font-bold text-gray-800 mb-2">Quando o seguro está ativo?</h4>
+                            <ul className="list-disc pl-5 space-y-1">
+                              <li>O seguro cobre você durante o período em que estiver realizando uma entrega pela plataforma da Tutts.</li>
+                              <li>A cobertura é ativada automaticamente desde o aceite da entrega até a finalização no destino.</li>
+                              <li>Não cobre o trajeto de casa para o trabalho ou atividades pessoais.</li>
+                              <li>O entregador estará coberto durante o período da entrega, limitado a até 60 minutos. Ou seja, se a entrega ultrapassar esse tempo e for finalizada após os 60 minutos, a cobertura do seguro de vida será encerrada.</li>
+                            </ul>
+                          </div>
+
+                          <div>
+                            <h4 className="font-bold text-gray-800 mb-2">Coberturas e Valores</h4>
+                            <ul className="list-disc pl-5 space-y-1">
+                              <li><strong>Morte Acidental:</strong> R$ 20.000,00</li>
+                              <li><strong>Invalidez Permanente Total ou Parcial por Acidente:</strong> R$ 20.000,00</li>
+                              <li><strong>Despesas Médicas, Hospitalares e Odontológicos:</strong> Até R$ 5.000,00</li>
+                              <li><strong>Diária por Incapacidade Temporária (até 30 dias):</strong> R$ 80,00 por dia</li>
+                              <li><strong>Funeral:</strong> R$ 5.000,00</li>
+                            </ul>
+                          </div>
+
+                          <div>
+                            <h4 className="font-bold text-gray-800 mb-2">Quando o seguro não cobre?</h4>
+                            <ul className="list-disc pl-5 space-y-1">
+                              <li>Se o entregador não estiver cadastrado corretamente ou com CPF incorreto.</li>
+                              <li>Se estiver sem habilitação válida no momento do acidente.</li>
+                              <li>Se estiver usando o veículo errado (ex.: moto em contrato de carro).</li>
+                              <li>Se estiver fora de uma entrega ativa pela plataforma da Tutts.</li>
+                              <li>Se for constatado fraude ou má-fé.</li>
+                            </ul>
+                          </div>
+
+                          <div>
+                            <h4 className="font-bold text-gray-800 mb-2">Como acionar o seguro em caso de acidente?</h4>
+                            <ul className="list-disc pl-5 space-y-1">
+                              <li>Baixe o aplicativo IZA Seguros.</li>
+                              <li>Informe: data, horário e local do acidente.</li>
+                              <li>Anexe os documentos solicitados no app (como boletim de ocorrência ou atestado médico).</li>
+                              <li>
+                                Dúvidas ou suporte: Telefone (11) 4673-2002 | WhatsApp{' '}
+                                <a 
+                                  href="https://wa.me/551146732004" 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-green-600 font-bold underline"
+                                >
+                                  (11) 4673-2004
+                                </a>
+                              </li>
+                              <li>
+                                Site:{' '}
+                                <a 
+                                  href="https://www.iza.com.vc" 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-blue-600 underline"
+                                >
+                                  www.iza.com.vc
+                                </a>
+                              </li>
+                            </ul>
+                          </div>
+
+                          <div>
+                            <h4 className="font-bold text-gray-800 mb-2">Outras Informações</h4>
+                            <ul className="list-disc pl-5 space-y-1">
+                              <li><strong>Sem carência:</strong> você estará coberto a partir da primeira entrega feita no dia.</li>
+                              <li>A cobertura se renova a cada entrega aceita na plataforma da Tutts.</li>
+                              <li><strong>Contribuição Simbólica:</strong> Para garantir essa importante proteção, cada entregador contribui com apenas R$ 0,10 por entrega. Essa pequena colaboração permite que todos tenham acesso a um seguro de vida completo, com coberturas que fazem diferença em momentos delicados.</li>
+                            </ul>
+                          </div>
+                        </div>
+                      )}
+
+                    </div>
+                  </div>
+                </div>
               )}
               </div>
             )}
