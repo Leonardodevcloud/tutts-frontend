@@ -6066,9 +6066,11 @@
                               {(() => {
                                 const linhas = dispData.linhas || [];
                                 const titulares = linhas.filter(l => !l.is_excedente && !l.is_reposicao).length;
+                                const emLoja = linhas.filter(l => l.status === 'EM LOJA').length;
                                 const emOp = linhas.filter(l => ['A CAMINHO', 'CONFIRMADO', 'EM LOJA'].includes(l.status)).length;
-                                const faltam = Math.max(0, titulares - emOp);
-                                const perc = titulares > 0 ? ((emOp / titulares) * 100).toFixed(0) : 0;
+                                const faltam = Math.max(0, titulares - emLoja);
+                                // % baseado em EM LOJA vs TITULARES, limitado a 100%
+                                const perc = titulares > 0 ? Math.min((emLoja / titulares) * 100, 100).toFixed(0) : 0;
                                 return (
                                   <div className="flex items-center gap-2">
                                     <span className={`px-2 py-0.5 rounded text-xs font-bold ${perc >= 80 ? 'bg-green-500' : perc >= 50 ? 'bg-yellow-500 text-black' : 'bg-red-500'}`}>
@@ -6154,7 +6156,8 @@
                                     const semContato = linhasLoja.filter(l => l.status === 'SEM CONTATO').length;
                                     const emOperacao = aCaminho + confirmado + emLoja;
                                     const falta = Math.max(0, titulares - emOperacao);
-                                    const perc = titulares > 0 ? ((emOperacao / titulares) * 100) : 0;
+                                    // % baseado em EM LOJA vs TITULARES, limitado a 100%
+                                    const perc = titulares > 0 ? Math.min((emLoja / titulares) * 100, 100) : 0;
                                     const regiao = regioes.find(r => r.id === loja.regiao_id);
                                     return { ...loja, titulares, aCaminho, confirmado, emLoja, semContato, emOperacao, falta, perc, regiao };
                                   });
@@ -6170,7 +6173,8 @@
                                     totalGeral.semContato += l.semContato;
                                     totalGeral.emOperacao += l.emOperacao;
                                   });
-                                  const percGeral = totalGeral.titulares > 0 ? ((totalGeral.emOperacao / totalGeral.titulares) * 100) : 0;
+                                  // % geral baseado em EM LOJA vs TITULARES, limitado a 100%
+                                  const percGeral = totalGeral.titulares > 0 ? Math.min((totalGeral.emLoja / totalGeral.titulares) * 100, 100) : 0;
                                   
                                   // Ordenar conforme seleção
                                   if (ordem === 'pior') {
@@ -6297,26 +6301,30 @@
                                       {item.data ? (
                                         <div className="space-y-1 text-sm">
                                           <div className="flex justify-between">
-                                            <span>% Operação:</span>
+                                            <span>% EM LOJA:</span>
                                             <span className={`font-bold ${item.data.perc >= 80 ? 'text-green-600' : item.data.perc >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
                                               {item.data.perc}%
                                             </span>
                                           </div>
                                           <div className="flex justify-between">
+                                            <span>Em Loja:</span>
+                                            <span className="font-bold text-blue-600">{item.data.emLoja || 0}</span>
+                                          </div>
+                                          <div className="flex justify-between">
                                             <span>Em Operação:</span>
-                                            <span className="font-bold text-blue-600">{item.data.emOperacao}</span>
+                                            <span className="font-bold text-green-600">{item.data.emOperacao || 0}</span>
                                           </div>
                                           <div className="flex justify-between">
                                             <span>Titulares:</span>
-                                            <span className="font-bold">{item.data.titulares}</span>
+                                            <span className="font-bold">{item.data.titulares || 0}</span>
                                           </div>
                                           <div className="flex justify-between">
                                             <span>Faltando:</span>
-                                            <span className="font-bold text-red-600">{item.data.faltando}</span>
+                                            <span className="font-bold text-red-600">{item.data.faltando || 0}</span>
                                           </div>
                                           <div className="flex justify-between">
                                             <span>Sem Contato:</span>
-                                            <span className="font-bold text-gray-600">{item.data.semContato}</span>
+                                            <span className="font-bold text-orange-600">{item.data.semContato || 0}</span>
                                           </div>
                                         </div>
                                       ) : (
@@ -6351,7 +6359,7 @@
                               
                               {/* === GRÁFICO DE MÉTRICAS (últimos 7 dias) === */}
                               <div className="bg-white rounded-xl shadow p-4">
-                                <h3 className="font-bold text-gray-800 mb-3">📈 Evolução % Operação (7 dias)</h3>
+                                <h3 className="font-bold text-gray-800 mb-3">📈 Evolução % EM LOJA (7 dias)</h3>
                                 {(() => {
                                   const metricas = Array.isArray(formData.relatoriosData?.metricas) ? formData.relatoriosData.metricas : [];
                                   if (metricas.length === 0) {
@@ -6374,6 +6382,7 @@
                                               style={{ height: `${altura * 1.5}px`, maxHeight: '140px' }}
                                             ></div>
                                             <span className="text-[10px] text-gray-500 mt-1">{dataFormatada}</span>
+                                            <span className="text-[9px] text-blue-600">{dia.emLoja || 0} em loja</span>
                                           </div>
                                         );
                                       })}
