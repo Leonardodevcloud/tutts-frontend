@@ -6292,12 +6292,15 @@
                                 <h3 className="font-bold text-gray-800 mb-3">📊 Comparativo</h3>
                                 <div className="grid grid-cols-3 gap-4">
                                   {[
-                                    { label: 'HOJE', data: formData.relatoriosData?.comparativo?.hoje, color: 'blue' },
-                                    { label: 'ONTEM', data: formData.relatoriosData?.comparativo?.ontem, color: 'gray' },
-                                    { label: '7 DIAS ATRÁS', data: formData.relatoriosData?.comparativo?.semanaPassada, color: 'purple' }
-                                  ].map(item => (
-                                    <div key={item.label} className={`p-4 rounded-lg bg-${item.color}-50 border border-${item.color}-200`}>
-                                      <h4 className={`font-bold text-${item.color}-800 text-center mb-2`}>{item.label}</h4>
+                                    { key: 'hoje', data: formData.relatoriosData?.comparativo?.hoje, color: 'blue' },
+                                    { key: 'ontem', data: formData.relatoriosData?.comparativo?.ontem, color: 'gray' },
+                                    { key: 'semanaPassada', data: formData.relatoriosData?.comparativo?.semanaPassada, color: 'purple' }
+                                  ].map(item => {
+                                    const labels = formData.relatoriosData?.comparativo?.labels || {};
+                                    const label = labels[item.key] || (item.key === 'hoje' ? 'MAIS RECENTE' : item.key === 'ontem' ? 'ANTERIOR' : '3º ANTERIOR');
+                                    return (
+                                    <div key={item.key} className={`p-4 rounded-lg bg-${item.color}-50 border border-${item.color}-200`}>
+                                      <h4 className={`font-bold text-${item.color}-800 text-center mb-2`}>{label}</h4>
                                       {item.data ? (
                                         <div className="space-y-1 text-sm">
                                           <div className="flex justify-between">
@@ -6327,7 +6330,7 @@
                                         <p className="text-gray-400 text-center text-sm">Sem dados</p>
                                       )}
                                     </div>
-                                  ))}
+                                  )})}
                                 </div>
                                 
                                 {/* Variação */}
