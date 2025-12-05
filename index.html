@@ -5480,7 +5480,8 @@
                         showToast('✅ Horário atualizado!', 'success');
                         // Recarregar
                         const res = await fetch(`${API_URL}/horarios`);
-                        setHorariosData(prev => ({...prev, horarios: await res.json()}));
+                        const horariosAtualizados = await res.json();
+                        setHorariosData(prev => ({...prev, horarios: horariosAtualizados}));
                       } catch (err) {
                         showToast('Erro ao atualizar', 'error');
                       }
@@ -5514,7 +5515,8 @@
                         showToast('✅ Horário especial criado!', 'success');
                         setFormData(f => ({...f, novoEspData: '', novoEspDesc: '', novoEspFechado: false, novoEspInicio: '09:00', novoEspFim: '18:00'}));
                         const res = await fetch(`${API_URL}/horarios/especiais`);
-                        setHorariosData(prev => ({...prev, especiais: await res.json()}));
+                        const especiaisAtualizados = await res.json();
+                        setHorariosData(prev => ({...prev, especiais: especiaisAtualizados}));
                       } catch (err) {
                         showToast('Erro ao criar', 'error');
                       }
@@ -5527,7 +5529,8 @@
                         await fetch(`${API_URL}/horarios/especiais/${id}`, { method: 'DELETE' });
                         showToast('✅ Removido!', 'success');
                         const res = await fetch(`${API_URL}/horarios/especiais`);
-                        setHorariosData(prev => ({...prev, especiais: await res.json()}));
+                        const especiaisAtualizados = await res.json();
+                        setHorariosData(prev => ({...prev, especiais: especiaisAtualizados}));
                       } catch (err) {
                         showToast('Erro', 'error');
                       }
