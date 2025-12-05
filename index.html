@@ -2508,26 +2508,26 @@
                       )}
                       
                       {!termsAccepted ? (
-                    <div className="bg-white rounded-xl shadow p-6">
-                      <h2 className="text-2xl font-bold text-purple-900 mb-4 text-center">📋 Termos de Uso</h2>
-                      <div className="bg-gray-50 rounded-lg p-4 mb-6 max-h-80 overflow-y-auto text-sm">
-                        <p className="text-gray-700 leading-relaxed">Uma taxa administrativa de 4,5% será aplicada sobre o valor solicitado e deduzida automaticamente na transferência. As solicitações são processadas de segunda a sexta, das 09:00 às 18:00, e aos sábados, das 08:00 às 12:00. Solicitações feitas fora desse horário serão atendidas no próximo dia útil. É sua responsabilidade garantir que as informações fornecidas estejam corretas, pois não nos responsabilizamos por atrasos ou transferências erradas causadas por dados incorretos. O dinheiro será transferido em até 1 hora após a confirmação, dentro do horário de funcionamento.</p>
-                      </div>
-                      <button onClick={handleAcceptTerms} disabled={loading} className="w-full bg-purple-600 text-white py-3 rounded-lg font-bold disabled:opacity-50">
-                        {loading ? 'Aguarde...' : '✓ Aceitar e Continuar'}
-                      </button>
-                    </div>
-                  ) : !financialData?.full_name ? (
-                    <div className="bg-white rounded-xl shadow p-6">
-                      <h2 className="text-xl font-bold text-purple-900 mb-4">💳 Cadastrar Dados Financeiros</h2>
-                      <p className="text-sm text-gray-600 mb-4">Preencha seus dados para receber os saques via PIX.</p>
-                      <div className="space-y-4">
-                        <div>
-                          <label className="block text-sm font-semibold mb-1">Código do Profissional</label>
-                          <input type="text" value={user.codProfissional} disabled className="w-full px-4 py-2 border rounded-lg bg-gray-100 text-gray-600" />
+                        <div className="bg-white rounded-xl shadow p-6">
+                          <h2 className="text-2xl font-bold text-purple-900 mb-4 text-center">📋 Termos de Uso</h2>
+                          <div className="bg-gray-50 rounded-lg p-4 mb-6 max-h-80 overflow-y-auto text-sm">
+                            <p className="text-gray-700 leading-relaxed">Uma taxa administrativa de 4,5% será aplicada sobre o valor solicitado e deduzida automaticamente na transferência. As solicitações são processadas de segunda a sexta, das 09:00 às 18:00, e aos sábados, das 08:00 às 12:00. Solicitações feitas fora desse horário serão atendidas no próximo dia útil. É sua responsabilidade garantir que as informações fornecidas estejam corretas, pois não nos responsabilizamos por atrasos ou transferências erradas causadas por dados incorretos. O dinheiro será transferido em até 1 hora após a confirmação, dentro do horário de funcionamento.</p>
+                          </div>
+                          <button onClick={handleAcceptTerms} disabled={loading} className="w-full bg-purple-600 text-white py-3 rounded-lg font-bold disabled:opacity-50">
+                            {loading ? 'Aguarde...' : '✓ Aceitar e Continuar'}
+                          </button>
                         </div>
+                      ) : !financialData?.full_name ? (
+                        <div className="bg-white rounded-xl shadow p-6">
+                          <h2 className="text-xl font-bold text-purple-900 mb-4">💳 Cadastrar Dados Financeiros</h2>
+                          <p className="text-sm text-gray-600 mb-4">Preencha seus dados para receber os saques via PIX.</p>
+                          <div className="space-y-4">
+                            <div>
+                              <label className="block text-sm font-semibold mb-1">Código do Profissional</label>
+                              <input type="text" value={user.codProfissional} disabled className="w-full px-4 py-2 border rounded-lg bg-gray-100 text-gray-600" />
+                            </div>
                         
-                        <div>
+                            <div>
                           <label className="block text-sm font-semibold mb-1">Nome Completo *</label>
                           <input 
                             type="text" 
@@ -3087,6 +3087,7 @@
                           )}
                         </div>
                       </div>
+                    </>
                     </>
                   )}
                 </>
