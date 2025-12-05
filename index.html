@@ -1968,7 +1968,7 @@
                     </div>
                     <div className="text-left flex-1">
                       <h3 className="text-lg font-bold text-gray-800">Solicitar Ajuste</h3>
-                      <p className="text-sm text-gray-500">Retornos, Pedágios e Ponto 1</p>
+                      <p className="text-sm text-gray-500">Retornos e Pedágios</p>
                     </div>
                     <span className="text-purple-400 text-2xl">›</span>
                   </button>
@@ -2098,28 +2098,12 @@
                       <input type="text" placeholder="Número da OS" value={formData.os || ''} onChange={e => setFormData({...formData, os: e.target.value})} className="w-full px-4 py-3 border rounded-lg" />
                       <select value={formData.motivo || ''} onChange={e => {
                         const m = e.target.value;
-                        let coord = '';
-                        if (m === 'Alteração Ponto 1 (Goiânia)') coord = '-16.64322218214421, -49.3190143453706';
-                        if (m === 'Alteração Ponto 1 (Campinas)') coord = '-22.850067092813358, -47.08310037116422';
-                        setFormData({...formData, motivo: m, coordenadas: coord, imagens: []});
+                        setFormData({...formData, motivo: m, imagens: []});
                       }} className="w-full px-4 py-3 border rounded-lg">
                         <option value="">Selecione o motivo</option>
-                        <option>Alteração Ponto 1 (Campinas)</option>
-                        <option>Alteração Ponto 1 (Goiânia)</option>
                         <option>Ajuste de Retorno</option>
                         <option>Ajuste de Pedágio (Campinas e Recife)</option>
                       </select>
-
-                      {formData.coordenadas && (
-                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                          <p className="text-xs text-blue-700 font-semibold">📍 COORDENADAS</p>
-                          <p className="font-mono text-blue-900">{formData.coordenadas}</p>
-                          <div className="flex gap-2 mt-2">
-                            <button onClick={() => { navigator.clipboard.writeText(formData.coordenadas); showToast('Copiado!', 'success'); }} className="text-sm text-blue-600 hover:underline">📋 Copiar</button>
-                            <a href={`https://www.google.com/maps?q=${formData.coordenadas}`} target="_blank" className="text-sm text-blue-600 hover:underline">🗺️ Ver no Maps</a>
-                          </div>
-                        </div>
-                      )}
 
                       {motivosComFoto.includes(formData.motivo) && (
                         <div className="border-2 border-dashed border-orange-300 bg-orange-50 rounded-lg p-4">
@@ -2170,6 +2154,12 @@
                               </div>
                               <span className={`px-3 py-1 rounded-full text-xs font-bold ${s.status === 'aprovada' ? 'bg-green-500 text-white' : s.status === 'rejeitada' ? 'bg-red-500 text-white' : 'bg-yellow-500 text-white'}`}>{s.status?.toUpperCase()}</span>
                             </div>
+                            {/* Mostrar motivo da rejeição */}
+                            {s.status === 'rejeitada' && s.observacao && (
+                              <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded">
+                                <p className="text-xs text-red-800"><strong>Motivo da rejeição:</strong> {s.observacao}</p>
+                              </div>
+                            )}
                             {s.temImagem && !s.imagemComprovante && <button onClick={() => loadImagem(s.id)} className="mt-2 text-sm text-blue-600 hover:underline">📷 Ver foto(s)</button>}
                             {s.imagemComprovante && (
                               <div className="mt-2 flex gap-2">
