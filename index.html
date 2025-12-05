@@ -783,6 +783,11 @@
         if (!user || user.role !== 'user') return;
         if (formData.userTab !== 'saque') return;
         
+        // Resetar estados ao entrar na aba de saque
+        setHorarioAceito(false);
+        setSliderValue(0);
+        setHorarioVerificado(null);
+        
         const verificarHorario = async () => {
           try {
             const [horRes, avisosRes] = await Promise.all([
