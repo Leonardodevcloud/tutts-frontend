@@ -552,6 +552,16 @@
       const [quizRespostasUsuario, setQuizRespostasUsuario] = useState([null, null, null, null, null]);
       const [quizResultado, setQuizResultado] = useState(null);
       const [quizExpandido, setQuizExpandido] = useState(false); // Controle do dropdown
+      
+      // Estados para aba Horários de Atendimento
+      const [horariosData, setHorariosData] = useState({ horarios: [], especiais: [], loading: true });
+      // Estados para aba Avisos
+      const [avisosData, setAvisosData] = useState({ avisos: [], loading: true });
+      // Estados para verificação de horário do usuário
+      const [horarioVerificado, setHorarioVerificado] = useState(null);
+      const [sliderValue, setSliderValue] = useState(0);
+      const [avisosUsuario, setAvisosUsuario] = useState([]);
+      const [horarioAceito, setHorarioAceito] = useState(false);
 
       // Verifica se usuário é novato (COD >= 14000) e se está dentro dos 30 dias
       const isNovato = () => {
@@ -726,6 +736,72 @@
         return () => clearInterval(interval);
       }, [user, formData.adminTab]);
 
+      // ========== CARREGAR HORÁRIOS DE ATENDIMENTO ==========
+      useEffect(() => {
+        if (!user || !['admin', 'admin_master'].includes(user.role)) return;
+        if (formData.finTab !== 'horarios') return;
+        
+        const carregarHorarios = async () => {
+          try {
+            const [horariosRes, especiaisRes] = await Promise.all([
+              fetch(`${API_URL}/horarios`).then(r => r.json()),
+              fetch(`${API_URL}/horarios/especiais`).then(r => r.json())
+            ]);
+            setHorariosData({
+              horarios: horariosRes,
+              especiais: especiaisRes,
+              loading: false
+            });
+          } catch (err) {
+            console.error('Erro ao carregar horários:', err);
+            setHorariosData(prev => ({...prev, loading: false}));
+          }
+        };
+        carregarHorarios();
+      }, [user, formData.finTab]);
+
+      // ========== CARREGAR AVISOS ==========
+      useEffect(() => {
+        if (!user || !['admin', 'admin_master'].includes(user.role)) return;
+        if (formData.finTab !== 'avisos') return;
+        
+        const carregarAvisos = async () => {
+          try {
+            const res = await fetch(`${API_URL}/avisos`);
+            const data = await res.json();
+            setAvisosData({ avisos: data, loading: false });
+          } catch (err) {
+            console.error('Erro ao carregar avisos:', err);
+            setAvisosData(prev => ({...prev, loading: false}));
+          }
+        };
+        carregarAvisos();
+      }, [user, formData.finTab]);
+
+      // ========== VERIFICAR HORÁRIO PARA USUÁRIO (SAQUE) ==========
+      useEffect(() => {
+        if (!user || user.role !== 'user') return;
+        if (formData.userTab !== 'saque') return;
+        
+        const verificarHorario = async () => {
+          try {
+            const [horRes, avisosRes] = await Promise.all([
+              fetch(`${API_URL}/horarios/verificar`).then(r => r.json()),
+              fetch(`${API_URL}/avisos?ativos=true`).then(r => r.json())
+            ]);
+            setHorarioVerificado(horRes);
+            const avisosFiltrados = avisosRes.filter(a => 
+              !a.exibir_fora_horario || (a.exibir_fora_horario && !horRes.dentroHorario)
+            );
+            setAvisosUsuario(avisosFiltrados);
+          } catch (err) {
+            console.error('Erro ao verificar horário:', err);
+            setHorarioVerificado({ dentroHorario: true }); // Fallback: permitir
+          }
+        };
+        verificarHorario();
+      }, [user, formData.userTab]);
+
       // Carregar pixTipo quando financialData mudar
       useEffect(() => {
         if (financialData && financialData.pix_tipo) {
@@ -888,6 +964,148 @@
           const res = await fetch(`${API_URL}/promocoes`);
           setPromocoes(await res.json());
         } catch (err) { console.error('Erro ao carregar promoções:', err); }
+      };
+
+      // ========== FUNÇÕES DE HORÁRIOS ==========
+      const diasSemana = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+      
+      const atualizarHorario = async (id, dados) => {
+        try {
+          await fetch(`${API_URL}/horarios/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(dados)
+          });
+          showToast('✅ Horário atualizado!', 'success');
+          const res = await fetch(`${API_URL}/horarios`);
+          const horariosAtualizados = await res.json();
+          setHorariosData(prev => ({...prev, horarios: horariosAtualizados}));
+        } catch (err) {
+          showToast('Erro ao atualizar', 'error');
+        }
+      };
+      
+      const criarEspecial = async () => {
+        const data = formData.novoEspData;
+        const descricao = formData.novoEspDesc;
+        const fechado = formData.novoEspFechado;
+        const horaInicio = formData.novoEspInicio;
+        const horaFim = formData.novoEspFim;
+        
+        if (!data) {
+          showToast('Selecione uma data', 'error');
+          return;
+        }
+        
+        try {
+          await fetch(`${API_URL}/horarios/especiais`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              data,
+              descricao: descricao || 'Horário especial',
+              hora_inicio: horaInicio,
+              hora_fim: horaFim,
+              fechado
+            })
+          });
+          showToast('✅ Horário especial criado!', 'success');
+          setFormData(f => ({...f, novoEspData: '', novoEspDesc: '', novoEspFechado: false, novoEspInicio: '09:00', novoEspFim: '18:00'}));
+          const res = await fetch(`${API_URL}/horarios/especiais`);
+          const especiaisAtualizados = await res.json();
+          setHorariosData(prev => ({...prev, especiais: especiaisAtualizados}));
+        } catch (err) {
+          showToast('Erro ao criar', 'error');
+        }
+      };
+      
+      const removerEspecial = async (id) => {
+        if (!confirm('Remover este horário especial?')) return;
+        try {
+          await fetch(`${API_URL}/horarios/especiais/${id}`, { method: 'DELETE' });
+          showToast('✅ Removido!', 'success');
+          const res = await fetch(`${API_URL}/horarios/especiais`);
+          const especiaisAtualizados = await res.json();
+          setHorariosData(prev => ({...prev, especiais: especiaisAtualizados}));
+        } catch (err) {
+          showToast('Erro', 'error');
+        }
+      };
+
+      // ========== FUNÇÕES DE AVISOS ==========
+      const criarAviso = async () => {
+        const titulo = formData.novoAvisoTitulo;
+        const mensagem = formData.novoAvisoMensagem;
+        const tipo = formData.novoAvisoTipo || 'info';
+        const exibirFora = formData.novoAvisoExibirFora || false;
+        
+        if (!titulo || !mensagem) {
+          showToast('Preencha título e mensagem', 'error');
+          return;
+        }
+        
+        try {
+          await fetch(`${API_URL}/avisos`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              titulo,
+              mensagem,
+              tipo,
+              exibir_fora_horario: exibirFora
+            })
+          });
+          showToast('✅ Aviso criado!', 'success');
+          setFormData(f => ({...f, novoAvisoTitulo: '', novoAvisoMensagem: '', novoAvisoTipo: 'info', novoAvisoExibirFora: false}));
+          const res = await fetch(`${API_URL}/avisos`);
+          setAvisosData({ avisos: await res.json(), loading: false });
+        } catch (err) {
+          showToast('Erro ao criar', 'error');
+        }
+      };
+      
+      const toggleAviso = async (aviso) => {
+        try {
+          await fetch(`${API_URL}/avisos/${aviso.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({...aviso, ativo: !aviso.ativo})
+          });
+          const res = await fetch(`${API_URL}/avisos`);
+          setAvisosData({ avisos: await res.json(), loading: false });
+        } catch (err) {
+          showToast('Erro', 'error');
+        }
+      };
+      
+      const removerAviso = async (id) => {
+        if (!confirm('Remover este aviso permanentemente?')) return;
+        try {
+          await fetch(`${API_URL}/avisos/${id}`, { method: 'DELETE' });
+          showToast('✅ Removido!', 'success');
+          const res = await fetch(`${API_URL}/avisos`);
+          setAvisosData({ avisos: await res.json(), loading: false });
+        } catch (err) {
+          showToast('Erro', 'error');
+        }
+      };
+      
+      // Função auxiliar para formatar próximo horário
+      const formatarProximoHorario = () => {
+        if (!horarioVerificado?.proximoHorario) return 'em breve';
+        const prox = horarioVerificado.proximoHorario;
+        const data = new Date(prox.data + 'T12:00:00');
+        const hoje = new Date();
+        hoje.setHours(0,0,0,0);
+        const dataProx = new Date(prox.data + 'T00:00:00');
+        
+        if (dataProx.getTime() === hoje.getTime()) {
+          return `hoje às ${prox.inicio}`;
+        } else if (dataProx.getTime() === hoje.getTime() + 86400000) {
+          return `amanhã às ${prox.inicio}`;
+        } else {
+          return `${data.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'short' })} às ${prox.inicio}`;
+        }
       };
 
       const loadPromocoesAtivas = async () => {
@@ -2178,172 +2396,118 @@
               {/* ABA SAQUE */}
               {formData.userTab === 'saque' && (
                 <>
-                  {(() => {
-                    // Estado para verificação de horário
-                    const [horarioVerificado, setHorarioVerificado] = React.useState(null);
-                    const [sliderValue, setSliderValue] = React.useState(0);
-                    const [avisosUsuario, setAvisosUsuario] = React.useState([]);
-                    const [horarioAceito, setHorarioAceito] = React.useState(false);
-                    
-                    // Verificar horário ao carregar
-                    React.useEffect(() => {
-                      const verificar = async () => {
-                        try {
-                          const [horRes, avisosRes] = await Promise.all([
-                            fetch(`${API_URL}/horarios/verificar`).then(r => r.json()),
-                            fetch(`${API_URL}/avisos?ativos=true`).then(r => r.json())
-                          ]);
-                          setHorarioVerificado(horRes);
-                          // Filtrar avisos: mostrar sempre os gerais, e os de "fora do horário" apenas quando fora
-                          const avisosFiltrados = avisosRes.filter(a => 
-                            !a.exibir_fora_horario || (a.exibir_fora_horario && !horRes.dentroHorario)
-                          );
-                          setAvisosUsuario(avisosFiltrados);
-                        } catch (err) {
-                          console.error('Erro ao verificar horário:', err);
-                        }
-                      };
-                      verificar();
-                    }, []);
-                    
-                    // Se ainda está verificando
-                    if (horarioVerificado === null) {
-                      return (
-                        <div className="flex items-center justify-center py-12">
-                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
-                          <span className="ml-3">Verificando horário...</span>
+                  {/* Verificando horário */}
+                  {horarioVerificado === null ? (
+                    <div className="flex items-center justify-center py-12">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+                      <span className="ml-3">Verificando horário...</span>
+                    </div>
+                  ) : !horarioVerificado.dentroHorario && !horarioAceito ? (
+                    /* Fora do horário - mostrar slider de confirmação */
+                    <div className="space-y-4">
+                      {/* Avisos */}
+                      {avisosUsuario.map(av => (
+                        <div key={av.id} className={`p-4 rounded-xl border-l-4 ${
+                          av.tipo === 'error' ? 'bg-red-50 border-red-500' :
+                          av.tipo === 'warning' ? 'bg-yellow-50 border-yellow-500' :
+                          av.tipo === 'success' ? 'bg-green-50 border-green-500' :
+                          'bg-blue-50 border-blue-500'
+                        }`}>
+                          <p className="font-bold text-sm mb-1">{av.titulo}</p>
+                          <p className="text-sm text-gray-700">{av.mensagem}</p>
                         </div>
-                      );
-                    }
-                    
-                    // Formatar próximo horário
-                    const formatarProximoHorario = () => {
-                      if (!horarioVerificado.proximoHorario) return 'em breve';
-                      const prox = horarioVerificado.proximoHorario;
-                      const data = new Date(prox.data + 'T12:00:00');
-                      const hoje = new Date();
-                      hoje.setHours(0,0,0,0);
-                      const dataProx = new Date(prox.data + 'T00:00:00');
+                      ))}
                       
-                      if (dataProx.getTime() === hoje.getTime()) {
-                        return `hoje às ${prox.inicio}`;
-                      } else if (dataProx.getTime() === hoje.getTime() + 86400000) {
-                        return `amanhã às ${prox.inicio}`;
-                      } else {
-                        return `${data.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'short' })} às ${prox.inicio}`;
-                      }
-                    };
-                    
-                    // Se está fora do horário e ainda não aceitou
-                    if (!horarioVerificado.dentroHorario && !horarioAceito) {
-                      return (
-                        <div className="space-y-4">
-                          {/* Avisos */}
+                      {/* Aviso de fora do horário */}
+                      <div className="bg-orange-50 border-2 border-orange-400 rounded-2xl p-6">
+                        <div className="text-center mb-6">
+                          <div className="text-6xl mb-4">🕐</div>
+                          <h2 className="text-xl font-bold text-orange-800 mb-2">Fora do Horário de Atendimento</h2>
+                          <p className="text-orange-700">
+                            O atendimento de saques estará disponível novamente <strong>{formatarProximoHorario()}</strong>.
+                          </p>
+                        </div>
+                        
+                        <div className="bg-white rounded-xl p-4 mb-6">
+                          <p className="text-sm text-gray-700 text-center">
+                            ⚠️ Você pode solicitar o saque agora, mas ele só será processado quando o atendimento reabrir.
+                          </p>
+                        </div>
+                        
+                        {/* Slider de confirmação */}
+                        <div className="bg-orange-100 rounded-xl p-4">
+                          <p className="text-sm font-semibold text-orange-800 mb-4 text-center">
+                            Arraste o cursor para confirmar que entendeu:
+                          </p>
+                          <div className="relative">
+                            <div className="w-full h-14 bg-orange-200 rounded-full overflow-hidden">
+                              <div 
+                                className="h-full bg-gradient-to-r from-orange-400 to-green-500 transition-all duration-100"
+                                style={{ width: `${sliderValue}%` }}
+                              />
+                            </div>
+                            <input 
+                              type="range" 
+                              min="0" 
+                              max="100" 
+                              value={sliderValue}
+                              onChange={e => {
+                                const val = parseInt(e.target.value);
+                                setSliderValue(val);
+                                if (val >= 95) {
+                                  setHorarioAceito(true);
+                                  showToast('✅ Você pode prosseguir com a solicitação!', 'success');
+                                }
+                              }}
+                              className="absolute top-0 left-0 w-full h-14 opacity-0 cursor-pointer"
+                            />
+                            <div 
+                              className="absolute top-1 left-1 w-12 h-12 bg-white rounded-full shadow-lg flex items-center justify-center text-2xl transition-all duration-100 pointer-events-none"
+                              style={{ left: `calc(${sliderValue}% - ${sliderValue * 0.48}px)` }}
+                            >
+                              {sliderValue < 95 ? '👉' : '✅'}
+                            </div>
+                            <div className="absolute top-1 right-3 h-12 flex items-center pointer-events-none">
+                              <span className={`font-bold ${sliderValue < 95 ? 'text-orange-600' : 'text-green-600'}`}>
+                                {sliderValue < 95 ? 'Arraste →' : 'OK!'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    /* Dentro do horário ou já aceitou - mostrar formulário */
+                    <>
+                      {/* Avisos */}
+                      {avisosUsuario.length > 0 && (
+                        <div className="space-y-2 mb-4">
                           {avisosUsuario.map(av => (
-                            <div key={av.id} className={`p-4 rounded-xl border-l-4 ${
+                            <div key={av.id} className={`p-3 rounded-xl border-l-4 ${
                               av.tipo === 'error' ? 'bg-red-50 border-red-500' :
                               av.tipo === 'warning' ? 'bg-yellow-50 border-yellow-500' :
                               av.tipo === 'success' ? 'bg-green-50 border-green-500' :
                               'bg-blue-50 border-blue-500'
                             }`}>
-                              <p className="font-bold text-sm mb-1">{av.titulo}</p>
-                              <p className="text-sm text-gray-700">{av.mensagem}</p>
+                              <p className="font-bold text-sm">{av.titulo}</p>
+                              <p className="text-xs text-gray-700">{av.mensagem}</p>
                             </div>
                           ))}
-                          
-                          {/* Aviso de fora do horário */}
-                          <div className="bg-orange-50 border-2 border-orange-400 rounded-2xl p-6">
-                            <div className="text-center mb-6">
-                              <div className="text-6xl mb-4">🕐</div>
-                              <h2 className="text-xl font-bold text-orange-800 mb-2">Fora do Horário de Atendimento</h2>
-                              <p className="text-orange-700">
-                                O atendimento de saques estará disponível novamente <strong>{formatarProximoHorario()}</strong>.
-                              </p>
-                            </div>
-                            
-                            <div className="bg-white rounded-xl p-4 mb-6">
-                              <p className="text-sm text-gray-700 text-center">
-                                ⚠️ Você pode solicitar o saque agora, mas ele só será processado quando o atendimento reabrir.
-                              </p>
-                            </div>
-                            
-                            {/* Slider de confirmação */}
-                            <div className="bg-orange-100 rounded-xl p-4">
-                              <p className="text-sm font-semibold text-orange-800 mb-4 text-center">
-                                Arraste o cursor para confirmar que entendeu:
-                              </p>
-                              <div className="relative">
-                                <div className="w-full h-14 bg-orange-200 rounded-full overflow-hidden">
-                                  <div 
-                                    className="h-full bg-gradient-to-r from-orange-400 to-green-500 transition-all duration-100"
-                                    style={{ width: `${sliderValue}%` }}
-                                  />
-                                </div>
-                                <input 
-                                  type="range" 
-                                  min="0" 
-                                  max="100" 
-                                  value={sliderValue}
-                                  onChange={e => {
-                                    const val = parseInt(e.target.value);
-                                    setSliderValue(val);
-                                    if (val >= 95) {
-                                      setHorarioAceito(true);
-                                      showToast('✅ Você pode prosseguir com a solicitação!', 'success');
-                                    }
-                                  }}
-                                  className="absolute top-0 left-0 w-full h-14 opacity-0 cursor-pointer"
-                                />
-                                <div 
-                                  className="absolute top-1 left-1 w-12 h-12 bg-white rounded-full shadow-lg flex items-center justify-center text-2xl transition-all duration-100 pointer-events-none"
-                                  style={{ left: `calc(${sliderValue}% - ${sliderValue * 0.48}px)` }}
-                                >
-                                  {sliderValue < 95 ? '👉' : '✅'}
-                                </div>
-                                <div className="absolute top-1 right-3 h-12 flex items-center pointer-events-none">
-                                  <span className={`font-bold ${sliderValue < 95 ? 'text-orange-600' : 'text-green-600'}`}>
-                                    {sliderValue < 95 ? 'Arraste →' : 'OK!'}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
+                        </div>
+                      )}
+                      
+                      {/* Indicador de horário se estiver fora */}
+                      {horarioVerificado && !horarioVerificado.dentroHorario && horarioAceito && (
+                        <div className="bg-orange-100 border border-orange-300 rounded-xl p-3 mb-4 flex items-center gap-3">
+                          <span className="text-2xl">⏰</span>
+                          <div>
+                            <p className="text-sm font-semibold text-orange-800">Solicitação fora do horário</p>
+                            <p className="text-xs text-orange-700">Será processada {formatarProximoHorario()}</p>
                           </div>
                         </div>
-                      );
-                    }
-                    
-                    // Dentro do horário ou já aceitou - mostrar avisos e continuar
-                    return (
-                      <>
-                        {/* Avisos */}
-                        {avisosUsuario.length > 0 && (
-                          <div className="space-y-2 mb-4">
-                            {avisosUsuario.map(av => (
-                              <div key={av.id} className={`p-3 rounded-xl border-l-4 ${
-                                av.tipo === 'error' ? 'bg-red-50 border-red-500' :
-                                av.tipo === 'warning' ? 'bg-yellow-50 border-yellow-500' :
-                                av.tipo === 'success' ? 'bg-green-50 border-green-500' :
-                                'bg-blue-50 border-blue-500'
-                              }`}>
-                                <p className="font-bold text-sm">{av.titulo}</p>
-                                <p className="text-xs text-gray-700">{av.mensagem}</p>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                        
-                        {/* Indicador de horário se estiver fora */}
-                        {!horarioVerificado.dentroHorario && horarioAceito && (
-                          <div className="bg-orange-100 border border-orange-300 rounded-xl p-3 mb-4 flex items-center gap-3">
-                            <span className="text-2xl">⏰</span>
-                            <div>
-                              <p className="text-sm font-semibold text-orange-800">Solicitação fora do horário</p>
-                              <p className="text-xs text-orange-700">Será processada {formatarProximoHorario()}</p>
-                            </div>
-                          </div>
-                        )}
-                        
-                        {!termsAccepted ? (
+                      )}
+                      
+                      {!termsAccepted ? (
                     <div className="bg-white rounded-xl shadow p-6">
                       <h2 className="text-2xl font-bold text-purple-900 mb-4 text-center">📋 Termos de Uso</h2>
                       <div className="bg-gray-50 rounded-lg p-4 mb-6 max-h-80 overflow-y-auto text-sm">
@@ -2925,9 +3089,6 @@
                       </div>
                     </>
                   )}
-                      </>
-                    );
-                  })()}
                 </>
               )}
 
@@ -5439,509 +5600,318 @@
               {/* ========== ABA HORÁRIOS DE ATENDIMENTO ========== */}
               {formData.finTab === 'horarios' && (
                 <>
-                  {(() => {
-                    const [horariosData, setHorariosData] = React.useState({
-                      horarios: [],
-                      especiais: [],
-                      loading: true
-                    });
-                    
-                    const diasSemana = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
-                    
-                    // Carregar dados
-                    React.useEffect(() => {
-                      const carregar = async () => {
-                        try {
-                          const [horariosRes, especiaisRes] = await Promise.all([
-                            fetch(`${API_URL}/horarios`).then(r => r.json()),
-                            fetch(`${API_URL}/horarios/especiais`).then(r => r.json())
-                          ]);
-                          setHorariosData({
-                            horarios: horariosRes,
-                            especiais: especiaisRes,
-                            loading: false
-                          });
-                        } catch (err) {
-                          console.error('Erro ao carregar horários:', err);
-                          setHorariosData(prev => ({...prev, loading: false}));
-                        }
-                      };
-                      carregar();
-                    }, []);
-                    
-                    // Atualizar horário
-                    const atualizarHorario = async (id, dados) => {
-                      try {
-                        await fetch(`${API_URL}/horarios/${id}`, {
-                          method: 'PUT',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify(dados)
-                        });
-                        showToast('✅ Horário atualizado!', 'success');
-                        // Recarregar
-                        const res = await fetch(`${API_URL}/horarios`);
-                        const horariosAtualizados = await res.json();
-                        setHorariosData(prev => ({...prev, horarios: horariosAtualizados}));
-                      } catch (err) {
-                        showToast('Erro ao atualizar', 'error');
-                      }
-                    };
-                    
-                    // Criar horário especial
-                    const criarEspecial = async () => {
-                      const data = formData.novoEspData;
-                      const descricao = formData.novoEspDesc;
-                      const fechado = formData.novoEspFechado;
-                      const horaInicio = formData.novoEspInicio;
-                      const horaFim = formData.novoEspFim;
-                      
-                      if (!data) {
-                        showToast('Selecione uma data', 'error');
-                        return;
-                      }
-                      
-                      try {
-                        await fetch(`${API_URL}/horarios/especiais`, {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({
-                            data,
-                            descricao: descricao || 'Horário especial',
-                            hora_inicio: horaInicio,
-                            hora_fim: horaFim,
-                            fechado
-                          })
-                        });
-                        showToast('✅ Horário especial criado!', 'success');
-                        setFormData(f => ({...f, novoEspData: '', novoEspDesc: '', novoEspFechado: false, novoEspInicio: '09:00', novoEspFim: '18:00'}));
-                        const res = await fetch(`${API_URL}/horarios/especiais`);
-                        const especiaisAtualizados = await res.json();
-                        setHorariosData(prev => ({...prev, especiais: especiaisAtualizados}));
-                      } catch (err) {
-                        showToast('Erro ao criar', 'error');
-                      }
-                    };
-                    
-                    // Remover especial
-                    const removerEspecial = async (id) => {
-                      if (!confirm('Remover este horário especial?')) return;
-                      try {
-                        await fetch(`${API_URL}/horarios/especiais/${id}`, { method: 'DELETE' });
-                        showToast('✅ Removido!', 'success');
-                        const res = await fetch(`${API_URL}/horarios/especiais`);
-                        const especiaisAtualizados = await res.json();
-                        setHorariosData(prev => ({...prev, especiais: especiaisAtualizados}));
-                      } catch (err) {
-                        showToast('Erro', 'error');
-                      }
-                    };
-                    
-                    if (horariosData.loading) {
-                      return (
-                        <div className="flex items-center justify-center py-12">
-                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
-                          <span className="ml-3">Carregando...</span>
-                        </div>
-                      );
-                    }
-                    
-                    return (
-                      <div className="space-y-6">
-                        {/* Horários Normais */}
-                        <div className="bg-white rounded-xl shadow p-4">
-                          <h3 className="font-bold text-gray-800 mb-4">🕐 Horários de Atendimento</h3>
-                          <p className="text-sm text-gray-600 mb-4">Configure os horários de funcionamento para cada dia da semana.</p>
-                          
-                          <div className="space-y-2">
-                            {horariosData.horarios.map(h => (
-                              <div key={h.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                                <div className="w-32 font-semibold text-sm">{diasSemana[h.dia_semana]}</div>
-                                <label className="flex items-center gap-2">
-                                  <input 
-                                    type="checkbox" 
-                                    checked={h.ativo} 
-                                    onChange={e => atualizarHorario(h.id, {...h, ativo: e.target.checked})}
-                                    className="w-4 h-4"
-                                  />
-                                  <span className="text-sm">Aberto</span>
-                                </label>
-                                {h.ativo && (
-                                  <>
-                                    <input 
-                                      type="time" 
-                                      value={h.hora_inicio || '09:00'}
-                                      onChange={e => atualizarHorario(h.id, {...h, hora_inicio: e.target.value})}
-                                      className="px-2 py-1 border rounded text-sm"
-                                    />
-                                    <span className="text-gray-500">às</span>
-                                    <input 
-                                      type="time" 
-                                      value={h.hora_fim || '18:00'}
-                                      onChange={e => atualizarHorario(h.id, {...h, hora_fim: e.target.value})}
-                                      className="px-2 py-1 border rounded text-sm"
-                                    />
-                                  </>
-                                )}
-                                {!h.ativo && <span className="text-red-500 text-sm font-semibold">FECHADO</span>}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
+                  {horariosData.loading ? (
+                    <div className="flex items-center justify-center py-12">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+                      <span className="ml-3">Carregando...</span>
+                    </div>
+                  ) : (
+                    <div className="space-y-6">
+                      {/* Horários Normais */}
+                      <div className="bg-white rounded-xl shadow p-4">
+                        <h3 className="font-bold text-gray-800 mb-4">🕐 Horários de Atendimento</h3>
+                        <p className="text-sm text-gray-600 mb-4">Configure os horários de funcionamento para cada dia da semana.</p>
                         
-                        {/* Horários Especiais */}
-                        <div className="bg-white rounded-xl shadow p-4">
-                          <h3 className="font-bold text-gray-800 mb-4">📅 Horários Especiais (Feriados, Datas específicas)</h3>
-                          
-                          {/* Formulário novo especial */}
-                          <div className="bg-blue-50 p-4 rounded-lg mb-4">
-                            <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-                              <input 
-                                type="date" 
-                                value={formData.novoEspData || ''}
-                                onChange={e => setFormData(f => ({...f, novoEspData: e.target.value}))}
-                                className="px-3 py-2 border rounded text-sm"
-                              />
-                              <input 
-                                type="text" 
-                                placeholder="Descrição (ex: Feriado)"
-                                value={formData.novoEspDesc || ''}
-                                onChange={e => setFormData(f => ({...f, novoEspDesc: e.target.value}))}
-                                className="px-3 py-2 border rounded text-sm"
-                              />
+                        <div className="space-y-2">
+                          {horariosData.horarios.map(h => (
+                            <div key={h.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                              <div className="w-32 font-semibold text-sm">{diasSemana[h.dia_semana]}</div>
                               <label className="flex items-center gap-2">
                                 <input 
                                   type="checkbox" 
-                                  checked={formData.novoEspFechado || false}
-                                  onChange={e => setFormData(f => ({...f, novoEspFechado: e.target.checked}))}
+                                  checked={h.ativo} 
+                                  onChange={e => atualizarHorario(h.id, {...h, ativo: e.target.checked})}
                                   className="w-4 h-4"
                                 />
-                                <span className="text-sm">Fechado</span>
+                                <span className="text-sm">Aberto</span>
                               </label>
-                              {!formData.novoEspFechado && (
-                                <div className="flex items-center gap-2">
+                              {h.ativo && (
+                                <>
                                   <input 
                                     type="time" 
-                                    value={formData.novoEspInicio || '09:00'}
-                                    onChange={e => setFormData(f => ({...f, novoEspInicio: e.target.value}))}
-                                    className="px-2 py-1 border rounded text-sm w-24"
+                                    value={h.hora_inicio || '09:00'}
+                                    onChange={e => atualizarHorario(h.id, {...h, hora_inicio: e.target.value})}
+                                    className="px-2 py-1 border rounded text-sm"
                                   />
-                                  <span>às</span>
+                                  <span className="text-gray-500">às</span>
                                   <input 
                                     type="time" 
-                                    value={formData.novoEspFim || '18:00'}
-                                    onChange={e => setFormData(f => ({...f, novoEspFim: e.target.value}))}
-                                    className="px-2 py-1 border rounded text-sm w-24"
+                                    value={h.hora_fim || '18:00'}
+                                    onChange={e => atualizarHorario(h.id, {...h, hora_fim: e.target.value})}
+                                    className="px-2 py-1 border rounded text-sm"
                                   />
-                                </div>
+                                </>
                               )}
-                              <button 
-                                onClick={criarEspecial}
-                                className="px-4 py-2 bg-blue-600 text-white rounded font-semibold text-sm hover:bg-blue-700"
-                              >
-                                + Adicionar
-                              </button>
+                              {!h.ativo && <span className="text-red-500 text-sm font-semibold">FECHADO</span>}
                             </div>
-                          </div>
-                          
-                          {/* Lista de especiais */}
-                          {horariosData.especiais.length === 0 ? (
-                            <p className="text-gray-500 text-sm">Nenhum horário especial programado.</p>
-                          ) : (
-                            <div className="space-y-2">
-                              {horariosData.especiais.map(esp => (
-                                <div key={esp.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                                  <div className="flex items-center gap-4">
-                                    <span className="font-mono font-bold text-purple-600">
-                                      {new Date(esp.data + 'T12:00:00').toLocaleDateString('pt-BR')}
-                                    </span>
-                                    <span className="text-sm text-gray-700">{esp.descricao}</span>
-                                    {esp.fechado ? (
-                                      <span className="px-2 py-0.5 bg-red-500 text-white text-xs rounded font-bold">FECHADO</span>
-                                    ) : (
-                                      <span className="text-sm text-green-600 font-semibold">
-                                        {esp.hora_inicio} às {esp.hora_fim}
-                                      </span>
-                                    )}
-                                  </div>
-                                  <button 
-                                    onClick={() => removerEspecial(esp.id)}
-                                    className="px-2 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600"
-                                  >
-                                    🗑️ Remover
-                                  </button>
-                                </div>
-                              ))}
-                            </div>
-                          )}
+                          ))}
                         </div>
                       </div>
-                    );
-                  })()}
+                      
+                      {/* Horários Especiais */}
+                      <div className="bg-white rounded-xl shadow p-4">
+                        <h3 className="font-bold text-gray-800 mb-4">📅 Horários Especiais (Feriados, Datas específicas)</h3>
+                        
+                        {/* Formulário novo especial */}
+                        <div className="bg-blue-50 p-4 rounded-lg mb-4">
+                          <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+                            <input 
+                              type="date" 
+                              value={formData.novoEspData || ''}
+                              onChange={e => setFormData(f => ({...f, novoEspData: e.target.value}))}
+                              className="px-3 py-2 border rounded text-sm"
+                            />
+                            <input 
+                              type="text" 
+                              placeholder="Descrição (ex: Feriado)"
+                              value={formData.novoEspDesc || ''}
+                              onChange={e => setFormData(f => ({...f, novoEspDesc: e.target.value}))}
+                              className="px-3 py-2 border rounded text-sm"
+                            />
+                            <label className="flex items-center gap-2">
+                              <input 
+                                type="checkbox" 
+                                checked={formData.novoEspFechado || false}
+                                onChange={e => setFormData(f => ({...f, novoEspFechado: e.target.checked}))}
+                                className="w-4 h-4"
+                              />
+                              <span className="text-sm">Fechado</span>
+                            </label>
+                            {!formData.novoEspFechado && (
+                              <div className="flex items-center gap-2">
+                                <input 
+                                  type="time" 
+                                  value={formData.novoEspInicio || '09:00'}
+                                  onChange={e => setFormData(f => ({...f, novoEspInicio: e.target.value}))}
+                                  className="px-2 py-1 border rounded text-sm w-24"
+                                />
+                                <span>às</span>
+                                <input 
+                                  type="time" 
+                                  value={formData.novoEspFim || '18:00'}
+                                  onChange={e => setFormData(f => ({...f, novoEspFim: e.target.value}))}
+                                  className="px-2 py-1 border rounded text-sm w-24"
+                                />
+                              </div>
+                            )}
+                            <button 
+                              onClick={criarEspecial}
+                              className="px-4 py-2 bg-blue-600 text-white rounded font-semibold text-sm hover:bg-blue-700"
+                            >
+                              + Adicionar
+                            </button>
+                          </div>
+                        </div>
+                        
+                        {/* Lista de especiais */}
+                        {horariosData.especiais.length === 0 ? (
+                          <p className="text-gray-500 text-sm">Nenhum horário especial programado.</p>
+                        ) : (
+                          <div className="space-y-2">
+                            {horariosData.especiais.map(esp => (
+                              <div key={esp.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                <div className="flex items-center gap-4">
+                                  <span className="font-mono font-bold text-purple-600">
+                                    {new Date(esp.data + 'T12:00:00').toLocaleDateString('pt-BR')}
+                                  </span>
+                                  <span className="text-sm text-gray-700">{esp.descricao}</span>
+                                  {esp.fechado ? (
+                                    <span className="px-2 py-0.5 bg-red-500 text-white text-xs rounded font-bold">FECHADO</span>
+                                  ) : (
+                                    <span className="text-sm text-green-600 font-semibold">
+                                      {esp.hora_inicio} às {esp.hora_fim}
+                                    </span>
+                                  )}
+                                </div>
+                                <button 
+                                  onClick={() => removerEspecial(esp.id)}
+                                  className="px-2 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600"
+                                >
+                                  🗑️ Remover
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </>
               )}
 
               {/* ========== ABA AVISOS ========== */}
               {formData.finTab === 'avisos' && (
                 <>
-                  {(() => {
-                    const [avisosData, setAvisosData] = React.useState({
-                      avisos: [],
-                      loading: true
-                    });
-                    
-                    // Carregar avisos
-                    React.useEffect(() => {
-                      const carregar = async () => {
-                        try {
-                          const res = await fetch(`${API_URL}/avisos`);
-                          const data = await res.json();
-                          setAvisosData({ avisos: data, loading: false });
-                        } catch (err) {
-                          console.error('Erro ao carregar avisos:', err);
-                          setAvisosData(prev => ({...prev, loading: false}));
-                        }
-                      };
-                      carregar();
-                    }, []);
-                    
-                    // Criar aviso
-                    const criarAviso = async () => {
-                      const titulo = formData.novoAvisoTitulo;
-                      const mensagem = formData.novoAvisoMensagem;
-                      const tipo = formData.novoAvisoTipo || 'info';
-                      const exibirFora = formData.novoAvisoExibirFora || false;
-                      
-                      if (!titulo || !mensagem) {
-                        showToast('Preencha título e mensagem', 'error');
-                        return;
-                      }
-                      
-                      try {
-                        await fetch(`${API_URL}/avisos`, {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({
-                            titulo,
-                            mensagem,
-                            tipo,
-                            exibir_fora_horario: exibirFora
-                          })
-                        });
-                        showToast('✅ Aviso criado!', 'success');
-                        setFormData(f => ({...f, novoAvisoTitulo: '', novoAvisoMensagem: '', novoAvisoTipo: 'info', novoAvisoExibirFora: false}));
-                        const res = await fetch(`${API_URL}/avisos`);
-                        setAvisosData({ avisos: await res.json(), loading: false });
-                      } catch (err) {
-                        showToast('Erro ao criar', 'error');
-                      }
-                    };
-                    
-                    // Toggle aviso ativo
-                    const toggleAviso = async (aviso) => {
-                      try {
-                        await fetch(`${API_URL}/avisos/${aviso.id}`, {
-                          method: 'PUT',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({...aviso, ativo: !aviso.ativo})
-                        });
-                        const res = await fetch(`${API_URL}/avisos`);
-                        setAvisosData({ avisos: await res.json(), loading: false });
-                      } catch (err) {
-                        showToast('Erro', 'error');
-                      }
-                    };
-                    
-                    // Remover aviso
-                    const removerAviso = async (id) => {
-                      if (!confirm('Remover este aviso permanentemente?')) return;
-                      try {
-                        await fetch(`${API_URL}/avisos/${id}`, { method: 'DELETE' });
-                        showToast('✅ Removido!', 'success');
-                        const res = await fetch(`${API_URL}/avisos`);
-                        setAvisosData({ avisos: await res.json(), loading: false });
-                      } catch (err) {
-                        showToast('Erro', 'error');
-                      }
-                    };
-                    
-                    if (avisosData.loading) {
-                      return (
-                        <div className="flex items-center justify-center py-12">
-                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-600"></div>
-                          <span className="ml-3">Carregando...</span>
-                        </div>
-                      );
-                    }
-                    
-                    const avisosAtivos = avisosData.avisos.filter(a => a.ativo);
-                    const avisosInativos = avisosData.avisos.filter(a => !a.ativo);
-                    
-                    return (
-                      <div className="space-y-6">
-                        {/* Criar Novo Aviso */}
-                        <div className="bg-white rounded-xl shadow p-4">
-                          <h3 className="font-bold text-gray-800 mb-4">📢 Criar Novo Aviso</h3>
-                          <p className="text-sm text-gray-600 mb-4">
-                            Os avisos criados aqui serão exibidos para os usuários na tela de Saque Emergencial.
-                          </p>
-                          
-                          <div className="bg-yellow-50 p-4 rounded-lg">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                              <input 
-                                type="text" 
-                                placeholder="Título do aviso"
-                                value={formData.novoAvisoTitulo || ''}
-                                onChange={e => setFormData(f => ({...f, novoAvisoTitulo: e.target.value}))}
-                                className="px-3 py-2 border rounded text-sm"
-                              />
-                              <select
-                                value={formData.novoAvisoTipo || 'info'}
-                                onChange={e => setFormData(f => ({...f, novoAvisoTipo: e.target.value}))}
-                                className="px-3 py-2 border rounded text-sm"
-                              >
-                                <option value="info">ℹ️ Informativo (Azul)</option>
-                                <option value="warning">⚠️ Atenção (Amarelo)</option>
-                                <option value="error">🚨 Urgente (Vermelho)</option>
-                                <option value="success">✅ Positivo (Verde)</option>
-                              </select>
-                            </div>
-                            <textarea 
-                              placeholder="Mensagem do aviso..."
-                              value={formData.novoAvisoMensagem || ''}
-                              onChange={e => setFormData(f => ({...f, novoAvisoMensagem: e.target.value}))}
-                              className="w-full px-3 py-2 border rounded text-sm mb-3"
-                              rows={3}
+                  {avisosData.loading ? (
+                    <div className="flex items-center justify-center py-12">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-600"></div>
+                      <span className="ml-3">Carregando...</span>
+                    </div>
+                  ) : (
+                    <div className="space-y-6">
+                      {/* Criar Novo Aviso */}
+                      <div className="bg-white rounded-xl shadow p-4">
+                        <h3 className="font-bold text-gray-800 mb-4">📢 Criar Novo Aviso</h3>
+                        <p className="text-sm text-gray-600 mb-4">
+                          Os avisos criados aqui serão exibidos para os usuários na tela de Saque Emergencial.
+                        </p>
+                        
+                        <div className="bg-yellow-50 p-4 rounded-lg">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                            <input 
+                              type="text" 
+                              placeholder="Título do aviso"
+                              value={formData.novoAvisoTitulo || ''}
+                              onChange={e => setFormData(f => ({...f, novoAvisoTitulo: e.target.value}))}
+                              className="px-3 py-2 border rounded text-sm"
                             />
-                            <div className="flex items-center justify-between flex-wrap gap-3">
-                              <label className="flex items-center gap-2">
-                                <input 
-                                  type="checkbox" 
-                                  checked={formData.novoAvisoExibirFora || false}
-                                  onChange={e => setFormData(f => ({...f, novoAvisoExibirFora: e.target.checked}))}
-                                  className="w-4 h-4"
-                                />
-                                <span className="text-sm">Exibir apenas fora do horário de atendimento</span>
-                              </label>
-                              <button 
-                                onClick={criarAviso}
-                                className="px-6 py-2 bg-yellow-500 text-white rounded-lg font-semibold text-sm hover:bg-yellow-600"
-                              >
-                                + Criar Aviso
-                              </button>
-                            </div>
+                            <select
+                              value={formData.novoAvisoTipo || 'info'}
+                              onChange={e => setFormData(f => ({...f, novoAvisoTipo: e.target.value}))}
+                              className="px-3 py-2 border rounded text-sm"
+                            >
+                              <option value="info">ℹ️ Informativo (Azul)</option>
+                              <option value="warning">⚠️ Atenção (Amarelo)</option>
+                              <option value="error">🚨 Urgente (Vermelho)</option>
+                              <option value="success">✅ Positivo (Verde)</option>
+                            </select>
+                          </div>
+                          <textarea 
+                            placeholder="Mensagem do aviso..."
+                            value={formData.novoAvisoMensagem || ''}
+                            onChange={e => setFormData(f => ({...f, novoAvisoMensagem: e.target.value}))}
+                            className="w-full px-3 py-2 border rounded text-sm mb-3"
+                            rows={3}
+                          />
+                          <div className="flex items-center justify-between flex-wrap gap-3">
+                            <label className="flex items-center gap-2">
+                              <input 
+                                type="checkbox" 
+                                checked={formData.novoAvisoExibirFora || false}
+                                onChange={e => setFormData(f => ({...f, novoAvisoExibirFora: e.target.checked}))}
+                                className="w-4 h-4"
+                              />
+                              <span className="text-sm">Exibir apenas fora do horário de atendimento</span>
+                            </label>
+                            <button 
+                              onClick={criarAviso}
+                              className="px-6 py-2 bg-yellow-500 text-white rounded-lg font-semibold text-sm hover:bg-yellow-600"
+                            >
+                              + Criar Aviso
+                            </button>
                           </div>
                         </div>
-                        
-                        {/* Avisos Ativos */}
-                        <div className="bg-white rounded-xl shadow p-4">
-                          <h3 className="font-bold text-gray-800 mb-4">
-                            ✅ Avisos Ativos ({avisosAtivos.length})
-                          </h3>
-                          
-                          {avisosAtivos.length === 0 ? (
-                            <div className="text-center py-8 text-gray-500">
-                              <p className="text-4xl mb-2">📭</p>
-                              <p>Nenhum aviso ativo no momento.</p>
-                            </div>
-                          ) : (
-                            <div className="space-y-3">
-                              {avisosAtivos.map(av => (
-                                <div key={av.id} className={`p-4 rounded-lg border-l-4 ${
-                                  av.tipo === 'error' ? 'bg-red-50 border-red-500' :
-                                  av.tipo === 'warning' ? 'bg-yellow-50 border-yellow-500' :
-                                  av.tipo === 'success' ? 'bg-green-50 border-green-500' :
-                                  'bg-blue-50 border-blue-500'
-                                }`}>
-                                  <div className="flex items-start justify-between gap-4">
-                                    <div className="flex-1">
-                                      <div className="flex items-center gap-2 mb-2">
-                                        <span className="text-lg">
-                                          {av.tipo === 'error' ? '🚨' : av.tipo === 'warning' ? '⚠️' : av.tipo === 'success' ? '✅' : 'ℹ️'}
-                                        </span>
-                                        <span className="font-bold">{av.titulo}</span>
-                                        {av.exibir_fora_horario && (
-                                          <span className="px-2 py-0.5 bg-orange-200 text-orange-700 text-[10px] rounded-full font-semibold">
-                                            🕐 Só fora do horário
-                                          </span>
-                                        )}
-                                      </div>
-                                      <p className="text-sm text-gray-700">{av.mensagem}</p>
-                                      <p className="text-xs text-gray-400 mt-2">
-                                        Criado em: {new Date(av.created_at).toLocaleString('pt-BR')}
-                                      </p>
-                                    </div>
-                                    <div className="flex flex-col gap-2">
-                                      <button 
-                                        onClick={() => toggleAviso(av)}
-                                        className="px-3 py-1.5 bg-gray-500 text-white rounded text-xs font-bold hover:bg-gray-600"
-                                      >
-                                        ⏸️ Desativar
-                                      </button>
-                                      <button 
-                                        onClick={() => removerAviso(av.id)}
-                                        className="px-3 py-1.5 bg-red-500 text-white rounded text-xs font-bold hover:bg-red-600"
-                                      >
-                                        🗑️ Excluir
-                                      </button>
-                                    </div>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                        
-                        {/* Histórico de Avisos (Inativos) */}
-                        <div className="bg-white rounded-xl shadow p-4">
-                          <h3 className="font-bold text-gray-800 mb-4">
-                            📜 Histórico de Avisos ({avisosInativos.length})
-                          </h3>
-                          
-                          {avisosInativos.length === 0 ? (
-                            <div className="text-center py-6 text-gray-400">
-                              <p className="text-sm">Nenhum aviso no histórico.</p>
-                            </div>
-                          ) : (
-                            <div className="space-y-2">
-                              {avisosInativos.map(av => (
-                                <div key={av.id} className="p-3 rounded-lg bg-gray-100 border border-gray-200 opacity-70">
-                                  <div className="flex items-start justify-between gap-4">
-                                    <div className="flex-1">
-                                      <div className="flex items-center gap-2 mb-1">
-                                        <span className="text-sm">
-                                          {av.tipo === 'error' ? '🚨' : av.tipo === 'warning' ? '⚠️' : av.tipo === 'success' ? '✅' : 'ℹ️'}
-                                        </span>
-                                        <span className="font-semibold text-sm text-gray-600">{av.titulo}</span>
-                                        <span className="px-1.5 py-0.5 bg-gray-400 text-white text-[10px] rounded">INATIVO</span>
-                                      </div>
-                                      <p className="text-xs text-gray-500">{av.mensagem}</p>
-                                      <p className="text-[10px] text-gray-400 mt-1">
-                                        Criado: {new Date(av.created_at).toLocaleString('pt-BR')}
-                                      </p>
-                                    </div>
-                                    <div className="flex gap-2">
-                                      <button 
-                                        onClick={() => toggleAviso(av)}
-                                        className="px-2 py-1 bg-green-500 text-white rounded text-xs font-bold hover:bg-green-600"
-                                      >
-                                        ▶️ Ativar
-                                      </button>
-                                      <button 
-                                        onClick={() => removerAviso(av.id)}
-                                        className="px-2 py-1 bg-red-500 text-white rounded text-xs font-bold hover:bg-red-600"
-                                      >
-                                        🗑️
-                                      </button>
-                                    </div>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
                       </div>
-                    );
-                  })()}
+                      
+                      {/* Avisos Ativos */}
+                      <div className="bg-white rounded-xl shadow p-4">
+                        <h3 className="font-bold text-gray-800 mb-4">
+                          ✅ Avisos Ativos ({avisosData.avisos.filter(a => a.ativo).length})
+                        </h3>
+                        
+                        {avisosData.avisos.filter(a => a.ativo).length === 0 ? (
+                          <div className="text-center py-8 text-gray-500">
+                            <p className="text-4xl mb-2">📭</p>
+                            <p>Nenhum aviso ativo no momento.</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-3">
+                            {avisosData.avisos.filter(a => a.ativo).map(av => (
+                              <div key={av.id} className={`p-4 rounded-lg border-l-4 ${
+                                av.tipo === 'error' ? 'bg-red-50 border-red-500' :
+                                av.tipo === 'warning' ? 'bg-yellow-50 border-yellow-500' :
+                                av.tipo === 'success' ? 'bg-green-50 border-green-500' :
+                                'bg-blue-50 border-blue-500'
+                              }`}>
+                                <div className="flex items-start justify-between gap-4">
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <span className="text-lg">
+                                        {av.tipo === 'error' ? '🚨' : av.tipo === 'warning' ? '⚠️' : av.tipo === 'success' ? '✅' : 'ℹ️'}
+                                      </span>
+                                      <span className="font-bold">{av.titulo}</span>
+                                      {av.exibir_fora_horario && (
+                                        <span className="px-2 py-0.5 bg-orange-200 text-orange-700 text-[10px] rounded-full font-semibold">
+                                          🕐 Só fora do horário
+                                        </span>
+                                      )}
+                                    </div>
+                                    <p className="text-sm text-gray-700">{av.mensagem}</p>
+                                    <p className="text-xs text-gray-400 mt-2">
+                                      Criado em: {new Date(av.created_at).toLocaleString('pt-BR')}
+                                    </p>
+                                  </div>
+                                  <div className="flex flex-col gap-2">
+                                    <button 
+                                      onClick={() => toggleAviso(av)}
+                                      className="px-3 py-1.5 bg-gray-500 text-white rounded text-xs font-bold hover:bg-gray-600"
+                                    >
+                                      ⏸️ Desativar
+                                    </button>
+                                    <button 
+                                      onClick={() => removerAviso(av.id)}
+                                      className="px-3 py-1.5 bg-red-500 text-white rounded text-xs font-bold hover:bg-red-600"
+                                    >
+                                      🗑️ Excluir
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Histórico de Avisos (Inativos) */}
+                      <div className="bg-white rounded-xl shadow p-4">
+                        <h3 className="font-bold text-gray-800 mb-4">
+                          📜 Histórico de Avisos ({avisosData.avisos.filter(a => !a.ativo).length})
+                        </h3>
+                        
+                        {avisosData.avisos.filter(a => !a.ativo).length === 0 ? (
+                          <div className="text-center py-6 text-gray-400">
+                            <p className="text-sm">Nenhum aviso no histórico.</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            {avisosData.avisos.filter(a => !a.ativo).map(av => (
+                              <div key={av.id} className="p-3 rounded-lg bg-gray-100 border border-gray-200 opacity-70">
+                                <div className="flex items-start justify-between gap-4">
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <span className="text-sm">
+                                        {av.tipo === 'error' ? '🚨' : av.tipo === 'warning' ? '⚠️' : av.tipo === 'success' ? '✅' : 'ℹ️'}
+                                      </span>
+                                      <span className="font-semibold text-sm text-gray-600">{av.titulo}</span>
+                                      <span className="px-1.5 py-0.5 bg-gray-400 text-white text-[10px] rounded">INATIVO</span>
+                                    </div>
+                                    <p className="text-xs text-gray-500">{av.mensagem}</p>
+                                    <p className="text-[10px] text-gray-400 mt-1">
+                                      Criado: {new Date(av.created_at).toLocaleString('pt-BR')}
+                                    </p>
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <button 
+                                      onClick={() => toggleAviso(av)}
+                                      className="px-2 py-1 bg-green-500 text-white rounded text-xs font-bold hover:bg-green-600"
+                                    >
+                                      ▶️ Ativar
+                                    </button>
+                                    <button 
+                                      onClick={() => removerAviso(av.id)}
+                                      className="px-2 py-1 bg-red-500 text-white rounded text-xs font-bold hover:bg-red-600"
+                                    >
+                                      🗑️
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </>
               )}
 
