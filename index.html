@@ -2444,39 +2444,81 @@
                           <p className="text-sm font-semibold text-orange-800 mb-4 text-center">
                             Arraste o cursor para confirmar que entendeu:
                           </p>
-                          <div className="relative">
-                            <div className="w-full h-14 bg-orange-200 rounded-full overflow-hidden">
-                              <div 
-                                className="h-full bg-gradient-to-r from-orange-400 to-green-500 transition-all duration-100"
-                                style={{ width: `${sliderValue}%` }}
-                              />
-                            </div>
-                            <input 
-                              type="range" 
-                              min="0" 
-                              max="100" 
-                              value={sliderValue}
-                              onChange={e => {
-                                const val = parseInt(e.target.value);
-                                setSliderValue(val);
-                                if (val >= 95) {
+                          <div 
+                            className="relative h-14 bg-orange-200 rounded-full overflow-hidden touch-none select-none"
+                            onTouchStart={e => {
+                              const touch = e.touches[0];
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              const percent = Math.max(0, Math.min(100, ((touch.clientX - rect.left) / rect.width) * 100));
+                              setSliderValue(percent);
+                            }}
+                            onTouchMove={e => {
+                              const touch = e.touches[0];
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              const percent = Math.max(0, Math.min(100, ((touch.clientX - rect.left) / rect.width) * 100));
+                              setSliderValue(percent);
+                              if (percent >= 95 && !horarioAceito) {
+                                setHorarioAceito(true);
+                                showToast('✅ Você pode prosseguir com a solicitação!', 'success');
+                              }
+                            }}
+                            onMouseDown={e => {
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              const percent = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+                              setSliderValue(percent);
+                              
+                              const handleMouseMove = (moveEvent) => {
+                                const newPercent = Math.max(0, Math.min(100, ((moveEvent.clientX - rect.left) / rect.width) * 100));
+                                setSliderValue(newPercent);
+                                if (newPercent >= 95 && !horarioAceito) {
                                   setHorarioAceito(true);
                                   showToast('✅ Você pode prosseguir com a solicitação!', 'success');
                                 }
-                              }}
-                              className="absolute top-0 left-0 w-full h-14 opacity-0 cursor-pointer"
-                            />
+                              };
+                              
+                              const handleMouseUp = () => {
+                                document.removeEventListener('mousemove', handleMouseMove);
+                                document.removeEventListener('mouseup', handleMouseUp);
+                              };
+                              
+                              document.addEventListener('mousemove', handleMouseMove);
+                              document.addEventListener('mouseup', handleMouseUp);
+                            }}
+                          >
+                            {/* Barra de progresso */}
                             <div 
-                              className="absolute top-1 left-1 w-12 h-12 bg-white rounded-full shadow-lg flex items-center justify-center text-2xl transition-all duration-100 pointer-events-none"
-                              style={{ left: `calc(${sliderValue}% - ${sliderValue * 0.48}px)` }}
+                              className="absolute top-0 left-0 h-full bg-gradient-to-r from-orange-400 via-yellow-400 to-green-500 rounded-full"
+                              style={{ 
+                                width: `${sliderValue}%`,
+                                transition: 'none'
+                              }}
+                            />
+                            
+                            {/* Cursor arrastável */}
+                            <div 
+                              className="absolute top-1 w-12 h-12 bg-white rounded-full shadow-lg flex items-center justify-center text-2xl pointer-events-none border-2 border-orange-300"
+                              style={{ 
+                                left: `calc(${sliderValue}% - ${sliderValue * 0.48}px)`,
+                                transition: 'none',
+                                transform: sliderValue >= 95 ? 'scale(1.1)' : 'scale(1)'
+                              }}
                             >
                               {sliderValue < 95 ? '👉' : '✅'}
                             </div>
-                            <div className="absolute top-1 right-3 h-12 flex items-center pointer-events-none">
-                              <span className={`font-bold ${sliderValue < 95 ? 'text-orange-600' : 'text-green-600'}`}>
-                                {sliderValue < 95 ? 'Arraste →' : 'OK!'}
+                            
+                            {/* Texto de instrução */}
+                            <div className="absolute inset-0 flex items-center justify-end pr-4 pointer-events-none">
+                              <span className={`font-bold text-sm ${sliderValue < 95 ? 'text-orange-700' : 'text-green-700'}`}>
+                                {sliderValue < 30 ? 'Arraste →→→' : sliderValue < 95 ? 'Continue →' : '✓ OK!'}
                               </span>
                             </div>
+                          </div>
+                          
+                          {/* Indicador de progresso */}
+                          <div className="mt-2 flex justify-between text-xs text-orange-600">
+                            <span>0%</span>
+                            <span className={sliderValue >= 95 ? 'text-green-600 font-bold' : ''}>{Math.round(sliderValue)}%</span>
+                            <span>100%</span>
                           </div>
                         </div>
                       </div>
