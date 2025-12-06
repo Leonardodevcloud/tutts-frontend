@@ -4165,37 +4165,80 @@
                           </div>
                         ) : lojaProdutos.map(prod => (
                           <div key={prod.id} className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
-                            <div className="flex">
-                              {prod.imagem_url && (
-                                <img src={prod.imagem_url} alt={prod.nome} className="w-32 h-32 object-cover" />
-                              )}
-                              <div className="flex-1 p-4">
-                                <h3 className="font-bold text-gray-800 text-lg">{prod.nome}</h3>
-                                {prod.marca && <p className="text-sm text-gray-500">{prod.marca}</p>}
-                                {prod.descricao && <p className="text-sm text-gray-600 mt-1 line-clamp-2">{prod.descricao}</p>}
-                                
-                                <div className="flex items-baseline gap-2 mt-2">
+                            {/* Imagem em destaque - clicável para ampliar */}
+                            {prod.imagem_url && (
+                              <div 
+                                className="relative cursor-pointer group"
+                                onClick={() => setFormData({...formData, lojaImagemAmpliada: prod.imagem_url})}
+                              >
+                                <img 
+                                  src={prod.imagem_url} 
+                                  alt={prod.nome} 
+                                  className="w-full h-48 object-cover group-hover:opacity-90 transition-opacity" 
+                                />
+                                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20">
+                                  <span className="bg-white/90 text-gray-700 px-3 py-1 rounded-full text-sm font-semibold">
+                                    🔍 Ampliar
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+                            
+                            <div className="p-4">
+                              <h3 className="font-bold text-gray-800 text-lg">{prod.nome}</h3>
+                              {prod.marca && <p className="text-sm text-purple-600 font-medium">{prod.marca}</p>}
+                              {prod.descricao && <p className="text-sm text-gray-600 mt-1 line-clamp-2">{prod.descricao}</p>}
+                              
+                              {/* Preço e Parcelas */}
+                              <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+                                <div className="flex items-baseline justify-between">
                                   <span className="text-2xl font-bold text-green-600">
                                     R$ {parseFloat(prod.valor).toFixed(2).replace('.', ',')}
                                   </span>
-                                  {prod.abatimento_avista > 0 && prod.parcelas_config && prod.parcelas_config.length > 0 && (
-                                    <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
-                                      até {prod.parcelas_config.length} opções de pagamento
-                                    </span>
-                                  )}
                                 </div>
                                 
-                                <button
-                                  onClick={() => setFormData({...formData, lojaProdutoSelecionado: prod, lojaCompraModal: true})}
-                                  className="mt-3 w-full py-2 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-lg font-semibold hover:opacity-90 transition-opacity"
-                                >
-                                  🛒 Comprar
-                                </button>
+                                {/* Opções de parcelamento */}
+                                {prod.parcelas_config && prod.parcelas_config.filter(p => p && parseFloat(p.valor_parcela) > 0).length > 0 && (
+                                  <div className="mt-2 flex flex-wrap gap-1">
+                                    {prod.parcelas_config.filter(p => p && parseFloat(p.valor_parcela) > 0).map((p, i) => (
+                                      <span key={i} className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
+                                        {parseInt(p.parcelas) === 1 ? 'À vista' : `${p.parcelas}x`} R$ {parseFloat(p.valor_parcela).toFixed(2).replace('.', ',')}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
                               </div>
+                              
+                              <button
+                                onClick={() => setFormData({...formData, lojaProdutoSelecionado: prod, lojaCompraModal: true})}
+                                className="mt-3 w-full py-3 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-xl font-bold text-lg hover:opacity-90 transition-opacity shadow-lg"
+                              >
+                                🛒 Comprar
+                              </button>
                             </div>
                           </div>
                         ))}
                       </div>
+                      
+                      {/* Modal de Imagem Ampliada */}
+                      {formData.lojaImagemAmpliada && (
+                        <div 
+                          className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
+                          onClick={() => setFormData({...formData, lojaImagemAmpliada: null})}
+                        >
+                          <button 
+                            className="absolute top-4 right-4 text-white text-4xl hover:text-gray-300"
+                            onClick={() => setFormData({...formData, lojaImagemAmpliada: null})}
+                          >
+                            ✕
+                          </button>
+                          <img 
+                            src={formData.lojaImagemAmpliada} 
+                            alt="Imagem ampliada" 
+                            className="max-w-full max-h-full object-contain rounded-lg"
+                          />
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -4253,12 +4296,14 @@
                             <label className="block text-sm font-semibold mb-2">Forma de Pagamento *</label>
                             <div className="space-y-2">
                               {(() => {
-                                const parcelas_config = formData.lojaProdutoSelecionado.parcelas_config || [];
+                                const parcelas_config = (formData.lojaProdutoSelecionado.parcelas_config || [])
+                                  .filter(p => p && parseFloat(p.valor_parcela) > 0);
                                 
                                 if (parcelas_config.length === 0) {
                                   return (
                                     <div className="text-center py-4 text-gray-500">
-                                      <p>Nenhuma opção de pagamento disponível</p>
+                                      <p>Nenhuma opção de pagamento configurada</p>
+                                      <p className="text-xs mt-1">Entre em contato com o administrador</p>
                                     </div>
                                   );
                                 }
@@ -6428,9 +6473,9 @@
                                   <p className="text-xl font-bold text-green-600 mt-2">R$ {parseFloat(prod.valor).toFixed(2).replace('.', ',')}</p>
                                   
                                   <div className="mt-3 text-xs text-gray-500">
-                                    {prod.parcelas_config && prod.parcelas_config.length > 0 ? (
+                                    {prod.parcelas_config && prod.parcelas_config.filter(p => p && parseFloat(p.valor_parcela) > 0).length > 0 ? (
                                       <div className="flex flex-wrap gap-1">
-                                        {prod.parcelas_config.map((p, i) => (
+                                        {prod.parcelas_config.filter(p => p && parseFloat(p.valor_parcela) > 0).map((p, i) => (
                                           <span key={i} className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded">
                                             {p.parcelas}x R$ {parseFloat(p.valor_parcela).toFixed(2).replace('.', ',')}
                                           </span>
