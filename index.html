@@ -69,61 +69,77 @@
     );
 
     // ========== GERADOR DE PIX QR CODE ==========
-    // Função para calcular CRC16 (padrão CCITT)
-    const crc16 = (str) => {
-      let crc = 0xFFFF;
-      for (let i = 0; i < str.length; i++) {
-        crc ^= str.charCodeAt(i) << 8;
+    // Função para calcular CRC16-CCITT-FALSE (padrão PIX)
+    const calcularCRC16 = (payload) => {
+      // Polinômio: 0x1021, Valor inicial: 0xFFFF
+      const polinomio = 0x1021;
+      let resultado = 0xFFFF;
+      
+      for (let i = 0; i < payload.length; i++) {
+        resultado ^= (payload.charCodeAt(i) << 8);
         for (let j = 0; j < 8; j++) {
-          if (crc & 0x8000) {
-            crc = (crc << 1) ^ 0x1021;
+          if ((resultado & 0x8000) !== 0) {
+            resultado = ((resultado << 1) ^ polinomio) & 0xFFFF;
           } else {
-            crc = crc << 1;
+            resultado = (resultado << 1) & 0xFFFF;
           }
         }
       }
-      return (crc & 0xFFFF).toString(16).toUpperCase().padStart(4, '0');
+      return resultado.toString(16).toUpperCase().padStart(4, '0');
     };
 
-    // Função para gerar código PIX no padrão BR Code
-    const generatePixCode = (pixKey, amount, recipientName, city = 'BRASILIA', txid = '***') => {
+    // Função auxiliar para montar campo EMV
+    const montarCampo = (id, valor) => {
+      const tamanho = valor.length.toString().padStart(2, '0');
+      return `${id}${tamanho}${valor}`;
+    };
+
+    // Função para gerar código PIX no padrão BR Code EMV
+    const generatePixCode = (pixKey, valor, nomeRecebedor, cidade = 'BRASILIA') => {
       // Limpar e formatar dados
-      const cleanName = recipientName
-        .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // Remove acentos
+      const chaveLimpa = pixKey.trim();
+      const nomeLimpo = nomeRecebedor
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '') // Remove acentos
+        .replace(/[^a-zA-Z0-9 ]/g, '') // Remove caracteres especiais
         .toUpperCase()
-        .substring(0, 25);
-      const cleanCity = city
-        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .substring(0, 25)
+        .trim();
+      const cidadeLimpa = cidade
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-zA-Z0-9 ]/g, '')
         .toUpperCase()
-        .substring(0, 15);
-      const formattedAmount = parseFloat(amount).toFixed(2);
+        .substring(0, 15)
+        .trim();
+      const valorFormatado = parseFloat(valor).toFixed(2);
       
       // Montar Merchant Account Information (ID 26)
-      const gui = '0014br.gov.bcb.pix'; // GUI do PIX
-      const key = `01${pixKey.length.toString().padStart(2, '0')}${pixKey}`;
-      const merchantAccount = `${gui}${key}`;
-      const merchantAccountField = `26${merchantAccount.length.toString().padStart(2, '0')}${merchantAccount}`;
+      // GUI (ID 00) + Chave PIX (ID 01)
+      const gui = montarCampo('00', 'br.gov.bcb.pix');
+      const chave = montarCampo('01', chaveLimpa);
+      const merchantAccountInfo = gui + chave;
       
-      // Montar Additional Data Field (ID 62) com TXID
-      const txidField = `05${txid.length.toString().padStart(2, '0')}${txid}`;
-      const additionalData = `62${txidField.length.toString().padStart(2, '0')}${txidField}`;
+      // Montar Additional Data Field Template (ID 62)
+      // TXID (ID 05) - usando *** como padrão
+      const txid = montarCampo('05', '***');
       
-      // Montar payload sem CRC
+      // Montar payload completo
       let payload = '';
-      payload += '000201'; // Payload Format Indicator
-      payload += merchantAccountField; // Merchant Account Information
-      payload += '52040000'; // Merchant Category Code (0000 = não especificado)
-      payload += '5303986'; // Transaction Currency (986 = BRL)
-      payload += `54${formattedAmount.length.toString().padStart(2, '0')}${formattedAmount}`; // Transaction Amount
-      payload += '5802BR'; // Country Code
-      payload += `59${cleanName.length.toString().padStart(2, '0')}${cleanName}`; // Merchant Name
-      payload += `60${cleanCity.length.toString().padStart(2, '0')}${cleanCity}`; // Merchant City
-      payload += additionalData; // Additional Data Field
-      payload += '6304'; // CRC16 placeholder
+      payload += montarCampo('00', '01'); // Payload Format Indicator
+      payload += montarCampo('26', merchantAccountInfo); // Merchant Account Information
+      payload += montarCampo('52', '0000'); // Merchant Category Code
+      payload += montarCampo('53', '986'); // Transaction Currency (BRL)
+      payload += montarCampo('54', valorFormatado); // Transaction Amount
+      payload += montarCampo('58', 'BR'); // Country Code
+      payload += montarCampo('59', nomeLimpo); // Merchant Name
+      payload += montarCampo('60', cidadeLimpa); // Merchant City
+      payload += montarCampo('62', txid); // Additional Data Field Template
+      payload += '6304'; // CRC16 (ID 63, tamanho 04, valor será calculado)
       
       // Calcular e adicionar CRC16
-      const crcValue = crc16(payload);
-      payload = payload.replace('6304', `6304${crcValue}`);
+      const crc = calcularCRC16(payload);
+      payload += crc;
       
       return payload;
     };
@@ -133,25 +149,54 @@
       const [qrCodeUrl, setQrCodeUrl] = React.useState('');
       const [pixCode, setPixCode] = React.useState('');
       const [copied, setCopied] = React.useState(false);
+      const [loading, setLoading] = React.useState(true);
+      const [error, setError] = React.useState('');
+      const canvasRef = React.useRef(null);
       
       React.useEffect(() => {
         if (withdrawal) {
-          // Gerar código PIX
-          const code = generatePixCode(
-            withdrawal.pix_key,
-            withdrawal.final_amount,
-            withdrawal.user_name
-          );
-          setPixCode(code);
-          
-          // Gerar QR Code
-          if (window.QRCode) {
-            window.QRCode.toDataURL(code, {
-              width: 280,
-              margin: 2,
-              color: { dark: '#000000', light: '#FFFFFF' }
-            }).then(url => setQrCodeUrl(url))
-              .catch(err => console.error('Erro ao gerar QR Code:', err));
+          try {
+            // Gerar código PIX
+            const code = generatePixCode(
+              withdrawal.pix_key,
+              withdrawal.final_amount,
+              withdrawal.user_name
+            );
+            setPixCode(code);
+            
+            // Gerar QR Code usando a API do QRCode
+            if (typeof QRCode !== 'undefined' && QRCode.toDataURL) {
+              QRCode.toDataURL(code, {
+                errorCorrectionLevel: 'M',
+                type: 'image/png',
+                width: 300,
+                margin: 2,
+                color: {
+                  dark: '#000000',
+                  light: '#FFFFFF'
+                }
+              })
+              .then(url => {
+                setQrCodeUrl(url);
+                setLoading(false);
+              })
+              .catch(err => {
+                console.error('Erro QRCode.toDataURL:', err);
+                // Fallback: usar API externa de QR Code
+                const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(code)}`;
+                setQrCodeUrl(qrApiUrl);
+                setLoading(false);
+              });
+            } else {
+              // Fallback: usar API externa de QR Code
+              const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(code)}`;
+              setQrCodeUrl(qrApiUrl);
+              setLoading(false);
+            }
+          } catch (err) {
+            console.error('Erro ao gerar PIX:', err);
+            setError('Erro ao gerar código PIX');
+            setLoading(false);
           }
         }
       }, [withdrawal]);
@@ -166,13 +211,19 @@
           // Fallback para navegadores mais antigos
           const textarea = document.createElement('textarea');
           textarea.value = pixCode;
+          textarea.style.position = 'fixed';
+          textarea.style.left = '-9999px';
           document.body.appendChild(textarea);
           textarea.select();
-          document.execCommand('copy');
+          try {
+            document.execCommand('copy');
+            setCopied(true);
+            showToast('✅ Código PIX copiado!', 'success');
+            setTimeout(() => setCopied(false), 3000);
+          } catch (e) {
+            showToast('❌ Erro ao copiar', 'error');
+          }
           document.body.removeChild(textarea);
-          setCopied(true);
-          showToast('✅ Código PIX copiado!', 'success');
-          setTimeout(() => setCopied(false), 3000);
         }
       };
       
@@ -182,13 +233,13 @@
         <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4" onClick={onClose}>
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden" onClick={e => e.stopPropagation()}>
             {/* Header */}
-            <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-4">
+            <div className="bg-gradient-to-r from-green-600 to-green-700 text-white p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <span className="text-3xl">📱</span>
+                  <span className="text-3xl">💰</span>
                   <div>
                     <h2 className="text-lg font-bold">PIX Copia e Cola</h2>
-                    <p className="text-purple-200 text-sm">Escaneie ou copie o código</p>
+                    <p className="text-green-200 text-sm">Escaneie ou copie o código</p>
                   </div>
                 </div>
                 <button onClick={onClose} className="text-white/80 hover:text-white text-2xl font-bold">✕</button>
@@ -201,39 +252,55 @@
               <div className="bg-gray-50 rounded-xl p-4 mb-4">
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div>
-                    <p className="text-gray-500">Beneficiário</p>
+                    <p className="text-gray-500 text-xs">Beneficiário</p>
                     <p className="font-semibold text-gray-800 truncate">{withdrawal.user_name}</p>
                   </div>
                   <div>
-                    <p className="text-gray-500">Código</p>
+                    <p className="text-gray-500 text-xs">Código</p>
                     <p className="font-semibold text-gray-800">{withdrawal.user_cod}</p>
                   </div>
-                  <div>
-                    <p className="text-gray-500">Chave PIX</p>
-                    <p className="font-semibold text-gray-800 text-xs truncate">{withdrawal.pix_key}</p>
+                  <div className="col-span-2">
+                    <p className="text-gray-500 text-xs">Chave PIX</p>
+                    <p className="font-semibold text-gray-800 text-sm break-all">{withdrawal.pix_key}</p>
                   </div>
-                  <div>
-                    <p className="text-gray-500">Valor</p>
-                    <p className="font-bold text-green-600 text-lg">R$ {parseFloat(withdrawal.final_amount).toFixed(2).replace('.', ',')}</p>
+                  <div className="col-span-2">
+                    <p className="text-gray-500 text-xs">Valor a Transferir</p>
+                    <p className="font-bold text-green-600 text-2xl">R$ {parseFloat(withdrawal.final_amount).toFixed(2).replace('.', ',')}</p>
                   </div>
                 </div>
               </div>
               
               {/* QR Code */}
               <div className="flex flex-col items-center mb-4">
-                {qrCodeUrl ? (
-                  <img src={qrCodeUrl} alt="QR Code PIX" className="w-56 h-56 border-4 border-gray-200 rounded-xl shadow-lg" />
-                ) : (
-                  <div className="w-56 h-56 bg-gray-100 rounded-xl flex items-center justify-center">
-                    <div className="w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+                {loading ? (
+                  <div className="w-64 h-64 bg-gray-100 rounded-xl flex items-center justify-center">
+                    <div className="text-center">
+                      <div className="w-10 h-10 border-4 border-green-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                      <p className="text-gray-500 text-sm">Gerando QR Code...</p>
+                    </div>
                   </div>
-                )}
+                ) : error ? (
+                  <div className="w-64 h-64 bg-red-50 rounded-xl flex items-center justify-center">
+                    <p className="text-red-500 text-center p-4">{error}</p>
+                  </div>
+                ) : qrCodeUrl ? (
+                  <img 
+                    src={qrCodeUrl} 
+                    alt="QR Code PIX" 
+                    className="w-64 h-64 border-4 border-green-200 rounded-xl shadow-lg"
+                    onError={() => {
+                      // Se a imagem falhar, tenta API alternativa
+                      const fallbackUrl = `https://chart.googleapis.com/chart?cht=qr&chs=300x300&chl=${encodeURIComponent(pixCode)}`;
+                      setQrCodeUrl(fallbackUrl);
+                    }}
+                  />
+                ) : null}
               </div>
               
               {/* Código Copia e Cola */}
               <div className="mb-4">
-                <p className="text-xs text-gray-500 mb-2 text-center">Código Copia e Cola:</p>
-                <div className="bg-gray-100 rounded-lg p-3 text-xs font-mono text-gray-700 break-all max-h-20 overflow-y-auto">
+                <p className="text-xs text-gray-500 mb-2 font-semibold">Código Copia e Cola:</p>
+                <div className="bg-gray-100 rounded-lg p-3 text-[10px] font-mono text-gray-600 break-all max-h-24 overflow-y-auto border">
                   {pixCode}
                 </div>
               </div>
@@ -241,14 +308,14 @@
               {/* Botão Copiar */}
               <button
                 onClick={handleCopy}
-                className={`w-full py-3 rounded-xl font-bold text-white transition-all flex items-center justify-center gap-2 ${
+                className={`w-full py-4 rounded-xl font-bold text-white transition-all flex items-center justify-center gap-2 text-lg ${
                   copied 
-                    ? 'bg-green-600 hover:bg-green-700' 
-                    : 'bg-purple-600 hover:bg-purple-700'
+                    ? 'bg-green-500' 
+                    : 'bg-green-600 hover:bg-green-700 active:scale-95'
                 }`}
               >
                 {copied ? (
-                  <>✅ Copiado!</>
+                  <>✅ Código Copiado!</>
                 ) : (
                   <>📋 Copiar Código PIX</>
                 )}
