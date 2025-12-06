@@ -190,9 +190,10 @@
       // TXID (ID 05) - usando *** como padrão
       const txid = montarCampo('05', '***');
       
-      // Montar payload completo
+      // Montar payload completo na ordem correta
       let payload = '';
-      payload += montarCampo('00', '01'); // Payload Format Indicator
+      payload += montarCampo('00', '01'); // Payload Format Indicator (obrigatório)
+      payload += montarCampo('01', '12'); // Point of Initiation Method: 12 = dinâmico (valor definido)
       payload += montarCampo('26', merchantAccountInfo); // Merchant Account Information
       payload += montarCampo('52', '0000'); // Merchant Category Code
       payload += montarCampo('53', '986'); // Transaction Currency (BRL)
