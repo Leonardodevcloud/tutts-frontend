@@ -675,6 +675,15 @@
       const [avisosUsuario, setAvisosUsuario] = useState([]);
       const [horarioAceito, setHorarioAceito] = useState(false);
 
+      // Estados para a Loja
+      const [lojaEstoque, setLojaEstoque] = useState([]);
+      const [lojaProdutos, setLojaProdutos] = useState([]);
+      const [lojaPedidos, setLojaPedidos] = useState([]);
+      const [lojaPedidosUsuario, setLojaPedidosUsuario] = useState([]);
+      const [lojaModalBemVindo, setLojaModalBemVindo] = useState(true);
+      const [lojaSliderAceito, setLojaSliderAceito] = useState(0);
+      const [lojaSubTab, setLojaSubTab] = useState('produtos'); // 'produtos' ou 'estoque' ou 'pedidos'
+
       // Verifica se usuário é novato (COD >= 14000) e se está dentro dos 30 dias
       const isNovato = () => {
         if (!user || !user.codProfissional) return false;
@@ -746,8 +755,8 @@
         if (!user) return;
         loadSubmissions();
         if (user.role === 'admin' || user.role === 'admin_master') loadUsers();
-        if (user.role === 'user') { checkTerms(); loadUserWithdrawals(); loadUserGratuities(); loadPromocoesAtivas(); loadMinhasIndicacoes(); loadPromocoesNovatosAtivas(); loadMinhasInscricoesNovatos(); loadQuizConfig(); verificarQuizRespondido(); }
-        if (user.role === 'admin_financeiro' || user.role === 'admin_master') { loadAllWithdrawals(); loadAllGratuities(); loadRestricted(); loadDashboard(); loadPromocoes(); loadIndicacoes(); loadPromocoesNovatos(); loadInscricoesNovatos(); loadQuizConfig(); loadQuizRespostas(); loadUsers(); }
+        if (user.role === 'user') { checkTerms(); loadUserWithdrawals(); loadUserGratuities(); loadPromocoesAtivas(); loadMinhasIndicacoes(); loadPromocoesNovatosAtivas(); loadMinhasInscricoesNovatos(); loadQuizConfig(); verificarQuizRespondido(); loadLojaProdutosAtivos(); loadLojaPedidosUsuario(); }
+        if (user.role === 'admin_financeiro' || user.role === 'admin_master') { loadAllWithdrawals(); loadAllGratuities(); loadRestricted(); loadDashboard(); loadPromocoes(); loadIndicacoes(); loadPromocoesNovatos(); loadInscricoesNovatos(); loadQuizConfig(); loadQuizRespostas(); loadUsers(); loadLojaEstoque(); loadLojaProdutos(); loadLojaPedidos(); }
       }, [user]);
 
       // ========== POLLING INTELIGENTE - APENAS ABA ATIVA ==========
@@ -1064,13 +1073,49 @@
         } catch (err) { console.error(err); }
       };
 
+      // ========== FUNÇÕES DA LOJA ==========
+      const loadLojaEstoque = async () => {
+        try {
+          const res = await fetch(`${API_URL}/loja/estoque`);
+          setLojaEstoque(await res.json());
+        } catch (err) { console.error('Erro ao carregar estoque:', err); }
+      };
+
+      const loadLojaProdutos = async () => {
+        try {
+          const res = await fetch(`${API_URL}/loja/produtos`);
+          setLojaProdutos(await res.json());
+        } catch (err) { console.error('Erro ao carregar produtos:', err); }
+      };
+
+      const loadLojaProdutosAtivos = async () => {
+        try {
+          const res = await fetch(`${API_URL}/loja/produtos/ativos`);
+          setLojaProdutos(await res.json());
+        } catch (err) { console.error('Erro ao carregar produtos:', err); }
+      };
+
+      const loadLojaPedidos = async () => {
+        try {
+          const res = await fetch(`${API_URL}/loja/pedidos`);
+          setLojaPedidos(await res.json());
+        } catch (err) { console.error('Erro ao carregar pedidos:', err); }
+      };
+
+      const loadLojaPedidosUsuario = async () => {
+        try {
+          const res = await fetch(`${API_URL}/loja/pedidos/user/${user.codProfissional}`);
+          setLojaPedidosUsuario(await res.json());
+        } catch (err) { console.error('Erro ao carregar pedidos:', err); }
+      };
+
       const refreshAll = async () => {
         setGlobalLoading(true);
         try {
           await loadSubmissions();
           if (user.role === 'admin' || user.role === 'admin_master') await loadUsers();
-          if (user.role === 'user') { await loadUserWithdrawals(); await loadUserGratuities(); await loadPromocoesAtivas(); await loadMinhasIndicacoes(); }
-          if (user.role === 'admin_financeiro' || user.role === 'admin_master') { await loadAllWithdrawals(); await loadAllGratuities(); await loadRestricted(); await loadDashboard(); await loadPromocoes(); await loadIndicacoes(); await loadUsers(); }
+          if (user.role === 'user') { await loadUserWithdrawals(); await loadUserGratuities(); await loadPromocoesAtivas(); await loadMinhasIndicacoes(); await loadLojaProdutosAtivos(); await loadLojaPedidosUsuario(); }
+          if (user.role === 'admin_financeiro' || user.role === 'admin_master') { await loadAllWithdrawals(); await loadAllGratuities(); await loadRestricted(); await loadDashboard(); await loadPromocoes(); await loadIndicacoes(); await loadUsers(); await loadLojaEstoque(); await loadLojaProdutos(); await loadLojaPedidos(); }
           showToast('🔄 Atualizado!', 'success');
         } catch (err) { showToast('Erro', 'error'); }
         setGlobalLoading(false);
@@ -2370,6 +2415,27 @@
                     <span className="text-cyan-400 text-2xl">›</span>
                   </button>
 
+                  {/* Botão Lojinha Tutts */}
+                  <button 
+                    onClick={() => {
+                      setLojaModalBemVindo(true);
+                      setLojaSliderAceito(0);
+                      loadLojaProdutosAtivos();
+                      loadLojaPedidosUsuario();
+                      setFormData({...formData, userTab: 'loja'});
+                    }}
+                    className="w-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl shadow-lg p-6 flex items-center gap-4 hover:shadow-xl transition-all hover:scale-[1.02]"
+                  >
+                    <div className="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center text-3xl">
+                      🛒
+                    </div>
+                    <div className="text-left flex-1">
+                      <h3 className="text-lg font-bold text-white">Lojinha Tutts</h3>
+                      <p className="text-sm text-white/80">Ofertas exclusivas com abatimento no saldo!</p>
+                    </div>
+                    <span className="text-white/60 text-2xl">›</span>
+                  </button>
+
                   {/* Botão Promoções Novatos - Apenas para COD >= 14000 e dentro de 30 dias */}
                   {isNovato() && (
                     <button 
@@ -2433,6 +2499,7 @@
                     {formData.userTab === 'indicacoes' && '👥 Promoção de Indicação'}
                     {formData.userTab === 'promo-novatos' && '🚀 Promoções Novatos'}
                     {formData.userTab === 'seguro-iza' && '🛡️ Seguro de Vida - IZA'}
+                    {formData.userTab === 'loja' && '🛒 Lojinha Tutts'}
                   </h1>
                 </div>
 
@@ -3949,6 +4016,338 @@
                   </div>
                 </div>
               )}
+
+              {/* ABA LOJINHA TUTTS */}
+              {formData.userTab === 'loja' && (
+                <>
+                  {/* Modal de Boas-vindas */}
+                  {lojaModalBemVindo && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+                      <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden">
+                        {/* Header com gradiente */}
+                        <div className="bg-gradient-to-r from-purple-600 to-pink-500 p-6 text-center">
+                          <div className="text-6xl mb-2">🛒✨</div>
+                          <h2 className="text-2xl font-bold text-white">Lojinha Virtual da Tutts</h2>
+                        </div>
+                        
+                        {/* Conteúdo */}
+                        <div className="p-6">
+                          <p className="text-lg mb-4">
+                            <span className="text-2xl">👋</span> <strong>Olá, entregador!</strong>
+                          </p>
+                          
+                          <p className="text-gray-700 mb-4">
+                            Criamos este espaço para trazer mais <strong>praticidade</strong> e <strong>acessibilidade</strong> na compra de itens essenciais para o seu dia a dia.
+                          </p>
+                          
+                          <p className="text-gray-700 mb-4">
+                            As ofertas disponíveis aqui são <strong>exclusivas</strong> para você, entregador autônomo que opera ativamente no aplicativo Tutts há pelo menos 3 meses e possui um bom score ⭐📊
+                          </p>
+                          
+                          <p className="text-gray-700 mb-2">
+                            Aproveite os benefícios, equipe sua rotina com qualidade e economize! 💜
+                          </p>
+                          
+                          <div className="bg-purple-50 rounded-xl p-4 mb-6">
+                            <p className="text-purple-800 font-semibold text-center">
+                              💰 Abatimentos diretamente do saldo do aplicativo!
+                            </p>
+                          </div>
+                          
+                          {/* Slider para aceitar */}
+                          <div className="relative">
+                            <p className="text-sm text-gray-500 text-center mb-2">Arraste para concordar e avançar</p>
+                            <div className="relative h-14 bg-gray-200 rounded-full overflow-hidden">
+                              <div 
+                                className="absolute left-0 top-0 h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all"
+                                style={{ width: `${lojaSliderAceito}%` }}
+                              ></div>
+                              <input 
+                                type="range" 
+                                min="0" 
+                                max="100" 
+                                value={lojaSliderAceito}
+                                onChange={(e) => {
+                                  const val = parseInt(e.target.value);
+                                  setLojaSliderAceito(val);
+                                  if (val >= 95) {
+                                    setTimeout(() => setLojaModalBemVindo(false), 300);
+                                  }
+                                }}
+                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                              />
+                              <div 
+                                className="absolute top-1 h-12 w-12 bg-white rounded-full shadow-lg flex items-center justify-center text-xl transition-all"
+                                style={{ left: `calc(${lojaSliderAceito}% - ${lojaSliderAceito * 0.48}px)` }}
+                              >
+                                {lojaSliderAceito >= 95 ? '✅' : '👉'}
+                              </div>
+                              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-semibold">
+                                {lojaSliderAceito >= 95 ? '✅' : 'Entrar na Loja'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Conteúdo da Loja */}
+                  {!lojaModalBemVindo && (
+                    <div className="space-y-6">
+                      {/* Banner */}
+                      <div className="bg-gradient-to-r from-purple-600 to-pink-500 rounded-2xl p-6 text-white text-center">
+                        <h2 className="text-2xl font-bold mb-2">🛍️ Ofertas Exclusivas!</h2>
+                        <p className="text-white/80">Abatimento direto no seu saldo - Sem dor de cabeça!</p>
+                      </div>
+
+                      {/* Meus Pedidos (resumo) */}
+                      {lojaPedidosUsuario.length > 0 && (
+                        <div className="bg-white rounded-xl shadow p-4">
+                          <h3 className="font-bold text-gray-800 mb-3">📦 Meus Pedidos</h3>
+                          <div className="space-y-2">
+                            {lojaPedidosUsuario.slice(0, 3).map(ped => (
+                              <div key={ped.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                                <div>
+                                  <p className="font-semibold text-sm">{ped.produto_nome}</p>
+                                  <p className="text-xs text-gray-500">{new Date(ped.created_at).toLocaleDateString('pt-BR')}</p>
+                                </div>
+                                <span className={`px-2 py-1 rounded text-xs font-bold ${
+                                  ped.status === 'pendente' ? 'bg-yellow-100 text-yellow-700' :
+                                  ped.status === 'aprovado' ? 'bg-green-100 text-green-700' :
+                                  'bg-red-100 text-red-700'
+                                }`}>
+                                  {ped.status === 'pendente' ? '⏳ Aguardando' : ped.status === 'aprovado' ? '✅ Aprovado' : '❌ Rejeitado'}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Lista de Produtos */}
+                      <div className="grid gap-4">
+                        {lojaProdutos.length === 0 ? (
+                          <div className="bg-white rounded-xl shadow p-8 text-center">
+                            <div className="text-6xl mb-4">🏪</div>
+                            <p className="text-gray-500">Nenhum produto disponível no momento</p>
+                            <p className="text-sm text-gray-400 mt-2">Em breve teremos novidades!</p>
+                          </div>
+                        ) : lojaProdutos.map(prod => (
+                          <div key={prod.id} className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
+                            <div className="flex">
+                              {prod.imagem_url && (
+                                <img src={prod.imagem_url} alt={prod.nome} className="w-32 h-32 object-cover" />
+                              )}
+                              <div className="flex-1 p-4">
+                                <h3 className="font-bold text-gray-800 text-lg">{prod.nome}</h3>
+                                {prod.marca && <p className="text-sm text-gray-500">{prod.marca}</p>}
+                                {prod.descricao && <p className="text-sm text-gray-600 mt-1 line-clamp-2">{prod.descricao}</p>}
+                                
+                                <div className="flex items-baseline gap-2 mt-2">
+                                  <span className="text-2xl font-bold text-green-600">
+                                    R$ {parseFloat(prod.valor).toFixed(2).replace('.', ',')}
+                                  </span>
+                                  {prod.abatimento_avista > 0 && (
+                                    <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                                      -{prod.abatimento_avista}% à vista
+                                    </span>
+                                  )}
+                                </div>
+                                
+                                <button
+                                  onClick={() => setFormData({...formData, lojaProdutoSelecionado: prod, lojaCompraModal: true})}
+                                  className="mt-3 w-full py-2 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-lg font-semibold hover:opacity-90 transition-opacity"
+                                >
+                                  🛒 Comprar
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Modal de Compra */}
+                  {formData.lojaCompraModal && formData.lojaProdutoSelecionado && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+                      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+                        <div className="bg-gradient-to-r from-purple-600 to-pink-500 p-4 text-white">
+                          <h2 className="text-xl font-bold">🛒 Finalizar Compra</h2>
+                        </div>
+                        
+                        <div className="p-6">
+                          {/* Info do Produto */}
+                          <div className="flex gap-4 mb-6">
+                            {formData.lojaProdutoSelecionado.imagem_url && (
+                              <img src={formData.lojaProdutoSelecionado.imagem_url} alt="" className="w-24 h-24 object-cover rounded-lg" />
+                            )}
+                            <div>
+                              <h3 className="font-bold text-gray-800">{formData.lojaProdutoSelecionado.nome}</h3>
+                              {formData.lojaProdutoSelecionado.marca && <p className="text-sm text-gray-500">{formData.lojaProdutoSelecionado.marca}</p>}
+                              <p className="text-xl font-bold text-green-600 mt-1">
+                                R$ {parseFloat(formData.lojaProdutoSelecionado.valor).toFixed(2).replace('.', ',')}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Seleção de Tamanho (se tiver) */}
+                          {formData.lojaProdutoSelecionado.tem_tamanho && formData.lojaProdutoSelecionado.tamanhos && formData.lojaProdutoSelecionado.tamanhos.length > 0 && (
+                            <div className="mb-4">
+                              <label className="block text-sm font-semibold mb-2">Tamanho *</label>
+                              <div className="flex flex-wrap gap-2">
+                                {formData.lojaProdutoSelecionado.tamanhos.map(t => (
+                                  <button
+                                    key={t.tamanho}
+                                    onClick={() => setFormData({...formData, lojaCompraTamanho: t.tamanho})}
+                                    disabled={t.quantidade <= 0}
+                                    className={`px-4 py-2 rounded-lg border-2 font-semibold transition-all ${
+                                      formData.lojaCompraTamanho === t.tamanho 
+                                        ? 'border-purple-600 bg-purple-50 text-purple-700' 
+                                        : t.quantidade <= 0 
+                                          ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
+                                          : 'border-gray-300 hover:border-purple-400'
+                                    }`}
+                                  >
+                                    {t.tamanho}
+                                    {t.quantidade <= 0 && <span className="text-xs ml-1">(Esgotado)</span>}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Tipo de Abatimento */}
+                          <div className="mb-6">
+                            <label className="block text-sm font-semibold mb-2">Forma de Pagamento *</label>
+                            <div className="space-y-2">
+                              {[
+                                { id: 'avista', label: 'À Vista', desc: 'Abatimento único', parcelas: 1, desconto: formData.lojaProdutoSelecionado.abatimento_avista },
+                                { id: '2semanas', label: '2 Semanas', desc: '2 abatimentos semanais', parcelas: 2, desconto: formData.lojaProdutoSelecionado.abatimento_2semanas },
+                                { id: '3semanas', label: '3 Semanas', desc: '3 abatimentos semanais', parcelas: 3, desconto: formData.lojaProdutoSelecionado.abatimento_3semanas },
+                                { id: '4semanas', label: '4 Semanas', desc: '4 abatimentos semanais', parcelas: 4, desconto: formData.lojaProdutoSelecionado.abatimento_4semanas },
+                              ].map(opt => {
+                                const valorOriginal = parseFloat(formData.lojaProdutoSelecionado.valor);
+                                const valorDesconto = valorOriginal * (opt.desconto / 100);
+                                const valorFinal = valorOriginal - valorDesconto;
+                                const valorParcela = valorFinal / opt.parcelas;
+                                
+                                return (
+                                  <button
+                                    key={opt.id}
+                                    onClick={() => setFormData({...formData, lojaCompraTipo: opt.id, lojaCompraParcelas: opt.parcelas, lojaCompraValorFinal: valorFinal, lojaCompraValorParcela: valorParcela, lojaCompraDesconto: valorDesconto})}
+                                    className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
+                                      formData.lojaCompraTipo === opt.id 
+                                        ? 'border-purple-600 bg-purple-50' 
+                                        : 'border-gray-200 hover:border-purple-300'
+                                    }`}
+                                  >
+                                    <div className="flex justify-between items-center">
+                                      <div>
+                                        <p className="font-semibold">{opt.label}</p>
+                                        <p className="text-xs text-gray-500">{opt.desc}</p>
+                                      </div>
+                                      <div className="text-right">
+                                        {opt.desconto > 0 && (
+                                          <p className="text-xs text-green-600 font-semibold">-{opt.desconto}%</p>
+                                        )}
+                                        <p className="font-bold text-purple-700">
+                                          {opt.parcelas > 1 ? `${opt.parcelas}x de ` : ''}R$ {valorParcela.toFixed(2).replace('.', ',')}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          {/* Resumo */}
+                          {formData.lojaCompraTipo && (
+                            <div className="bg-gray-50 rounded-xl p-4 mb-6">
+                              <h4 className="font-bold text-gray-800 mb-2">📋 Resumo do Pedido</h4>
+                              <div className="space-y-1 text-sm">
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Valor original:</span>
+                                  <span>R$ {parseFloat(formData.lojaProdutoSelecionado.valor).toFixed(2).replace('.', ',')}</span>
+                                </div>
+                                {formData.lojaCompraDesconto > 0 && (
+                                  <div className="flex justify-between text-green-600">
+                                    <span>Desconto:</span>
+                                    <span>- R$ {formData.lojaCompraDesconto.toFixed(2).replace('.', ',')}</span>
+                                  </div>
+                                )}
+                                <div className="flex justify-between font-bold text-lg border-t pt-2 mt-2">
+                                  <span>Total:</span>
+                                  <span className="text-purple-700">R$ {formData.lojaCompraValorFinal.toFixed(2).replace('.', ',')}</span>
+                                </div>
+                                {formData.lojaCompraParcelas > 1 && (
+                                  <p className="text-center text-xs text-gray-500 mt-1">
+                                    em {formData.lojaCompraParcelas}x de R$ {formData.lojaCompraValorParcela.toFixed(2).replace('.', ',')}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Botões */}
+                          <div className="flex gap-3">
+                            <button
+                              onClick={() => setFormData({...formData, lojaCompraModal: false, lojaProdutoSelecionado: null, lojaCompraTipo: null, lojaCompraTamanho: null})}
+                              className="flex-1 px-4 py-3 bg-gray-200 text-gray-700 rounded-xl font-semibold"
+                            >Cancelar</button>
+                            <button
+                              onClick={async () => {
+                                if (formData.lojaProdutoSelecionado.tem_tamanho && !formData.lojaCompraTamanho) {
+                                  showToast('Selecione um tamanho', 'error');
+                                  return;
+                                }
+                                if (!formData.lojaCompraTipo) {
+                                  showToast('Selecione a forma de pagamento', 'error');
+                                  return;
+                                }
+                                
+                                try {
+                                  const body = {
+                                    produto_id: formData.lojaProdutoSelecionado.id,
+                                    user_cod: user.codProfissional,
+                                    user_name: user.fullName,
+                                    produto_nome: formData.lojaProdutoSelecionado.nome,
+                                    tamanho: formData.lojaCompraTamanho || null,
+                                    marca: formData.lojaProdutoSelecionado.marca || null,
+                                    valor_original: parseFloat(formData.lojaProdutoSelecionado.valor),
+                                    tipo_abatimento: formData.lojaCompraTipo === 'avista' ? 'À Vista' : 
+                                      formData.lojaCompraTipo === '2semanas' ? '2 Semanas' :
+                                      formData.lojaCompraTipo === '3semanas' ? '3 Semanas' : '4 Semanas',
+                                    valor_abatimento: formData.lojaCompraDesconto || 0,
+                                    valor_final: formData.lojaCompraValorFinal,
+                                    parcelas: formData.lojaCompraParcelas,
+                                    valor_parcela: formData.lojaCompraValorParcela
+                                  };
+                                  
+                                  await fetch(`${API_URL}/loja/pedidos`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify(body)
+                                  });
+                                  
+                                  showToast('✅ Pedido enviado com sucesso!', 'success');
+                                  setFormData({...formData, lojaCompraModal: false, lojaProdutoSelecionado: null, lojaCompraTipo: null, lojaCompraTamanho: null});
+                                  loadLojaPedidosUsuario();
+                                } catch (err) {
+                                  showToast('Erro ao enviar pedido', 'error');
+                                }
+                              }}
+                              className="flex-1 px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-xl font-semibold hover:opacity-90"
+                            >✅ Confirmar Pedido</button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
               </div>
             )}
           </div>
@@ -4038,7 +4437,7 @@
 
             <div className="bg-white border-b sticky top-0 z-10">
               <div className="max-w-7xl mx-auto px-2 flex gap-0.5 overflow-x-auto">
-                {['solicitacoes', 'validacao', 'conciliacao', 'resumo', 'gratuidades', 'restritos', 'indicacoes', 'promo-novatos', 'relatorios', 'horarios', 'avisos', 'backup'].map(tab => (
+                {['solicitacoes', 'validacao', 'conciliacao', 'resumo', 'gratuidades', 'restritos', 'indicacoes', 'promo-novatos', 'loja', 'relatorios', 'horarios', 'avisos', 'backup'].map(tab => (
                   <button key={tab} onClick={() => setFormData({...formData, finTab: tab})} className={`px-2 py-1.5 text-xs font-semibold whitespace-nowrap rounded-t-lg ${(formData.finTab || 'solicitacoes') === tab ? 'text-green-700 border-b-2 border-green-600 bg-green-50' : 'text-gray-600 hover:bg-gray-100'}`}>
                     {tab === 'solicitacoes' && '📋 Solicitações'}
                     {tab === 'validacao' && '📊 Validação'}
@@ -4048,6 +4447,7 @@
                     {tab === 'restritos' && '🚫 Restritos'}
                     {tab === 'indicacoes' && '👥 Indicações'}
                     {tab === 'promo-novatos' && '🚀 Promo Novatos'}
+                    {tab === 'loja' && '🛒 Loja'}
                     {tab === 'relatorios' && '📈 Relatórios'}
                     {tab === 'horarios' && '🕐 Horários'}
                     {tab === 'avisos' && '📢 Avisos'}
@@ -5622,6 +6022,596 @@
                         </table>
                       </div>
                     )}
+                  </div>
+                </>
+              )}
+
+              {/* ========== ABA LOJA ========== */}
+              {formData.finTab === 'loja' && (
+                <>
+                  {/* Sub-abas da Loja */}
+                  <div className="bg-white rounded-xl shadow mb-6">
+                    <div className="flex border-b">
+                      {['produtos', 'estoque', 'pedidos'].map(subtab => (
+                        <button
+                          key={subtab}
+                          onClick={() => {
+                            setLojaSubTab(subtab);
+                            if (subtab === 'estoque') loadLojaEstoque();
+                            if (subtab === 'produtos') { loadLojaProdutos(); loadLojaEstoque(); }
+                            if (subtab === 'pedidos') loadLojaPedidos();
+                          }}
+                          className={`flex-1 px-4 py-3 text-sm font-semibold ${lojaSubTab === subtab ? 'text-purple-700 border-b-2 border-purple-600 bg-purple-50' : 'text-gray-600 hover:bg-gray-50'}`}
+                        >
+                          {subtab === 'produtos' && '🏷️ Produtos à Venda'}
+                          {subtab === 'estoque' && '📦 Estoque'}
+                          {subtab === 'pedidos' && '🛍️ Pedidos'}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="p-6">
+                      {/* SUB-ABA ESTOQUE */}
+                      {lojaSubTab === 'estoque' && (
+                        <>
+                          <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-xl font-bold text-gray-800">📦 Gerenciar Estoque</h2>
+                            <button
+                              onClick={() => setFormData({...formData, lojaEstoqueModal: true, lojaEstoqueEdit: null})}
+                              className="px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
+                            >
+                              ➕ Novo Item
+                            </button>
+                          </div>
+
+                          <div className="grid gap-4">
+                            {lojaEstoque.length === 0 ? (
+                              <p className="text-gray-500 text-center py-8">Nenhum item no estoque</p>
+                            ) : lojaEstoque.map(item => (
+                              <div key={item.id} className="border rounded-xl p-4 hover:shadow-md transition-shadow">
+                                <div className="flex gap-4">
+                                  {item.imagem_url && (
+                                    <img src={item.imagem_url} alt={item.nome} className="w-20 h-20 object-cover rounded-lg" />
+                                  )}
+                                  <div className="flex-1">
+                                    <div className="flex justify-between items-start">
+                                      <div>
+                                        <h3 className="font-bold text-gray-800">{item.nome}</h3>
+                                        {item.marca && <p className="text-sm text-gray-600">Marca: {item.marca}</p>}
+                                        <p className="text-lg font-bold text-green-600">R$ {parseFloat(item.valor).toFixed(2).replace('.', ',')}</p>
+                                      </div>
+                                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${item.status === 'ativo' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                        {item.status === 'ativo' ? '✅ Ativo' : '❌ Inativo'}
+                                      </span>
+                                    </div>
+                                    
+                                    {item.tem_tamanho && item.tamanhos && item.tamanhos.length > 0 ? (
+                                      <div className="mt-2">
+                                        <p className="text-xs text-gray-500 mb-1">Tamanhos disponíveis:</p>
+                                        <div className="flex flex-wrap gap-2">
+                                          {item.tamanhos.map(t => (
+                                            <span key={t.id} className="px-2 py-1 bg-gray-100 rounded text-xs">
+                                              {t.tamanho}: <strong>{t.quantidade}</strong>
+                                            </span>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <p className="text-sm text-gray-600 mt-2">Quantidade: <strong>{item.quantidade}</strong></p>
+                                    )}
+                                  </div>
+                                  <div className="flex flex-col gap-2">
+                                    <button
+                                      onClick={() => setFormData({...formData, lojaEstoqueModal: true, lojaEstoqueEdit: item})}
+                                      className="px-3 py-1 bg-blue-100 text-blue-700 rounded text-xs font-semibold hover:bg-blue-200"
+                                    >✏️ Editar</button>
+                                    <button
+                                      onClick={async () => {
+                                        if (!confirm('Excluir este item do estoque?')) return;
+                                        await fetch(`${API_URL}/loja/estoque/${item.id}`, { method: 'DELETE' });
+                                        loadLojaEstoque();
+                                        showToast('🗑️ Item excluído!', 'success');
+                                      }}
+                                      className="px-3 py-1 bg-red-100 text-red-700 rounded text-xs font-semibold hover:bg-red-200"
+                                    >🗑️</button>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Modal de Estoque */}
+                          {formData.lojaEstoqueModal && (
+                            <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+                              <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+                                <div className="p-6">
+                                  <h2 className="text-xl font-bold mb-4">{formData.lojaEstoqueEdit ? '✏️ Editar Item' : '➕ Novo Item no Estoque'}</h2>
+                                  
+                                  <div className="space-y-4">
+                                    <div>
+                                      <label className="block text-sm font-semibold mb-1">Nome do Produto *</label>
+                                      <input
+                                        type="text"
+                                        value={formData.lojaEstoqueNome ?? formData.lojaEstoqueEdit?.nome ?? ''}
+                                        onChange={e => setFormData({...formData, lojaEstoqueNome: e.target.value})}
+                                        className="w-full px-4 py-2 border rounded-lg"
+                                        placeholder="Ex: Camiseta Polo"
+                                      />
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-2 gap-4">
+                                      <div>
+                                        <label className="block text-sm font-semibold mb-1">Marca</label>
+                                        <input
+                                          type="text"
+                                          value={formData.lojaEstoqueMarca ?? formData.lojaEstoqueEdit?.marca ?? ''}
+                                          onChange={e => setFormData({...formData, lojaEstoqueMarca: e.target.value})}
+                                          className="w-full px-4 py-2 border rounded-lg"
+                                          placeholder="Ex: Nike"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="block text-sm font-semibold mb-1">Valor (R$) *</label>
+                                        <input
+                                          type="number"
+                                          step="0.01"
+                                          value={formData.lojaEstoqueValor ?? formData.lojaEstoqueEdit?.valor ?? ''}
+                                          onChange={e => setFormData({...formData, lojaEstoqueValor: e.target.value})}
+                                          className="w-full px-4 py-2 border rounded-lg"
+                                          placeholder="99.90"
+                                        />
+                                      </div>
+                                    </div>
+
+                                    <div>
+                                      <label className="block text-sm font-semibold mb-1">URL da Imagem</label>
+                                      <input
+                                        type="text"
+                                        value={formData.lojaEstoqueImagem ?? formData.lojaEstoqueEdit?.imagem_url ?? ''}
+                                        onChange={e => setFormData({...formData, lojaEstoqueImagem: e.target.value})}
+                                        className="w-full px-4 py-2 border rounded-lg"
+                                        placeholder="https://..."
+                                      />
+                                    </div>
+
+                                    <div className="flex items-center gap-2">
+                                      <input
+                                        type="checkbox"
+                                        id="temTamanho"
+                                        checked={formData.lojaEstoqueTemTamanho ?? formData.lojaEstoqueEdit?.tem_tamanho ?? false}
+                                        onChange={e => setFormData({...formData, lojaEstoqueTemTamanho: e.target.checked})}
+                                        className="w-5 h-5"
+                                      />
+                                      <label htmlFor="temTamanho" className="text-sm font-semibold">Este produto tem tamanhos</label>
+                                    </div>
+
+                                    {(formData.lojaEstoqueTemTamanho ?? formData.lojaEstoqueEdit?.tem_tamanho) ? (
+                                      <div>
+                                        <label className="block text-sm font-semibold mb-2">Tamanhos e Quantidades</label>
+                                        <div className="space-y-2">
+                                          {['PP', 'P', 'M', 'G', 'GG', 'XG', 'XXG'].map(tam => {
+                                            const tamanhoExistente = (formData.lojaEstoqueEdit?.tamanhos || []).find(t => t.tamanho === tam);
+                                            return (
+                                              <div key={tam} className="flex items-center gap-2">
+                                                <span className="w-12 text-sm font-semibold">{tam}</span>
+                                                <input
+                                                  type="number"
+                                                  min="0"
+                                                  value={formData[`lojaEstoqueTam_${tam}`] ?? tamanhoExistente?.quantidade ?? 0}
+                                                  onChange={e => setFormData({...formData, [`lojaEstoqueTam_${tam}`]: parseInt(e.target.value) || 0})}
+                                                  className="flex-1 px-3 py-1 border rounded"
+                                                  placeholder="0"
+                                                />
+                                              </div>
+                                            );
+                                          })}
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <div>
+                                        <label className="block text-sm font-semibold mb-1">Quantidade em Estoque *</label>
+                                        <input
+                                          type="number"
+                                          min="0"
+                                          value={formData.lojaEstoqueQtd ?? formData.lojaEstoqueEdit?.quantidade ?? 0}
+                                          onChange={e => setFormData({...formData, lojaEstoqueQtd: parseInt(e.target.value) || 0})}
+                                          className="w-full px-4 py-2 border rounded-lg"
+                                        />
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  <div className="flex gap-3 mt-6">
+                                    <button
+                                      onClick={() => setFormData({...formData, lojaEstoqueModal: false, lojaEstoqueEdit: null, lojaEstoqueNome: '', lojaEstoqueMarca: '', lojaEstoqueValor: '', lojaEstoqueImagem: '', lojaEstoqueTemTamanho: false, lojaEstoqueQtd: 0})}
+                                      className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold"
+                                    >Cancelar</button>
+                                    <button
+                                      onClick={async () => {
+                                        const nome = formData.lojaEstoqueNome ?? formData.lojaEstoqueEdit?.nome;
+                                        const valor = formData.lojaEstoqueValor ?? formData.lojaEstoqueEdit?.valor;
+                                        if (!nome || !valor) { showToast('Preencha nome e valor', 'error'); return; }
+                                        
+                                        const temTamanho = formData.lojaEstoqueTemTamanho ?? formData.lojaEstoqueEdit?.tem_tamanho;
+                                        let tamanhos = [];
+                                        if (temTamanho) {
+                                          ['PP', 'P', 'M', 'G', 'GG', 'XG', 'XXG'].forEach(tam => {
+                                            const qtd = formData[`lojaEstoqueTam_${tam}`] ?? (formData.lojaEstoqueEdit?.tamanhos || []).find(t => t.tamanho === tam)?.quantidade ?? 0;
+                                            if (qtd > 0) tamanhos.push({ tamanho: tam, quantidade: qtd });
+                                          });
+                                        }
+                                        
+                                        const body = {
+                                          nome,
+                                          marca: formData.lojaEstoqueMarca ?? formData.lojaEstoqueEdit?.marca ?? '',
+                                          valor: parseFloat(valor),
+                                          quantidade: temTamanho ? 0 : (formData.lojaEstoqueQtd ?? formData.lojaEstoqueEdit?.quantidade ?? 0),
+                                          tem_tamanho: temTamanho,
+                                          tamanhos,
+                                          imagem_url: formData.lojaEstoqueImagem ?? formData.lojaEstoqueEdit?.imagem_url ?? '',
+                                          created_by: user.fullName
+                                        };
+                                        
+                                        if (formData.lojaEstoqueEdit) {
+                                          await fetch(`${API_URL}/loja/estoque/${formData.lojaEstoqueEdit.id}`, {
+                                            method: 'PUT',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify(body)
+                                          });
+                                          showToast('✅ Item atualizado!', 'success');
+                                        } else {
+                                          await fetch(`${API_URL}/loja/estoque`, {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify(body)
+                                          });
+                                          showToast('✅ Item adicionado!', 'success');
+                                        }
+                                        
+                                        setFormData({...formData, lojaEstoqueModal: false, lojaEstoqueEdit: null, lojaEstoqueNome: '', lojaEstoqueMarca: '', lojaEstoqueValor: '', lojaEstoqueImagem: '', lojaEstoqueTemTamanho: false, lojaEstoqueQtd: 0});
+                                        loadLojaEstoque();
+                                      }}
+                                      className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
+                                    >{formData.lojaEstoqueEdit ? '💾 Salvar' : '➕ Adicionar'}</button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      )}
+
+                      {/* SUB-ABA PRODUTOS À VENDA */}
+                      {lojaSubTab === 'produtos' && (
+                        <>
+                          <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-xl font-bold text-gray-800">🏷️ Produtos à Venda</h2>
+                            <button
+                              onClick={() => {
+                                loadLojaEstoque();
+                                setFormData({...formData, lojaProdutoModal: true, lojaProdutoEdit: null});
+                              }}
+                              className="px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
+                            >
+                              ➕ Novo Produto
+                            </button>
+                          </div>
+
+                          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {lojaProdutos.length === 0 ? (
+                              <p className="text-gray-500 text-center py-8 col-span-full">Nenhum produto cadastrado</p>
+                            ) : lojaProdutos.map(prod => (
+                              <div key={prod.id} className={`border rounded-xl overflow-hidden hover:shadow-lg transition-shadow ${prod.status !== 'ativo' ? 'opacity-60' : ''}`}>
+                                {prod.imagem_url && (
+                                  <img src={prod.imagem_url} alt={prod.nome} className="w-full h-40 object-cover" />
+                                )}
+                                <div className="p-4">
+                                  <div className="flex justify-between items-start mb-2">
+                                    <h3 className="font-bold text-gray-800">{prod.nome}</h3>
+                                    <span className={`px-2 py-0.5 rounded text-xs font-bold ${prod.status === 'ativo' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                      {prod.status === 'ativo' ? 'Ativo' : 'Inativo'}
+                                    </span>
+                                  </div>
+                                  {prod.marca && <p className="text-sm text-gray-500">{prod.marca}</p>}
+                                  <p className="text-xl font-bold text-green-600 mt-2">R$ {parseFloat(prod.valor).toFixed(2).replace('.', ',')}</p>
+                                  
+                                  <div className="mt-3 text-xs text-gray-500">
+                                    <p>💵 À vista: {prod.abatimento_avista}%</p>
+                                    <p>📅 2 sem: {prod.abatimento_2semanas}% | 3 sem: {prod.abatimento_3semanas}% | 4 sem: {prod.abatimento_4semanas}%</p>
+                                  </div>
+                                  
+                                  <div className="flex gap-2 mt-3">
+                                    <button
+                                      onClick={() => setFormData({...formData, lojaProdutoModal: true, lojaProdutoEdit: prod})}
+                                      className="flex-1 px-3 py-1 bg-blue-100 text-blue-700 rounded text-xs font-semibold hover:bg-blue-200"
+                                    >✏️ Editar</button>
+                                    <button
+                                      onClick={async () => {
+                                        if (!confirm('Excluir este produto?')) return;
+                                        await fetch(`${API_URL}/loja/produtos/${prod.id}`, { method: 'DELETE' });
+                                        loadLojaProdutos();
+                                        showToast('🗑️ Produto excluído!', 'success');
+                                      }}
+                                      className="px-3 py-1 bg-red-100 text-red-700 rounded text-xs font-semibold hover:bg-red-200"
+                                    >🗑️</button>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Modal de Produto */}
+                          {formData.lojaProdutoModal && (
+                            <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+                              <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+                                <div className="p-6">
+                                  <h2 className="text-xl font-bold mb-4">{formData.lojaProdutoEdit ? '✏️ Editar Produto' : '➕ Novo Produto à Venda'}</h2>
+                                  
+                                  <div className="space-y-4">
+                                    <div>
+                                      <label className="block text-sm font-semibold mb-1">Produto do Estoque *</label>
+                                      <select
+                                        value={formData.lojaProdutoEstoqueId ?? formData.lojaProdutoEdit?.estoque_id ?? ''}
+                                        onChange={e => {
+                                          const est = lojaEstoque.find(x => x.id === parseInt(e.target.value));
+                                          setFormData({
+                                            ...formData,
+                                            lojaProdutoEstoqueId: e.target.value,
+                                            lojaProdutoNome: est?.nome || '',
+                                            lojaProdutoMarca: est?.marca || '',
+                                            lojaProdutoValor: est?.valor || '',
+                                            lojaProdutoImagem: est?.imagem_url || ''
+                                          });
+                                        }}
+                                        className="w-full px-4 py-2 border rounded-lg bg-white"
+                                      >
+                                        <option value="">Selecione...</option>
+                                        {lojaEstoque.filter(e => e.status === 'ativo').map(e => (
+                                          <option key={e.id} value={e.id}>{e.nome} - R$ {parseFloat(e.valor).toFixed(2)}</option>
+                                        ))}
+                                      </select>
+                                    </div>
+
+                                    <div>
+                                      <label className="block text-sm font-semibold mb-1">Nome do Produto *</label>
+                                      <input
+                                        type="text"
+                                        value={formData.lojaProdutoNome ?? formData.lojaProdutoEdit?.nome ?? ''}
+                                        onChange={e => setFormData({...formData, lojaProdutoNome: e.target.value})}
+                                        className="w-full px-4 py-2 border rounded-lg"
+                                      />
+                                    </div>
+
+                                    <div>
+                                      <label className="block text-sm font-semibold mb-1">Descrição</label>
+                                      <textarea
+                                        value={formData.lojaProdutoDesc ?? formData.lojaProdutoEdit?.descricao ?? ''}
+                                        onChange={e => setFormData({...formData, lojaProdutoDesc: e.target.value})}
+                                        className="w-full px-4 py-2 border rounded-lg"
+                                        rows={3}
+                                        placeholder="Descreva o produto..."
+                                      />
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                      <div>
+                                        <label className="block text-sm font-semibold mb-1">Marca</label>
+                                        <input
+                                          type="text"
+                                          value={formData.lojaProdutoMarca ?? formData.lojaProdutoEdit?.marca ?? ''}
+                                          onChange={e => setFormData({...formData, lojaProdutoMarca: e.target.value})}
+                                          className="w-full px-4 py-2 border rounded-lg"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="block text-sm font-semibold mb-1">Valor (R$) *</label>
+                                        <input
+                                          type="number"
+                                          step="0.01"
+                                          value={formData.lojaProdutoValor ?? formData.lojaProdutoEdit?.valor ?? ''}
+                                          onChange={e => setFormData({...formData, lojaProdutoValor: e.target.value})}
+                                          className="w-full px-4 py-2 border rounded-lg"
+                                        />
+                                      </div>
+                                    </div>
+
+                                    <div>
+                                      <label className="block text-sm font-semibold mb-1">URL da Imagem</label>
+                                      <input
+                                        type="text"
+                                        value={formData.lojaProdutoImagem ?? formData.lojaProdutoEdit?.imagem_url ?? ''}
+                                        onChange={e => setFormData({...formData, lojaProdutoImagem: e.target.value})}
+                                        className="w-full px-4 py-2 border rounded-lg"
+                                      />
+                                    </div>
+
+                                    <div className="bg-purple-50 rounded-lg p-4">
+                                      <h3 className="font-bold text-purple-800 mb-3">💰 Abatimentos (%)</h3>
+                                      <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                          <label className="block text-xs text-gray-600 mb-1">À Vista</label>
+                                          <input
+                                            type="number"
+                                            step="0.1"
+                                            value={formData.lojaProdutoAbatAvista ?? formData.lojaProdutoEdit?.abatimento_avista ?? 0}
+                                            onChange={e => setFormData({...formData, lojaProdutoAbatAvista: e.target.value})}
+                                            className="w-full px-3 py-2 border rounded"
+                                          />
+                                        </div>
+                                        <div>
+                                          <label className="block text-xs text-gray-600 mb-1">2 Semanas</label>
+                                          <input
+                                            type="number"
+                                            step="0.1"
+                                            value={formData.lojaProdutoAbat2sem ?? formData.lojaProdutoEdit?.abatimento_2semanas ?? 0}
+                                            onChange={e => setFormData({...formData, lojaProdutoAbat2sem: e.target.value})}
+                                            className="w-full px-3 py-2 border rounded"
+                                          />
+                                        </div>
+                                        <div>
+                                          <label className="block text-xs text-gray-600 mb-1">3 Semanas</label>
+                                          <input
+                                            type="number"
+                                            step="0.1"
+                                            value={formData.lojaProdutoAbat3sem ?? formData.lojaProdutoEdit?.abatimento_3semanas ?? 0}
+                                            onChange={e => setFormData({...formData, lojaProdutoAbat3sem: e.target.value})}
+                                            className="w-full px-3 py-2 border rounded"
+                                          />
+                                        </div>
+                                        <div>
+                                          <label className="block text-xs text-gray-600 mb-1">4 Semanas</label>
+                                          <input
+                                            type="number"
+                                            step="0.1"
+                                            value={formData.lojaProdutoAbat4sem ?? formData.lojaProdutoEdit?.abatimento_4semanas ?? 0}
+                                            onChange={e => setFormData({...formData, lojaProdutoAbat4sem: e.target.value})}
+                                            className="w-full px-3 py-2 border rounded"
+                                          />
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex gap-3 mt-6">
+                                    <button
+                                      onClick={() => setFormData({...formData, lojaProdutoModal: false, lojaProdutoEdit: null})}
+                                      className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold"
+                                    >Cancelar</button>
+                                    <button
+                                      onClick={async () => {
+                                        const nome = formData.lojaProdutoNome ?? formData.lojaProdutoEdit?.nome;
+                                        const valor = formData.lojaProdutoValor ?? formData.lojaProdutoEdit?.valor;
+                                        if (!nome || !valor) { showToast('Preencha nome e valor', 'error'); return; }
+                                        
+                                        const body = {
+                                          estoque_id: formData.lojaProdutoEstoqueId ?? formData.lojaProdutoEdit?.estoque_id,
+                                          nome,
+                                          descricao: formData.lojaProdutoDesc ?? formData.lojaProdutoEdit?.descricao ?? '',
+                                          marca: formData.lojaProdutoMarca ?? formData.lojaProdutoEdit?.marca ?? '',
+                                          valor: parseFloat(valor),
+                                          imagem_url: formData.lojaProdutoImagem ?? formData.lojaProdutoEdit?.imagem_url ?? '',
+                                          abatimento_avista: parseFloat(formData.lojaProdutoAbatAvista ?? formData.lojaProdutoEdit?.abatimento_avista ?? 0),
+                                          abatimento_2semanas: parseFloat(formData.lojaProdutoAbat2sem ?? formData.lojaProdutoEdit?.abatimento_2semanas ?? 0),
+                                          abatimento_3semanas: parseFloat(formData.lojaProdutoAbat3sem ?? formData.lojaProdutoEdit?.abatimento_3semanas ?? 0),
+                                          abatimento_4semanas: parseFloat(formData.lojaProdutoAbat4sem ?? formData.lojaProdutoEdit?.abatimento_4semanas ?? 0),
+                                          created_by: user.fullName
+                                        };
+                                        
+                                        if (formData.lojaProdutoEdit) {
+                                          await fetch(`${API_URL}/loja/produtos/${formData.lojaProdutoEdit.id}`, {
+                                            method: 'PUT',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({...body, status: formData.lojaProdutoEdit.status})
+                                          });
+                                          showToast('✅ Produto atualizado!', 'success');
+                                        } else {
+                                          await fetch(`${API_URL}/loja/produtos`, {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify(body)
+                                          });
+                                          showToast('✅ Produto adicionado!', 'success');
+                                        }
+                                        
+                                        setFormData({...formData, lojaProdutoModal: false, lojaProdutoEdit: null});
+                                        loadLojaProdutos();
+                                      }}
+                                      className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
+                                    >{formData.lojaProdutoEdit ? '💾 Salvar' : '➕ Adicionar'}</button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      )}
+
+                      {/* SUB-ABA PEDIDOS */}
+                      {lojaSubTab === 'pedidos' && (
+                        <>
+                          <h2 className="text-xl font-bold text-gray-800 mb-6">🛍️ Pedidos</h2>
+                          
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                              <thead className="bg-gray-50">
+                                <tr>
+                                  <th className="px-4 py-3 text-left">Data</th>
+                                  <th className="px-4 py-3 text-left">Profissional</th>
+                                  <th className="px-4 py-3 text-left">Produto</th>
+                                  <th className="px-4 py-3 text-center">Tamanho</th>
+                                  <th className="px-4 py-3 text-right">Valor</th>
+                                  <th className="px-4 py-3 text-center">Parcelamento</th>
+                                  <th className="px-4 py-3 text-center">Status</th>
+                                  <th className="px-4 py-3 text-center">Ações</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {lojaPedidos.length === 0 ? (
+                                  <tr><td colSpan="8" className="text-center py-8 text-gray-500">Nenhum pedido</td></tr>
+                                ) : lojaPedidos.map(ped => (
+                                  <tr key={ped.id} className="border-t hover:bg-gray-50">
+                                    <td className="px-4 py-3 text-xs">{new Date(ped.created_at).toLocaleDateString('pt-BR')}</td>
+                                    <td className="px-4 py-3">
+                                      <p className="font-semibold">{ped.user_name}</p>
+                                      <p className="text-xs text-gray-500">COD: {ped.user_cod}</p>
+                                    </td>
+                                    <td className="px-4 py-3">{ped.produto_nome}</td>
+                                    <td className="px-4 py-3 text-center">{ped.tamanho || '-'}</td>
+                                    <td className="px-4 py-3 text-right">
+                                      <p className="font-bold">R$ {parseFloat(ped.valor_final).toFixed(2).replace('.', ',')}</p>
+                                      {ped.parcelas > 1 && <p className="text-xs text-gray-500">{ped.parcelas}x de R$ {parseFloat(ped.valor_parcela).toFixed(2).replace('.', ',')}</p>}
+                                    </td>
+                                    <td className="px-4 py-3 text-center text-xs">{ped.tipo_abatimento}</td>
+                                    <td className="px-4 py-3 text-center">
+                                      <span className={`px-2 py-1 rounded text-xs font-bold ${
+                                        ped.status === 'pendente' ? 'bg-yellow-100 text-yellow-700' :
+                                        ped.status === 'aprovado' ? 'bg-green-100 text-green-700' :
+                                        ped.status === 'rejeitado' ? 'bg-red-100 text-red-700' :
+                                        'bg-gray-100 text-gray-700'
+                                      }`}>
+                                        {ped.status === 'pendente' ? '⏳ Pendente' : ped.status === 'aprovado' ? '✅ Aprovado' : ped.status === 'rejeitado' ? '❌ Rejeitado' : ped.status}
+                                      </span>
+                                    </td>
+                                    <td className="px-4 py-3 text-center">
+                                      {ped.status === 'pendente' && (
+                                        <div className="flex gap-1 justify-center">
+                                          <button
+                                            onClick={async () => {
+                                              await fetch(`${API_URL}/loja/pedidos/${ped.id}`, {
+                                                method: 'PATCH',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({ status: 'aprovado', admin_id: user.codProfissional, admin_name: user.fullName })
+                                              });
+                                              loadLojaPedidos();
+                                              showToast('✅ Pedido aprovado!', 'success');
+                                            }}
+                                            className="px-2 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700"
+                                          >✅</button>
+                                          <button
+                                            onClick={async () => {
+                                              const motivo = prompt('Motivo da rejeição:');
+                                              if (!motivo) return;
+                                              await fetch(`${API_URL}/loja/pedidos/${ped.id}`, {
+                                                method: 'PATCH',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({ status: 'rejeitado', admin_id: user.codProfissional, admin_name: user.fullName, observacao: motivo })
+                                              });
+                                              loadLojaPedidos();
+                                              showToast('❌ Pedido rejeitado', 'success');
+                                            }}
+                                            className="px-2 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700"
+                                          >❌</button>
+                                        </div>
+                                      )}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </>
               )}
