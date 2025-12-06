@@ -4076,19 +4076,24 @@
                   </div>
                   <div className="bg-white rounded-xl shadow overflow-hidden">
                     <table className="w-full text-sm">
-                      <thead className="bg-gray-50"><tr><th className="px-4 py-3 text-left">Data</th><th className="px-4 py-3 text-left">Nome</th><th className="px-4 py-3 text-left">CPF</th><th className="px-4 py-3 text-left">Código</th><th className="px-4 py-3 text-right">Solicitado</th><th className="px-4 py-3 text-right">Valor Profissional</th><th className="px-4 py-3 text-center">Gratuidade</th><th className="px-4 py-3 text-center">OMIE</th></tr></thead>
+                      <thead className="bg-gray-50"><tr><th className="px-4 py-3 text-left">Datas</th><th className="px-4 py-3 text-left">Nome</th><th className="px-4 py-3 text-left">CPF</th><th className="px-4 py-3 text-left">Código</th><th className="px-4 py-3 text-right">Solicitado</th><th className="px-4 py-3 text-right">Valor Profissional</th><th className="px-4 py-3 text-center">Gratuidade</th><th className="px-4 py-3 text-center">OMIE</th></tr></thead>
                       <tbody>
                         {allWithdrawals.filter(w => w.status?.includes('aprovado')).map(w => {
-                          const dataObj = new Date(w.created_at);
-                          const dataFormatada = dataObj.toLocaleDateString('pt-BR');
-                          const horaFormatada = dataObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                          const dataSolicitado = new Date(w.created_at);
+                          const dataSolicitadoFormatada = dataSolicitado.toLocaleDateString('pt-BR');
+                          const horaSolicitadoFormatada = dataSolicitado.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                          
+                          const dataRealizado = w.approved_at ? new Date(w.approved_at) : null;
+                          const dataRealizadoFormatada = dataRealizado ? dataRealizado.toLocaleDateString('pt-BR') : '-';
+                          const horaRealizadoFormatada = dataRealizado ? dataRealizado.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '';
+                          
                           const isGratuidade = w.has_gratuity;
                           return (
-                          <tr key={w.id} className={`border-t hover:bg-gray-50 ${isGratuidade ? 'bg-emerald-50' : ''}`}>
+                          <tr key={w.id} className={`border-t hover:bg-gray-50 ${isGratuidade ? 'bg-emerald-50 border-l-4 border-l-emerald-500' : ''}`}>
                             <td className="px-4 py-3">
-                              <div className="flex flex-col">
-                                <span className="font-medium text-xs">{dataFormatada}</span>
-                                <span className="text-[10px] text-gray-500">{horaFormatada}</span>
+                              <div className="flex flex-col text-[10px]">
+                                <span className="text-gray-600">Solicitado: <span className="font-medium text-gray-800">{dataSolicitadoFormatada}</span> às <span className="font-medium text-gray-800">{horaSolicitadoFormatada}</span></span>
+                                <span className="text-green-600">Realizado: <span className="font-medium text-green-700">{dataRealizadoFormatada}</span>{horaRealizadoFormatada && <> às <span className="font-medium text-green-700">{horaRealizadoFormatada}</span></>}</span>
                               </div>
                             </td>
                             <td className="px-4 py-3">{w.user_name}</td>
@@ -4177,18 +4182,26 @@
                           </div>
                           <div className="overflow-x-auto">
                             <table className="w-full text-sm">
-                              <thead className="bg-gray-50"><tr><th className="px-4 py-3 text-left">Data</th><th className="px-4 py-3 text-left">Nome</th><th className="px-4 py-3 text-left">CPF</th><th className="px-4 py-3 text-left">Código</th><th className="px-4 py-3 text-right">Solicitado</th><th className="px-4 py-3 text-right">Valor Profissional</th><th className="px-4 py-3 text-left">PIX</th><th className="px-4 py-3 text-center">Gratuidade</th><th className="px-4 py-3 text-center">Status</th></tr></thead>
+                              <thead className="bg-gray-50"><tr><th className="px-4 py-3 text-left">Datas</th><th className="px-4 py-3 text-left">Nome</th><th className="px-4 py-3 text-left">CPF</th><th className="px-4 py-3 text-left">Código</th><th className="px-4 py-3 text-right">Solicitado</th><th className="px-4 py-3 text-right">Valor Profissional</th><th className="px-4 py-3 text-left">PIX</th><th className="px-4 py-3 text-center">Gratuidade</th><th className="px-4 py-3 text-center">Status</th></tr></thead>
                               <tbody>
                                 {filtered.filter(w => !formData.resumoFilter || w.status === formData.resumoFilter).map(w => {
-                                  const dataObj = new Date(w.created_at);
-                                  const dataFormatada = dataObj.toLocaleDateString('pt-BR');
-                                  const horaFormatada = dataObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                                  const dataSolicitado = new Date(w.created_at);
+                                  const dataSolicitadoFormatada = dataSolicitado.toLocaleDateString('pt-BR');
+                                  const horaSolicitadoFormatada = dataSolicitado.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                                  
+                                  const dataRealizado = w.approved_at ? new Date(w.approved_at) : null;
+                                  const dataRealizadoFormatada = dataRealizado ? dataRealizado.toLocaleDateString('pt-BR') : '-';
+                                  const horaRealizadoFormatada = dataRealizado ? dataRealizado.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '';
+                                  
+                                  const isAprovado = w.status === 'aprovado' || w.status === 'aprovado_gratuidade';
                                   return (
-                                  <tr key={w.id} className={`border-t hover:bg-gray-50 ${w.has_gratuity ? 'bg-emerald-50' : ''} ${w.is_restricted ? 'row-red' : ''}`}>
+                                  <tr key={w.id} className={`border-t hover:bg-gray-50 ${w.has_gratuity ? 'bg-emerald-50 border-l-4 border-l-emerald-500' : ''} ${w.is_restricted ? 'row-red' : ''}`}>
                                     <td className="px-4 py-3">
-                                      <div className="flex flex-col">
-                                        <span className="font-medium text-xs">{dataFormatada}</span>
-                                        <span className="text-[10px] text-gray-500">{horaFormatada}</span>
+                                      <div className="flex flex-col text-[10px]">
+                                        <span className="text-gray-600">Solicitado: <span className="font-medium text-gray-800">{dataSolicitadoFormatada}</span> às <span className="font-medium text-gray-800">{horaSolicitadoFormatada}</span></span>
+                                        {isAprovado && (
+                                          <span className="text-green-600">Realizado: <span className="font-medium text-green-700">{dataRealizadoFormatada}</span>{horaRealizadoFormatada && <> às <span className="font-medium text-green-700">{horaRealizadoFormatada}</span></>}</span>
+                                        )}
                                       </div>
                                     </td>
                                     <td className="px-4 py-3">{w.user_name}</td>
