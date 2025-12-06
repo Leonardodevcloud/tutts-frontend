@@ -96,46 +96,66 @@
 
     // Função para formatar a chave PIX conforme o tipo
     const formatarChavePix = (chave) => {
-      // Remove espaços extras
-      let chaveFormatada = chave.trim();
+      // Remove espaços extras no início e fim
+      let chaveOriginal = chave.trim();
       
-      // Remove caracteres especiais para análise
-      const apenasNumeros = chaveFormatada.replace(/\D/g, '');
-      
-      // Detecta o tipo de chave e formata adequadamente
-      
-      // CPF: 11 dígitos (formato: 12345678901)
-      if (apenasNumeros.length === 11 && !chaveFormatada.includes('@') && !chaveFormatada.startsWith('+')) {
-        // Retorna apenas os números, sem formatação
-        return apenasNumeros;
+      // Se é e-mail, retorna em lowercase e limpo
+      if (chaveOriginal.includes('@')) {
+        return chaveOriginal.toLowerCase().trim();
       }
       
-      // CNPJ: 14 dígitos (formato: 12345678000199)
-      if (apenasNumeros.length === 14 && !chaveFormatada.includes('@')) {
-        // Retorna apenas os números, sem formatação
-        return apenasNumeros;
+      // Se contém letras (mas não é email), provavelmente é chave aleatória
+      if (/[a-zA-Z]/.test(chaveOriginal)) {
+        return chaveOriginal;
       }
       
-      // Telefone: começa com + ou tem 10-11 dígitos (DDD + número)
-      // Formato esperado: +5511999999999
-      if (chaveFormatada.startsWith('+')) {
-        // Já tem o +, mantém apenas números e o +
-        return '+' + apenasNumeros;
-      }
+      // Remove TUDO que não é número para análise
+      const apenasNumeros = chaveOriginal.replace(/\D/g, '');
       
-      // Telefone sem o +55 (10 ou 11 dígitos = DDD + número)
-      if ((apenasNumeros.length === 10 || apenasNumeros.length === 11) && !chaveFormatada.includes('@')) {
-        // Adiciona +55 na frente
+      // REGRA 1: Se tem parênteses, É TELEFONE com certeza
+      if (chaveOriginal.includes('(') || chaveOriginal.includes(')')) {
+        // Telefone: +55 + DDD + número
         return '+55' + apenasNumeros;
       }
       
-      // E-mail ou chave aleatória: retorna como está (lowercase para email)
-      if (chaveFormatada.includes('@')) {
-        return chaveFormatada.toLowerCase();
+      // REGRA 2: CNPJ = 14 dígitos
+      if (apenasNumeros.length === 14) {
+        return apenasNumeros;
       }
       
-      // Chave aleatória (UUID): retorna como está
-      return chaveFormatada;
+      // REGRA 3: Telefone com +55 já = 13 dígitos começando com 55
+      if (apenasNumeros.length === 13 && apenasNumeros.startsWith('55')) {
+        return '+' + apenasNumeros;
+      }
+      
+      // REGRA 4: Telefone fixo = 10 dígitos (DDD + 8 dígitos)
+      if (apenasNumeros.length === 10) {
+        return '+55' + apenasNumeros;
+      }
+      
+      // REGRA 5: 11 dígitos = CPF ou Celular
+      if (apenasNumeros.length === 11) {
+        // Se tem ponto E traço, é CPF formatado
+        if (chaveOriginal.includes('.') && chaveOriginal.includes('-')) {
+          return apenasNumeros;
+        }
+        
+        // Se terceiro dígito é 9, é CELULAR (celulares começam com 9)
+        if (apenasNumeros.charAt(2) === '9') {
+          return '+55' + apenasNumeros;
+        }
+        
+        // Caso contrário, é CPF
+        return apenasNumeros;
+      }
+      
+      // Se começa com +, mantém formatação
+      if (chaveOriginal.startsWith('+')) {
+        return '+' + apenasNumeros;
+      }
+      
+      // Fallback: retorna só números ou original
+      return apenasNumeros || chaveOriginal;
     };
 
     // Função para gerar código PIX no padrão BR Code EMV
@@ -306,8 +326,12 @@
                     <p className="font-semibold text-gray-800">{withdrawal.user_cod}</p>
                   </div>
                   <div className="col-span-2">
-                    <p className="text-gray-500 text-xs">Chave PIX</p>
+                    <p className="text-gray-500 text-xs">Chave PIX (original)</p>
                     <p className="font-semibold text-gray-800 text-sm break-all">{withdrawal.pix_key}</p>
+                  </div>
+                  <div className="col-span-2">
+                    <p className="text-gray-500 text-xs">Chave PIX (formatada para envio)</p>
+                    <p className="font-semibold text-blue-600 text-sm break-all font-mono">{formatarChavePix(withdrawal.pix_key)}</p>
                   </div>
                   <div className="col-span-2">
                     <p className="text-gray-500 text-xs">Valor a Transferir</p>
