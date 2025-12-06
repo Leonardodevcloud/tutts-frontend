@@ -94,10 +94,56 @@
       return `${id}${tamanho}${valor}`;
     };
 
+    // Função para formatar a chave PIX conforme o tipo
+    const formatarChavePix = (chave) => {
+      // Remove espaços extras
+      let chaveFormatada = chave.trim();
+      
+      // Remove caracteres especiais para análise
+      const apenasNumeros = chaveFormatada.replace(/\D/g, '');
+      
+      // Detecta o tipo de chave e formata adequadamente
+      
+      // CPF: 11 dígitos (formato: 12345678901)
+      if (apenasNumeros.length === 11 && !chaveFormatada.includes('@') && !chaveFormatada.startsWith('+')) {
+        // Retorna apenas os números, sem formatação
+        return apenasNumeros;
+      }
+      
+      // CNPJ: 14 dígitos (formato: 12345678000199)
+      if (apenasNumeros.length === 14 && !chaveFormatada.includes('@')) {
+        // Retorna apenas os números, sem formatação
+        return apenasNumeros;
+      }
+      
+      // Telefone: começa com + ou tem 10-11 dígitos (DDD + número)
+      // Formato esperado: +5511999999999
+      if (chaveFormatada.startsWith('+')) {
+        // Já tem o +, mantém apenas números e o +
+        return '+' + apenasNumeros;
+      }
+      
+      // Telefone sem o +55 (10 ou 11 dígitos = DDD + número)
+      if ((apenasNumeros.length === 10 || apenasNumeros.length === 11) && !chaveFormatada.includes('@')) {
+        // Adiciona +55 na frente
+        return '+55' + apenasNumeros;
+      }
+      
+      // E-mail ou chave aleatória: retorna como está (lowercase para email)
+      if (chaveFormatada.includes('@')) {
+        return chaveFormatada.toLowerCase();
+      }
+      
+      // Chave aleatória (UUID): retorna como está
+      return chaveFormatada;
+    };
+
     // Função para gerar código PIX no padrão BR Code EMV
     const generatePixCode = (pixKey, valor, nomeRecebedor, cidade = 'BRASILIA') => {
+      // Formatar a chave PIX conforme o tipo
+      const chaveFormatada = formatarChavePix(pixKey);
+      
       // Limpar e formatar dados
-      const chaveLimpa = pixKey.trim();
       const nomeLimpo = nomeRecebedor
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '') // Remove acentos
@@ -117,7 +163,7 @@
       // Montar Merchant Account Information (ID 26)
       // GUI (ID 00) + Chave PIX (ID 01)
       const gui = montarCampo('00', 'br.gov.bcb.pix');
-      const chave = montarCampo('01', chaveLimpa);
+      const chave = montarCampo('01', chaveFormatada);
       const merchantAccountInfo = gui + chave;
       
       // Montar Additional Data Field Template (ID 62)
@@ -4219,7 +4265,7 @@
                                   onClick={() => setPixQRModal(w)}
                                   className="text-lg hover:scale-125 transition-transform"
                                   title="Gerar QR Code PIX"
-                                >📱</button>
+                                >💠</button>
                               </div>
                               {w.has_gratuity && (
                                 <p className="text-[10px] font-bold text-emerald-700 mt-0.5">🎁 GRATUIDADE</p>
