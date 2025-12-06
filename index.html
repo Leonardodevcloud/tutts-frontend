@@ -6213,14 +6213,83 @@
                                     </div>
 
                                     <div>
-                                      <label className="block text-sm font-semibold mb-1">URL da Imagem</label>
-                                      <input
-                                        type="text"
-                                        value={formData.lojaEstoqueImagem ?? formData.lojaEstoqueEdit?.imagem_url ?? ''}
-                                        onChange={e => setFormData({...formData, lojaEstoqueImagem: e.target.value})}
-                                        className="w-full px-4 py-2 border rounded-lg"
-                                        placeholder="https://..."
-                                      />
+                                      <label className="block text-sm font-semibold mb-1">Imagem do Produto</label>
+                                      <div className="space-y-2">
+                                        {/* Preview da imagem */}
+                                        {(formData.lojaEstoqueImagem || formData.lojaEstoqueEdit?.imagem_url) && (
+                                          <div className="relative inline-block">
+                                            <img 
+                                              src={formData.lojaEstoqueImagem || formData.lojaEstoqueEdit?.imagem_url} 
+                                              alt="Preview" 
+                                              className="w-20 h-20 object-cover rounded-lg border"
+                                            />
+                                            <button
+                                              type="button"
+                                              onClick={() => setFormData({...formData, lojaEstoqueImagem: ''})}
+                                              className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full text-xs hover:bg-red-600"
+                                            >✕</button>
+                                          </div>
+                                        )}
+                                        
+                                        {/* Botão de upload */}
+                                        <label className="block cursor-pointer">
+                                          <div className="px-4 py-2 bg-purple-100 text-purple-700 rounded-lg text-center font-semibold hover:bg-purple-200 transition-colors text-sm">
+                                            {formData.uploadingEstoqueImage ? '⏳ Enviando...' : '📷 Fazer Upload'}
+                                          </div>
+                                          <input
+                                            type="file"
+                                            accept="image/*"
+                                            className="hidden"
+                                            disabled={formData.uploadingEstoqueImage}
+                                            onChange={async (e) => {
+                                              const file = e.target.files?.[0];
+                                              if (!file) return;
+                                              
+                                              if (file.size > 5 * 1024 * 1024) {
+                                                showToast('Imagem muito grande (máx 5MB)', 'error');
+                                                return;
+                                              }
+                                              
+                                              setFormData({...formData, uploadingEstoqueImage: true});
+                                              
+                                              try {
+                                                const formDataUpload = new FormData();
+                                                formDataUpload.append('image', file);
+                                                
+                                                const res = await fetch('https://api.imgbb.com/1/upload?key=c4e786c17e03ef7bde9e758319d6164f', {
+                                                  method: 'POST',
+                                                  body: formDataUpload
+                                                });
+                                                
+                                                const data = await res.json();
+                                                
+                                                if (data.success) {
+                                                  setFormData({...formData, lojaEstoqueImagem: data.data.url, uploadingEstoqueImage: false});
+                                                  showToast('✅ Imagem enviada!', 'success');
+                                                } else {
+                                                  throw new Error('Falha no upload');
+                                                }
+                                              } catch (err) {
+                                                console.error('Erro upload:', err);
+                                                showToast('Erro ao enviar imagem', 'error');
+                                                setFormData({...formData, uploadingEstoqueImage: false});
+                                              }
+                                            }}
+                                          />
+                                        </label>
+                                        
+                                        {/* Campo URL manual */}
+                                        <details className="text-xs">
+                                          <summary className="cursor-pointer text-gray-500">Ou cole uma URL</summary>
+                                          <input
+                                            type="text"
+                                            placeholder="https://..."
+                                            value={formData.lojaEstoqueImagem ?? formData.lojaEstoqueEdit?.imagem_url ?? ''}
+                                            onChange={e => setFormData({...formData, lojaEstoqueImagem: e.target.value})}
+                                            className="w-full px-3 py-1 border rounded mt-1 text-sm"
+                                          />
+                                        </details>
+                                      </div>
                                     </div>
 
                                     <div className="flex items-center gap-2">
@@ -6455,13 +6524,85 @@
                                     </div>
 
                                     <div>
-                                      <label className="block text-sm font-semibold mb-1">URL da Imagem</label>
-                                      <input
-                                        type="text"
-                                        value={formData.lojaProdutoImagem ?? formData.lojaProdutoEdit?.imagem_url ?? ''}
-                                        onChange={e => setFormData({...formData, lojaProdutoImagem: e.target.value})}
-                                        className="w-full px-4 py-2 border rounded-lg"
-                                      />
+                                      <label className="block text-sm font-semibold mb-1">Imagem do Produto</label>
+                                      <div className="space-y-2">
+                                        {/* Preview da imagem */}
+                                        {(formData.lojaProdutoImagem || formData.lojaProdutoEdit?.imagem_url) && (
+                                          <div className="relative inline-block">
+                                            <img 
+                                              src={formData.lojaProdutoImagem || formData.lojaProdutoEdit?.imagem_url} 
+                                              alt="Preview" 
+                                              className="w-24 h-24 object-cover rounded-lg border"
+                                            />
+                                            <button
+                                              type="button"
+                                              onClick={() => setFormData({...formData, lojaProdutoImagem: ''})}
+                                              className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full text-xs hover:bg-red-600"
+                                            >✕</button>
+                                          </div>
+                                        )}
+                                        
+                                        {/* Botões de upload */}
+                                        <div className="flex gap-2">
+                                          <label className="flex-1 cursor-pointer">
+                                            <div className="px-4 py-2 bg-purple-100 text-purple-700 rounded-lg text-center font-semibold hover:bg-purple-200 transition-colors">
+                                              {formData.uploadingImage ? '⏳ Enviando...' : '📷 Fazer Upload'}
+                                            </div>
+                                            <input
+                                              type="file"
+                                              accept="image/*"
+                                              className="hidden"
+                                              disabled={formData.uploadingImage}
+                                              onChange={async (e) => {
+                                                const file = e.target.files?.[0];
+                                                if (!file) return;
+                                                
+                                                if (file.size > 5 * 1024 * 1024) {
+                                                  showToast('Imagem muito grande (máx 5MB)', 'error');
+                                                  return;
+                                                }
+                                                
+                                                setFormData({...formData, uploadingImage: true});
+                                                
+                                                try {
+                                                  const formDataUpload = new FormData();
+                                                  formDataUpload.append('image', file);
+                                                  
+                                                  const res = await fetch('https://api.imgbb.com/1/upload?key=c4e786c17e03ef7bde9e758319d6164f', {
+                                                    method: 'POST',
+                                                    body: formDataUpload
+                                                  });
+                                                  
+                                                  const data = await res.json();
+                                                  
+                                                  if (data.success) {
+                                                    setFormData({...formData, lojaProdutoImagem: data.data.url, uploadingImage: false});
+                                                    showToast('✅ Imagem enviada!', 'success');
+                                                  } else {
+                                                    throw new Error('Falha no upload');
+                                                  }
+                                                } catch (err) {
+                                                  console.error('Erro upload:', err);
+                                                  showToast('Erro ao enviar imagem', 'error');
+                                                  setFormData({...formData, uploadingImage: false});
+                                                }
+                                              }}
+                                            />
+                                          </label>
+                                        </div>
+                                        
+                                        {/* Campo URL manual (colapsável) */}
+                                        <details className="text-sm">
+                                          <summary className="cursor-pointer text-gray-500 hover:text-gray-700">Ou cole uma URL</summary>
+                                          <input
+                                            type="text"
+                                            placeholder="https://..."
+                                            value={formData.lojaProdutoImagem ?? formData.lojaProdutoEdit?.imagem_url ?? ''}
+                                            onChange={e => setFormData({...formData, lojaProdutoImagem: e.target.value})}
+                                            className="w-full px-3 py-2 border rounded-lg mt-2 text-sm"
+                                          />
+                                        </details>
+                                      </div>
                                     </div>
 
                                     {/* Configuração de Parcelas Dinâmica */}
@@ -6591,27 +6732,6 @@
                                         }
                                         
                                         setFormData({...formData, lojaProdutoModal: false, lojaProdutoEdit: null, lojaProdutoParcelas: null});
-                                        loadLojaProdutos();
-                                      }}
-                                      className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
-                                    >{formData.lojaProdutoEdit ? '💾 Salvar' : '➕ Adicionar'}</button>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </>
-                      )}
-
-                                          await fetch(`${API_URL}/loja/produtos`, {
-                                            method: 'POST',
-                                            headers: { 'Content-Type': 'application/json' },
-                                            body: JSON.stringify(body)
-                                          });
-                                          showToast('✅ Produto adicionado!', 'success');
-                                        }
-                                        
-                                        setFormData({...formData, lojaProdutoModal: false, lojaProdutoEdit: null, lojaParcela1Hab: null, lojaParcela2Hab: null, lojaParcela3Hab: null, lojaParcela4Hab: null, lojaParcela1Valor: null, lojaParcela2Valor: null, lojaParcela3Valor: null, lojaParcela4Valor: null});
                                         loadLojaProdutos();
                                       }}
                                       className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
