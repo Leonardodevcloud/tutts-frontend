@@ -4056,36 +4056,66 @@
                           
                           {/* Slider para aceitar */}
                           <div className="relative">
-                            <p className="text-sm text-gray-500 text-center mb-2">Arraste para concordar e avançar</p>
-                            <div className="relative h-14 bg-gray-200 rounded-full overflow-hidden">
+                            <p className="text-sm text-gray-500 text-center mb-2">Deslize para concordar e avançar</p>
+                            <div className="relative h-16 bg-gray-100 rounded-full overflow-hidden border-2 border-gray-200">
+                              {/* Barra de progresso */}
                               <div 
-                                className="absolute left-0 top-0 h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all"
-                                style={{ width: `${lojaSliderAceito}%` }}
+                                className="absolute left-0 top-0 h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"
+                                style={{ 
+                                  width: `${lojaSliderAceito}%`, 
+                                  transition: 'width 0.1s ease-out'
+                                }}
                               ></div>
-                              <input 
-                                type="range" 
-                                min="0" 
-                                max="100" 
+                              
+                              {/* Input range invisível mas funcional */}
+                              <input
+                                type="range"
+                                min="0"
+                                max="100"
                                 value={lojaSliderAceito}
                                 onChange={(e) => {
                                   const val = parseInt(e.target.value);
                                   setLojaSliderAceito(val);
-                                  if (val >= 95) {
+                                }}
+                                onMouseUp={() => {
+                                  if (lojaSliderAceito >= 85) {
+                                    setLojaSliderAceito(100);
                                     setTimeout(() => setLojaModalBemVindo(false), 300);
+                                  } else {
+                                    setLojaSliderAceito(0);
                                   }
                                 }}
-                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                onTouchEnd={() => {
+                                  if (lojaSliderAceito >= 85) {
+                                    setLojaSliderAceito(100);
+                                    setTimeout(() => setLojaModalBemVindo(false), 300);
+                                  } else {
+                                    setLojaSliderAceito(0);
+                                  }
+                                }}
+                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
+                                style={{ WebkitAppearance: 'none', margin: 0 }}
                               />
+                              
+                              {/* Botão visual */}
                               <div 
-                                className="absolute top-1 h-12 w-12 bg-white rounded-full shadow-lg flex items-center justify-center text-xl transition-all"
-                                style={{ left: `calc(${lojaSliderAceito}% - ${lojaSliderAceito * 0.48}px)` }}
+                                className="absolute top-1/2 -translate-y-1/2 h-12 w-12 bg-white rounded-full shadow-lg flex items-center justify-center text-2xl pointer-events-none z-10 border-2 border-purple-200"
+                                style={{ 
+                                  left: `calc(${Math.min(lojaSliderAceito, 92)}% - ${lojaSliderAceito * 0.4}px + 4px)`,
+                                  transition: 'left 0.1s ease-out'
+                                }}
                               >
-                                {lojaSliderAceito >= 95 ? '✅' : '👉'}
+                                {lojaSliderAceito >= 85 ? '✅' : '👆'}
                               </div>
-                              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-semibold">
-                                {lojaSliderAceito >= 95 ? '✅' : 'Entrar na Loja'}
-                              </span>
+                              
+                              {/* Texto central */}
+                              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                <span className={`font-bold text-sm ${lojaSliderAceito > 30 ? 'text-white' : 'text-gray-400'}`}>
+                                  {lojaSliderAceito >= 85 ? 'Entrando...' : lojaSliderAceito > 10 ? 'Continue →' : 'Arraste para entrar →'}
+                                </span>
+                              </div>
                             </div>
+                            <p className="text-xs text-gray-400 text-center mt-2">Solte no final para confirmar</p>
                           </div>
                         </div>
                       </div>
@@ -4148,9 +4178,9 @@
                                   <span className="text-2xl font-bold text-green-600">
                                     R$ {parseFloat(prod.valor).toFixed(2).replace('.', ',')}
                                   </span>
-                                  {prod.abatimento_avista > 0 && (
+                                  {prod.abatimento_avista > 0 && prod.parcelas_config && prod.parcelas_config.length > 0 && (
                                     <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
-                                      -{prod.abatimento_avista}% à vista
+                                      até {prod.parcelas_config.length} opções de pagamento
                                     </span>
                                   )}
                                 </div>
@@ -4222,44 +4252,65 @@
                           <div className="mb-6">
                             <label className="block text-sm font-semibold mb-2">Forma de Pagamento *</label>
                             <div className="space-y-2">
-                              {[
-                                { id: 'avista', label: 'À Vista', desc: 'Abatimento único', parcelas: 1, desconto: formData.lojaProdutoSelecionado.abatimento_avista },
-                                { id: '2semanas', label: '2 Semanas', desc: '2 abatimentos semanais', parcelas: 2, desconto: formData.lojaProdutoSelecionado.abatimento_2semanas },
-                                { id: '3semanas', label: '3 Semanas', desc: '3 abatimentos semanais', parcelas: 3, desconto: formData.lojaProdutoSelecionado.abatimento_3semanas },
-                                { id: '4semanas', label: '4 Semanas', desc: '4 abatimentos semanais', parcelas: 4, desconto: formData.lojaProdutoSelecionado.abatimento_4semanas },
-                              ].map(opt => {
-                                const valorOriginal = parseFloat(formData.lojaProdutoSelecionado.valor);
-                                const valorDesconto = valorOriginal * (opt.desconto / 100);
-                                const valorFinal = valorOriginal - valorDesconto;
-                                const valorParcela = valorFinal / opt.parcelas;
+                              {(() => {
+                                const parcelas_config = formData.lojaProdutoSelecionado.parcelas_config || [];
                                 
-                                return (
-                                  <button
-                                    key={opt.id}
-                                    onClick={() => setFormData({...formData, lojaCompraTipo: opt.id, lojaCompraParcelas: opt.parcelas, lojaCompraValorFinal: valorFinal, lojaCompraValorParcela: valorParcela, lojaCompraDesconto: valorDesconto})}
-                                    className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
-                                      formData.lojaCompraTipo === opt.id 
-                                        ? 'border-purple-600 bg-purple-50' 
-                                        : 'border-gray-200 hover:border-purple-300'
-                                    }`}
-                                  >
-                                    <div className="flex justify-between items-center">
-                                      <div>
-                                        <p className="font-semibold">{opt.label}</p>
-                                        <p className="text-xs text-gray-500">{opt.desc}</p>
-                                      </div>
-                                      <div className="text-right">
-                                        {opt.desconto > 0 && (
-                                          <p className="text-xs text-green-600 font-semibold">-{opt.desconto}%</p>
-                                        )}
-                                        <p className="font-bold text-purple-700">
-                                          {opt.parcelas > 1 ? `${opt.parcelas}x de ` : ''}R$ {valorParcela.toFixed(2).replace('.', ',')}
-                                        </p>
-                                      </div>
+                                if (parcelas_config.length === 0) {
+                                  return (
+                                    <div className="text-center py-4 text-gray-500">
+                                      <p>Nenhuma opção de pagamento disponível</p>
                                     </div>
-                                  </button>
-                                );
-                              })}
+                                  );
+                                }
+                                
+                                return parcelas_config.map((opt, idx) => {
+                                  const numParcelas = parseInt(opt.parcelas) || 1;
+                                  const valorParcela = parseFloat(opt.valor_parcela) || 0;
+                                  const valorTotal = valorParcela * numParcelas;
+                                  const valorOriginal = parseFloat(formData.lojaProdutoSelecionado.valor);
+                                  const economia = valorOriginal - valorTotal;
+                                  const nomeOpcao = numParcelas === 1 ? 'À Vista' : `${numParcelas}x Semanal`;
+                                  
+                                  return (
+                                    <button
+                                      key={idx}
+                                      onClick={() => setFormData({
+                                        ...formData, 
+                                        lojaCompraTipo: nomeOpcao, 
+                                        lojaCompraParcelas: numParcelas, 
+                                        lojaCompraValorFinal: valorTotal, 
+                                        lojaCompraValorParcela: valorParcela, 
+                                        lojaCompraDesconto: economia > 0 ? economia : 0
+                                      })}
+                                      className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
+                                        formData.lojaCompraTipo === nomeOpcao 
+                                          ? 'border-purple-600 bg-purple-50' 
+                                          : 'border-gray-200 hover:border-purple-300'
+                                      }`}
+                                    >
+                                      <div className="flex justify-between items-center">
+                                        <div>
+                                          <p className="font-semibold">{nomeOpcao}</p>
+                                          <p className="text-xs text-gray-500">
+                                            {numParcelas === 1 ? 'Abatimento único do saldo' : `${numParcelas} abatimentos semanais`}
+                                          </p>
+                                        </div>
+                                        <div className="text-right">
+                                          {economia > 0 && (
+                                            <p className="text-xs text-green-600 font-semibold">Economia R$ {economia.toFixed(2).replace('.', ',')}</p>
+                                          )}
+                                          <p className="font-bold text-purple-700">
+                                            {numParcelas > 1 ? `${numParcelas}x de ` : ''}R$ {valorParcela.toFixed(2).replace('.', ',')}
+                                          </p>
+                                          {numParcelas > 1 && (
+                                            <p className="text-xs text-gray-500">Total: R$ {valorTotal.toFixed(2).replace('.', ',')}</p>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </button>
+                                  );
+                                });
+                              })()}
                             </div>
                           </div>
 
@@ -4317,9 +4368,7 @@
                                     tamanho: formData.lojaCompraTamanho || null,
                                     marca: formData.lojaProdutoSelecionado.marca || null,
                                     valor_original: parseFloat(formData.lojaProdutoSelecionado.valor),
-                                    tipo_abatimento: formData.lojaCompraTipo === 'avista' ? 'À Vista' : 
-                                      formData.lojaCompraTipo === '2semanas' ? '2 Semanas' :
-                                      formData.lojaCompraTipo === '3semanas' ? '3 Semanas' : '4 Semanas',
+                                    tipo_abatimento: formData.lojaCompraTipo,
                                     valor_abatimento: formData.lojaCompraDesconto || 0,
                                     valor_final: formData.lojaCompraValorFinal,
                                     parcelas: formData.lojaCompraParcelas,
@@ -6316,29 +6365,19 @@
                                   <p className="text-xl font-bold text-green-600 mt-2">R$ {parseFloat(prod.valor).toFixed(2).replace('.', ',')}</p>
                                   
                                   <div className="mt-3 text-xs text-gray-500">
-                                    <p>💵 À vista: {prod.abatimento_avista}%</p>
-                                    <p>📅 2 sem: {prod.abatimento_2semanas}% | 3 sem: {prod.abatimento_3semanas}% | 4 sem: {prod.abatimento_4semanas}%</p>
+                                    {prod.parcelas_config && prod.parcelas_config.length > 0 ? (
+                                      <div className="flex flex-wrap gap-1">
+                                        {prod.parcelas_config.map((p, i) => (
+                                          <span key={i} className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded">
+                                            {p.parcelas}x R$ {parseFloat(p.valor_parcela).toFixed(2).replace('.', ',')}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <p className="text-gray-400">Sem parcelas configuradas</p>
+                                    )}
                                   </div>
                                   
-                                  <div className="flex gap-2 mt-3">
-                                    <button
-                                      onClick={() => setFormData({...formData, lojaProdutoModal: true, lojaProdutoEdit: prod})}
-                                      className="flex-1 px-3 py-1 bg-blue-100 text-blue-700 rounded text-xs font-semibold hover:bg-blue-200"
-                                    >✏️ Editar</button>
-                                    <button
-                                      onClick={async () => {
-                                        if (!confirm('Excluir este produto?')) return;
-                                        await fetch(`${API_URL}/loja/produtos/${prod.id}`, { method: 'DELETE' });
-                                        loadLojaProdutos();
-                                        showToast('🗑️ Produto excluído!', 'success');
-                                      }}
-                                      className="px-3 py-1 bg-red-100 text-red-700 rounded text-xs font-semibold hover:bg-red-200"
-                                    >🗑️</button>
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
 
                           {/* Modal de Produto */}
                           {formData.lojaProdutoModal && (
@@ -6404,7 +6443,7 @@
                                         />
                                       </div>
                                       <div>
-                                        <label className="block text-sm font-semibold mb-1">Valor (R$) *</label>
+                                        <label className="block text-sm font-semibold mb-1">Valor Original (R$)</label>
                                         <input
                                           type="number"
                                           step="0.01"
@@ -6425,56 +6464,84 @@
                                       />
                                     </div>
 
+                                    {/* Configuração de Parcelas Dinâmica */}
                                     <div className="bg-purple-50 rounded-lg p-4">
-                                      <h3 className="font-bold text-purple-800 mb-3">💰 Abatimentos (%)</h3>
-                                      <div className="grid grid-cols-2 gap-3">
-                                        <div>
-                                          <label className="block text-xs text-gray-600 mb-1">À Vista</label>
-                                          <input
-                                            type="number"
-                                            step="0.1"
-                                            value={formData.lojaProdutoAbatAvista ?? formData.lojaProdutoEdit?.abatimento_avista ?? 0}
-                                            onChange={e => setFormData({...formData, lojaProdutoAbatAvista: e.target.value})}
-                                            className="w-full px-3 py-2 border rounded"
-                                          />
-                                        </div>
-                                        <div>
-                                          <label className="block text-xs text-gray-600 mb-1">2 Semanas</label>
-                                          <input
-                                            type="number"
-                                            step="0.1"
-                                            value={formData.lojaProdutoAbat2sem ?? formData.lojaProdutoEdit?.abatimento_2semanas ?? 0}
-                                            onChange={e => setFormData({...formData, lojaProdutoAbat2sem: e.target.value})}
-                                            className="w-full px-3 py-2 border rounded"
-                                          />
-                                        </div>
-                                        <div>
-                                          <label className="block text-xs text-gray-600 mb-1">3 Semanas</label>
-                                          <input
-                                            type="number"
-                                            step="0.1"
-                                            value={formData.lojaProdutoAbat3sem ?? formData.lojaProdutoEdit?.abatimento_3semanas ?? 0}
-                                            onChange={e => setFormData({...formData, lojaProdutoAbat3sem: e.target.value})}
-                                            className="w-full px-3 py-2 border rounded"
-                                          />
-                                        </div>
-                                        <div>
-                                          <label className="block text-xs text-gray-600 mb-1">4 Semanas</label>
-                                          <input
-                                            type="number"
-                                            step="0.1"
-                                            value={formData.lojaProdutoAbat4sem ?? formData.lojaProdutoEdit?.abatimento_4semanas ?? 0}
-                                            onChange={e => setFormData({...formData, lojaProdutoAbat4sem: e.target.value})}
-                                            className="w-full px-3 py-2 border rounded"
-                                          />
-                                        </div>
+                                      <div className="flex justify-between items-center mb-3">
+                                        <h3 className="font-bold text-purple-800">💰 Opções de Parcelamento</h3>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            const parcelas = formData.lojaProdutoParcelas ?? (formData.lojaProdutoEdit?.parcelas_config ? [...formData.lojaProdutoEdit.parcelas_config] : []);
+                                            setFormData({...formData, lojaProdutoParcelas: [...parcelas, { parcelas: 1, valor_parcela: '' }]});
+                                          }}
+                                          className="px-3 py-1 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700"
+                                        >
+                                          ➕ Adicionar
+                                        </button>
+                                      </div>
+                                      
+                                      <div className="space-y-2">
+                                        {((formData.lojaProdutoParcelas ?? formData.lojaProdutoEdit?.parcelas_config) || []).length === 0 ? (
+                                          <p className="text-sm text-gray-500 text-center py-3 bg-white rounded-lg">
+                                            Nenhuma opção de parcelamento.<br/>Clique em "➕ Adicionar" acima.
+                                          </p>
+                                        ) : ((formData.lojaProdutoParcelas ?? formData.lojaProdutoEdit?.parcelas_config) || []).map((parc, idx) => (
+                                          <div key={idx} className="flex gap-2 items-center bg-white p-3 rounded-lg border">
+                                            <div className="w-24">
+                                              <label className="block text-xs text-gray-500 mb-1">Parcelas</label>
+                                              <select
+                                                value={parc.parcelas || 1}
+                                                onChange={e => {
+                                                  const parcelas = [...((formData.lojaProdutoParcelas ?? formData.lojaProdutoEdit?.parcelas_config) || [])];
+                                                  parcelas[idx] = {...parcelas[idx], parcelas: parseInt(e.target.value)};
+                                                  setFormData({...formData, lojaProdutoParcelas: parcelas});
+                                                }}
+                                                className="w-full px-2 py-1.5 border rounded text-sm bg-white"
+                                              >
+                                                {[1,2,3,4,5,6,7,8,9,10,11,12].map(n => (
+                                                  <option key={n} value={n}>{n}x</option>
+                                                ))}
+                                              </select>
+                                            </div>
+                                            <div className="flex-1">
+                                              <label className="block text-xs text-gray-500 mb-1">Valor da Parcela (R$)</label>
+                                              <input
+                                                type="number"
+                                                step="0.01"
+                                                value={parc.valor_parcela ?? ''}
+                                                onChange={e => {
+                                                  const parcelas = [...((formData.lojaProdutoParcelas ?? formData.lojaProdutoEdit?.parcelas_config) || [])];
+                                                  parcelas[idx] = {...parcelas[idx], valor_parcela: e.target.value};
+                                                  setFormData({...formData, lojaProdutoParcelas: parcelas});
+                                                }}
+                                                className="w-full px-2 py-1.5 border rounded text-sm"
+                                                placeholder="0.00"
+                                              />
+                                            </div>
+                                            <div className="w-24 text-right">
+                                              <label className="block text-xs text-gray-500 mb-1">Total</label>
+                                              <span className="text-sm font-bold text-green-600">
+                                                R$ {((parc.parcelas || 1) * (parseFloat(parc.valor_parcela) || 0)).toFixed(2).replace('.', ',')}
+                                              </span>
+                                            </div>
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                const parcelas = [...((formData.lojaProdutoParcelas ?? formData.lojaProdutoEdit?.parcelas_config) || [])];
+                                                parcelas.splice(idx, 1);
+                                                setFormData({...formData, lojaProdutoParcelas: parcelas});
+                                              }}
+                                              className="p-2 text-red-500 hover:bg-red-50 rounded"
+                                            >🗑️</button>
+                                          </div>
+                                        ))}
                                       </div>
                                     </div>
                                   </div>
 
                                   <div className="flex gap-3 mt-6">
                                     <button
-                                      onClick={() => setFormData({...formData, lojaProdutoModal: false, lojaProdutoEdit: null})}
+                                      onClick={() => setFormData({...formData, lojaProdutoModal: false, lojaProdutoEdit: null, lojaProdutoParcelas: null})}
                                       className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold"
                                     >Cancelar</button>
                                     <button
@@ -6483,6 +6550,16 @@
                                         const valor = formData.lojaProdutoValor ?? formData.lojaProdutoEdit?.valor;
                                         if (!nome || !valor) { showToast('Preencha nome e valor', 'error'); return; }
                                         
+                                        const parcelas = formData.lojaProdutoParcelas ?? formData.lojaProdutoEdit?.parcelas_config ?? [];
+                                        if (parcelas.length === 0) { showToast('Adicione pelo menos uma opção de parcelamento', 'error'); return; }
+                                        
+                                        for (const p of parcelas) {
+                                          if (!p.valor_parcela || parseFloat(p.valor_parcela) <= 0) {
+                                            showToast('Preencha o valor de todas as parcelas', 'error');
+                                            return;
+                                          }
+                                        }
+                                        
                                         const body = {
                                           estoque_id: formData.lojaProdutoEstoqueId ?? formData.lojaProdutoEdit?.estoque_id,
                                           nome,
@@ -6490,10 +6567,10 @@
                                           marca: formData.lojaProdutoMarca ?? formData.lojaProdutoEdit?.marca ?? '',
                                           valor: parseFloat(valor),
                                           imagem_url: formData.lojaProdutoImagem ?? formData.lojaProdutoEdit?.imagem_url ?? '',
-                                          abatimento_avista: parseFloat(formData.lojaProdutoAbatAvista ?? formData.lojaProdutoEdit?.abatimento_avista ?? 0),
-                                          abatimento_2semanas: parseFloat(formData.lojaProdutoAbat2sem ?? formData.lojaProdutoEdit?.abatimento_2semanas ?? 0),
-                                          abatimento_3semanas: parseFloat(formData.lojaProdutoAbat3sem ?? formData.lojaProdutoEdit?.abatimento_3semanas ?? 0),
-                                          abatimento_4semanas: parseFloat(formData.lojaProdutoAbat4sem ?? formData.lojaProdutoEdit?.abatimento_4semanas ?? 0),
+                                          parcelas_config: parcelas.map(p => ({
+                                            parcelas: parseInt(p.parcelas) || 1,
+                                            valor_parcela: parseFloat(p.valor_parcela) || 0
+                                          })),
                                           created_by: user.fullName
                                         };
                                         
@@ -6513,7 +6590,28 @@
                                           showToast('✅ Produto adicionado!', 'success');
                                         }
                                         
-                                        setFormData({...formData, lojaProdutoModal: false, lojaProdutoEdit: null});
+                                        setFormData({...formData, lojaProdutoModal: false, lojaProdutoEdit: null, lojaProdutoParcelas: null});
+                                        loadLojaProdutos();
+                                      }}
+                                      className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
+                                    >{formData.lojaProdutoEdit ? '💾 Salvar' : '➕ Adicionar'}</button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      )}
+
+                                          await fetch(`${API_URL}/loja/produtos`, {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify(body)
+                                          });
+                                          showToast('✅ Produto adicionado!', 'success');
+                                        }
+                                        
+                                        setFormData({...formData, lojaProdutoModal: false, lojaProdutoEdit: null, lojaParcela1Hab: null, lojaParcela2Hab: null, lojaParcela3Hab: null, lojaParcela4Hab: null, lojaParcela1Valor: null, lojaParcela2Valor: null, lojaParcela3Valor: null, lojaParcela4Valor: null});
                                         loadLojaProdutos();
                                       }}
                                       className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
