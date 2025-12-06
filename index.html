@@ -6245,33 +6245,27 @@
                                               const file = e.target.files?.[0];
                                               if (!file) return;
                                               
-                                              if (file.size > 5 * 1024 * 1024) {
-                                                showToast('Imagem muito grande (máx 5MB)', 'error');
+                                              if (file.size > 2 * 1024 * 1024) {
+                                                showToast('Imagem muito grande (máx 2MB)', 'error');
                                                 return;
                                               }
                                               
                                               setFormData({...formData, uploadingEstoqueImage: true});
                                               
                                               try {
-                                                const formDataUpload = new FormData();
-                                                formDataUpload.append('image', file);
-                                                
-                                                const res = await fetch('https://api.imgbb.com/1/upload?key=c4e786c17e03ef7bde9e758319d6164f', {
-                                                  method: 'POST',
-                                                  body: formDataUpload
-                                                });
-                                                
-                                                const data = await res.json();
-                                                
-                                                if (data.success) {
-                                                  setFormData({...formData, lojaEstoqueImagem: data.data.url, uploadingEstoqueImage: false});
-                                                  showToast('✅ Imagem enviada!', 'success');
-                                                } else {
-                                                  throw new Error('Falha no upload');
-                                                }
+                                                const reader = new FileReader();
+                                                reader.onload = (event) => {
+                                                  const base64 = event.target.result;
+                                                  setFormData({...formData, lojaEstoqueImagem: base64, uploadingEstoqueImage: false});
+                                                  showToast('✅ Imagem carregada!', 'success');
+                                                };
+                                                reader.onerror = () => {
+                                                  throw new Error('Erro ao ler arquivo');
+                                                };
+                                                reader.readAsDataURL(file);
                                               } catch (err) {
                                                 console.error('Erro upload:', err);
-                                                showToast('Erro ao enviar imagem', 'error');
+                                                showToast('Erro ao carregar imagem', 'error');
                                                 setFormData({...formData, uploadingEstoqueImage: false});
                                               }
                                             }}
@@ -6576,33 +6570,28 @@
                                                 const file = e.target.files?.[0];
                                                 if (!file) return;
                                                 
-                                                if (file.size > 5 * 1024 * 1024) {
-                                                  showToast('Imagem muito grande (máx 5MB)', 'error');
+                                                if (file.size > 2 * 1024 * 1024) {
+                                                  showToast('Imagem muito grande (máx 2MB)', 'error');
                                                   return;
                                                 }
                                                 
                                                 setFormData({...formData, uploadingImage: true});
                                                 
                                                 try {
-                                                  const formDataUpload = new FormData();
-                                                  formDataUpload.append('image', file);
-                                                  
-                                                  const res = await fetch('https://api.imgbb.com/1/upload?key=c4e786c17e03ef7bde9e758319d6164f', {
-                                                    method: 'POST',
-                                                    body: formDataUpload
-                                                  });
-                                                  
-                                                  const data = await res.json();
-                                                  
-                                                  if (data.success) {
-                                                    setFormData({...formData, lojaProdutoImagem: data.data.url, uploadingImage: false});
-                                                    showToast('✅ Imagem enviada!', 'success');
-                                                  } else {
-                                                    throw new Error('Falha no upload');
-                                                  }
+                                                  // Converter para base64 data URL
+                                                  const reader = new FileReader();
+                                                  reader.onload = (event) => {
+                                                    const base64 = event.target.result;
+                                                    setFormData({...formData, lojaProdutoImagem: base64, uploadingImage: false});
+                                                    showToast('✅ Imagem carregada!', 'success');
+                                                  };
+                                                  reader.onerror = () => {
+                                                    throw new Error('Erro ao ler arquivo');
+                                                  };
+                                                  reader.readAsDataURL(file);
                                                 } catch (err) {
                                                   console.error('Erro upload:', err);
-                                                  showToast('Erro ao enviar imagem', 'error');
+                                                  showToast('Erro ao carregar imagem', 'error');
                                                   setFormData({...formData, uploadingImage: false});
                                                 }
                                               }}
