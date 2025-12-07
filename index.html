@@ -718,6 +718,8 @@
       const [lojaSubTab, setLojaSubTab] = useState('produtos'); // 'produtos' ou 'estoque' ou 'pedidos'
       const [lojaMovimentacoes, setLojaMovimentacoes] = useState([]);
       const [lojaEstoqueView, setLojaEstoqueView] = useState('lista'); // 'lista' ou 'movimentacoes'
+      const [lojaSugestoes, setLojaSugestoes] = useState([]);
+      const [lojaSugestoesUsuario, setLojaSugestoesUsuario] = useState([]);
 
       // Verifica se usuário é novato (COD >= 14000) e se está dentro dos 30 dias
       const isNovato = () => {
@@ -822,6 +824,7 @@
             loadInBackground(loadQuizConfig);
             loadInBackground(verificarQuizRespondido);
             loadInBackground(loadLojaPedidosUsuario);
+            loadInBackground(loadLojaSugestoesUsuario);
           }
           if (user.role === 'admin_financeiro' || user.role === 'admin_master') {
             loadInBackground(loadAllGratuities);
@@ -836,6 +839,7 @@
             loadInBackground(loadLojaEstoque);
             loadInBackground(loadLojaProdutos);
             loadInBackground(loadLojaPedidos);
+            loadInBackground(loadLojaSugestoes);
           }
           if (user.role === 'admin' || user.role === 'admin_master') {
             loadInBackground(loadUsers);
@@ -1318,6 +1322,20 @@
           const res = await fetch(`${API_URL}/loja/pedidos/user/${user.codProfissional}`);
           setLojaPedidosUsuario(await res.json());
         } catch (err) { console.error('Erro ao carregar pedidos:', err); }
+      };
+
+      const loadLojaSugestoes = async () => {
+        try {
+          const res = await fetch(`${API_URL}/loja/sugestoes`);
+          setLojaSugestoes(await res.json());
+        } catch (err) { console.error('Erro ao carregar sugestões:', err); }
+      };
+
+      const loadLojaSugestoesUsuario = async () => {
+        try {
+          const res = await fetch(`${API_URL}/loja/sugestoes/user/${user.codProfissional}`);
+          setLojaSugestoesUsuario(await res.json());
+        } catch (err) { console.error('Erro ao carregar sugestões:', err); }
       };
 
       const refreshAll = async () => {
@@ -4342,6 +4360,96 @@
                         <p className="text-white/80">Abatimento direto no seu saldo - Sem dor de cabeça!</p>
                       </div>
 
+                      {/* Botão Sugerir Produto */}
+                      <button
+                        onClick={() => setFormData({...formData, lojaSugestaoModal: true})}
+                        className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-semibold hover:opacity-90 transition-opacity shadow-lg flex items-center justify-center gap-2"
+                      >
+                        💡 Sugerir Produto para a Loja
+                      </button>
+
+                      {/* Minhas Sugestões */}
+                      {lojaSugestoesUsuario.length > 0 && (
+                        <div className="bg-white rounded-xl shadow p-4">
+                          <h3 className="font-bold text-gray-800 mb-3">💡 Minhas Sugestões</h3>
+                          <div className="space-y-2">
+                            {lojaSugestoesUsuario.map(sug => (
+                              <div key={sug.id} className={`p-3 rounded-lg border ${
+                                sug.status === 'respondido' ? 'border-green-200 bg-green-50' :
+                                sug.status === 'recusado' ? 'border-red-200 bg-red-50' :
+                                'border-gray-200 bg-gray-50'
+                              }`}>
+                                <p className="text-sm text-gray-800">{sug.sugestao}</p>
+                                <p className="text-xs text-gray-500 mt-1">{new Date(sug.created_at).toLocaleDateString('pt-BR')}</p>
+                                {sug.status === 'respondido' && sug.resposta && (
+                                  <div className="mt-2 p-2 bg-green-100 rounded">
+                                    <p className="text-xs font-semibold text-green-800">✅ Resposta:</p>
+                                    <p className="text-sm text-green-700">{sug.resposta}</p>
+                                  </div>
+                                )}
+                                {sug.status === 'recusado' && sug.resposta && (
+                                  <div className="mt-2 p-2 bg-red-100 rounded">
+                                    <p className="text-xs font-semibold text-red-800">❌ Resposta:</p>
+                                    <p className="text-sm text-red-700">{sug.resposta}</p>
+                                  </div>
+                                )}
+                                {sug.status === 'pendente' && (
+                                  <span className="inline-block mt-2 px-2 py-0.5 bg-yellow-100 text-yellow-700 text-xs rounded-full">⏳ Aguardando análise</span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Modal de Sugestão */}
+                      {formData.lojaSugestaoModal && (
+                        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+                          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full">
+                            <div className="bg-gradient-to-r from-amber-500 to-orange-500 p-4 rounded-t-2xl text-white">
+                              <h2 className="text-xl font-bold">💡 Sugerir Produto</h2>
+                              <p className="text-sm opacity-80">Diga o que você gostaria de ver na loja</p>
+                            </div>
+                            <div className="p-6">
+                              <textarea
+                                value={formData.lojaSugestaoTexto || ''}
+                                onChange={e => setFormData({...formData, lojaSugestaoTexto: e.target.value})}
+                                placeholder="Descreva o produto que você gostaria que tivesse na loja... Ex: Tênis Nike Air Max tamanho 42, Camiseta do Flamengo M..."
+                                className="w-full px-4 py-3 border rounded-xl h-32 resize-none"
+                              />
+                              <p className="text-xs text-gray-500 mt-2">Sua sugestão será analisada pela equipe</p>
+                              <div className="flex gap-3 mt-4">
+                                <button
+                                  onClick={() => setFormData({...formData, lojaSugestaoModal: false, lojaSugestaoTexto: ''})}
+                                  className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold"
+                                >Cancelar</button>
+                                <button
+                                  onClick={async () => {
+                                    if (!formData.lojaSugestaoTexto?.trim()) {
+                                      showToast('Digite sua sugestão', 'error');
+                                      return;
+                                    }
+                                    await fetch(`${API_URL}/loja/sugestoes`, {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({
+                                        user_cod: user.codProfissional,
+                                        user_name: user.fullName,
+                                        sugestao: formData.lojaSugestaoTexto.trim()
+                                      })
+                                    });
+                                    showToast('💡 Sugestão enviada!', 'success');
+                                    setFormData({...formData, lojaSugestaoModal: false, lojaSugestaoTexto: ''});
+                                    loadLojaSugestoesUsuario();
+                                  }}
+                                  className="flex-1 px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg font-semibold hover:opacity-90"
+                                >📤 Enviar Sugestão</button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
                       {/* Meus Pedidos (resumo) */}
                       {lojaPedidosUsuario.length > 0 && (
                         <div className="bg-white rounded-xl shadow p-4">
@@ -6422,7 +6530,7 @@
                   {/* Sub-abas da Loja */}
                   <div className="bg-white rounded-xl shadow mb-6">
                     <div className="flex border-b">
-                      {['produtos', 'estoque', 'pedidos'].map(subtab => (
+                      {['produtos', 'estoque', 'pedidos', 'sugestoes'].map(subtab => (
                         <button
                           key={subtab}
                           onClick={() => {
@@ -6430,12 +6538,23 @@
                             if (subtab === 'estoque') loadLojaEstoque();
                             if (subtab === 'produtos') { loadLojaProdutos(); loadLojaEstoque(); }
                             if (subtab === 'pedidos') loadLojaPedidos();
+                            if (subtab === 'sugestoes') loadLojaSugestoes();
                           }}
-                          className={`flex-1 px-4 py-3 text-sm font-semibold ${lojaSubTab === subtab ? 'text-purple-700 border-b-2 border-purple-600 bg-purple-50' : 'text-gray-600 hover:bg-gray-50'}`}
+                          className={`flex-1 px-4 py-3 text-sm font-semibold relative ${lojaSubTab === subtab ? 'text-purple-700 border-b-2 border-purple-600 bg-purple-50' : 'text-gray-600 hover:bg-gray-50'}`}
                         >
-                          {subtab === 'produtos' && '🏷️ Produtos à Venda'}
+                          {subtab === 'produtos' && '🏷️ Produtos'}
                           {subtab === 'estoque' && '📦 Estoque'}
                           {subtab === 'pedidos' && '🛍️ Pedidos'}
+                          {subtab === 'sugestoes' && (
+                            <>
+                              💡 Sugestões
+                              {lojaSugestoes.filter(s => s.status === 'pendente').length > 0 && (
+                                <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                                  {lojaSugestoes.filter(s => s.status === 'pendente').length}
+                                </span>
+                              )}
+                            </>
+                          )}
                         </button>
                       ))}
                     </div>
@@ -7579,6 +7698,179 @@
                                     }}
                                     className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700"
                                   >🗑️ Excluir</button>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      )}
+
+                      {/* SUB-ABA SUGESTÕES */}
+                      {lojaSubTab === 'sugestoes' && (
+                        <>
+                          <div className="flex justify-between items-center mb-6">
+                            <div>
+                              <h2 className="text-xl font-bold text-gray-800">💡 Sugestões de Produtos</h2>
+                              <p className="text-sm text-gray-500">Veja o que os profissionais gostariam de ter na loja</p>
+                            </div>
+                            <div className="flex gap-2 text-sm">
+                              <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full font-semibold">
+                                ⏳ {lojaSugestoes.filter(s => s.status === 'pendente').length} Pendentes
+                              </span>
+                              <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full font-semibold">
+                                ✅ {lojaSugestoes.filter(s => s.status === 'respondido').length} Respondidas
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="space-y-4">
+                            {lojaSugestoes.length === 0 ? (
+                              <p className="text-gray-500 text-center py-8">Nenhuma sugestão recebida</p>
+                            ) : lojaSugestoes.map(sug => (
+                              <div key={sug.id} className={`border-2 rounded-xl p-4 ${
+                                sug.status === 'pendente' ? 'border-yellow-200 bg-yellow-50' :
+                                sug.status === 'respondido' ? 'border-green-200 bg-green-50' :
+                                'border-red-200 bg-red-50'
+                              }`}>
+                                <div className="flex justify-between items-start gap-4">
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <span className="font-bold text-gray-800">{sug.user_name}</span>
+                                      <span className="text-xs text-gray-500">COD: {sug.user_cod}</span>
+                                      <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                                        sug.status === 'pendente' ? 'bg-yellow-200 text-yellow-800' :
+                                        sug.status === 'respondido' ? 'bg-green-200 text-green-800' :
+                                        'bg-red-200 text-red-800'
+                                      }`}>
+                                        {sug.status === 'pendente' ? '⏳ Pendente' : sug.status === 'respondido' ? '✅ Respondido' : '❌ Recusado'}
+                                      </span>
+                                    </div>
+                                    <p className="text-gray-700 bg-white p-3 rounded-lg border">{sug.sugestao}</p>
+                                    <p className="text-xs text-gray-500 mt-2">
+                                      Enviado em {new Date(sug.created_at).toLocaleDateString('pt-BR')} às {new Date(sug.created_at).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}
+                                    </p>
+                                    
+                                    {sug.resposta && (
+                                      <div className={`mt-3 p-3 rounded-lg ${sug.status === 'respondido' ? 'bg-green-100' : 'bg-red-100'}`}>
+                                        <p className="text-xs font-semibold text-gray-600">Resposta de {sug.respondido_por}:</p>
+                                        <p className="text-sm text-gray-800 mt-1">{sug.resposta}</p>
+                                      </div>
+                                    )}
+                                  </div>
+                                  
+                                  {sug.status === 'pendente' && (
+                                    <div className="flex flex-col gap-2">
+                                      <button
+                                        onClick={() => setFormData({...formData, lojaSugestaoResponder: sug, lojaSugestaoResposta: ''})}
+                                        className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-xs font-semibold hover:bg-green-700"
+                                      >✅ Responder</button>
+                                      <button
+                                        onClick={() => setFormData({...formData, lojaSugestaoRecusar: sug, lojaSugestaoResposta: ''})}
+                                        className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-semibold hover:bg-red-700"
+                                      >❌ Recusar</button>
+                                      <button
+                                        onClick={async () => {
+                                          if (!confirm('Excluir esta sugestão?')) return;
+                                          await fetch(`${API_URL}/loja/sugestoes/${sug.id}`, { method: 'DELETE' });
+                                          loadLojaSugestoes();
+                                          showToast('🗑️ Sugestão excluída!', 'success');
+                                        }}
+                                        className="px-3 py-1.5 bg-gray-200 text-gray-700 rounded-lg text-xs font-semibold hover:bg-gray-300"
+                                      >🗑️</button>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Modal Responder Sugestão */}
+                          {formData.lojaSugestaoResponder && (
+                            <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+                              <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full">
+                                <div className="bg-green-600 p-4 rounded-t-2xl text-white">
+                                  <h2 className="text-xl font-bold">✅ Responder Sugestão</h2>
+                                </div>
+                                <div className="p-6">
+                                  <div className="bg-gray-50 p-3 rounded-lg mb-4">
+                                    <p className="text-sm text-gray-600"><strong>{formData.lojaSugestaoResponder.user_name}:</strong></p>
+                                    <p className="text-gray-800">{formData.lojaSugestaoResponder.sugestao}</p>
+                                  </div>
+                                  <textarea
+                                    value={formData.lojaSugestaoResposta || ''}
+                                    onChange={e => setFormData({...formData, lojaSugestaoResposta: e.target.value})}
+                                    placeholder="Escreva sua resposta... Ex: Ótima sugestão! Vamos providenciar esse produto."
+                                    className="w-full px-4 py-3 border rounded-xl h-24 resize-none"
+                                  />
+                                  <div className="flex gap-3 mt-4">
+                                    <button
+                                      onClick={() => setFormData({...formData, lojaSugestaoResponder: null, lojaSugestaoResposta: ''})}
+                                      className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold"
+                                    >Cancelar</button>
+                                    <button
+                                      onClick={async () => {
+                                        await fetch(`${API_URL}/loja/sugestoes/${formData.lojaSugestaoResponder.id}`, {
+                                          method: 'PATCH',
+                                          headers: { 'Content-Type': 'application/json' },
+                                          body: JSON.stringify({
+                                            status: 'respondido',
+                                            resposta: formData.lojaSugestaoResposta || 'Obrigado pela sugestão!',
+                                            respondido_por: user.fullName
+                                          })
+                                        });
+                                        showToast('✅ Sugestão respondida!', 'success');
+                                        setFormData({...formData, lojaSugestaoResponder: null, lojaSugestaoResposta: ''});
+                                        loadLojaSugestoes();
+                                      }}
+                                      className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700"
+                                    >✅ Enviar Resposta</button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Modal Recusar Sugestão */}
+                          {formData.lojaSugestaoRecusar && (
+                            <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+                              <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full">
+                                <div className="bg-red-600 p-4 rounded-t-2xl text-white">
+                                  <h2 className="text-xl font-bold">❌ Recusar Sugestão</h2>
+                                </div>
+                                <div className="p-6">
+                                  <div className="bg-gray-50 p-3 rounded-lg mb-4">
+                                    <p className="text-sm text-gray-600"><strong>{formData.lojaSugestaoRecusar.user_name}:</strong></p>
+                                    <p className="text-gray-800">{formData.lojaSugestaoRecusar.sugestao}</p>
+                                  </div>
+                                  <textarea
+                                    value={formData.lojaSugestaoResposta || ''}
+                                    onChange={e => setFormData({...formData, lojaSugestaoResposta: e.target.value})}
+                                    placeholder="Motivo da recusa... Ex: Infelizmente não conseguimos esse produto no momento."
+                                    className="w-full px-4 py-3 border rounded-xl h-24 resize-none"
+                                  />
+                                  <div className="flex gap-3 mt-4">
+                                    <button
+                                      onClick={() => setFormData({...formData, lojaSugestaoRecusar: null, lojaSugestaoResposta: ''})}
+                                      className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold"
+                                    >Cancelar</button>
+                                    <button
+                                      onClick={async () => {
+                                        await fetch(`${API_URL}/loja/sugestoes/${formData.lojaSugestaoRecusar.id}`, {
+                                          method: 'PATCH',
+                                          headers: { 'Content-Type': 'application/json' },
+                                          body: JSON.stringify({
+                                            status: 'recusado',
+                                            resposta: formData.lojaSugestaoResposta || 'Não foi possível atender esta sugestão.',
+                                            respondido_por: user.fullName
+                                          })
+                                        });
+                                        showToast('❌ Sugestão recusada', 'success');
+                                        setFormData({...formData, lojaSugestaoRecusar: null, lojaSugestaoResposta: ''});
+                                        loadLojaSugestoes();
+                                      }}
+                                      className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700"
+                                    >❌ Confirmar Recusa</button>
+                                  </div>
                                 </div>
                               </div>
                             </div>
