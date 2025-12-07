@@ -697,6 +697,8 @@
       const [lojaModalBemVindo, setLojaModalBemVindo] = useState(true);
       const [lojaSliderAceito, setLojaSliderAceito] = useState(0);
       const [lojaSubTab, setLojaSubTab] = useState('produtos'); // 'produtos' ou 'estoque' ou 'pedidos'
+      const [lojaMovimentacoes, setLojaMovimentacoes] = useState([]);
+      const [lojaEstoqueView, setLojaEstoqueView] = useState('lista'); // 'lista' ou 'movimentacoes'
 
       // Verifica se usuário é novato (COD >= 14000) e se está dentro dos 30 dias
       const isNovato = () => {
@@ -1206,6 +1208,13 @@
           const res = await fetch(`${API_URL}/loja/estoque`);
           setLojaEstoque(await res.json());
         } catch (err) { console.error('Erro ao carregar estoque:', err); }
+      };
+
+      const loadLojaMovimentacoes = async () => {
+        try {
+          const res = await fetch(`${API_URL}/loja/movimentacoes`);
+          setLojaMovimentacoes(await res.json());
+        } catch (err) { console.error('Erro ao carregar movimentações:', err); }
       };
 
       const loadLojaProdutos = async () => {
@@ -6360,71 +6369,204 @@
                       {/* SUB-ABA ESTOQUE */}
                       {lojaSubTab === 'estoque' && (
                         <>
-                          <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-xl font-bold text-gray-800">📦 Gerenciar Estoque</h2>
-                            <button
-                              onClick={() => setFormData({...formData, lojaEstoqueModal: true, lojaEstoqueEdit: null})}
-                              className="px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
-                            >
-                              ➕ Novo Item
-                            </button>
+                          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                            <div>
+                              <h2 className="text-xl font-bold text-gray-800">📦 Controle de Estoque</h2>
+                              <p className="text-sm text-gray-500">Gerencie produtos, entradas e saídas</p>
+                            </div>
+                            <div className="flex gap-2">
+                              <div className="flex bg-gray-100 rounded-lg p-1">
+                                <button
+                                  onClick={() => { setLojaEstoqueView('lista'); }}
+                                  className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${lojaEstoqueView === 'lista' ? 'bg-white shadow text-purple-700' : 'text-gray-600 hover:text-gray-800'}`}
+                                >📋 Produtos</button>
+                                <button
+                                  onClick={() => { setLojaEstoqueView('movimentacoes'); loadLojaMovimentacoes(); }}
+                                  className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${lojaEstoqueView === 'movimentacoes' ? 'bg-white shadow text-purple-700' : 'text-gray-600 hover:text-gray-800'}`}
+                                >📊 Histórico</button>
+                              </div>
+                              <button
+                                onClick={() => setFormData({...formData, lojaEstoqueModal: true, lojaEstoqueEdit: null})}
+                                className="px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
+                              >
+                                ➕ Novo Item
+                              </button>
+                            </div>
                           </div>
 
-                          <div className="grid gap-4">
-                            {lojaEstoque.length === 0 ? (
-                              <p className="text-gray-500 text-center py-8">Nenhum item no estoque</p>
-                            ) : lojaEstoque.map(item => (
-                              <div key={item.id} className="border rounded-xl p-4 hover:shadow-md transition-shadow">
-                                <div className="flex gap-4">
-                                  {item.imagem_url && (
-                                    <img src={item.imagem_url} alt={item.nome} className="w-20 h-20 object-cover rounded-lg" />
-                                  )}
-                                  <div className="flex-1">
-                                    <div className="flex justify-between items-start">
-                                      <div>
-                                        <h3 className="font-bold text-gray-800">{item.nome}</h3>
-                                        {item.marca && <p className="text-sm text-gray-600">Marca: {item.marca}</p>}
-                                        <p className="text-lg font-bold text-green-600">R$ {parseFloat(item.valor).toFixed(2).replace('.', ',')}</p>
-                                      </div>
-                                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${item.status === 'ativo' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                                        {item.status === 'ativo' ? '✅ Ativo' : '❌ Inativo'}
-                                      </span>
-                                    </div>
-                                    
-                                    {item.tem_tamanho && item.tamanhos && item.tamanhos.length > 0 ? (
-                                      <div className="mt-2">
-                                        <p className="text-xs text-gray-500 mb-1">Tamanhos disponíveis:</p>
-                                        <div className="flex flex-wrap gap-2">
-                                          {item.tamanhos.map(t => (
-                                            <span key={t.id} className="px-2 py-1 bg-gray-100 rounded text-xs">
-                                              {t.tamanho}: <strong>{t.quantidade}</strong>
-                                            </span>
-                                          ))}
-                                        </div>
-                                      </div>
-                                    ) : (
-                                      <p className="text-sm text-gray-600 mt-2">Quantidade: <strong>{item.quantidade}</strong></p>
-                                    )}
-                                  </div>
-                                  <div className="flex flex-col gap-2">
-                                    <button
-                                      onClick={() => setFormData({...formData, lojaEstoqueModal: true, lojaEstoqueEdit: item})}
-                                      className="px-3 py-1 bg-blue-100 text-blue-700 rounded text-xs font-semibold hover:bg-blue-200"
-                                    >✏️ Editar</button>
-                                    <button
-                                      onClick={async () => {
-                                        if (!confirm('Excluir este item do estoque?')) return;
-                                        await fetch(`${API_URL}/loja/estoque/${item.id}`, { method: 'DELETE' });
-                                        loadLojaEstoque();
-                                        showToast('🗑️ Item excluído!', 'success');
-                                      }}
-                                      className="px-3 py-1 bg-red-100 text-red-700 rounded text-xs font-semibold hover:bg-red-200"
-                                    >🗑️</button>
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
+                          {/* Resumo do Estoque */}
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                            <div className="bg-white rounded-xl shadow p-4">
+                              <p className="text-sm text-gray-600">Total de Itens</p>
+                              <p className="text-2xl font-bold text-purple-600">{lojaEstoque.length}</p>
+                            </div>
+                            <div className="bg-white rounded-xl shadow p-4">
+                              <p className="text-sm text-gray-600">Itens Ativos</p>
+                              <p className="text-2xl font-bold text-green-600">{lojaEstoque.filter(i => i.status === 'ativo').length}</p>
+                            </div>
+                            <div className="bg-white rounded-xl shadow p-4">
+                              <p className="text-sm text-gray-600">Qtd. Total em Estoque</p>
+                              <p className="text-2xl font-bold text-blue-600">
+                                {lojaEstoque.reduce((acc, item) => {
+                                  if (item.tem_tamanho && item.tamanhos) {
+                                    return acc + item.tamanhos.reduce((a, t) => a + (t.quantidade || 0), 0);
+                                  }
+                                  return acc + (item.quantidade || 0);
+                                }, 0)}
+                              </p>
+                            </div>
+                            <div className="bg-white rounded-xl shadow p-4">
+                              <p className="text-sm text-gray-600">Valor Total</p>
+                              <p className="text-2xl font-bold text-green-600">
+                                R$ {lojaEstoque.reduce((acc, item) => {
+                                  const qtd = item.tem_tamanho && item.tamanhos 
+                                    ? item.tamanhos.reduce((a, t) => a + (t.quantidade || 0), 0)
+                                    : (item.quantidade || 0);
+                                  return acc + (parseFloat(item.valor) * qtd);
+                                }, 0).toFixed(2).replace('.', ',')}
+                              </p>
+                            </div>
                           </div>
+
+                          {/* View: Lista de Produtos */}
+                          {lojaEstoqueView === 'lista' && (
+                            <div className="grid gap-4">
+                              {lojaEstoque.length === 0 ? (
+                                <p className="text-gray-500 text-center py-8">Nenhum item no estoque</p>
+                              ) : lojaEstoque.map(item => {
+                                const qtdTotal = item.tem_tamanho && item.tamanhos 
+                                  ? item.tamanhos.reduce((a, t) => a + (t.quantidade || 0), 0)
+                                  : (item.quantidade || 0);
+                                const isLowStock = qtdTotal > 0 && qtdTotal <= 3;
+                                const isOutOfStock = qtdTotal === 0;
+                                
+                                return (
+                                  <div key={item.id} className={`border-2 rounded-xl p-4 hover:shadow-md transition-shadow ${isOutOfStock ? 'border-red-200 bg-red-50' : isLowStock ? 'border-yellow-200 bg-yellow-50' : 'border-gray-200'}`}>
+                                    <div className="flex gap-4">
+                                      {item.imagem_url && (
+                                        <img src={item.imagem_url} alt={item.nome} className="w-24 h-24 object-contain rounded-lg bg-gray-100" />
+                                      )}
+                                      <div className="flex-1">
+                                        <div className="flex justify-between items-start">
+                                          <div>
+                                            <h3 className="font-bold text-gray-800 text-lg">{item.nome}</h3>
+                                            {item.marca && <p className="text-sm text-gray-600">Marca: {item.marca}</p>}
+                                            <p className="text-lg font-bold text-green-600">R$ {parseFloat(item.valor).toFixed(2).replace('.', ',')}</p>
+                                          </div>
+                                          <div className="flex flex-col items-end gap-1">
+                                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${item.status === 'ativo' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                              {item.status === 'ativo' ? '✅ Ativo' : '❌ Inativo'}
+                                            </span>
+                                            {isOutOfStock && <span className="px-2 py-0.5 bg-red-500 text-white text-xs rounded-full">SEM ESTOQUE</span>}
+                                            {isLowStock && !isOutOfStock && <span className="px-2 py-0.5 bg-yellow-500 text-white text-xs rounded-full">ESTOQUE BAIXO</span>}
+                                          </div>
+                                        </div>
+                                        
+                                        {item.tem_tamanho && item.tamanhos && item.tamanhos.length > 0 ? (
+                                          <div className="mt-3">
+                                            <p className="text-xs text-gray-500 mb-1">Tamanhos em estoque:</p>
+                                            <div className="flex flex-wrap gap-2">
+                                              {item.tamanhos.map(t => (
+                                                <span key={t.id} className={`px-3 py-1 rounded-lg text-sm font-semibold ${t.quantidade <= 0 ? 'bg-red-100 text-red-700' : t.quantidade <= 3 ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'}`}>
+                                                  {t.tamanho}: <strong>{t.quantidade}</strong>
+                                                </span>
+                                              ))}
+                                            </div>
+                                          </div>
+                                        ) : (
+                                          <div className="mt-3 flex items-center gap-2">
+                                            <span className="text-sm text-gray-600">Quantidade:</span>
+                                            <span className={`px-3 py-1 rounded-lg text-lg font-bold ${item.quantidade <= 0 ? 'bg-red-100 text-red-700' : item.quantidade <= 3 ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'}`}>
+                                              {item.quantidade}
+                                            </span>
+                                          </div>
+                                        )}
+                                      </div>
+                                      
+                                      {/* Ações */}
+                                      <div className="flex flex-col gap-2">
+                                        <button
+                                          onClick={() => setFormData({...formData, lojaMovModal: true, lojaMovItem: item, lojaMovTipo: 'entrada'})}
+                                          className="px-3 py-1.5 bg-green-100 text-green-700 rounded-lg text-xs font-semibold hover:bg-green-200 flex items-center gap-1"
+                                        >📥 Entrada</button>
+                                        <button
+                                          onClick={() => setFormData({...formData, lojaMovModal: true, lojaMovItem: item, lojaMovTipo: 'saida'})}
+                                          className="px-3 py-1.5 bg-red-100 text-red-700 rounded-lg text-xs font-semibold hover:bg-red-200 flex items-center gap-1"
+                                        >📤 Saída</button>
+                                        <button
+                                          onClick={() => setFormData({...formData, lojaEstoqueModal: true, lojaEstoqueEdit: item})}
+                                          className="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg text-xs font-semibold hover:bg-blue-200"
+                                        >✏️ Editar</button>
+                                        <button
+                                          onClick={async () => {
+                                            if (!confirm('Excluir este item do estoque?')) return;
+                                            await fetch(`${API_URL}/loja/estoque/${item.id}`, { method: 'DELETE' });
+                                            loadLojaEstoque();
+                                            showToast('🗑️ Item excluído!', 'success');
+                                          }}
+                                          className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-xs font-semibold hover:bg-gray-200"
+                                        >🗑️</button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+
+                          {/* View: Histórico de Movimentações */}
+                          {lojaEstoqueView === 'movimentacoes' && (
+                            <div className="bg-white rounded-xl shadow">
+                              <div className="p-4 border-b">
+                                <h3 className="font-bold text-gray-800">📊 Histórico de Movimentações</h3>
+                                <p className="text-sm text-gray-500">Todas as entradas e saídas do estoque</p>
+                              </div>
+                              <div className="overflow-x-auto">
+                                <table className="w-full text-sm">
+                                  <thead className="bg-gray-50">
+                                    <tr>
+                                      <th className="px-4 py-3 text-left">Data/Hora</th>
+                                      <th className="px-4 py-3 text-left">Produto</th>
+                                      <th className="px-4 py-3 text-center">Tipo</th>
+                                      <th className="px-4 py-3 text-center">Tam.</th>
+                                      <th className="px-4 py-3 text-center">Qtd.</th>
+                                      <th className="px-4 py-3 text-left">Motivo</th>
+                                      <th className="px-4 py-3 text-left">Por</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {lojaMovimentacoes.length === 0 ? (
+                                      <tr><td colSpan="7" className="text-center py-8 text-gray-500">Nenhuma movimentação registrada</td></tr>
+                                    ) : lojaMovimentacoes.map(mov => (
+                                      <tr key={mov.id} className="border-t hover:bg-gray-50">
+                                        <td className="px-4 py-3 text-xs">
+                                          {new Date(mov.created_at).toLocaleDateString('pt-BR')}<br/>
+                                          <span className="text-gray-500">{new Date(mov.created_at).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}</span>
+                                        </td>
+                                        <td className="px-4 py-3">
+                                          <p className="font-semibold">{mov.produto_nome}</p>
+                                          {mov.marca && <p className="text-xs text-gray-500">{mov.marca}</p>}
+                                        </td>
+                                        <td className="px-4 py-3 text-center">
+                                          <span className={`px-2 py-1 rounded-full text-xs font-bold ${mov.tipo === 'entrada' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                            {mov.tipo === 'entrada' ? '📥 Entrada' : '📤 Saída'}
+                                          </span>
+                                        </td>
+                                        <td className="px-4 py-3 text-center font-semibold">{mov.tamanho || '-'}</td>
+                                        <td className="px-4 py-3 text-center">
+                                          <span className={`text-lg font-bold ${mov.tipo === 'entrada' ? 'text-green-600' : 'text-red-600'}`}>
+                                            {mov.tipo === 'entrada' ? '+' : '-'}{mov.quantidade}
+                                          </span>
+                                        </td>
+                                        <td className="px-4 py-3 text-sm text-gray-600">{mov.motivo || '-'}</td>
+                                        <td className="px-4 py-3 text-sm">{mov.created_by || '-'}</td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          )}
 
                           {/* Modal de Estoque */}
                           {formData.lojaEstoqueModal && (
@@ -6710,7 +6852,9 @@
                                           created_by: user.fullName
                                         };
                                         
-                                        if (formData.lojaEstoqueEdit) {
+                                        const isEdit = !!formData.lojaEstoqueEdit;
+                                        
+                                        if (isEdit) {
                                           await fetch(`${API_URL}/loja/estoque/${formData.lojaEstoqueEdit.id}`, {
                                             method: 'PUT',
                                             headers: { 'Content-Type': 'application/json' },
@@ -6718,19 +6862,126 @@
                                           });
                                           showToast('✅ Item atualizado!', 'success');
                                         } else {
-                                          await fetch(`${API_URL}/loja/estoque`, {
+                                          // Criar item
+                                          const res = await fetch(`${API_URL}/loja/estoque`, {
                                             method: 'POST',
                                             headers: { 'Content-Type': 'application/json' },
                                             body: JSON.stringify(body)
                                           });
+                                          const novoItem = await res.json();
+                                          
+                                          // Registrar entrada inicial se tiver quantidade
+                                          const qtdTotal = temTamanho ? tamanhos.reduce((acc, t) => acc + t.quantidade, 0) : (body.quantidade || 0);
+                                          if (qtdTotal > 0) {
+                                            await fetch(`${API_URL}/loja/estoque/${novoItem.id}/entrada`, {
+                                              method: 'POST',
+                                              headers: { 'Content-Type': 'application/json' },
+                                              body: JSON.stringify({ quantidade: qtdTotal, motivo: 'Estoque inicial', created_by: user.fullName })
+                                            });
+                                          }
                                           showToast('✅ Item adicionado!', 'success');
                                         }
                                         
                                         setFormData({...formData, lojaEstoqueModal: false, lojaEstoqueEdit: null, lojaEstoqueNome: '', lojaEstoqueMarca: '', lojaEstoqueValor: '', lojaEstoqueImagem: '', lojaEstoqueTemTamanho: false, lojaEstoqueQtd: 0});
                                         loadLojaEstoque();
+                                        loadLojaMovimentacoes();
                                       }}
                                       className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
                                     >{formData.lojaEstoqueEdit ? '💾 Salvar' : '➕ Adicionar'}</button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Modal de Entrada/Saída de Estoque */}
+                          {formData.lojaMovModal && (
+                            <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+                              <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full">
+                                <div className={`p-4 rounded-t-2xl ${formData.lojaMovTipo === 'entrada' ? 'bg-green-600' : 'bg-red-600'} text-white`}>
+                                  <h2 className="text-xl font-bold">
+                                    {formData.lojaMovTipo === 'entrada' ? '📥 Registrar Entrada' : '📤 Registrar Saída'}
+                                  </h2>
+                                  <p className="text-sm opacity-80">{formData.lojaMovItem?.nome}</p>
+                                </div>
+                                
+                                <div className="p-6 space-y-4">
+                                  {formData.lojaMovItem?.tem_tamanho && formData.lojaMovItem?.tamanhos?.length > 0 && (
+                                    <div>
+                                      <label className="block text-sm font-semibold mb-2">Tamanho</label>
+                                      <select
+                                        value={formData.lojaMovTamanho || ''}
+                                        onChange={e => setFormData({...formData, lojaMovTamanho: e.target.value})}
+                                        className="w-full px-4 py-2 border rounded-lg"
+                                      >
+                                        <option value="">Selecione o tamanho</option>
+                                        {formData.lojaMovItem.tamanhos.map(t => (
+                                          <option key={t.tamanho} value={t.tamanho}>
+                                            {t.tamanho} (atual: {t.quantidade})
+                                          </option>
+                                        ))}
+                                      </select>
+                                    </div>
+                                  )}
+                                  
+                                  <div>
+                                    <label className="block text-sm font-semibold mb-2">Quantidade *</label>
+                                    <input
+                                      type="number"
+                                      min="1"
+                                      value={formData.lojaMovQtd || ''}
+                                      onChange={e => setFormData({...formData, lojaMovQtd: parseInt(e.target.value) || 0})}
+                                      className="w-full px-4 py-2 border rounded-lg text-2xl font-bold text-center"
+                                      placeholder="0"
+                                    />
+                                  </div>
+                                  
+                                  <div>
+                                    <label className="block text-sm font-semibold mb-2">Motivo</label>
+                                    <input
+                                      type="text"
+                                      value={formData.lojaMovMotivo || ''}
+                                      onChange={e => setFormData({...formData, lojaMovMotivo: e.target.value})}
+                                      className="w-full px-4 py-2 border rounded-lg"
+                                      placeholder={formData.lojaMovTipo === 'entrada' ? 'Ex: Compra de fornecedor' : 'Ex: Produto danificado'}
+                                    />
+                                  </div>
+                                  
+                                  <div className="flex gap-3 mt-6">
+                                    <button
+                                      onClick={() => setFormData({...formData, lojaMovModal: false, lojaMovItem: null, lojaMovTipo: null, lojaMovQtd: 0, lojaMovMotivo: '', lojaMovTamanho: ''})}
+                                      className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold"
+                                    >Cancelar</button>
+                                    <button
+                                      onClick={async () => {
+                                        if (!formData.lojaMovQtd || formData.lojaMovQtd <= 0) {
+                                          showToast('Informe a quantidade', 'error');
+                                          return;
+                                        }
+                                        if (formData.lojaMovItem?.tem_tamanho && !formData.lojaMovTamanho) {
+                                          showToast('Selecione o tamanho', 'error');
+                                          return;
+                                        }
+                                        
+                                        const endpoint = formData.lojaMovTipo === 'entrada' ? 'entrada' : 'saida';
+                                        await fetch(`${API_URL}/loja/estoque/${formData.lojaMovItem.id}/${endpoint}`, {
+                                          method: 'POST',
+                                          headers: { 'Content-Type': 'application/json' },
+                                          body: JSON.stringify({
+                                            quantidade: formData.lojaMovQtd,
+                                            tamanho: formData.lojaMovTamanho || null,
+                                            motivo: formData.lojaMovMotivo || (formData.lojaMovTipo === 'entrada' ? 'Entrada manual' : 'Saída manual'),
+                                            created_by: user.fullName
+                                          })
+                                        });
+                                        
+                                        showToast(formData.lojaMovTipo === 'entrada' ? '📥 Entrada registrada!' : '📤 Saída registrada!', 'success');
+                                        setFormData({...formData, lojaMovModal: false, lojaMovItem: null, lojaMovTipo: null, lojaMovQtd: 0, lojaMovMotivo: '', lojaMovTamanho: ''});
+                                        loadLojaEstoque();
+                                        loadLojaMovimentacoes();
+                                      }}
+                                      className={`flex-1 px-4 py-2 text-white rounded-lg font-semibold ${formData.lojaMovTipo === 'entrada' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}`}
+                                    >{formData.lojaMovTipo === 'entrada' ? '📥 Confirmar Entrada' : '📤 Confirmar Saída'}</button>
                                   </div>
                                 </div>
                               </div>
@@ -7180,42 +7431,83 @@
                                       {ped.status !== 'aprovado' && <span className="text-gray-400">-</span>}
                                     </td>
                                     <td className="px-3 py-3 text-center">
-                                      {ped.status === 'pendente' && (
-                                        <div className="flex gap-1 justify-center">
-                                          <button
-                                            onClick={async () => {
-                                              await fetch(`${API_URL}/loja/pedidos/${ped.id}`, {
-                                                method: 'PATCH',
-                                                headers: { 'Content-Type': 'application/json' },
-                                                body: JSON.stringify({ status: 'aprovado', admin_id: user.codProfissional, admin_name: user.fullName })
-                                              });
-                                              loadLojaPedidos();
-                                              showToast('✅ Pedido aprovado!', 'success');
-                                            }}
-                                            className="px-2 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700"
-                                          >✅</button>
-                                          <button
-                                            onClick={async () => {
-                                              const motivo = prompt('Motivo da rejeição:');
-                                              if (!motivo) return;
-                                              await fetch(`${API_URL}/loja/pedidos/${ped.id}`, {
-                                                method: 'PATCH',
-                                                headers: { 'Content-Type': 'application/json' },
-                                                body: JSON.stringify({ status: 'rejeitado', admin_id: user.codProfissional, admin_name: user.fullName, observacao: motivo })
-                                              });
-                                              loadLojaPedidos();
-                                              showToast('❌ Pedido rejeitado', 'success');
-                                            }}
-                                            className="px-2 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700"
-                                          >❌</button>
-                                        </div>
-                                      )}
+                                      <div className="flex gap-1 justify-center">
+                                        {ped.status === 'pendente' && (
+                                          <>
+                                            <button
+                                              onClick={async () => {
+                                                await fetch(`${API_URL}/loja/pedidos/${ped.id}`, {
+                                                  method: 'PATCH',
+                                                  headers: { 'Content-Type': 'application/json' },
+                                                  body: JSON.stringify({ status: 'aprovado', admin_id: user.codProfissional, admin_name: user.fullName })
+                                                });
+                                                loadLojaPedidos();
+                                                showToast('✅ Pedido aprovado!', 'success');
+                                              }}
+                                              className="px-2 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700"
+                                              title="Aprovar"
+                                            >✅</button>
+                                            <button
+                                              onClick={async () => {
+                                                const motivo = prompt('Motivo da rejeição:');
+                                                if (!motivo) return;
+                                                await fetch(`${API_URL}/loja/pedidos/${ped.id}`, {
+                                                  method: 'PATCH',
+                                                  headers: { 'Content-Type': 'application/json' },
+                                                  body: JSON.stringify({ status: 'rejeitado', admin_id: user.codProfissional, admin_name: user.fullName, observacao: motivo })
+                                                });
+                                                loadLojaPedidos();
+                                                showToast('❌ Pedido rejeitado', 'success');
+                                              }}
+                                              className="px-2 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700"
+                                              title="Rejeitar"
+                                            >❌</button>
+                                          </>
+                                        )}
+                                        <button
+                                          onClick={() => setFormData({...formData, lojaPedidoDeleteConfirm: ped})}
+                                          className="px-2 py-1 bg-gray-600 text-white rounded text-xs hover:bg-gray-700"
+                                          title="Excluir"
+                                        >🗑️</button>
+                                      </div>
                                     </td>
                                   </tr>
                                 ))}
                               </tbody>
                             </table>
                           </div>
+                          
+                          {/* Modal de confirmação de exclusão de pedido */}
+                          {formData.lojaPedidoDeleteConfirm && (
+                            <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+                              <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full">
+                                <h3 className="text-xl font-bold text-red-600 mb-4">⚠️ Excluir Pedido</h3>
+                                <p className="text-gray-700 mb-4">Tem certeza que deseja excluir este pedido?</p>
+                                <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                                  <p className="text-sm"><strong>Profissional:</strong> {formData.lojaPedidoDeleteConfirm.user_name}</p>
+                                  <p className="text-sm"><strong>Produto:</strong> {formData.lojaPedidoDeleteConfirm.produto_nome}</p>
+                                  <p className="text-sm"><strong>Valor:</strong> R$ {parseFloat(formData.lojaPedidoDeleteConfirm.valor_final).toFixed(2).replace('.', ',')}</p>
+                                  <p className="text-sm"><strong>Status:</strong> {formData.lojaPedidoDeleteConfirm.status}</p>
+                                </div>
+                                <p className="text-red-600 text-sm mb-4 font-semibold">Esta ação não pode ser desfeita!</p>
+                                <div className="flex gap-3">
+                                  <button 
+                                    onClick={() => setFormData({...formData, lojaPedidoDeleteConfirm: null})} 
+                                    className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300"
+                                  >Cancelar</button>
+                                  <button 
+                                    onClick={async () => {
+                                      await fetch(`${API_URL}/loja/pedidos/${formData.lojaPedidoDeleteConfirm.id}`, { method: 'DELETE' });
+                                      setFormData({...formData, lojaPedidoDeleteConfirm: null});
+                                      loadLojaPedidos();
+                                      showToast('🗑️ Pedido excluído!', 'success');
+                                    }}
+                                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700"
+                                  >🗑️ Excluir</button>
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </>
                       )}
                     </div>
