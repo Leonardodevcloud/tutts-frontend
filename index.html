@@ -595,7 +595,26 @@
 
     // ========== COMPONENTE PRINCIPAL ==========
     const App = () => {
-      const [user, setUser] = useState(null);
+      // Tentar recuperar usuário do sessionStorage para login mais rápido
+      const getCachedUser = () => {
+        try {
+          const cached = sessionStorage.getItem('tutts_user');
+          return cached ? JSON.parse(cached) : null;
+        } catch { return null; }
+      };
+      
+      const [user, setUserState] = useState(getCachedUser);
+      
+      // Wrapper para setUser que também salva no cache
+      const setUser = (newUser) => {
+        if (newUser) {
+          sessionStorage.setItem('tutts_user', JSON.stringify(newUser));
+        } else {
+          sessionStorage.removeItem('tutts_user');
+        }
+        setUserState(newUser);
+      };
+      
       const [loading, setLoading] = useState(false);
       const [globalLoading, setGlobalLoading] = useState(false);
       const [toast, setToast] = useState(null);
@@ -766,13 +785,69 @@
         }
       }, [formData.cod, formData.view, profissionaisSheet]);
 
-      // Carregar dados ao logar
+      // Carregar dados ao logar - OTIMIZADO
       useEffect(() => {
         if (!user) return;
-        loadSubmissions();
-        if (user.role === 'admin' || user.role === 'admin_master') loadUsers();
-        if (user.role === 'user') { checkTerms(); loadUserWithdrawals(); loadUserGratuities(); loadPromocoesAtivas(); loadMinhasIndicacoes(); loadPromocoesNovatosAtivas(); loadMinhasInscricoesNovatos(); loadQuizConfig(); verificarQuizRespondido(); loadLojaProdutosAtivos(); loadLojaPedidosUsuario(); }
-        if (user.role === 'admin_financeiro' || user.role === 'admin_master') { loadAllWithdrawals(); loadAllGratuities(); loadRestricted(); loadDashboard(); loadPromocoes(); loadIndicacoes(); loadPromocoesNovatos(); loadInscricoesNovatos(); loadQuizConfig(); loadQuizRespostas(); loadUsers(); loadLojaEstoque(); loadLojaProdutos(); loadLojaPedidos(); }
+        
+        // Função para carregar em background sem bloquear
+        const loadInBackground = async (fn) => {
+          try { await fn(); } catch (e) { console.log('Background load error:', e); }
+        };
+        
+        // PRIORIDADE 1: Carregar dados essenciais primeiro (bloqueante)
+        const loadEssential = async () => {
+          if (user.role === 'user') {
+            await Promise.all([
+              loadUserWithdrawals(),
+              loadLojaProdutosAtivos()
+            ]);
+          }
+          if (user.role === 'admin_financeiro' || user.role === 'admin_master') {
+            await Promise.all([
+              loadAllWithdrawals(),
+              loadDashboard()
+            ]);
+          }
+        };
+        
+        // PRIORIDADE 2: Carregar resto em background (não bloqueante)
+        const loadSecondary = () => {
+          if (user.role === 'user') {
+            loadInBackground(checkTerms);
+            loadInBackground(loadUserGratuities);
+            loadInBackground(loadPromocoesAtivas);
+            loadInBackground(loadMinhasIndicacoes);
+            loadInBackground(loadPromocoesNovatosAtivas);
+            loadInBackground(loadMinhasInscricoesNovatos);
+            loadInBackground(loadQuizConfig);
+            loadInBackground(verificarQuizRespondido);
+            loadInBackground(loadLojaPedidosUsuario);
+          }
+          if (user.role === 'admin_financeiro' || user.role === 'admin_master') {
+            loadInBackground(loadAllGratuities);
+            loadInBackground(loadRestricted);
+            loadInBackground(loadPromocoes);
+            loadInBackground(loadIndicacoes);
+            loadInBackground(loadPromocoesNovatos);
+            loadInBackground(loadInscricoesNovatos);
+            loadInBackground(loadQuizConfig);
+            loadInBackground(loadQuizRespostas);
+            loadInBackground(loadUsers);
+            loadInBackground(loadLojaEstoque);
+            loadInBackground(loadLojaProdutos);
+            loadInBackground(loadLojaPedidos);
+          }
+          if (user.role === 'admin' || user.role === 'admin_master') {
+            loadInBackground(loadUsers);
+          }
+          loadInBackground(loadSubmissions);
+        };
+        
+        // Executar
+        loadEssential().then(() => {
+          // Depois de carregar o essencial, carrega o resto
+          setTimeout(loadSecondary, 100);
+        });
       }, [user]);
 
       // ========== NOTIFICAÇÃO SONORA ==========
@@ -831,7 +906,7 @@
       useEffect(() => {
         if (!user || (user.role !== 'admin_financeiro' && !(user.role === 'admin_master' && adminMasterModule === 'financeiro'))) return;
         
-        const POLLING_INTERVAL = 5000; // 5 segundos - tempo real
+        const POLLING_INTERVAL = 10000; // 5 segundos - tempo real
         
         const pollAllData = async () => {
           setIsPolling(true);
@@ -4653,7 +4728,7 @@
                   <div className="flex items-center gap-3">
                     <div className="flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full">
                       <span className={`w-2 h-2 rounded-full ${isPolling ? 'bg-yellow-400 animate-pulse' : 'bg-green-400'}`}></span>
-                      <span className="text-xs text-indigo-200">{isPolling ? 'Atualizando...' : lastUpdate ? `${lastUpdate.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}` : '⚡ 5s'}</span>
+                      <span className="text-xs text-indigo-200">{isPolling ? 'Atualizando...' : lastUpdate ? `${lastUpdate.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}` : '⚡ 10s'}</span>
                     </div>
                     <button onClick={refreshAll} className="px-4 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 text-sm font-semibold">🔄</button>
                     <button onClick={() => setUser(null)} className="px-4 py-2 text-white hover:bg-white/20 rounded-lg">Sair</button>
@@ -4669,7 +4744,7 @@
                     <div className="flex items-center gap-2 bg-green-900/50 px-3 py-1 rounded-full">
                       <span className={`w-2 h-2 rounded-full ${isPolling ? 'bg-yellow-400 animate-pulse' : 'bg-green-400 animate-pulse'}`}></span>
                       <span className="text-xs text-green-200">
-                        {isPolling ? '🔄 Atualizando...' : '⚡ Tempo Real (5s)'}
+                        {isPolling ? '🔄 Atualizando...' : '⚡ Tempo Real (10s)'}
                       </span>
                     </div>
                     {lastUpdate && (
@@ -8475,7 +8550,7 @@
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full">
                     <span className={`w-2 h-2 rounded-full ${isPolling ? 'bg-yellow-400 animate-pulse' : 'bg-green-400'}`}></span>
-                    <span className="text-xs text-indigo-200">{isPolling ? 'Atualizando...' : lastUpdate ? `${lastUpdate.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}` : '⚡ 5s'}</span>
+                    <span className="text-xs text-indigo-200">{isPolling ? 'Atualizando...' : lastUpdate ? `${lastUpdate.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}` : '⚡ 10s'}</span>
                   </div>
                   <button onClick={refreshAll} className="px-4 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 text-sm font-semibold">🔄</button>
                   <button onClick={() => setUser(null)} className="px-4 py-2 text-white hover:bg-white/20 rounded-lg">Sair</button>
@@ -8498,7 +8573,7 @@
                   </div>
                   <div className="flex items-center gap-2 bg-purple-800/50 px-3 py-1 rounded-full">
                     <span className={`w-2 h-2 rounded-full ${isPolling ? 'bg-yellow-400 animate-pulse' : 'bg-green-400'}`}></span>
-                    <span className="text-xs text-purple-200">{isPolling ? 'Atualizando...' : lastUpdate ? `${lastUpdate.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}` : '⚡ 5s'}</span>
+                    <span className="text-xs text-purple-200">{isPolling ? 'Atualizando...' : lastUpdate ? `${lastUpdate.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}` : '⚡ 10s'}</span>
                   </div>
                 </div>
                 <div className="flex gap-2">
