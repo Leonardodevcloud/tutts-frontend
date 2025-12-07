@@ -604,6 +604,20 @@
       const [lastActivity, setLastActivity] = useState(Date.now());
       const [lastUpdate, setLastUpdate] = useState(null);
       const [isPolling, setIsPolling] = useState(false);
+      
+      // Estados - Badges de Notificação (não lidos)
+      const [badges, setBadges] = useState({
+        solicitacoes: 0,
+        validacao: 0,
+        loja: 0,
+        gratuidades: 0
+      });
+      const [viewedTabs, setViewedTabs] = useState({
+        solicitacoes: [],
+        validacao: [],
+        loja: [],
+        gratuidades: []
+      });
 
       // Estados - Solicitações
       const [submissions, setSubmissions] = useState([]);
@@ -759,27 +773,123 @@
         if (user.role === 'admin_financeiro' || user.role === 'admin_master') { loadAllWithdrawals(); loadAllGratuities(); loadRestricted(); loadDashboard(); loadPromocoes(); loadIndicacoes(); loadPromocoesNovatos(); loadInscricoesNovatos(); loadQuizConfig(); loadQuizRespostas(); loadUsers(); loadLojaEstoque(); loadLojaProdutos(); loadLojaPedidos(); }
       }, [user]);
 
-      // ========== POLLING INTELIGENTE - APENAS ABA ATIVA ==========
+      // ========== NOTIFICAÇÃO SONORA ==========
+      const playNotificationSound = () => {
+        try {
+          // Criar um som de notificação usando Web Audio API
+          const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          const oscillator = audioContext.createOscillator();
+          const gainNode = audioContext.createGain();
+          
+          oscillator.connect(gainNode);
+          gainNode.connect(audioContext.destination);
+          
+          oscillator.frequency.value = 800; // Frequência do som
+          oscillator.type = 'sine';
+          gainNode.gain.value = 0.3; // Volume
+          
+          oscillator.start();
+          
+          // Som de 2 beeps
+          setTimeout(() => { oscillator.frequency.value = 600; }, 150);
+          setTimeout(() => { oscillator.frequency.value = 800; }, 300);
+          setTimeout(() => { oscillator.stop(); }, 450);
+        } catch (e) {
+          console.log('Audio não suportado');
+        }
+      };
+
+      // Refs para controlar notificações
+      const prevWithdrawalsCount = React.useRef(0);
+      const prevPedidosCount = React.useRef(0);
+      const viewedItemsRef = React.useRef({
+        solicitacoes: new Set(),
+        loja: new Set(),
+        gratuidades: new Set()
+      });
+
+      // Função para marcar itens como visualizados quando entrar na aba
+      const markTabAsViewed = (tab) => {
+        if (tab === 'solicitacoes' || tab === 'validacao') {
+          const pendingIds = allWithdrawals.filter(w => w.status === 'pending').map(w => w.id);
+          viewedItemsRef.current.solicitacoes = new Set([...viewedItemsRef.current.solicitacoes, ...pendingIds]);
+          setBadges(b => ({...b, solicitacoes: 0, validacao: 0}));
+        } else if (tab === 'loja') {
+          const pendingIds = lojaPedidos.filter(p => p.status === 'pendente').map(p => p.id);
+          viewedItemsRef.current.loja = new Set([...viewedItemsRef.current.loja, ...pendingIds]);
+          setBadges(b => ({...b, loja: 0}));
+        } else if (tab === 'gratuidades') {
+          const pendingIds = gratuities.filter(g => g.status === 'pending').map(g => g.id);
+          viewedItemsRef.current.gratuidades = new Set([...viewedItemsRef.current.gratuidades, ...pendingIds]);
+          setBadges(b => ({...b, gratuidades: 0}));
+        }
+      };
+
+      // ========== POLLING TEMPO REAL - ADMIN FINANCEIRO (5 segundos) ==========
       useEffect(() => {
-        if (!user || user.role !== 'admin_financeiro') return;
+        if (!user || (user.role !== 'admin_financeiro' && !(user.role === 'admin_master' && adminMasterModule === 'financeiro'))) return;
         
-        const POLLING_INTERVAL = 60000; // 60 segundos
+        const POLLING_INTERVAL = 5000; // 5 segundos - tempo real
         
-        const pollActiveTab = async () => {
-          const activeTab = formData.finTab || 'solicitacoes';
+        const pollAllData = async () => {
           setIsPolling(true);
+          const activeTab = formData.finTab || 'solicitacoes';
           
           try {
+            // Sempre buscar saques e pedidos para atualizar badges
+            const [resW, resP, resG] = await Promise.all([
+              fetch(`${API_URL}/withdrawals`),
+              fetch(`${API_URL}/loja/pedidos`),
+              fetch(`${API_URL}/gratuities`)
+            ]);
+            
+            const newWithdrawals = await resW.json();
+            const newPedidos = await resP.json();
+            const newGratuities = await resG.json();
+            
+            // Calcular novos itens não visualizados
+            const newPendingSaques = newWithdrawals.filter(w => 
+              w.status === 'pending' && !viewedItemsRef.current.solicitacoes.has(w.id)
+            );
+            const newPendingPedidos = newPedidos.filter(p => 
+              p.status === 'pendente' && !viewedItemsRef.current.loja.has(p.id)
+            );
+            const newPendingGratuidades = newGratuities.filter(g => 
+              g.status === 'pending' && !viewedItemsRef.current.gratuidades.has(g.id)
+            );
+            
+            // Atualizar badges
+            setBadges({
+              solicitacoes: newPendingSaques.length,
+              validacao: newPendingSaques.length,
+              loja: newPendingPedidos.length,
+              gratuidades: newPendingGratuidades.length
+            });
+            
+            // Verificar se há NOVOS itens (para notificação sonora)
+            const pendentesAntes = prevWithdrawalsCount.current;
+            const pendentesAgora = newWithdrawals.filter(w => w.status === 'pending').length;
+            if (pendentesAgora > pendentesAntes && pendentesAntes > 0) {
+              playNotificationSound();
+              showToast('🔔 Novo saque solicitado!', 'info');
+            }
+            prevWithdrawalsCount.current = pendentesAgora;
+            
+            const pedidosPendentesAntes = prevPedidosCount.current;
+            const pedidosPendentesAgora = newPedidos.filter(p => p.status === 'pendente').length;
+            if (pedidosPendentesAgora > pedidosPendentesAntes && pedidosPendentesAntes > 0) {
+              playNotificationSound();
+              showToast('🛒 Novo pedido na loja!', 'info');
+            }
+            prevPedidosCount.current = pedidosPendentesAgora;
+            
+            // Atualizar states
+            setAllWithdrawals(newWithdrawals);
+            setLojaPedidos(newPedidos);
+            setGratuities(newGratuities);
+            
+            // Carregar dados específicos da aba ativa
             switch(activeTab) {
-              case 'solicitacoes':
-                await loadAllWithdrawals();
-                break;
-              case 'validacao':
-                await loadAllWithdrawals();
-                break;
-              case 'gratuidades':
-                await loadAllGratuities();
-                break;
               case 'restritos':
                 await loadRestricted();
                 break;
@@ -795,9 +905,23 @@
               case 'resumo':
                 await loadDashboard();
                 break;
+              case 'loja':
+                await loadLojaEstoque();
+                await loadLojaProdutos();
+                break;
               default:
                 break;
             }
+            
+            // Marcar como visualizado se estiver na aba
+            if (activeTab === 'solicitacoes' || activeTab === 'validacao') {
+              markTabAsViewed('solicitacoes');
+            } else if (activeTab === 'loja') {
+              markTabAsViewed('loja');
+            } else if (activeTab === 'gratuidades') {
+              markTabAsViewed('gratuidades');
+            }
+            
             setLastUpdate(new Date());
           } catch (err) {
             console.error('Erro no polling:', err);
@@ -805,11 +929,14 @@
           setIsPolling(false);
         };
         
-        const interval = setInterval(pollActiveTab, POLLING_INTERVAL);
+        // Executar imediatamente ao entrar
+        pollAllData();
+        
+        const interval = setInterval(pollAllData, POLLING_INTERVAL);
         
         // Cleanup ao desmontar ou trocar de aba
         return () => clearInterval(interval);
-      }, [user, formData.finTab]);
+      }, [user, formData.finTab, adminMasterModule]);
 
       // ========== POLLING PARA ADMIN MASTER (Submissões de Ajuste) ==========
       useEffect(() => {
@@ -4517,7 +4644,7 @@
                   <div className="flex items-center gap-3">
                     <div className="flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full">
                       <span className={`w-2 h-2 rounded-full ${isPolling ? 'bg-yellow-400 animate-pulse' : 'bg-green-400'}`}></span>
-                      <span className="text-xs text-indigo-200">{isPolling ? 'Atualizando...' : lastUpdate ? `${lastUpdate.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}` : '60s'}</span>
+                      <span className="text-xs text-indigo-200">{isPolling ? 'Atualizando...' : lastUpdate ? `${lastUpdate.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}` : '⚡ 5s'}</span>
                     </div>
                     <button onClick={refreshAll} className="px-4 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 text-sm font-semibold">🔄</button>
                     <button onClick={() => setUser(null)} className="px-4 py-2 text-white hover:bg-white/20 rounded-lg">Sair</button>
@@ -4531,9 +4658,16 @@
                   <div className="flex items-center gap-3">
                     <h1 className="text-xl font-bold text-white">💰 Painel Financeiro</h1>
                     <div className="flex items-center gap-2 bg-green-900/50 px-3 py-1 rounded-full">
-                      <span className={`w-2 h-2 rounded-full ${isPolling ? 'bg-yellow-400 animate-pulse' : 'bg-green-400'}`}></span>
-                      <span className="text-xs text-green-200">{isPolling ? 'Atualizando...' : lastUpdate ? `Atualizado ${lastUpdate.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}` : 'Auto-refresh: 60s'}</span>
+                      <span className={`w-2 h-2 rounded-full ${isPolling ? 'bg-yellow-400 animate-pulse' : 'bg-green-400 animate-pulse'}`}></span>
+                      <span className="text-xs text-green-200">
+                        {isPolling ? '🔄 Atualizando...' : '⚡ Tempo Real (5s)'}
+                      </span>
                     </div>
+                    {lastUpdate && (
+                      <span className="text-xs text-green-300">
+                        Última: {lastUpdate.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit', second: '2-digit'})}
+                      </span>
+                    )}
                   </div>
                   <div className="flex gap-2">
                     <button onClick={refreshAll} className="px-4 py-2 bg-green-700 text-white rounded-lg hover:bg-green-600 text-sm font-semibold">🔄</button>
@@ -4567,16 +4701,59 @@
             <div className="bg-white border-b sticky top-0 z-10">
               <div className="max-w-7xl mx-auto px-2 flex gap-0.5 overflow-x-auto">
                 {['solicitacoes', 'validacao', 'conciliacao', 'resumo', 'gratuidades', 'restritos', 'indicacoes', 'promo-novatos', 'loja', 'relatorios', 'horarios', 'avisos', 'backup'].map(tab => (
-                  <button key={tab} onClick={() => setFormData({...formData, finTab: tab})} className={`px-2 py-1.5 text-xs font-semibold whitespace-nowrap rounded-t-lg ${(formData.finTab || 'solicitacoes') === tab ? 'text-green-700 border-b-2 border-green-600 bg-green-50' : 'text-gray-600 hover:bg-gray-100'}`}>
-                    {tab === 'solicitacoes' && '📋 Solicitações'}
-                    {tab === 'validacao' && '📊 Validação'}
+                  <button 
+                    key={tab} 
+                    onClick={() => {
+                      setFormData({...formData, finTab: tab});
+                      markTabAsViewed(tab);
+                    }} 
+                    className={`relative px-2 py-1.5 text-xs font-semibold whitespace-nowrap rounded-t-lg ${(formData.finTab || 'solicitacoes') === tab ? 'text-green-700 border-b-2 border-green-600 bg-green-50' : 'text-gray-600 hover:bg-gray-100'}`}
+                  >
+                    {tab === 'solicitacoes' && (
+                      <>
+                        📋 Solicitações
+                        {badges.solicitacoes > 0 && (formData.finTab || 'solicitacoes') !== 'solicitacoes' && (
+                          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
+                            {badges.solicitacoes > 9 ? '9+' : badges.solicitacoes}
+                          </span>
+                        )}
+                      </>
+                    )}
+                    {tab === 'validacao' && (
+                      <>
+                        📊 Validação
+                        {badges.validacao > 0 && formData.finTab !== 'validacao' && (
+                          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
+                            {badges.validacao > 9 ? '9+' : badges.validacao}
+                          </span>
+                        )}
+                      </>
+                    )}
                     {tab === 'conciliacao' && '✅ Conciliação'}
                     {tab === 'resumo' && '🔍 Resumo'}
-                    {tab === 'gratuidades' && '🎁 Gratuidades'}
+                    {tab === 'gratuidades' && (
+                      <>
+                        🎁 Gratuidades
+                        {badges.gratuidades > 0 && formData.finTab !== 'gratuidades' && (
+                          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
+                            {badges.gratuidades > 9 ? '9+' : badges.gratuidades}
+                          </span>
+                        )}
+                      </>
+                    )}
                     {tab === 'restritos' && '🚫 Restritos'}
                     {tab === 'indicacoes' && '👥 Indicações'}
                     {tab === 'promo-novatos' && '🚀 Promo Novatos'}
-                    {tab === 'loja' && '🛒 Loja'}
+                    {tab === 'loja' && (
+                      <>
+                        🛒 Loja
+                        {badges.loja > 0 && formData.finTab !== 'loja' && (
+                          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
+                            {badges.loja > 9 ? '9+' : badges.loja}
+                          </span>
+                        )}
+                      </>
+                    )}
                     {tab === 'relatorios' && '📈 Relatórios'}
                     {tab === 'horarios' && '🕐 Horários'}
                     {tab === 'avisos' && '📢 Avisos'}
@@ -8006,7 +8183,7 @@
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full">
                     <span className={`w-2 h-2 rounded-full ${isPolling ? 'bg-yellow-400 animate-pulse' : 'bg-green-400'}`}></span>
-                    <span className="text-xs text-indigo-200">{isPolling ? 'Atualizando...' : lastUpdate ? `${lastUpdate.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}` : '60s'}</span>
+                    <span className="text-xs text-indigo-200">{isPolling ? 'Atualizando...' : lastUpdate ? `${lastUpdate.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}` : '⚡ 5s'}</span>
                   </div>
                   <button onClick={refreshAll} className="px-4 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 text-sm font-semibold">🔄</button>
                   <button onClick={() => setUser(null)} className="px-4 py-2 text-white hover:bg-white/20 rounded-lg">Sair</button>
@@ -8029,7 +8206,7 @@
                   </div>
                   <div className="flex items-center gap-2 bg-purple-800/50 px-3 py-1 rounded-full">
                     <span className={`w-2 h-2 rounded-full ${isPolling ? 'bg-yellow-400 animate-pulse' : 'bg-green-400'}`}></span>
-                    <span className="text-xs text-purple-200">{isPolling ? 'Atualizando...' : lastUpdate ? `${lastUpdate.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}` : '60s'}</span>
+                    <span className="text-xs text-purple-200">{isPolling ? 'Atualizando...' : lastUpdate ? `${lastUpdate.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}` : '⚡ 5s'}</span>
                   </div>
                 </div>
                 <div className="flex gap-2">
