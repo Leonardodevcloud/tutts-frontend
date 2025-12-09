@@ -1448,10 +1448,20 @@
           setBiCidades(cidades);
           // Setar filtros com primeira e última data disponível e carregar dashboard
           if (datas && datas.length > 0) {
-            const novosFiltros = {...biFiltros, data_inicio: datas[datas.length - 1].data, data_fim: datas[0].data};
+            // Converter datas para formato YYYY-MM-DD
+            const formatarData = (d) => {
+              if (!d) return '';
+              const data = new Date(d);
+              return data.toISOString().split('T')[0];
+            };
+            const novosFiltros = {...biFiltros, data_inicio: formatarData(datas[datas.length - 1].data), data_fim: formatarData(datas[0].data)};
+            console.log('📊 Datas formatadas:', novosFiltros.data_inicio, 'até', novosFiltros.data_fim);
             setBiFiltros(novosFiltros);
             // Carregar dashboard com as datas corretas
             setTimeout(() => loadBiDashboardComFiltros(novosFiltros), 100);
+          } else {
+            // Se não tem datas, carrega sem filtro
+            loadBiDashboardComFiltros({});
           }
         } catch (err) { console.error('Erro ao carregar dropdowns:', err); }
       };
