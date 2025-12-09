@@ -1628,6 +1628,17 @@
           setBiClientesResumo(data.porCliente || []);
           setBiProfissionaisResumo(data.porProfissional || []);
           setBiGraficos({ porTempo: data.porTempo || [], porKm: data.porKm || [] });
+          
+          // Expandir todas as linhas por padrão
+          const expandedState = {};
+          (data.porCliente || []).forEach((_, i) => {
+            expandedState[`dash-cli-${i}`] = true;
+            expandedState[`cli-${i}`] = true;
+          });
+          (data.porProfissional || []).forEach((_, i) => {
+            expandedState[`prof-${i}`] = true;
+          });
+          setBiExpandedRows(expandedState);
         } catch (err) { console.error('Erro ao carregar BI:', err); }
         setBiLoading(false);
       };
@@ -9638,8 +9649,19 @@
                       <div className="border rounded-lg p-4 bg-purple-50">
                         <div className="flex justify-between items-center mb-3">
                           <h3 className="font-bold text-purple-800">🏢 Cliente (Loja)</h3>
-                          {(biFiltros.cod_cliente || []).length > 0 && (
-                            <span className="text-xs bg-purple-200 text-purple-800 px-2 py-1 rounded-full font-semibold">{(biFiltros.cod_cliente || []).length} selecionado(s)</span>
+                          {(biFiltros.cod_cliente || []).length > 0 ? (
+                            <button 
+                              onClick={() => {
+                                const novosFiltros = {...biFiltros, cod_cliente: [], centro_custo: [], regiao: ''};
+                                setBiFiltros(novosFiltros);
+                                atualizarFiltrosInteligentes(novosFiltros);
+                              }}
+                              className="text-xs bg-purple-200 text-purple-800 px-2 py-1 rounded-full font-semibold hover:bg-purple-300 cursor-pointer"
+                            >
+                              {(biFiltros.cod_cliente || []).length} selecionado(s) ✕
+                            </button>
+                          ) : (
+                            <span className="text-xs text-purple-600">Todas</span>
                           )}
                         </div>
                         <select 
@@ -9660,15 +9682,26 @@
                             </option>
                           ))}
                         </select>
-                        <p className="text-xs text-purple-600 mt-2">💡 Ctrl+Click para selecionar múltiplos</p>
+                        <p className="text-xs text-purple-600 mt-2">💡 Ctrl+Click para multi-seleção | Sem seleção = Todas</p>
                       </div>
 
                       {/* Centro de Custo */}
                       <div className="border rounded-lg p-4 bg-green-50">
                         <div className="flex justify-between items-center mb-3">
                           <h3 className="font-bold text-green-800">📁 Centro de Custo</h3>
-                          {(biFiltros.centro_custo || []).length > 0 && (
-                            <span className="text-xs bg-green-200 text-green-800 px-2 py-1 rounded-full font-semibold">{(biFiltros.centro_custo || []).length} selecionado(s)</span>
+                          {(biFiltros.centro_custo || []).length > 0 ? (
+                            <button 
+                              onClick={() => {
+                                const novosFiltros = {...biFiltros, centro_custo: []};
+                                setBiFiltros(novosFiltros);
+                                atualizarFiltrosInteligentes(novosFiltros);
+                              }}
+                              className="text-xs bg-green-200 text-green-800 px-2 py-1 rounded-full font-semibold hover:bg-green-300 cursor-pointer"
+                            >
+                              {(biFiltros.centro_custo || []).length} selecionado(s) ✕
+                            </button>
+                          ) : (
+                            <span className="text-xs text-green-600">Todos</span>
                           )}
                         </div>
                         <select 
@@ -9695,7 +9728,7 @@
                             );
                           })}
                         </select>
-                        <p className="text-xs text-green-600 mt-2">💡 Ctrl+Click para selecionar múltiplos</p>
+                        <p className="text-xs text-green-600 mt-2">💡 Ctrl+Click para multi-seleção | Sem seleção = Todos</p>
                       </div>
                     </div>
                   </div>
