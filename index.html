@@ -1390,8 +1390,10 @@
         try {
           setBiLoading(true);
           const params = getBiParams();
+          console.log('📊 Carregando dashboard com filtros:', params.toString() || '(sem filtros)');
           const res = await fetch(`${API_URL}/bi/dashboard-completo?${params}`);
           const data = await res.json();
+          console.log('📊 Dados recebidos:', data);
           setBiDashboard(data.metricas || {});
           setBiClientesResumo(data.porCliente || []);
           setBiProfissionaisResumo(data.porProfissional || []);
@@ -1444,11 +1446,38 @@
           setBiDatasDisponiveis(datas);
           setBiUploads(uploads);
           setBiCidades(cidades);
-          // Setar filtros com primeira e última data disponível
+          // Setar filtros com primeira e última data disponível e carregar dashboard
           if (datas && datas.length > 0) {
-            setBiFiltros(f => ({...f, data_inicio: datas[datas.length - 1].data, data_fim: datas[0].data}));
+            const novosFiltros = {...biFiltros, data_inicio: datas[datas.length - 1].data, data_fim: datas[0].data};
+            setBiFiltros(novosFiltros);
+            // Carregar dashboard com as datas corretas
+            setTimeout(() => loadBiDashboardComFiltros(novosFiltros), 100);
           }
         } catch (err) { console.error('Erro ao carregar dropdowns:', err); }
+      };
+
+      // Versão que recebe filtros diretamente (para evitar race condition)
+      const loadBiDashboardComFiltros = async (filtros) => {
+        try {
+          setBiLoading(true);
+          const params = new URLSearchParams();
+          if (filtros.data_inicio) params.append('data_inicio', filtros.data_inicio);
+          if (filtros.data_fim) params.append('data_fim', filtros.data_fim);
+          if (filtros.cod_cliente) params.append('cod_cliente', filtros.cod_cliente);
+          if (filtros.centro_custo) params.append('centro_custo', filtros.centro_custo);
+          if (filtros.cod_prof) params.append('cod_prof', filtros.cod_prof);
+          if (filtros.categoria) params.append('categoria', filtros.categoria);
+          if (filtros.cidade) params.append('cidade', filtros.cidade);
+          if (filtros.status_prazo) params.append('status_prazo', filtros.status_prazo);
+          
+          const res = await fetch(`${API_URL}/bi/dashboard-completo?${params}`);
+          const data = await res.json();
+          setBiDashboard(data.metricas || {});
+          setBiClientesResumo(data.porCliente || []);
+          setBiProfissionaisResumo(data.porProfissional || []);
+          setBiGraficos({ porTempo: data.porTempo || [], porKm: data.porKm || [] });
+        } catch (err) { console.error('Erro ao carregar BI:', err); }
+        setBiLoading(false);
       };
 
       const formatarTempo = (minutos) => {
@@ -5099,7 +5128,7 @@
                       <button onClick={() => setAdminMasterModule('disponibilidade')} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${adminMasterModule === 'disponibilidade' ? 'bg-white text-blue-800' : 'text-white hover:bg-white/10'}`}>
                         📅 Disponibilidade
                       </button>
-                      <button onClick={() => { setAdminMasterModule('bi'); loadBiDropdowns(); loadBiPrazos(); loadBiPrazoPadrao(); loadBiDashboard(); }} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${adminMasterModule === 'bi' ? 'bg-white text-orange-800' : 'text-white hover:bg-white/10'}`}>
+                      <button onClick={() => { setAdminMasterModule('bi'); loadBiDropdowns(); loadBiPrazos(); loadBiPrazoPadrao(); }} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${adminMasterModule === 'bi' ? 'bg-white text-orange-800' : 'text-white hover:bg-white/10'}`}>
                         📊 BI
                       </button>
                     </div>
@@ -9861,7 +9890,7 @@
                     <button onClick={() => { setAdminMasterModule('solicitacoes'); setFormData(f => ({...f, adminTab: 'disponibilidade'})); }} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${adminMasterModule === 'solicitacoes' && formData.adminTab === 'disponibilidade' ? 'bg-white text-blue-800' : 'text-white hover:bg-white/10'}`}>
                       📅 Disponibilidade
                     </button>
-                    <button onClick={() => { setAdminMasterModule('bi'); loadBiDropdowns(); loadBiPrazos(); loadBiPrazoPadrao(); loadBiDashboard(); }} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${adminMasterModule === 'bi' ? 'bg-white text-orange-800' : 'text-white hover:bg-white/10'}`}>
+                    <button onClick={() => { setAdminMasterModule('bi'); loadBiDropdowns(); loadBiPrazos(); loadBiPrazoPadrao(); }} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${adminMasterModule === 'bi' ? 'bg-white text-orange-800' : 'text-white hover:bg-white/10'}`}>
                       📊 BI
                     </button>
                   </div>
