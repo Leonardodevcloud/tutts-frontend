@@ -1470,8 +1470,14 @@
           if (filtros.cidade) params.append('cidade', filtros.cidade);
           if (filtros.status_prazo) params.append('status_prazo', filtros.status_prazo);
           
+          console.log('📊 loadBiDashboardComFiltros - params:', params.toString());
           const res = await fetch(`${API_URL}/bi/dashboard-completo?${params}`);
           const data = await res.json();
+          console.log('📊 loadBiDashboardComFiltros - resposta:', data);
+          console.log('📊 metricas:', data.metricas);
+          console.log('📊 porCliente:', data.porCliente?.length, 'registros');
+          console.log('📊 porProfissional:', data.porProfissional?.length, 'registros');
+          
           setBiDashboard(data.metricas || {});
           setBiClientesResumo(data.porCliente || []);
           setBiProfissionaisResumo(data.porProfissional || []);
@@ -9354,29 +9360,29 @@
               ) : (
                 <>
                   {/* ===== ABA DASHBOARD ===== */}
-                  {biTab === 'dashboard' && biDashboard && (
+                  {biTab === 'dashboard' && (
                     <>
                       {/* Cards superiores - Valores */}
                       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
                         <div className="bg-purple-700 text-white rounded-lg p-4 text-center">
                           <p className="text-xs opacity-80">Valor Total</p>
-                          <p className="text-2xl font-bold">{formatarMoeda(biDashboard.valor_total || 0)}</p>
+                          <p className="text-2xl font-bold">{formatarMoeda(biDashboard?.valor_total || 0)}</p>
                         </div>
                         <div className="bg-purple-600 text-white rounded-lg p-4 text-center">
                           <p className="text-xs opacity-80">Valor Profissional</p>
-                          <p className="text-2xl font-bold">{formatarMoeda(biDashboard.valor_prof_total || 0)}</p>
+                          <p className="text-2xl font-bold">{formatarMoeda(biDashboard?.valor_prof_total || 0)}</p>
                         </div>
                         <div className="bg-purple-500 text-white rounded-lg p-4 text-center">
                           <p className="text-xs opacity-80">Faturamento</p>
-                          <p className="text-2xl font-bold">{formatarMoeda((biDashboard.valor_total || 0) - (biDashboard.valor_prof_total || 0))}</p>
+                          <p className="text-2xl font-bold">{formatarMoeda(toNum(biDashboard?.valor_total) - toNum(biDashboard?.valor_prof_total))}</p>
                         </div>
                         <div className="bg-purple-400 text-white rounded-lg p-4 text-center">
                           <p className="text-xs opacity-80">Ticket Médio</p>
-                          <p className="text-2xl font-bold">{formatarMoeda(biDashboard.ticket_medio || 0)}</p>
+                          <p className="text-2xl font-bold">{formatarMoeda(biDashboard?.ticket_medio || 0)}</p>
                         </div>
                         <div className="bg-purple-300 text-purple-900 rounded-lg p-4 text-center">
                           <p className="text-xs opacity-80">Entrega x Entregadores</p>
-                          <p className="text-2xl font-bold">{(biDashboard.media_entregas_por_prof || 0).toFixed(2)}</p>
+                          <p className="text-2xl font-bold">{toNum(biDashboard?.media_entregas_por_prof).toFixed(2)}</p>
                         </div>
                       </div>
 
@@ -9384,28 +9390,28 @@
                       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
                         <div className="bg-purple-800 text-white rounded-lg p-4 text-center">
                           <p className="text-xs opacity-80">Quantidade OS</p>
-                          <p className="text-3xl font-bold">{(biDashboard.total_os || 0).toLocaleString('pt-BR')}</p>
+                          <p className="text-3xl font-bold">{toNum(biDashboard?.total_os).toLocaleString('pt-BR')}</p>
                         </div>
                         <div className="bg-purple-700 text-white rounded-lg p-4 text-center">
                           <p className="text-xs opacity-80">Quantidade Entregas</p>
-                          <p className="text-3xl font-bold">{(biDashboard.total_entregas || 0).toLocaleString('pt-BR')}</p>
+                          <p className="text-3xl font-bold">{toNum(biDashboard?.total_entregas).toLocaleString('pt-BR')}</p>
                           <p className="text-xs mt-1">
-                            <span className="text-green-300">No Prazo: {(biDashboard.dentro_prazo || 0).toLocaleString('pt-BR')}</span>
+                            <span className="text-green-300">No Prazo: {toNum(biDashboard?.dentro_prazo).toLocaleString('pt-BR')}</span>
                             <span className="mx-2">|</span>
-                            <span className="text-red-300">Fora: {(biDashboard.fora_prazo || 0).toLocaleString('pt-BR')}</span>
+                            <span className="text-red-300">Fora: {toNum(biDashboard?.fora_prazo).toLocaleString('pt-BR')}</span>
                           </p>
                         </div>
                         <div className="bg-purple-600 text-white rounded-lg p-4 text-center">
                           <p className="text-xs opacity-80">Média Entrega</p>
-                          <p className="text-3xl font-bold">{formatarTempo(biDashboard.tempo_medio)}</p>
+                          <p className="text-3xl font-bold">{formatarTempo(biDashboard?.tempo_medio)}</p>
                         </div>
                         <div className="bg-purple-500 text-white rounded-lg p-4 text-center">
                           <p className="text-xs opacity-80">Quantidade Retornos</p>
-                          <p className="text-3xl font-bold">{(biDashboard.total_retornos || 0).toLocaleString('pt-BR')}</p>
+                          <p className="text-3xl font-bold">{toNum(biDashboard?.total_retornos).toLocaleString('pt-BR')}</p>
                         </div>
                         <div className="bg-purple-400 text-white rounded-lg p-4 text-center">
                           <p className="text-xs opacity-80">Entregadores</p>
-                          <p className="text-3xl font-bold">{(biDashboard.total_profissionais || 0).toLocaleString('pt-BR')}</p>
+                          <p className="text-3xl font-bold">{toNum(biDashboard?.total_profissionais).toLocaleString('pt-BR')}</p>
                         </div>
                       </div>
 
@@ -9433,7 +9439,7 @@
                               </tr>
                             </thead>
                             <tbody>
-                              {biClientesResumo.slice(0, 15).map((c, i) => (
+                              {(biClientesResumo || []).slice(0, 15).map((c, i) => (
                                 <tr key={i} className={`border-b hover:bg-purple-50 ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
                                   <td className="px-3 py-2"><button onClick={() => toggleBiRow(`cli-${i}`)} className="text-purple-600">➕</button></td>
                                   <td className="px-3 py-2 font-medium">{c.cod_cliente}-{c.nome_cliente}</td>
@@ -9446,7 +9452,7 @@
                                   <td className="px-3 py-2 text-right">{formatarTempo(c.tempo_medio)}</td>
                                   <td className="px-3 py-2 text-right">{formatarMoeda(c.valor_total)}</td>
                                   <td className="px-3 py-2 text-right">{formatarMoeda(c.valor_prof)}</td>
-                                  <td className="px-3 py-2 text-right font-medium">{formatarMoeda((c.valor_total || 0) - (c.valor_prof || 0))}</td>
+                                  <td className="px-3 py-2 text-right font-medium">{formatarMoeda(toNum(c.valor_total) - toNum(c.valor_prof))}</td>
                                 </tr>
                               ))}
                             </tbody>
@@ -9454,16 +9460,16 @@
                               <tr>
                                 <td className="px-3 py-2"></td>
                                 <td className="px-3 py-2">Total</td>
-                                <td className="px-3 py-2 text-right">{(biDashboard.total_os || 0).toLocaleString('pt-BR')}</td>
-                                <td className="px-3 py-2 text-right">{(biDashboard.total_entregas || 0).toLocaleString('pt-BR')}</td>
-                                <td className="px-3 py-2 text-right text-green-700">{(biDashboard.dentro_prazo || 0).toLocaleString('pt-BR')}</td>
-                                <td className="px-3 py-2 text-right text-green-700">{((biDashboard.dentro_prazo || 0) / (biDashboard.total_entregas || 1) * 100).toFixed(2)}%</td>
-                                <td className="px-3 py-2 text-right text-red-700">{(biDashboard.fora_prazo || 0).toLocaleString('pt-BR')}</td>
-                                <td className="px-3 py-2 text-right text-red-700">{((biDashboard.fora_prazo || 0) / (biDashboard.total_entregas || 1) * 100).toFixed(2)}%</td>
-                                <td className="px-3 py-2 text-right">{formatarTempo(biDashboard.tempo_medio)}</td>
-                                <td className="px-3 py-2 text-right">{formatarMoeda(biDashboard.valor_total)}</td>
-                                <td className="px-3 py-2 text-right">{formatarMoeda(biDashboard.valor_prof_total)}</td>
-                                <td className="px-3 py-2 text-right">{formatarMoeda((biDashboard.valor_total || 0) - (biDashboard.valor_prof_total || 0))}</td>
+                                <td className="px-3 py-2 text-right">{toNum(biDashboard?.total_os).toLocaleString('pt-BR')}</td>
+                                <td className="px-3 py-2 text-right">{toNum(biDashboard?.total_entregas).toLocaleString('pt-BR')}</td>
+                                <td className="px-3 py-2 text-right text-green-700">{toNum(biDashboard?.dentro_prazo).toLocaleString('pt-BR')}</td>
+                                <td className="px-3 py-2 text-right text-green-700">{(toNum(biDashboard?.dentro_prazo) / (toNum(biDashboard?.total_entregas) || 1) * 100).toFixed(2)}%</td>
+                                <td className="px-3 py-2 text-right text-red-700">{toNum(biDashboard?.fora_prazo).toLocaleString('pt-BR')}</td>
+                                <td className="px-3 py-2 text-right text-red-700">{(toNum(biDashboard?.fora_prazo) / (toNum(biDashboard?.total_entregas) || 1) * 100).toFixed(2)}%</td>
+                                <td className="px-3 py-2 text-right">{formatarTempo(biDashboard?.tempo_medio)}</td>
+                                <td className="px-3 py-2 text-right">{formatarMoeda(biDashboard?.valor_total)}</td>
+                                <td className="px-3 py-2 text-right">{formatarMoeda(biDashboard?.valor_prof_total)}</td>
+                                <td className="px-3 py-2 text-right">{formatarMoeda(toNum(biDashboard?.valor_total) - toNum(biDashboard?.valor_prof_total))}</td>
                               </tr>
                             </tfoot>
                           </table>
