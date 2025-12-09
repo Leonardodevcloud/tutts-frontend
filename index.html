@@ -15,6 +15,7 @@
   <link rel="apple-touch-icon" href="/icon-192.png">
   
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
   <style>
     @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
     .toast { animation: slideIn 0.3s ease-out; }
@@ -1439,10 +1440,9 @@
         try {
           setBiUploadProgress('Lendo arquivo...');
           
-          // Usar SheetJS para ler o Excel
-          const XLSX = await import('https://cdn.sheetjs.com/xlsx-0.20.1/package/xlsx.mjs');
+          // Usar SheetJS (carregado via CDN no head)
           const data = await file.arrayBuffer();
-          const workbook = XLSX.read(data);
+          const workbook = XLSX.read(data, { type: 'array' });
           const sheet = workbook.Sheets[workbook.SheetNames[0]];
           const jsonData = XLSX.utils.sheet_to_json(sheet);
           
@@ -1503,7 +1503,7 @@
           }
         } catch (err) {
           console.error('Erro no upload:', err);
-          showToast('❌ Erro ao processar arquivo', 'error');
+          showToast('❌ Erro ao processar arquivo: ' + err.message, 'error');
         }
         setBiUploadProgress(null);
       };
