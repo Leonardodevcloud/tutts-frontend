@@ -721,6 +721,25 @@
       const [lojaSugestoes, setLojaSugestoes] = useState([]);
       const [lojaSugestoesUsuario, setLojaSugestoesUsuario] = useState([]);
 
+      // Estados para o módulo BI
+      const [biTab, setBiTab] = useState('dashboard'); // 'dashboard', 'config', 'upload'
+      const [biDashboard, setBiDashboard] = useState(null);
+      const [biPrazos, setBiPrazos] = useState([]);
+      const [biPrazoPadrao, setBiPrazoPadrao] = useState([]);
+      const [biClientes, setBiClientes] = useState([]);
+      const [biCentrosCusto, setBiCentrosCusto] = useState([]);
+      const [biProfissionais, setBiProfissionais] = useState([]);
+      const [biFiltros, setBiFiltros] = useState({
+        data_inicio: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        data_fim: new Date().toISOString().split('T')[0],
+        cod_cliente: '',
+        centro_custo: '',
+        cod_prof: '',
+        categoria: ''
+      });
+      const [biLoading, setBiLoading] = useState(false);
+      const [biUploadProgress, setBiUploadProgress] = useState(null);
+
       // Verifica se usuário é novato (COD >= 14000) e se está dentro dos 30 dias
       const isNovato = () => {
         if (!user || !user.codProfissional) return false;
@@ -1336,6 +1355,168 @@
           const res = await fetch(`${API_URL}/loja/sugestoes/user/${user.codProfissional}`);
           setLojaSugestoesUsuario(await res.json());
         } catch (err) { console.error('Erro ao carregar sugestões:', err); }
+      };
+
+      // ========== FUNÇÕES DO MÓDULO BI ==========
+      const loadBiDashboard = async () => {
+        try {
+          setBiLoading(true);
+          const params = new URLSearchParams();
+          if (biFiltros.data_inicio) params.append('data_inicio', biFiltros.data_inicio);
+          if (biFiltros.data_fim) params.append('data_fim', biFiltros.data_fim);
+          if (biFiltros.cod_cliente) params.append('cod_cliente', biFiltros.cod_cliente);
+          if (biFiltros.centro_custo) params.append('centro_custo', biFiltros.centro_custo);
+          if (biFiltros.cod_prof) params.append('cod_prof', biFiltros.cod_prof);
+          if (biFiltros.categoria) params.append('categoria', biFiltros.categoria);
+          
+          const res = await fetch(`${API_URL}/bi/dashboard?${params}`);
+          setBiDashboard(await res.json());
+        } catch (err) { console.error('Erro ao carregar BI:', err); }
+        setBiLoading(false);
+      };
+
+      const loadBiPrazos = async () => {
+        try {
+          const res = await fetch(`${API_URL}/bi/prazos`);
+          setBiPrazos(await res.json());
+        } catch (err) { console.error('Erro ao carregar prazos:', err); }
+      };
+
+      const loadBiPrazoPadrao = async () => {
+        try {
+          const res = await fetch(`${API_URL}/bi/prazo-padrao`);
+          setBiPrazoPadrao(await res.json());
+        } catch (err) { console.error('Erro ao carregar prazo padrão:', err); }
+      };
+
+      const loadBiDropdowns = async () => {
+        try {
+          const [clientes, centros, profs] = await Promise.all([
+            fetch(`${API_URL}/bi/clientes`).then(r => r.json()),
+            fetch(`${API_URL}/bi/centros-custo`).then(r => r.json()),
+            fetch(`${API_URL}/bi/profissionais`).then(r => r.json())
+          ]);
+          setBiClientes(clientes);
+          setBiCentrosCusto(centros);
+          setBiProfissionais(profs);
+        } catch (err) { console.error('Erro ao carregar dropdowns:', err); }
+      };
+
+      const saveBiPrazo = async (tipo, codigo, nome, faixas) => {
+        try {
+          await fetch(`${API_URL}/bi/prazos`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tipo, codigo, nome, faixas })
+          });
+          showToast('✅ Prazo salvo!', 'success');
+          loadBiPrazos();
+        } catch (err) { showToast('Erro ao salvar', 'error'); }
+      };
+
+      const saveBiPrazoPadrao = async (faixas) => {
+        try {
+          await fetch(`${API_URL}/bi/prazo-padrao`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ faixas })
+          });
+          showToast('✅ Prazo padrão salvo!', 'success');
+          loadBiPrazoPadrao();
+        } catch (err) { showToast('Erro ao salvar', 'error'); }
+      };
+
+      const deleteBiPrazo = async (id) => {
+        if (!confirm('Remover esta configuração de prazo?')) return;
+        try {
+          await fetch(`${API_URL}/bi/prazos/${id}`, { method: 'DELETE' });
+          showToast('✅ Removido!', 'success');
+          loadBiPrazos();
+        } catch (err) { showToast('Erro ao remover', 'error'); }
+      };
+
+      const handleBiUpload = async (file) => {
+        try {
+          setBiUploadProgress('Lendo arquivo...');
+          
+          // Usar SheetJS para ler o Excel
+          const XLSX = await import('https://cdn.sheetjs.com/xlsx-0.20.1/package/xlsx.mjs');
+          const data = await file.arrayBuffer();
+          const workbook = XLSX.read(data);
+          const sheet = workbook.Sheets[workbook.SheetNames[0]];
+          const jsonData = XLSX.utils.sheet_to_json(sheet);
+          
+          setBiUploadProgress(`Processando ${jsonData.length} linhas...`);
+          
+          // Mapear colunas para o formato do banco
+          const entregas = jsonData.map(row => ({
+            os: row['OS'],
+            num_pedido: row['Nº Pedido'],
+            cod_cliente: row['Cód. cliente'],
+            nome_cliente: row['Nome cliente'],
+            empresa: row['Empresa'],
+            nome_fantasia: row['Nome fantasia'],
+            centro_custo: row['Centro custo'],
+            cidade_p1: row['Cidade P1'],
+            endereco: row['Endereço'],
+            bairro: row['Bairro'],
+            cidade: row['Cidade'],
+            estado: row['Estado'],
+            cod_prof: row['Cód. prof.'],
+            nome_prof: row['Nome prof.'],
+            data_hora: row['Data/Hora'],
+            data_hora_alocado: row['Data/Hora Alocado'],
+            data_solicitado: row['Data solicitado'],
+            hora_solicitado: row['Hora solicitado'],
+            data_chegada: row['Data Chegada'],
+            hora_chegada: row['Hora Chegada'],
+            data_saida: row['Data Saida'],
+            hora_saida: row['Hora Saida'],
+            categoria: row['Categoria'],
+            valor: row['Valor'],
+            distancia: row['Distância'],
+            valor_prof: row['Valor prof.'],
+            finalizado: row['Finalizado'],
+            execucao_comp: row['Execução Comp.'],
+            execucao_espera: row['Execução - Espera'],
+            status: row['Status'],
+            motivo: row['Motivo'],
+            ocorrencia: row['Ocorrência'],
+            velocidade_media: row['Velocidade Média']
+          })).filter(e => e.os); // Filtra linhas sem OS
+          
+          setBiUploadProgress(`Enviando ${entregas.length} entregas...`);
+          
+          const res = await fetch(`${API_URL}/bi/entregas/upload`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ entregas })
+          });
+          
+          const result = await res.json();
+          if (result.success) {
+            showToast(`✅ Upload concluído! ${result.inseridos} novos, ${result.atualizados} atualizados`, 'success');
+            loadBiDashboard();
+            loadBiDropdowns();
+          } else {
+            showToast('❌ Erro no upload: ' + result.error, 'error');
+          }
+        } catch (err) {
+          console.error('Erro no upload:', err);
+          showToast('❌ Erro ao processar arquivo', 'error');
+        }
+        setBiUploadProgress(null);
+      };
+
+      const recalcularBiPrazos = async () => {
+        try {
+          setBiLoading(true);
+          const res = await fetch(`${API_URL}/bi/entregas/recalcular`, { method: 'POST' });
+          const result = await res.json();
+          showToast(`✅ ${result.atualizados} entregas recalculadas!`, 'success');
+          loadBiDashboard();
+        } catch (err) { showToast('Erro ao recalcular', 'error'); }
+        setBiLoading(false);
       };
 
       const refreshAll = async () => {
@@ -4830,6 +5011,9 @@
                       </button>
                       <button onClick={() => setAdminMasterModule('disponibilidade')} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${adminMasterModule === 'disponibilidade' ? 'bg-white text-blue-800' : 'text-white hover:bg-white/10'}`}>
                         📅 Disponibilidade
+                      </button>
+                      <button onClick={() => setAdminMasterModule('bi')} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${adminMasterModule === 'bi' ? 'bg-white text-orange-800' : 'text-white hover:bg-white/10'}`}>
+                        📊 BI
                       </button>
                     </div>
                   </div>
@@ -8919,6 +9103,115 @@
                     );
                   })()}
                 </>
+              )}
+            </div>
+          </div>
+        );
+      }
+
+      // ========== MÓDULO BI ==========
+      if (user.role === 'admin_master' && adminMasterModule === 'bi') {
+        return (
+          <div className="min-h-screen bg-gray-100">
+            {toast && <Toast {...toast} />}
+            {globalLoading && <LoadingOverlay />}
+
+            <nav className="bg-gradient-to-r from-orange-600 to-amber-600 shadow-lg">
+              <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+                <div className="flex items-center gap-4">
+                  <div><h1 className="text-xl font-bold text-white">📊 Business Intelligence</h1><p className="text-xs text-orange-100">Análise de Entregas</p></div>
+                  <div className="flex bg-white/10 rounded-lg p-1">
+                    <button onClick={() => setAdminMasterModule('solicitacoes')} className="px-3 py-1.5 rounded-lg text-sm font-semibold text-white hover:bg-white/10">📋 Solicitações</button>
+                    <button onClick={() => setAdminMasterModule('financeiro')} className="px-3 py-1.5 rounded-lg text-sm font-semibold text-white hover:bg-white/10">💰 Financeiro</button>
+                    <button onClick={() => setAdminMasterModule('disponibilidade')} className="px-3 py-1.5 rounded-lg text-sm font-semibold text-white hover:bg-white/10">📅 Disponibilidade</button>
+                    <button className="px-3 py-1.5 rounded-lg text-sm font-semibold bg-white text-orange-800">📊 BI</button>
+                  </div>
+                </div>
+                <button onClick={() => setUser(null)} className="px-4 py-2 text-white hover:bg-white/20 rounded-lg">Sair</button>
+              </div>
+            </nav>
+
+            <div className="bg-white border-b sticky top-0 z-10">
+              <div className="max-w-7xl mx-auto px-4 flex gap-1">
+                <button onClick={() => { setBiTab('dashboard'); loadBiDashboard(); loadBiDropdowns(); }} className={`px-4 py-3 text-sm font-semibold border-b-2 ${biTab === 'dashboard' ? 'border-orange-600 text-orange-600' : 'border-transparent text-gray-600'}`}>📈 Dashboard</button>
+                <button onClick={() => setBiTab('upload')} className={`px-4 py-3 text-sm font-semibold border-b-2 ${biTab === 'upload' ? 'border-orange-600 text-orange-600' : 'border-transparent text-gray-600'}`}>📤 Upload</button>
+                <button onClick={() => { setBiTab('config'); loadBiPrazos(); loadBiPrazoPadrao(); loadBiDropdowns(); }} className={`px-4 py-3 text-sm font-semibold border-b-2 ${biTab === 'config' ? 'border-orange-600 text-orange-600' : 'border-transparent text-gray-600'}`}>⚙️ Prazos</button>
+              </div>
+            </div>
+
+            <div className="max-w-7xl mx-auto p-4">
+              {biTab === 'dashboard' && (
+                <>
+                  <div className="bg-white rounded-xl shadow p-4 mb-6">
+                    <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+                      <div><label className="text-xs text-gray-600">Data Início</label><input type="date" value={biFiltros.data_inicio} onChange={e => setBiFiltros({...biFiltros, data_inicio: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
+                      <div><label className="text-xs text-gray-600">Data Fim</label><input type="date" value={biFiltros.data_fim} onChange={e => setBiFiltros({...biFiltros, data_fim: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
+                      <div><label className="text-xs text-gray-600">Cliente</label><select value={biFiltros.cod_cliente} onChange={e => setBiFiltros({...biFiltros, cod_cliente: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-sm"><option value="">Todos</option>{biClientes.map(c => <option key={c.cod_cliente} value={c.cod_cliente}>{c.nome_cliente}</option>)}</select></div>
+                      <div><label className="text-xs text-gray-600">Centro Custo</label><select value={biFiltros.centro_custo} onChange={e => setBiFiltros({...biFiltros, centro_custo: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-sm"><option value="">Todos</option>{biCentrosCusto.map(c => <option key={c.centro_custo} value={c.centro_custo}>{c.centro_custo}</option>)}</select></div>
+                      <div><label className="text-xs text-gray-600">Profissional</label><select value={biFiltros.cod_prof} onChange={e => setBiFiltros({...biFiltros, cod_prof: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-sm"><option value="">Todos</option>{biProfissionais.map(p => <option key={p.cod_prof} value={p.cod_prof}>{p.nome_prof}</option>)}</select></div>
+                      <div className="flex items-end"><button onClick={loadBiDashboard} className="w-full px-4 py-2 bg-orange-600 text-white rounded-lg font-semibold hover:bg-orange-700">🔍 Filtrar</button></div>
+                    </div>
+                  </div>
+                  {biLoading ? (<div className="text-center py-20"><div className="animate-spin text-5xl">⏳</div></div>
+                  ) : biDashboard && biDashboard.metricas ? (
+                    <>
+                      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+                        <div className="bg-white rounded-xl shadow p-4"><p className="text-xs text-gray-500">Total</p><p className="text-3xl font-bold text-gray-800">{biDashboard.metricas.total_entregas || 0}</p></div>
+                        <div className="bg-white rounded-xl shadow p-4 border-l-4 border-green-500"><p className="text-xs text-gray-500">✅ No Prazo</p><p className="text-3xl font-bold text-green-600">{biDashboard.metricas.dentro_prazo || 0}</p></div>
+                        <div className="bg-white rounded-xl shadow p-4 border-l-4 border-red-500"><p className="text-xs text-gray-500">❌ Fora</p><p className="text-3xl font-bold text-red-600">{biDashboard.metricas.fora_prazo || 0}</p></div>
+                        <div className="bg-white rounded-xl shadow p-4"><p className="text-xs text-gray-500">⏱️ Tempo Médio</p><p className="text-3xl font-bold text-blue-600">{biDashboard.metricas.tempo_medio || 0}min</p></div>
+                        <div className="bg-white rounded-xl shadow p-4"><p className="text-xs text-gray-500">📏 Dist. Média</p><p className="text-3xl font-bold text-purple-600">{biDashboard.metricas.distancia_media || 0}km</p></div>
+                      </div>
+                      {biDashboard.porDia && biDashboard.porDia.length > 0 && (
+                        <div className="bg-white rounded-xl shadow p-6 mb-6">
+                          <h3 className="text-lg font-semibold mb-4">📈 Entregas por Dia</h3>
+                          <div className="h-48 flex items-end gap-1">
+                            {biDashboard.porDia.slice(-14).map((d, i) => {
+                              const maxT = Math.max(...biDashboard.porDia.map(x => x.total));
+                              const hPct = maxT > 0 ? (d.total / maxT) * 100 : 0;
+                              const dPct = d.total > 0 ? (d.dentro_prazo / d.total) * 100 : 0;
+                              return (<div key={i} className="flex-1 flex flex-col items-center group"><div className="w-full rounded-t overflow-hidden" style={{height: `${hPct}%`, minHeight: '4px'}}><div className="bg-green-500 w-full" style={{height: `${dPct}%`}}></div><div className="bg-red-400 w-full" style={{height: `${100-dPct}%`}}></div></div><p className="text-[9px] text-gray-500 mt-1">{new Date(d.data).toLocaleDateString('pt-BR', {day:'2-digit',month:'2-digit'})}</p></div>);
+                            })}
+                          </div>
+                        </div>
+                      )}
+                      <div className="grid md:grid-cols-2 gap-6">
+                        <div className="bg-white rounded-xl shadow p-6"><h3 className="text-lg font-semibold mb-4">🏆 Top Profissionais</h3><div className="space-y-2 max-h-72 overflow-y-auto">{biDashboard.ranking && biDashboard.ranking.slice(0,10).map((p,i) => (<div key={i} className="flex items-center gap-2 p-2 bg-gray-50 rounded"><span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${i<3?'bg-yellow-400':'bg-gray-200'}`}>{i+1}</span><div className="flex-1 min-w-0"><p className="text-sm font-medium truncate">{p.nome_prof}</p><p className="text-xs text-gray-500">{p.total} entregas</p></div><p className={`text-sm font-bold ${(p.taxa_prazo||0)>=80?'text-green-600':'text-red-600'}`}>{p.taxa_prazo||0}%</p></div>))}</div></div>
+                        <div className="bg-white rounded-xl shadow p-6"><h3 className="text-lg font-semibold mb-4">🏢 Por Centro de Custo</h3><div className="space-y-2 max-h-72 overflow-y-auto">{biDashboard.porCentro && biDashboard.porCentro.slice(0,10).map((c,i) => (<div key={i} className="p-2 bg-gray-50 rounded"><div className="flex justify-between mb-1"><p className="text-sm font-medium truncate">{c.centro_custo}</p><p className="text-sm font-bold">{c.total}</p></div><div className="w-full bg-gray-200 rounded-full h-2"><div className="bg-green-500 h-2 rounded-full" style={{width:`${c.taxa_prazo||0}%`}}></div></div></div>))}</div></div>
+                      </div>
+                    </>
+                  ) : (<div className="bg-white rounded-xl shadow p-10 text-center"><p className="text-5xl mb-4">📊</p><p className="text-gray-500">Nenhum dado. Faça upload.</p></div>)}
+                </>
+              )}
+              {biTab === 'upload' && (
+                <div className="bg-white rounded-xl shadow p-6">
+                  <h2 className="text-xl font-bold mb-6">📤 Upload de Planilha</h2>
+                  <div className="border-2 border-dashed border-gray-300 rounded-xl p-10 text-center mb-6">
+                    {biUploadProgress ? (<div><div className="animate-spin text-5xl mb-4">⏳</div><p>{biUploadProgress}</p></div>) : (<><p className="text-5xl mb-4">📄</p><p className="text-gray-600 mb-4">Selecione planilha Excel (.xlsx)</p><input type="file" accept=".xlsx,.xls" onChange={e => e.target.files[0] && handleBiUpload(e.target.files[0])} className="hidden" id="bi-upload" /><label htmlFor="bi-upload" className="px-6 py-3 bg-orange-600 text-white rounded-lg font-semibold cursor-pointer hover:bg-orange-700">📤 Selecionar</label></>)}
+                  </div>
+                  <button onClick={recalcularBiPrazos} disabled={biLoading} className="px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold">🔄 Recalcular Prazos</button>
+                </div>
+              )}
+              {biTab === 'config' && (
+                <div className="space-y-6">
+                  <div className="bg-white rounded-xl shadow p-6">
+                    <h2 className="text-xl font-bold mb-4">⚙️ Prazo Padrão</h2>
+                    <div className="space-y-3 mb-4" id="faixas-padrao">{(biPrazoPadrao.length>0?biPrazoPadrao:[{km_min:0,km_max:10,prazo_minutos:45}]).map((f,i) => (<div key={i} className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg"><span className="text-sm">De</span><input type="number" defaultValue={f.km_min} className="w-16 px-2 py-1 border rounded text-center" data-field="km_min" data-idx={i} /><span className="text-sm">até</span><input type="number" defaultValue={f.km_max||''} placeholder="∞" className="w-16 px-2 py-1 border rounded text-center" data-field="km_max" data-idx={i} /><span className="text-sm">km →</span><input type="number" defaultValue={f.prazo_minutos} className="w-16 px-2 py-1 border rounded text-center" data-field="prazo_minutos" data-idx={i} /><span className="text-sm">min</span></div>))}</div>
+                    <button onClick={() => { const c=document.getElementById('faixas-padrao'); const inp=c.querySelectorAll('input'); const m={}; inp.forEach(i => { const idx=i.dataset.idx; if(!m[idx])m[idx]={}; m[idx][i.dataset.field]=i.value===''?null:Number(i.value); }); saveBiPrazoPadrao(Object.values(m)); }} className="px-4 py-2 bg-green-600 text-white rounded-lg font-semibold">💾 Salvar Padrão</button>
+                  </div>
+                  <div className="bg-white rounded-xl shadow p-6">
+                    <h2 className="text-xl font-bold mb-4">➕ Novo Prazo por Cliente/Centro</h2>
+                    <div className="grid md:grid-cols-2 gap-4 mb-4">
+                      <div><label className="text-sm text-gray-600">Selecionar</label><select id="novo-codigo" className="w-full px-3 py-2 border rounded-lg"><option value="">-- Selecione --</option>{biClientes.map(c => <option key={c.cod_cliente} value={`cliente:${c.cod_cliente}:${c.nome_cliente}`}>👤 {c.nome_cliente}</option>)}{biCentrosCusto.map(c => <option key={c.centro_custo} value={`centro:${c.centro_custo}:${c.centro_custo}`}>🏢 {c.centro_custo}</option>)}</select></div>
+                    </div>
+                    <div className="space-y-3 mb-4" id="faixas-novo"><div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg"><span className="text-sm">De</span><input type="number" defaultValue="0" className="w-16 px-2 py-1 border rounded text-center" data-field="km_min" data-idx="0" /><span className="text-sm">até</span><input type="number" defaultValue="10" className="w-16 px-2 py-1 border rounded text-center" data-field="km_max" data-idx="0" /><span className="text-sm">km →</span><input type="number" defaultValue="45" className="w-16 px-2 py-1 border rounded text-center" data-field="prazo_minutos" data-idx="0" /><span className="text-sm">min</span></div></div>
+                    <button onClick={() => { const sel=document.getElementById('novo-codigo').value; if(!sel) return showToast('Selecione','error'); const [t,c,n]=sel.split(':'); const ctr=document.getElementById('faixas-novo'); const inp=ctr.querySelectorAll('input'); const m={}; inp.forEach(i => { const idx=i.dataset.idx; if(!m[idx])m[idx]={}; m[idx][i.dataset.field]=i.value===''?null:Number(i.value); }); saveBiPrazo(t==='centro'?'centro_custo':'cliente',c,n,Object.values(m)); }} className="px-4 py-2 bg-orange-600 text-white rounded-lg font-semibold">💾 Salvar</button>
+                  </div>
+                  <div className="bg-white rounded-xl shadow p-6">
+                    <h2 className="text-xl font-bold mb-4">📋 Prazos Configurados ({biPrazos.length})</h2>
+                    {biPrazos.length===0?<p className="text-gray-500 text-center py-4">Nenhum</p>:(<div className="space-y-3">{biPrazos.map(p => (<div key={p.id} className="border rounded-lg p-4"><div className="flex justify-between items-start mb-2"><div><span className={`text-xs px-2 py-0.5 rounded ${p.tipo==='cliente'?'bg-blue-100 text-blue-700':'bg-purple-100 text-purple-700'}`}>{p.tipo==='cliente'?'👤 Cliente':'🏢 Centro'}</span><p className="font-semibold mt-1">{p.nome||p.codigo}</p></div><button onClick={() => deleteBiPrazo(p.id)} className="text-red-500">🗑️</button></div><div className="flex flex-wrap gap-2">{p.faixas&&p.faixas.map((f,i) => (<span key={i} className="bg-gray-100 px-2 py-1 rounded text-sm">{f.km_min}-{f.km_max||'∞'}km → {f.prazo_minutos}min</span>))}</div></div>))}</div>)}
+                  </div>
+                </div>
               )}
             </div>
           </div>
