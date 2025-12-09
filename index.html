@@ -9874,26 +9874,22 @@
                                     <td className="px-3 py-2 text-right">{formatarMoeda(c.valor_prof)}</td>
                                     <td className="px-3 py-2 text-right font-medium">{formatarMoeda(toNum(c.valor_total) - toNum(c.valor_prof))}</td>
                                   </tr>
-                                  {biExpandedRows[`dash-cli-${i}`] && (
-                                    <tr className="bg-purple-100">
-                                      <td colSpan="12" className="px-6 py-3">
-                                        <div className="text-sm">
-                                          <span className="font-semibold text-purple-800">📁 Centros de Custo: </span>
-                                          {(c.centros_custo || []).length > 0 ? (
-                                            <span className="text-purple-700">
-                                              {(c.centros_custo || []).map((cc, idx) => (
-                                                <span key={idx} className="inline-block bg-white border border-purple-300 px-2 py-0.5 rounded mr-2 mb-1">
-                                                  {c.cod_cliente} - {cc}
-                                                </span>
-                                              ))}
-                                            </span>
-                                          ) : (
-                                            <span className="text-gray-500 italic">Nenhum centro de custo</span>
-                                          )}
-                                        </div>
-                                      </td>
+                                  {biExpandedRows[`dash-cli-${i}`] && (c.centros_custo || []).map((cc, idx) => (
+                                    <tr key={`${i}-cc-${idx}`} className="bg-purple-50 border-l-4 border-purple-400">
+                                      <td className="px-3 py-2 text-purple-400 text-center">└</td>
+                                      <td className="px-3 py-2 text-purple-700 pl-6">📁 {c.cod_cliente} - {cc.centro_custo}</td>
+                                      <td className="px-3 py-2 text-right text-purple-600">{toNum(cc.total_os).toLocaleString('pt-BR')}</td>
+                                      <td className="px-3 py-2 text-right text-purple-600">{toNum(cc.total_entregas).toLocaleString('pt-BR')}</td>
+                                      <td className="px-3 py-2 text-right text-green-600">{toNum(cc.dentro_prazo).toLocaleString('pt-BR')}</td>
+                                      <td className="px-3 py-2 text-right text-green-600">{(toNum(cc.dentro_prazo) / (toNum(cc.total_entregas) || 1) * 100).toFixed(2)}%</td>
+                                      <td className="px-3 py-2 text-right text-red-500">{toNum(cc.fora_prazo).toLocaleString('pt-BR')}</td>
+                                      <td className="px-3 py-2 text-right text-red-500">{(toNum(cc.fora_prazo) / (toNum(cc.total_entregas) || 1) * 100).toFixed(2)}%</td>
+                                      <td className="px-3 py-2 text-right text-purple-600">{formatarTempo(cc.tempo_medio)}</td>
+                                      <td className="px-3 py-2 text-right text-purple-600">{formatarMoeda(cc.valor_total)}</td>
+                                      <td className="px-3 py-2 text-right text-purple-600">{formatarMoeda(cc.valor_prof)}</td>
+                                      <td className="px-3 py-2 text-right text-purple-600">{formatarMoeda(toNum(cc.valor_total) - toNum(cc.valor_prof))}</td>
                                     </tr>
-                                  )}
+                                  ))}
                                 </React.Fragment>
                               ))}
                             </tbody>
@@ -9989,26 +9985,22 @@
                                   <td className="px-3 py-2 text-right">{formatarMoeda(c.valor_prof)}</td>
                                   <td className="px-3 py-2 text-right font-medium">{formatarMoeda((c.valor_total || 0) - (c.valor_prof || 0))}</td>
                                 </tr>
-                                {biExpandedRows[`cli-${i}`] && (
-                                  <tr className="bg-purple-100">
-                                    <td colSpan="12" className="px-6 py-3">
-                                      <div className="text-sm">
-                                        <span className="font-semibold text-purple-800">📁 Centros de Custo: </span>
-                                        {(c.centros_custo || []).length > 0 ? (
-                                          <span className="text-purple-700">
-                                            {(c.centros_custo || []).map((cc, idx) => (
-                                              <span key={idx} className="inline-block bg-white border border-purple-300 px-2 py-0.5 rounded mr-2 mb-1">
-                                                {c.cod_cliente} - {cc}
-                                              </span>
-                                            ))}
-                                          </span>
-                                        ) : (
-                                          <span className="text-gray-500 italic">Nenhum centro de custo</span>
-                                        )}
-                                      </div>
-                                    </td>
+                                {biExpandedRows[`cli-${i}`] && (c.centros_custo || []).map((cc, idx) => (
+                                  <tr key={`cli-${i}-cc-${idx}`} className="bg-purple-50 border-l-4 border-purple-400">
+                                    <td className="px-3 py-2 text-purple-400 text-center">└</td>
+                                    <td className="px-3 py-2 text-purple-700 pl-6">📁 {c.cod_cliente} - {cc.centro_custo}</td>
+                                    <td className="px-3 py-2 text-right text-purple-600">{toNum(cc.total_os).toLocaleString('pt-BR')}</td>
+                                    <td className="px-3 py-2 text-right text-purple-600">{toNum(cc.total_entregas).toLocaleString('pt-BR')}</td>
+                                    <td className="px-3 py-2 text-right text-green-600">{toNum(cc.dentro_prazo).toLocaleString('pt-BR')}</td>
+                                    <td className="px-3 py-2 text-right text-green-600">{(toNum(cc.dentro_prazo) / (toNum(cc.total_entregas) || 1) * 100).toFixed(2)}%</td>
+                                    <td className="px-3 py-2 text-right text-red-500">{toNum(cc.fora_prazo).toLocaleString('pt-BR')}</td>
+                                    <td className="px-3 py-2 text-right text-red-500">{(toNum(cc.fora_prazo) / (toNum(cc.total_entregas) || 1) * 100).toFixed(2)}%</td>
+                                    <td className="px-3 py-2 text-right text-purple-600">{formatarTempo(cc.tempo_medio)}</td>
+                                    <td className="px-3 py-2 text-right text-purple-600">{formatarMoeda(cc.valor_total)}</td>
+                                    <td className="px-3 py-2 text-right text-purple-600">{formatarMoeda(cc.valor_prof)}</td>
+                                    <td className="px-3 py-2 text-right text-purple-600">{formatarMoeda(toNum(cc.valor_total) - toNum(cc.valor_prof))}</td>
                                   </tr>
-                                )}
+                                ))}
                               </React.Fragment>
                             ))}
                           </tbody>
