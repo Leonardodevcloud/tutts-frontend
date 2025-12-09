@@ -729,6 +729,8 @@
       const [biPrazoPadrao, setBiPrazoPadrao] = useState([{km_min: 0, km_max: 15, prazo_minutos: 45}, {km_min: 15, km_max: 20, prazo_minutos: 50}, {km_min: 20, km_max: 30, prazo_minutos: 60}, {km_min: 30, km_max: null, prazo_minutos: 90}]);
       const [biClientes, setBiClientes] = useState([]);
       const [biCentrosCusto, setBiCentrosCusto] = useState([]);
+      const [biCentrosCustoFiltrados, setBiCentrosCustoFiltrados] = useState([]); // CCs filtrados por cliente selecionado
+      const [biClienteCentros, setBiClienteCentros] = useState({}); // Mapa cliente -> centros de custo
       const [biProfissionais, setBiProfissionais] = useState([]);
       const [biDatasDisponiveis, setBiDatasDisponiveis] = useState([]);
       const [biUploads, setBiUploads] = useState([]);
@@ -740,11 +742,12 @@
       const [biExpandedRows, setBiExpandedRows] = useState({}); // Linhas expandidas nas tabelas
       const [biMascaras, setBiMascaras] = useState([]); // Máscaras de clientes (apelidos)
       const [biRegrasContagem, setBiRegrasContagem] = useState([]); // Clientes que contam pontos como entregas
+      const [biSortConfig, setBiSortConfig] = useState({ key: null, direction: 'desc' }); // Ordenação das tabelas
       const [biFiltros, setBiFiltros] = useState({
         data_inicio: '',
         data_fim: '',
-        cod_cliente: '',
-        centro_custo: '',
+        cod_cliente: [], // Agora é array para multi-seleção
+        centro_custo: [], // Agora é array para multi-seleção
         cod_prof: '',
         categoria: '',
         cidade: '',
@@ -1434,20 +1437,29 @@
 
       const loadBiDropdowns = async () => {
         try {
-          const [clientes, centros, profs, datas, uploads, cidades] = await Promise.all([
+          const [clientes, centros, profs, datas, uploads, cidades, clienteCentros] = await Promise.all([
             fetch(`${API_URL}/bi/clientes`).then(r => r.json()),
             fetch(`${API_URL}/bi/centros-custo`).then(r => r.json()),
             fetch(`${API_URL}/bi/profissionais`).then(r => r.json()),
             fetch(`${API_URL}/bi/datas`).then(r => r.json()),
             fetch(`${API_URL}/bi/uploads`).then(r => r.json()),
-            fetch(`${API_URL}/bi/cidades`).then(r => r.json()).catch(() => [])
+            fetch(`${API_URL}/bi/cidades`).then(r => r.json()).catch(() => []),
+            fetch(`${API_URL}/bi/cliente-centros`).then(r => r.json()).catch(() => ({}))
           ]);
-          setBiClientes(clientes);
-          setBiCentrosCusto(centros);
-          setBiProfissionais(profs);
-          setBiDatasDisponiveis(datas);
-          setBiUploads(uploads);
-          setBiCidades(cidades);
+          // Ordenar clientes por código (crescente)
+          const clientesOrdenados = (clientes || []).sort((a, b) => {
+            const codA = parseInt(a.cod_cliente) || 0;
+            const codB = parseInt(b.cod_cliente) || 0;
+            return codA - codB;
+          });
+          setBiClientes(clientesOrdenados);
+          setBiCentrosCusto(centros || []);
+          setBiCentrosCustoFiltrados(centros || []);
+          setBiClienteCentros(clienteCentros || {});
+          setBiProfissionais(profs || []);
+          setBiDatasDisponiveis(datas || []);
+          setBiUploads(uploads || []);
+          setBiCidades(cidades || []);
           // Setar filtros com primeira e última data disponível e carregar dashboard
           if (datas && datas.length > 0) {
             // Converter datas para formato YYYY-MM-DD
@@ -1456,7 +1468,7 @@
               const data = new Date(d);
               return data.toISOString().split('T')[0];
             };
-            const novosFiltros = {...biFiltros, data_inicio: formatarData(datas[datas.length - 1].data), data_fim: formatarData(datas[0].data)};
+            const novosFiltros = {...biFiltros, data_inicio: formatarData(datas[datas.length - 1].data), data_fim: formatarData(datas[0].data), cod_cliente: [], centro_custo: []};
             console.log('📊 Datas formatadas:', novosFiltros.data_inicio, 'até', novosFiltros.data_fim);
             setBiFiltros(novosFiltros);
             // Carregar dashboard com as datas corretas
@@ -1468,6 +1480,27 @@
         } catch (err) { console.error('Erro ao carregar dropdowns:', err); }
       };
 
+      // Atualiza centros de custo filtrados quando clientes selecionados mudam
+      const atualizarCentrosFiltrados = (clientesSelecionados) => {
+        if (!clientesSelecionados || clientesSelecionados.length === 0) {
+          setBiCentrosCustoFiltrados(biCentrosCusto);
+          return;
+        }
+        // Busca todos os centros de custo dos clientes selecionados
+        const centrosDoClientes = new Set();
+        clientesSelecionados.forEach(codCliente => {
+          const centros = biClienteCentros[codCliente] || [];
+          centros.forEach(c => centrosDoClientes.add(c));
+        });
+        // Filtra a lista de centros
+        if (centrosDoClientes.size > 0) {
+          const filtrados = biCentrosCusto.filter(c => centrosDoClientes.has(c.centro_custo));
+          setBiCentrosCustoFiltrados(filtrados);
+        } else {
+          setBiCentrosCustoFiltrados(biCentrosCusto);
+        }
+      };
+
       // Versão que recebe filtros diretamente (para evitar race condition)
       const loadBiDashboardComFiltros = async (filtros) => {
         try {
@@ -1475,8 +1508,14 @@
           const params = new URLSearchParams();
           if (filtros.data_inicio) params.append('data_inicio', filtros.data_inicio);
           if (filtros.data_fim) params.append('data_fim', filtros.data_fim);
-          if (filtros.cod_cliente) params.append('cod_cliente', filtros.cod_cliente);
-          if (filtros.centro_custo) params.append('centro_custo', filtros.centro_custo);
+          // Suporte a múltiplos clientes
+          if (filtros.cod_cliente && filtros.cod_cliente.length > 0) {
+            filtros.cod_cliente.forEach(c => params.append('cod_cliente', c));
+          }
+          // Suporte a múltiplos centros de custo
+          if (filtros.centro_custo && filtros.centro_custo.length > 0) {
+            filtros.centro_custo.forEach(c => params.append('centro_custo', c));
+          }
           if (filtros.cod_prof) params.append('cod_prof', filtros.cod_prof);
           if (filtros.categoria) params.append('categoria', filtros.categoria);
           if (filtros.cidade) params.append('cidade', filtros.cidade);
@@ -1516,6 +1555,60 @@
         setBiExpandedRows(prev => ({...prev, [id]: !prev[id]}));
       };
 
+      // ===== FUNÇÃO HELPER PARA MÁSCARAS =====
+      // Retorna o nome com máscara se existir
+      const getMascara = (cod_cliente) => {
+        const mascara = biMascaras.find(m => String(m.cod_cliente) === String(cod_cliente));
+        return mascara ? mascara.mascara : null;
+      };
+      
+      // Retorna nome formatado: "COD - Máscara" ou "COD - Nome Original"
+      const getNomeComMascara = (cod_cliente, nome_original) => {
+        const mascara = getMascara(cod_cliente);
+        return mascara || nome_original || 'Sem nome';
+      };
+
+      // ===== FUNÇÃO DE ORDENAÇÃO DE TABELAS =====
+      const handleBiSort = (key) => {
+        setBiSortConfig(prev => ({
+          key,
+          direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+        }));
+      };
+
+      const sortBiData = (data, config) => {
+        if (!config.key || !data) return data;
+        return [...data].sort((a, b) => {
+          let aVal = a[config.key];
+          let bVal = b[config.key];
+          // Converte para número se possível
+          if (!isNaN(parseFloat(aVal))) aVal = parseFloat(aVal);
+          if (!isNaN(parseFloat(bVal))) bVal = parseFloat(bVal);
+          // Trata null/undefined
+          if (aVal == null) aVal = config.direction === 'asc' ? Infinity : -Infinity;
+          if (bVal == null) bVal = config.direction === 'asc' ? Infinity : -Infinity;
+          // Compara
+          if (aVal < bVal) return config.direction === 'asc' ? -1 : 1;
+          if (aVal > bVal) return config.direction === 'asc' ? 1 : -1;
+          return 0;
+        });
+      };
+
+      // Componente de cabeçalho ordenável
+      const SortHeader = ({ label, sortKey, className = '' }) => (
+        <th 
+          className={`px-3 py-2 text-left cursor-pointer hover:bg-purple-100 select-none ${className}`}
+          onClick={() => handleBiSort(sortKey)}
+        >
+          <div className="flex items-center gap-1">
+            {label}
+            <span className="text-xs">
+              {biSortConfig.key === sortKey ? (biSortConfig.direction === 'asc' ? '▲' : '▼') : '⇅'}
+            </span>
+          </div>
+        </th>
+      );
+
       // ===== FUNÇÕES PARA MÁSCARAS DE CLIENTES =====
       const loadBiMascaras = async () => {
         try {
@@ -1554,7 +1647,7 @@
 
       // Função helper para obter nome do cliente com máscara
       const getNomeClienteComMascara = (cod_cliente, nome_cliente) => {
-        const mascara = biMascaras.find(m => m.cod_cliente === cod_cliente);
+        const mascara = biMascaras.find(m => String(m.cod_cliente) === String(cod_cliente));
         if (mascara) {
           return `${cod_cliente} - ${mascara.mascara}`;
         }
@@ -9374,53 +9467,103 @@
             {/* Modal de Filtros */}
             {biShowFilters && (
               <div className="fixed inset-0 bg-black/50 z-50 flex items-start justify-center pt-10">
-                <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[80vh] overflow-y-auto">
-                  <div className="sticky top-0 bg-purple-700 text-white px-6 py-4 flex justify-between items-center">
+                <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl max-h-[85vh] overflow-y-auto">
+                  <div className="sticky top-0 bg-purple-700 text-white px-6 py-4 flex justify-between items-center z-10">
                     <h2 className="text-lg font-bold">Seleção de Filtros</h2>
                     <button onClick={() => setBiShowFilters(false)} className="text-white hover:bg-white/20 rounded-lg px-3 py-1">✕</button>
                   </div>
-                  <div className="p-6 grid grid-cols-2 md:grid-cols-4 gap-6">
-                    {/* Data */}
-                    <div className="border rounded-lg p-4">
-                      <h3 className="font-semibold text-gray-700 mb-3">📅 Data</h3>
-                      <div className="space-y-2">
-                        <input type="date" value={biFiltros.data_inicio} onChange={e => setBiFiltros({...biFiltros, data_inicio: e.target.value})} className="w-full px-3 py-2 border rounded text-sm" />
-                        <input type="date" value={biFiltros.data_fim} onChange={e => setBiFiltros({...biFiltros, data_fim: e.target.value})} className="w-full px-3 py-2 border rounded text-sm" />
+                  <div className="p-6 space-y-6">
+                    {/* Linha 1: Data, Profissional, Outros */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div className="border rounded-lg p-4">
+                        <h3 className="font-semibold text-gray-700 mb-3">📅 Período</h3>
+                        <div className="space-y-2">
+                          <div><label className="text-xs text-gray-500">De:</label><input type="date" value={biFiltros.data_inicio} onChange={e => setBiFiltros({...biFiltros, data_inicio: e.target.value})} className="w-full px-3 py-2 border rounded text-sm" /></div>
+                          <div><label className="text-xs text-gray-500">Até:</label><input type="date" value={biFiltros.data_fim} onChange={e => setBiFiltros({...biFiltros, data_fim: e.target.value})} className="w-full px-3 py-2 border rounded text-sm" /></div>
+                        </div>
+                      </div>
+                      <div className="border rounded-lg p-4">
+                        <h3 className="font-semibold text-gray-700 mb-3">👤 Profissional</h3>
+                        <select value={biFiltros.cod_prof} onChange={e => setBiFiltros({...biFiltros, cod_prof: e.target.value})} className="w-full px-3 py-2 border rounded text-sm">
+                          <option value="">Todos</option>
+                          {biProfissionais.map(p => <option key={p.cod_prof} value={p.cod_prof}>{p.cod_prof} - {p.nome_prof}</option>)}
+                        </select>
+                      </div>
+                      <div className="border rounded-lg p-4 space-y-3">
+                        <div>
+                          <h3 className="font-semibold text-gray-700 mb-2">🏷️ Categoria</h3>
+                          <select value={biFiltros.categoria} onChange={e => setBiFiltros({...biFiltros, categoria: e.target.value})} className="w-full px-3 py-2 border rounded text-sm">
+                            <option value="">Todas</option>
+                            <option value="Motofrete (Expresso)">Expresso</option>
+                            <option value="Motofrete">Normal</option>
+                          </select>
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-gray-700 mb-2">⏱️ Status Prazo</h3>
+                          <select value={biFiltros.status_prazo} onChange={e => setBiFiltros({...biFiltros, status_prazo: e.target.value})} className="w-full px-3 py-2 border rounded text-sm">
+                            <option value="">Todos</option>
+                            <option value="dentro">✅ Dentro</option>
+                            <option value="fora">❌ Fora</option>
+                          </select>
+                        </div>
                       </div>
                     </div>
-                    {/* Cliente */}
+
+                    {/* Clientes (multi-seleção) */}
                     <div className="border rounded-lg p-4">
-                      <h3 className="font-semibold text-gray-700 mb-3">🏢 Cliente</h3>
-                      <select value={biFiltros.cod_cliente} onChange={e => setBiFiltros({...biFiltros, cod_cliente: e.target.value})} className="w-full px-3 py-2 border rounded text-sm">
-                        <option value="">Todos</option>
-                        {biClientes.map(c => <option key={c.cod_cliente} value={c.cod_cliente}>{c.cod_cliente} - {c.nome_display || c.nome_cliente}</option>)}
-                      </select>
+                      <div className="flex justify-between items-center mb-3">
+                        <h3 className="font-semibold text-gray-700">🏢 Clientes ({(biFiltros.cod_cliente || []).length} selecionados)</h3>
+                        <div className="flex gap-2">
+                          <button onClick={() => { const todos = biClientes.map(c => String(c.cod_cliente)); setBiFiltros({...biFiltros, cod_cliente: todos}); atualizarCentrosFiltrados(todos); }} className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded hover:bg-purple-200">Todos</button>
+                          <button onClick={() => { setBiFiltros({...biFiltros, cod_cliente: [], centro_custo: []}); setBiCentrosCustoFiltrados(biCentrosCusto); }} className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200">Limpar</button>
+                        </div>
+                      </div>
+                      <div className="max-h-48 overflow-y-auto border rounded p-2 bg-gray-50 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1">
+                        {biClientes.map(c => {
+                          const isSelected = (biFiltros.cod_cliente || []).includes(String(c.cod_cliente));
+                          const mascara = getMascara(c.cod_cliente);
+                          return (
+                            <label key={c.cod_cliente} className={`flex items-center gap-2 p-2 rounded cursor-pointer text-sm ${isSelected ? 'bg-purple-100 border border-purple-300' : 'hover:bg-gray-100'}`}>
+                              <input type="checkbox" checked={isSelected} onChange={(e) => {
+                                const newClientes = e.target.checked ? [...(biFiltros.cod_cliente || []), String(c.cod_cliente)] : (biFiltros.cod_cliente || []).filter(x => x !== String(c.cod_cliente));
+                                setBiFiltros({...biFiltros, cod_cliente: newClientes, centro_custo: []});
+                                atualizarCentrosFiltrados(newClientes);
+                              }} className="rounded text-purple-600" />
+                              <span className="truncate"><strong>{c.cod_cliente}</strong> - {mascara || c.nome_cliente}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
                     </div>
-                    {/* Centro Custo */}
+
+                    {/* Centros de Custo (multi-seleção) */}
                     <div className="border rounded-lg p-4">
-                      <h3 className="font-semibold text-gray-700 mb-3">📁 Centro Custo</h3>
-                      <select value={biFiltros.centro_custo} onChange={e => setBiFiltros({...biFiltros, centro_custo: e.target.value})} className="w-full px-3 py-2 border rounded text-sm">
-                        <option value="">Todos</option>
-                        {biCentrosCusto.map(c => <option key={c.centro_custo} value={c.centro_custo}>{c.centro_custo}</option>)}
-                      </select>
+                      <div className="flex justify-between items-center mb-3">
+                        <h3 className="font-semibold text-gray-700">📁 Centros de Custo ({(biFiltros.centro_custo || []).length} selecionados)</h3>
+                        <div className="flex gap-2">
+                          <button onClick={() => setBiFiltros({...biFiltros, centro_custo: biCentrosCustoFiltrados.map(c => c.centro_custo)})} className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded hover:bg-purple-200">Todos</button>
+                          <button onClick={() => setBiFiltros({...biFiltros, centro_custo: []})} className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200">Limpar</button>
+                        </div>
+                      </div>
+                      {(biFiltros.cod_cliente || []).length > 0 && <p className="text-xs text-purple-600 mb-2">Mostrando centros dos clientes selecionados</p>}
+                      <div className="max-h-40 overflow-y-auto border rounded p-2 bg-gray-50 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1">
+                        {biCentrosCustoFiltrados.length === 0 ? (
+                          <p className="text-gray-400 text-sm col-span-full text-center py-4">Nenhum centro disponível</p>
+                        ) : biCentrosCustoFiltrados.map(c => {
+                          const isSelected = (biFiltros.centro_custo || []).includes(c.centro_custo);
+                          return (
+                            <label key={c.centro_custo} className={`flex items-center gap-2 p-2 rounded cursor-pointer text-sm ${isSelected ? 'bg-purple-100 border border-purple-300' : 'hover:bg-gray-100'}`}>
+                              <input type="checkbox" checked={isSelected} onChange={(e) => {
+                                const newCentros = e.target.checked ? [...(biFiltros.centro_custo || []), c.centro_custo] : (biFiltros.centro_custo || []).filter(x => x !== c.centro_custo);
+                                setBiFiltros({...biFiltros, centro_custo: newCentros});
+                              }} className="rounded text-purple-600" />
+                              <span className="truncate">{c.centro_custo}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
                     </div>
-                    {/* Profissional */}
-                    <div className="border rounded-lg p-4">
-                      <h3 className="font-semibold text-gray-700 mb-3">👤 Profissional</h3>
-                      <select value={biFiltros.cod_prof} onChange={e => setBiFiltros({...biFiltros, cod_prof: e.target.value})} className="w-full px-3 py-2 border rounded text-sm">
-                        <option value="">Todos</option>
-                        {biProfissionais.map(p => <option key={p.cod_prof} value={p.cod_prof}>{p.nome_prof}</option>)}
-                      </select>
-                    </div>
-                    {/* Categoria */}
-                    <div className="border rounded-lg p-4">
-                      <h3 className="font-semibold text-gray-700 mb-3">🏷️ Categoria</h3>
-                      <select value={biFiltros.categoria} onChange={e => setBiFiltros({...biFiltros, categoria: e.target.value})} className="w-full px-3 py-2 border rounded text-sm">
-                        <option value="">Todas</option>
-                        <option value="Motofrete (Expresso)">Expresso</option>
-                        <option value="Motofrete">Normal</option>
-                      </select>
-                    </div>
+
                     {/* Cidade */}
                     <div className="border rounded-lg p-4">
                       <h3 className="font-semibold text-gray-700 mb-3">🌆 Cidade</h3>
@@ -9429,19 +9572,10 @@
                         {biCidades.map(c => <option key={c.cidade} value={c.cidade}>{c.cidade}</option>)}
                       </select>
                     </div>
-                    {/* Status Prazo */}
-                    <div className="border rounded-lg p-4">
-                      <h3 className="font-semibold text-gray-700 mb-3">⏱️ Status Prazo</h3>
-                      <select value={biFiltros.status_prazo} onChange={e => setBiFiltros({...biFiltros, status_prazo: e.target.value})} className="w-full px-3 py-2 border rounded text-sm">
-                        <option value="">Todos</option>
-                        <option value="dentro">✅ Dentro do Prazo</option>
-                        <option value="fora">❌ Fora do Prazo</option>
-                      </select>
-                    </div>
                   </div>
-                  <div className="sticky bottom-0 bg-gray-50 px-6 py-4 flex justify-between">
-                    <button onClick={() => setBiFiltros({data_inicio: '', data_fim: '', cod_cliente: '', centro_custo: '', cod_prof: '', categoria: '', cidade: '', status_prazo: '', semana: ''})} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300">🗑️ Limpar Filtros</button>
-                    <button onClick={() => { setBiShowFilters(false); loadBiDashboard(); }} className="px-6 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700">🔍 Aplicar Filtros</button>
+                  <div className="sticky bottom-0 bg-gray-50 px-6 py-4 flex justify-between border-t">
+                    <button onClick={() => { setBiFiltros({...biFiltros, cod_cliente: [], centro_custo: [], cod_prof: '', categoria: '', cidade: '', status_prazo: ''}); setBiCentrosCustoFiltrados(biCentrosCusto); }} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300">🗑️ Limpar</button>
+                    <button onClick={() => { setBiShowFilters(false); loadBiDashboardComFiltros(biFiltros); }} className="px-6 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700">🔍 Aplicar</button>
                   </div>
                 </div>
               </div>
@@ -9582,21 +9716,21 @@
                           <thead className="bg-purple-50">
                             <tr>
                               <th className="px-3 py-2 text-left text-purple-900"></th>
-                              <th className="px-3 py-2 text-left text-purple-900">Cliente</th>
-                              <th className="px-3 py-2 text-right text-purple-900">OS</th>
-                              <th className="px-3 py-2 text-right text-purple-900">Entregas</th>
-                              <th className="px-3 py-2 text-right text-purple-900">No Prazo</th>
-                              <th className="px-3 py-2 text-right text-purple-900">No Prazo %</th>
-                              <th className="px-3 py-2 text-right text-purple-900">Fora Prazo</th>
-                              <th className="px-3 py-2 text-right text-purple-900">Fora %</th>
-                              <th className="px-3 py-2 text-right text-purple-900">Média Entrega</th>
-                              <th className="px-3 py-2 text-right text-purple-900">Valor Total</th>
-                              <th className="px-3 py-2 text-right text-purple-900">Valor Prof.</th>
+                              <SortHeader label="Cliente" sortKey="cod_cliente" className="text-left text-purple-900" />
+                              <SortHeader label="OS" sortKey="total_os" className="text-right text-purple-900" />
+                              <SortHeader label="Entregas" sortKey="total_entregas" className="text-right text-purple-900" />
+                              <SortHeader label="No Prazo" sortKey="dentro_prazo" className="text-right text-purple-900" />
+                              <th className="px-3 py-2 text-right text-purple-900">%</th>
+                              <SortHeader label="Fora Prazo" sortKey="fora_prazo" className="text-right text-purple-900" />
+                              <th className="px-3 py-2 text-right text-purple-900">%</th>
+                              <SortHeader label="Média" sortKey="tempo_medio" className="text-right text-purple-900" />
+                              <SortHeader label="Valor Total" sortKey="valor_total" className="text-right text-purple-900" />
+                              <SortHeader label="Valor Prof." sortKey="valor_prof" className="text-right text-purple-900" />
                               <th className="px-3 py-2 text-right text-purple-900">Fat. Total</th>
                             </tr>
                           </thead>
                           <tbody>
-                            {biClientesResumo.map((c, i) => (
+                            {sortBiData(biClientesResumo, biSortConfig).map((c, i) => (
                               <tr key={i} className={`border-b hover:bg-purple-50 ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
                                 <td className="px-3 py-2"><button onClick={() => toggleBiRow(`cli-${i}`)} className="text-purple-600">➕</button></td>
                                 <td className="px-3 py-2 font-medium">{c.cod_cliente} - {c.nome_display || c.nome_cliente}</td>
