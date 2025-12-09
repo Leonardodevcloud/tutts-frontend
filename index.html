@@ -9563,6 +9563,9 @@
                     <button onClick={() => { setAdminMasterModule('solicitacoes'); setFormData(f => ({...f, adminTab: 'disponibilidade'})); }} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${adminMasterModule === 'solicitacoes' && formData.adminTab === 'disponibilidade' ? 'bg-white text-blue-800' : 'text-white hover:bg-white/10'}`}>
                       📅 Disponibilidade
                     </button>
+                    <button onClick={() => { setAdminMasterModule('bi'); loadBiDropdowns(); loadBiPrazos(); loadBiPrazoPadrao(); loadBiDashboard(); }} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${adminMasterModule === 'bi' ? 'bg-white text-orange-800' : 'text-white hover:bg-white/10'}`}>
+                      📊 BI
+                    </button>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
