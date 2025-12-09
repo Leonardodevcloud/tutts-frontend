@@ -738,6 +738,8 @@
       const [biGraficos, setBiGraficos] = useState({ porTempo: [], porKm: [] }); // Dados dos gráficos
       const [biCidades, setBiCidades] = useState([]); // Lista de cidades
       const [biExpandedRows, setBiExpandedRows] = useState({}); // Linhas expandidas nas tabelas
+      const [biMascaras, setBiMascaras] = useState([]); // Máscaras de clientes (apelidos)
+      const [biRegrasContagem, setBiRegrasContagem] = useState([]); // Clientes que contam pontos como entregas
       const [biFiltros, setBiFiltros] = useState({
         data_inicio: '',
         data_fim: '',
@@ -1512,6 +1514,87 @@
 
       const toggleBiRow = (id) => {
         setBiExpandedRows(prev => ({...prev, [id]: !prev[id]}));
+      };
+
+      // ===== FUNÇÕES PARA MÁSCARAS DE CLIENTES =====
+      const loadBiMascaras = async () => {
+        try {
+          const res = await fetch(`${API_URL}/bi/mascaras`);
+          setBiMascaras(await res.json());
+        } catch (err) { console.error('Erro ao carregar máscaras:', err); }
+      };
+
+      const saveBiMascara = async (cod_cliente, mascara) => {
+        try {
+          const res = await fetch(`${API_URL}/bi/mascaras`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cod_cliente, mascara })
+          });
+          const result = await res.json();
+          if (result.success) {
+            showToast('✅ Máscara salva!', 'success');
+            loadBiMascaras();
+          } else {
+            showToast('❌ Erro: ' + result.error, 'error');
+          }
+        } catch (err) { showToast('Erro ao salvar máscara', 'error'); }
+      };
+
+      const deleteBiMascara = async (id) => {
+        if (!confirm('Excluir esta máscara?')) return;
+        try {
+          const res = await fetch(`${API_URL}/bi/mascaras/${id}`, { method: 'DELETE' });
+          if (res.ok) {
+            showToast('✅ Máscara excluída!', 'success');
+            loadBiMascaras();
+          }
+        } catch (err) { showToast('Erro ao excluir', 'error'); }
+      };
+
+      // Função helper para obter nome do cliente com máscara
+      const getNomeClienteComMascara = (cod_cliente, nome_cliente) => {
+        const mascara = biMascaras.find(m => m.cod_cliente === cod_cliente);
+        if (mascara) {
+          return `${cod_cliente} - ${mascara.mascara}`;
+        }
+        return `${cod_cliente} - ${nome_cliente || 'Sem nome'}`;
+      };
+
+      // ===== FUNÇÕES PARA REGRAS DE CONTAGEM =====
+      const loadBiRegrasContagem = async () => {
+        try {
+          const res = await fetch(`${API_URL}/bi/regras-contagem`);
+          setBiRegrasContagem(await res.json());
+        } catch (err) { console.error('Erro ao carregar regras:', err); }
+      };
+
+      const saveBiRegraContagem = async (cod_cliente, nome_cliente) => {
+        try {
+          const res = await fetch(`${API_URL}/bi/regras-contagem`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cod_cliente, nome_cliente })
+          });
+          const result = await res.json();
+          if (result.success) {
+            showToast('✅ Regra salva!', 'success');
+            loadBiRegrasContagem();
+          } else {
+            showToast('❌ Erro: ' + result.error, 'error');
+          }
+        } catch (err) { showToast('Erro ao salvar regra', 'error'); }
+      };
+
+      const deleteBiRegraContagem = async (id) => {
+        if (!confirm('Excluir esta regra de contagem?')) return;
+        try {
+          const res = await fetch(`${API_URL}/bi/regras-contagem/${id}`, { method: 'DELETE' });
+          if (res.ok) {
+            showToast('✅ Regra excluída!', 'success');
+            loadBiRegrasContagem();
+          }
+        } catch (err) { showToast('Erro ao excluir', 'error'); }
       };
 
       const saveBiPrazo = async (tipo, codigo, nome, faixas) => {
@@ -5146,7 +5229,7 @@
                       <button onClick={() => setAdminMasterModule('disponibilidade')} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${adminMasterModule === 'disponibilidade' ? 'bg-white text-blue-800' : 'text-white hover:bg-white/10'}`}>
                         📅 Disponibilidade
                       </button>
-                      <button onClick={() => { setAdminMasterModule('bi'); loadBiDropdowns(); loadBiPrazos(); loadBiPrazoPadrao(); }} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${adminMasterModule === 'bi' ? 'bg-white text-orange-800' : 'text-white hover:bg-white/10'}`}>
+                      <button onClick={() => { setAdminMasterModule('bi'); loadBiDropdowns(); loadBiPrazos(); loadBiPrazoPadrao(); loadBiMascaras(); loadBiRegrasContagem(); }} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${adminMasterModule === 'bi' ? 'bg-white text-orange-800' : 'text-white hover:bg-white/10'}`}>
                         📊 BI
                       </button>
                     </div>
@@ -9310,7 +9393,7 @@
                       <h3 className="font-semibold text-gray-700 mb-3">🏢 Cliente</h3>
                       <select value={biFiltros.cod_cliente} onChange={e => setBiFiltros({...biFiltros, cod_cliente: e.target.value})} className="w-full px-3 py-2 border rounded text-sm">
                         <option value="">Todos</option>
-                        {biClientes.map(c => <option key={c.cod_cliente} value={c.cod_cliente}>{c.cod_cliente}-{c.nome_cliente}</option>)}
+                        {biClientes.map(c => <option key={c.cod_cliente} value={c.cod_cliente}>{c.cod_cliente} - {c.nome_display || c.nome_cliente}</option>)}
                       </select>
                     </div>
                     {/* Centro Custo */}
@@ -9452,7 +9535,7 @@
                               {(biClientesResumo || []).slice(0, 15).map((c, i) => (
                                 <tr key={i} className={`border-b hover:bg-purple-50 ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
                                   <td className="px-3 py-2"><button onClick={() => toggleBiRow(`cli-${i}`)} className="text-purple-600">➕</button></td>
-                                  <td className="px-3 py-2 font-medium">{c.cod_cliente}-{c.nome_cliente}</td>
+                                  <td className="px-3 py-2 font-medium">{c.cod_cliente} - {c.nome_display || c.nome_cliente}</td>
                                   <td className="px-3 py-2 text-right">{toNum(c.total_os).toLocaleString('pt-BR')}</td>
                                   <td className="px-3 py-2 text-right">{toNum(c.total_entregas).toLocaleString('pt-BR')}</td>
                                   <td className="px-3 py-2 text-right text-green-600 font-medium">{toNum(c.dentro_prazo).toLocaleString('pt-BR')}</td>
@@ -9516,7 +9599,7 @@
                             {biClientesResumo.map((c, i) => (
                               <tr key={i} className={`border-b hover:bg-purple-50 ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
                                 <td className="px-3 py-2"><button onClick={() => toggleBiRow(`cli-${i}`)} className="text-purple-600">➕</button></td>
-                                <td className="px-3 py-2 font-medium">{c.cod_cliente}-{c.nome_cliente}</td>
+                                <td className="px-3 py-2 font-medium">{c.cod_cliente} - {c.nome_display || c.nome_cliente}</td>
                                 <td className="px-3 py-2 text-right">{toNum(c.total_os).toLocaleString('pt-BR')}</td>
                                 <td className="px-3 py-2 text-right">{toNum(c.total_entregas).toLocaleString('pt-BR')}</td>
                                 <td className="px-3 py-2 text-right text-green-600 font-medium">{toNum(c.dentro_prazo).toLocaleString('pt-BR')}</td>
@@ -9783,6 +9866,100 @@
                   {/* ===== ABA CONFIG ===== */}
                   {biTab === 'config' && (
                     <div className="space-y-6">
+                      {/* SEÇÃO: MÁSCARAS DE CLIENTES */}
+                      <div className="bg-white rounded-xl shadow p-6">
+                        <h2 className="text-xl font-bold text-purple-900 mb-2">🏷️ Máscaras de Clientes</h2>
+                        <p className="text-sm text-gray-500 mb-4">Defina apelidos para os códigos de clientes. Esses apelidos aparecerão nos filtros e visualizações.</p>
+                        
+                        {/* Formulário para adicionar máscara */}
+                        <div className="flex gap-3 mb-4 flex-wrap">
+                          <select id="bi-mascara-cliente" className="flex-1 min-w-48 px-3 py-2 border rounded-lg">
+                            <option value="">-- Selecione um Cliente --</option>
+                            {biClientes.map(c => (
+                              <option key={c.cod_cliente} value={`${c.cod_cliente}:${c.nome_cliente}`}>
+                                {c.cod_cliente} - {c.nome_cliente}
+                              </option>
+                            ))}
+                          </select>
+                          <input type="text" id="bi-mascara-nome" placeholder="Digite a máscara (apelido)" className="flex-1 min-w-48 px-3 py-2 border rounded-lg" />
+                          <button onClick={() => {
+                            const sel = document.getElementById('bi-mascara-cliente').value;
+                            const mascara = document.getElementById('bi-mascara-nome').value.trim();
+                            if (!sel || !mascara) return showToast('Selecione um cliente e digite a máscara', 'error');
+                            const [cod] = sel.split(':');
+                            saveBiMascara(cod, mascara);
+                            document.getElementById('bi-mascara-cliente').value = '';
+                            document.getElementById('bi-mascara-nome').value = '';
+                          }} className="px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 whitespace-nowrap">💾 Salvar Máscara</button>
+                        </div>
+                        
+                        {/* Lista de máscaras */}
+                        {biMascaras.length === 0 ? (
+                          <p className="text-gray-500 text-center py-4 bg-gray-50 rounded-lg">Nenhuma máscara configurada</p>
+                        ) : (
+                          <div className="space-y-2">
+                            {biMascaras.map(m => (
+                              <div key={m.id} className="flex items-center justify-between p-3 bg-purple-50 rounded-lg border border-purple-200">
+                                <div>
+                                  <span className="font-mono bg-purple-200 px-2 py-0.5 rounded text-purple-900">{m.cod_cliente}</span>
+                                  <span className="mx-2">→</span>
+                                  <span className="font-semibold text-purple-900">{m.mascara}</span>
+                                </div>
+                                <button onClick={() => deleteBiMascara(m.id)} className="text-red-500 hover:text-red-700 p-1">🗑️</button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* SEÇÃO: REGRAS DE CONTAGEM DE ENTREGAS */}
+                      <div className="bg-white rounded-xl shadow p-6">
+                        <h2 className="text-xl font-bold text-purple-900 mb-2">📦 Regras de Contagem de Entregas</h2>
+                        <p className="text-sm text-gray-500 mb-4">
+                          <strong>Padrão:</strong> cada OS conta como 1 entrega.<br />
+                          <strong>Com regra:</strong> para clientes abaixo, conta-se os pontos de entrega (Ponto 1 = coleta, não conta).<br />
+                          <span className="text-purple-600">Exemplo: OS com 4 pontos = 3 entregas (pontos 2, 3 e 4)</span>
+                        </p>
+                        
+                        {/* Formulário para adicionar regra */}
+                        <div className="flex gap-3 mb-4 flex-wrap">
+                          <select id="bi-regra-cliente" className="flex-1 min-w-64 px-3 py-2 border rounded-lg">
+                            <option value="">-- Selecione um Cliente para contar pontos como entregas --</option>
+                            {biClientes.filter(c => !biRegrasContagem.find(r => r.cod_cliente === c.cod_cliente)).map(c => (
+                              <option key={c.cod_cliente} value={`${c.cod_cliente}:${c.nome_cliente}`}>
+                                {c.cod_cliente} - {c.nome_cliente}
+                              </option>
+                            ))}
+                          </select>
+                          <button onClick={() => {
+                            const sel = document.getElementById('bi-regra-cliente').value;
+                            if (!sel) return showToast('Selecione um cliente', 'error');
+                            const [cod, ...nomeParts] = sel.split(':');
+                            saveBiRegraContagem(cod, nomeParts.join(':'));
+                            document.getElementById('bi-regra-cliente').value = '';
+                          }} className="px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 whitespace-nowrap">➕ Adicionar Cliente</button>
+                        </div>
+                        
+                        {/* Lista de clientes com regra */}
+                        {biRegrasContagem.length === 0 ? (
+                          <p className="text-gray-500 text-center py-4 bg-gray-50 rounded-lg">Nenhum cliente configurado. Todas OS contam como 1 entrega.</p>
+                        ) : (
+                          <div className="space-y-2">
+                            <p className="text-sm text-green-700 font-medium mb-2">✅ Clientes que contam PONTOS como entregas:</p>
+                            {biRegrasContagem.map(r => (
+                              <div key={r.id} className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
+                                <div>
+                                  <span className="font-mono bg-green-200 px-2 py-0.5 rounded text-green-900">{r.cod_cliente}</span>
+                                  <span className="ml-2 text-green-900">{r.nome_cliente || getNomeClienteComMascara(r.cod_cliente, '')}</span>
+                                </div>
+                                <button onClick={() => deleteBiRegraContagem(r.id)} className="text-red-500 hover:text-red-700 p-1">🗑️</button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* SEÇÃO ORIGINAL: PRAZO PADRÃO */}
                       <div className="bg-white rounded-xl shadow p-6">
                         <h2 className="text-xl font-bold text-purple-900 mb-2">⚙️ Prazo Padrão</h2>
                         <p className="text-sm text-gray-500 mb-4">Usado para clientes/centros sem configuração específica</p>
@@ -9908,7 +10085,7 @@
                     <button onClick={() => { setAdminMasterModule('solicitacoes'); setFormData(f => ({...f, adminTab: 'disponibilidade'})); }} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${adminMasterModule === 'solicitacoes' && formData.adminTab === 'disponibilidade' ? 'bg-white text-blue-800' : 'text-white hover:bg-white/10'}`}>
                       📅 Disponibilidade
                     </button>
-                    <button onClick={() => { setAdminMasterModule('bi'); loadBiDropdowns(); loadBiPrazos(); loadBiPrazoPadrao(); }} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${adminMasterModule === 'bi' ? 'bg-white text-orange-800' : 'text-white hover:bg-white/10'}`}>
+                    <button onClick={() => { setAdminMasterModule('bi'); loadBiDropdowns(); loadBiPrazos(); loadBiPrazoPadrao(); loadBiMascaras(); loadBiRegrasContagem(); }} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${adminMasterModule === 'bi' ? 'bg-white text-orange-800' : 'text-white hover:bg-white/10'}`}>
                       📊 BI
                     </button>
                   </div>
