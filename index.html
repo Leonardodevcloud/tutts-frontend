@@ -5051,7 +5051,7 @@
                       <button onClick={() => setAdminMasterModule('disponibilidade')} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${adminMasterModule === 'disponibilidade' ? 'bg-white text-blue-800' : 'text-white hover:bg-white/10'}`}>
                         📅 Disponibilidade
                       </button>
-                      <button onClick={() => setAdminMasterModule('bi')} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${adminMasterModule === 'bi' ? 'bg-white text-orange-800' : 'text-white hover:bg-white/10'}`}>
+                      <button onClick={() => { setAdminMasterModule('bi'); loadBiDropdowns(); loadBiPrazos(); loadBiPrazoPadrao(); loadBiDashboard(); }} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${adminMasterModule === 'bi' ? 'bg-white text-orange-800' : 'text-white hover:bg-white/10'}`}>
                         📊 BI
                       </button>
                     </div>
@@ -9150,13 +9150,9 @@
 
       // ========== MÓDULO BI ==========
       if (user.role === 'admin_master' && adminMasterModule === 'bi') {
-        // Carregar dados ao entrar no módulo
-        React.useEffect(() => {
-          loadBiDropdowns();
-          loadBiPrazos();
-          loadBiPrazoPadrao();
-        }, []);
-
+        // Carregar dados ao clicar nas abas (não usar useEffect dentro de if)
+        const initBi = () => { loadBiDropdowns(); loadBiPrazos(); loadBiPrazoPadrao(); loadBiDashboard(); };
+        
         return (
           <div className="min-h-screen bg-gray-100">
             {toast && <Toast {...toast} />}
