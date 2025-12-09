@@ -741,18 +741,17 @@
       const [biCidades, setBiCidades] = useState([]); // Lista de cidades
       const [biExpandedRows, setBiExpandedRows] = useState({}); // Linhas expandidas nas tabelas
       const [biMascaras, setBiMascaras] = useState([]); // Máscaras de clientes (apelidos)
-      const [biRegrasContagem, setBiRegrasContagem] = useState([]); // Clientes que contam pontos como entregas
+      const [biRegioes, setBiRegioes] = useState([]); // Regiões configuradas
+      const [biCategorias, setBiCategorias] = useState([]); // Categorias da planilha
       const [biSortConfig, setBiSortConfig] = useState({ key: null, direction: 'desc' }); // Ordenação das tabelas
       const [biFiltros, setBiFiltros] = useState({
         data_inicio: '',
         data_fim: '',
-        cod_cliente: [], // Agora é array para multi-seleção
-        centro_custo: [], // Agora é array para multi-seleção
-        cod_prof: '',
+        cod_cliente: [], // Array para multi-seleção
+        centro_custo: [], // Array para multi-seleção
         categoria: '',
-        cidade: '',
         status_prazo: '', // 'dentro', 'fora', ''
-        semana: ''
+        regiao: '' // ID da região selecionada
       });
       const [biLoading, setBiLoading] = useState(false);
       const [biUploadProgress, setBiUploadProgress] = useState(null);
@@ -1437,14 +1436,16 @@
 
       const loadBiDropdowns = async () => {
         try {
-          const [clientes, centros, profs, datas, uploads, cidades, clienteCentros] = await Promise.all([
+          const [clientes, centros, profs, datas, uploads, cidades, clienteCentros, categorias, regioes] = await Promise.all([
             fetch(`${API_URL}/bi/clientes`).then(r => r.json()),
             fetch(`${API_URL}/bi/centros-custo`).then(r => r.json()),
             fetch(`${API_URL}/bi/profissionais`).then(r => r.json()),
             fetch(`${API_URL}/bi/datas`).then(r => r.json()),
             fetch(`${API_URL}/bi/uploads`).then(r => r.json()),
             fetch(`${API_URL}/bi/cidades`).then(r => r.json()).catch(() => []),
-            fetch(`${API_URL}/bi/cliente-centros`).then(r => r.json()).catch(() => ({}))
+            fetch(`${API_URL}/bi/cliente-centros`).then(r => r.json()).catch(() => ({})),
+            fetch(`${API_URL}/bi/categorias`).then(r => r.json()).catch(() => []),
+            fetch(`${API_URL}/bi/regioes`).then(r => r.json()).catch(() => [])
           ]);
           // Ordenar clientes por código (crescente)
           const clientesOrdenados = (clientes || []).sort((a, b) => {
@@ -1460,6 +1461,8 @@
           setBiDatasDisponiveis(datas || []);
           setBiUploads(uploads || []);
           setBiCidades(cidades || []);
+          setBiCategorias(categorias || []);
+          setBiRegioes(regioes || []);
           // Setar filtros com primeira e última data disponível e carregar dashboard
           if (datas && datas.length > 0) {
             // Converter datas para formato YYYY-MM-DD
@@ -1654,38 +1657,38 @@
         return `${cod_cliente} - ${nome_cliente || 'Sem nome'}`;
       };
 
-      // ===== FUNÇÕES PARA REGRAS DE CONTAGEM =====
-      const loadBiRegrasContagem = async () => {
+      // ===== FUNÇÕES PARA REGIÕES =====
+      const loadBiRegioes = async () => {
         try {
-          const res = await fetch(`${API_URL}/bi/regras-contagem`);
-          setBiRegrasContagem(await res.json());
-        } catch (err) { console.error('Erro ao carregar regras:', err); }
+          const res = await fetch(`${API_URL}/bi/regioes`);
+          setBiRegioes(await res.json());
+        } catch (err) { console.error('Erro ao carregar regiões:', err); }
       };
 
-      const saveBiRegraContagem = async (cod_cliente, nome_cliente) => {
+      const saveBiRegiao = async (nome, clientes) => {
         try {
-          const res = await fetch(`${API_URL}/bi/regras-contagem`, {
+          const res = await fetch(`${API_URL}/bi/regioes`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ cod_cliente, nome_cliente })
+            body: JSON.stringify({ nome, clientes })
           });
           const result = await res.json();
           if (result.success) {
-            showToast('✅ Regra salva!', 'success');
-            loadBiRegrasContagem();
+            showToast('✅ Região salva!', 'success');
+            loadBiRegioes();
           } else {
             showToast('❌ Erro: ' + result.error, 'error');
           }
-        } catch (err) { showToast('Erro ao salvar regra', 'error'); }
+        } catch (err) { showToast('Erro ao salvar região', 'error'); }
       };
 
-      const deleteBiRegraContagem = async (id) => {
-        if (!confirm('Excluir esta regra de contagem?')) return;
+      const deleteBiRegiao = async (id) => {
+        if (!confirm('Excluir esta região?')) return;
         try {
-          const res = await fetch(`${API_URL}/bi/regras-contagem/${id}`, { method: 'DELETE' });
+          const res = await fetch(`${API_URL}/bi/regioes/${id}`, { method: 'DELETE' });
           if (res.ok) {
-            showToast('✅ Regra excluída!', 'success');
-            loadBiRegrasContagem();
+            showToast('✅ Região excluída!', 'success');
+            loadBiRegioes();
           }
         } catch (err) { showToast('Erro ao excluir', 'error'); }
       };
@@ -5322,7 +5325,7 @@
                       <button onClick={() => setAdminMasterModule('disponibilidade')} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${adminMasterModule === 'disponibilidade' ? 'bg-white text-blue-800' : 'text-white hover:bg-white/10'}`}>
                         📅 Disponibilidade
                       </button>
-                      <button onClick={() => { setAdminMasterModule('bi'); loadBiDropdowns(); loadBiPrazos(); loadBiPrazoPadrao(); loadBiMascaras(); loadBiRegrasContagem(); }} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${adminMasterModule === 'bi' ? 'bg-white text-orange-800' : 'text-white hover:bg-white/10'}`}>
+                      <button onClick={() => { setAdminMasterModule('bi'); loadBiDropdowns(); loadBiPrazos(); loadBiPrazoPadrao(); loadBiMascaras(); loadBiRegioes(); }} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${adminMasterModule === 'bi' ? 'bg-white text-orange-800' : 'text-white hover:bg-white/10'}`}>
                         📊 BI
                       </button>
                     </div>
@@ -9492,12 +9495,47 @@
                         <option value="fora">❌ Fora do Prazo</option>
                       </select>
                     </div>
+                    {/* Região */}
+                    <div className="border rounded-lg p-4">
+                      <h3 className="font-semibold text-gray-700 mb-2">🗺️ Região</h3>
+                      <select 
+                        value={biFiltros.regiao || ''} 
+                        onChange={e => {
+                          const regiaoId = e.target.value;
+                          if (regiaoId) {
+                            const regiao = biRegioes.find(r => r.id === parseInt(regiaoId));
+                            if (regiao && regiao.clientes) {
+                              const clientesDaRegiao = regiao.clientes.map(c => String(c));
+                              setBiFiltros({...biFiltros, regiao: regiaoId, cod_cliente: clientesDaRegiao, centro_custo: []});
+                              atualizarCentrosFiltrados(clientesDaRegiao);
+                            }
+                          } else {
+                            setBiFiltros({...biFiltros, regiao: '', cod_cliente: [], centro_custo: []});
+                            setBiCentrosCustoFiltrados(biCentrosCusto);
+                          }
+                        }} 
+                        className="w-full px-3 py-2 border rounded text-sm"
+                      >
+                        <option value="">Todas as Regiões</option>
+                        {biRegioes.map(r => (
+                          <option key={r.id} value={r.id}>{r.nome} ({r.clientes?.length || 0} clientes)</option>
+                        ))}
+                      </select>
+                    </div>
+                    {/* Categoria - Dinâmica da planilha */}
+                    <div className="border rounded-lg p-4">
+                      <h3 className="font-semibold text-gray-700 mb-2">🏷️ Categoria</h3>
+                      <select value={biFiltros.categoria} onChange={e => setBiFiltros({...biFiltros, categoria: e.target.value})} className="w-full px-3 py-2 border rounded text-sm">
+                        <option value="">Todas</option>
+                        {biCategorias.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                      </select>
+                    </div>
                     {/* Cliente - Multi-select dropdown */}
-                    <div className="border rounded-lg p-4 col-span-2 md:col-span-1">
+                    <div className="border rounded-lg p-4">
                       <div className="flex justify-between items-center mb-2">
                         <h3 className="font-semibold text-gray-700">🏢 Cliente</h3>
                         {(biFiltros.cod_cliente || []).length > 0 && (
-                          <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded">{(biFiltros.cod_cliente || []).length} selecionado(s)</span>
+                          <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded">{(biFiltros.cod_cliente || []).length} sel.</span>
                         )}
                       </div>
                       <select 
@@ -9506,7 +9544,7 @@
                         value={biFiltros.cod_cliente || []}
                         onChange={(e) => {
                           const selected = Array.from(e.target.selectedOptions, opt => opt.value);
-                          setBiFiltros({...biFiltros, cod_cliente: selected, centro_custo: []});
+                          setBiFiltros({...biFiltros, cod_cliente: selected, centro_custo: [], regiao: ''});
                           atualizarCentrosFiltrados(selected);
                         }}
                         className="w-full px-2 py-1 border rounded text-sm"
@@ -9520,11 +9558,11 @@
                       <p className="text-xs text-gray-400 mt-1">Ctrl+Click para multi-seleção</p>
                     </div>
                     {/* Centro de Custo - Multi-select dropdown */}
-                    <div className="border rounded-lg p-4 col-span-2 md:col-span-1">
+                    <div className="border rounded-lg p-4">
                       <div className="flex justify-between items-center mb-2">
                         <h3 className="font-semibold text-gray-700">📁 Centro Custo</h3>
                         {(biFiltros.centro_custo || []).length > 0 && (
-                          <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded">{(biFiltros.centro_custo || []).length} selecionado(s)</span>
+                          <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded">{(biFiltros.centro_custo || []).length} sel.</span>
                         )}
                       </div>
                       <select 
@@ -9541,38 +9579,10 @@
                           <option key={c.centro_custo} value={c.centro_custo}>{c.centro_custo}</option>
                         ))}
                       </select>
-                      {(biFiltros.cod_cliente || []).length > 0 && (
-                        <p className="text-xs text-purple-600 mt-1">Filtrado pelos clientes selecionados</p>
-                      )}
-                    </div>
-                    {/* Profissional */}
-                    <div className="border rounded-lg p-4">
-                      <h3 className="font-semibold text-gray-700 mb-2">👤 Profissional</h3>
-                      <select value={biFiltros.cod_prof} onChange={e => setBiFiltros({...biFiltros, cod_prof: e.target.value})} className="w-full px-3 py-2 border rounded text-sm">
-                        <option value="">Todos</option>
-                        {biProfissionais.map(p => <option key={p.cod_prof} value={p.cod_prof}>{p.cod_prof} - {p.nome_prof}</option>)}
-                      </select>
-                    </div>
-                    {/* Categoria */}
-                    <div className="border rounded-lg p-4">
-                      <h3 className="font-semibold text-gray-700 mb-2">🏷️ Categoria</h3>
-                      <select value={biFiltros.categoria} onChange={e => setBiFiltros({...biFiltros, categoria: e.target.value})} className="w-full px-3 py-2 border rounded text-sm">
-                        <option value="">Todas</option>
-                        <option value="Motofrete (Expresso)">Expresso</option>
-                        <option value="Motofrete">Normal</option>
-                      </select>
-                    </div>
-                    {/* Cidade */}
-                    <div className="border rounded-lg p-4">
-                      <h3 className="font-semibold text-gray-700 mb-2">🌆 Cidade</h3>
-                      <select value={biFiltros.cidade} onChange={e => setBiFiltros({...biFiltros, cidade: e.target.value})} className="w-full px-3 py-2 border rounded text-sm">
-                        <option value="">Todas</option>
-                        {biCidades.map(c => <option key={c.cidade} value={c.cidade}>{c.cidade}</option>)}
-                      </select>
                     </div>
                   </div>
                   <div className="sticky bottom-0 bg-gray-50 px-6 py-4 flex justify-between border-t">
-                    <button onClick={() => { setBiFiltros({...biFiltros, cod_cliente: [], centro_custo: [], cod_prof: '', categoria: '', cidade: '', status_prazo: ''}); setBiCentrosCustoFiltrados(biCentrosCusto); }} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300">🗑️ Limpar Filtros</button>
+                    <button onClick={() => { setBiFiltros({...biFiltros, cod_cliente: [], centro_custo: [], categoria: '', status_prazo: '', regiao: ''}); setBiCentrosCustoFiltrados(biCentrosCusto); }} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300">🗑️ Limpar Filtros</button>
                     <button onClick={() => { setBiShowFilters(false); loadBiDashboardComFiltros(biFiltros); }} className="px-6 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700">🔍 Aplicar Filtros</button>
                   </div>
                 </div>
@@ -9998,6 +10008,72 @@
                   {/* ===== ABA CONFIG ===== */}
                   {biTab === 'config' && (
                     <div className="space-y-6">
+                      {/* SEÇÃO: REGIÕES */}
+                      <div className="bg-white rounded-xl shadow p-6">
+                        <h2 className="text-xl font-bold text-purple-900 mb-2">🗺️ Configuração de Regiões</h2>
+                        <p className="text-sm text-gray-500 mb-4">Agrupe clientes em regiões para facilitar a filtragem no dashboard.</p>
+                        
+                        {/* Formulário para adicionar região */}
+                        <div className="border rounded-lg p-4 mb-4 bg-gray-50">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                              <label className="text-sm font-semibold text-gray-700">Nome da Região</label>
+                              <input type="text" id="bi-regiao-nome" placeholder="Ex: Grande Recife, Interior, Zona Sul..." className="w-full px-3 py-2 border rounded-lg mt-1" />
+                            </div>
+                            <div>
+                              <label className="text-sm font-semibold text-gray-700">Clientes da Região</label>
+                              <select id="bi-regiao-clientes" multiple size="5" className="w-full px-2 py-1 border rounded-lg mt-1 text-sm">
+                                {biClientes.map(c => (
+                                  <option key={c.cod_cliente} value={c.cod_cliente}>
+                                    {c.cod_cliente} - {getMascara(c.cod_cliente) || c.nome_cliente}
+                                  </option>
+                                ))}
+                              </select>
+                              <p className="text-xs text-gray-400 mt-1">Ctrl+Click para selecionar múltiplos</p>
+                            </div>
+                          </div>
+                          <button onClick={() => {
+                            const nome = document.getElementById('bi-regiao-nome').value.trim();
+                            const selectEl = document.getElementById('bi-regiao-clientes');
+                            const clientes = Array.from(selectEl.selectedOptions, opt => parseInt(opt.value));
+                            if (!nome) return showToast('Digite o nome da região', 'error');
+                            if (clientes.length === 0) return showToast('Selecione pelo menos um cliente', 'error');
+                            saveBiRegiao(nome, clientes);
+                            document.getElementById('bi-regiao-nome').value = '';
+                            selectEl.selectedIndex = -1;
+                          }} className="px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700">➕ Criar Região</button>
+                        </div>
+                        
+                        {/* Lista de regiões */}
+                        {biRegioes.length === 0 ? (
+                          <p className="text-gray-500 text-center py-4 bg-gray-50 rounded-lg">Nenhuma região configurada</p>
+                        ) : (
+                          <div className="space-y-3">
+                            {biRegioes.map(r => (
+                              <div key={r.id} className="border border-blue-200 rounded-lg p-4 bg-blue-50">
+                                <div className="flex justify-between items-start mb-2">
+                                  <div>
+                                    <h3 className="font-bold text-blue-900">{r.nome}</h3>
+                                    <p className="text-sm text-blue-600">{r.clientes?.length || 0} clientes</p>
+                                  </div>
+                                  <button onClick={() => deleteBiRegiao(r.id)} className="text-red-500 hover:text-red-700 p-1">🗑️</button>
+                                </div>
+                                <div className="flex flex-wrap gap-1">
+                                  {(r.clientes || []).map(cod => {
+                                    const cliente = biClientes.find(c => c.cod_cliente === cod);
+                                    return (
+                                      <span key={cod} className="text-xs bg-white border border-blue-300 px-2 py-0.5 rounded">
+                                        {cod} - {getMascara(cod) || cliente?.nome_cliente || ''}
+                                      </span>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
                       {/* SEÇÃO: MÁSCARAS DE CLIENTES */}
                       <div className="bg-white rounded-xl shadow p-6">
                         <h2 className="text-xl font-bold text-purple-900 mb-2">🏷️ Máscaras de Clientes</h2>
@@ -10038,53 +10114,6 @@
                                   <span className="font-semibold text-purple-900">{m.mascara}</span>
                                 </div>
                                 <button onClick={() => deleteBiMascara(m.id)} className="text-red-500 hover:text-red-700 p-1">🗑️</button>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* SEÇÃO: REGRAS DE CONTAGEM DE ENTREGAS */}
-                      <div className="bg-white rounded-xl shadow p-6">
-                        <h2 className="text-xl font-bold text-purple-900 mb-2">📦 Regras de Contagem de Entregas</h2>
-                        <p className="text-sm text-gray-500 mb-4">
-                          <strong>Padrão:</strong> cada OS conta como 1 entrega.<br />
-                          <strong>Com regra:</strong> para clientes abaixo, conta-se os pontos de entrega (Ponto 1 = coleta, não conta).<br />
-                          <span className="text-purple-600">Exemplo: OS com 4 pontos = 3 entregas (pontos 2, 3 e 4)</span>
-                        </p>
-                        
-                        {/* Formulário para adicionar regra */}
-                        <div className="flex gap-3 mb-4 flex-wrap">
-                          <select id="bi-regra-cliente" className="flex-1 min-w-64 px-3 py-2 border rounded-lg">
-                            <option value="">-- Selecione um Cliente para contar pontos como entregas --</option>
-                            {biClientes.filter(c => !biRegrasContagem.find(r => r.cod_cliente === c.cod_cliente)).map(c => (
-                              <option key={c.cod_cliente} value={`${c.cod_cliente}:${c.nome_cliente}`}>
-                                {c.cod_cliente} - {c.nome_cliente}
-                              </option>
-                            ))}
-                          </select>
-                          <button onClick={() => {
-                            const sel = document.getElementById('bi-regra-cliente').value;
-                            if (!sel) return showToast('Selecione um cliente', 'error');
-                            const [cod, ...nomeParts] = sel.split(':');
-                            saveBiRegraContagem(cod, nomeParts.join(':'));
-                            document.getElementById('bi-regra-cliente').value = '';
-                          }} className="px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 whitespace-nowrap">➕ Adicionar Cliente</button>
-                        </div>
-                        
-                        {/* Lista de clientes com regra */}
-                        {biRegrasContagem.length === 0 ? (
-                          <p className="text-gray-500 text-center py-4 bg-gray-50 rounded-lg">Nenhum cliente configurado. Todas OS contam como 1 entrega.</p>
-                        ) : (
-                          <div className="space-y-2">
-                            <p className="text-sm text-green-700 font-medium mb-2">✅ Clientes que contam PONTOS como entregas:</p>
-                            {biRegrasContagem.map(r => (
-                              <div key={r.id} className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
-                                <div>
-                                  <span className="font-mono bg-green-200 px-2 py-0.5 rounded text-green-900">{r.cod_cliente}</span>
-                                  <span className="ml-2 text-green-900">{r.nome_cliente || getNomeClienteComMascara(r.cod_cliente, '')}</span>
-                                </div>
-                                <button onClick={() => deleteBiRegraContagem(r.id)} className="text-red-500 hover:text-red-700 p-1">🗑️</button>
                               </div>
                             ))}
                           </div>
@@ -10217,7 +10246,7 @@
                     <button onClick={() => { setAdminMasterModule('solicitacoes'); setFormData(f => ({...f, adminTab: 'disponibilidade'})); }} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${adminMasterModule === 'solicitacoes' && formData.adminTab === 'disponibilidade' ? 'bg-white text-blue-800' : 'text-white hover:bg-white/10'}`}>
                       📅 Disponibilidade
                     </button>
-                    <button onClick={() => { setAdminMasterModule('bi'); loadBiDropdowns(); loadBiPrazos(); loadBiPrazoPadrao(); loadBiMascaras(); loadBiRegrasContagem(); }} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${adminMasterModule === 'bi' ? 'bg-white text-orange-800' : 'text-white hover:bg-white/10'}`}>
+                    <button onClick={() => { setAdminMasterModule('bi'); loadBiDropdowns(); loadBiPrazos(); loadBiPrazoPadrao(); loadBiMascaras(); loadBiRegioes(); }} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${adminMasterModule === 'bi' ? 'bg-white text-orange-800' : 'text-white hover:bg-white/10'}`}>
                       📊 BI
                     </button>
                   </div>
