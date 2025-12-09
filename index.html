@@ -1629,16 +1629,8 @@
           setBiProfissionaisResumo(data.porProfissional || []);
           setBiGraficos({ porTempo: data.porTempo || [], porKm: data.porKm || [] });
           
-          // Expandir todas as linhas por padrão
-          const expandedState = {};
-          (data.porCliente || []).forEach((_, i) => {
-            expandedState[`dash-cli-${i}`] = true;
-            expandedState[`cli-${i}`] = true;
-          });
-          (data.porProfissional || []).forEach((_, i) => {
-            expandedState[`prof-${i}`] = true;
-          });
-          setBiExpandedRows(expandedState);
+          // Linhas fechadas por padrão
+          setBiExpandedRows({});
         } catch (err) { console.error('Erro ao carregar BI:', err); }
         setBiLoading(false);
       };
