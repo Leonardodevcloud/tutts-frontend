@@ -1893,6 +1893,11 @@
             velocidade_media: row['Velocidade Média']
           })).filter(e => e.os); // Filtra linhas sem OS
           
+          // Debug: verificar se centro_custo está sendo capturado
+          console.log('📋 Primeira entrega:', entregas[0]);
+          console.log('📋 Centro custo:', entregas[0]?.centro_custo);
+          console.log('📋 Colunas do Excel:', Object.keys(jsonData[0] || {}));
+          
           setBiUploadProgress(`Enviando ${entregas.length} entregas...`);
           
           const res = await fetch(`${API_URL}/bi/entregas/upload`, {
