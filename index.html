@@ -1489,8 +1489,10 @@
 
       const formatarMoeda = (valor) => {
         if (!valor && valor !== 0) return 'R$0,00';
-        return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor);
+        return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(parseFloat(valor) || 0);
       };
+
+      const toNum = (v) => parseFloat(v) || 0; // Helper para converter string para número
 
       const toggleBiRow = (id) => {
         setBiExpandedRows(prev => ({...prev, [id]: !prev[id]}));
@@ -9435,12 +9437,12 @@
                                 <tr key={i} className={`border-b hover:bg-purple-50 ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
                                   <td className="px-3 py-2"><button onClick={() => toggleBiRow(`cli-${i}`)} className="text-purple-600">➕</button></td>
                                   <td className="px-3 py-2 font-medium">{c.cod_cliente}-{c.nome_cliente}</td>
-                                  <td className="px-3 py-2 text-right">{(c.total_os || 0).toLocaleString('pt-BR')}</td>
-                                  <td className="px-3 py-2 text-right">{(c.total_entregas || 0).toLocaleString('pt-BR')}</td>
-                                  <td className="px-3 py-2 text-right text-green-600 font-medium">{(c.dentro_prazo || 0).toLocaleString('pt-BR')}</td>
-                                  <td className="px-3 py-2 text-right text-green-600">{((c.dentro_prazo || 0) / (c.total_entregas || 1) * 100).toFixed(2)}%</td>
-                                  <td className="px-3 py-2 text-right text-red-600 font-medium">{(c.fora_prazo || 0).toLocaleString('pt-BR')}</td>
-                                  <td className="px-3 py-2 text-right text-red-600">{((c.fora_prazo || 0) / (c.total_entregas || 1) * 100).toFixed(2)}%</td>
+                                  <td className="px-3 py-2 text-right">{toNum(c.total_os).toLocaleString('pt-BR')}</td>
+                                  <td className="px-3 py-2 text-right">{toNum(c.total_entregas).toLocaleString('pt-BR')}</td>
+                                  <td className="px-3 py-2 text-right text-green-600 font-medium">{toNum(c.dentro_prazo).toLocaleString('pt-BR')}</td>
+                                  <td className="px-3 py-2 text-right text-green-600">{(toNum(c.dentro_prazo) / (toNum(c.total_entregas) || 1) * 100).toFixed(2)}%</td>
+                                  <td className="px-3 py-2 text-right text-red-600 font-medium">{toNum(c.fora_prazo).toLocaleString('pt-BR')}</td>
+                                  <td className="px-3 py-2 text-right text-red-600">{(toNum(c.fora_prazo) / (toNum(c.total_entregas) || 1) * 100).toFixed(2)}%</td>
                                   <td className="px-3 py-2 text-right">{formatarTempo(c.tempo_medio)}</td>
                                   <td className="px-3 py-2 text-right">{formatarMoeda(c.valor_total)}</td>
                                   <td className="px-3 py-2 text-right">{formatarMoeda(c.valor_prof)}</td>
@@ -9499,12 +9501,12 @@
                               <tr key={i} className={`border-b hover:bg-purple-50 ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
                                 <td className="px-3 py-2"><button onClick={() => toggleBiRow(`cli-${i}`)} className="text-purple-600">➕</button></td>
                                 <td className="px-3 py-2 font-medium">{c.cod_cliente}-{c.nome_cliente}</td>
-                                <td className="px-3 py-2 text-right">{(c.total_os || 0).toLocaleString('pt-BR')}</td>
-                                <td className="px-3 py-2 text-right">{(c.total_entregas || 0).toLocaleString('pt-BR')}</td>
-                                <td className="px-3 py-2 text-right text-green-600 font-medium">{(c.dentro_prazo || 0).toLocaleString('pt-BR')}</td>
-                                <td className="px-3 py-2 text-right text-green-600">{((c.dentro_prazo || 0) / (c.total_entregas || 1) * 100).toFixed(2)}%</td>
-                                <td className="px-3 py-2 text-right text-red-600 font-medium">{(c.fora_prazo || 0).toLocaleString('pt-BR')}</td>
-                                <td className="px-3 py-2 text-right text-red-600">{((c.fora_prazo || 0) / (c.total_entregas || 1) * 100).toFixed(2)}%</td>
+                                <td className="px-3 py-2 text-right">{toNum(c.total_os).toLocaleString('pt-BR')}</td>
+                                <td className="px-3 py-2 text-right">{toNum(c.total_entregas).toLocaleString('pt-BR')}</td>
+                                <td className="px-3 py-2 text-right text-green-600 font-medium">{toNum(c.dentro_prazo).toLocaleString('pt-BR')}</td>
+                                <td className="px-3 py-2 text-right text-green-600">{(toNum(c.dentro_prazo) / (toNum(c.total_entregas) || 1) * 100).toFixed(2)}%</td>
+                                <td className="px-3 py-2 text-right text-red-600 font-medium">{toNum(c.fora_prazo).toLocaleString('pt-BR')}</td>
+                                <td className="px-3 py-2 text-right text-red-600">{(toNum(c.fora_prazo) / (toNum(c.total_entregas) || 1) * 100).toFixed(2)}%</td>
                                 <td className="px-3 py-2 text-right">{formatarTempo(c.tempo_medio)}</td>
                                 <td className="px-3 py-2 text-right">{formatarMoeda(c.valor_total)}</td>
                                 <td className="px-3 py-2 text-right">{formatarMoeda(c.valor_prof)}</td>
@@ -9516,16 +9518,16 @@
                             <tr>
                               <td className="px-3 py-2"></td>
                               <td className="px-3 py-2">Total</td>
-                              <td className="px-3 py-2 text-right">{biClientesResumo.reduce((a,c) => a + (c.total_os||0), 0).toLocaleString('pt-BR')}</td>
-                              <td className="px-3 py-2 text-right">{biClientesResumo.reduce((a,c) => a + (c.total_entregas||0), 0).toLocaleString('pt-BR')}</td>
-                              <td className="px-3 py-2 text-right text-green-700">{biClientesResumo.reduce((a,c) => a + (c.dentro_prazo||0), 0).toLocaleString('pt-BR')}</td>
+                              <td className="px-3 py-2 text-right">{biClientesResumo.reduce((a,c) => a + toNum(c.total_os), 0).toLocaleString('pt-BR')}</td>
+                              <td className="px-3 py-2 text-right">{biClientesResumo.reduce((a,c) => a + toNum(c.total_entregas), 0).toLocaleString('pt-BR')}</td>
+                              <td className="px-3 py-2 text-right text-green-700">{biClientesResumo.reduce((a,c) => a + toNum(c.dentro_prazo), 0).toLocaleString('pt-BR')}</td>
                               <td className="px-3 py-2 text-right text-green-700">-</td>
-                              <td className="px-3 py-2 text-right text-red-700">{biClientesResumo.reduce((a,c) => a + (c.fora_prazo||0), 0).toLocaleString('pt-BR')}</td>
+                              <td className="px-3 py-2 text-right text-red-700">{biClientesResumo.reduce((a,c) => a + toNum(c.fora_prazo), 0).toLocaleString('pt-BR')}</td>
                               <td className="px-3 py-2 text-right text-red-700">-</td>
                               <td className="px-3 py-2 text-right">-</td>
-                              <td className="px-3 py-2 text-right">{formatarMoeda(biClientesResumo.reduce((a,c) => a + (c.valor_total||0), 0))}</td>
-                              <td className="px-3 py-2 text-right">{formatarMoeda(biClientesResumo.reduce((a,c) => a + (c.valor_prof||0), 0))}</td>
-                              <td className="px-3 py-2 text-right">{formatarMoeda(biClientesResumo.reduce((a,c) => a + ((c.valor_total||0)-(c.valor_prof||0)), 0))}</td>
+                              <td className="px-3 py-2 text-right">{formatarMoeda(biClientesResumo.reduce((a,c) => a + toNum(c.valor_total), 0))}</td>
+                              <td className="px-3 py-2 text-right">{formatarMoeda(biClientesResumo.reduce((a,c) => a + toNum(c.valor_prof), 0))}</td>
+                              <td className="px-3 py-2 text-right">{formatarMoeda(biClientesResumo.reduce((a,c) => a + (toNum(c.valor_total)-toNum(c.valor_prof)), 0))}</td>
                             </tr>
                           </tfoot>
                         </table>
@@ -9563,15 +9565,15 @@
                               <tr key={i} className={`border-b hover:bg-purple-50 ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
                                 <td className="px-3 py-2"><button onClick={() => toggleBiRow(`prof-${i}`)} className="text-purple-600">➕</button></td>
                                 <td className="px-3 py-2 font-medium">{p.nome_prof}</td>
-                                <td className="px-3 py-2 text-right">{(p.total_entregas || 0).toLocaleString('pt-BR')}</td>
+                                <td className="px-3 py-2 text-right">{toNum(p.total_entregas).toLocaleString('pt-BR')}</td>
                                 <td className="px-3 py-2 text-right">{formatarTempo(p.tempo_alocado)}</td>
                                 <td className="px-3 py-2 text-right">{formatarTempo(p.tempo_coleta)}</td>
                                 <td className="px-3 py-2 text-right">{formatarTempo(p.tempo_medio)}</td>
-                                <td className="px-3 py-2 text-right text-green-600 font-medium">{(p.dentro_prazo || 0).toLocaleString('pt-BR')}</td>
-                                <td className="px-3 py-2 text-right text-green-600">{((p.dentro_prazo || 0) / (p.total_entregas || 1) * 100).toFixed(2)}%</td>
-                                <td className="px-3 py-2 text-right text-red-600 font-medium">{(p.fora_prazo || 0).toLocaleString('pt-BR')}</td>
-                                <td className="px-3 py-2 text-right text-red-600">{((p.fora_prazo || 0) / (p.total_entregas || 1) * 100).toFixed(2)}%</td>
-                                <td className="px-3 py-2 text-right">{(p.distancia_total || 0).toLocaleString('pt-BR', {maximumFractionDigits: 2})} km</td>
+                                <td className="px-3 py-2 text-right text-green-600 font-medium">{toNum(p.dentro_prazo).toLocaleString('pt-BR')}</td>
+                                <td className="px-3 py-2 text-right text-green-600">{(toNum(p.dentro_prazo) / (toNum(p.total_entregas) || 1) * 100).toFixed(2)}%</td>
+                                <td className="px-3 py-2 text-right text-red-600 font-medium">{toNum(p.fora_prazo).toLocaleString('pt-BR')}</td>
+                                <td className="px-3 py-2 text-right text-red-600">{(toNum(p.fora_prazo) / (toNum(p.total_entregas) || 1) * 100).toFixed(2)}%</td>
+                                <td className="px-3 py-2 text-right">{parseFloat(p.distancia_total || 0).toLocaleString('pt-BR', {maximumFractionDigits: 2})} km</td>
                                 <td className="px-3 py-2 text-right">{p.retornos || 0}</td>
                                 <td className="px-3 py-2 text-right">{formatarMoeda(p.valor_prof)}</td>
                               </tr>
@@ -9581,17 +9583,17 @@
                             <tr>
                               <td className="px-3 py-2"></td>
                               <td className="px-3 py-2">Total</td>
-                              <td className="px-3 py-2 text-right">{biProfissionaisResumo.reduce((a,p) => a + (p.total_entregas||0), 0).toLocaleString('pt-BR')}</td>
+                              <td className="px-3 py-2 text-right">{biProfissionaisResumo.reduce((a,p) => a + toNum(p.total_entregas), 0).toLocaleString('pt-BR')}</td>
                               <td className="px-3 py-2 text-right">-</td>
                               <td className="px-3 py-2 text-right">-</td>
                               <td className="px-3 py-2 text-right">-</td>
-                              <td className="px-3 py-2 text-right text-green-700">{biProfissionaisResumo.reduce((a,p) => a + (p.dentro_prazo||0), 0).toLocaleString('pt-BR')}</td>
+                              <td className="px-3 py-2 text-right text-green-700">{biProfissionaisResumo.reduce((a,p) => a + toNum(p.dentro_prazo), 0).toLocaleString('pt-BR')}</td>
                               <td className="px-3 py-2 text-right">-</td>
-                              <td className="px-3 py-2 text-right text-red-700">{biProfissionaisResumo.reduce((a,p) => a + (p.fora_prazo||0), 0).toLocaleString('pt-BR')}</td>
+                              <td className="px-3 py-2 text-right text-red-700">{biProfissionaisResumo.reduce((a,p) => a + toNum(p.fora_prazo), 0).toLocaleString('pt-BR')}</td>
                               <td className="px-3 py-2 text-right">-</td>
-                              <td className="px-3 py-2 text-right">{biProfissionaisResumo.reduce((a,p) => a + (p.distancia_total||0), 0).toLocaleString('pt-BR', {maximumFractionDigits: 2})} km</td>
-                              <td className="px-3 py-2 text-right">{biProfissionaisResumo.reduce((a,p) => a + (p.retornos||0), 0)}</td>
-                              <td className="px-3 py-2 text-right">{formatarMoeda(biProfissionaisResumo.reduce((a,p) => a + (p.valor_prof||0), 0))}</td>
+                              <td className="px-3 py-2 text-right">{biProfissionaisResumo.reduce((a,p) => a + parseFloat(p.distancia_total||0), 0).toLocaleString('pt-BR', {maximumFractionDigits: 2})} km</td>
+                              <td className="px-3 py-2 text-right">{biProfissionaisResumo.reduce((a,p) => a + toNum(p.retornos), 0)}</td>
+                              <td className="px-3 py-2 text-right">{formatarMoeda(biProfissionaisResumo.reduce((a,p) => a + toNum(p.valor_prof), 0))}</td>
                             </tr>
                           </tfoot>
                         </table>
@@ -9635,7 +9637,7 @@
                                 <td className="px-3 py-2 text-center">{e.hora_chegada || '-'}</td>
                                 <td className="px-3 py-2 text-center">{e.hora_saida || '-'}</td>
                                 <td className="px-3 py-2 text-center">{formatarTempo(e.tempo_execucao_minutos)}</td>
-                                <td className="px-3 py-2 text-right">{(e.distancia || 0).toFixed(2)} km</td>
+                                <td className="px-3 py-2 text-right">{parseFloat(e.distancia || 0).toFixed(2)} km</td>
                                 <td className="px-3 py-2 text-center">
                                   {e.dentro_prazo === true && <span className="text-green-600">✅</span>}
                                   {e.dentro_prazo === false && <span className="text-red-600">❌</span>}
