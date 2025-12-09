@@ -742,8 +742,13 @@
       const [biExpandedRows, setBiExpandedRows] = useState({}); // Linhas expandidas nas tabelas
       const [biMascaras, setBiMascaras] = useState([]); // Máscaras de clientes (apelidos)
       const [biRegioes, setBiRegioes] = useState([]); // Regiões configuradas
-      const [biCategorias, setBiCategorias] = useState([]); // Categorias da planilha
+      const [biCategorias, setBiCategorias] = useState([]); // Categorias da planilha (todas)
       const [biSortConfig, setBiSortConfig] = useState({ key: null, direction: 'desc' }); // Ordenação das tabelas
+      // Dados brutos para filtros inteligentes
+      const [biDadosFiltro, setBiDadosFiltro] = useState([]); // Dados para calcular filtros dinâmicos
+      // Opções filtradas dinamicamente
+      const [biClientesFiltrados, setBiClientesFiltrados] = useState([]); // Clientes disponíveis no filtro
+      const [biCategoriasFiltradas, setBiCategoriasFiltradas] = useState([]); // Categorias disponíveis no filtro
       const [biFiltros, setBiFiltros] = useState({
         data_inicio: '',
         data_fim: '',
@@ -1436,7 +1441,7 @@
 
       const loadBiDropdowns = async () => {
         try {
-          const [clientes, centros, profs, datas, uploads, cidades, clienteCentros, categorias, regioes] = await Promise.all([
+          const [clientes, centros, profs, datas, uploads, cidades, clienteCentros, categorias, regioes, dadosFiltro] = await Promise.all([
             fetch(`${API_URL}/bi/clientes`).then(r => r.json()),
             fetch(`${API_URL}/bi/centros-custo`).then(r => r.json()),
             fetch(`${API_URL}/bi/profissionais`).then(r => r.json()),
@@ -1445,7 +1450,8 @@
             fetch(`${API_URL}/bi/cidades`).then(r => r.json()).catch(() => []),
             fetch(`${API_URL}/bi/cliente-centros`).then(r => r.json()).catch(() => ({})),
             fetch(`${API_URL}/bi/categorias`).then(r => r.json()).catch(() => []),
-            fetch(`${API_URL}/bi/regioes`).then(r => r.json()).catch(() => [])
+            fetch(`${API_URL}/bi/regioes`).then(r => r.json()).catch(() => []),
+            fetch(`${API_URL}/bi/dados-filtro`).then(r => r.json()).catch(() => [])
           ]);
           // Ordenar clientes por código (crescente)
           const clientesOrdenados = (clientes || []).sort((a, b) => {
@@ -1462,7 +1468,10 @@
           setBiUploads(uploads || []);
           setBiCidades(cidades || []);
           setBiCategorias(categorias || []);
+          setBiCategoriasFiltradas(categorias || []);
           setBiRegioes(regioes || []);
+          setBiDadosFiltro(dadosFiltro || []);
+          setBiClientesFiltrados(clientesOrdenados);
           // Setar filtros com primeira e última data disponível e carregar dashboard
           if (datas && datas.length > 0) {
             // Converter datas para formato YYYY-MM-DD
@@ -1483,25 +1492,98 @@
         } catch (err) { console.error('Erro ao carregar dropdowns:', err); }
       };
 
-      // Atualiza centros de custo filtrados quando clientes selecionados mudam
-      const atualizarCentrosFiltrados = (clientesSelecionados) => {
-        if (!clientesSelecionados || clientesSelecionados.length === 0) {
+      // ===== FILTROS INTELIGENTES =====
+      // Atualiza todas as opções de filtro baseado nas seleções atuais
+      const atualizarFiltrosInteligentes = (novosFiltros) => {
+        // Pega dados brutos para filtrar
+        const dados = biDadosFiltro;
+        if (!dados || dados.length === 0) {
+          // Se não tem dados, usa todos
+          setBiClientesFiltrados(biClientes);
           setBiCentrosCustoFiltrados(biCentrosCusto);
+          setBiCategoriasFiltradas(biCategorias);
           return;
         }
-        // Busca todos os centros de custo dos clientes selecionados
-        const centrosDoClientes = new Set();
-        clientesSelecionados.forEach(codCliente => {
-          const centros = biClienteCentros[codCliente] || [];
-          centros.forEach(c => centrosDoClientes.add(c));
-        });
-        // Filtra a lista de centros
-        if (centrosDoClientes.size > 0) {
-          const filtrados = biCentrosCusto.filter(c => centrosDoClientes.has(c.centro_custo));
-          setBiCentrosCustoFiltrados(filtrados);
-        } else {
-          setBiCentrosCustoFiltrados(biCentrosCusto);
+        
+        // Determina quais clientes estão selecionados (via região ou direto)
+        let clientesSelecionados = novosFiltros.cod_cliente || [];
+        if (novosFiltros.regiao) {
+          const regiao = biRegioes.find(r => r.id === parseInt(novosFiltros.regiao));
+          if (regiao && regiao.clientes) {
+            clientesSelecionados = regiao.clientes.map(c => String(c));
+          }
         }
+        
+        // Filtra dados base
+        let dadosFiltrados = dados;
+        
+        // Aplica filtro de clientes (se houver)
+        if (clientesSelecionados.length > 0) {
+          dadosFiltrados = dadosFiltrados.filter(d => 
+            clientesSelecionados.includes(String(d.cod_cliente))
+          );
+        }
+        
+        // Aplica filtro de categoria (se houver)
+        if (novosFiltros.categoria) {
+          dadosFiltrados = dadosFiltrados.filter(d => 
+            d.categoria === novosFiltros.categoria
+          );
+        }
+        
+        // Aplica filtro de centro de custo (se houver)
+        if (novosFiltros.centro_custo && novosFiltros.centro_custo.length > 0) {
+          dadosFiltrados = dadosFiltrados.filter(d => 
+            novosFiltros.centro_custo.includes(d.centro_custo)
+          );
+        }
+        
+        // Agora calcula as opções disponíveis baseado nos dados filtrados
+        
+        // Clientes disponíveis (se não tem seleção de cliente, mostra todos dos dados filtrados)
+        if (clientesSelecionados.length === 0) {
+          const clientesDisponiveis = [...new Set(dadosFiltrados.map(d => d.cod_cliente))];
+          setBiClientesFiltrados(biClientes.filter(c => clientesDisponiveis.includes(c.cod_cliente)));
+        } else {
+          // Se tem clientes selecionados, recalcula baseado em categoria/centro
+          let dadosParaClientes = dados;
+          if (novosFiltros.categoria) {
+            dadosParaClientes = dadosParaClientes.filter(d => d.categoria === novosFiltros.categoria);
+          }
+          if (novosFiltros.centro_custo && novosFiltros.centro_custo.length > 0) {
+            dadosParaClientes = dadosParaClientes.filter(d => novosFiltros.centro_custo.includes(d.centro_custo));
+          }
+          const clientesDisponiveis = [...new Set(dadosParaClientes.map(d => d.cod_cliente))];
+          setBiClientesFiltrados(biClientes.filter(c => clientesDisponiveis.includes(c.cod_cliente)));
+        }
+        
+        // Centros de custo disponíveis
+        let dadosParaCentros = dados;
+        if (clientesSelecionados.length > 0) {
+          dadosParaCentros = dadosParaCentros.filter(d => clientesSelecionados.includes(String(d.cod_cliente)));
+        }
+        if (novosFiltros.categoria) {
+          dadosParaCentros = dadosParaCentros.filter(d => d.categoria === novosFiltros.categoria);
+        }
+        const centrosDisponiveis = [...new Set(dadosParaCentros.map(d => d.centro_custo).filter(c => c))];
+        setBiCentrosCustoFiltrados(biCentrosCusto.filter(c => centrosDisponiveis.includes(c.centro_custo)));
+        
+        // Categorias disponíveis
+        let dadosParaCategorias = dados;
+        if (clientesSelecionados.length > 0) {
+          dadosParaCategorias = dadosParaCategorias.filter(d => clientesSelecionados.includes(String(d.cod_cliente)));
+        }
+        if (novosFiltros.centro_custo && novosFiltros.centro_custo.length > 0) {
+          dadosParaCategorias = dadosParaCategorias.filter(d => novosFiltros.centro_custo.includes(d.centro_custo));
+        }
+        const categoriasDisponiveis = [...new Set(dadosParaCategorias.map(d => d.categoria).filter(c => c))];
+        setBiCategoriasFiltradas(categoriasDisponiveis.sort());
+      };
+      
+      // Função legada para compatibilidade
+      const atualizarCentrosFiltrados = (clientesSelecionados) => {
+        const novosFiltros = {...biFiltros, cod_cliente: clientesSelecionados};
+        atualizarFiltrosInteligentes(novosFiltros);
       };
 
       // Versão que recebe filtros diretamente (para evitar race condition)
@@ -9472,7 +9554,7 @@
               <div className="fixed inset-0 bg-black/50 z-50 flex items-start justify-center pt-10">
                 <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[80vh] overflow-y-auto">
                   <div className="sticky top-0 bg-purple-700 text-white px-6 py-4 flex justify-between items-center z-10">
-                    <h2 className="text-lg font-bold">Seleção de Filtros</h2>
+                    <h2 className="text-lg font-bold">🔍 Filtros Inteligentes</h2>
                     <button onClick={() => setBiShowFilters(false)} className="text-white hover:bg-white/20 rounded-lg px-3 py-1">✕</button>
                   </div>
                   <div className="p-6 grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -9502,17 +9584,16 @@
                         value={biFiltros.regiao || ''} 
                         onChange={e => {
                           const regiaoId = e.target.value;
+                          let novosFiltros;
                           if (regiaoId) {
                             const regiao = biRegioes.find(r => r.id === parseInt(regiaoId));
-                            if (regiao && regiao.clientes) {
-                              const clientesDaRegiao = regiao.clientes.map(c => String(c));
-                              setBiFiltros({...biFiltros, regiao: regiaoId, cod_cliente: clientesDaRegiao, centro_custo: []});
-                              atualizarCentrosFiltrados(clientesDaRegiao);
-                            }
+                            const clientesDaRegiao = regiao?.clientes?.map(c => String(c)) || [];
+                            novosFiltros = {...biFiltros, regiao: regiaoId, cod_cliente: clientesDaRegiao, centro_custo: [], categoria: ''};
                           } else {
-                            setBiFiltros({...biFiltros, regiao: '', cod_cliente: [], centro_custo: []});
-                            setBiCentrosCustoFiltrados(biCentrosCusto);
+                            novosFiltros = {...biFiltros, regiao: '', cod_cliente: [], centro_custo: [], categoria: ''};
                           }
+                          setBiFiltros(novosFiltros);
+                          atualizarFiltrosInteligentes(novosFiltros);
                         }} 
                         className="w-full px-3 py-2 border rounded text-sm"
                       >
@@ -9522,15 +9603,23 @@
                         ))}
                       </select>
                     </div>
-                    {/* Categoria - Dinâmica da planilha */}
+                    {/* Categoria - Filtrada dinamicamente */}
                     <div className="border rounded-lg p-4">
                       <h3 className="font-semibold text-gray-700 mb-2">🏷️ Categoria</h3>
-                      <select value={biFiltros.categoria} onChange={e => setBiFiltros({...biFiltros, categoria: e.target.value})} className="w-full px-3 py-2 border rounded text-sm">
-                        <option value="">Todas</option>
-                        {biCategorias.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                      <select 
+                        value={biFiltros.categoria} 
+                        onChange={e => {
+                          const novosFiltros = {...biFiltros, categoria: e.target.value};
+                          setBiFiltros(novosFiltros);
+                          atualizarFiltrosInteligentes(novosFiltros);
+                        }} 
+                        className="w-full px-3 py-2 border rounded text-sm"
+                      >
+                        <option value="">Todas ({biCategoriasFiltradas.length})</option>
+                        {biCategoriasFiltradas.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                       </select>
                     </div>
-                    {/* Cliente - Multi-select dropdown */}
+                    {/* Cliente - Multi-select com filtro inteligente */}
                     <div className="border rounded-lg p-4">
                       <div className="flex justify-between items-center mb-2">
                         <h3 className="font-semibold text-gray-700">🏢 Cliente</h3>
@@ -9544,20 +9633,21 @@
                         value={biFiltros.cod_cliente || []}
                         onChange={(e) => {
                           const selected = Array.from(e.target.selectedOptions, opt => opt.value);
-                          setBiFiltros({...biFiltros, cod_cliente: selected, centro_custo: [], regiao: ''});
-                          atualizarCentrosFiltrados(selected);
+                          const novosFiltros = {...biFiltros, cod_cliente: selected, centro_custo: [], regiao: ''};
+                          setBiFiltros(novosFiltros);
+                          atualizarFiltrosInteligentes(novosFiltros);
                         }}
                         className="w-full px-2 py-1 border rounded text-sm"
                       >
-                        {biClientes.map(c => (
+                        {biClientesFiltrados.map(c => (
                           <option key={c.cod_cliente} value={String(c.cod_cliente)}>
-                            {c.cod_cliente} - {getMascara(c.cod_cliente) || c.nome_cliente}
+                            {getMascara(c.cod_cliente) || c.nome_cliente}
                           </option>
                         ))}
                       </select>
                       <p className="text-xs text-gray-400 mt-1">Ctrl+Click para multi-seleção</p>
                     </div>
-                    {/* Centro de Custo - Multi-select dropdown */}
+                    {/* Centro de Custo - Filtrado dinamicamente */}
                     <div className="border rounded-lg p-4">
                       <div className="flex justify-between items-center mb-2">
                         <h3 className="font-semibold text-gray-700">📁 Centro Custo</h3>
@@ -9571,7 +9661,9 @@
                         value={biFiltros.centro_custo || []}
                         onChange={(e) => {
                           const selected = Array.from(e.target.selectedOptions, opt => opt.value);
-                          setBiFiltros({...biFiltros, centro_custo: selected});
+                          const novosFiltros = {...biFiltros, centro_custo: selected};
+                          setBiFiltros(novosFiltros);
+                          atualizarFiltrosInteligentes(novosFiltros);
                         }}
                         className="w-full px-2 py-1 border rounded text-sm"
                       >
@@ -9582,7 +9674,13 @@
                     </div>
                   </div>
                   <div className="sticky bottom-0 bg-gray-50 px-6 py-4 flex justify-between border-t">
-                    <button onClick={() => { setBiFiltros({...biFiltros, cod_cliente: [], centro_custo: [], categoria: '', status_prazo: '', regiao: ''}); setBiCentrosCustoFiltrados(biCentrosCusto); }} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300">🗑️ Limpar Filtros</button>
+                    <button onClick={() => { 
+                      const novosFiltros = {...biFiltros, cod_cliente: [], centro_custo: [], categoria: '', status_prazo: '', regiao: ''}; 
+                      setBiFiltros(novosFiltros);
+                      setBiClientesFiltrados(biClientes);
+                      setBiCentrosCustoFiltrados(biCentrosCusto);
+                      setBiCategoriasFiltradas(biCategorias);
+                    }} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300">🗑️ Limpar Filtros</button>
                     <button onClick={() => { setBiShowFilters(false); loadBiDashboardComFiltros(biFiltros); }} className="px-6 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700">🔍 Aplicar Filtros</button>
                   </div>
                 </div>
@@ -10150,7 +10248,7 @@
                           <label className="text-sm text-gray-600 font-medium">Selecionar Cliente ou Centro de Custo</label>
                           <select id="bi-novo-codigo" className="w-full px-3 py-2 border rounded-lg mt-1">
                             <option value="">-- Selecione --</option>
-                            <optgroup label="👤 Clientes">{biClientes.map(c => <option key={`cli-${c.cod_cliente}`} value={`cliente:${c.cod_cliente}:${c.nome_cliente}`}>{c.nome_cliente} (Cód: {c.cod_cliente})</option>)}</optgroup>
+                            <optgroup label="👤 Clientes">{biClientes.map(c => <option key={`cli-${c.cod_cliente}`} value={`cliente:${c.cod_cliente}:${getMascara(c.cod_cliente) || c.nome_cliente}`}>{getMascara(c.cod_cliente) || c.nome_cliente} (Cód: {c.cod_cliente})</option>)}</optgroup>
                             <optgroup label="🏢 Centros de Custo">{biCentrosCusto.map(c => <option key={`cc-${c.centro_custo}`} value={`centro_custo:${c.centro_custo}:${c.centro_custo}`}>{c.centro_custo}</option>)}</optgroup>
                           </select>
                         </div>
