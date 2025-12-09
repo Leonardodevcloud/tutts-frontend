@@ -4960,6 +4960,22 @@
                 <>
                   {/* Cards de estatísticas + Performance */}
                   {(() => {
+                    // Função para verificar se uma data está dentro do horário de atendimento
+                    const isDentroHorarioAtendimento = (data) => {
+                      const d = new Date(data);
+                      const diaSemana = d.getDay(); // 0=Dom, 1=Seg, ..., 6=Sab
+                      const hora = d.getHours();
+                      const minutos = d.getMinutes();
+                      const horaDecimal = hora + minutos / 60;
+                      
+                      // Domingo = não atende
+                      if (diaSemana === 0) return false;
+                      // Sábado = 08:00 às 12:00
+                      if (diaSemana === 6) return horaDecimal >= 8 && horaDecimal < 12;
+                      // Segunda a Sexta = 09:00 às 18:00
+                      return horaDecimal >= 9 && horaDecimal < 18;
+                    };
+                    
                     // Calcular métricas de performance
                     const hoje = new Date();
                     hoje.setHours(0, 0, 0, 0);
@@ -4968,27 +4984,23 @@
                     const processadasHoje = solicitacoesHoje.filter(w => w.status !== 'aguardando_aprovacao');
                     const aguardandoHoje = solicitacoesHoje.filter(w => w.status === 'aguardando_aprovacao');
                     
-                    // Tempo médio de resposta (apenas processadas)
+                    // Tempo médio de resposta (apenas processadas DENTRO do horário de atendimento)
                     const temposResposta = allWithdrawals
-                      .filter(w => w.status !== 'aguardando_aprovacao' && w.updated_at && w.created_at)
+                      .filter(w => w.status !== 'aguardando_aprovacao' && w.updated_at && w.created_at && isDentroHorarioAtendimento(w.created_at))
                       .map(w => (new Date(w.updated_at) - new Date(w.created_at)) / (1000 * 60)); // em minutos
                     
                     const tempoMedio = temposResposta.length > 0 
                       ? Math.round(temposResposta.reduce((a, b) => a + b, 0) / temposResposta.length)
                       : 0;
                     
-                    // Solicitações atrasadas (> 2h)
+                    // Solicitações atrasadas (> 1h) - APENAS as que foram enviadas dentro do horário de atendimento
                     const atrasadas = allWithdrawals.filter(w => 
                       w.status === 'aguardando_aprovacao' && 
+                      isDentroHorarioAtendimento(w.created_at) &&
                       (Date.now() - new Date(w.created_at).getTime()) >= 3600000
                     );
                     
-                    // Taxa de aprovação
-                    const totalProcessadas = allWithdrawals.filter(w => w.status !== 'aguardando_aprovacao').length;
-                    const aprovadas = allWithdrawals.filter(w => w.status === 'aprovado' || w.status === 'aprovado_gratuidade').length;
-                    const taxaAprovacao = totalProcessadas > 0 ? Math.round((aprovadas / totalProcessadas) * 100) : 0;
-                    
-                    // Performance score (0-100)
+                    // Performance score (0-100) - considera apenas solicitações dentro do horário
                     const scoreAtraso = atrasadas.length === 0 ? 100 : Math.max(0, 100 - (atrasadas.length * 20));
                     const scoreTempo = tempoMedio <= 30 ? 100 : tempoMedio <= 60 ? 80 : tempoMedio <= 120 ? 60 : 40;
                     const performanceScore = Math.round((scoreAtraso + scoreTempo) / 2);
@@ -5054,16 +5066,14 @@
                               <div className="bg-white/10 rounded-lg p-3 text-center">
                                 <p className="text-white/70 text-xs">Tempo Médio</p>
                                 <p className="text-2xl font-bold">{tempoMedio < 60 ? `${tempoMedio}min` : `${Math.floor(tempoMedio/60)}h${tempoMedio%60}m`}</p>
-                                <p className={`text-xs ${tempoMedio <= 120 ? 'text-green-300' : 'text-red-300'}`}>
-                                  {tempoMedio <= 60 ? '✅ Excelente' : tempoMedio <= 120 ? '⚠️ Bom' : '🚨 Lento'}
+                                <p className={`text-xs ${tempoMedio <= 60 ? 'text-green-300' : 'text-red-300'}`}>
+                                  {tempoMedio <= 30 ? '✅ Excelente' : tempoMedio <= 60 ? '⚠️ Bom' : '🚨 Lento'}
                                 </p>
                               </div>
                               <div className="bg-white/10 rounded-lg p-3 text-center">
-                                <p className="text-white/70 text-xs">Taxa Aprovação</p>
-                                <p className="text-2xl font-bold">{taxaAprovacao}%</p>
-                                <div className="w-full bg-white/20 rounded-full h-1.5 mt-1">
-                                  <div className="bg-green-400 h-1.5 rounded-full" style={{width: `${taxaAprovacao}%`}}></div>
-                                </div>
+                                <p className="text-white/70 text-xs">Pendentes</p>
+                                <p className="text-2xl font-bold">{allWithdrawals.filter(w => w.status === 'aguardando_aprovacao').length}</p>
+                                <p className="text-xs text-white/60">aguardando</p>
                               </div>
                               <div className="bg-white/10 rounded-lg p-3 text-center">
                                 <p className="text-white/70 text-xs">Prazo (1h)</p>
@@ -9011,6 +9021,22 @@
               <>
                 {/* Cards de estatísticas + Performance */}
                 {(() => {
+                  // Função para verificar se uma data está dentro do horário de atendimento
+                  const isDentroHorarioAtendimento = (data) => {
+                    const d = new Date(data);
+                    const diaSemana = d.getDay(); // 0=Dom, 1=Seg, ..., 6=Sab
+                    const hora = d.getHours();
+                    const minutos = d.getMinutes();
+                    const horaDecimal = hora + minutos / 60;
+                    
+                    // Domingo = não atende
+                    if (diaSemana === 0) return false;
+                    // Sábado = 08:00 às 12:00
+                    if (diaSemana === 6) return horaDecimal >= 8 && horaDecimal < 12;
+                    // Segunda a Sexta = 09:00 às 18:00
+                    return horaDecimal >= 9 && horaDecimal < 18;
+                  };
+                  
                   // Calcular métricas de performance para solicitações de ajuste
                   const hoje = new Date();
                   hoje.setHours(0, 0, 0, 0);
@@ -9018,27 +9044,23 @@
                   const solicitacoesHoje = submissions.filter(s => new Date(s.created_at) >= hoje);
                   const processadasHoje = solicitacoesHoje.filter(s => s.status !== 'pendente');
                   
-                  // Tempo médio de resposta (apenas processadas)
+                  // Tempo médio de resposta (apenas processadas DENTRO do horário de atendimento)
                   const temposResposta = submissions
-                    .filter(s => s.status !== 'pendente' && s.updated_at && s.created_at)
+                    .filter(s => s.status !== 'pendente' && s.updated_at && s.created_at && isDentroHorarioAtendimento(s.created_at))
                     .map(s => (new Date(s.updated_at) - new Date(s.created_at)) / (1000 * 60 * 60)); // em horas
                   
                   const tempoMedioHoras = temposResposta.length > 0 
                     ? temposResposta.reduce((a, b) => a + b, 0) / temposResposta.length
                     : 0;
                   
-                  // Solicitações atrasadas (> 24h)
+                  // Solicitações atrasadas (> 24h) - APENAS as que foram enviadas dentro do horário de atendimento
                   const atrasadas = submissions.filter(s => 
                     s.status === 'pendente' && 
+                    isDentroHorarioAtendimento(s.created_at) &&
                     (Date.now() - new Date(s.created_at).getTime()) >= 86400000 // 24h em ms
                   );
                   
-                  // Taxa de aprovação
-                  const totalProcessadas = submissions.filter(s => s.status !== 'pendente').length;
-                  const aprovadas = submissions.filter(s => s.status === 'aprovada').length;
-                  const taxaAprovacao = totalProcessadas > 0 ? Math.round((aprovadas / totalProcessadas) * 100) : 0;
-                  
-                  // Performance score (0-100)
+                  // Performance score (0-100) - considera apenas solicitações dentro do horário
                   const scoreAtraso = atrasadas.length === 0 ? 100 : Math.max(0, 100 - (atrasadas.length * 15));
                   const scoreTempo = tempoMedioHoras <= 6 ? 100 : tempoMedioHoras <= 12 ? 80 : tempoMedioHoras <= 24 ? 60 : 40;
                   const performanceScore = Math.round((scoreAtraso + scoreTempo) / 2);
@@ -9106,11 +9128,9 @@
                               </p>
                             </div>
                             <div className="bg-white/10 rounded-lg p-3 text-center">
-                              <p className="text-white/70 text-xs">Taxa Aprovação</p>
-                              <p className="text-xl font-bold">{taxaAprovacao}%</p>
-                              <div className="w-full bg-white/20 rounded-full h-1.5 mt-1">
-                                <div className="bg-green-400 h-1.5 rounded-full" style={{width: `${taxaAprovacao}%`}}></div>
-                              </div>
+                              <p className="text-white/70 text-xs">Pendentes</p>
+                              <p className="text-xl font-bold">{submissions.filter(s => s.status === 'pendente').length}</p>
+                              <p className="text-xs text-white/60">aguardando</p>
                             </div>
                             <div className="bg-white/10 rounded-lg p-3 text-center">
                               <p className="text-white/70 text-xs">Prazo (24h)</p>
