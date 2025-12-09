@@ -9847,6 +9847,7 @@
                                 <th className="px-3 py-2 text-right text-purple-900">%</th>
                                 <th className="px-3 py-2 text-right text-purple-900">Fora</th>
                                 <th className="px-3 py-2 text-right text-purple-900">%</th>
+                                <th className="px-3 py-2 text-right text-purple-900">S/Prazo</th>
                                 <th className="px-3 py-2 text-right text-purple-900">Média</th>
                                 <th className="px-3 py-2 text-right text-purple-900">Valor</th>
                                 <th className="px-3 py-2 text-right text-purple-900">Val. Prof.</th>
@@ -9874,6 +9875,7 @@
                                     <td className="px-3 py-2 text-right text-green-600">{(toNum(c.dentro_prazo) / (toNum(c.total_entregas) || 1) * 100).toFixed(2)}%</td>
                                     <td className="px-3 py-2 text-right text-red-600 font-medium">{toNum(c.fora_prazo).toLocaleString('pt-BR')}</td>
                                     <td className="px-3 py-2 text-right text-red-600">{(toNum(c.fora_prazo) / (toNum(c.total_entregas) || 1) * 100).toFixed(2)}%</td>
+                                    <td className="px-3 py-2 text-right text-gray-500">{toNum(c.sem_prazo).toLocaleString('pt-BR')}</td>
                                     <td className="px-3 py-2 text-right">{formatarTempo(c.tempo_medio)}</td>
                                     <td className="px-3 py-2 text-right">{formatarMoeda(c.valor_total)}</td>
                                     <td className="px-3 py-2 text-right">{formatarMoeda(c.valor_prof)}</td>
@@ -9900,6 +9902,7 @@
                                       <td className="px-3 py-2 text-right text-green-600">{(toNum(cc.dentro_prazo) / (toNum(cc.total_entregas) || 1) * 100).toFixed(2)}%</td>
                                       <td className="px-3 py-2 text-right text-red-500">{toNum(cc.fora_prazo).toLocaleString('pt-BR')}</td>
                                       <td className="px-3 py-2 text-right text-red-500">{(toNum(cc.fora_prazo) / (toNum(cc.total_entregas) || 1) * 100).toFixed(2)}%</td>
+                                      <td className="px-3 py-2 text-right text-gray-400">{toNum(cc.sem_prazo || 0).toLocaleString('pt-BR')}</td>
                                       <td className="px-3 py-2 text-right text-purple-600">{formatarTempo(cc.tempo_medio)}</td>
                                       <td className="px-3 py-2 text-right text-purple-600">{formatarMoeda(cc.valor_total)}</td>
                                       <td className="px-3 py-2 text-right text-purple-600">{formatarMoeda(cc.valor_prof)}</td>
@@ -9922,6 +9925,7 @@
                                 <td className="px-3 py-2 text-right text-green-700">{(toNum(biDashboard?.dentro_prazo) / (toNum(biDashboard?.total_entregas) || 1) * 100).toFixed(2)}%</td>
                                 <td className="px-3 py-2 text-right text-red-700">{toNum(biDashboard?.fora_prazo).toLocaleString('pt-BR')}</td>
                                 <td className="px-3 py-2 text-right text-red-700">{(toNum(biDashboard?.fora_prazo) / (toNum(biDashboard?.total_entregas) || 1) * 100).toFixed(2)}%</td>
+                                <td className="px-3 py-2 text-right text-gray-600">{toNum(biDashboard?.sem_prazo).toLocaleString('pt-BR')}</td>
                                 <td className="px-3 py-2 text-right">{formatarTempo(biDashboard?.tempo_medio)}</td>
                                 <td className="px-3 py-2 text-right">{formatarMoeda(biDashboard?.valor_total)}</td>
                                 <td className="px-3 py-2 text-right">{formatarMoeda(biDashboard?.valor_prof_total)}</td>
