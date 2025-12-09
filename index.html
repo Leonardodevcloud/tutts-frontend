@@ -818,6 +818,16 @@
         }
       }, [formData.view]);
 
+      // Travar scroll do body quando modal de filtros está aberto
+      useEffect(() => {
+        if (biShowFilters) {
+          document.body.style.overflow = 'hidden';
+        } else {
+          document.body.style.overflow = 'auto';
+        }
+        return () => { document.body.style.overflow = 'auto'; };
+      }, [biShowFilters]);
+
       // Auto-preencher nome quando digitar código na tela de cadastro
       useEffect(() => {
         if (formData.view === 'register' && formData.cod && profissionaisSheet.length > 0) {
@@ -9551,137 +9561,148 @@
 
             {/* Modal de Filtros */}
             {biShowFilters && (
-              <div className="fixed inset-0 bg-black/50 z-50 flex items-start justify-center pt-10">
-                <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[80vh] overflow-y-auto">
+              <div className="fixed inset-0 bg-black/50 z-50 flex items-start justify-center pt-10 overflow-hidden">
+                <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl max-h-[85vh] overflow-y-auto">
                   <div className="sticky top-0 bg-purple-700 text-white px-6 py-4 flex justify-between items-center z-10">
                     <h2 className="text-lg font-bold">🔍 Filtros Inteligentes</h2>
-                    <button onClick={() => setBiShowFilters(false)} className="text-white hover:bg-white/20 rounded-lg px-3 py-1">✕</button>
+                    <button onClick={() => setBiShowFilters(false)} className="text-white hover:bg-white/20 rounded-lg px-3 py-1 text-xl">✕</button>
                   </div>
-                  <div className="p-6 grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {/* Data Início */}
-                    <div className="border rounded-lg p-4">
-                      <h3 className="font-semibold text-gray-700 mb-2">📅 Data Início</h3>
-                      <input type="date" value={biFiltros.data_inicio} onChange={e => setBiFiltros({...biFiltros, data_inicio: e.target.value})} className="w-full px-3 py-2 border rounded text-sm" />
-                    </div>
-                    {/* Data Fim */}
-                    <div className="border rounded-lg p-4">
-                      <h3 className="font-semibold text-gray-700 mb-2">📅 Data Fim</h3>
-                      <input type="date" value={biFiltros.data_fim} onChange={e => setBiFiltros({...biFiltros, data_fim: e.target.value})} className="w-full px-3 py-2 border rounded text-sm" />
-                    </div>
-                    {/* Status Prazo */}
-                    <div className="border rounded-lg p-4">
-                      <h3 className="font-semibold text-gray-700 mb-2">⏱️ Status Prazo</h3>
-                      <select value={biFiltros.status_prazo} onChange={e => setBiFiltros({...biFiltros, status_prazo: e.target.value})} className="w-full px-3 py-2 border rounded text-sm">
-                        <option value="">Todos</option>
-                        <option value="dentro">✅ Dentro do Prazo</option>
-                        <option value="fora">❌ Fora do Prazo</option>
-                      </select>
-                    </div>
-                    {/* Região */}
-                    <div className="border rounded-lg p-4">
-                      <h3 className="font-semibold text-gray-700 mb-2">🗺️ Região</h3>
-                      <select 
-                        value={biFiltros.regiao || ''} 
-                        onChange={e => {
-                          const regiaoId = e.target.value;
-                          let novosFiltros;
-                          if (regiaoId) {
-                            const regiao = biRegioes.find(r => r.id === parseInt(regiaoId));
-                            const clientesDaRegiao = regiao?.clientes?.map(c => String(c)) || [];
-                            novosFiltros = {...biFiltros, regiao: regiaoId, cod_cliente: clientesDaRegiao, centro_custo: [], categoria: ''};
-                          } else {
-                            novosFiltros = {...biFiltros, regiao: '', cod_cliente: [], centro_custo: [], categoria: ''};
-                          }
-                          setBiFiltros(novosFiltros);
-                          atualizarFiltrosInteligentes(novosFiltros);
-                        }} 
-                        className="w-full px-3 py-2 border rounded text-sm"
-                      >
-                        <option value="">Todas as Regiões</option>
-                        {biRegioes.map(r => (
-                          <option key={r.id} value={r.id}>{r.nome} ({r.clientes?.length || 0} clientes)</option>
-                        ))}
-                      </select>
-                    </div>
-                    {/* Categoria - Filtrada dinamicamente */}
-                    <div className="border rounded-lg p-4">
-                      <h3 className="font-semibold text-gray-700 mb-2">🏷️ Categoria</h3>
-                      <select 
-                        value={biFiltros.categoria} 
-                        onChange={e => {
-                          const novosFiltros = {...biFiltros, categoria: e.target.value};
-                          setBiFiltros(novosFiltros);
-                          atualizarFiltrosInteligentes(novosFiltros);
-                        }} 
-                        className="w-full px-3 py-2 border rounded text-sm"
-                      >
-                        <option value="">Todas ({biCategoriasFiltradas.length})</option>
-                        {biCategoriasFiltradas.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                      </select>
-                    </div>
-                    {/* Cliente - Multi-select com filtro inteligente */}
-                    <div className="border rounded-lg p-4">
-                      <div className="flex justify-between items-center mb-2">
-                        <h3 className="font-semibold text-gray-700">🏢 Cliente</h3>
-                        {(biFiltros.cod_cliente || []).length > 0 && (
-                          <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded">{(biFiltros.cod_cliente || []).length} sel.</span>
-                        )}
+                  <div className="p-6">
+                    {/* Linha 1: Datas e Status */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                      <div className="border rounded-lg p-3 bg-gray-50">
+                        <h3 className="font-semibold text-gray-700 mb-2 text-sm">📅 Data Início</h3>
+                        <input type="date" value={biFiltros.data_inicio} onChange={e => setBiFiltros({...biFiltros, data_inicio: e.target.value})} className="w-full px-3 py-2 border rounded text-sm" />
                       </div>
-                      <select 
-                        multiple 
-                        size="5"
-                        value={biFiltros.cod_cliente || []}
-                        onChange={(e) => {
-                          const selected = Array.from(e.target.selectedOptions, opt => opt.value);
-                          const novosFiltros = {...biFiltros, cod_cliente: selected, centro_custo: [], regiao: ''};
-                          setBiFiltros(novosFiltros);
-                          atualizarFiltrosInteligentes(novosFiltros);
-                        }}
-                        className="w-full px-2 py-1 border rounded text-sm"
-                      >
-                        {biClientesFiltrados.map(c => (
-                          <option key={c.cod_cliente} value={String(c.cod_cliente)}>
-                            {getMascara(c.cod_cliente) || c.nome_cliente}
-                          </option>
-                        ))}
-                      </select>
-                      <p className="text-xs text-gray-400 mt-1">Ctrl+Click para multi-seleção</p>
-                    </div>
-                    {/* Centro de Custo - Filtrado dinamicamente */}
-                    <div className="border rounded-lg p-4">
-                      <div className="flex justify-between items-center mb-2">
-                        <h3 className="font-semibold text-gray-700">📁 Centro Custo</h3>
-                        {(biFiltros.centro_custo || []).length > 0 && (
-                          <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded">{(biFiltros.centro_custo || []).length} sel.</span>
-                        )}
+                      <div className="border rounded-lg p-3 bg-gray-50">
+                        <h3 className="font-semibold text-gray-700 mb-2 text-sm">📅 Data Fim</h3>
+                        <input type="date" value={biFiltros.data_fim} onChange={e => setBiFiltros({...biFiltros, data_fim: e.target.value})} className="w-full px-3 py-2 border rounded text-sm" />
                       </div>
-                      <select 
-                        multiple 
-                        size="5"
-                        value={biFiltros.centro_custo || []}
-                        onChange={(e) => {
-                          const selected = Array.from(e.target.selectedOptions, opt => opt.value);
-                          const novosFiltros = {...biFiltros, centro_custo: selected};
-                          setBiFiltros(novosFiltros);
-                          atualizarFiltrosInteligentes(novosFiltros);
-                        }}
-                        className="w-full px-2 py-1 border rounded text-sm"
-                      >
-                        {biCentrosCustoFiltrados.map(c => (
-                          <option key={c.centro_custo} value={c.centro_custo}>{c.centro_custo}</option>
-                        ))}
-                      </select>
+                      <div className="border rounded-lg p-3 bg-gray-50">
+                        <h3 className="font-semibold text-gray-700 mb-2 text-sm">⏱️ Status Prazo</h3>
+                        <select value={biFiltros.status_prazo} onChange={e => setBiFiltros({...biFiltros, status_prazo: e.target.value})} className="w-full px-3 py-2 border rounded text-sm">
+                          <option value="">Todos</option>
+                          <option value="dentro">✅ Dentro do Prazo</option>
+                          <option value="fora">❌ Fora do Prazo</option>
+                        </select>
+                      </div>
+                      <div className="border rounded-lg p-3 bg-gray-50">
+                        <h3 className="font-semibold text-gray-700 mb-2 text-sm">🗺️ Região</h3>
+                        <select 
+                          value={biFiltros.regiao || ''} 
+                          onChange={e => {
+                            const regiaoId = e.target.value;
+                            let novosFiltros;
+                            if (regiaoId) {
+                              const regiao = biRegioes.find(r => r.id === parseInt(regiaoId));
+                              const clientesDaRegiao = regiao?.clientes?.map(c => String(c)) || [];
+                              novosFiltros = {...biFiltros, regiao: regiaoId, cod_cliente: clientesDaRegiao, centro_custo: [], categoria: ''};
+                            } else {
+                              novosFiltros = {...biFiltros, regiao: '', cod_cliente: [], centro_custo: [], categoria: ''};
+                            }
+                            setBiFiltros(novosFiltros);
+                            atualizarFiltrosInteligentes(novosFiltros);
+                          }} 
+                          className="w-full px-3 py-2 border rounded text-sm"
+                        >
+                          <option value="">Todas as Regiões</option>
+                          {biRegioes.map(r => (
+                            <option key={r.id} value={r.id}>{r.nome} ({r.clientes?.length || 0} clientes)</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Linha 2: Categoria */}
+                    <div className="grid grid-cols-1 gap-4 mb-4">
+                      <div className="border rounded-lg p-3 bg-blue-50">
+                        <h3 className="font-semibold text-gray-700 mb-2 text-sm">🏷️ Categoria</h3>
+                        <select 
+                          value={biFiltros.categoria} 
+                          onChange={e => {
+                            const novosFiltros = {...biFiltros, categoria: e.target.value};
+                            setBiFiltros(novosFiltros);
+                            atualizarFiltrosInteligentes(novosFiltros);
+                          }} 
+                          className="w-full px-3 py-2 border rounded text-sm"
+                        >
+                          <option value="">Todas as Categorias ({biCategoriasFiltradas.length} disponíveis)</option>
+                          {biCategoriasFiltradas.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Linha 3: Cliente e Centro de Custo lado a lado */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Cliente */}
+                      <div className="border rounded-lg p-4 bg-purple-50">
+                        <div className="flex justify-between items-center mb-3">
+                          <h3 className="font-bold text-purple-800">🏢 Cliente (Loja)</h3>
+                          {(biFiltros.cod_cliente || []).length > 0 && (
+                            <span className="text-xs bg-purple-200 text-purple-800 px-2 py-1 rounded-full font-semibold">{(biFiltros.cod_cliente || []).length} selecionado(s)</span>
+                          )}
+                        </div>
+                        <select 
+                          multiple 
+                          size="10"
+                          value={biFiltros.cod_cliente || []}
+                          onChange={(e) => {
+                            const selected = Array.from(e.target.selectedOptions, opt => opt.value);
+                            const novosFiltros = {...biFiltros, cod_cliente: selected, centro_custo: [], regiao: ''};
+                            setBiFiltros(novosFiltros);
+                            atualizarFiltrosInteligentes(novosFiltros);
+                          }}
+                          className="w-full px-3 py-2 border-2 border-purple-200 rounded-lg text-sm bg-white focus:border-purple-500 focus:ring-2 focus:ring-purple-200"
+                        >
+                          {biClientesFiltrados.map(c => (
+                            <option key={c.cod_cliente} value={String(c.cod_cliente)} className="py-1">
+                              {c.cod_cliente} - {getMascara(c.cod_cliente) || c.nome_cliente}
+                            </option>
+                          ))}
+                        </select>
+                        <p className="text-xs text-purple-600 mt-2">💡 Ctrl+Click para selecionar múltiplos</p>
+                      </div>
+
+                      {/* Centro de Custo */}
+                      <div className="border rounded-lg p-4 bg-green-50">
+                        <div className="flex justify-between items-center mb-3">
+                          <h3 className="font-bold text-green-800">📁 Centro de Custo</h3>
+                          {(biFiltros.centro_custo || []).length > 0 && (
+                            <span className="text-xs bg-green-200 text-green-800 px-2 py-1 rounded-full font-semibold">{(biFiltros.centro_custo || []).length} selecionado(s)</span>
+                          )}
+                        </div>
+                        <select 
+                          multiple 
+                          size="10"
+                          value={biFiltros.centro_custo || []}
+                          onChange={(e) => {
+                            const selected = Array.from(e.target.selectedOptions, opt => opt.value);
+                            const novosFiltros = {...biFiltros, centro_custo: selected};
+                            setBiFiltros(novosFiltros);
+                            atualizarFiltrosInteligentes(novosFiltros);
+                          }}
+                          className="w-full px-3 py-2 border-2 border-green-200 rounded-lg text-sm bg-white focus:border-green-500 focus:ring-2 focus:ring-green-200"
+                        >
+                          {biCentrosCustoFiltrados.map((c, idx) => (
+                            <option key={c.centro_custo} value={c.centro_custo} className="py-1">
+                              {idx + 1} - {c.centro_custo}
+                            </option>
+                          ))}
+                        </select>
+                        <p className="text-xs text-green-600 mt-2">💡 Ctrl+Click para selecionar múltiplos</p>
+                      </div>
                     </div>
                   </div>
-                  <div className="sticky bottom-0 bg-gray-50 px-6 py-4 flex justify-between border-t">
+
+                  <div className="sticky bottom-0 bg-gray-100 px-6 py-4 flex justify-between border-t">
                     <button onClick={() => { 
                       const novosFiltros = {...biFiltros, cod_cliente: [], centro_custo: [], categoria: '', status_prazo: '', regiao: ''}; 
                       setBiFiltros(novosFiltros);
                       setBiClientesFiltrados(biClientes);
                       setBiCentrosCustoFiltrados(biCentrosCusto);
                       setBiCategoriasFiltradas(biCategorias);
-                    }} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300">🗑️ Limpar Filtros</button>
-                    <button onClick={() => { setBiShowFilters(false); loadBiDashboardComFiltros(biFiltros); }} className="px-6 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700">🔍 Aplicar Filtros</button>
+                    }} className="px-5 py-2.5 bg-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-400 transition">🗑️ Limpar Filtros</button>
+                    <button onClick={() => { setBiShowFilters(false); loadBiDashboardComFiltros(biFiltros); }} className="px-6 py-2.5 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition shadow-lg">🔍 Aplicar Filtros</button>
                   </div>
                 </div>
               </div>
