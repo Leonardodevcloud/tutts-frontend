@@ -738,6 +738,7 @@
       const [biClientesResumo, setBiClientesResumo] = useState([]); // Resumo por cliente
       const [biProfissionaisResumo, setBiProfissionaisResumo] = useState([]); // Resumo por profissional
       const [biGraficos, setBiGraficos] = useState({ porTempo: [], porKm: [] }); // Dados dos gráficos
+      const [biFiltroKmExcluidas, setBiFiltroKmExcluidas] = useState([]); // Faixas de KM excluídas do gráfico
       const [biCidades, setBiCidades] = useState([]); // Lista de cidades
       const [biExpandedRows, setBiExpandedRows] = useState({}); // Linhas expandidas nas tabelas
       const [biMascaras, setBiMascaras] = useState([]); // Máscaras de clientes (apelidos)
@@ -10048,7 +10049,7 @@
                       </div>
                       
                       {/* ===== GRÁFICOS ABAIXO DA TABELA ===== */}
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+                      <div className="space-y-6 mt-6">
                         {/* Gráfico por Faixa de Tempo */}
                         <div className="bg-white rounded-lg shadow p-6">
                           <h3 className="font-bold text-purple-900 mb-4">📊 Distribuição de Entregas por Faixas de Tempo</h3>
@@ -10073,20 +10074,50 @@
 
                         {/* Gráfico por Faixa de KM */}
                         <div className="bg-white rounded-lg shadow p-6">
-                          <h3 className="font-bold text-purple-900 mb-4">📊 Entregas por Faixas de Km</h3>
+                          <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
+                            <h3 className="font-bold text-purple-900">📊 Entregas por Faixas de Km</h3>
+                            {/* Filtro de Faixas de KM */}
+                            <div className="flex flex-wrap gap-2 items-center text-xs">
+                              <span className="text-gray-600 font-medium">Faixa KM:</span>
+                              {(biGraficos.porKm || []).map((item, i) => (
+                                <label key={i} className="flex items-center gap-1 cursor-pointer hover:bg-purple-50 px-1 rounded">
+                                  <input 
+                                    type="checkbox" 
+                                    checked={!biFiltroKmExcluidas?.includes(item.faixa)}
+                                    onChange={(e) => {
+                                      if (e.target.checked) {
+                                        setBiFiltroKmExcluidas((prev) => (prev || []).filter(f => f !== item.faixa));
+                                      } else {
+                                        setBiFiltroKmExcluidas((prev) => [...(prev || []), item.faixa]);
+                                      }
+                                    }}
+                                    className="w-3 h-3 accent-purple-600"
+                                  />
+                                  <span className="text-gray-700">{item.faixa} KM</span>
+                                  {item.total > 0 && <span className="text-orange-500">🔥</span>}
+                                </label>
+                              ))}
+                            </div>
+                          </div>
                           <div className="flex items-end gap-1 h-48 overflow-x-auto pb-2">
-                            {(biGraficos.porKm || []).map((item, i) => {
+                            {(biGraficos.porKm || [])
+                              .filter(item => !biFiltroKmExcluidas?.includes(item.faixa))
+                              .map((item, i) => {
                               const count = item.total || 0;
-                              const total = (biGraficos.porKm || []).reduce((a, k) => a + (k.total || 0), 0) || 1;
-                              const pct = (count / total) * 100;
-                              const maxCount = Math.max(...(biGraficos.porKm || []).map(k => k.total || 0), 1);
+                              const totalFiltrado = (biGraficos.porKm || [])
+                                .filter(k => !biFiltroKmExcluidas?.includes(k.faixa))
+                                .reduce((a, k) => a + (k.total || 0), 0) || 1;
+                              const pct = (count / totalFiltrado) * 100;
+                              const maxCount = Math.max(...(biGraficos.porKm || [])
+                                .filter(k => !biFiltroKmExcluidas?.includes(k.faixa))
+                                .map(k => k.total || 0), 1);
                               const height = maxCount > 0 ? (count / maxCount) * 100 : 0;
                               return (
-                                <div key={i} className="flex-none w-10 flex flex-col items-center">
-                                  <div className="text-[8px] text-orange-500 mb-0.5">{pct.toFixed(0)}%</div>
-                                  <div className="text-[10px] font-bold text-purple-900 mb-0.5">{count}</div>
-                                  <div className="w-7 bg-purple-600 rounded-t transition-all" style={{height: `${Math.max(height, 2)}%`, minHeight: count > 0 ? '10px' : '2px'}}></div>
-                                  <div className="text-[8px] text-gray-600 mt-1 text-center">{item.faixa}</div>
+                                <div key={i} className="flex-1 min-w-[40px] flex flex-col items-center">
+                                  <div className="text-[9px] text-orange-500 mb-0.5">{pct.toFixed(1)}%</div>
+                                  <div className="text-xs font-bold text-purple-900 mb-0.5">{count.toLocaleString('pt-BR')}</div>
+                                  <div className="w-full max-w-[30px] bg-purple-600 rounded-t transition-all" style={{height: `${Math.max(height, 2)}%`, minHeight: count > 0 ? '10px' : '2px'}}></div>
+                                  <div className="text-[9px] text-gray-600 mt-1 text-center">{item.faixa}</div>
                                 </div>
                               );
                             })}
