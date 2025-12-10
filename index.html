@@ -4497,7 +4497,7 @@
                     
                     {/* Link de Indicação */}
                     <div className="bg-white/10 backdrop-blur rounded-xl p-4 mb-4">
-                      {formData.meuLinkIndicacao ? (
+                      {formData.meuLinkIndicacao && formData.meuLinkIndicacao.token ? (
                         <div>
                           <p className="text-sm text-blue-200 mb-2">Seu link de indicação:</p>
                           <div className="flex gap-2">
@@ -4536,6 +4536,7 @@
                             onClick={async () => {
                               try {
                                 setLoading(true);
+                                console.log('🔗 Gerando link para:', user.codProfissional, user.nomeCompleto);
                                 const res = await fetch(`${API_URL}/indicacao-link/gerar`, {
                                   method: 'POST',
                                   headers: { 'Content-Type': 'application/json' },
@@ -4544,11 +4545,30 @@
                                     user_name: user.nomeCompleto 
                                   })
                                 });
+                                
+                                if (!res.ok) {
+                                  const errData = await res.json().catch(() => ({}));
+                                  console.error('❌ Erro na API:', res.status, errData);
+                                  showToast('❌ Erro ao gerar link: ' + (errData.error || res.status), 'error');
+                                  setLoading(false);
+                                  return;
+                                }
+                                
                                 const data = await res.json();
+                                console.log('✅ Link gerado:', data);
+                                
+                                if (!data || !data.token) {
+                                  console.error('❌ Token não retornado:', data);
+                                  showToast('❌ Erro: token não gerado', 'error');
+                                  setLoading(false);
+                                  return;
+                                }
+                                
                                 setFormData({...formData, meuLinkIndicacao: data});
                                 showToast('✅ Link gerado com sucesso!', 'success');
                               } catch (err) {
-                                showToast('❌ Erro ao gerar link', 'error');
+                                console.error('❌ Erro:', err);
+                                showToast('❌ Erro ao gerar link: ' + err.message, 'error');
                               }
                               setLoading(false);
                             }}
