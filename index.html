@@ -1227,8 +1227,9 @@
                 await loadRestricted();
                 break;
               case 'indicacoes':
+                await loadPromocoesAtivas(); // Carrega promoções de indicação ativas
                 await loadMeuLinkIndicacao();
-                await loadIndicacoes();
+                await loadMinhasIndicacoes();
                 break;
               case 'promo-novatos':
                 await loadPromocoesNovatos();
@@ -4471,95 +4472,14 @@
               {/* ========== ABA INDICAÇÕES ========== */}
               {formData.userTab === 'indicacoes' && (
                 <>
-                  {/* NOVO SISTEMA DE INDICAÇÃO POR LINK */}
+                  {/* Header */}
                   <div className="bg-gradient-to-br from-blue-600 to-purple-700 rounded-xl shadow-lg p-6 mb-6 text-white">
                     <div className="flex items-center gap-4 mb-4">
                       <div className="text-5xl">🔗</div>
                       <div>
                         <h2 className="text-2xl font-bold">Indique e Ganhe!</h2>
-                        <p className="text-blue-200">Compartilhe seu link e ganhe bônus por cada indicação aprovada</p>
+                        <p className="text-blue-200">Escolha uma promoção e compartilhe seu link de indicação</p>
                       </div>
-                    </div>
-                    
-                    {/* Link de Indicação */}
-                    <div className="bg-white/10 backdrop-blur rounded-xl p-4 mb-4">
-                      {formData.meuLinkIndicacao && formData.meuLinkIndicacao.token ? (
-                        <div>
-                          <p className="text-sm text-blue-200 mb-2">Seu link de indicação:</p>
-                          <div className="flex gap-2">
-                            <input 
-                              type="text" 
-                              readOnly 
-                              value={`${window.location.origin}/#/indicar/${formData.meuLinkIndicacao.token}`}
-                              className="flex-1 px-4 py-3 bg-white/20 border border-white/30 rounded-lg text-white font-mono text-sm"
-                            />
-                            <button 
-                              onClick={() => {
-                                navigator.clipboard.writeText(`${window.location.origin}/#/indicar/${formData.meuLinkIndicacao.token}`);
-                                showToast('✅ Link copiado!', 'success');
-                              }}
-                              className="px-4 py-3 bg-green-500 hover:bg-green-600 rounded-lg font-bold transition-colors"
-                            >
-                              📋 Copiar
-                            </button>
-                          </div>
-                          <div className="flex gap-2 mt-3">
-                            <button 
-                              onClick={() => {
-                                const texto = `Olá! Estou te indicando para trabalhar como entregador. Faça seu cadastro aqui: ${window.location.origin}/#/indicar/${formData.meuLinkIndicacao.token}`;
-                                window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, '_blank');
-                              }}
-                              className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg font-semibold text-sm flex items-center justify-center gap-2"
-                            >
-                              <span>📱</span> Compartilhar no WhatsApp
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="text-center">
-                          <p className="text-blue-200 mb-3">Gere seu link único de indicação</p>
-                          <button 
-                            onClick={async () => {
-                              try {
-                                setLoading(true);
-                                const res = await fetch(`${API_URL}/indicacao-link/gerar`, {
-                                  method: 'POST',
-                                  headers: { 'Content-Type': 'application/json' },
-                                  body: JSON.stringify({ 
-                                    user_cod: user.codProfissional, 
-                                    user_name: user.fullName 
-                                  })
-                                });
-                                
-                                if (!res.ok) {
-                                  const errData = await res.json().catch(() => ({}));
-                                  showToast('❌ Erro ao gerar link: ' + (errData.error || res.status), 'error');
-                                  setLoading(false);
-                                  return;
-                                }
-                                
-                                const data = await res.json();
-                                
-                                if (!data || !data.token) {
-                                  showToast('❌ Erro: token não gerado', 'error');
-                                  setLoading(false);
-                                  return;
-                                }
-                                
-                                setFormData({...formData, meuLinkIndicacao: data});
-                                showToast('✅ Link gerado com sucesso!', 'success');
-                              } catch (err) {
-                                showToast('❌ Erro ao gerar link: ' + err.message, 'error');
-                              }
-                              setLoading(false);
-                            }}
-                            disabled={loading}
-                            className="px-6 py-3 bg-yellow-500 hover:bg-yellow-600 text-gray-900 rounded-lg font-bold text-lg disabled:opacity-50"
-                          >
-                            {loading ? '⏳ Gerando...' : '🔗 Gerar Meu Link'}
-                          </button>
-                        </div>
-                      )}
                     </div>
                     
                     {/* Estatísticas */}
@@ -4585,24 +4505,146 @@
                     )}
                   </div>
 
+                  {/* Promoções Disponíveis */}
+                  <div className="bg-white rounded-xl shadow p-6 mb-6">
+                    <h2 className="text-xl font-bold text-purple-800 mb-4">🎯 Promoções de Indicação Disponíveis</h2>
+                    {promocoes.length === 0 ? (
+                      <div className="text-center py-8 text-gray-500">
+                        <p className="text-4xl mb-2">📢</p>
+                        <p>Nenhuma promoção disponível no momento</p>
+                        <p className="text-sm">Fique atento, novas promoções podem aparecer a qualquer momento!</p>
+                      </div>
+                    ) : (
+                      <div className="grid md:grid-cols-2 gap-4">
+                        {promocoes.map(p => (
+                          <div key={p.id} className="border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-white rounded-xl p-6">
+                            <div className="flex justify-between items-start mb-3">
+                              <span className="px-3 py-1 bg-green-500 text-white rounded-full text-xs font-bold">🔥 ATIVA</span>
+                            </div>
+                            <p className="text-lg font-bold text-gray-800 mb-1">📍 {p.regiao}</p>
+                            <p className="text-3xl font-bold text-green-600 mb-3">{formatMoney(p.valor_bonus)}</p>
+                            {p.detalhes && (
+                              <div className="bg-white border border-purple-200 rounded-lg p-3 mb-4">
+                                <p className="text-sm text-gray-700 whitespace-pre-wrap">{p.detalhes}</p>
+                              </div>
+                            )}
+                            
+                            {/* Link da promoção */}
+                            {formData.linkPromoSelecionada === p.id && formData.meuLinkIndicacao?.token ? (
+                              <div className="space-y-3">
+                                <div className="bg-purple-100 rounded-lg p-3">
+                                  <p className="text-xs text-purple-600 mb-1">Seu link para esta promoção:</p>
+                                  <div className="flex gap-2">
+                                    <input 
+                                      type="text" 
+                                      readOnly 
+                                      value={`${window.location.origin}/#/indicar/${formData.meuLinkIndicacao.token}`}
+                                      className="flex-1 px-3 py-2 bg-white border border-purple-300 rounded-lg text-gray-800 font-mono text-xs"
+                                    />
+                                    <button 
+                                      onClick={() => {
+                                        navigator.clipboard.writeText(`${window.location.origin}/#/indicar/${formData.meuLinkIndicacao.token}`);
+                                        showToast('✅ Link copiado!', 'success');
+                                      }}
+                                      className="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-bold text-sm"
+                                    >
+                                      📋
+                                    </button>
+                                  </div>
+                                </div>
+                                <button 
+                                  onClick={() => {
+                                    const valorFormatado = formatMoney(p.valor_bonus);
+                                    const texto = `🚀 Fala, parceiro(a)!
+
+Estou te indicando para realizar entregas comigo no aplicativo TUTTS! 💜📦 
+
+Faça seu cadastro pelo link abaixo, rode pelo menos 5 dias e garanta um bônus de ${valorFormatado} no final! 💰✨
+
+👉 Link para cadastro: ${window.location.origin}/#/indicar/${formData.meuLinkIndicacao.token}
+
+Vem ganhar com a gente! 🛵🔥`;
+                                    window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, '_blank');
+                                  }}
+                                  className="w-full px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold flex items-center justify-center gap-2"
+                                >
+                                  <span>📱</span> Compartilhar no WhatsApp
+                                </button>
+                              </div>
+                            ) : (
+                              <button 
+                                onClick={async () => {
+                                  try {
+                                    setLoading(true);
+                                    const res = await fetch(`${API_URL}/indicacao-link/gerar`, {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({ 
+                                        user_cod: user.codProfissional, 
+                                        user_name: user.fullName,
+                                        promocao_id: p.id,
+                                        regiao: p.regiao,
+                                        valor_bonus: p.valor_bonus
+                                      })
+                                    });
+                                    
+                                    if (!res.ok) {
+                                      const errData = await res.json().catch(() => ({}));
+                                      showToast('❌ Erro: ' + (errData.error || res.status), 'error');
+                                      setLoading(false);
+                                      return;
+                                    }
+                                    
+                                    const data = await res.json();
+                                    
+                                    if (!data || !data.token) {
+                                      showToast('❌ Erro: token não gerado', 'error');
+                                      setLoading(false);
+                                      return;
+                                    }
+                                    
+                                    setFormData({...formData, meuLinkIndicacao: data, linkPromoSelecionada: p.id});
+                                    showToast('✅ Link gerado!', 'success');
+                                  } catch (err) {
+                                    showToast('❌ Erro: ' + err.message, 'error');
+                                  }
+                                  setLoading(false);
+                                }}
+                                disabled={loading}
+                                className="w-full px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold disabled:opacity-50"
+                              >
+                                {loading ? '⏳ Gerando...' : '🔗 Gerar Link de Indicação'}
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
                   {/* Como Funciona */}
                   <div className="bg-white rounded-xl shadow p-6 mb-6">
                     <h3 className="text-lg font-bold text-gray-800 mb-4">📖 Como Funciona</h3>
-                    <div className="grid md:grid-cols-3 gap-4">
+                    <div className="grid md:grid-cols-4 gap-4">
                       <div className="bg-blue-50 rounded-lg p-4 text-center">
                         <div className="text-3xl mb-2">1️⃣</div>
-                        <p className="font-semibold text-blue-800">Gere seu Link</p>
-                        <p className="text-sm text-gray-600">Clique no botão acima para criar seu link único</p>
-                      </div>
-                      <div className="bg-green-50 rounded-lg p-4 text-center">
-                        <div className="text-3xl mb-2">2️⃣</div>
-                        <p className="font-semibold text-green-800">Compartilhe</p>
-                        <p className="text-sm text-gray-600">Envie para amigos via WhatsApp ou redes sociais</p>
+                        <p className="font-semibold text-blue-800">Escolha</p>
+                        <p className="text-sm text-gray-600">Selecione uma promoção ativa</p>
                       </div>
                       <div className="bg-purple-50 rounded-lg p-4 text-center">
+                        <div className="text-3xl mb-2">2️⃣</div>
+                        <p className="font-semibold text-purple-800">Gere o Link</p>
+                        <p className="text-sm text-gray-600">Clique para criar seu link único</p>
+                      </div>
+                      <div className="bg-green-50 rounded-lg p-4 text-center">
                         <div className="text-3xl mb-2">3️⃣</div>
-                        <p className="font-semibold text-purple-800">Ganhe Bônus</p>
-                        <p className="text-sm text-gray-600">Quando aprovada, você recebe o bônus no repasse</p>
+                        <p className="font-semibold text-green-800">Compartilhe</p>
+                        <p className="text-sm text-gray-600">Envie pelo WhatsApp</p>
+                      </div>
+                      <div className="bg-yellow-50 rounded-lg p-4 text-center">
+                        <div className="text-3xl mb-2">4️⃣</div>
+                        <p className="font-semibold text-yellow-800">Ganhe</p>
+                        <p className="text-sm text-gray-600">Receba o bônus no repasse</p>
                       </div>
                     </div>
                   </div>
@@ -4628,6 +4670,8 @@
                               <div>
                                 <p className="font-bold text-lg">{ind.indicado_nome}</p>
                                 <p className="text-sm text-gray-600">📞 {ind.indicado_contato}</p>
+                                {ind.regiao && <p className="text-sm text-purple-600">📍 {ind.regiao}</p>}
+                                {ind.valor_bonus && <p className="text-sm text-green-600 font-semibold">💰 {formatMoney(ind.valor_bonus)}</p>}
                                 <p className="text-xs text-gray-500 mt-1">Cadastrado em {new Date(ind.created_at).toLocaleDateString('pt-BR')}</p>
                               </div>
                               <div className="text-right">
@@ -4643,7 +4687,7 @@
                             </div>
                             {ind.status === 'aprovada' && (
                               <div className="mt-3 bg-green-100 border border-green-300 rounded-lg p-3">
-                                <p className="text-green-800 text-sm">🎉 <strong>Parabéns!</strong> Sua indicação foi aprovada!</p>
+                                <p className="text-green-800 text-sm">🎉 <strong>Parabéns!</strong> Sua indicação foi aprovada! {ind.valor_bonus && `Bônus de ${formatMoney(ind.valor_bonus)} será creditado.`}</p>
                               </div>
                             )}
                             {ind.status === 'rejeitada' && ind.motivo_rejeicao && (
