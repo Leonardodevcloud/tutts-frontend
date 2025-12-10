@@ -594,8 +594,187 @@
       );
     };
 
+    // ========== PÁGINA PÚBLICA DE CADASTRO DE INDICAÇÃO ==========
+    const PaginaIndicacao = ({ token }) => {
+      const [validando, setValidando] = useState(true);
+      const [indicador, setIndicador] = useState(null);
+      const [erro, setErro] = useState(null);
+      const [sucesso, setSucesso] = useState(false);
+      const [enviando, setEnviando] = useState(false);
+      const [form, setForm] = useState({ nome: '', telefone: '' });
+      
+      // Máscara de telefone
+      const formatarTelefone = (valor) => {
+        const numeros = valor.replace(/\D/g, '');
+        if (numeros.length <= 2) return `(${numeros}`;
+        if (numeros.length <= 7) return `(${numeros.slice(0,2)}) ${numeros.slice(2)}`;
+        if (numeros.length <= 11) return `(${numeros.slice(0,2)}) ${numeros.slice(2,7)}-${numeros.slice(7)}`;
+        return `(${numeros.slice(0,2)}) ${numeros.slice(2,7)}-${numeros.slice(7,11)}`;
+      };
+      
+      // Validar token ao carregar
+      React.useEffect(() => {
+        const validarToken = async () => {
+          try {
+            const res = await fetch(`${API_URL}/indicacao-link/validar/${token}`);
+            if (!res.ok) {
+              setErro('Link inválido ou expirado');
+              return;
+            }
+            const data = await res.json();
+            setIndicador(data.indicador);
+          } catch (err) {
+            setErro('Erro ao validar link');
+          }
+          setValidando(false);
+        };
+        validarToken();
+      }, [token]);
+      
+      const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!form.nome.trim() || !form.telefone.trim()) {
+          alert('Preencha todos os campos');
+          return;
+        }
+        
+        // Validar telefone
+        const telefoneLimpo = form.telefone.replace(/\D/g, '');
+        if (telefoneLimpo.length < 10 || telefoneLimpo.length > 11) {
+          alert('Telefone inválido. Use o formato (DD) 99999-9999');
+          return;
+        }
+        
+        setEnviando(true);
+        try {
+          const res = await fetch(`${API_URL}/indicacao-link/cadastrar`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              token,
+              nome: form.nome.trim(),
+              telefone: form.telefone
+            })
+          });
+          
+          if (!res.ok) {
+            const data = await res.json();
+            throw new Error(data.error || 'Erro ao cadastrar');
+          }
+          
+          setSucesso(true);
+        } catch (err) {
+          alert(err.message);
+        }
+        setEnviando(false);
+      };
+      
+      if (validando) {
+        return (
+          <div className="min-h-screen bg-gradient-to-br from-blue-600 to-purple-700 flex items-center justify-center">
+            <div className="text-white text-center">
+              <div className="animate-spin text-6xl mb-4">⏳</div>
+              <p className="text-xl">Validando link...</p>
+            </div>
+          </div>
+        );
+      }
+      
+      if (erro) {
+        return (
+          <div className="min-h-screen bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full text-center">
+              <div className="text-6xl mb-4">❌</div>
+              <h1 className="text-2xl font-bold text-red-600 mb-2">Link Inválido</h1>
+              <p className="text-gray-600 mb-6">{erro}</p>
+              <p className="text-sm text-gray-500">Peça um novo link para quem te indicou.</p>
+            </div>
+          </div>
+        );
+      }
+      
+      if (sucesso) {
+        return (
+          <div className="min-h-screen bg-gradient-to-br from-green-500 to-green-700 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full text-center">
+              <div className="text-6xl mb-4">🎉</div>
+              <h1 className="text-2xl font-bold text-green-600 mb-2">Cadastro Realizado!</h1>
+              <p className="text-gray-600 mb-4">Seu cadastro foi enviado com sucesso.</p>
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <p className="text-green-800 text-sm">Em breve entraremos em contato pelo número informado.</p>
+              </div>
+            </div>
+          </div>
+        );
+      }
+      
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-blue-600 to-purple-700 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
+            <div className="text-center mb-6">
+              <div className="text-5xl mb-3">🚀</div>
+              <h1 className="text-2xl font-bold text-gray-800">Seja um Entregador!</h1>
+              <p className="text-gray-600 mt-2">
+                Você foi indicado por <span className="font-bold text-purple-600">{indicador?.user_name}</span>
+              </p>
+            </div>
+            
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Nome Completo *</label>
+                <input 
+                  type="text"
+                  value={form.nome}
+                  onChange={e => setForm({...form, nome: e.target.value})}
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-colors"
+                  placeholder="Seu nome completo"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">WhatsApp *</label>
+                <input 
+                  type="tel"
+                  value={form.telefone}
+                  onChange={e => setForm({...form, telefone: formatarTelefone(e.target.value)})}
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-colors"
+                  placeholder="(62) 99999-9999"
+                  maxLength={15}
+                  required
+                />
+                <p className="text-xs text-gray-500 mt-1">Entraremos em contato por este número</p>
+              </div>
+              
+              <button 
+                type="submit"
+                disabled={enviando}
+                className="w-full py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl font-bold text-lg hover:from-purple-700 hover:to-blue-700 transition-all disabled:opacity-50"
+              >
+                {enviando ? '⏳ Enviando...' : '📤 Enviar Cadastro'}
+              </button>
+            </form>
+            
+            <div className="mt-6 text-center">
+              <p className="text-xs text-gray-400">
+                Ao enviar, você concorda em ser contatado sobre oportunidades de trabalho.
+              </p>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
     // ========== COMPONENTE PRINCIPAL ==========
     const App = () => {
+      // Verificar se é página de indicação
+      const path = window.location.pathname;
+      const indicarMatch = path.match(/\/indicar\/([A-Za-z0-9]+)/);
+      
+      if (indicarMatch) {
+        return <PaginaIndicacao token={indicarMatch[1]} />;
+      }
+      
       // Tentar recuperar usuário do sessionStorage para login mais rápido
       const getCachedUser = () => {
         try {
@@ -1029,7 +1208,7 @@
                 await loadRestricted();
                 break;
               case 'indicacoes':
-                await loadPromocoes();
+                await loadMeuLinkIndicacao();
                 await loadIndicacoes();
                 break;
               case 'promo-novatos':
@@ -2210,6 +2389,30 @@
           const res = await fetch(`${API_URL}/indicacoes/usuario/${user.codProfissional}`);
           setMinhasIndicacoes(await res.json());
         } catch (err) { console.error('Erro ao carregar minhas indicações:', err); }
+      };
+
+      // === NOVO: Carregar link de indicação do usuário ===
+      const loadMeuLinkIndicacao = async () => {
+        try {
+          // Carregar link existente
+          const resLink = await fetch(`${API_URL}/indicacao-link/usuario/${user.codProfissional}`);
+          const link = await resLink.json();
+          
+          // Carregar estatísticas
+          const resStats = await fetch(`${API_URL}/indicacao-link/estatisticas/${user.codProfissional}`);
+          const stats = await resStats.json();
+          
+          // Carregar minhas indicações
+          await loadMinhasIndicacoes();
+          
+          setFormData(prev => ({
+            ...prev, 
+            meuLinkIndicacao: link,
+            statsIndicacao: stats
+          }));
+        } catch (err) { 
+          console.error('Erro ao carregar link de indicação:', err); 
+        }
       };
 
       // === FUNÇÕES PROMOÇÕES NOVATOS ===
@@ -4249,98 +4452,125 @@
               {/* ========== ABA INDICAÇÕES ========== */}
               {formData.userTab === 'indicacoes' && (
                 <>
-                  {/* Modal para fazer indicação */}
-                  {formData.modalIndicacao && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-                      <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full">
-                        <h3 className="text-xl font-bold text-blue-700 mb-4">👥 Fazer Indicação</h3>
-                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                          <p className="text-sm font-semibold text-blue-800">📍 {formData.modalIndicacao.regiao}</p>
-                          <p className="text-2xl font-bold text-green-600">Bônus: {formatMoney(formData.modalIndicacao.valor_bonus)}</p>
-                        </div>
-                        <div className="space-y-4">
-                          <div>
-                            <label className="block text-sm font-semibold mb-1">Nome Completo do Indicado *</label>
-                            <input 
-                              type="text" 
-                              value={formData.indicadoNome || ''} 
-                              onChange={e => setFormData({...formData, indicadoNome: e.target.value})} 
-                              className="w-full px-4 py-2 border rounded-lg"
-                              placeholder="Nome completo"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-semibold mb-1">CPF (opcional)</label>
-                            <input 
-                              type="text" 
-                              value={formData.indicadoCpf || ''} 
-                              onChange={e => setFormData({...formData, indicadoCpf: formatCPF(e.target.value)})} 
-                              className="w-full px-4 py-2 border rounded-lg"
-                              placeholder="000.000.000-00"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-semibold mb-1">Contato (WhatsApp) *</label>
-                            <input 
-                              type="text" 
-                              value={formData.indicadoContato || ''} 
-                              onChange={e => setFormData({...formData, indicadoContato: formatTelefone(e.target.value)})} 
-                              className={`w-full px-4 py-2 border rounded-lg ${formData.indicadoContato && !validarTelefone(formData.indicadoContato) ? 'border-red-500 bg-red-50' : ''}`}
-                              placeholder="(62) 99390-8345"
-                            />
-                            {formData.indicadoContato && !validarTelefone(formData.indicadoContato) && (
-                              <p className="text-red-500 text-xs mt-1">⚠️ Formato inválido. Use: (DD) 99999-9999</p>
-                            )}
-                          </div>
-                        </div>
-                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mt-4">
-                          <p className="text-xs text-yellow-800">⏰ A indicação será válida por <strong>30 dias</strong>. Se não for aprovada nesse período, irá expirar automaticamente.</p>
-                        </div>
-                        <div className="flex gap-3 mt-4">
-                          <button onClick={() => setFormData({...formData, modalIndicacao: null, indicadoNome: '', indicadoCpf: '', indicadoContato: ''})} className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300">Cancelar</button>
-                          <button onClick={() => handleEnviarIndicacao(formData.modalIndicacao)} disabled={loading} className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50">
-                            {loading ? '...' : '📤 Enviar Indicação'}
-                          </button>
-                        </div>
+                  {/* NOVO SISTEMA DE INDICAÇÃO POR LINK */}
+                  <div className="bg-gradient-to-br from-blue-600 to-purple-700 rounded-xl shadow-lg p-6 mb-6 text-white">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="text-5xl">🔗</div>
+                      <div>
+                        <h2 className="text-2xl font-bold">Indique e Ganhe!</h2>
+                        <p className="text-blue-200">Compartilhe seu link e ganhe bônus por cada indicação aprovada</p>
                       </div>
                     </div>
-                  )}
-
-                  {/* Promoções Disponíveis */}
-                  <div className="bg-white rounded-xl shadow p-6 mb-6">
-                    <h2 className="text-xl font-bold text-blue-800 mb-4">🎯 Promoções de Indicação Disponíveis</h2>
-                    {promocoes.length === 0 ? (
-                      <div className="text-center py-8 text-gray-500">
-                        <p className="text-4xl mb-2">📢</p>
-                        <p>Nenhuma promoção disponível no momento</p>
-                        <p className="text-sm">Fique atento, novas promoções podem aparecer a qualquer momento!</p>
-                      </div>
-                    ) : (
-                      <div className="grid md:grid-cols-2 gap-4">
-                        {promocoes.map(p => (
-                          <div key={p.id} className="border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white rounded-xl p-6">
-                            <div className="flex justify-between items-start mb-3">
-                              <span className="px-3 py-1 bg-green-500 text-white rounded-full text-xs font-bold">🔥 ATIVA</span>
-                            </div>
-                            <p className="text-lg font-bold text-gray-800 mb-1">📍 {p.regiao}</p>
-                            <p className="text-3xl font-bold text-green-600 mb-3">{formatMoney(p.valor_bonus)}</p>
-                            {p.detalhes ? (
-                              <div className="bg-white border border-blue-200 rounded-lg p-3 mb-4">
-                                <p className="text-sm text-gray-700 whitespace-pre-wrap">{p.detalhes}</p>
-                              </div>
-                            ) : (
-                              <p className="text-sm text-gray-600 mb-4">Indique um amigo para trabalhar nesta região e ganhe este bônus quando ele for aprovado!</p>
-                            )}
+                    
+                    {/* Link de Indicação */}
+                    <div className="bg-white/10 backdrop-blur rounded-xl p-4 mb-4">
+                      {formData.meuLinkIndicacao ? (
+                        <div>
+                          <p className="text-sm text-blue-200 mb-2">Seu link de indicação:</p>
+                          <div className="flex gap-2">
+                            <input 
+                              type="text" 
+                              readOnly 
+                              value={`${window.location.origin}/indicar/${formData.meuLinkIndicacao.token}`}
+                              className="flex-1 px-4 py-3 bg-white/20 border border-white/30 rounded-lg text-white font-mono text-sm"
+                            />
                             <button 
-                              onClick={() => setFormData({...formData, modalIndicacao: p})} 
-                              className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700"
+                              onClick={() => {
+                                navigator.clipboard.writeText(`${window.location.origin}/indicar/${formData.meuLinkIndicacao.token}`);
+                                showToast('✅ Link copiado!', 'success');
+                              }}
+                              className="px-4 py-3 bg-green-500 hover:bg-green-600 rounded-lg font-bold transition-colors"
                             >
-                              👥 Fazer Indicação
+                              📋 Copiar
                             </button>
                           </div>
-                        ))}
+                          <div className="flex gap-2 mt-3">
+                            <button 
+                              onClick={() => {
+                                const texto = `Olá! Estou te indicando para trabalhar como entregador. Faça seu cadastro aqui: ${window.location.origin}/indicar/${formData.meuLinkIndicacao.token}`;
+                                window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, '_blank');
+                              }}
+                              className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg font-semibold text-sm flex items-center justify-center gap-2"
+                            >
+                              <span>📱</span> Compartilhar no WhatsApp
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-center">
+                          <p className="text-blue-200 mb-3">Gere seu link único de indicação</p>
+                          <button 
+                            onClick={async () => {
+                              try {
+                                setLoading(true);
+                                const res = await fetch(`${API_URL}/indicacao-link/gerar`, {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ 
+                                    user_cod: user.codProfissional, 
+                                    user_name: user.nomeCompleto 
+                                  })
+                                });
+                                const data = await res.json();
+                                setFormData({...formData, meuLinkIndicacao: data});
+                                showToast('✅ Link gerado com sucesso!', 'success');
+                              } catch (err) {
+                                showToast('❌ Erro ao gerar link', 'error');
+                              }
+                              setLoading(false);
+                            }}
+                            disabled={loading}
+                            className="px-6 py-3 bg-yellow-500 hover:bg-yellow-600 text-gray-900 rounded-lg font-bold text-lg disabled:opacity-50"
+                          >
+                            {loading ? '⏳ Gerando...' : '🔗 Gerar Meu Link'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Estatísticas */}
+                    {formData.statsIndicacao && (
+                      <div className="grid grid-cols-4 gap-3">
+                        <div className="bg-white/10 rounded-lg p-3 text-center">
+                          <p className="text-2xl font-bold">{formData.statsIndicacao.total || 0}</p>
+                          <p className="text-xs text-blue-200">Total</p>
+                        </div>
+                        <div className="bg-yellow-500/30 rounded-lg p-3 text-center">
+                          <p className="text-2xl font-bold">{formData.statsIndicacao.pendentes || 0}</p>
+                          <p className="text-xs text-yellow-200">Pendentes</p>
+                        </div>
+                        <div className="bg-green-500/30 rounded-lg p-3 text-center">
+                          <p className="text-2xl font-bold">{formData.statsIndicacao.aprovadas || 0}</p>
+                          <p className="text-xs text-green-200">Aprovadas</p>
+                        </div>
+                        <div className="bg-red-500/30 rounded-lg p-3 text-center">
+                          <p className="text-2xl font-bold">{formData.statsIndicacao.rejeitadas || 0}</p>
+                          <p className="text-xs text-red-200">Rejeitadas</p>
+                        </div>
                       </div>
                     )}
+                  </div>
+
+                  {/* Como Funciona */}
+                  <div className="bg-white rounded-xl shadow p-6 mb-6">
+                    <h3 className="text-lg font-bold text-gray-800 mb-4">📖 Como Funciona</h3>
+                    <div className="grid md:grid-cols-3 gap-4">
+                      <div className="bg-blue-50 rounded-lg p-4 text-center">
+                        <div className="text-3xl mb-2">1️⃣</div>
+                        <p className="font-semibold text-blue-800">Gere seu Link</p>
+                        <p className="text-sm text-gray-600">Clique no botão acima para criar seu link único</p>
+                      </div>
+                      <div className="bg-green-50 rounded-lg p-4 text-center">
+                        <div className="text-3xl mb-2">2️⃣</div>
+                        <p className="font-semibold text-green-800">Compartilhe</p>
+                        <p className="text-sm text-gray-600">Envie para amigos via WhatsApp ou redes sociais</p>
+                      </div>
+                      <div className="bg-purple-50 rounded-lg p-4 text-center">
+                        <div className="text-3xl mb-2">3️⃣</div>
+                        <p className="font-semibold text-purple-800">Ganhe Bônus</p>
+                        <p className="text-sm text-gray-600">Quando aprovada, você recebe o bônus no repasse</p>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Minhas Indicações */}
@@ -4349,54 +4579,46 @@
                     {minhasIndicacoes.length === 0 ? (
                       <div className="text-center py-8 text-gray-500">
                         <p className="text-4xl mb-2">👥</p>
-                        <p>Você ainda não fez nenhuma indicação</p>
+                        <p>Você ainda não tem indicações</p>
+                        <p className="text-sm">Compartilhe seu link e comece a indicar!</p>
                       </div>
                     ) : (
                       <div className="space-y-4">
-                        {minhasIndicacoes.map(ind => {
-                          const diasRestantes = Math.ceil((new Date(ind.expires_at) - new Date()) / (1000 * 60 * 60 * 24));
-                          return (
-                            <div key={ind.id} className={`border rounded-xl p-4 ${
-                              ind.status === 'aprovada' ? 'border-green-300 bg-green-50' :
-                              ind.status === 'rejeitada' ? 'border-red-300 bg-red-50' :
-                              ind.status === 'expirada' ? 'border-gray-300 bg-gray-50' :
-                              'border-yellow-300 bg-yellow-50'
-                            }`}>
-                              <div className="flex justify-between items-start">
-                                <div>
-                                  <p className="font-bold text-lg">{ind.indicado_nome}</p>
-                                  <p className="text-sm text-gray-600">📍 {ind.regiao}</p>
-                                  <p className="text-sm text-gray-600">📞 {ind.indicado_contato}</p>
-                                  <p className="text-xs text-gray-500 mt-1">Enviado em {new Date(ind.created_at).toLocaleDateString('pt-BR')}</p>
-                                </div>
-                                <div className="text-right">
-                                  <p className="text-xl font-bold text-green-600">{formatMoney(ind.valor_bonus)}</p>
-                                  <span className={`inline-block mt-2 px-3 py-1 rounded-full text-xs font-bold ${
-                                    ind.status === 'pendente' ? 'bg-yellow-500 text-white' :
-                                    ind.status === 'aprovada' ? 'bg-green-500 text-white' :
-                                    ind.status === 'rejeitada' ? 'bg-red-500 text-white' :
-                                    'bg-gray-500 text-white'
-                                  }`}>
-                                    {ind.status === 'pendente' ? `⏳ Pendente (${diasRestantes > 0 ? diasRestantes + ' dias' : 'Expirando'})` :
-                                     ind.status === 'aprovada' ? '✅ Aprovada' :
-                                     ind.status === 'rejeitada' ? '❌ Rejeitada' :
-                                     '⏰ Expirada'}
-                                  </span>
-                                </div>
+                        {minhasIndicacoes.map(ind => (
+                          <div key={ind.id} className={`border rounded-xl p-4 ${
+                            ind.status === 'aprovada' ? 'border-green-300 bg-green-50' :
+                            ind.status === 'rejeitada' ? 'border-red-300 bg-red-50' :
+                            'border-yellow-300 bg-yellow-50'
+                          }`}>
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <p className="font-bold text-lg">{ind.indicado_nome}</p>
+                                <p className="text-sm text-gray-600">📞 {ind.indicado_contato}</p>
+                                <p className="text-xs text-gray-500 mt-1">Cadastrado em {new Date(ind.created_at).toLocaleDateString('pt-BR')}</p>
                               </div>
-                              {ind.status === 'aprovada' && (
-                                <div className="mt-3 bg-green-100 border border-green-300 rounded-lg p-3">
-                                  <p className="text-green-800 text-sm">🎉 <strong>Parabéns!</strong> Sua indicação foi aprovada! O bônus de {formatMoney(ind.valor_bonus)} será incluído no seu próximo repasse.</p>
-                                </div>
-                              )}
-                              {ind.status === 'rejeitada' && ind.motivo_rejeicao && (
-                                <div className="mt-3 bg-red-100 border border-red-300 rounded-lg p-3">
-                                  <p className="text-red-800 text-sm"><strong>Motivo:</strong> {ind.motivo_rejeicao}</p>
-                                </div>
-                              )}
+                              <div className="text-right">
+                                <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${
+                                  ind.status === 'pendente' ? 'bg-yellow-500 text-white' :
+                                  ind.status === 'aprovada' ? 'bg-green-500 text-white' :
+                                  'bg-red-500 text-white'
+                                }`}>
+                                  {ind.status === 'pendente' ? '⏳ Pendente' :
+                                   ind.status === 'aprovada' ? '✅ Aprovada' : '❌ Rejeitada'}
+                                </span>
+                              </div>
                             </div>
-                          );
-                        })}
+                            {ind.status === 'aprovada' && (
+                              <div className="mt-3 bg-green-100 border border-green-300 rounded-lg p-3">
+                                <p className="text-green-800 text-sm">🎉 <strong>Parabéns!</strong> Sua indicação foi aprovada!</p>
+                              </div>
+                            )}
+                            {ind.status === 'rejeitada' && ind.motivo_rejeicao && (
+                              <div className="mt-3 bg-red-100 border border-red-300 rounded-lg p-3">
+                                <p className="text-red-800 text-sm"><strong>Motivo:</strong> {ind.motivo_rejeicao}</p>
+                              </div>
+                            )}
+                          </div>
+                        ))}
                       </div>
                     )}
                   </div>
