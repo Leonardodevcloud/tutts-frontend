@@ -1416,7 +1416,61 @@
           setBiDashboard(data.metricas || {});
           setBiClientesResumo(data.porCliente || []);
           setBiProfissionaisResumo(data.porProfissional || []);
-          setBiGraficos({ porTempo: data.porTempo || [], porKm: data.porKm || [] });
+          
+          // Processar dados brutos para gráficos
+          const dadosBrutos = data.dadosGraficos || [];
+          
+          // Agrupar por faixas de TEMPO (configurável aqui!)
+          const faixasTempo = [
+            { label: '0 a 45 min', min: 0, max: 45 },
+            { label: '45-60 min', min: 45, max: 60 },
+            { label: '60-75 min', min: 60, max: 75 },
+            { label: '75-90 min', min: 75, max: 90 },
+            { label: '90 a 120 min', min: 90, max: 120 },
+            { label: '> 120 min', min: 120, max: 99999 }
+          ];
+          
+          const porTempo = faixasTempo.map(f => ({
+            faixa: f.label,
+            total: dadosBrutos.filter(d => {
+              const t = parseFloat(d.tempo);
+              return t !== null && !isNaN(t) && t >= f.min && t < f.max;
+            }).length
+          }));
+          
+          // Agrupar por faixas de KM (configurável aqui!)
+          const faixasKm = [
+            { label: '0-10', min: 0, max: 10 },
+            { label: '11-15', min: 10, max: 15 },
+            { label: '16-20', min: 15, max: 20 },
+            { label: '21-25', min: 20, max: 25 },
+            { label: '26-30', min: 25, max: 30 },
+            { label: '31-35', min: 30, max: 35 },
+            { label: '36-40', min: 35, max: 40 },
+            { label: '41-45', min: 40, max: 45 },
+            { label: '46-50', min: 45, max: 50 },
+            { label: '51-55', min: 50, max: 55 },
+            { label: '56-60', min: 55, max: 60 },
+            { label: '61-65', min: 60, max: 65 },
+            { label: '66-70', min: 65, max: 70 },
+            { label: '71-75', min: 70, max: 75 },
+            { label: '76-80', min: 75, max: 80 },
+            { label: '81-85', min: 80, max: 85 },
+            { label: '86-90', min: 85, max: 90 },
+            { label: '91-95', min: 90, max: 95 },
+            { label: '96-100', min: 95, max: 100 },
+            { label: '>100', min: 100, max: 99999 }
+          ];
+          
+          const porKm = faixasKm.map(f => ({
+            faixa: f.label,
+            total: dadosBrutos.filter(d => {
+              const k = parseFloat(d.km);
+              return k !== null && !isNaN(k) && k >= f.min && k < f.max;
+            }).length
+          }));
+          
+          setBiGraficos({ porTempo, porKm });
         } catch (err) { console.error('Erro ao carregar BI:', err); }
         setBiLoading(false);
       };
@@ -1627,7 +1681,61 @@
           setBiDashboard(data.metricas || {});
           setBiClientesResumo(data.porCliente || []);
           setBiProfissionaisResumo(data.porProfissional || []);
-          setBiGraficos({ porTempo: data.porTempo || [], porKm: data.porKm || [] });
+          
+          // Processar dados brutos para gráficos
+          const dadosBrutos = data.dadosGraficos || [];
+          
+          // Agrupar por faixas de TEMPO (configurável aqui!)
+          const faixasTempo = [
+            { label: '0 a 45 min', min: 0, max: 45 },
+            { label: '45-60 min', min: 45, max: 60 },
+            { label: '60-75 min', min: 60, max: 75 },
+            { label: '75-90 min', min: 75, max: 90 },
+            { label: '90 a 120 min', min: 90, max: 120 },
+            { label: '> 120 min', min: 120, max: 99999 }
+          ];
+          
+          const porTempo = faixasTempo.map(f => ({
+            faixa: f.label,
+            total: dadosBrutos.filter(d => {
+              const t = parseFloat(d.tempo);
+              return t !== null && !isNaN(t) && t >= f.min && t < f.max;
+            }).length
+          }));
+          
+          // Agrupar por faixas de KM (configurável aqui!)
+          const faixasKm = [
+            { label: '0-10', min: 0, max: 10 },
+            { label: '11-15', min: 10, max: 15 },
+            { label: '16-20', min: 15, max: 20 },
+            { label: '21-25', min: 20, max: 25 },
+            { label: '26-30', min: 25, max: 30 },
+            { label: '31-35', min: 30, max: 35 },
+            { label: '36-40', min: 35, max: 40 },
+            { label: '41-45', min: 40, max: 45 },
+            { label: '46-50', min: 45, max: 50 },
+            { label: '51-55', min: 50, max: 55 },
+            { label: '56-60', min: 55, max: 60 },
+            { label: '61-65', min: 60, max: 65 },
+            { label: '66-70', min: 65, max: 70 },
+            { label: '71-75', min: 70, max: 75 },
+            { label: '76-80', min: 75, max: 80 },
+            { label: '81-85', min: 80, max: 85 },
+            { label: '86-90', min: 85, max: 90 },
+            { label: '91-95', min: 90, max: 95 },
+            { label: '96-100', min: 95, max: 100 },
+            { label: '>100', min: 100, max: 99999 }
+          ];
+          
+          const porKm = faixasKm.map(f => ({
+            faixa: f.label,
+            total: dadosBrutos.filter(d => {
+              const k = parseFloat(d.km);
+              return k !== null && !isNaN(k) && k >= f.min && k < f.max;
+            }).length
+          }));
+          
+          setBiGraficos({ porTempo, porKm });
           
           // Linhas fechadas por padrão
           setBiExpandedRows({});
@@ -9560,7 +9668,6 @@
                 <button onClick={() => { setBiTab('dashboard'); loadBiDashboard(); }} className={`px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-all ${biTab === 'dashboard' ? 'border-purple-600 text-purple-600 bg-purple-50' : 'border-transparent text-gray-600 hover:text-gray-800'}`}>📊 Dashboard</button>
                 <button onClick={() => { setBiTab('profissionais'); loadBiDashboard(); }} className={`px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-all ${biTab === 'profissionais' ? 'border-purple-600 text-purple-600 bg-purple-50' : 'border-transparent text-gray-600 hover:text-gray-800'}`}>👤 Por Profissional</button>
                 <button onClick={() => { setBiTab('os'); loadBiEntregas(); }} className={`px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-all ${biTab === 'os' ? 'border-purple-600 text-purple-600 bg-purple-50' : 'border-transparent text-gray-600 hover:text-gray-800'}`}>📋 Análise por OS</button>
-                <button onClick={() => { setBiTab('graficos'); loadBiDashboard(); }} className={`px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-all ${biTab === 'graficos' ? 'border-purple-600 text-purple-600 bg-purple-50' : 'border-transparent text-gray-600 hover:text-gray-800'}`}>📈 Gráficos</button>
                 <button onClick={() => { setBiTab('upload'); loadBiDropdowns(); }} className={`px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-all ${biTab === 'upload' ? 'border-purple-600 text-purple-600 bg-purple-50' : 'border-transparent text-gray-600 hover:text-gray-800'}`}>📤 Upload</button>
                 <button onClick={() => { setBiTab('config'); loadBiPrazos(); loadBiPrazoPadrao(); }} className={`px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-all ${biTab === 'config' ? 'border-purple-600 text-purple-600 bg-purple-50' : 'border-transparent text-gray-600 hover:text-gray-800'}`}>⚙️ Config</button>
               </div>
@@ -9939,6 +10046,53 @@
                           </table>
                         </div>
                       </div>
+                      
+                      {/* ===== GRÁFICOS ABAIXO DA TABELA ===== */}
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+                        {/* Gráfico por Faixa de Tempo */}
+                        <div className="bg-white rounded-lg shadow p-6">
+                          <h3 className="font-bold text-purple-900 mb-4">📊 Distribuição de Entregas por Faixas de Tempo</h3>
+                          <div className="flex items-end gap-2 h-48">
+                            {(biGraficos.porTempo || []).map((item, i) => {
+                              const count = item.total || 0;
+                              const total = (biGraficos.porTempo || []).reduce((a, t) => a + (t.total || 0), 0) || 1;
+                              const pct = (count / total) * 100;
+                              const maxCount = Math.max(...(biGraficos.porTempo || []).map(t => t.total || 0), 1);
+                              const height = maxCount > 0 ? (count / maxCount) * 100 : 0;
+                              return (
+                                <div key={i} className="flex-1 flex flex-col items-center">
+                                  <div className="text-xs text-orange-500 mb-1">{pct.toFixed(1)}%</div>
+                                  <div className="text-sm font-bold text-purple-900 mb-1">{count.toLocaleString('pt-BR')}</div>
+                                  <div className="w-full bg-purple-600 rounded-t transition-all" style={{height: `${Math.max(height, 2)}%`, minHeight: count > 0 ? '20px' : '4px'}}></div>
+                                  <div className="text-[10px] text-gray-600 mt-2 text-center leading-tight">{item.faixa}</div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* Gráfico por Faixa de KM */}
+                        <div className="bg-white rounded-lg shadow p-6">
+                          <h3 className="font-bold text-purple-900 mb-4">📊 Entregas por Faixas de Km</h3>
+                          <div className="flex items-end gap-1 h-48 overflow-x-auto pb-2">
+                            {(biGraficos.porKm || []).map((item, i) => {
+                              const count = item.total || 0;
+                              const total = (biGraficos.porKm || []).reduce((a, k) => a + (k.total || 0), 0) || 1;
+                              const pct = (count / total) * 100;
+                              const maxCount = Math.max(...(biGraficos.porKm || []).map(k => k.total || 0), 1);
+                              const height = maxCount > 0 ? (count / maxCount) * 100 : 0;
+                              return (
+                                <div key={i} className="flex-none w-10 flex flex-col items-center">
+                                  <div className="text-[8px] text-orange-500 mb-0.5">{pct.toFixed(0)}%</div>
+                                  <div className="text-[10px] font-bold text-purple-900 mb-0.5">{count}</div>
+                                  <div className="w-7 bg-purple-600 rounded-t transition-all" style={{height: `${Math.max(height, 2)}%`, minHeight: count > 0 ? '10px' : '2px'}}></div>
+                                  <div className="text-[8px] text-gray-600 mt-1 text-center">{item.faixa}</div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
                     </>
                   )}
 
@@ -10091,65 +10245,6 @@
                           Mostrando 100 de {biEntregas.length} registros. Use os filtros para refinar a busca.
                         </div>
                       )}
-                    </div>
-                  )}
-
-                  {/* ===== ABA GRÁFICOS ===== */}
-                  {biTab === 'graficos' && (
-                    <div className="space-y-6">
-                      {/* Gráfico por Faixa de Tempo */}
-                      <div className="bg-white rounded-lg shadow p-6">
-                        <h3 className="font-bold text-purple-900 mb-4">Distribuição de Entregas por Faixas de Tempo</h3>
-                        <div className="flex items-end gap-2 h-64">
-                          {[
-                            { label: '0-45 min', min: 0, max: 45 },
-                            { label: '45-60 min', min: 45, max: 60 },
-                            { label: '60-75 min', min: 60, max: 75 },
-                            { label: '75-90 min', min: 75, max: 90 },
-                            { label: '90-120 min', min: 90, max: 120 },
-                            { label: '> 120 min', min: 120, max: 9999 }
-                          ].map((faixa, i) => {
-                            const count = biGraficos.porTempo?.find(t => t.faixa === faixa.label)?.total || 0;
-                            const total = biGraficos.porTempo?.reduce((a, t) => a + (t.total || 0), 0) || 1;
-                            const pct = (count / total) * 100;
-                            const maxCount = Math.max(...(biGraficos.porTempo?.map(t => t.total) || [1]));
-                            const height = maxCount > 0 ? (count / maxCount) * 100 : 0;
-                            return (
-                              <div key={i} className="flex-1 flex flex-col items-center">
-                                <div className="text-xs text-orange-500 mb-1">{pct.toFixed(2)}%</div>
-                                <div className="text-sm font-bold text-purple-900 mb-1">{count.toLocaleString('pt-BR')}</div>
-                                <div className="w-full bg-purple-600 rounded-t" style={{height: `${height}%`, minHeight: count > 0 ? '20px' : '4px'}}></div>
-                                <div className="text-xs text-gray-600 mt-2 text-center">{faixa.label}</div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-
-                      {/* Gráfico por Faixa de KM */}
-                      <div className="bg-white rounded-lg shadow p-6">
-                        <h3 className="font-bold text-purple-900 mb-4">Entregas por Faixas de Km</h3>
-                        <div className="flex items-end gap-1 h-64 overflow-x-auto">
-                          {[
-                            '0-10', '11-15', '16-20', '21-25', '26-30', '31-35', '36-40', '41-45', '46-50',
-                            '51-55', '56-60', '61-65', '66-70', '71-75', '76-80', '81-85', '86-90', '91-95', '96-100', '>100'
-                          ].map((faixa, i) => {
-                            const count = biGraficos.porKm?.find(k => k.faixa === faixa)?.total || 0;
-                            const total = biGraficos.porKm?.reduce((a, k) => a + (k.total || 0), 0) || 1;
-                            const pct = (count / total) * 100;
-                            const maxCount = Math.max(...(biGraficos.porKm?.map(k => k.total) || [1]));
-                            const height = maxCount > 0 ? (count / maxCount) * 100 : 0;
-                            return (
-                              <div key={i} className="flex-none w-12 flex flex-col items-center">
-                                <div className="text-[10px] text-orange-500 mb-0.5">{pct.toFixed(1)}%</div>
-                                <div className="text-xs font-bold text-purple-900 mb-0.5">{count.toLocaleString('pt-BR')}</div>
-                                <div className="w-8 bg-purple-600 rounded-t" style={{height: `${height}%`, minHeight: count > 0 ? '10px' : '2px'}}></div>
-                                <div className="text-[9px] text-gray-600 mt-1 text-center">{faixa} KM</div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
                     </div>
                   )}
 
