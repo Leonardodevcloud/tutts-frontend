@@ -1439,7 +1439,7 @@
             }).length
           }));
           
-          // Agrupar por faixas de KM (configurável aqui!)
+          // Agrupar por faixas de KM (até 70km + Outras)
           const faixasKm = [
             { label: '0-10', min: 0, max: 10 },
             { label: '11-15', min: 10, max: 15 },
@@ -1454,13 +1454,7 @@
             { label: '56-60', min: 55, max: 60 },
             { label: '61-65', min: 60, max: 65 },
             { label: '66-70', min: 65, max: 70 },
-            { label: '71-75', min: 70, max: 75 },
-            { label: '76-80', min: 75, max: 80 },
-            { label: '81-85', min: 80, max: 85 },
-            { label: '86-90', min: 85, max: 90 },
-            { label: '91-95', min: 90, max: 95 },
-            { label: '96-100', min: 95, max: 100 },
-            { label: '>100', min: 100, max: 99999 }
+            { label: 'Outras', min: 70, max: 99999 }
           ];
           
           const porKm = faixasKm.map(f => ({
@@ -1704,7 +1698,7 @@
             }).length
           }));
           
-          // Agrupar por faixas de KM (configurável aqui!)
+          // Agrupar por faixas de KM (até 70km + Outras)
           const faixasKm = [
             { label: '0-10', min: 0, max: 10 },
             { label: '11-15', min: 10, max: 15 },
@@ -1719,13 +1713,7 @@
             { label: '56-60', min: 55, max: 60 },
             { label: '61-65', min: 60, max: 65 },
             { label: '66-70', min: 65, max: 70 },
-            { label: '71-75', min: 70, max: 75 },
-            { label: '76-80', min: 75, max: 80 },
-            { label: '81-85', min: 80, max: 85 },
-            { label: '86-90', min: 85, max: 90 },
-            { label: '91-95', min: 90, max: 95 },
-            { label: '96-100', min: 95, max: 100 },
-            { label: '>100', min: 100, max: 99999 }
+            { label: 'Outras', min: 70, max: 99999 }
           ];
           
           const porKm = faixasKm.map(f => ({
@@ -9955,7 +9943,6 @@
                                 <th className="px-3 py-2 text-right text-purple-900">%</th>
                                 <th className="px-3 py-2 text-right text-purple-900">Fora</th>
                                 <th className="px-3 py-2 text-right text-purple-900">%</th>
-                                <th className="px-3 py-2 text-right text-purple-900">S/Prazo</th>
                                 <th className="px-3 py-2 text-right text-purple-900">Média</th>
                                 <th className="px-3 py-2 text-right text-purple-900">Val. Cliente</th>
                                 <th className="px-3 py-2 text-right text-purple-900">Val. Prof.</th>
@@ -9983,7 +9970,6 @@
                                     <td className="px-3 py-2 text-right text-green-600">{(toNum(c.dentro_prazo) / (toNum(c.total_entregas) || 1) * 100).toFixed(2)}%</td>
                                     <td className="px-3 py-2 text-right text-red-600 font-medium">{toNum(c.fora_prazo).toLocaleString('pt-BR')}</td>
                                     <td className="px-3 py-2 text-right text-red-600">{(toNum(c.fora_prazo) / (toNum(c.total_entregas) || 1) * 100).toFixed(2)}%</td>
-                                    <td className="px-3 py-2 text-right text-gray-500">{toNum(c.sem_prazo).toLocaleString('pt-BR')}</td>
                                     <td className="px-3 py-2 text-right">{formatarTempo(c.tempo_medio)}</td>
                                     <td className="px-3 py-2 text-right">{formatarMoeda(c.valor_total)}</td>
                                     <td className="px-3 py-2 text-right">{formatarMoeda(c.valor_prof)}</td>
@@ -10010,7 +9996,6 @@
                                       <td className="px-3 py-2 text-right text-green-600">{(toNum(cc.dentro_prazo) / (toNum(cc.total_entregas) || 1) * 100).toFixed(2)}%</td>
                                       <td className="px-3 py-2 text-right text-red-500">{toNum(cc.fora_prazo).toLocaleString('pt-BR')}</td>
                                       <td className="px-3 py-2 text-right text-red-500">{(toNum(cc.fora_prazo) / (toNum(cc.total_entregas) || 1) * 100).toFixed(2)}%</td>
-                                      <td className="px-3 py-2 text-right text-gray-400">{toNum(cc.sem_prazo || 0).toLocaleString('pt-BR')}</td>
                                       <td className="px-3 py-2 text-right text-purple-600">{formatarTempo(cc.tempo_medio)}</td>
                                       <td className="px-3 py-2 text-right text-purple-600">{formatarMoeda(cc.valor_total)}</td>
                                       <td className="px-3 py-2 text-right text-purple-600">{formatarMoeda(cc.valor_prof)}</td>
@@ -10033,7 +10018,6 @@
                                 <td className="px-3 py-2 text-right text-green-700">{(toNum(biDashboard?.dentro_prazo) / (toNum(biDashboard?.total_entregas) || 1) * 100).toFixed(2)}%</td>
                                 <td className="px-3 py-2 text-right text-red-700">{toNum(biDashboard?.fora_prazo).toLocaleString('pt-BR')}</td>
                                 <td className="px-3 py-2 text-right text-red-700">{(toNum(biDashboard?.fora_prazo) / (toNum(biDashboard?.total_entregas) || 1) * 100).toFixed(2)}%</td>
-                                <td className="px-3 py-2 text-right text-gray-600">{toNum(biDashboard?.sem_prazo).toLocaleString('pt-BR')}</td>
                                 <td className="px-3 py-2 text-right">{formatarTempo(biDashboard?.tempo_medio)}</td>
                                 <td className="px-3 py-2 text-right">{formatarMoeda(biDashboard?.valor_total)}</td>
                                 <td className="px-3 py-2 text-right">{formatarMoeda(biDashboard?.valor_prof_total)}</td>
@@ -10053,22 +10037,31 @@
                         {/* Gráfico por Faixa de Tempo */}
                         <div className="bg-white rounded-lg shadow p-6">
                           <h3 className="font-bold text-purple-900 mb-6 text-lg">📊 Distribuição de Entregas por Faixas de Tempo</h3>
-                          <div className="flex items-end gap-4 h-64">
-                            {(biGraficos.porTempo || []).map((item, i) => {
-                              const count = item.total || 0;
-                              const total = (biGraficos.porTempo || []).reduce((a, t) => a + (t.total || 0), 0) || 1;
-                              const pct = (count / total) * 100;
-                              const maxCount = Math.max(...(biGraficos.porTempo || []).map(t => t.total || 0), 1);
-                              const height = maxCount > 0 ? (count / maxCount) * 100 : 0;
-                              return (
-                                <div key={i} className="flex-1 flex flex-col items-center">
-                                  <div className="text-sm text-orange-500 font-semibold mb-1">{pct.toFixed(1)}%</div>
-                                  <div className="text-lg font-bold text-purple-900 mb-2">{count.toLocaleString('pt-BR')}</div>
-                                  <div className="w-full bg-purple-600 rounded-t transition-all" style={{height: `${Math.max(height, 5)}%`, minHeight: count > 0 ? '30px' : '8px'}}></div>
-                                  <div className="text-xs text-gray-600 mt-3 text-center font-medium">{item.faixa}</div>
-                                </div>
-                              );
-                            })}
+                          <div className="flex items-end gap-4" style={{height: '250px'}}>
+                            {(() => {
+                              const dados = biGraficos.porTempo || [];
+                              const maxCount = Math.max(...dados.map(t => t.total || 0), 1);
+                              const total = dados.reduce((a, t) => a + (t.total || 0), 0) || 1;
+                              const alturaMaxima = 200; // pixels
+                              
+                              return dados.map((item, i) => {
+                                const count = item.total || 0;
+                                const pct = (count / total) * 100;
+                                const altura = maxCount > 0 ? (count / maxCount) * alturaMaxima : 0;
+                                
+                                return (
+                                  <div key={i} className="flex-1 flex flex-col items-center justify-end">
+                                    <div className="text-sm text-orange-500 font-semibold mb-1">{pct.toFixed(1)}%</div>
+                                    <div className="text-lg font-bold text-purple-900 mb-2">{count.toLocaleString('pt-BR')}</div>
+                                    <div 
+                                      className="w-full bg-purple-600 rounded-t transition-all"
+                                      style={{height: `${Math.max(altura, count > 0 ? 20 : 5)}px`}}
+                                    ></div>
+                                    <div className="text-xs text-gray-600 mt-3 text-center font-medium">{item.faixa}</div>
+                                  </div>
+                                );
+                              });
+                            })()}
                           </div>
                         </div>
 
@@ -10078,28 +10071,31 @@
                           <div className="flex gap-6">
                             {/* Gráfico */}
                             <div className="flex-1">
-                              <div className="flex items-end gap-2 h-64">
-                                {(biGraficos.porKm || [])
-                                  .filter(item => !biFiltroKmExcluidas?.includes(item.faixa))
-                                  .map((item, i) => {
-                                  const count = item.total || 0;
-                                  const totalFiltrado = (biGraficos.porKm || [])
-                                    .filter(k => !biFiltroKmExcluidas?.includes(k.faixa))
-                                    .reduce((a, k) => a + (k.total || 0), 0) || 1;
-                                  const pct = (count / totalFiltrado) * 100;
-                                  const maxCount = Math.max(...(biGraficos.porKm || [])
-                                    .filter(k => !biFiltroKmExcluidas?.includes(k.faixa))
-                                    .map(k => k.total || 0), 1);
-                                  const height = maxCount > 0 ? (count / maxCount) * 100 : 0;
-                                  return (
-                                    <div key={i} className="flex-1 min-w-[35px] flex flex-col items-center">
-                                      <div className="text-xs text-orange-500 font-semibold mb-1">{pct.toFixed(1)}%</div>
-                                      <div className="text-sm font-bold text-purple-900 mb-2">{count.toLocaleString('pt-BR')}</div>
-                                      <div className="w-full bg-purple-600 rounded-t transition-all" style={{height: `${Math.max(height, 5)}%`, minHeight: count > 0 ? '20px' : '6px'}}></div>
-                                      <div className="text-[10px] text-gray-600 mt-2 text-center font-medium">{item.faixa}</div>
-                                    </div>
-                                  );
-                                })}
+                              <div className="flex items-end gap-2" style={{height: '250px'}}>
+                                {(() => {
+                                  const dados = (biGraficos.porKm || []).filter(item => !biFiltroKmExcluidas?.includes(item.faixa));
+                                  const maxCount = Math.max(...dados.map(k => k.total || 0), 1);
+                                  const total = dados.reduce((a, k) => a + (k.total || 0), 0) || 1;
+                                  const alturaMaxima = 200; // pixels
+                                  
+                                  return dados.map((item, i) => {
+                                    const count = item.total || 0;
+                                    const pct = (count / total) * 100;
+                                    const altura = maxCount > 0 ? (count / maxCount) * alturaMaxima : 0;
+                                    
+                                    return (
+                                      <div key={i} className="flex-1 min-w-[35px] flex flex-col items-center justify-end">
+                                        <div className="text-xs text-orange-500 font-semibold mb-1">{pct.toFixed(1)}%</div>
+                                        <div className="text-sm font-bold text-purple-900 mb-2">{count.toLocaleString('pt-BR')}</div>
+                                        <div 
+                                          className="w-full bg-purple-600 rounded-t transition-all max-w-[30px]"
+                                          style={{height: `${Math.max(altura, count > 0 ? 15 : 3)}px`}}
+                                        ></div>
+                                        <div className="text-[10px] text-gray-600 mt-2 text-center font-medium">{item.faixa}</div>
+                                      </div>
+                                    );
+                                  });
+                                })()}
                               </div>
                             </div>
                             
