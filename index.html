@@ -612,22 +612,37 @@
         return `(${numeros.slice(0,2)}) ${numeros.slice(2,7)}-${numeros.slice(7,11)}`;
       };
       
-      // Validar token ao carregar
+      // Validar token ao carregar - só executa se tiver token
       React.useEffect(() => {
+        console.log('📦 PaginaIndicacao montada com token:', token);
+        
+        if (!token || token === 'undefined' || token === 'null') {
+          console.log('❌ Token inválido ou ausente');
+          setErro('Link inválido');
+          setValidando(false);
+          return;
+        }
+        
         const validarToken = async () => {
           try {
+            console.log('🔍 Chamando API para validar token:', token);
             const res = await fetch(`${API_URL}/indicacao-link/validar/${token}`);
+            console.log('📡 Resposta:', res.status);
             if (!res.ok) {
               setErro('Link inválido ou expirado');
+              setValidando(false);
               return;
             }
             const data = await res.json();
+            console.log('✅ Dados do indicador:', data);
             setIndicador(data.indicador);
           } catch (err) {
+            console.error('❌ Erro ao validar:', err);
             setErro('Erro ao validar link');
           }
           setValidando(false);
         };
+        
         validarToken();
       }, [token]);
       
@@ -767,11 +782,29 @@
 
     // ========== COMPONENTE PRINCIPAL ==========
     const App = () => {
-      // Verificar se é página de indicação
-      const path = window.location.pathname;
-      const indicarMatch = path.match(/\/indicar\/([A-Za-z0-9]+)/);
+      // Verificar se é página de indicação (usando hash routing: /#/indicar/TOKEN)
+      const [hashPath, setHashPath] = useState(window.location.hash || '');
       
-      if (indicarMatch) {
+      // Log para debug
+      console.log('🔗 Hash atual:', hashPath);
+      console.log('🔗 Location completa:', window.location.href);
+      
+      // Ouvir mudanças no hash
+      React.useEffect(() => {
+        const handleHashChange = () => {
+          console.log('🔄 Hash mudou para:', window.location.hash);
+          setHashPath(window.location.hash || '');
+        };
+        window.addEventListener('hashchange', handleHashChange);
+        return () => window.removeEventListener('hashchange', handleHashChange);
+      }, []);
+      
+      // Verificar se é página de indicação
+      const indicarMatch = hashPath.match(/#\/indicar\/([A-Za-z0-9]+)/);
+      console.log('🎯 Match indicação:', indicarMatch);
+      
+      if (indicarMatch && indicarMatch[1]) {
+        console.log('✅ Token encontrado:', indicarMatch[1]);
         return <PaginaIndicacao token={indicarMatch[1]} />;
       }
       
@@ -4471,12 +4504,12 @@
                             <input 
                               type="text" 
                               readOnly 
-                              value={`${window.location.origin}/indicar/${formData.meuLinkIndicacao.token}`}
+                              value={`${window.location.origin}/#/indicar/${formData.meuLinkIndicacao.token}`}
                               className="flex-1 px-4 py-3 bg-white/20 border border-white/30 rounded-lg text-white font-mono text-sm"
                             />
                             <button 
                               onClick={() => {
-                                navigator.clipboard.writeText(`${window.location.origin}/indicar/${formData.meuLinkIndicacao.token}`);
+                                navigator.clipboard.writeText(`${window.location.origin}/#/indicar/${formData.meuLinkIndicacao.token}`);
                                 showToast('✅ Link copiado!', 'success');
                               }}
                               className="px-4 py-3 bg-green-500 hover:bg-green-600 rounded-lg font-bold transition-colors"
@@ -4487,7 +4520,7 @@
                           <div className="flex gap-2 mt-3">
                             <button 
                               onClick={() => {
-                                const texto = `Olá! Estou te indicando para trabalhar como entregador. Faça seu cadastro aqui: ${window.location.origin}/indicar/${formData.meuLinkIndicacao.token}`;
+                                const texto = `Olá! Estou te indicando para trabalhar como entregador. Faça seu cadastro aqui: ${window.location.origin}/#/indicar/${formData.meuLinkIndicacao.token}`;
                                 window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, '_blank');
                               }}
                               className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg font-semibold text-sm flex items-center justify-center gap-2"
