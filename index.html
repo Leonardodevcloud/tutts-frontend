@@ -614,10 +614,7 @@
       
       // Validar token ao carregar - só executa se tiver token
       React.useEffect(() => {
-        console.log('📦 PaginaIndicacao montada com token:', token);
-        
         if (!token || token === 'undefined' || token === 'null') {
-          console.log('❌ Token inválido ou ausente');
           setErro('Link inválido');
           setValidando(false);
           return;
@@ -625,19 +622,15 @@
         
         const validarToken = async () => {
           try {
-            console.log('🔍 Chamando API para validar token:', token);
             const res = await fetch(`${API_URL}/indicacao-link/validar/${token}`);
-            console.log('📡 Resposta:', res.status);
             if (!res.ok) {
               setErro('Link inválido ou expirado');
               setValidando(false);
               return;
             }
             const data = await res.json();
-            console.log('✅ Dados do indicador:', data);
             setIndicador(data.indicador);
           } catch (err) {
-            console.error('❌ Erro ao validar:', err);
             setErro('Erro ao validar link');
           }
           setValidando(false);
@@ -785,14 +778,9 @@
       // Verificar se é página de indicação (usando hash routing: /#/indicar/TOKEN)
       const [hashPath, setHashPath] = useState(window.location.hash || '');
       
-      // Log para debug
-      console.log('🔗 Hash atual:', hashPath);
-      console.log('🔗 Location completa:', window.location.href);
-      
       // Ouvir mudanças no hash
       React.useEffect(() => {
         const handleHashChange = () => {
-          console.log('🔄 Hash mudou para:', window.location.hash);
           setHashPath(window.location.hash || '');
         };
         window.addEventListener('hashchange', handleHashChange);
@@ -801,10 +789,8 @@
       
       // Verificar se é página de indicação
       const indicarMatch = hashPath.match(/#\/indicar\/([A-Za-z0-9]+)/);
-      console.log('🎯 Match indicação:', indicarMatch);
       
       if (indicarMatch && indicarMatch[1]) {
-        console.log('✅ Token encontrado:', indicarMatch[1]);
         return <PaginaIndicacao token={indicarMatch[1]} />;
       }
       
@@ -4536,29 +4522,25 @@
                             onClick={async () => {
                               try {
                                 setLoading(true);
-                                console.log('🔗 Gerando link para:', user.codProfissional, user.nomeCompleto);
                                 const res = await fetch(`${API_URL}/indicacao-link/gerar`, {
                                   method: 'POST',
                                   headers: { 'Content-Type': 'application/json' },
                                   body: JSON.stringify({ 
                                     user_cod: user.codProfissional, 
-                                    user_name: user.nomeCompleto 
+                                    user_name: user.fullName 
                                   })
                                 });
                                 
                                 if (!res.ok) {
                                   const errData = await res.json().catch(() => ({}));
-                                  console.error('❌ Erro na API:', res.status, errData);
                                   showToast('❌ Erro ao gerar link: ' + (errData.error || res.status), 'error');
                                   setLoading(false);
                                   return;
                                 }
                                 
                                 const data = await res.json();
-                                console.log('✅ Link gerado:', data);
                                 
                                 if (!data || !data.token) {
-                                  console.error('❌ Token não retornado:', data);
                                   showToast('❌ Erro: token não gerado', 'error');
                                   setLoading(false);
                                   return;
@@ -4567,7 +4549,6 @@
                                 setFormData({...formData, meuLinkIndicacao: data});
                                 showToast('✅ Link gerado com sucesso!', 'success');
                               } catch (err) {
-                                console.error('❌ Erro:', err);
                                 showToast('❌ Erro ao gerar link: ' + err.message, 'error');
                               }
                               setLoading(false);
