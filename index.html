@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Central do Entregador Tutts - Solicitações e Saque Emergencial</title>
+  <title>Central do Entregador Tutts</title>
   
   <!-- PWA Meta Tags -->
   <meta name="description" content="Central do Entregador Tutts - Gestão de Solicitações, Saques e Disponibilidade de Entregadores">
@@ -14,9 +14,62 @@
   <link rel="manifest" href="/manifest.json">
   <link rel="apple-touch-icon" href="/icon-192.png">
   
+  <!-- Preconnect para carregar recursos mais rápido -->
+  <link rel="preconnect" href="https://tutts-backend-production.up.railway.app">
+  <link rel="preconnect" href="https://cdn.tailwindcss.com">
+  <link rel="preconnect" href="https://unpkg.com">
+  
+  <!-- DNS Prefetch -->
+  <link rel="dns-prefetch" href="https://tutts-backend-production.up.railway.app">
+  
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js" defer></script>
+  
   <style>
+    /* Loading Screen */
+    #loading-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      transition: opacity 0.5s ease-out;
+    }
+    #loading-screen.fade-out {
+      opacity: 0;
+      pointer-events: none;
+    }
+    .loader {
+      width: 60px;
+      height: 60px;
+      border: 4px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .loading-text {
+      color: white;
+      margin-top: 20px;
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 18px;
+      font-weight: 500;
+    }
+    .loading-subtitle {
+      color: rgba(255,255,255,0.7);
+      margin-top: 8px;
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 14px;
+    }
+    
     @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
     .toast { animation: slideIn 0.3s ease-out; }
     .row-green { background-color: #dcfce7 !important; border-left: 4px solid #22c55e !important; }
@@ -33,15 +86,34 @@
   </style>
 </head>
 <body>
+  <!-- Loading Screen -->
+  <div id="loading-screen">
+    <div class="loader"></div>
+    <div class="loading-text">Central do Entregador Tutts</div>
+    <div class="loading-subtitle">Carregando...</div>
+  </div>
+  
   <div id="root"></div>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script src="https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <script src="https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js" defer></script>
   
   <script type="text/babel">
     const { useState, useEffect } = React;
     const API_URL = 'https://tutts-backend-production.up.railway.app/api';
+    
+    // Ping ao servidor para acordar (evita cold start)
+    fetch(`${API_URL.replace('/api', '')}/health`).catch(() => {});
+    
+    // Esconder loading screen quando app carregar
+    const hideLoadingScreen = () => {
+      const loadingScreen = document.getElementById('loading-screen');
+      if (loadingScreen) {
+        loadingScreen.classList.add('fade-out');
+        setTimeout(() => loadingScreen.remove(), 500);
+      }
+    };
 
     // ========== COMPONENTES UTILITÁRIOS ==========
     const Toast = ({ message, type }) => (
@@ -14139,7 +14211,8 @@ Vem ganhar com a gente! 🛵🔥`;
       );
     };
 
-    ReactDOM.render(<App />, document.getElementById('root'));
+    // Renderizar e esconder loading
+    ReactDOM.render(<App />, document.getElementById('root'), hideLoadingScreen);
   </script>
   
   <!-- PWA Install Banner Component -->
