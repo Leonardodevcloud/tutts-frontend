@@ -83,6 +83,23 @@
       from { transform: translateY(100%); opacity: 0; }
       to { transform: translateY(0); opacity: 1; }
     }
+    
+    /* Toggle Switch Mobile Optimization */
+    button[role="switch"] {
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+      -webkit-touch-callout: none;
+    }
+    button[role="switch"]:active {
+      transform: scale(0.95);
+    }
+    button[role="switch"] span {
+      will-change: transform;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+    }
   </style>
 </head>
 <body>
