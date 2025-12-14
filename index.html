@@ -91,6 +91,9 @@
       -webkit-user-select: none;
       touch-action: manipulation;
       -webkit-touch-callout: none;
+      /* Área de toque ampliada */
+      position: relative;
+      padding: 12px !important;
     }
     button[role="switch"]:active {
       transform: scale(0.95);
@@ -99,6 +102,13 @@
       will-change: transform;
       backface-visibility: hidden;
       -webkit-backface-visibility: hidden;
+    }
+    /* Aumentar área clicável no mobile */
+    @media (max-width: 768px) {
+      button[role="switch"] {
+        min-width: 100px !important;
+        min-height: 56px !important;
+      }
     }
   </style>
 </head>
