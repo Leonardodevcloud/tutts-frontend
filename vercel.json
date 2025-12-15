@@ -1,5 +1,5 @@
 {
   "rewrites": [
-    { "source": "/((?!sw.js|manifest.json|icon-).*)", "destination": "/index.html" }
+    { "source": "/((?!app\\.min\\.js|sw\\.js|manifest\\.json|icon-|qrcode).*)", "destination": "/index.html" }
   ]
 }
