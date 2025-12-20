@@ -9701,7 +9701,7 @@ const hideLoadingScreen = () => {
                     s(!1);
                 },
                 className: "px-3 py-1 bg-red-600 text-white rounded text-xs font-semibold hover:bg-red-700"
-            }, "❌ Rejeitar")))))))))));
+            }, "❌ Rejeitar"))))))))))));
         }
         
         // ============================================
@@ -9900,7 +9900,7 @@ const hideLoadingScreen = () => {
                     },
                     className: "px-2 py-1 rounded text-xs font-semibold transition-all " + (isActive ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-500 hover:bg-gray-200")
                 }, isActive ? "✓ " : "", tab);
-            }))))))))));
+            })))))))));
         }
         
         if ("admin_master" === l.role && "bi" === Ee) {
