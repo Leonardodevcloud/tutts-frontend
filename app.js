@@ -1933,10 +1933,11 @@ const hideLoadingScreen = () => {
                         const permRes = await fetch(`${API_URL}/admin-permissions/${t.cod_profissional}`);
                         if (permRes.ok) {
                             const permData = await permRes.json();
-                            // Converter allowed_modules (array) para objeto de módulos
-                            const allowedMods = permData.allowed_modules || [];
+                            const allowedMods = Array.isArray(permData.allowed_modules) ? permData.allowed_modules : [];
+                            const allowedTabs = permData.allowed_tabs && typeof permData.allowed_tabs === 'object' ? permData.allowed_tabs : {};
                             perms = {
                                 allowed_modules: allowedMods,
+                                allowed_tabs: allowedTabs,
                                 modulos: {
                                     solicitacoes: allowedMods.length === 0 || allowedMods.includes("solicitacoes"),
                                     financeiro: allowedMods.length === 0 || allowedMods.includes("financeiro"),
@@ -1944,7 +1945,8 @@ const hideLoadingScreen = () => {
                                     disponibilidade: allowedMods.length === 0 || allowedMods.includes("disponibilidade"),
                                     bi: allowedMods.length === 0 || allowedMods.includes("bi"),
                                     todo: allowedMods.length === 0 || allowedMods.includes("todo")
-                                }
+                                },
+                                abas: allowedTabs
                             };
                             console.log("Permissões carregadas:", perms);
                         }
@@ -4541,7 +4543,17 @@ const hideLoadingScreen = () => {
                 className: "bg-white border-b sticky top-0 z-10"
             }, React.createElement("div", {
                 className: "max-w-7xl mx-auto px-2 flex gap-0.5 overflow-x-auto"
-            }, ["solicitacoes", "validacao", "conciliacao", "resumo", "gratuidades", "restritos", "indicacoes", "promo-novatos", "loja", "relatorios", "horarios", "avisos", "backup"].map(e => React.createElement("button", {
+            }, ["solicitacoes", "validacao", "conciliacao", "resumo", "gratuidades", "restritos", "indicacoes", "promo-novatos", "loja", "relatorios", "horarios", "avisos", "backup"].filter(function(tabId) {
+                // Admin master tem acesso a tudo
+                if ("admin_master" === l.role) return true;
+                // Verificar permissão da aba
+                const abaKey = "financeiro_" + tabId.replace("-", "");
+                const abas = l.permissions && l.permissions.abas ? l.permissions.abas : {};
+                // Se não há permissões de abas definidas, mostrar todas
+                if (Object.keys(abas).length === 0) return true;
+                // Verificar se a aba específica está permitida (default: true se não definido)
+                return abas[abaKey] !== false;
+            }).map(e => React.createElement("button", {
                 key: e,
                 onClick: () => {
                     x({
@@ -9462,11 +9474,23 @@ const hideLoadingScreen = () => {
             ))),
             React.createElement("div", {className: "bg-white border-b sticky top-0 z-10"},
                 React.createElement("div", {className: "max-w-7xl mx-auto px-4 flex gap-1 overflow-x-auto"},
-                    React.createElement("button", {
+                    // Verificar permissão para aba Indicação
+                    (function() {
+                        if ("admin_master" === l.role) return true;
+                        const abas = l.permissions && l.permissions.abas ? l.permissions.abas : {};
+                        if (Object.keys(abas).length === 0) return true;
+                        return abas["operacional_indicacao"] !== false;
+                    })() && React.createElement("button", {
                         onClick: function() { he("financeiro"); x({finTab: "indicacoes"}); },
                         className: "px-4 py-2.5 text-sm font-semibold whitespace-nowrap " + ((p.opTab || "indicacoes") === "indicacoes" ? "text-teal-700 border-b-2 border-teal-600 bg-teal-50" : "text-gray-600 hover:bg-gray-100")
                     }, "👥 Indicação"),
-                    React.createElement("button", {
+                    // Verificar permissão para aba Promo Novatos
+                    (function() {
+                        if ("admin_master" === l.role) return true;
+                        const abas = l.permissions && l.permissions.abas ? l.permissions.abas : {};
+                        if (Object.keys(abas).length === 0) return true;
+                        return abas["operacional_promonovatos"] !== false;
+                    })() && React.createElement("button", {
                         onClick: function() { he("financeiro"); x({finTab: "promo-novatos"}); },
                         className: "px-4 py-2.5 text-sm font-semibold whitespace-nowrap " + (p.opTab === "promo-novatos" ? "text-teal-700 border-b-2 border-teal-600 bg-teal-50" : "text-gray-600 hover:bg-gray-100")
                     }, "🚀 Promo Novato")
@@ -9708,8 +9732,8 @@ const hideLoadingScreen = () => {
                 p.configTab === "permissoes" && React.createElement("div", null,
                     React.createElement("div", {className: "bg-blue-50 border border-blue-200 rounded-xl p-6 mb-6"},
                         React.createElement("h2", {className: "text-lg font-bold text-blue-800 mb-2"}, "🔐 Sistema de Permissões"),
-                        React.createElement("p", {className: "text-blue-600 mb-3"}, "Configure quais módulos cada administrador pode acessar. Clique nos módulos para ativar/desativar o acesso."),
-                        React.createElement("div", {className: "flex gap-3"},
+                        React.createElement("p", {className: "text-blue-600 mb-3"}, "Configure módulos e abas que cada administrador pode acessar. Clique para ativar/desativar."),
+                        React.createElement("div", {className: "flex gap-3 flex-wrap"},
                             React.createElement("button", {
                                 onClick: async function() {
                                     s(true);
@@ -9720,23 +9744,25 @@ const hideLoadingScreen = () => {
                                             const permsObj = {};
                                             adminsPerms.forEach(function(adm) {
                                                 const mods = Array.isArray(adm.allowed_modules) ? adm.allowed_modules : [];
-                                                // Usar cod_profissional como chave
+                                                const tabs = adm.allowed_tabs && typeof adm.allowed_tabs === 'object' ? adm.allowed_tabs : {};
                                                 permsObj[adm.cod_profissional] = {
-                                                    solicitacoes: mods.length === 0 || mods.includes("solicitacoes"),
-                                                    financeiro: mods.length === 0 || mods.includes("financeiro"),
-                                                    operacional: mods.length === 0 || mods.includes("operacional"),
-                                                    disponibilidade: mods.length === 0 || mods.includes("disponibilidade"),
-                                                    bi: mods.length === 0 || mods.includes("bi"),
-                                                    todo: mods.length === 0 || mods.includes("todo")
+                                                    modulos: {
+                                                        solicitacoes: mods.length === 0 || mods.includes("solicitacoes"),
+                                                        financeiro: mods.length === 0 || mods.includes("financeiro"),
+                                                        operacional: mods.length === 0 || mods.includes("operacional"),
+                                                        disponibilidade: mods.length === 0 || mods.includes("disponibilidade"),
+                                                        bi: mods.length === 0 || mods.includes("bi"),
+                                                        todo: mods.length === 0 || mods.includes("todo")
+                                                    },
+                                                    abas: tabs
                                                 };
-                                                console.log("Carregado permissões para:", adm.cod_profissional, permsObj[adm.cod_profissional]);
                                             });
                                             x({...p, adminPerms: permsObj});
                                             ja("✅ Permissões carregadas!", "success");
                                         }
                                     } catch (err) {
                                         console.error("Erro:", err);
-                                        ja("❌ Erro ao carregar permissões", "error");
+                                        ja("❌ Erro ao carregar", "error");
                                     }
                                     s(false);
                                 },
@@ -9747,136 +9773,172 @@ const hideLoadingScreen = () => {
                                     s(true);
                                     const adminsList = A.filter(function(u) { return u.role === "admin" || u.role === "admin_financeiro"; });
                                     let savedCount = 0;
-                                    let errors = [];
                                     
                                     for (let i = 0; i < adminsList.length; i++) {
                                         const admin = adminsList[i];
                                         const cod = admin.codProfissional;
                                         const perms = p.adminPerms && p.adminPerms[cod] ? p.adminPerms[cod] : null;
                                         
-                                        if (!perms) {
-                                            console.log("Sem permissões para:", cod);
-                                            continue;
-                                        }
+                                        if (!perms) continue;
                                         
-                                        // Converter para array de módulos permitidos
                                         const allowedModules = [];
-                                        if (perms.solicitacoes === true) allowedModules.push("solicitacoes");
-                                        if (perms.financeiro === true) allowedModules.push("financeiro");
-                                        if (perms.operacional === true) allowedModules.push("operacional");
-                                        if (perms.disponibilidade === true) allowedModules.push("disponibilidade");
-                                        if (perms.bi === true) allowedModules.push("bi");
-                                        if (perms.todo === true) allowedModules.push("todo");
+                                        const mods = perms.modulos || perms;
+                                        if (mods.solicitacoes === true) allowedModules.push("solicitacoes");
+                                        if (mods.financeiro === true) allowedModules.push("financeiro");
+                                        if (mods.operacional === true) allowedModules.push("operacional");
+                                        if (mods.disponibilidade === true) allowedModules.push("disponibilidade");
+                                        if (mods.bi === true) allowedModules.push("bi");
+                                        if (mods.todo === true) allowedModules.push("todo");
                                         
-                                        console.log("Salvando para " + cod + ":", allowedModules);
+                                        const allowedTabs = perms.abas || {};
                                         
                                         try {
                                             const res = await fetch(API_URL + "/admin-permissions/" + encodeURIComponent(cod), {
                                                 method: "PATCH",
                                                 headers: {"Content-Type": "application/json"},
-                                                body: JSON.stringify({
-                                                    allowed_modules: allowedModules,
-                                                    allowed_tabs: {}
-                                                })
+                                                body: JSON.stringify({ allowed_modules: allowedModules, allowed_tabs: allowedTabs })
                                             });
-                                            if (res.ok) {
-                                                savedCount++;
-                                                console.log("✅ Salvo com sucesso para:", cod);
-                                            } else {
-                                                const errData = await res.text();
-                                                errors.push(cod + ": " + errData);
-                                                console.error("Erro para " + cod + ":", errData);
-                                            }
+                                            if (res.ok) savedCount++;
                                         } catch (err) {
-                                            errors.push(cod + ": " + err.message);
-                                            console.error("Erro ao salvar para " + cod + ":", err);
+                                            console.error("Erro:", err);
                                         }
                                     }
-                                    
-                                    if (savedCount > 0) {
-                                        ja("✅ Permissões salvas para " + savedCount + " admin(s)!", "success");
-                                    } else if (errors.length > 0) {
-                                        ja("❌ Erro ao salvar: " + errors[0], "error");
-                                    } else {
-                                        ja("⚠️ Nenhuma permissão para salvar. Modifique algum módulo primeiro.", "warning");
-                                    }
+                                    ja(savedCount > 0 ? "✅ Salvo para " + savedCount + " admin(s)!" : "⚠️ Nada para salvar", savedCount > 0 ? "success" : "warning");
                                     s(false);
                                 },
                                 className: "px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-semibold hover:bg-purple-700"
                             }, "💾 Salvar Permissões")
                         )
                     ),
-                    React.createElement("div", {className: "bg-white rounded-xl shadow-sm border p-6"},
-                        React.createElement("h3", {className: "font-bold mb-4"}, "👑 Administradores"),
-                        A.filter(function(u) { return u.role === "admin" || u.role === "admin_financeiro"; }).length === 0
-                            ? React.createElement("div", {className: "text-center py-8 text-gray-500"},
-                                React.createElement("span", {className: "text-4xl block mb-2"}, "👤"),
-                                React.createElement("p", null, "Nenhum administrador cadastrado (exceto Master)")
-                            )
-                            : React.createElement("div", {className: "space-y-6"},
-                                A.filter(function(u) { return u.role === "admin" || u.role === "admin_financeiro"; }).map(function(admin) {
-                                    const cod = admin.codProfissional;
-                                    const perms = p.adminPerms && p.adminPerms[cod] ? p.adminPerms[cod] : {
-                                        solicitacoes: true, financeiro: true, operacional: true, disponibilidade: true, bi: true, todo: true
-                                    };
-                                    return React.createElement("div", {
-                                        key: cod,
-                                        className: "border rounded-xl p-5 bg-gray-50"
-                                    },
-                                        React.createElement("div", {className: "flex items-center justify-between mb-4"},
-                                            React.createElement("div", {className: "flex items-center gap-3"},
+                    // Lista de admins
+                    A.filter(function(u) { return u.role === "admin" || u.role === "admin_financeiro"; }).length === 0
+                        ? React.createElement("div", {className: "bg-white rounded-xl p-8 text-center text-gray-500"},
+                            React.createElement("span", {className: "text-4xl block mb-2"}, "👤"),
+                            "Nenhum administrador cadastrado"
+                        )
+                        : A.filter(function(u) { return u.role === "admin" || u.role === "admin_financeiro"; }).map(function(admin) {
+                            const cod = admin.codProfissional;
+                            const perms = p.adminPerms && p.adminPerms[cod] ? p.adminPerms[cod] : { modulos: {}, abas: {} };
+                            const mods = perms.modulos || {};
+                            const abas = perms.abas || {};
+                            
+                            // Definição dos módulos e suas abas
+                            const modulosConfig = [
+                                { id: "solicitacoes", label: "Solicitações", icon: "📋", color: "purple", 
+                                  abas: [
+                                    {id: "dashboard", label: "Dashboard"},
+                                    {id: "search", label: "Busca Detalhada"},
+                                    {id: "ranking", label: "Ranking"},
+                                    {id: "relatorios", label: "Relatórios"}
+                                  ]
+                                },
+                                { id: "financeiro", label: "Financeiro", icon: "💰", color: "green",
+                                  abas: [
+                                    {id: "solicitacoes", label: "Solicitações"},
+                                    {id: "validacao", label: "Validação"},
+                                    {id: "conciliacao", label: "Conciliação"},
+                                    {id: "resumo", label: "Resumo"},
+                                    {id: "gratuidades", label: "Gratuidades"},
+                                    {id: "restritos", label: "Restritos"},
+                                    {id: "indicacoes", label: "Indicações"},
+                                    {id: "promonovatos", label: "Promo Novatos"},
+                                    {id: "loja", label: "Loja"},
+                                    {id: "relatorios", label: "Relatórios"},
+                                    {id: "horarios", label: "Horários"},
+                                    {id: "avisos", label: "Avisos"},
+                                    {id: "backup", label: "Backup"}
+                                  ]
+                                },
+                                { id: "operacional", label: "Operacional", icon: "⚙️", color: "teal",
+                                  abas: [
+                                    {id: "indicacao", label: "Indicação"},
+                                    {id: "promonovatos", label: "Promo Novatos"}
+                                  ]
+                                },
+                                { id: "disponibilidade", label: "Disponibilidade", icon: "📅", color: "blue", abas: [] },
+                                { id: "bi", label: "BI/Relatórios", icon: "📊", color: "orange", abas: [] },
+                                { id: "todo", label: "TO-DO", icon: "📝", color: "indigo", abas: [] }
+                            ];
+                            
+                            return React.createElement("div", {
+                                key: cod,
+                                className: "bg-white rounded-xl shadow-sm border p-6 mb-4"
+                            },
+                                // Header do admin
+                                React.createElement("div", {className: "flex items-center gap-3 mb-4 pb-4 border-b"},
+                                    React.createElement("div", {
+                                        className: "w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg " +
+                                            (admin.role === "admin" ? "bg-blue-600" : "bg-green-600")
+                                    }, admin.fullName ? admin.fullName.charAt(0).toUpperCase() : "?"),
+                                    React.createElement("div", null,
+                                        React.createElement("p", {className: "font-bold text-lg"}, admin.fullName),
+                                        React.createElement("p", {className: "text-sm text-gray-500"}, "COD: " + cod + " • " + (admin.role === "admin" ? "👑 Admin" : "💰 Admin Financeiro"))
+                                    )
+                                ),
+                                // Módulos e Abas
+                                React.createElement("div", {className: "space-y-4"},
+                                    modulosConfig.map(function(modConfig) {
+                                        const modAtivo = mods[modConfig.id] !== false;
+                                        const modKey = modConfig.id;
+                                        
+                                        return React.createElement("div", {
+                                            key: modKey,
+                                            className: "border rounded-lg overflow-hidden " + (modAtivo ? "border-green-200" : "border-gray-200 opacity-60")
+                                        },
+                                            // Cabeçalho do módulo
+                                            React.createElement("div", {
+                                                className: "flex items-center justify-between p-3 cursor-pointer " + 
+                                                    (modAtivo ? "bg-green-50" : "bg-gray-50"),
+                                                onClick: function() {
+                                                    const newPerms = JSON.parse(JSON.stringify(p.adminPerms || {}));
+                                                    if (!newPerms[cod]) newPerms[cod] = { modulos: {}, abas: {} };
+                                                    if (!newPerms[cod].modulos) newPerms[cod].modulos = {};
+                                                    newPerms[cod].modulos[modKey] = !modAtivo;
+                                                    x({...p, adminPerms: newPerms});
+                                                }
+                                            },
+                                                React.createElement("div", {className: "flex items-center gap-2"},
+                                                    React.createElement("span", {className: "text-xl"}, modConfig.icon),
+                                                    React.createElement("span", {className: "font-semibold"}, modConfig.label)
+                                                ),
                                                 React.createElement("div", {
-                                                    className: "w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg " +
-                                                        (admin.role === "admin" ? "bg-blue-600" : "bg-green-600")
-                                                }, admin.fullName ? admin.fullName.charAt(0).toUpperCase() : "?"),
-                                                React.createElement("div", null,
-                                                    React.createElement("p", {className: "font-bold text-lg"}, admin.fullName),
-                                                    React.createElement("p", {className: "text-sm text-gray-500"},
-                                                        "COD: ", cod, " • ",
-                                                        admin.role === "admin" ? "👑 Admin" : "💰 Admin Financeiro"
-                                                    )
+                                                    className: "px-3 py-1 rounded-full text-xs font-bold " +
+                                                        (modAtivo ? "bg-green-200 text-green-800" : "bg-gray-200 text-gray-600")
+                                                }, modAtivo ? "✓ Ativo" : "✗ Inativo")
+                                            ),
+                                            // Abas do módulo (se houver e módulo estiver ativo)
+                                            modAtivo && modConfig.abas.length > 0 && React.createElement("div", {
+                                                className: "p-3 bg-white border-t"
+                                            },
+                                                React.createElement("p", {className: "text-xs text-gray-500 mb-2"}, "Abas permitidas:"),
+                                                React.createElement("div", {className: "flex flex-wrap gap-2"},
+                                                    modConfig.abas.map(function(aba) {
+                                                        const abaKey = modKey + "_" + aba.id;
+                                                        const abaAtiva = abas[abaKey] !== false;
+                                                        
+                                                        return React.createElement("button", {
+                                                            key: abaKey,
+                                                            onClick: function(e) {
+                                                                e.stopPropagation();
+                                                                const newPerms = JSON.parse(JSON.stringify(p.adminPerms || {}));
+                                                                if (!newPerms[cod]) newPerms[cod] = { modulos: {}, abas: {} };
+                                                                if (!newPerms[cod].abas) newPerms[cod].abas = {};
+                                                                newPerms[cod].abas[abaKey] = !abaAtiva;
+                                                                x({...p, adminPerms: newPerms});
+                                                            },
+                                                            className: "px-3 py-1.5 rounded-lg text-sm font-medium transition-all " +
+                                                                (abaAtiva 
+                                                                    ? "bg-green-100 text-green-700 border border-green-300" 
+                                                                    : "bg-gray-100 text-gray-400 border border-gray-200")
+                                                        }, abaAtiva ? "✓ " + aba.label : "✗ " + aba.label);
+                                                    })
                                                 )
                                             )
-                                        ),
-                                        React.createElement("p", {className: "text-sm font-semibold mb-3 text-gray-600"}, "📱 Módulos (clique para alternar):"),
-                                        React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-3 gap-3"},
-                                            [
-                                                {id: "solicitacoes", label: "Solicitações", icon: "📋"},
-                                                {id: "financeiro", label: "Financeiro", icon: "💰"},
-                                                {id: "operacional", label: "Operacional", icon: "⚙️"},
-                                                {id: "disponibilidade", label: "Disponibilidade", icon: "📅"},
-                                                {id: "bi", label: "BI/Relatórios", icon: "📊"},
-                                                {id: "todo", label: "TO-DO", icon: "📝"}
-                                            ].map(function(mod) {
-                                                const isActive = perms[mod.id] === true;
-                                                return React.createElement("button", {
-                                                    key: mod.id,
-                                                    onClick: function() {
-                                                        const newPerms = JSON.parse(JSON.stringify(p.adminPerms || {}));
-                                                        if (!newPerms[cod]) {
-                                                            newPerms[cod] = {
-                                                                solicitacoes: true, financeiro: true, operacional: true, 
-                                                                disponibilidade: true, bi: true, todo: true
-                                                            };
-                                                        }
-                                                        newPerms[cod][mod.id] = !isActive;
-                                                        console.log("Alterado " + mod.id + " para " + cod + ":", newPerms[cod][mod.id]);
-                                                        x({...p, adminPerms: newPerms});
-                                                    },
-                                                    className: "flex items-center gap-2 p-3 rounded-lg border text-left transition-all " +
-                                                        (isActive
-                                                            ? "border-green-300 bg-green-50 text-green-700 hover:bg-green-100"
-                                                            : "border-gray-200 bg-white text-gray-400 hover:bg-gray-50")
-                                                },
-                                                    React.createElement("span", {className: "text-xl"}, mod.icon),
-                                                    React.createElement("span", {className: "font-medium"}, mod.label)
-                                                );
-                                            })
-                                        )
-                                    );
-                                })
-                            )
-                    )
+                                        );
+                                    })
+                                )
+                            );
+                        })
                 ),
                 // TAB SISTEMA
                 p.configTab === "sistema" && React.createElement("div", null,
@@ -11402,7 +11464,16 @@ const hideLoadingScreen = () => {
             className: "bg-white border-b sticky top-0 z-10"
         }, React.createElement("div", {
             className: "max-w-7xl mx-auto px-4 flex gap-1 overflow-x-auto"
-        }, ["dashboard", "search", "ranking", "relatorios"].map(e => React.createElement("button", {
+        }, ["dashboard", "search", "ranking", "relatorios"].filter(function(tabId) {
+            // Admin master tem acesso a tudo
+            if ("admin_master" === l.role) return true;
+            // Verificar permissão da aba
+            const abaKey = "solicitacoes_" + tabId;
+            const abas = l.permissions && l.permissions.abas ? l.permissions.abas : {};
+            // Se não há permissões de abas definidas, mostrar todas
+            if (Object.keys(abas).length === 0) return true;
+            return abas[abaKey] !== false;
+        }).map(e => React.createElement("button", {
             key: e,
             onClick: () => x({
                 ...p,
