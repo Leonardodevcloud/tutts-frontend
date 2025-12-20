@@ -28,6 +28,54 @@ const SISTEMA_MODULOS_CONFIG = [
     }
 ];
 
+// MENSAGENS DE GENTILEZA - Uma será exibida aleatoriamente a cada acesso
+const MENSAGENS_GENTILEZA = [
+    "Pequenos gestos de gentileza fazem grandes diferenças.",
+    "Gentileza é a linguagem que o coração entende.",
+    "Ser gentil é um ato de coragem e de amor.",
+    "Espalhe amor onde quer que vá. O mundo precisa disso.",
+    "A gentileza é o que torna o mundo um lugar melhor.",
+    "Uma palavra amiga pode mudar o dia de alguém.",
+    "Seja a gentileza que você deseja ver no mundo.",
+    "Atitudes gentis não custam nada, mas valem muito.",
+    "A bondade em palavras cria confiança.",
+    "Sorria! Às vezes, é o que o outro precisa.",
+    "A verdadeira gentileza é ajudar sem esperar nada em troca.",
+    "Palavras gentis são como abraços silenciosos.",
+    "Ser gentil é uma escolha diária.",
+    "A gentileza é a chave para abrir corações.",
+    "A verdadeira força está em ser gentil.",
+    "Seja luz na vida de alguém hoje.",
+    "Pequenos gestos, grandes mudanças.",
+    "Gentileza é amor em ação.",
+    "A gratidão é o primeiro passo para a gentileza.",
+    "Ser gentil é um ato de esperança.",
+    "Gentileza gera gentileza, sempre.",
+    "A generosidade é o reflexo de um coração gentil.",
+    "Cada sorriso conta uma história de bondade.",
+    "Compartilhar gentileza é como plantar sementes de paz.",
+    "As melhores pessoas são aquelas que espalham amor.",
+    "Gentileza é o perfume que deixamos pelo caminho.",
+    "Deixe a gentileza ser sua marca registrada.",
+    "A simplicidade dos atos gentis é poderosa.",
+    "Trate os outros com a mesma bondade que você deseja receber.",
+    "A bondade é o tesouro mais precioso de todos."
+];
+
+// Função para obter saudação baseada no horário
+const getSaudacao = () => {
+    const hora = new Date().getHours();
+    if (hora >= 5 && hora < 12) return "Bom dia";
+    if (hora >= 12 && hora < 18) return "Boa tarde";
+    return "Boa noite";
+};
+
+// Função para obter mensagem aleatória
+const getMensagemGentileza = () => {
+    const index = Math.floor(Math.random() * MENSAGENS_GENTILEZA.length);
+    return MENSAGENS_GENTILEZA[index];
+};
+
 fetch(`${API_URL.replace("/api","")}/health`).catch(() => {});
 const hideLoadingScreen = () => {
         const e = document.getElementById("loading-screen");
@@ -677,7 +725,7 @@ const hideLoadingScreen = () => {
             validacao: [],
             loja: [],
             gratuidades: []
-        }), [j, C] = useState([]), [A, S] = useState([]), [k, P] = useState(!1), [T, D] = useState(null), [L, I] = useState([]), [F, $] = useState(!1), [M, O] = useState([]), [q, U] = useState([]), [z, B] = useState([]), [V, J] = useState(null), [Q, H] = useState([]), [G, W] = useState([]), [Z, Y] = useState([]), [K, X] = useState({}), [ee, te] = useState([]), [ae, le] = useState([]), [re, oe] = useState([]), [ce, se] = useState([]), [ne, me] = useState([]), [ie, de] = useState([]), [pe, xe] = useState([]), [ue, ge] = useState(!1), [be, Re] = useState(null), [Ee, he] = useState("solicitacoes"), [fe, Ne] = useState({
+        }), [j, C] = useState([]), [A, S] = useState([]), [k, P] = useState(!1), [T, D] = useState(null), [L, I] = useState([]), [F, $] = useState(!1), [M, O] = useState([]), [q, U] = useState([]), [z, B] = useState([]), [V, J] = useState(null), [Q, H] = useState([]), [G, W] = useState([]), [Z, Y] = useState([]), [K, X] = useState({}), [ee, te] = useState([]), [ae, le] = useState([]), [re, oe] = useState([]), [ce, se] = useState([]), [ne, me] = useState([]), [ie, de] = useState([]), [pe, xe] = useState([]), [ue, ge] = useState(!1), [be, Re] = useState(null), [Ee, he] = useState("home"), [mensagemGentileza, setMensagemGentileza] = useState(() => getMensagemGentileza()), [fe, Ne] = useState({
             titulo: "Acerte os procedimentos e ganhe saque gratuito de R$ 500,00",
             imagens: [null, null, null, null],
             perguntas: [{
@@ -4792,6 +4840,9 @@ const hideLoadingScreen = () => {
             }, socialProfile?.display_name || l.fullName)), React.createElement("div", {
                 className: "flex bg-white/10 rounded-lg p-1"
             }, React.createElement("button", {
+                onClick: () => he("home"),
+                className: "px-4 py-2 rounded-lg text-sm font-semibold transition-all " + ("home" === Ee ? "bg-white text-purple-900" : "text-white hover:bg-white/10")
+            }, "🏠 Início"), React.createElement("button", {
                 onClick: () => he("solicitacoes"),
                 className: "px-4 py-2 rounded-lg text-sm font-semibold transition-all " + ("solicitacoes" === Ee ? "bg-white text-purple-900" : "text-white hover:bg-white/10")
             }, "📋 Solicitações"), React.createElement("button", {
@@ -4853,7 +4904,7 @@ const hideLoadingScreen = () => {
                 className: "flex bg-green-900/50 rounded-lg p-1 ml-3"
             },
                 (!l.permissions || !l.permissions.modulos || l.permissions.modulos.solicitacoes !== false) && React.createElement("button", {
-                    onClick: () => he("solicitacoes"),
+                    onClick: () => he("home"),
                     className: "px-3 py-1.5 rounded-lg text-xs font-semibold text-white hover:bg-white/10"
                 }, "📋 Solicitações"),
                 React.createElement("button", {
@@ -9569,7 +9620,7 @@ const hideLoadingScreen = () => {
                 // Footer
                 React.createElement("div", {className: "p-3 border-t"},
                     React.createElement("button", {
-                        onClick: () => he("solicitacoes"),
+                        onClick: () => he("home"),
                         className: "w-full py-2 bg-gray-100 text-gray-600 rounded-lg font-semibold hover:bg-gray-200 text-sm flex items-center justify-center gap-2"
                     }, "← Voltar")
                 )
@@ -9613,7 +9664,7 @@ const hideLoadingScreen = () => {
                     ),
                     React.createElement("div", {className: "flex items-center gap-3"},
                         React.createElement("button", {
-                            onClick: () => he("solicitacoes"),
+                            onClick: () => he("home"),
                             className: "px-4 py-2 text-gray-600 rounded-lg font-semibold hover:bg-gray-100"
                         }, "← Voltar"),
                         React.createElement("button", {
@@ -9693,25 +9744,15 @@ const hideLoadingScreen = () => {
                                     t.responsaveis && React.createElement("p", null, "👤 ", (() => {
                                         try {
                                             let resp = t.responsaveis;
-                                            // Se for string, tentar parsear
-                                            if (typeof resp === 'string') {
-                                                resp = JSON.parse(resp);
-                                            }
-                                            // Se não for array, retornar vazio
+                                            if (typeof resp === 'string') resp = JSON.parse(resp);
                                             if (!Array.isArray(resp) || resp.length === 0) return null;
-                                            // Mapear para extrair nomes
                                             const nomes = resp.map(r => {
                                                 if (typeof r === 'string') return r;
-                                                if (typeof r === 'object' && r !== null) {
-                                                    return r.nome || r.name || r.full_name || r.fullName || JSON.stringify(r);
-                                                }
-                                                return String(r);
+                                                if (typeof r === 'object' && r !== null) return r.user_name || r.nome || r.name || r.full_name || null;
+                                                return null;
                                             }).filter(Boolean);
                                             return nomes.length > 0 ? nomes.join(", ") : null;
-                                        } catch (e) {
-                                            console.error("Erro ao parsear responsaveis:", e, t.responsaveis);
-                                            return String(t.responsaveis);
-                                        }
+                                        } catch (e) { return null; }
                                     })())
                                 ),
                                 
@@ -10084,7 +10125,7 @@ const hideLoadingScreen = () => {
             ),
             React.createElement("div", {className: "flex items-center gap-2"},
                 React.createElement("button", {
-                    onClick: () => he("solicitacoes"),
+                    onClick: () => he("home"),
                     className: "px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 text-sm"
                 }, "← Voltar"),
                 React.createElement("button", {
@@ -10273,7 +10314,7 @@ const hideLoadingScreen = () => {
                 React.createElement("p", {className: "text-xs text-teal-200"}, socialProfile?.display_name || l.fullName)
             ), React.createElement("div", {className: "flex bg-white/10 rounded-lg p-1"},
                 React.createElement("button", {
-                    onClick: function() { he("solicitacoes"); },
+                    onClick: function() { he("home"); },
                     className: "px-4 py-2 rounded-lg text-sm font-semibold text-white hover:bg-white/10"
                 }, "📋 Solicitações"),
                 "admin_master" === l.role && React.createElement("button", {
@@ -10346,7 +10387,7 @@ const hideLoadingScreen = () => {
                 React.createElement("p", {className: "text-xs text-gray-300"}, socialProfile?.display_name || l.fullName)
             ), React.createElement("div", {className: "flex bg-white/10 rounded-lg p-1"},
                 React.createElement("button", {
-                    onClick: function() { he("solicitacoes"); },
+                    onClick: function() { he("home"); },
                     className: "px-4 py-2 rounded-lg text-sm font-semibold text-white hover:bg-white/10"
                 }, "📋 Solicitações"),
                 React.createElement("button", {
@@ -10844,7 +10885,7 @@ const hideLoadingScreen = () => {
                 onClick: () => _a(!0),
                 className: "px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 text-sm font-semibold"
             }, "🔍 Filtros"), React.createElement("button", {
-                onClick: () => he("solicitacoes"),
+                onClick: () => he("home"),
                 className: "px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 text-sm"
             }, "📋 Voltar"), React.createElement("button", {
                 onClick: () => o(null),
@@ -12174,6 +12215,166 @@ const hideLoadingScreen = () => {
                 className: "text-sm text-gray-400 mt-2"
             }, 'Faça upload de uma planilha na aba "Upload"')))))
         }
+        
+        // ========== PÁGINA HOME - BEM-VINDO ==========
+        if ("home" === Ee && ("admin" === l.role || "admin_master" === l.role || "admin_financeiro" === l.role)) {
+            const primeiroNome = (socialProfile?.display_name || l.fullName || "").split(" ")[0];
+            
+            return React.createElement("div", {
+                className: "min-h-screen bg-gradient-to-br from-purple-50 via-white to-indigo-50"
+            }, i && React.createElement(Toast, i), n && React.createElement(LoadingOverlay, null),
+            
+            // Modal de notificação de tarefas pendentes
+            todoNotifModal && todoPendentesNotif.length > 0 && React.createElement("div", {
+                className: "fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            }, React.createElement("div", {
+                className: "bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+            }, React.createElement("div", {
+                className: "bg-gradient-to-r from-orange-500 to-red-500 p-4 text-white"
+            }, React.createElement("h2", {className: "text-xl font-bold flex items-center gap-2"}, "⚠️ Atenção!"),
+                React.createElement("p", {className: "text-orange-100 text-sm"}, "Você possui tarefas pendentes")
+            ), React.createElement("div", {className: "p-4 max-h-60 overflow-y-auto"},
+                React.createElement("p", {className: "text-gray-600 mb-3"}, "📋 ", todoPendentesNotif.length, " tarefa(s) precisam da sua atenção:"),
+                React.createElement("div", {className: "space-y-2"},
+                    todoPendentesNotif.slice(0, 5).map(t => React.createElement("div", {
+                        key: t.id,
+                        className: "bg-orange-50 border-l-4 border-orange-500 p-3 rounded"
+                    }, React.createElement("p", {className: "font-semibold text-gray-800"}, t.titulo),
+                        t.data_prazo && React.createElement("p", {className: "text-xs text-orange-600"}, "📅 Vence: ", new Date(t.data_prazo).toLocaleDateString("pt-BR"))
+                    ))
+                ),
+                todoPendentesNotif.length > 5 && React.createElement("p", {className: "text-sm text-gray-500 mt-2"}, "... e mais ", todoPendentesNotif.length - 5, " tarefa(s)")
+            ), React.createElement("div", {className: "flex gap-3 p-4 border-t"},
+                React.createElement("button", {
+                    onClick: () => setTodoNotifModal(false),
+                    className: "flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300"
+                }, "Fechar"),
+                React.createElement("button", {
+                    onClick: () => { setTodoNotifModal(false); he("todo"); },
+                    className: "flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
+                }, "📋 Ir para Tarefas")
+            ))),
+            
+            // Header
+            React.createElement("nav", {
+                className: "bg-gradient-to-r from-purple-700 to-indigo-700 shadow-lg"
+            }, React.createElement("div", {
+                className: "max-w-7xl mx-auto px-4 py-4 flex justify-between items-center"
+            }, React.createElement("div", {className: "flex items-center gap-3"},
+                socialProfile?.profile_photo ? React.createElement("img", {
+                    src: socialProfile.profile_photo,
+                    className: "w-12 h-12 rounded-full object-cover border-2 border-white/50"
+                }) : React.createElement("div", {
+                    className: "w-12 h-12 rounded-full bg-purple-500 flex items-center justify-center text-white font-bold text-xl border-2 border-white/50"
+                }, primeiroNome?.charAt(0)?.toUpperCase() || "?"),
+                React.createElement("div", null,
+                    React.createElement("h1", {className: "text-xl font-bold text-white"}, "Central Tutts"),
+                    React.createElement("p", {className: "text-purple-200 text-sm"}, socialProfile?.display_name || l.fullName)
+                )
+            ), React.createElement("div", {className: "flex items-center gap-2"},
+                React.createElement("button", {
+                    onClick: () => o(null),
+                    className: "px-4 py-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all"
+                }, "Sair")
+            ))),
+            
+            // Conteúdo Principal
+            React.createElement("div", {className: "max-w-4xl mx-auto px-4 py-12"},
+                // Saudação
+                React.createElement("div", {className: "text-center mb-12"},
+                    React.createElement("h1", {
+                        className: "text-4xl md:text-5xl font-bold text-gray-800 mb-4"
+                    }, getSaudacao(), ", ", React.createElement("span", {className: "text-purple-600"}, primeiroNome), "!"),
+                    React.createElement("p", {className: "text-xl text-gray-600 mb-2"}, "Seja bem-vindo(a) à Central Tutts"),
+                    React.createElement("div", {className: "mt-8 p-6 bg-white rounded-2xl shadow-lg border-l-4 border-purple-500"},
+                        React.createElement("p", {className: "text-lg text-gray-700 italic"}, "\"", mensagemGentileza, "\""),
+                        React.createElement("p", {className: "text-purple-500 mt-2"}, "💜")
+                    )
+                ),
+                
+                // Botões de Acesso Rápido
+                React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-3 gap-4"},
+                    // Solicitações
+                    React.createElement("button", {
+                        onClick: () => he("home"),
+                        className: "bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 border-2 border-transparent hover:border-purple-300"
+                    }, React.createElement("span", {className: "text-4xl block mb-3"}, "📋"),
+                        React.createElement("p", {className: "font-bold text-gray-800"}, "Solicitações"),
+                        React.createElement("p", {className: "text-sm text-gray-500"}, "Gerencie pedidos")
+                    ),
+                    
+                    // Financeiro
+                    (l.role === "admin_master" || l.role === "admin_financeiro" || (l.role === "admin" && (!l.permissions || !l.permissions.modulos || l.permissions.modulos.financeiro !== false))) &&
+                    React.createElement("button", {
+                        onClick: () => he("financeiro"),
+                        className: "bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 border-2 border-transparent hover:border-green-300"
+                    }, React.createElement("span", {className: "text-4xl block mb-3"}, "💰"),
+                        React.createElement("p", {className: "font-bold text-gray-800"}, "Financeiro"),
+                        React.createElement("p", {className: "text-sm text-gray-500"}, "Saques e valores")
+                    ),
+                    
+                    // Disponibilidade (só admin_master)
+                    l.role === "admin_master" && React.createElement("button", {
+                        onClick: () => he("disponibilidade"),
+                        className: "bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 border-2 border-transparent hover:border-blue-300"
+                    }, React.createElement("span", {className: "text-4xl block mb-3"}, "📅"),
+                        React.createElement("p", {className: "font-bold text-gray-800"}, "Disponibilidade"),
+                        React.createElement("p", {className: "text-sm text-gray-500"}, "Escalas e horários")
+                    ),
+                    
+                    // TO-DO
+                    (l.role === "admin_master" || (l.role === "admin" && (!l.permissions || !l.permissions.modulos || l.permissions.modulos.todo !== false))) &&
+                    React.createElement("button", {
+                        onClick: () => he("todo"),
+                        className: "bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 border-2 border-transparent hover:border-indigo-300"
+                    }, React.createElement("span", {className: "text-4xl block mb-3"}, "📝"),
+                        React.createElement("p", {className: "font-bold text-gray-800"}, "TO-DO"),
+                        React.createElement("p", {className: "text-sm text-gray-500"}, "Suas tarefas"),
+                        todoMeuDia.length > 0 && React.createElement("span", {
+                            className: "inline-block mt-2 px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded-full"
+                        }, todoMeuDia.length, " pendente(s)")
+                    ),
+                    
+                    // BI (só admin_master)
+                    l.role === "admin_master" && React.createElement("button", {
+                        onClick: () => he("bi"),
+                        className: "bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 border-2 border-transparent hover:border-orange-300"
+                    }, React.createElement("span", {className: "text-4xl block mb-3"}, "📊"),
+                        React.createElement("p", {className: "font-bold text-gray-800"}, "BI"),
+                        React.createElement("p", {className: "text-sm text-gray-500"}, "Análises e dados")
+                    ),
+                    
+                    // Social
+                    React.createElement("button", {
+                        onClick: () => he("social"),
+                        className: "bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 border-2 border-transparent hover:border-pink-300"
+                    }, React.createElement("span", {className: "text-4xl block mb-3"}, "💜"),
+                        React.createElement("p", {className: "font-bold text-gray-800"}, "Social"),
+                        React.createElement("p", {className: "text-sm text-gray-500"}, "Comunidade"),
+                        socialUnread > 0 && React.createElement("span", {
+                            className: "inline-block mt-2 px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full"
+                        }, socialUnread, " mensagem(ns)")
+                    ),
+                    
+                    // Operacional
+                    (l.role === "admin_master" || (l.role === "admin" && (!l.permissions || !l.permissions.modulos || l.permissions.modulos.operacional !== false))) &&
+                    React.createElement("button", {
+                        onClick: () => he("operacional"),
+                        className: "bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 border-2 border-transparent hover:border-teal-300"
+                    }, React.createElement("span", {className: "text-4xl block mb-3"}, "⚙️"),
+                        React.createElement("p", {className: "font-bold text-gray-800"}, "Operacional"),
+                        React.createElement("p", {className: "text-sm text-gray-500"}, "Configurações")
+                    )
+                )
+            ),
+            
+            // Footer
+            React.createElement("div", {className: "text-center py-8 text-gray-400 text-sm"},
+                "Central Tutts © ", new Date().getFullYear()
+            )
+            )
+        }
+        
         const rr = "admin_master" === l.role && ("solicitacoes" === Ee || "disponibilidade" === Ee),
             or = "admin" === l.role;
         return React.createElement("div", {
@@ -12233,6 +12434,9 @@ const hideLoadingScreen = () => {
         }, socialProfile?.display_name || l.fullName)), React.createElement("div", {
             className: "flex bg-white/10 rounded-lg p-1"
         }, React.createElement("button", {
+            onClick: () => he("home"),
+            className: "px-4 py-2 rounded-lg text-sm font-semibold transition-all " + ("home" === Ee ? "bg-white text-purple-900" : "text-white hover:bg-white/10")
+        }, "🏠 Início"), React.createElement("button", {
             onClick: () => {
                 he("solicitacoes"), x(e => ({
                     ...e,
@@ -12245,12 +12449,12 @@ const hideLoadingScreen = () => {
             className: "px-4 py-2 rounded-lg text-sm font-semibold transition-all " + ("financeiro" === Ee ? "bg-white text-green-800" : "text-white hover:bg-white/10")
         }, "💰 Financeiro"), React.createElement("button", {
             onClick: () => {
-                he("solicitacoes"), x(e => ({
+                he("disponibilidade"), x(e => ({
                     ...e,
                     adminTab: "disponibilidade"
                 }))
             },
-            className: "px-4 py-2 rounded-lg text-sm font-semibold transition-all " + ("solicitacoes" === Ee && "disponibilidade" === p.adminTab ? "bg-white text-blue-800" : "text-white hover:bg-white/10")
+            className: "px-4 py-2 rounded-lg text-sm font-semibold transition-all " + ("disponibilidade" === Ee ? "bg-white text-blue-800" : "text-white hover:bg-white/10")
         }, "📅 Disponibilidade"), React.createElement("button", {
             onClick: () => {
                 he("bi"), ll(), tl(), al(), dl(), pl()
@@ -12307,7 +12511,7 @@ const hideLoadingScreen = () => {
                         break;
                     }
                 }
-                he("solicitacoes");
+                he("home");
                 x(e => ({...e, adminTab: primeiraAba}));
             },
             className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("solicitacoes" === Ee && "disponibilidade" !== p.adminTab ? "bg-white text-purple-900" : "text-white hover:bg-white/10")
@@ -12339,7 +12543,7 @@ const hideLoadingScreen = () => {
         // Disponibilidade - verificar permissão
         (!l.permissions || !l.permissions.modulos || l.permissions.modulos.disponibilidade !== false) && React.createElement("button", {
             onClick: () => {
-                he("solicitacoes"), x(e => ({
+                he("home"), x(e => ({
                     ...e,
                     adminTab: "disponibilidade"
                 }))
