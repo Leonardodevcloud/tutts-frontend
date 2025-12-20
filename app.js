@@ -5180,7 +5180,48 @@ const hideLoadingScreen = () => {
                 }, er(x)), React.createElement("p", {
                     className: "text-xs opacity-75 mt-2"
                 }, "Baseado em ", n, " aprovações com gratuidade (", er(d), ")"))))
-            })()), "conciliacao" === p.finTab && React.createElement(React.Fragment, null, React.createElement("div", {
+            })()), "conciliacao" === p.finTab && React.createElement(React.Fragment, null, 
+                // Filtros de Conciliação
+                React.createElement("div", {
+                    className: "bg-white rounded-xl shadow p-4 mb-4"
+                }, 
+                    React.createElement("div", {className: "flex flex-wrap items-end gap-4"},
+                        // Filtro por Data de Solicitação
+                        React.createElement("div", null,
+                            React.createElement("label", {className: "block text-xs font-semibold text-gray-600 mb-1"}, "📅 Data Solicitação"),
+                            React.createElement("input", {
+                                type: "date",
+                                value: p.concDataSolicitacao || "",
+                                onChange: e => x({...p, concDataSolicitacao: e.target.value}),
+                                className: "px-3 py-2 border rounded-lg text-sm"
+                            })
+                        ),
+                        // Filtro por Data de Realização
+                        React.createElement("div", null,
+                            React.createElement("label", {className: "block text-xs font-semibold text-gray-600 mb-1"}, "✅ Data Realização"),
+                            React.createElement("input", {
+                                type: "date",
+                                value: p.concDataRealizacao || "",
+                                onChange: e => x({...p, concDataRealizacao: e.target.value}),
+                                className: "px-3 py-2 border rounded-lg text-sm"
+                            })
+                        ),
+                        // Filtro de Gratuidade
+                        React.createElement("div", {className: "flex items-center gap-2"},
+                            React.createElement("button", {
+                                onClick: () => x({...p, concApenasGratuidade: !p.concApenasGratuidade}),
+                                className: "px-4 py-2 rounded-lg text-sm font-semibold " + 
+                                    (p.concApenasGratuidade ? "bg-blue-600 text-white" : "bg-gray-100 hover:bg-gray-200")
+                            }, "🎁 Apenas Gratuidades")
+                        ),
+                        // Botão Limpar Filtros
+                        (p.concDataSolicitacao || p.concDataRealizacao || p.concApenasGratuidade) && React.createElement("button", {
+                            onClick: () => x({...p, concDataSolicitacao: "", concDataRealizacao: "", concApenasGratuidade: false}),
+                            className: "px-4 py-2 bg-red-100 text-red-700 rounded-lg text-sm font-semibold hover:bg-red-200"
+                        }, "✕ Limpar Filtros")
+                    )
+                ),
+                React.createElement("div", {
                 className: "grid md:grid-cols-5 gap-4 mb-6"
             }, React.createElement("div", {
                 className: "bg-white rounded-xl shadow p-4"
@@ -5222,7 +5263,28 @@ const hideLoadingScreen = () => {
                 className: "px-4 py-3 text-center"
             }, "Gratuidade"), React.createElement("th", {
                 className: "px-4 py-3 text-center"
-            }, "OMIE"))), React.createElement("tbody", null, q.filter(e => e.status?.includes("aprovado")).map(e => {
+            }, "OMIE"))), React.createElement("tbody", null, q.filter(e => {
+                // Filtro base: apenas aprovados
+                if (!e.status?.includes("aprovado")) return false;
+                
+                // Filtro por data de solicitação
+                if (p.concDataSolicitacao) {
+                    const dataSolic = new Date(e.created_at).toISOString().split('T')[0];
+                    if (dataSolic !== p.concDataSolicitacao) return false;
+                }
+                
+                // Filtro por data de realização
+                if (p.concDataRealizacao) {
+                    if (!e.approved_at) return false;
+                    const dataReal = new Date(e.approved_at).toISOString().split('T')[0];
+                    if (dataReal !== p.concDataRealizacao) return false;
+                }
+                
+                // Filtro apenas gratuidades
+                if (p.concApenasGratuidade && !e.has_gratuity) return false;
+                
+                return true;
+            }).map(e => {
                 const t = new Date(e.created_at),
                     a = t.toLocaleDateString("pt-BR"),
                     l = t.toLocaleTimeString("pt-BR", {
