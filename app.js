@@ -4635,11 +4635,19 @@ const hideLoadingScreen = () => {
                 className: "max-w-7xl mx-auto px-4 py-4 flex justify-between items-center"
             }, React.createElement("div", {
                 className: "flex items-center gap-4"
-            }, React.createElement("div", null, React.createElement("h1", {
+            }, 
+            // Foto de perfil
+            socialProfile?.profile_photo ? React.createElement("img", {
+                src: socialProfile.profile_photo,
+                className: "w-10 h-10 rounded-full object-cover border-2 border-white/50"
+            }) : React.createElement("div", {
+                className: "w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold border-2 border-white/50"
+            }, l.fullName?.charAt(0)?.toUpperCase() || "?"),
+            React.createElement("div", null, React.createElement("h1", {
                 className: "text-xl font-bold text-white"
             }, "👑 Admin Master"), React.createElement("p", {
                 className: "text-xs text-indigo-200"
-            }, l.fullName)), React.createElement("div", {
+            }, socialProfile?.display_name || l.fullName)), React.createElement("div", {
                 className: "flex bg-white/10 rounded-lg p-1"
             }, React.createElement("button", {
                 onClick: () => he("solicitacoes"),
@@ -9851,9 +9859,9 @@ const hideLoadingScreen = () => {
                         className: "w-full px-4 py-3 border border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 h-24 resize-none"
                     }),
                     React.createElement("button", {
-                        onClick: () => {
+                        onClick: async () => {
                             if (p.socialMsgText?.trim()) {
-                                sendSocialMessage(socialModalUser.cod_profissional, "message", p.socialMsgText);
+                                await sendSocialMessage(socialModalUser.cod_profissional, "message", p.socialMsgText);
                                 x({...p, socialMsgText: ""});
                             }
                         },
