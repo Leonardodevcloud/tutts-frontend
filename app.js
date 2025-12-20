@@ -9708,36 +9708,103 @@ const hideLoadingScreen = () => {
                 p.configTab === "permissoes" && React.createElement("div", null,
                     React.createElement("div", {className: "bg-blue-50 border border-blue-200 rounded-xl p-6 mb-6"},
                         React.createElement("h2", {className: "text-lg font-bold text-blue-800 mb-2"}, "🔐 Sistema de Permissões"),
-                        React.createElement("p", {className: "text-blue-600"}, "Configure quais módulos cada administrador pode acessar. Clique nos módulos para ativar/desativar o acesso."),
-                        React.createElement("button", {
-                            onClick: async function() {
-                                s(true);
-                                try {
-                                    const res = await fetch(API_URL + "/admin-permissions");
-                                    if (res.ok) {
-                                        const adminsPerms = await res.json();
-                                        const permsObj = {};
-                                        adminsPerms.forEach(function(adm) {
-                                            const mods = adm.allowed_modules || [];
-                                            permsObj[adm.cod_profissional] = {
-                                                solicitacoes: mods.length === 0 || mods.includes("solicitacoes"),
-                                                financeiro: mods.length === 0 || mods.includes("financeiro"),
-                                                operacional: mods.length === 0 || mods.includes("operacional"),
-                                                disponibilidade: mods.length === 0 || mods.includes("disponibilidade"),
-                                                bi: mods.length === 0 || mods.includes("bi"),
-                                                todo: mods.length === 0 || mods.includes("todo")
-                                            };
-                                        });
-                                        x({...p, adminPerms: permsObj});
-                                        ja("✅ Permissões carregadas!", "success");
+                        React.createElement("p", {className: "text-blue-600 mb-3"}, "Configure quais módulos cada administrador pode acessar. Clique nos módulos para ativar/desativar o acesso."),
+                        React.createElement("div", {className: "flex gap-3"},
+                            React.createElement("button", {
+                                onClick: async function() {
+                                    s(true);
+                                    try {
+                                        const res = await fetch(API_URL + "/admin-permissions");
+                                        if (res.ok) {
+                                            const adminsPerms = await res.json();
+                                            const permsObj = {};
+                                            adminsPerms.forEach(function(adm) {
+                                                const mods = Array.isArray(adm.allowed_modules) ? adm.allowed_modules : [];
+                                                // Usar cod_profissional como chave
+                                                permsObj[adm.cod_profissional] = {
+                                                    solicitacoes: mods.length === 0 || mods.includes("solicitacoes"),
+                                                    financeiro: mods.length === 0 || mods.includes("financeiro"),
+                                                    operacional: mods.length === 0 || mods.includes("operacional"),
+                                                    disponibilidade: mods.length === 0 || mods.includes("disponibilidade"),
+                                                    bi: mods.length === 0 || mods.includes("bi"),
+                                                    todo: mods.length === 0 || mods.includes("todo")
+                                                };
+                                                console.log("Carregado permissões para:", adm.cod_profissional, permsObj[adm.cod_profissional]);
+                                            });
+                                            x({...p, adminPerms: permsObj});
+                                            ja("✅ Permissões carregadas!", "success");
+                                        }
+                                    } catch (err) {
+                                        console.error("Erro:", err);
+                                        ja("❌ Erro ao carregar permissões", "error");
                                     }
-                                } catch (err) {
-                                    ja("❌ Erro ao carregar permissões", "error");
-                                }
-                                s(false);
-                            },
-                            className: "mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700"
-                        }, "🔄 Carregar Permissões do Servidor")
+                                    s(false);
+                                },
+                                className: "px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700"
+                            }, "🔄 Carregar do Servidor"),
+                            React.createElement("button", {
+                                onClick: async function() {
+                                    s(true);
+                                    const adminsList = A.filter(function(u) { return u.role === "admin" || u.role === "admin_financeiro"; });
+                                    let savedCount = 0;
+                                    let errors = [];
+                                    
+                                    for (let i = 0; i < adminsList.length; i++) {
+                                        const admin = adminsList[i];
+                                        const cod = admin.codProfissional;
+                                        const perms = p.adminPerms && p.adminPerms[cod] ? p.adminPerms[cod] : null;
+                                        
+                                        if (!perms) {
+                                            console.log("Sem permissões para:", cod);
+                                            continue;
+                                        }
+                                        
+                                        // Converter para array de módulos permitidos
+                                        const allowedModules = [];
+                                        if (perms.solicitacoes === true) allowedModules.push("solicitacoes");
+                                        if (perms.financeiro === true) allowedModules.push("financeiro");
+                                        if (perms.operacional === true) allowedModules.push("operacional");
+                                        if (perms.disponibilidade === true) allowedModules.push("disponibilidade");
+                                        if (perms.bi === true) allowedModules.push("bi");
+                                        if (perms.todo === true) allowedModules.push("todo");
+                                        
+                                        console.log("Salvando para " + cod + ":", allowedModules);
+                                        
+                                        try {
+                                            const res = await fetch(API_URL + "/admin-permissions/" + encodeURIComponent(cod), {
+                                                method: "PATCH",
+                                                headers: {"Content-Type": "application/json"},
+                                                body: JSON.stringify({
+                                                    allowed_modules: allowedModules,
+                                                    allowed_tabs: {}
+                                                })
+                                            });
+                                            if (res.ok) {
+                                                savedCount++;
+                                                console.log("✅ Salvo com sucesso para:", cod);
+                                            } else {
+                                                const errData = await res.text();
+                                                errors.push(cod + ": " + errData);
+                                                console.error("Erro para " + cod + ":", errData);
+                                            }
+                                        } catch (err) {
+                                            errors.push(cod + ": " + err.message);
+                                            console.error("Erro ao salvar para " + cod + ":", err);
+                                        }
+                                    }
+                                    
+                                    if (savedCount > 0) {
+                                        ja("✅ Permissões salvas para " + savedCount + " admin(s)!", "success");
+                                    } else if (errors.length > 0) {
+                                        ja("❌ Erro ao salvar: " + errors[0], "error");
+                                    } else {
+                                        ja("⚠️ Nenhuma permissão para salvar. Modifique algum módulo primeiro.", "warning");
+                                    }
+                                    s(false);
+                                },
+                                className: "px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-semibold hover:bg-purple-700"
+                            }, "💾 Salvar Permissões")
+                        )
                     ),
                     React.createElement("div", {className: "bg-white rounded-xl shadow-sm border p-6"},
                         React.createElement("h3", {className: "font-bold mb-4"}, "👑 Administradores"),
@@ -9748,11 +9815,12 @@ const hideLoadingScreen = () => {
                             )
                             : React.createElement("div", {className: "space-y-6"},
                                 A.filter(function(u) { return u.role === "admin" || u.role === "admin_financeiro"; }).map(function(admin) {
-                                    const perms = p.adminPerms && p.adminPerms[admin.codProfissional] ? p.adminPerms[admin.codProfissional] : {
+                                    const cod = admin.codProfissional;
+                                    const perms = p.adminPerms && p.adminPerms[cod] ? p.adminPerms[cod] : {
                                         solicitacoes: true, financeiro: true, operacional: true, disponibilidade: true, bi: true, todo: true
                                     };
                                     return React.createElement("div", {
-                                        key: admin.codProfissional,
+                                        key: cod,
                                         className: "border rounded-xl p-5 bg-gray-50"
                                     },
                                         React.createElement("div", {className: "flex items-center justify-between mb-4"},
@@ -9764,7 +9832,7 @@ const hideLoadingScreen = () => {
                                                 React.createElement("div", null,
                                                     React.createElement("p", {className: "font-bold text-lg"}, admin.fullName),
                                                     React.createElement("p", {className: "text-sm text-gray-500"},
-                                                        "COD: ", admin.codProfissional, " • ",
+                                                        "COD: ", cod, " • ",
                                                         admin.role === "admin" ? "👑 Admin" : "💰 Admin Financeiro"
                                                     )
                                                 )
@@ -9784,14 +9852,15 @@ const hideLoadingScreen = () => {
                                                 return React.createElement("button", {
                                                     key: mod.id,
                                                     onClick: function() {
-                                                        const newPerms = {...(p.adminPerms || {})};
-                                                        const currentPerms = newPerms[admin.codProfissional] || {
-                                                            solicitacoes: true, financeiro: true, operacional: true, disponibilidade: true, bi: true, todo: true
-                                                        };
-                                                        newPerms[admin.codProfissional] = {
-                                                            ...currentPerms,
-                                                            [mod.id]: !isActive
-                                                        };
+                                                        const newPerms = JSON.parse(JSON.stringify(p.adminPerms || {}));
+                                                        if (!newPerms[cod]) {
+                                                            newPerms[cod] = {
+                                                                solicitacoes: true, financeiro: true, operacional: true, 
+                                                                disponibilidade: true, bi: true, todo: true
+                                                            };
+                                                        }
+                                                        newPerms[cod][mod.id] = !isActive;
+                                                        console.log("Alterado " + mod.id + " para " + cod + ":", newPerms[cod][mod.id]);
                                                         x({...p, adminPerms: newPerms});
                                                     },
                                                     className: "flex items-center gap-2 p-3 rounded-lg border text-left transition-all " +
@@ -9806,45 +9875,7 @@ const hideLoadingScreen = () => {
                                         )
                                     );
                                 })
-                            ),
-                        React.createElement("div", {className: "flex justify-end mt-6"},
-                            React.createElement("button", {
-                                onClick: async function() {
-                                    s(true);
-                                    const perms = p.adminPerms || {};
-                                    let savedCount = 0;
-                                    for (const cod in perms) {
-                                        try {
-                                            // Converter objeto de permissões para array de módulos permitidos
-                                            const allowedModules = [];
-                                            if (perms[cod].solicitacoes) allowedModules.push("solicitacoes");
-                                            if (perms[cod].financeiro) allowedModules.push("financeiro");
-                                            if (perms[cod].operacional) allowedModules.push("operacional");
-                                            if (perms[cod].disponibilidade) allowedModules.push("disponibilidade");
-                                            if (perms[cod].bi) allowedModules.push("bi");
-                                            if (perms[cod].todo) allowedModules.push("todo");
-                                            
-                                            console.log("Salvando para " + cod + ":", allowedModules);
-                                            
-                                            const res = await fetch(API_URL + "/admin-permissions/" + cod, {
-                                                method: "PATCH",
-                                                headers: {"Content-Type": "application/json"},
-                                                body: JSON.stringify({
-                                                    allowed_modules: allowedModules,
-                                                    allowed_tabs: {}
-                                                })
-                                            });
-                                            if (res.ok) savedCount++;
-                                        } catch (err) {
-                                            console.error("Erro ao salvar para " + cod + ":", err);
-                                        }
-                                    }
-                                    ja("✅ Permissões salvas para " + savedCount + " admin(s)!", "success");
-                                    s(false);
-                                },
-                                className: "px-6 py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition-colors"
-                            }, "💾 Salvar Permissões")
-                        )
+                            )
                     )
                 ),
                 // TAB SISTEMA
