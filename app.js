@@ -12328,8 +12328,17 @@ const hideLoadingScreen = () => {
                     React.createElement("button", {
                         onClick: () => he("operacional"),
                         className: "bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 border-2 border-transparent hover:border-teal-300"
-                    }, React.createElement("span", {className: "text-4xl block mb-3"}, "⚙️"),
+                    }, React.createElement("span", {className: "text-4xl block mb-3"}, "🔧"),
                         React.createElement("p", {className: "font-bold text-gray-800"}, "Operacional"),
+                        React.createElement("p", {className: "text-sm text-gray-500"}, "Gestão operacional")
+                    ),
+                    
+                    // Config (só admin_master)
+                    l.role === "admin_master" && React.createElement("button", {
+                        onClick: () => he("config"),
+                        className: "bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 border-2 border-transparent hover:border-gray-400"
+                    }, React.createElement("span", {className: "text-4xl block mb-3"}, "⚙️"),
+                        React.createElement("p", {className: "font-bold text-gray-800"}, "Config"),
                         React.createElement("p", {className: "text-sm text-gray-500"}, "Configurações")
                     )
                 )
