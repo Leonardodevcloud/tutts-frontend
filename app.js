@@ -4477,7 +4477,33 @@ const hideLoadingScreen = () => {
                 className: "flex items-center gap-3"
             }, React.createElement("h1", {
                 className: "text-xl font-bold text-white"
-            }, "💰 Painel Financeiro"), React.createElement("div", {
+            }, "💰 Painel Financeiro"), 
+            // Botões de navegação para admin comum
+            "admin" === l.role && React.createElement("div", {
+                className: "flex bg-green-900/50 rounded-lg p-1 ml-3"
+            },
+                (!l.permissions || !l.permissions.modulos || l.permissions.modulos.solicitacoes !== false) && React.createElement("button", {
+                    onClick: () => he("solicitacoes"),
+                    className: "px-3 py-1.5 rounded-lg text-xs font-semibold text-white hover:bg-white/10"
+                }, "📋 Solicitações"),
+                React.createElement("button", {
+                    onClick: () => he("financeiro"),
+                    className: "px-3 py-1.5 rounded-lg text-xs font-semibold bg-white text-green-800"
+                }, "💰 Financeiro"),
+                (!l.permissions || !l.permissions.modulos || l.permissions.modulos.operacional !== false) && React.createElement("button", {
+                    onClick: () => he("operacional"),
+                    className: "px-3 py-1.5 rounded-lg text-xs font-semibold text-white hover:bg-white/10"
+                }, "⚙️ Operacional"),
+                (!l.permissions || !l.permissions.modulos || l.permissions.modulos.bi !== false) && React.createElement("button", {
+                    onClick: () => { he("bi"); ll(); tl(); al(); dl(); pl(); },
+                    className: "px-3 py-1.5 rounded-lg text-xs font-semibold text-white hover:bg-white/10"
+                }, "📊 BI"),
+                (!l.permissions || !l.permissions.modulos || l.permissions.modulos.todo !== false) && React.createElement("button", {
+                    onClick: () => he("todo"),
+                    className: "px-3 py-1.5 rounded-lg text-xs font-semibold text-white hover:bg-white/10"
+                }, "📋 TO-DO")
+            ),
+            React.createElement("div", {
                 className: "flex items-center gap-2 bg-green-900/50 px-3 py-1 rounded-full"
             }, React.createElement("span", {
                 className: "w-2 h-2 rounded-full " + (f ? "bg-yellow-400 animate-pulse" : "bg-green-400 animate-pulse")
@@ -11454,27 +11480,50 @@ const hideLoadingScreen = () => {
             className: "flex bg-purple-800/50 rounded-lg p-1"
         }, 
         // Solicitações - verificar permissão (se não tem permissions definido, mostra tudo)
-        (!l.permissions || !l.permissions.modulos || l.permissions.modulos.solicitacoes === true) && React.createElement("button", {
+        (!l.permissions || !l.permissions.modulos || l.permissions.modulos.solicitacoes !== false) && React.createElement("button", {
             onClick: () => {
-                he("solicitacoes"), x(e => ({
-                    ...e,
-                    adminTab: "dashboard"
-                }))
+                // Determinar primeira aba permitida
+                const todasAbas = ["dashboard", "search", "ranking", "relatorios"];
+                const abas = l.permissions && l.permissions.abas ? l.permissions.abas : {};
+                let primeiraAba = "dashboard";
+                for (let i = 0; i < todasAbas.length; i++) {
+                    const abaKey = "solicitacoes_" + todasAbas[i];
+                    if (abas[abaKey] !== false) {
+                        primeiraAba = todasAbas[i];
+                        break;
+                    }
+                }
+                he("solicitacoes");
+                x(e => ({...e, adminTab: primeiraAba}));
             },
             className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("solicitacoes" === Ee && "disponibilidade" !== p.adminTab ? "bg-white text-purple-900" : "text-white hover:bg-white/10")
         }, "📋 Solicitações"),
         // Financeiro - verificar permissão
-        (!l.permissions || !l.permissions.modulos || l.permissions.modulos.financeiro === true) && React.createElement("button", {
-            onClick: () => he("financeiro"),
+        (!l.permissions || !l.permissions.modulos || l.permissions.modulos.financeiro !== false) && React.createElement("button", {
+            onClick: () => {
+                // Determinar primeira aba permitida
+                const todasAbas = ["solicitacoes", "validacao", "conciliacao", "resumo", "gratuidades", "restritos", "indicacoes", "promo-novatos", "loja", "relatorios", "horarios", "avisos", "backup"];
+                const abas = l.permissions && l.permissions.abas ? l.permissions.abas : {};
+                let primeiraAba = "solicitacoes";
+                for (let i = 0; i < todasAbas.length; i++) {
+                    const abaKey = "financeiro_" + todasAbas[i].replace("-", "");
+                    if (abas[abaKey] !== false) {
+                        primeiraAba = todasAbas[i];
+                        break;
+                    }
+                }
+                he("financeiro");
+                x(e => ({...e, finTab: primeiraAba}));
+            },
             className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("financeiro" === Ee ? "bg-white text-green-800" : "text-white hover:bg-white/10")
         }, "💰 Financeiro"),
         // Operacional - verificar permissão
-        (!l.permissions || !l.permissions.modulos || l.permissions.modulos.operacional === true) && React.createElement("button", {
+        (!l.permissions || !l.permissions.modulos || l.permissions.modulos.operacional !== false) && React.createElement("button", {
             onClick: () => he("operacional"),
             className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("operacional" === Ee ? "bg-white text-teal-800" : "text-white hover:bg-white/10")
         }, "⚙️ Operacional"),
         // Disponibilidade - verificar permissão
-        (!l.permissions || !l.permissions.modulos || l.permissions.modulos.disponibilidade === true) && React.createElement("button", {
+        (!l.permissions || !l.permissions.modulos || l.permissions.modulos.disponibilidade !== false) && React.createElement("button", {
             onClick: () => {
                 he("solicitacoes"), x(e => ({
                     ...e,
@@ -11484,12 +11533,12 @@ const hideLoadingScreen = () => {
             className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("solicitacoes" === Ee && "disponibilidade" === p.adminTab ? "bg-white text-blue-800" : "text-white hover:bg-white/10")
         }, "📅 Disponibilidade"),
         // BI - verificar permissão
-        (!l.permissions || !l.permissions.modulos || l.permissions.modulos.bi === true) && React.createElement("button", {
+        (!l.permissions || !l.permissions.modulos || l.permissions.modulos.bi !== false) && React.createElement("button", {
             onClick: () => { he("bi"); ll(); tl(); al(); dl(); pl(); },
             className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("bi" === Ee ? "bg-white text-orange-800" : "text-white hover:bg-white/10")
         }, "📊 BI"),
         // TO-DO - verificar permissão
-        (!l.permissions || !l.permissions.modulos || l.permissions.modulos.todo === true) && React.createElement("button", {
+        (!l.permissions || !l.permissions.modulos || l.permissions.modulos.todo !== false) && React.createElement("button", {
             onClick: () => he("todo"),
             className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("todo" === Ee ? "bg-white text-indigo-800" : "text-white hover:bg-white/10")
         }, "📋 TO-DO")
