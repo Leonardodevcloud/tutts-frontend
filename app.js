@@ -5221,27 +5221,63 @@ const hideLoadingScreen = () => {
                         }, "✕ Limpar Filtros")
                     )
                 ),
+                // Cards dinâmicos baseados nos filtros
+                (() => {
+                    // Aplicar os mesmos filtros para calcular os cards
+                    const dadosFiltrados = q.filter(e => {
+                        if (!e.status?.includes("aprovado")) return false;
+                        if (p.concDataSolicitacao) {
+                            const dataSolic = new Date(e.created_at).toISOString().split('T')[0];
+                            if (dataSolic !== p.concDataSolicitacao) return false;
+                        }
+                        if (p.concDataRealizacao) {
+                            if (!e.approved_at) return false;
+                            const dataReal = new Date(e.approved_at).toISOString().split('T')[0];
+                            if (dataReal !== p.concDataRealizacao) return false;
+                        }
+                        if (p.concApenasGratuidade && !e.has_gratuity) return false;
+                        return true;
+                    });
+                    
+                    const totalAprovados = dadosFiltrados.length;
+                    const totalConciliados = dadosFiltrados.filter(e => e.conciliacao_omie).length;
+                    const pendenteConciliacao = totalAprovados - totalConciliados;
+                    const totalGratuidades = dadosFiltrados.filter(e => e.has_gratuity).length;
+                    
+                    return React.createElement("div", {
+                        className: "grid grid-cols-2 md:grid-cols-4 gap-4 mb-6"
+                    }, 
+                        React.createElement("div", {
+                            className: "bg-white rounded-xl shadow p-4"
+                        }, React.createElement("p", {
+                            className: "text-sm text-gray-600"
+                        }, "Aprovados"), React.createElement("p", {
+                            className: "text-2xl font-bold text-green-600"
+                        }, totalAprovados)),
+                        React.createElement("div", {
+                            className: "bg-white rounded-xl shadow p-4"
+                        }, React.createElement("p", {
+                            className: "text-sm text-gray-600"
+                        }, "Conciliados"), React.createElement("p", {
+                            className: "text-2xl font-bold text-purple-600"
+                        }, totalConciliados)),
+                        React.createElement("div", {
+                            className: "bg-white rounded-xl shadow p-4"
+                        }, React.createElement("p", {
+                            className: "text-sm text-gray-600"
+                        }, "Pend. Conc."), React.createElement("p", {
+                            className: "text-2xl font-bold text-yellow-600"
+                        }, pendenteConciliacao)),
+                        React.createElement("div", {
+                            className: "bg-white rounded-xl shadow p-4"
+                        }, React.createElement("p", {
+                            className: "text-sm text-gray-600"
+                        }, "🎁 Gratuidades"), React.createElement("p", {
+                            className: "text-2xl font-bold text-blue-600"
+                        }, totalGratuidades))
+                    );
+                })(),
                 React.createElement("div", {
-                className: "grid md:grid-cols-5 gap-4 mb-6"
-            }, React.createElement("div", {
-                className: "bg-white rounded-xl shadow p-4"
-            }, React.createElement("p", {
-                className: "text-sm text-gray-600"
-            }, "Aprovados"), React.createElement("p", {
-                className: "text-2xl font-bold text-green-600"
-            }, K.total_aprovados || 0)), React.createElement("div", {
-                className: "bg-white rounded-xl shadow p-4"
-            }, React.createElement("p", {
-                className: "text-sm text-gray-600"
-            }, "Conciliados"), React.createElement("p", {
-                className: "text-2xl font-bold text-blue-600"
-            }, K.total_conciliado || 0)), React.createElement("div", {
-                className: "bg-white rounded-xl shadow p-4"
-            }, React.createElement("p", {
-                className: "text-sm text-gray-600"
-            }, "Pend. Conc."), React.createElement("p", {
-                className: "text-2xl font-bold text-yellow-600"
-            }, K.pendente_conciliacao || 0))), React.createElement("div", {
                 className: "bg-white rounded-xl shadow overflow-hidden"
             }, React.createElement("table", {
                 className: "w-full text-sm"
