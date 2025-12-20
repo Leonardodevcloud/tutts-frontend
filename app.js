@@ -12566,12 +12566,7 @@ const hideLoadingScreen = () => {
         (!l.permissions || !l.permissions.modulos || l.permissions.modulos.todo !== false) && React.createElement("button", {
             onClick: () => he("todo"),
             className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("todo" === Ee ? "bg-white text-indigo-800" : "text-white hover:bg-white/10")
-        }, "📋 TO-DO"),
-        // Social
-        React.createElement("button", {
-            onClick: () => he("social"),
-            className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("social" === Ee ? "bg-white text-purple-800" : "text-white hover:bg-white/10")
-        }, "💜 Social")
+        }, "📋 TO-DO")
         ), React.createElement("div", {
             className: "flex items-center gap-2 bg-purple-800/50 px-3 py-1 rounded-full"
         }, React.createElement("span", {
