@@ -744,6 +744,12 @@ const hideLoadingScreen = () => {
             km_max: 15,
             prazo_minutos: 45
         }]), [wa, _a] = useState(!1), [todoGrupos, setTodoGrupos] = useState([]), [todoTarefas, setTodoTarefas] = useState([]), [todoGrupoAtivo, setTodoGrupoAtivo] = useState(null), [todoMetricas, setTodoMetricas] = useState(null), [todoTab, setTodoTab] = useState("tarefas"), [todoFiltroStatus, setTodoFiltroStatus] = useState("todas"), [todoModal, setTodoModal] = useState(null), [todoLoading, setTodoLoading] = useState(false), [todoAdmins, setTodoAdmins] = useState([]),
+        // Novos estados para TODO melhorado
+        [todoMeuDia, setTodoMeuDia] = useState([]),
+        [todoViewMode, setTodoViewMode] = useState("meudia"), // "meudia" ou "grupo"
+        [todoFiltroCard, setTodoFiltroCard] = useState(null), // "pendentes", "atrasadas", "concluidas"
+        [todoNotifModal, setTodoNotifModal] = useState(false),
+        [todoPendentesNotif, setTodoPendentesNotif] = useState([]),
         // Estados do módulo Social
         [socialProfile, setSocialProfile] = useState(null),
         [socialUsers, setSocialUsers] = useState([]),
@@ -882,6 +888,12 @@ const hideLoadingScreen = () => {
                 loadSocialProfile(l.codProfissional);
                 updateOnlineStatus(true);
                 loadSocialMessages();
+                
+                // Verificar tarefas pendentes (para admins)
+                const canAccessTodoEff = "admin_master" === l?.role || ("admin" === l?.role && (!l?.permissions || !l?.permissions?.modulos || l?.permissions?.modulos?.todo === true));
+                if (canAccessTodoEff) {
+                    setTimeout(() => checkTodoPendentes(), 2000); // Aguarda 2s após login
+                }
                 
                 // Atualizar status online periodicamente
                 const statusInterval = setInterval(() => {
@@ -1165,19 +1177,83 @@ const hideLoadingScreen = () => {
                 return []
             }
         };
+        
+        // Função para carregar "Meu Dia" - tarefas do dia ou vencidas atribuídas ao usuário
+        const loadTodoMeuDia = async () => {
+            try {
+                const res = await fetch(`${API_URL}/todo/tarefas?user_cod=${l.codProfissional}&role=${l.role}`);
+                const todas = await res.json();
+                const hoje = new Date();
+                hoje.setHours(0, 0, 0, 0);
+                
+                // Filtrar tarefas atribuídas ao usuário (ou criadas por ele) que são do dia ou vencidas
+                const meuDia = todas.filter(t => {
+                    const isMinhaAtribuicao = t.atribuido_para === l.codProfissional || 
+                                              t.atribuido_para === l.fullName ||
+                                              t.criado_por === l.fullName;
+                    if (!isMinhaAtribuicao) return false;
+                    if (t.status === "concluida") return false; // Não mostrar concluídas no meu dia
+                    
+                    if (t.data_vencimento) {
+                        const dataVenc = new Date(t.data_vencimento);
+                        dataVenc.setHours(0, 0, 0, 0);
+                        return dataVenc <= hoje; // Hoje ou vencida
+                    }
+                    return true; // Sem data = aparece no meu dia
+                });
+                
+                setTodoMeuDia(meuDia);
+                return meuDia;
+            } catch (err) {
+                console.error("Erro ao carregar Meu Dia:", err);
+                return [];
+            }
+        };
+        
+        // Função para verificar tarefas pendentes e mostrar notificação
+        const checkTodoPendentes = async () => {
+            try {
+                const res = await fetch(`${API_URL}/todo/tarefas?user_cod=${l.codProfissional}&role=${l.role}`);
+                const todas = await res.json();
+                const hoje = new Date();
+                hoje.setHours(0, 0, 0, 0);
+                
+                const pendentes = todas.filter(t => {
+                    const isMinhaAtribuicao = t.atribuido_para === l.codProfissional || 
+                                              t.atribuido_para === l.fullName ||
+                                              t.criado_por === l.fullName;
+                    if (!isMinhaAtribuicao) return false;
+                    if (t.status === "concluida") return false;
+                    
+                    if (t.data_vencimento) {
+                        const dataVenc = new Date(t.data_vencimento);
+                        dataVenc.setHours(0, 0, 0, 0);
+                        return dataVenc <= hoje;
+                    }
+                    return true;
+                });
+                
+                if (pendentes.length > 0) {
+                    setTodoPendentesNotif(pendentes);
+                    setTodoNotifModal(true);
+                }
+            } catch (err) {
+                console.error("Erro ao verificar pendentes:", err);
+            }
+        };
+        
         useEffect(() => {
             const canAccessTodoEff = "admin_master" === l?.role || ("admin" === l?.role && (!l?.permissions || !l?.permissions?.modulos || l?.permissions?.modulos?.todo === true));
             if (!(l && canAccessTodoEff && "todo" === Ee)) return;
             const init = async () => {
                 setTodoLoading(true);
-                const [grupos, admins] = await Promise.all([loadTodoGrupos(), loadTodoAdmins()]);
+                const [grupos, admins, meuDia] = await Promise.all([loadTodoGrupos(), loadTodoAdmins(), loadTodoMeuDia()]);
                 setTodoGrupos(grupos);
                 setTodoAdmins(admins);
-                if (grupos.length > 0) {
-                    setTodoGrupoAtivo(grupos[0]);
-                    const tarefas = await loadTodoTarefas(grupos[0].id);
-                    setTodoTarefas(tarefas)
-                }
+                setTodoMeuDia(meuDia);
+                // Iniciar com "Meu Dia" como padrão
+                setTodoViewMode("meudia");
+                setTodoGrupoAtivo(null);
                 if ("admin_master" === l.role) {
                     const metricas = await loadTodoMetricas();
                     setTodoMetricas(metricas)
@@ -9295,6 +9371,27 @@ const hideLoadingScreen = () => {
         // Verificar permissão para TO-DO (admin comum)
         const canAccessTodo = "admin_master" === l.role || ("admin" === l.role && (!l.permissions || !l.permissions.modulos || l.permissions.modulos.todo === true));
         if (canAccessTodo && "todo" === Ee) {
+            // Calcular métricas das tarefas atuais
+            const tarefasAtuais = todoViewMode === "meudia" ? todoMeuDia : todoTarefas;
+            const hoje = new Date();
+            hoje.setHours(0, 0, 0, 0);
+            
+            const pendentes = tarefasAtuais.filter(t => t.status === "pendente" || t.status === "em_andamento");
+            const atrasadas = tarefasAtuais.filter(t => {
+                if (t.status === "concluida") return false;
+                if (!t.data_vencimento) return false;
+                const dataVenc = new Date(t.data_vencimento);
+                dataVenc.setHours(0, 0, 0, 0);
+                return dataVenc < hoje;
+            });
+            const concluidas = tarefasAtuais.filter(t => t.status === "concluida");
+            
+            // Filtrar tarefas baseado no card selecionado
+            let tarefasFiltradas = tarefasAtuais;
+            if (todoFiltroCard === "pendentes") tarefasFiltradas = pendentes;
+            else if (todoFiltroCard === "atrasadas") tarefasFiltradas = atrasadas;
+            else if (todoFiltroCard === "concluidas") tarefasFiltradas = concluidas;
+            
             return React.createElement("div", {
                 className: "min-h-screen bg-gray-100 flex"
             }, i && React.createElement(Toast, i), todoLoading && React.createElement("div", {
@@ -9303,509 +9400,506 @@ const hideLoadingScreen = () => {
                 className: "bg-white rounded-xl p-6 text-center"
             }, React.createElement("div", {
                 className: "animate-spin w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full mx-auto mb-3"
-            }), React.createElement("p", null, "Carregando TO-DO..."))), React.createElement("div", {
-                className: "w-72 bg-white shadow-lg flex flex-col"
+            }), React.createElement("p", null, "Carregando TO-DO..."))),
+            
+            // Modal de notificação de pendentes
+            todoNotifModal && React.createElement("div", {
+                className: "fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
             }, React.createElement("div", {
-                className: "bg-gradient-to-r from-purple-600 to-indigo-600 p-4 text-white"
-            }, React.createElement("div", {className: "flex items-center gap-3"},
-                // Foto de perfil
-                socialProfile?.profile_photo ? React.createElement("img", {
-                    src: socialProfile.profile_photo,
-                    className: "w-10 h-10 rounded-full object-cover border-2 border-white/50"
-                }) : React.createElement("div", {
-                    className: "w-10 h-10 rounded-full bg-purple-500 flex items-center justify-center text-white font-bold border-2 border-white/50"
-                }, l.fullName?.charAt(0)?.toUpperCase() || "?"),
-                React.createElement("div", null,
-                    React.createElement("h1", {
-                        className: "text-xl font-bold flex items-center gap-2"
-                    }, "📋 TO-DO Tutts"), 
-                    React.createElement("p", {
-                        className: "text-purple-200 text-sm"
-                    }, socialProfile?.display_name || l.fullName)
+                className: "bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+            }, React.createElement("div", {
+                className: "bg-gradient-to-r from-orange-500 to-red-500 p-4 text-white"
+            }, React.createElement("h2", {className: "text-xl font-bold flex items-center gap-2"}, "⚠️ Atenção!"),
+                React.createElement("p", {className: "text-orange-100 text-sm"}, "Você possui tarefas pendentes")
+            ), React.createElement("div", {className: "p-4 max-h-60 overflow-y-auto"},
+                React.createElement("p", {className: "text-gray-600 mb-3"}, "📋 ", todoPendentesNotif.length, " tarefa(s) precisam da sua atenção:"),
+                React.createElement("div", {className: "space-y-2"},
+                    todoPendentesNotif.slice(0, 5).map(t => React.createElement("div", {
+                        key: t.id,
+                        className: "bg-orange-50 border-l-4 border-orange-500 p-3 rounded"
+                    }, React.createElement("p", {className: "font-semibold text-gray-800"}, t.titulo),
+                        t.data_vencimento && React.createElement("p", {className: "text-xs text-orange-600"}, "📅 Vence: ", new Date(t.data_vencimento).toLocaleDateString("pt-BR"))
+                    ))
+                ),
+                todoPendentesNotif.length > 5 && React.createElement("p", {className: "text-sm text-gray-500 mt-2"}, "... e mais ", todoPendentesNotif.length - 5, " tarefa(s)")
+            ), React.createElement("div", {className: "flex gap-3 p-4 border-t"},
+                React.createElement("button", {
+                    onClick: () => setTodoNotifModal(false),
+                    className: "flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300"
+                }, "Fechar"),
+                React.createElement("button", {
+                    onClick: () => { setTodoNotifModal(false); he("todo"); },
+                    className: "flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
+                }, "📋 Ir para Tarefas")
+            ))),
+            
+            // Sidebar Esquerda
+            React.createElement("div", {
+                className: "w-64 bg-white shadow-lg flex flex-col"
+            }, 
+                // Header
+                React.createElement("div", {
+                    className: "bg-gradient-to-r from-purple-600 to-indigo-600 p-4 text-white"
+                }, React.createElement("div", {className: "flex items-center gap-3"},
+                    socialProfile?.profile_photo ? React.createElement("img", {
+                        src: socialProfile.profile_photo,
+                        className: "w-10 h-10 rounded-full object-cover border-2 border-white/50"
+                    }) : React.createElement("div", {
+                        className: "w-10 h-10 rounded-full bg-purple-500 flex items-center justify-center text-white font-bold border-2 border-white/50"
+                    }, l.fullName?.charAt(0)?.toUpperCase() || "?"),
+                    React.createElement("div", null,
+                        React.createElement("h1", {className: "text-lg font-bold"}, "📋 TO-DO"),
+                        React.createElement("p", {className: "text-purple-200 text-xs"}, socialProfile?.display_name || l.fullName)
+                    )
+                )),
+                
+                // Cards de Métricas/Filtros
+                React.createElement("div", {className: "p-3 space-y-2"},
+                    React.createElement("p", {className: "text-xs font-semibold text-gray-500 uppercase mb-2"}, "Filtros"),
+                    React.createElement("button", {
+                        onClick: () => setTodoFiltroCard(todoFiltroCard === "pendentes" ? null : "pendentes"),
+                        className: "w-full p-3 rounded-lg flex items-center justify-between transition-all " + 
+                            (todoFiltroCard === "pendentes" ? "bg-yellow-100 ring-2 ring-yellow-500" : "bg-yellow-50 hover:bg-yellow-100")
+                    }, React.createElement("div", {className: "flex items-center gap-2"},
+                        React.createElement("span", {className: "text-xl"}, "⏳"),
+                        React.createElement("span", {className: "font-semibold text-yellow-800"}, "Pendentes")
+                    ), React.createElement("span", {className: "text-xl font-bold text-yellow-600"}, pendentes.length)),
+                    
+                    React.createElement("button", {
+                        onClick: () => setTodoFiltroCard(todoFiltroCard === "atrasadas" ? null : "atrasadas"),
+                        className: "w-full p-3 rounded-lg flex items-center justify-between transition-all " + 
+                            (todoFiltroCard === "atrasadas" ? "bg-red-100 ring-2 ring-red-500" : "bg-red-50 hover:bg-red-100")
+                    }, React.createElement("div", {className: "flex items-center gap-2"},
+                        React.createElement("span", {className: "text-xl"}, "🔥"),
+                        React.createElement("span", {className: "font-semibold text-red-800"}, "Atrasadas")
+                    ), React.createElement("span", {className: "text-xl font-bold text-red-600"}, atrasadas.length)),
+                    
+                    React.createElement("button", {
+                        onClick: () => setTodoFiltroCard(todoFiltroCard === "concluidas" ? null : "concluidas"),
+                        className: "w-full p-3 rounded-lg flex items-center justify-between transition-all " + 
+                            (todoFiltroCard === "concluidas" ? "bg-green-100 ring-2 ring-green-500" : "bg-green-50 hover:bg-green-100")
+                    }, React.createElement("div", {className: "flex items-center gap-2"},
+                        React.createElement("span", {className: "text-xl"}, "✅"),
+                        React.createElement("span", {className: "font-semibold text-green-800"}, "Concluídas")
+                    ), React.createElement("span", {className: "text-xl font-bold text-green-600"}, concluidas.length)),
+                    
+                    todoFiltroCard && React.createElement("button", {
+                        onClick: () => setTodoFiltroCard(null),
+                        className: "w-full py-2 text-sm text-gray-500 hover:text-gray-700"
+                    }, "✕ Limpar filtro")
+                ),
+                
+                // Separador
+                React.createElement("div", {className: "border-t mx-3"}),
+                
+                // Listas
+                React.createElement("div", {className: "flex-1 overflow-y-auto p-3"},
+                    React.createElement("p", {className: "text-xs font-semibold text-gray-500 uppercase mb-2"}, "Listas"),
+                    
+                    // Meu Dia
+                    React.createElement("button", {
+                        onClick: async () => {
+                            setTodoViewMode("meudia");
+                            setTodoGrupoAtivo(null);
+                            setTodoFiltroCard(null);
+                            setTodoLoading(true);
+                            await loadTodoMeuDia();
+                            setTodoLoading(false);
+                        },
+                        className: "w-full text-left px-3 py-2 rounded-lg mb-1 flex items-center gap-2 transition-all " + 
+                            (todoViewMode === "meudia" ? "bg-purple-100 text-purple-700 ring-2 ring-purple-500" : "hover:bg-gray-100")
+                    }, React.createElement("span", {className: "text-lg"}, "☀️"), 
+                        React.createElement("span", {className: "flex-1"}, "Meu Dia"),
+                        React.createElement("span", {className: "text-xs bg-purple-200 text-purple-700 px-2 py-0.5 rounded-full"}, todoMeuDia.length)
+                    ),
+                    
+                    React.createElement("p", {className: "text-xs font-semibold text-gray-400 uppercase mt-4 mb-2"}, "Grupos"),
+                    
+                    todoGrupos.map(g => React.createElement("button", {
+                        key: g.id,
+                        onClick: async () => {
+                            setTodoViewMode("grupo");
+                            setTodoGrupoAtivo(g);
+                            setTodoFiltroCard(null);
+                            setTodoLoading(true);
+                            const tarefas = await loadTodoTarefas(g.id);
+                            setTodoTarefas(tarefas);
+                            setTodoLoading(false);
+                        },
+                        className: "w-full text-left px-3 py-2 rounded-lg mb-1 flex items-center gap-2 transition-all " + 
+                            (todoViewMode === "grupo" && todoGrupoAtivo?.id === g.id ? "bg-purple-100 text-purple-700" : "hover:bg-gray-100")
+                    }, React.createElement("span", null, g.icone || "📋"), 
+                        React.createElement("span", {className: "flex-1 truncate"}, g.nome),
+                        g.tipo === "pessoal" && React.createElement("span", {className: "text-xs bg-yellow-100 text-yellow-700 px-1 rounded"}, "🔒")
+                    )),
+                    
+                    React.createElement("button", {
+                        onClick: () => setTodoModal({tipo: "novoGrupo"}),
+                        className: "w-full text-left px-3 py-2 rounded-lg text-gray-500 hover:bg-gray-100 flex items-center gap-2"
+                    }, React.createElement("span", null, "➕"), "Novo Grupo")
+                ),
+                
+                // Footer
+                React.createElement("div", {className: "p-3 border-t"},
+                    React.createElement("button", {
+                        onClick: () => he("solicitacoes"),
+                        className: "w-full py-2 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 text-sm"
+                    }, "← Voltar")
                 )
-            )), React.createElement("div", {
-                className: "flex border-b"
-            }, React.createElement("button", {
-                onClick: () => setTodoTab("tarefas"),
-                className: "flex-1 py-3 text-sm font-semibold " + (todoTab === "tarefas" ? "text-purple-600 border-b-2 border-purple-600" : "text-gray-500")
-            }, "📝 Tarefas"), "admin_master" === l.role && React.createElement("button", {
-                onClick: () => setTodoTab("metricas"),
-                className: "flex-1 py-3 text-sm font-semibold " + (todoTab === "metricas" ? "text-purple-600 border-b-2 border-purple-600" : "text-gray-500")
-            }, "📊 Métricas")), React.createElement("div", {
-                className: "flex-1 overflow-y-auto p-3"
-            }, React.createElement("div", {
-                className: "flex justify-between items-center mb-3"
-            }, React.createElement("span", {
-                className: "text-xs font-semibold text-gray-500 uppercase"
-            }, "Grupos"), React.createElement("button", {
-                onClick: () => setTodoModal({
-                    tipo: "novoGrupo"
-                }),
-                className: "text-purple-600 hover:bg-purple-50 p-1 rounded"
-            }, "➕")), todoGrupos.map(g => React.createElement("button", {
-                key: g.id,
-                onClick: async () => {
-                    setTodoGrupoAtivo(g);
-                    setTodoLoading(true);
-                    const tarefas = await loadTodoTarefas(g.id, todoFiltroStatus);
-                    setTodoTarefas(tarefas);
-                    setTodoLoading(false)
-                },
-                className: "w-full text-left px-3 py-2 rounded-lg mb-1 flex items-center gap-2 transition-all " + (todoGrupoAtivo?.id === g.id ? "bg-purple-100 text-purple-700" : "hover:bg-gray-100")
-            }, React.createElement("span", null, g.icone || "📋"), React.createElement("span", {
-                className: "flex-1 truncate"
-            }, g.nome), g.tipo === "pessoal" && React.createElement("span", {
-                className: "text-xs bg-yellow-100 text-yellow-700 px-1 rounded"
-            }, "Pessoal")))), React.createElement("div", {
-                className: "p-3 border-t"
-            }, React.createElement("button", {
-                onClick: () => he("solicitacoes"),
-                className: "w-full py-2 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200"
-            }, "← Voltar ao Painel"))), React.createElement("div", {
-                className: "flex-1 p-6 overflow-y-auto"
-            }, todoTab === "tarefas" && React.createElement(React.Fragment, null, React.createElement("div", {
-                className: "flex justify-between items-center mb-6"
-            }, React.createElement("div", null, React.createElement("h2", {
-                className: "text-2xl font-bold text-gray-800"
-            }, todoGrupoAtivo?.icone, " ", todoGrupoAtivo?.nome || "Selecione um Grupo"), React.createElement("p", {
-                className: "text-gray-500"
-            }, todoTarefas.length, " tarefa(s)")), React.createElement("div", {
-                className: "flex gap-3"
-            }, React.createElement("select", {
-                value: todoFiltroStatus,
-                onChange: async (e) => {
-                    setTodoFiltroStatus(e.target.value);
-                    if (todoGrupoAtivo) {
-                        setTodoLoading(true);
-                        const tarefas = await loadTodoTarefas(todoGrupoAtivo.id, e.target.value);
-                        setTodoTarefas(tarefas);
-                        setTodoLoading(false)
-                    }
-                },
-                className: "px-3 py-2 border rounded-lg bg-white"
-            }, React.createElement("option", {
-                value: "todas"
-            }, "Todas"), React.createElement("option", {
-                value: "pendente"
-            }, "Pendentes"), React.createElement("option", {
-                value: "em_andamento"
-            }, "Em Andamento"), React.createElement("option", {
-                value: "concluida"
-            }, "Concluídas")), React.createElement("button", {
-                onClick: () => setTodoModal({
-                    tipo: "novaTarefa"
-                }),
-                className: "px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 flex items-center gap-2",
-                disabled: !todoGrupoAtivo
-            }, "➕ Nova Tarefa"))), React.createElement("div", {
-                className: "space-y-3"
-            }, todoTarefas.length === 0 ? React.createElement("div", {
-                className: "bg-white rounded-xl shadow p-8 text-center"
-            }, React.createElement("div", {
-                className: "text-6xl mb-4"
-            }, "📭"), React.createElement("p", {
-                className: "text-gray-500"
-            }, "Nenhuma tarefa encontrada"), React.createElement("button", {
-                onClick: () => setTodoModal({
-                    tipo: "novaTarefa"
-                }),
-                className: "mt-4 px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold",
-                disabled: !todoGrupoAtivo
-            }, "Criar primeira tarefa")) : todoTarefas.map(t => React.createElement("div", {
-                key: t.id,
-                className: "bg-white rounded-xl shadow-sm hover:shadow-md transition-all p-4 border-l-4 " + (t.status === "concluida" ? "border-green-500 bg-green-50/30" : t.prioridade === "alta" || t.prioridade === "urgente" ? "border-red-500" : t.prioridade === "baixa" ? "border-gray-300" : "border-yellow-500")
-            }, React.createElement("div", {
-                className: "flex items-start gap-3"
-            }, React.createElement("button", {
-                onClick: async () => {
-                    const novoStatus = t.status === "concluida" ? "pendente" : "concluida";
-                    await fetch(`${API_URL}/todo/tarefas/${t.id}`, {
-                        method: "PUT",
-                        headers: {
-                            "Content-Type": "application/json"
-                        },
-                        body: JSON.stringify({
-                            status: novoStatus,
-                            user_cod: l.codProfissional,
-                            user_name: l.fullName
-                        })
-                    });
-                    const tarefas = await loadTodoTarefas(todoGrupoAtivo.id, todoFiltroStatus);
-                    setTodoTarefas(tarefas);
-                    ja(novoStatus === "concluida" ? "✅ Tarefa concluída!" : "Tarefa reaberta", "success")
-                },
-                className: "mt-1 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all " + (t.status === "concluida" ? "bg-green-500 border-green-500 text-white" : "border-gray-300 hover:border-purple-500")
-            }, t.status === "concluida" && "✓"), React.createElement("div", {
-                className: "flex-1"
-            }, React.createElement("div", {
-                className: "flex items-center gap-2 mb-1"
-            }, React.createElement("h3", {
-                className: "font-semibold text-gray-800 " + (t.status === "concluida" ? "line-through text-gray-500" : "")
-            }, t.titulo), t.tipo === "pessoal" && React.createElement("span", {
-                className: "text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded"
-            }, "Pessoal"), t.recorrente && React.createElement("span", {
-                className: "text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded"
-            }, "🔄")), t.descricao && React.createElement("p", {
-                className: "text-sm text-gray-600 mb-2"
-            }, t.descricao.substring(0, 100)), React.createElement("div", {
-                className: "flex flex-wrap items-center gap-3 text-xs text-gray-500"
-            }, t.data_prazo && React.createElement("span", {
-                className: "flex items-center gap-1 " + (new Date(t.data_prazo) < new Date() && t.status !== "concluida" ? "text-red-600 font-semibold" : "")
-            }, "📅 ", new Date(t.data_prazo).toLocaleDateString("pt-BR")), t.responsaveis?.length > 0 && React.createElement("span", {
-                className: "flex items-center gap-1"
-            }, "👤 ", t.responsaveis.slice(0, 2).map(r => r?.user_name?.split(" ")[0]).filter(Boolean).join(", ")), parseInt(t.qtd_comentarios) > 0 && React.createElement("span", {
-                className: "flex items-center gap-1"
-            }, "💬 ", t.qtd_comentarios), React.createElement("span", {
-                className: "px-2 py-0.5 rounded " + (t.prioridade === "alta" || t.prioridade === "urgente" ? "bg-red-100 text-red-700" : t.prioridade === "baixa" ? "bg-gray-100 text-gray-600" : "bg-yellow-100 text-yellow-700")
-            }, t.prioridade === "alta" || t.prioridade === "urgente" ? "🔴 Alta" : t.prioridade === "baixa" ? "⚪ Baixa" : "🟡 Média"))), React.createElement("div", {
-                className: "flex gap-1"
-            }, React.createElement("button", {
-                onClick: () => setTodoModal({
-                    tipo: "editarTarefa",
-                    tarefa: t
-                }),
-                className: "p-2 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded"
-            }, "✏️"), React.createElement("button", {
-                onClick: async () => {
-                    if (confirm("Excluir esta tarefa?")) {
-                        await fetch(`${API_URL}/todo/tarefas/${t.id}`, {
-                            method: "DELETE"
-                        });
-                        const tarefas = await loadTodoTarefas(todoGrupoAtivo.id, todoFiltroStatus);
-                        setTodoTarefas(tarefas);
-                        ja("🗑️ Tarefa excluída", "success")
-                    }
-                },
-                className: "p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded"
-            }, "🗑️"))))))), todoTab === "metricas" && "admin_master" === l.role && todoMetricas && React.createElement(React.Fragment, null, React.createElement("h2", {
-                className: "text-2xl font-bold text-gray-800 mb-6"
-            }, "📊 Métricas de Produtividade"), React.createElement("div", {
-                className: "grid grid-cols-4 gap-4 mb-6"
-            }, React.createElement("div", {
-                className: "bg-white rounded-xl shadow p-4"
-            }, React.createElement("p", {
-                className: "text-gray-500 text-sm"
-            }, "Total de Tarefas"), React.createElement("p", {
-                className: "text-3xl font-bold text-gray-800"
-            }, todoMetricas.totais?.total || 0)), React.createElement("div", {
-                className: "bg-white rounded-xl shadow p-4"
-            }, React.createElement("p", {
-                className: "text-gray-500 text-sm"
-            }, "Concluídas"), React.createElement("p", {
-                className: "text-3xl font-bold text-green-600"
-            }, todoMetricas.totais?.concluidas || 0)), React.createElement("div", {
-                className: "bg-white rounded-xl shadow p-4"
-            }, React.createElement("p", {
-                className: "text-gray-500 text-sm"
-            }, "No Prazo"), React.createElement("p", {
-                className: "text-3xl font-bold text-blue-600"
-            }, todoMetricas.totais?.no_prazo || 0)), React.createElement("div", {
-                className: "bg-white rounded-xl shadow p-4"
-            }, React.createElement("p", {
-                className: "text-gray-500 text-sm"
-            }, "Vencidas"), React.createElement("p", {
-                className: "text-3xl font-bold text-red-600"
-            }, todoMetricas.totais?.vencidas || 0))), React.createElement("div", {
-                className: "grid grid-cols-2 gap-6"
-            }, React.createElement("div", {
-                className: "bg-white rounded-xl shadow p-6"
-            }, React.createElement("h3", {
-                className: "font-semibold mb-4"
-            }, "🏆 Ranking de Conclusões"), React.createElement("div", {
-                className: "space-y-3"
-            }, todoMetricas.porResponsavel?.slice(0, 10).map((u, i) => React.createElement("div", {
-                key: u.user_cod || i,
-                className: "flex items-center gap-3 p-2 rounded-lg " + (i < 3 ? "bg-yellow-50" : "")
-            }, React.createElement("span", {
-                className: "text-xl"
-            }, i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : i + 1), React.createElement("div", {
-                className: "flex-1"
-            }, React.createElement("p", {
-                className: "font-semibold"
-            }, u.user_name || "—"), React.createElement("p", {
-                className: "text-xs text-gray-500"
-            }, u.total_concluidas, " concluídas")), React.createElement("div", {
-                className: "text-right"
-            }, React.createElement("p", {
-                className: "text-lg font-bold text-green-600"
-            }, u.total_concluidas > 0 ? Math.round((u.no_prazo / u.total_concluidas) * 100) : 0, "%")))))), React.createElement("div", {
-                className: "bg-white rounded-xl shadow p-6"
-            }, React.createElement("h3", {
-                className: "font-semibold mb-4"
-            }, "📁 Por Grupo"), React.createElement("div", {
-                className: "space-y-3"
-            }, todoMetricas.porGrupo?.map(g => React.createElement("div", {
-                key: g.id,
-                className: "flex items-center gap-3 p-2"
-            }, React.createElement("span", {
-                className: "text-xl"
-            }, g.icone || "📋"), React.createElement("div", {
-                className: "flex-1"
-            }, React.createElement("p", {
-                className: "font-semibold"
-            }, g.nome), React.createElement("div", {
-                className: "w-full bg-gray-200 rounded-full h-2 mt-1"
-            }, React.createElement("div", {
-                className: "bg-green-500 h-2 rounded-full",
-                style: {
-                    width: `${g.total>0?(g.concluidas/g.total)*100:0}%`
-                }
-            }))), React.createElement("div", {
-                className: "text-right text-sm"
-            }, React.createElement("span", {
-                className: "text-green-600 font-semibold"
-            }, g.concluidas), React.createElement("span", {
-                className: "text-gray-400"
-            }, "/", g.total))))))))), todoModal && React.createElement("div", {
-                className: "fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-            }, todoModal.tipo === "novoGrupo" && React.createElement("div", {
-                className: "bg-white rounded-2xl shadow-2xl max-w-md w-full"
-            }, React.createElement("div", {
-                className: "bg-gradient-to-r from-purple-600 to-indigo-600 p-4 rounded-t-2xl text-white"
-            }, React.createElement("h2", {
-                className: "text-xl font-bold"
-            }, "📁 Novo Grupo")), React.createElement("div", {
-                className: "p-6 space-y-4"
-            }, React.createElement("div", null, React.createElement("label", {
-                className: "block text-sm font-semibold mb-1"
-            }, "Nome do Grupo *"), React.createElement("input", {
-                type: "text",
-                value: todoModal.nome || "",
-                onChange: e => setTodoModal({
-                    ...todoModal,
-                    nome: e.target.value
-                }),
-                className: "w-full px-3 py-2 border rounded-lg",
-                placeholder: "Ex: TO-DO Monitoramento"
-            })), React.createElement("div", {
-                className: "grid grid-cols-2 gap-4"
-            }, React.createElement("div", null, React.createElement("label", {
-                className: "block text-sm font-semibold mb-1"
-            }, "Ícone"), React.createElement("select", {
-                value: todoModal.icone || "📋",
-                onChange: e => setTodoModal({
-                    ...todoModal,
-                    icone: e.target.value
-                }),
-                className: "w-full px-3 py-2 border rounded-lg bg-white"
-            }, ["📋", "📊", "🎯", "🚀", "💼", "📁", "⭐", "🔔", "📌", "✅", "🛠️", "💡", "🔥", "📈", "🎨", "🏆", "⚡", "🔒"].map(ic => React.createElement("option", {
-                key: ic,
-                value: ic
-            }, ic)))), React.createElement("div", null, React.createElement("label", {
-                className: "block text-sm font-semibold mb-1"
-            }, "Tipo"), React.createElement("select", {
-                value: todoModal.tipoGrupo || "compartilhado",
-                onChange: e => setTodoModal({
-                    ...todoModal,
-                    tipoGrupo: e.target.value
-                }),
-                className: "w-full px-3 py-2 border rounded-lg bg-white"
-            }, React.createElement("option", {
-                value: "compartilhado"
-            }, "👥 Compartilhado"), React.createElement("option", {
-                value: "pessoal"
-            }, "🔒 Pessoal")))), React.createElement("div", {
-                className: "flex gap-3 pt-4"
-            }, React.createElement("button", {
-                onClick: () => setTodoModal(null),
-                className: "flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold"
-            }, "Cancelar"), React.createElement("button", {
-                onClick: async () => {
-                    if (!todoModal.nome?.trim()) {
-                        ja("Informe o nome do grupo", "error");
-                        return
-                    }
-                    await fetch(`${API_URL}/todo/grupos`, {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json"
-                        },
-                        body: JSON.stringify({
-                            nome: todoModal.nome,
-                            icone: todoModal.icone || "📋",
-                            tipo: todoModal.tipoGrupo || "compartilhado",
-                            criado_por: l.codProfissional,
-                            criado_por_nome: l.fullName
-                        })
-                    });
-                    const grupos = await loadTodoGrupos();
-                    setTodoGrupos(grupos);
-                    setTodoModal(null);
-                    ja("✅ Grupo criado!", "success")
-                },
-                className: "flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
-            }, "Criar Grupo")))), (todoModal.tipo === "novaTarefa" || todoModal.tipo === "editarTarefa") && React.createElement("div", {
-                className: "bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
-            }, React.createElement("div", {
-                className: "bg-gradient-to-r from-purple-600 to-indigo-600 p-4 rounded-t-2xl text-white sticky top-0"
-            }, React.createElement("h2", {
-                className: "text-xl font-bold"
-            }, todoModal.tipo === "novaTarefa" ? "📝 Nova Tarefa" : "✏️ Editar Tarefa")), React.createElement("div", {
-                className: "p-6 space-y-4"
-            }, React.createElement("div", null, React.createElement("label", {
-                className: "block text-sm font-semibold mb-1"
-            }, "Título *"), React.createElement("input", {
-                type: "text",
-                value: todoModal.titulo || todoModal.tarefa?.titulo || "",
-                onChange: e => setTodoModal({
-                    ...todoModal,
-                    titulo: e.target.value
-                }),
-                className: "w-full px-3 py-2 border rounded-lg",
-                placeholder: "O que precisa ser feito?"
-            })), React.createElement("div", null, React.createElement("label", {
-                className: "block text-sm font-semibold mb-1"
-            }, "Descrição"), React.createElement("textarea", {
-                value: todoModal.descricao || todoModal.tarefa?.descricao || "",
-                onChange: e => setTodoModal({
-                    ...todoModal,
-                    descricao: e.target.value
-                }),
-                className: "w-full px-3 py-2 border rounded-lg h-24",
-                placeholder: "Detalhes da tarefa..."
-            })), React.createElement("div", {
-                className: "grid grid-cols-3 gap-4"
-            }, React.createElement("div", null, React.createElement("label", {
-                className: "block text-sm font-semibold mb-1"
-            }, "Prioridade"), React.createElement("select", {
-                value: todoModal.prioridade || todoModal.tarefa?.prioridade || "media",
-                onChange: e => setTodoModal({
-                    ...todoModal,
-                    prioridade: e.target.value
-                }),
-                className: "w-full px-3 py-2 border rounded-lg bg-white"
-            }, React.createElement("option", {
-                value: "baixa"
-            }, "⚪ Baixa"), React.createElement("option", {
-                value: "media"
-            }, "🟡 Média"), React.createElement("option", {
-                value: "alta"
-            }, "🔴 Alta"), React.createElement("option", {
-                value: "urgente"
-            }, "🔥 Urgente"))), React.createElement("div", null, React.createElement("label", {
-                className: "block text-sm font-semibold mb-1"
-            }, "Prazo"), React.createElement("input", {
-                type: "datetime-local",
-                value: todoModal.data_prazo || todoModal.tarefa?.data_prazo?.substring(0, 16) || "",
-                onChange: e => setTodoModal({
-                    ...todoModal,
-                    data_prazo: e.target.value
-                }),
-                className: "w-full px-3 py-2 border rounded-lg"
-            })), React.createElement("div", null, React.createElement("label", {
-                className: "block text-sm font-semibold mb-1"
-            }, "Recorrência"), React.createElement("select", {
-                value: todoModal.tipo_recorrencia || todoModal.tarefa?.tipo_recorrencia || "",
-                onChange: e => setTodoModal({
-                    ...todoModal,
-                    tipo_recorrencia: e.target.value,
-                    recorrente: !!e.target.value
-                }),
-                className: "w-full px-3 py-2 border rounded-lg bg-white"
-            }, React.createElement("option", {
-                value: ""
-            }, "Sem recorrência"), React.createElement("option", {
-                value: "diario"
-            }, "📆 Diário"), React.createElement("option", {
-                value: "semanal"
-            }, "📅 Semanal"), React.createElement("option", {
-                value: "mensal"
-            }, "🗓️ Mensal")))), React.createElement("div", null, React.createElement("label", {
-                className: "block text-sm font-semibold mb-1"
-            }, "Tipo"), React.createElement("div", {
-                className: "flex gap-3"
-            }, React.createElement("button", {
-                type: "button",
-                onClick: () => setTodoModal({
-                    ...todoModal,
-                    tipoTarefa: "compartilhado"
-                }),
-                className: "flex-1 py-2 rounded-lg border-2 font-semibold transition-all " + ((todoModal.tipoTarefa || todoModal.tarefa?.tipo || "compartilhado") === "compartilhado" ? "border-purple-600 bg-purple-50 text-purple-700" : "border-gray-200")
-            }, "👥 Compartilhado"), React.createElement("button", {
-                type: "button",
-                onClick: () => setTodoModal({
-                    ...todoModal,
-                    tipoTarefa: "pessoal"
-                }),
-                className: "flex-1 py-2 rounded-lg border-2 font-semibold transition-all " + ((todoModal.tipoTarefa || todoModal.tarefa?.tipo) === "pessoal" ? "border-yellow-500 bg-yellow-50 text-yellow-700" : "border-gray-200")
-            }, "🔒 Pessoal"))), todoAdmins.length > 0 && React.createElement("div", null, React.createElement("label", {
-                className: "block text-sm font-semibold mb-1"
-            }, "Responsáveis"), React.createElement("div", {
-                className: "flex flex-wrap gap-2"
-            }, todoAdmins.map(adm => React.createElement("button", {
-                key: adm.cod,
-                type: "button",
-                onClick: () => {
-                    const atual = todoModal.responsaveis || todoModal.tarefa?.responsaveis || [];
-                    const existe = atual.find(r => r.user_cod === adm.cod);
-                    if (existe) {
-                        setTodoModal({
-                            ...todoModal,
-                            responsaveis: atual.filter(r => r.user_cod !== adm.cod)
-                        })
-                    } else {
-                        setTodoModal({
-                            ...todoModal,
-                            responsaveis: [...atual, {
-                                user_cod: adm.cod,
-                                user_name: adm.nome
-                            }]
-                        })
-                    }
-                },
-                className: "px-3 py-1 rounded-full text-sm font-semibold transition-all " + ((todoModal.responsaveis || todoModal.tarefa?.responsaveis || []).find(r => r.user_cod === adm.cod) ? "bg-purple-600 text-white" : "bg-gray-100 hover:bg-gray-200")
-            }, adm.nome?.split(" ")[0])))), React.createElement("div", {
-                className: "flex gap-3 pt-4"
-            }, React.createElement("button", {
-                onClick: () => setTodoModal(null),
-                className: "flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold"
-            }, "Cancelar"), React.createElement("button", {
-                onClick: async () => {
-                    const titulo = todoModal.titulo || todoModal.tarefa?.titulo;
-                    if (!titulo?.trim()) {
-                        ja("Informe o título", "error");
-                        return
-                    }
-                    const payload = {
-                        grupo_id: todoGrupoAtivo.id,
-                        titulo,
-                        descricao: todoModal.descricao || todoModal.tarefa?.descricao,
-                        prioridade: todoModal.prioridade || todoModal.tarefa?.prioridade || "media",
-                        data_prazo: todoModal.data_prazo || todoModal.tarefa?.data_prazo || null,
-                        recorrente: todoModal.recorrente || !!todoModal.tipo_recorrencia,
-                        tipo_recorrencia: todoModal.tipo_recorrencia || todoModal.tarefa?.tipo_recorrencia || null,
-                        tipo: todoModal.tipoTarefa || todoModal.tarefa?.tipo || "compartilhado",
-                        responsaveis: todoModal.responsaveis || todoModal.tarefa?.responsaveis || [],
-                        criado_por: l.codProfissional,
-                        criado_por_nome: l.fullName,
-                        user_cod: l.codProfissional,
-                        user_name: l.fullName
-                    };
-                    if (todoModal.tipo === "editarTarefa") {
-                        await fetch(`${API_URL}/todo/tarefas/${todoModal.tarefa.id}`, {
-                            method: "PUT",
-                            headers: {
-                                "Content-Type": "application/json"
+            ),
+            
+            // Área Principal
+            React.createElement("div", {className: "flex-1 p-6 overflow-y-auto"},
+                // Header da área
+                React.createElement("div", {className: "flex justify-between items-center mb-6"},
+                    React.createElement("div", null,
+                        React.createElement("h2", {className: "text-2xl font-bold text-gray-800"}, 
+                            todoViewMode === "meudia" ? "☀️ Meu Dia" : (todoGrupoAtivo?.icone + " " + todoGrupoAtivo?.nome || "Selecione uma lista")
+                        ),
+                        React.createElement("p", {className: "text-gray-500"}, 
+                            tarefasFiltradas.length, " tarefa(s)", 
+                            todoFiltroCard && (" - Filtro: " + (todoFiltroCard === "pendentes" ? "⏳ Pendentes" : todoFiltroCard === "atrasadas" ? "🔥 Atrasadas" : "✅ Concluídas"))
+                        )
+                    ),
+                    React.createElement("button", {
+                        onClick: () => setTodoModal({tipo: "novaTarefa"}),
+                        className: "px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 flex items-center gap-2",
+                        disabled: todoViewMode === "meudia" && !todoGrupoAtivo
+                    }, "➕ Nova Tarefa")
+                ),
+                
+                // Grid Kanban (3 por linha)
+                tarefasFiltradas.length === 0 ? 
+                    React.createElement("div", {className: "text-center py-12"},
+                        React.createElement("span", {className: "text-6xl block mb-4"}, todoViewMode === "meudia" ? "🎉" : "📋"),
+                        React.createElement("p", {className: "text-gray-500 text-lg"}, 
+                            todoViewMode === "meudia" ? "Nenhuma tarefa para hoje! Aproveite seu dia." : "Nenhuma tarefa neste grupo"
+                        )
+                    ) :
+                    React.createElement("div", {className: "grid grid-cols-3 gap-4"},
+                        tarefasFiltradas.map(t => {
+                            const isAtrasada = t.data_vencimento && new Date(t.data_vencimento) < hoje && t.status !== "concluida";
+                            const isHoje = t.data_vencimento && new Date(t.data_vencimento).toDateString() === hoje.toDateString();
+                            
+                            return React.createElement("div", {
+                                key: t.id,
+                                className: "bg-white rounded-xl shadow-md p-4 border-l-4 hover:shadow-lg transition-shadow " + 
+                                    (t.status === "concluida" ? "border-green-500 opacity-75" : 
+                                     isAtrasada ? "border-red-500" : 
+                                     isHoje ? "border-orange-500" : 
+                                     t.prioridade === "alta" ? "border-red-400" : 
+                                     t.prioridade === "media" ? "border-yellow-400" : "border-blue-400")
                             },
-                            body: JSON.stringify(payload)
-                        });
-                        ja("✅ Tarefa atualizada!", "success")
-                    } else {
-                        await fetch(`${API_URL}/todo/tarefas`, {
-                            method: "POST",
-                            headers: {
-                                "Content-Type": "application/json"
-                            },
-                            body: JSON.stringify(payload)
-                        });
-                        ja("✅ Tarefa criada!", "success")
-                    }
-                    const tarefas = await loadTodoTarefas(todoGrupoAtivo.id, todoFiltroStatus);
-                    setTodoTarefas(tarefas);
-                    setTodoModal(null)
-                },
-                className: "flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
-            }, todoModal.tipo === "editarTarefa" ? "Salvar Alterações" : "Criar Tarefa"))))))
+                                // Header do card
+                                React.createElement("div", {className: "flex justify-between items-start mb-2"},
+                                    React.createElement("h3", {className: "font-bold text-gray-800 flex-1 " + (t.status === "concluida" ? "line-through text-gray-500" : "")}, t.titulo),
+                                    React.createElement("div", {className: "flex gap-1"},
+                                        React.createElement("button", {
+                                            onClick: () => setTodoModal({tipo: "editarTarefa", tarefa: t}),
+                                            className: "p-1 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded"
+                                        }, "✏️"),
+                                        React.createElement("button", {
+                                            onClick: async () => {
+                                                if (confirm("Excluir esta tarefa?")) {
+                                                    await fetch(`${API_URL}/todo/tarefas/${t.id}`, {method: "DELETE"});
+                                                    if (todoViewMode === "meudia") await loadTodoMeuDia();
+                                                    else {
+                                                        const tarefas = await loadTodoTarefas(todoGrupoAtivo.id);
+                                                        setTodoTarefas(tarefas);
+                                                    }
+                                                    ja("🗑️ Tarefa excluída", "success");
+                                                }
+                                            },
+                                            className: "p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded"
+                                        }, "🗑️")
+                                    )
+                                ),
+                                
+                                // Descrição
+                                t.descricao && React.createElement("p", {className: "text-sm text-gray-600 mb-3 line-clamp-2"}, t.descricao),
+                                
+                                // Tags
+                                React.createElement("div", {className: "flex flex-wrap gap-1 mb-3"},
+                                    React.createElement("span", {
+                                        className: "text-xs px-2 py-0.5 rounded-full " + 
+                                            (t.prioridade === "alta" ? "bg-red-100 text-red-700" : 
+                                             t.prioridade === "media" ? "bg-yellow-100 text-yellow-700" : "bg-blue-100 text-blue-700")
+                                    }, t.prioridade === "alta" ? "🔴 Alta" : t.prioridade === "media" ? "🟡 Média" : "🔵 Baixa"),
+                                    isAtrasada && React.createElement("span", {className: "text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700"}, "🔥 Atrasada"),
+                                    isHoje && !isAtrasada && React.createElement("span", {className: "text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-700"}, "📅 Hoje")
+                                ),
+                                
+                                // Data e Atribuído
+                                React.createElement("div", {className: "text-xs text-gray-500 space-y-1"},
+                                    t.data_vencimento && React.createElement("p", null, "📅 ", new Date(t.data_vencimento).toLocaleDateString("pt-BR")),
+                                    t.atribuido_para && React.createElement("p", null, "👤 ", t.atribuido_para)
+                                ),
+                                
+                                // Botão de status
+                                React.createElement("div", {className: "mt-3 pt-3 border-t"},
+                                    t.status === "concluida" ? 
+                                        React.createElement("button", {
+                                            onClick: async () => {
+                                                await fetch(`${API_URL}/todo/tarefas/${t.id}`, {
+                                                    method: "PATCH",
+                                                    headers: {"Content-Type": "application/json"},
+                                                    body: JSON.stringify({status: "pendente"})
+                                                });
+                                                if (todoViewMode === "meudia") await loadTodoMeuDia();
+                                                else {
+                                                    const tarefas = await loadTodoTarefas(todoGrupoAtivo.id);
+                                                    setTodoTarefas(tarefas);
+                                                }
+                                            },
+                                            className: "w-full py-2 bg-gray-100 text-gray-600 rounded-lg text-sm font-semibold hover:bg-gray-200"
+                                        }, "↩️ Reabrir") :
+                                        React.createElement("button", {
+                                            onClick: async () => {
+                                                await fetch(`${API_URL}/todo/tarefas/${t.id}`, {
+                                                    method: "PATCH",
+                                                    headers: {"Content-Type": "application/json"},
+                                                    body: JSON.stringify({status: "concluida"})
+                                                });
+                                                if (todoViewMode === "meudia") await loadTodoMeuDia();
+                                                else {
+                                                    const tarefas = await loadTodoTarefas(todoGrupoAtivo.id);
+                                                    setTodoTarefas(tarefas);
+                                                }
+                                                ja("✅ Tarefa concluída!", "success");
+                                            },
+                                            className: "w-full py-2 bg-green-500 text-white rounded-lg text-sm font-semibold hover:bg-green-600"
+                                        }, "✅ Concluir")
+                                )
+                            );
+                        })
+                    ),
+                
+                // Tabs e Métricas (apenas admin_master)
+                "admin_master" === l.role && todoTab === "metricas" && todoMetricas && React.createElement("div", {className: "mt-8"},
+                    React.createElement("h2", {className: "text-2xl font-bold text-gray-800 mb-6"}, "📊 Métricas de Produtividade"),
+                    React.createElement("div", {className: "grid grid-cols-4 gap-4"},
+                        React.createElement("div", {className: "bg-white rounded-xl shadow p-4"},
+                            React.createElement("p", {className: "text-gray-500 text-sm"}, "Total de Tarefas"),
+                            React.createElement("p", {className: "text-3xl font-bold text-gray-800"}, todoMetricas.totais?.total || 0)
+                        ),
+                        React.createElement("div", {className: "bg-white rounded-xl shadow p-4"},
+                            React.createElement("p", {className: "text-gray-500 text-sm"}, "Concluídas"),
+                            React.createElement("p", {className: "text-3xl font-bold text-green-600"}, todoMetricas.totais?.concluidas || 0)
+                        ),
+                        React.createElement("div", {className: "bg-white rounded-xl shadow p-4"},
+                            React.createElement("p", {className: "text-gray-500 text-sm"}, "No Prazo"),
+                            React.createElement("p", {className: "text-3xl font-bold text-blue-600"}, todoMetricas.totais?.no_prazo || 0)
+                        ),
+                        React.createElement("div", {className: "bg-white rounded-xl shadow p-4"},
+                            React.createElement("p", {className: "text-gray-500 text-sm"}, "Vencidas"),
+                            React.createElement("p", {className: "text-3xl font-bold text-red-600"}, todoMetricas.totais?.vencidas || 0)
+                        )
+                    )
+                )
+            ),
+            
+            // Modal de Novo Grupo
+            todoModal?.tipo === "novoGrupo" && React.createElement("div", {
+                className: "fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+            }, React.createElement("div", {
+                className: "bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+            }, React.createElement("div", {
+                className: "bg-gradient-to-r from-purple-600 to-indigo-600 p-4 text-white flex justify-between items-center"
+            }, React.createElement("h2", {className: "text-xl font-bold"}, "📁 Novo Grupo"), React.createElement("button", {
+                onClick: () => setTodoModal(null),
+                className: "text-white/80 hover:text-white text-xl"
+            }, "✕")), React.createElement("div", {className: "p-6 space-y-4"},
+                React.createElement("div", null,
+                    React.createElement("label", {className: "block text-sm font-semibold mb-1"}, "Nome do Grupo *"),
+                    React.createElement("input", {
+                        type: "text",
+                        value: todoModal.nome || "",
+                        onChange: e => setTodoModal({...todoModal, nome: e.target.value}),
+                        className: "w-full px-3 py-2 border rounded-lg",
+                        placeholder: "Ex: Projetos Q1"
+                    })
+                ),
+                React.createElement("div", null,
+                    React.createElement("label", {className: "block text-sm font-semibold mb-1"}, "Ícone"),
+                    React.createElement("select", {
+                        value: todoModal.icone || "📋",
+                        onChange: e => setTodoModal({...todoModal, icone: e.target.value}),
+                        className: "w-full px-3 py-2 border rounded-lg bg-white"
+                    }, ["📋", "📁", "🎯", "💼", "🚀", "⭐", "🔥", "💡", "📊", "🛠️"].map(ic => 
+                        React.createElement("option", {key: ic, value: ic}, ic)
+                    ))
+                ),
+                React.createElement("div", null,
+                    React.createElement("label", {className: "block text-sm font-semibold mb-1"}, "Tipo"),
+                    React.createElement("select", {
+                        value: todoModal.tipoGrupo || "compartilhado",
+                        onChange: e => setTodoModal({...todoModal, tipoGrupo: e.target.value}),
+                        className: "w-full px-3 py-2 border rounded-lg bg-white"
+                    }, React.createElement("option", {value: "compartilhado"}, "👥 Compartilhado"),
+                        React.createElement("option", {value: "pessoal"}, "🔒 Pessoal"))
+                ),
+                React.createElement("div", {className: "flex gap-3 pt-4"},
+                    React.createElement("button", {
+                        onClick: () => setTodoModal(null),
+                        className: "flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold"
+                    }, "Cancelar"),
+                    React.createElement("button", {
+                        onClick: async () => {
+                            if (!todoModal.nome?.trim()) {
+                                ja("Informe o nome do grupo", "error");
+                                return;
+                            }
+                            await fetch(`${API_URL}/todo/grupos`, {
+                                method: "POST",
+                                headers: {"Content-Type": "application/json"},
+                                body: JSON.stringify({
+                                    nome: todoModal.nome,
+                                    icone: todoModal.icone || "📋",
+                                    tipo: todoModal.tipoGrupo || "compartilhado",
+                                    criado_por: l.fullName
+                                })
+                            });
+                            const grupos = await loadTodoGrupos();
+                            setTodoGrupos(grupos);
+                            setTodoModal(null);
+                            ja("✅ Grupo criado!", "success");
+                        },
+                        className: "flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
+                    }, "Criar Grupo")
+                )
+            ))),
+            
+            // Modal de Nova/Editar Tarefa
+            (todoModal?.tipo === "novaTarefa" || todoModal?.tipo === "editarTarefa") && React.createElement("div", {
+                className: "fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+            }, React.createElement("div", {
+                className: "bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden"
+            }, React.createElement("div", {
+                className: "bg-gradient-to-r from-purple-600 to-indigo-600 p-4 text-white flex justify-between items-center"
+            }, React.createElement("h2", {className: "text-xl font-bold"}, todoModal.tipo === "novaTarefa" ? "📝 Nova Tarefa" : "✏️ Editar Tarefa"),
+                React.createElement("button", {
+                    onClick: () => setTodoModal(null),
+                    className: "text-white/80 hover:text-white text-xl"
+                }, "✕")
+            ), React.createElement("div", {className: "p-6 space-y-4"},
+                React.createElement("div", null,
+                    React.createElement("label", {className: "block text-sm font-semibold mb-1"}, "Título *"),
+                    React.createElement("input", {
+                        type: "text",
+                        value: todoModal.titulo || todoModal.tarefa?.titulo || "",
+                        onChange: e => setTodoModal({...todoModal, titulo: e.target.value}),
+                        className: "w-full px-3 py-2 border rounded-lg",
+                        placeholder: "O que precisa ser feito?"
+                    })
+                ),
+                React.createElement("div", null,
+                    React.createElement("label", {className: "block text-sm font-semibold mb-1"}, "Descrição"),
+                    React.createElement("textarea", {
+                        value: todoModal.descricao || todoModal.tarefa?.descricao || "",
+                        onChange: e => setTodoModal({...todoModal, descricao: e.target.value}),
+                        className: "w-full px-3 py-2 border rounded-lg h-20",
+                        placeholder: "Detalhes..."
+                    })
+                ),
+                React.createElement("div", {className: "grid grid-cols-2 gap-4"},
+                    React.createElement("div", null,
+                        React.createElement("label", {className: "block text-sm font-semibold mb-1"}, "Prioridade"),
+                        React.createElement("select", {
+                            value: todoModal.prioridade || todoModal.tarefa?.prioridade || "media",
+                            onChange: e => setTodoModal({...todoModal, prioridade: e.target.value}),
+                            className: "w-full px-3 py-2 border rounded-lg bg-white"
+                        }, React.createElement("option", {value: "baixa"}, "🔵 Baixa"),
+                            React.createElement("option", {value: "media"}, "🟡 Média"),
+                            React.createElement("option", {value: "alta"}, "🔴 Alta"))
+                    ),
+                    React.createElement("div", null,
+                        React.createElement("label", {className: "block text-sm font-semibold mb-1"}, "Data de Vencimento"),
+                        React.createElement("input", {
+                            type: "date",
+                            value: todoModal.dataVencimento || (todoModal.tarefa?.data_vencimento ? todoModal.tarefa.data_vencimento.split("T")[0] : ""),
+                            onChange: e => setTodoModal({...todoModal, dataVencimento: e.target.value}),
+                            className: "w-full px-3 py-2 border rounded-lg"
+                        })
+                    )
+                ),
+                React.createElement("div", null,
+                    React.createElement("label", {className: "block text-sm font-semibold mb-1"}, "Atribuir para"),
+                    React.createElement("select", {
+                        value: todoModal.atribuidoPara || todoModal.tarefa?.atribuido_para || "",
+                        onChange: e => setTodoModal({...todoModal, atribuidoPara: e.target.value}),
+                        className: "w-full px-3 py-2 border rounded-lg bg-white"
+                    }, React.createElement("option", {value: ""}, "Selecione..."),
+                        todoAdmins.map(a => React.createElement("option", {key: a.cod_profissional, value: a.full_name}, a.full_name)))
+                ),
+                todoModal.tipo === "novaTarefa" && React.createElement("div", null,
+                    React.createElement("label", {className: "block text-sm font-semibold mb-1"}, "Grupo"),
+                    React.createElement("select", {
+                        value: todoModal.grupoId || todoGrupoAtivo?.id || "",
+                        onChange: e => setTodoModal({...todoModal, grupoId: e.target.value}),
+                        className: "w-full px-3 py-2 border rounded-lg bg-white"
+                    }, React.createElement("option", {value: ""}, "Selecione um grupo..."),
+                        todoGrupos.map(g => React.createElement("option", {key: g.id, value: g.id}, g.icone + " " + g.nome)))
+                ),
+                React.createElement("div", {className: "flex gap-3 pt-4"},
+                    React.createElement("button", {
+                        onClick: () => setTodoModal(null),
+                        className: "flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold"
+                    }, "Cancelar"),
+                    React.createElement("button", {
+                        onClick: async () => {
+                            const titulo = todoModal.titulo || todoModal.tarefa?.titulo;
+                            if (!titulo?.trim()) {
+                                ja("Informe o título", "error");
+                                return;
+                            }
+                            const grupoId = todoModal.grupoId || todoGrupoAtivo?.id || todoModal.tarefa?.grupo_id;
+                            if (!grupoId) {
+                                ja("Selecione um grupo", "error");
+                                return;
+                            }
+                            
+                            if (todoModal.tipo === "novaTarefa") {
+                                await fetch(`${API_URL}/todo/tarefas`, {
+                                    method: "POST",
+                                    headers: {"Content-Type": "application/json"},
+                                    body: JSON.stringify({
+                                        grupo_id: grupoId,
+                                        titulo: titulo,
+                                        descricao: todoModal.descricao || "",
+                                        prioridade: todoModal.prioridade || "media",
+                                        data_vencimento: todoModal.dataVencimento || null,
+                                        atribuido_para: todoModal.atribuidoPara || null,
+                                        criado_por: l.fullName
+                                    })
+                                });
+                                ja("✅ Tarefa criada!", "success");
+                            } else {
+                                await fetch(`${API_URL}/todo/tarefas/${todoModal.tarefa.id}`, {
+                                    method: "PATCH",
+                                    headers: {"Content-Type": "application/json"},
+                                    body: JSON.stringify({
+                                        titulo: titulo,
+                                        descricao: todoModal.descricao ?? todoModal.tarefa.descricao,
+                                        prioridade: todoModal.prioridade || todoModal.tarefa.prioridade,
+                                        data_vencimento: todoModal.dataVencimento || todoModal.tarefa.data_vencimento,
+                                        atribuido_para: todoModal.atribuidoPara ?? todoModal.tarefa.atribuido_para
+                                    })
+                                });
+                                ja("✅ Tarefa atualizada!", "success");
+                            }
+                            
+                            if (todoViewMode === "meudia") await loadTodoMeuDia();
+                            else if (todoGrupoAtivo) {
+                                const tarefas = await loadTodoTarefas(todoGrupoAtivo.id);
+                                setTodoTarefas(tarefas);
+                            }
+                            setTodoModal(null);
+                        },
+                        className: "flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
+                    }, todoModal.tipo === "novaTarefa" ? "Criar Tarefa" : "Salvar")
+                )
+            )))
+            )
         }
         
         // ========== MÓDULO SOCIAL ==========
