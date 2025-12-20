@@ -15237,10 +15237,26 @@ const hideLoadingScreen = () => {
                     }, "×")))))), React.createElement("div", {
                         className: "flex gap-2 p-2 bg-gray-50 border-t"
                     }, React.createElement("button", {
-                        onClick: () => s(t.id, 1, !1),
+                        onClick: async () => {
+                            try {
+                                await fetch(`${API_URL}/disponibilidade/linhas`, {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({ loja_id: t.id, quantidade: 1, is_excedente: false })
+                                }), ja("✅ Titular adicionado!", "success"), r()
+                            } catch (err) { ja("Erro ao adicionar", "error") }
+                        },
                         className: "px-3 py-1 text-xs bg-green-100 text-green-700 rounded hover:bg-green-200 font-semibold flex items-center gap-1"
                     }, "➕ Titular"), React.createElement("button", {
-                        onClick: () => s(t.id, 1, !0),
+                        onClick: async () => {
+                            try {
+                                await fetch(`${API_URL}/disponibilidade/linhas`, {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({ loja_id: t.id, quantidade: 1, is_excedente: true })
+                                }), ja("✅ Excedente adicionado!", "success"), r()
+                            } catch (err) { ja("Erro ao adicionar", "error") }
+                        },
                         className: "px-3 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200 font-semibold flex items-center gap-1"
                     }, "➕ Excedente"))))
                 }), React.createElement("div", {
