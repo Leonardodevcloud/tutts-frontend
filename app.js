@@ -15234,7 +15234,15 @@ const hideLoadingScreen = () => {
                         })(e.id),
                         className: "text-red-400 hover:text-red-600 text-xs",
                         title: "Remover"
-                    }, "×"))))))))
+                    }, "×")))))), React.createElement("div", {
+                        className: "flex gap-2 p-2 bg-gray-50 border-t"
+                    }, React.createElement("button", {
+                        onClick: () => s(t.id, 1, !1),
+                        className: "px-3 py-1 text-xs bg-green-100 text-green-700 rounded hover:bg-green-200 font-semibold flex items-center gap-1"
+                    }, "➕ Titular"), React.createElement("button", {
+                        onClick: () => s(t.id, 1, !0),
+                        className: "px-3 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200 font-semibold flex items-center gap-1"
+                    }, "➕ Excedente"))))
                 }), React.createElement("div", {
                     className: "flex gap-2 pt-2"
                 }, React.createElement("button", {
