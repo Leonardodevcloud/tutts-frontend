@@ -816,7 +816,7 @@ const hideLoadingScreen = () => {
                 }
             };
         useEffect(() => {
-            const canAccessFinEff = "admin_financeiro" === l?.role || "admin_master" === l?.role || ("admin" === l?.role && l?.permissions?.modulos?.financeiro !== false);
+            const canAccessFinEff = "admin_financeiro" === l?.role || "admin_master" === l?.role || ("admin" === l?.role && (!l?.permissions || !l?.permissions?.modulos || l?.permissions?.modulos?.financeiro === true));
             if (!l || (!canAccessFinEff || ("admin_master" === l.role && "financeiro" !== Ee))) return;
             const e = async () => {
                 N(!0);
@@ -988,7 +988,7 @@ const hideLoadingScreen = () => {
             }
         };
         useEffect(() => {
-            const canAccessTodoEff = "admin_master" === l?.role || ("admin" === l?.role && (!l?.permissions || !l?.permissions?.modulos || l?.permissions?.modulos?.todo !== false));
+            const canAccessTodoEff = "admin_master" === l?.role || ("admin" === l?.role && (!l?.permissions || !l?.permissions?.modulos || l?.permissions?.modulos?.todo === true));
             if (!(l && canAccessTodoEff && "todo" === Ee)) return;
             const init = async () => {
                 setTodoLoading(true);
@@ -1932,7 +1932,21 @@ const hideLoadingScreen = () => {
                     try {
                         const permRes = await fetch(`${API_URL}/admin-permissions/${t.cod_profissional}`);
                         if (permRes.ok) {
-                            perms = await permRes.json();
+                            const permData = await permRes.json();
+                            // Converter allowed_modules (array) para objeto de módulos
+                            const allowedMods = permData.allowed_modules || [];
+                            perms = {
+                                allowed_modules: allowedMods,
+                                modulos: {
+                                    solicitacoes: allowedMods.length === 0 || allowedMods.includes("solicitacoes"),
+                                    financeiro: allowedMods.length === 0 || allowedMods.includes("financeiro"),
+                                    operacional: allowedMods.length === 0 || allowedMods.includes("operacional"),
+                                    disponibilidade: allowedMods.length === 0 || allowedMods.includes("disponibilidade"),
+                                    bi: allowedMods.length === 0 || allowedMods.includes("bi"),
+                                    todo: allowedMods.length === 0 || allowedMods.includes("todo")
+                                }
+                            };
+                            console.log("Permissões carregadas:", perms);
                         }
                     } catch (err) {
                         console.log("Sem permissões definidas, usando padrão");
@@ -4395,7 +4409,7 @@ const hideLoadingScreen = () => {
             className: "flex-1 px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-xl font-semibold hover:opacity-90"
         }, "✅ Confirmar Pedido"))))))));
         // Verificar permissão para Financeiro (admin comum)
-        const canAccessFinanceiro = "admin_financeiro" === l.role || "admin_master" === l.role || ("admin" === l.role && l.permissions?.modulos?.financeiro !== false);
+        const canAccessFinanceiro = "admin_financeiro" === l.role || "admin_master" === l.role || ("admin" === l.role && (!l.permissions || !l.permissions.modulos || l.permissions.modulos.financeiro === true));
         if ((canAccessFinanceiro && "financeiro" === Ee) || "admin_financeiro" === l.role) {
             const e = "admin_master" === l.role;
             return React.createElement("div", {
@@ -8911,7 +8925,7 @@ const hideLoadingScreen = () => {
             })())))
         }
         // Verificar permissão para TO-DO (admin comum)
-        const canAccessTodo = "admin_master" === l.role || ("admin" === l.role && (!l.permissions || !l.permissions.modulos || l.permissions.modulos.todo !== false));
+        const canAccessTodo = "admin_master" === l.role || ("admin" === l.role && (!l.permissions || !l.permissions.modulos || l.permissions.modulos.todo === true));
         if (canAccessTodo && "todo" === Ee) {
             return React.createElement("div", {
                 className: "min-h-screen bg-gray-100 flex"
@@ -9415,7 +9429,7 @@ const hideLoadingScreen = () => {
         }
         // ========== MÓDULO OPERACIONAL / ATIVAÇÃO ==========
         // Verificar permissão para Operacional (admin comum)
-        const canAccessOperacional = "admin_master" === l.role || ("admin" === l.role && (!l.permissions || !l.permissions.modulos || l.permissions.modulos.operacional !== false));
+        const canAccessOperacional = "admin_master" === l.role || ("admin" === l.role && (!l.permissions || !l.permissions.modulos || l.permissions.modulos.operacional === true));
         if (canAccessOperacional && "operacional" === Ee) {
             return React.createElement("div", {
                 className: "min-h-screen bg-gray-50"
@@ -9694,7 +9708,36 @@ const hideLoadingScreen = () => {
                 p.configTab === "permissoes" && React.createElement("div", null,
                     React.createElement("div", {className: "bg-blue-50 border border-blue-200 rounded-xl p-6 mb-6"},
                         React.createElement("h2", {className: "text-lg font-bold text-blue-800 mb-2"}, "🔐 Sistema de Permissões"),
-                        React.createElement("p", {className: "text-blue-600"}, "Configure quais módulos cada administrador pode acessar. Clique nos módulos para ativar/desativar o acesso.")
+                        React.createElement("p", {className: "text-blue-600"}, "Configure quais módulos cada administrador pode acessar. Clique nos módulos para ativar/desativar o acesso."),
+                        React.createElement("button", {
+                            onClick: async function() {
+                                s(true);
+                                try {
+                                    const res = await fetch(API_URL + "/admin-permissions");
+                                    if (res.ok) {
+                                        const adminsPerms = await res.json();
+                                        const permsObj = {};
+                                        adminsPerms.forEach(function(adm) {
+                                            const mods = adm.allowed_modules || [];
+                                            permsObj[adm.cod_profissional] = {
+                                                solicitacoes: mods.length === 0 || mods.includes("solicitacoes"),
+                                                financeiro: mods.length === 0 || mods.includes("financeiro"),
+                                                operacional: mods.length === 0 || mods.includes("operacional"),
+                                                disponibilidade: mods.length === 0 || mods.includes("disponibilidade"),
+                                                bi: mods.length === 0 || mods.includes("bi"),
+                                                todo: mods.length === 0 || mods.includes("todo")
+                                            };
+                                        });
+                                        x({...p, adminPerms: permsObj});
+                                        ja("✅ Permissões carregadas!", "success");
+                                    }
+                                } catch (err) {
+                                    ja("❌ Erro ao carregar permissões", "error");
+                                }
+                                s(false);
+                            },
+                            className: "mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700"
+                        }, "🔄 Carregar Permissões do Servidor")
                     ),
                     React.createElement("div", {className: "bg-white rounded-xl shadow-sm border p-6"},
                         React.createElement("h3", {className: "font-bold mb-4"}, "👑 Administradores"),
@@ -9705,7 +9748,9 @@ const hideLoadingScreen = () => {
                             )
                             : React.createElement("div", {className: "space-y-6"},
                                 A.filter(function(u) { return u.role === "admin" || u.role === "admin_financeiro"; }).map(function(admin) {
-                                    const perms = p.adminPerms && p.adminPerms[admin.codProfissional] ? p.adminPerms[admin.codProfissional] : {};
+                                    const perms = p.adminPerms && p.adminPerms[admin.codProfissional] ? p.adminPerms[admin.codProfissional] : {
+                                        solicitacoes: true, financeiro: true, operacional: true, disponibilidade: true, bi: true, todo: true
+                                    };
                                     return React.createElement("div", {
                                         key: admin.codProfissional,
                                         className: "border rounded-xl p-5 bg-gray-50"
@@ -9723,21 +9768,7 @@ const hideLoadingScreen = () => {
                                                         admin.role === "admin" ? "👑 Admin" : "💰 Admin Financeiro"
                                                     )
                                                 )
-                                            ),
-                                            React.createElement("button", {
-                                                onClick: function() {
-                                                    const newPerms = {...(p.adminPerms || {})};
-                                                    newPerms[admin.codProfissional] = {
-                                                        ...perms,
-                                                        ativo: !(perms.ativo !== false)
-                                                    };
-                                                    x({...p, adminPerms: newPerms});
-                                                },
-                                                className: "px-4 py-2 rounded-full text-sm font-bold transition-colors " +
-                                                    (perms.ativo !== false
-                                                        ? "bg-green-100 text-green-700 hover:bg-green-200"
-                                                        : "bg-red-100 text-red-700 hover:bg-red-200")
-                                            }, perms.ativo !== false ? "✅ Ativo" : "❌ Inativo")
+                                            )
                                         ),
                                         React.createElement("p", {className: "text-sm font-semibold mb-3 text-gray-600"}, "📱 Módulos (clique para alternar):"),
                                         React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-3 gap-3"},
@@ -9749,13 +9780,16 @@ const hideLoadingScreen = () => {
                                                 {id: "bi", label: "BI/Relatórios", icon: "📊"},
                                                 {id: "todo", label: "TO-DO", icon: "📝"}
                                             ].map(function(mod) {
-                                                const isActive = perms[mod.id] !== false;
+                                                const isActive = perms[mod.id] === true;
                                                 return React.createElement("button", {
                                                     key: mod.id,
                                                     onClick: function() {
                                                         const newPerms = {...(p.adminPerms || {})};
+                                                        const currentPerms = newPerms[admin.codProfissional] || {
+                                                            solicitacoes: true, financeiro: true, operacional: true, disponibilidade: true, bi: true, todo: true
+                                                        };
                                                         newPerms[admin.codProfissional] = {
-                                                            ...perms,
+                                                            ...currentPerms,
                                                             [mod.id]: !isActive
                                                         };
                                                         x({...p, adminPerms: newPerms});
@@ -9778,21 +9812,34 @@ const hideLoadingScreen = () => {
                                 onClick: async function() {
                                     s(true);
                                     const perms = p.adminPerms || {};
+                                    let savedCount = 0;
                                     for (const cod in perms) {
                                         try {
-                                            await fetch(API_URL + "/admin-permissions/" + cod, {
-                                                method: "PUT",
+                                            // Converter objeto de permissões para array de módulos permitidos
+                                            const allowedModules = [];
+                                            if (perms[cod].solicitacoes) allowedModules.push("solicitacoes");
+                                            if (perms[cod].financeiro) allowedModules.push("financeiro");
+                                            if (perms[cod].operacional) allowedModules.push("operacional");
+                                            if (perms[cod].disponibilidade) allowedModules.push("disponibilidade");
+                                            if (perms[cod].bi) allowedModules.push("bi");
+                                            if (perms[cod].todo) allowedModules.push("todo");
+                                            
+                                            console.log("Salvando para " + cod + ":", allowedModules);
+                                            
+                                            const res = await fetch(API_URL + "/admin-permissions/" + cod, {
+                                                method: "PATCH",
                                                 headers: {"Content-Type": "application/json"},
                                                 body: JSON.stringify({
-                                                    ativo: perms[cod].ativo !== false,
-                                                    modulos: perms[cod]
+                                                    allowed_modules: allowedModules,
+                                                    allowed_tabs: {}
                                                 })
                                             });
+                                            if (res.ok) savedCount++;
                                         } catch (err) {
-                                            console.error("Erro:", err);
+                                            console.error("Erro ao salvar para " + cod + ":", err);
                                         }
                                     }
-                                    ja("✅ Permissões salvas com sucesso!", "success");
+                                    ja("✅ Permissões salvas para " + savedCount + " admin(s)!", "success");
                                     s(false);
                                 },
                                 className: "px-6 py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition-colors"
@@ -9837,7 +9884,7 @@ const hideLoadingScreen = () => {
             ));
         }
         // Verificar permissão para BI (admin comum)
-        const canAccessBI = "admin_master" === l.role || ("admin" === l.role && (!l.permissions || !l.permissions.modulos || l.permissions.modulos.bi !== false));
+        const canAccessBI = "admin_master" === l.role || ("admin" === l.role && (!l.permissions || !l.permissions.modulos || l.permissions.modulos.bi === true));
         if (canAccessBI && "bi" === Ee) {
             return React.createElement("div", {
                 className: "min-h-screen bg-gray-100"
@@ -11266,8 +11313,8 @@ const hideLoadingScreen = () => {
         }, "Painel Admin"), React.createElement("div", {
             className: "flex bg-purple-800/50 rounded-lg p-1"
         }, 
-        // Solicitações - verificar permissão
-        (!l.permissions || !l.permissions.modulos || l.permissions.modulos.solicitacoes !== false) && React.createElement("button", {
+        // Solicitações - verificar permissão (se não tem permissions definido, mostra tudo)
+        (!l.permissions || !l.permissions.modulos || l.permissions.modulos.solicitacoes === true) && React.createElement("button", {
             onClick: () => {
                 he("solicitacoes"), x(e => ({
                     ...e,
@@ -11277,17 +11324,17 @@ const hideLoadingScreen = () => {
             className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("solicitacoes" === Ee && "disponibilidade" !== p.adminTab ? "bg-white text-purple-900" : "text-white hover:bg-white/10")
         }, "📋 Solicitações"),
         // Financeiro - verificar permissão
-        (!l.permissions || !l.permissions.modulos || l.permissions.modulos.financeiro !== false) && React.createElement("button", {
+        (!l.permissions || !l.permissions.modulos || l.permissions.modulos.financeiro === true) && React.createElement("button", {
             onClick: () => he("financeiro"),
             className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("financeiro" === Ee ? "bg-white text-green-800" : "text-white hover:bg-white/10")
         }, "💰 Financeiro"),
         // Operacional - verificar permissão
-        (!l.permissions || !l.permissions.modulos || l.permissions.modulos.operacional !== false) && React.createElement("button", {
+        (!l.permissions || !l.permissions.modulos || l.permissions.modulos.operacional === true) && React.createElement("button", {
             onClick: () => he("operacional"),
             className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("operacional" === Ee ? "bg-white text-teal-800" : "text-white hover:bg-white/10")
         }, "⚙️ Operacional"),
         // Disponibilidade - verificar permissão
-        (!l.permissions || !l.permissions.modulos || l.permissions.modulos.disponibilidade !== false) && React.createElement("button", {
+        (!l.permissions || !l.permissions.modulos || l.permissions.modulos.disponibilidade === true) && React.createElement("button", {
             onClick: () => {
                 he("solicitacoes"), x(e => ({
                     ...e,
@@ -11297,12 +11344,12 @@ const hideLoadingScreen = () => {
             className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("solicitacoes" === Ee && "disponibilidade" === p.adminTab ? "bg-white text-blue-800" : "text-white hover:bg-white/10")
         }, "📅 Disponibilidade"),
         // BI - verificar permissão
-        (!l.permissions || !l.permissions.modulos || l.permissions.modulos.bi !== false) && React.createElement("button", {
+        (!l.permissions || !l.permissions.modulos || l.permissions.modulos.bi === true) && React.createElement("button", {
             onClick: () => { he("bi"); ll(); tl(); al(); dl(); pl(); },
             className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("bi" === Ee ? "bg-white text-orange-800" : "text-white hover:bg-white/10")
         }, "📊 BI"),
         // TO-DO - verificar permissão
-        (!l.permissions || !l.permissions.modulos || l.permissions.modulos.todo !== false) && React.createElement("button", {
+        (!l.permissions || !l.permissions.modulos || l.permissions.modulos.todo === true) && React.createElement("button", {
             onClick: () => he("todo"),
             className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("todo" === Ee ? "bg-white text-indigo-800" : "text-white hover:bg-white/10")
         }, "📋 TO-DO")
