@@ -1188,14 +1188,16 @@ const hideLoadingScreen = () => {
                 
                 // Filtrar tarefas atribuídas ao usuário (ou criadas por ele) que são do dia ou vencidas
                 const meuDia = todas.filter(t => {
-                    const isMinhaAtribuicao = t.atribuido_para === l.codProfissional || 
-                                              t.atribuido_para === l.fullName ||
-                                              t.criado_por === l.fullName;
+                    const responsaveis = Array.isArray(t.responsaveis) ? t.responsaveis : (typeof t.responsaveis === 'string' ? JSON.parse(t.responsaveis || '[]') : []);
+                    const isMinhaAtribuicao = responsaveis.includes(l.codProfissional) || 
+                                              responsaveis.includes(l.fullName) ||
+                                              t.criado_por === l.codProfissional ||
+                                              t.criado_por_nome === l.fullName;
                     if (!isMinhaAtribuicao) return false;
                     if (t.status === "concluida") return false; // Não mostrar concluídas no meu dia
                     
-                    if (t.data_vencimento) {
-                        const dataVenc = new Date(t.data_vencimento);
+                    if (t.data_prazo) {
+                        const dataVenc = new Date(t.data_prazo);
                         dataVenc.setHours(0, 0, 0, 0);
                         return dataVenc <= hoje; // Hoje ou vencida
                     }
@@ -1219,14 +1221,16 @@ const hideLoadingScreen = () => {
                 hoje.setHours(0, 0, 0, 0);
                 
                 const pendentes = todas.filter(t => {
-                    const isMinhaAtribuicao = t.atribuido_para === l.codProfissional || 
-                                              t.atribuido_para === l.fullName ||
-                                              t.criado_por === l.fullName;
+                    const responsaveis = Array.isArray(t.responsaveis) ? t.responsaveis : (typeof t.responsaveis === 'string' ? JSON.parse(t.responsaveis || '[]') : []);
+                    const isMinhaAtribuicao = responsaveis.includes(l.codProfissional) || 
+                                              responsaveis.includes(l.fullName) ||
+                                              t.criado_por === l.codProfissional ||
+                                              t.criado_por_nome === l.fullName;
                     if (!isMinhaAtribuicao) return false;
                     if (t.status === "concluida") return false;
                     
-                    if (t.data_vencimento) {
-                        const dataVenc = new Date(t.data_vencimento);
+                    if (t.data_prazo) {
+                        const dataVenc = new Date(t.data_prazo);
                         dataVenc.setHours(0, 0, 0, 0);
                         return dataVenc <= hoje;
                     }
@@ -9379,8 +9383,8 @@ const hideLoadingScreen = () => {
             const pendentes = tarefasAtuais.filter(t => t.status === "pendente" || t.status === "em_andamento");
             const atrasadas = tarefasAtuais.filter(t => {
                 if (t.status === "concluida") return false;
-                if (!t.data_vencimento) return false;
-                const dataVenc = new Date(t.data_vencimento);
+                if (!t.data_prazo) return false;
+                const dataVenc = new Date(t.data_prazo);
                 dataVenc.setHours(0, 0, 0, 0);
                 return dataVenc < hoje;
             });
@@ -9418,7 +9422,7 @@ const hideLoadingScreen = () => {
                         key: t.id,
                         className: "bg-orange-50 border-l-4 border-orange-500 p-3 rounded"
                     }, React.createElement("p", {className: "font-semibold text-gray-800"}, t.titulo),
-                        t.data_vencimento && React.createElement("p", {className: "text-xs text-orange-600"}, "📅 Vence: ", new Date(t.data_vencimento).toLocaleDateString("pt-BR"))
+                        t.data_prazo && React.createElement("p", {className: "text-xs text-orange-600"}, "📅 Vence: ", new Date(t.data_prazo).toLocaleDateString("pt-BR"))
                     ))
                 ),
                 todoPendentesNotif.length > 5 && React.createElement("p", {className: "text-sm text-gray-500 mt-2"}, "... e mais ", todoPendentesNotif.length - 5, " tarefa(s)")
@@ -9433,11 +9437,11 @@ const hideLoadingScreen = () => {
                 }, "📋 Ir para Tarefas")
             ))),
             
-            // Sidebar Esquerda
+            // Sidebar Esquerda - Apenas Listas e Grupos
             React.createElement("div", {
-                className: "w-64 bg-white shadow-lg flex flex-col h-screen"
+                className: "w-56 bg-white shadow-lg flex flex-col h-screen border-r"
             }, 
-                // Header
+                // Header da Sidebar
                 React.createElement("div", {
                     className: "bg-gradient-to-r from-purple-600 to-indigo-600 p-4 text-white"
                 }, React.createElement("div", {className: "flex items-center gap-3"},
@@ -9449,53 +9453,12 @@ const hideLoadingScreen = () => {
                     }, l.fullName?.charAt(0)?.toUpperCase() || "?"),
                     React.createElement("div", null,
                         React.createElement("h1", {className: "text-lg font-bold"}, "📋 TO-DO"),
-                        React.createElement("p", {className: "text-purple-200 text-xs"}, socialProfile?.display_name || l.fullName)
+                        React.createElement("p", {className: "text-purple-200 text-xs truncate"}, socialProfile?.display_name || l.fullName)
                     )
                 )),
                 
-                // Cards de Métricas/Filtros
-                React.createElement("div", {className: "p-3 space-y-2"},
-                    React.createElement("p", {className: "text-xs font-semibold text-gray-500 uppercase mb-2"}, "Filtros"),
-                    React.createElement("button", {
-                        onClick: () => setTodoFiltroCard(todoFiltroCard === "pendentes" ? null : "pendentes"),
-                        className: "w-full p-3 rounded-lg flex items-center justify-between transition-all " + 
-                            (todoFiltroCard === "pendentes" ? "bg-yellow-100 ring-2 ring-yellow-500" : "bg-yellow-50 hover:bg-yellow-100")
-                    }, React.createElement("div", {className: "flex items-center gap-2"},
-                        React.createElement("span", {className: "text-xl"}, "⏳"),
-                        React.createElement("span", {className: "font-semibold text-yellow-800"}, "Pendentes")
-                    ), React.createElement("span", {className: "text-xl font-bold text-yellow-600"}, pendentes.length)),
-                    
-                    React.createElement("button", {
-                        onClick: () => setTodoFiltroCard(todoFiltroCard === "atrasadas" ? null : "atrasadas"),
-                        className: "w-full p-3 rounded-lg flex items-center justify-between transition-all " + 
-                            (todoFiltroCard === "atrasadas" ? "bg-red-100 ring-2 ring-red-500" : "bg-red-50 hover:bg-red-100")
-                    }, React.createElement("div", {className: "flex items-center gap-2"},
-                        React.createElement("span", {className: "text-xl"}, "🔥"),
-                        React.createElement("span", {className: "font-semibold text-red-800"}, "Atrasadas")
-                    ), React.createElement("span", {className: "text-xl font-bold text-red-600"}, atrasadas.length)),
-                    
-                    React.createElement("button", {
-                        onClick: () => setTodoFiltroCard(todoFiltroCard === "concluidas" ? null : "concluidas"),
-                        className: "w-full p-3 rounded-lg flex items-center justify-between transition-all " + 
-                            (todoFiltroCard === "concluidas" ? "bg-green-100 ring-2 ring-green-500" : "bg-green-50 hover:bg-green-100")
-                    }, React.createElement("div", {className: "flex items-center gap-2"},
-                        React.createElement("span", {className: "text-xl"}, "✅"),
-                        React.createElement("span", {className: "font-semibold text-green-800"}, "Concluídas")
-                    ), React.createElement("span", {className: "text-xl font-bold text-green-600"}, concluidas.length)),
-                    
-                    todoFiltroCard && React.createElement("button", {
-                        onClick: () => setTodoFiltroCard(null),
-                        className: "w-full py-2 text-sm text-gray-500 hover:text-gray-700"
-                    }, "✕ Limpar filtro")
-                ),
-                
-                // Separador
-                React.createElement("div", {className: "border-t mx-3"}),
-                
                 // Listas
                 React.createElement("div", {className: "flex-1 overflow-y-auto p-3"},
-                    React.createElement("p", {className: "text-xs font-semibold text-gray-500 uppercase mb-2"}, "Listas"),
-                    
                     // Meu Dia
                     React.createElement("button", {
                         onClick: async () => {
@@ -9506,14 +9469,16 @@ const hideLoadingScreen = () => {
                             await loadTodoMeuDia();
                             setTodoLoading(false);
                         },
-                        className: "w-full text-left px-3 py-2 rounded-lg mb-1 flex items-center gap-2 transition-all " + 
-                            (todoViewMode === "meudia" ? "bg-purple-100 text-purple-700 ring-2 ring-purple-500" : "hover:bg-gray-100")
-                    }, React.createElement("span", {className: "text-lg"}, "☀️"), 
-                        React.createElement("span", {className: "flex-1"}, "Meu Dia"),
-                        React.createElement("span", {className: "text-xs bg-purple-200 text-purple-700 px-2 py-0.5 rounded-full"}, todoMeuDia.length)
+                        className: "w-full text-left px-3 py-3 rounded-xl mb-2 flex items-center gap-3 transition-all " + 
+                            (todoViewMode === "meudia" ? "bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-md" : "hover:bg-gray-100")
+                    }, React.createElement("span", {className: "text-xl"}, "☀️"), 
+                        React.createElement("span", {className: "flex-1 font-semibold"}, "Meu Dia"),
+                        React.createElement("span", {className: "text-sm px-2 py-0.5 rounded-full " + (todoViewMode === "meudia" ? "bg-white/20" : "bg-purple-100 text-purple-700")}, todoMeuDia.length)
                     ),
                     
-                    React.createElement("p", {className: "text-xs font-semibold text-gray-400 uppercase mt-4 mb-2"}, "Grupos"),
+                    React.createElement("div", {className: "border-t my-3"}),
+                    
+                    React.createElement("p", {className: "text-xs font-semibold text-gray-400 uppercase mb-2 px-1"}, "Meus Grupos"),
                     
                     todoGrupos.map(g => React.createElement("button", {
                         key: g.id,
@@ -9527,15 +9492,15 @@ const hideLoadingScreen = () => {
                             setTodoLoading(false);
                         },
                         className: "w-full text-left px-3 py-2 rounded-lg mb-1 flex items-center gap-2 transition-all " + 
-                            (todoViewMode === "grupo" && todoGrupoAtivo?.id === g.id ? "bg-purple-100 text-purple-700" : "hover:bg-gray-100")
+                            (todoViewMode === "grupo" && todoGrupoAtivo?.id === g.id ? "bg-purple-100 text-purple-700 font-semibold" : "hover:bg-gray-100 text-gray-700")
                     }, React.createElement("span", null, g.icone || "📋"), 
                         React.createElement("span", {className: "flex-1 truncate"}, g.nome),
-                        g.tipo === "pessoal" && React.createElement("span", {className: "text-xs bg-yellow-100 text-yellow-700 px-1 rounded"}, "🔒")
+                        g.tipo === "pessoal" && React.createElement("span", {className: "text-xs"}, "🔒")
                     )),
                     
                     React.createElement("button", {
                         onClick: () => setTodoModal({tipo: "novoGrupo"}),
-                        className: "w-full text-left px-3 py-2 rounded-lg text-gray-500 hover:bg-gray-100 flex items-center gap-2"
+                        className: "w-full text-left px-3 py-2 rounded-lg text-purple-600 hover:bg-purple-50 flex items-center gap-2 mt-2"
                     }, React.createElement("span", null, "➕"), "Novo Grupo")
                 ),
                 
@@ -9543,28 +9508,51 @@ const hideLoadingScreen = () => {
                 React.createElement("div", {className: "p-3 border-t"},
                     React.createElement("button", {
                         onClick: () => he("solicitacoes"),
-                        className: "w-full py-2 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 text-sm"
+                        className: "w-full py-2 bg-gray-100 text-gray-600 rounded-lg font-semibold hover:bg-gray-200 text-sm flex items-center justify-center gap-2"
                     }, "← Voltar")
                 )
             ),
             
             // Área Principal
             React.createElement("div", {className: "flex-1 flex flex-col h-screen"},
-                // Header da área (FIXO)
-                React.createElement("div", {className: "bg-white shadow-sm p-6 flex justify-between items-center flex-shrink-0"},
-                    React.createElement("div", null,
-                        React.createElement("h2", {className: "text-2xl font-bold text-gray-800"}, 
-                            todoViewMode === "meudia" ? "☀️ Meu Dia" : (todoGrupoAtivo?.icone + " " + todoGrupoAtivo?.nome || "Selecione uma lista")
+                // Header da área (FIXO) com filtros
+                React.createElement("div", {className: "bg-white shadow-sm px-6 py-4 flex justify-between items-center flex-shrink-0 border-b"},
+                    React.createElement("div", {className: "flex items-center gap-6"},
+                        React.createElement("div", null,
+                            React.createElement("h2", {className: "text-xl font-bold text-gray-800"}, 
+                                todoViewMode === "meudia" ? "☀️ Meu Dia" : (todoGrupoAtivo?.icone + " " + todoGrupoAtivo?.nome || "Selecione uma lista")
+                            ),
+                            React.createElement("p", {className: "text-sm text-gray-500"}, 
+                                tarefasFiltradas.length, " tarefa(s)"
+                            )
                         ),
-                        React.createElement("p", {className: "text-gray-500"}, 
-                            tarefasFiltradas.length, " tarefa(s)", 
-                            todoFiltroCard && (" - Filtro: " + (todoFiltroCard === "pendentes" ? "⏳ Pendentes" : todoFiltroCard === "atrasadas" ? "🔥 Atrasadas" : "✅ Concluídas"))
+                        // Cards de Filtro Horizontal
+                        React.createElement("div", {className: "flex gap-2"},
+                            React.createElement("button", {
+                                onClick: () => setTodoFiltroCard(todoFiltroCard === "pendentes" ? null : "pendentes"),
+                                className: "px-3 py-1.5 rounded-lg flex items-center gap-2 text-sm font-semibold transition-all " + 
+                                    (todoFiltroCard === "pendentes" ? "bg-yellow-500 text-white" : "bg-yellow-100 text-yellow-700 hover:bg-yellow-200")
+                            }, "⏳ ", pendentes.length),
+                            React.createElement("button", {
+                                onClick: () => setTodoFiltroCard(todoFiltroCard === "atrasadas" ? null : "atrasadas"),
+                                className: "px-3 py-1.5 rounded-lg flex items-center gap-2 text-sm font-semibold transition-all " + 
+                                    (todoFiltroCard === "atrasadas" ? "bg-red-500 text-white" : "bg-red-100 text-red-700 hover:bg-red-200")
+                            }, "🔥 ", atrasadas.length),
+                            React.createElement("button", {
+                                onClick: () => setTodoFiltroCard(todoFiltroCard === "concluidas" ? null : "concluidas"),
+                                className: "px-3 py-1.5 rounded-lg flex items-center gap-2 text-sm font-semibold transition-all " + 
+                                    (todoFiltroCard === "concluidas" ? "bg-green-500 text-white" : "bg-green-100 text-green-700 hover:bg-green-200")
+                            }, "✅ ", concluidas.length),
+                            todoFiltroCard && React.createElement("button", {
+                                onClick: () => setTodoFiltroCard(null),
+                                className: "px-2 py-1.5 text-gray-400 hover:text-gray-600"
+                            }, "✕")
                         )
                     ),
                     React.createElement("div", {className: "flex items-center gap-3"},
                         React.createElement("button", {
                             onClick: () => he("solicitacoes"),
-                            className: "px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200"
+                            className: "px-4 py-2 text-gray-600 rounded-lg font-semibold hover:bg-gray-100"
                         }, "← Voltar"),
                         React.createElement("button", {
                             onClick: () => setTodoModal({tipo: "novaTarefa"}),
@@ -9574,7 +9562,7 @@ const hideLoadingScreen = () => {
                 ),
                 
                 // Área de conteúdo com scroll
-                React.createElement("div", {className: "flex-1 overflow-y-auto p-6"},
+                React.createElement("div", {className: "flex-1 overflow-y-auto p-6 bg-gray-50"},
                 
                 // Grid Kanban (3 por linha)
                 tarefasFiltradas.length === 0 ? 
@@ -9586,8 +9574,8 @@ const hideLoadingScreen = () => {
                     ) :
                     React.createElement("div", {className: "grid grid-cols-3 gap-4"},
                         tarefasFiltradas.map(t => {
-                            const isAtrasada = t.data_vencimento && new Date(t.data_vencimento) < hoje && t.status !== "concluida";
-                            const isHoje = t.data_vencimento && new Date(t.data_vencimento).toDateString() === hoje.toDateString();
+                            const isAtrasada = t.data_prazo && new Date(t.data_prazo) < hoje && t.status !== "concluida";
+                            const isHoje = t.data_prazo && new Date(t.data_prazo).toDateString() === hoje.toDateString();
                             
                             return React.createElement("div", {
                                 key: t.id,
@@ -9639,8 +9627,8 @@ const hideLoadingScreen = () => {
                                 
                                 // Data e Atribuído
                                 React.createElement("div", {className: "text-xs text-gray-500 space-y-1"},
-                                    t.data_vencimento && React.createElement("p", null, "📅 ", new Date(t.data_vencimento).toLocaleDateString("pt-BR")),
-                                    t.atribuido_para && React.createElement("p", null, "👤 ", t.atribuido_para)
+                                    t.data_prazo && React.createElement("p", null, "📅 ", new Date(t.data_prazo).toLocaleDateString("pt-BR")),
+                                    t.responsaveis && t.responsaveis.length > 0 && React.createElement("p", null, "👤 ", Array.isArray(t.responsaveis) ? t.responsaveis.join(", ") : t.responsaveis)
                                 ),
                                 
                                 // Botão de status
@@ -9834,7 +9822,7 @@ const hideLoadingScreen = () => {
                 React.createElement("div", null,
                     React.createElement("label", {className: "block text-sm font-semibold mb-1"}, "Atribuir para"),
                     React.createElement("select", {
-                        value: todoModal.atribuidoPara || todoModal.tarefa?.atribuido_para || "",
+                        value: todoModal.atribuidoPara || (todoModal.tarefa?.responsaveis && todoModal.tarefa.responsaveis[0]) || "",
                         onChange: e => setTodoModal({...todoModal, atribuidoPara: e.target.value}),
                         className: "w-full px-3 py-2 border rounded-lg bg-white"
                     }, React.createElement("option", {value: ""}, "Selecione..."),
@@ -9876,22 +9864,25 @@ const hideLoadingScreen = () => {
                                         titulo: titulo,
                                         descricao: todoModal.descricao || "",
                                         prioridade: todoModal.prioridade || "media",
-                                        data_vencimento: todoModal.dataVencimento || null,
-                                        atribuido_para: todoModal.atribuidoPara || null,
-                                        criado_por: l.fullName
+                                        data_prazo: todoModal.dataVencimento || null,
+                                        responsaveis: todoModal.atribuidoPara ? [todoModal.atribuidoPara] : [],
+                                        criado_por: l.codProfissional,
+                                        criado_por_nome: l.fullName
                                     })
                                 });
                                 ja("✅ Tarefa criada!", "success");
                             } else {
                                 await fetch(`${API_URL}/todo/tarefas/${todoModal.tarefa.id}`, {
-                                    method: "PATCH",
+                                    method: "PUT",
                                     headers: {"Content-Type": "application/json"},
                                     body: JSON.stringify({
                                         titulo: titulo,
                                         descricao: todoModal.descricao ?? todoModal.tarefa.descricao,
                                         prioridade: todoModal.prioridade || todoModal.tarefa.prioridade,
-                                        data_vencimento: todoModal.dataVencimento || todoModal.tarefa.data_vencimento,
-                                        atribuido_para: todoModal.atribuidoPara ?? todoModal.tarefa.atribuido_para
+                                        data_prazo: todoModal.dataVencimento || todoModal.tarefa.data_prazo,
+                                        responsaveis: todoModal.atribuidoPara ? [todoModal.atribuidoPara] : (todoModal.tarefa.responsaveis || []),
+                                        user_cod: l.codProfissional,
+                                        user_name: l.fullName
                                     })
                                 });
                                 ja("✅ Tarefa atualizada!", "success");
