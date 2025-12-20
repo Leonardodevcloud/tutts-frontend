@@ -2042,6 +2042,7 @@ const hideLoadingScreen = () => {
         }, Vl = async () => {
             const e = parseFloat(p.withdrawAmount);
             if (!e || e <= 0) return void ja("Valor inválido", "error");
+            if (e < 10) return void ja("⚠️ Valor mínimo é R$ 10,00", "error");
             const t = new Date,
                 a = new Date(t.getTime() - 36e5),
                 r = M.filter(e => new Date(e.created_at) >= a);
@@ -2995,20 +2996,27 @@ const hideLoadingScreen = () => {
                 className: "block text-sm font-semibold mb-1"
             }, "Valor ", t && React.createElement("span", {
                 className: "text-green-600 text-xs"
-            }, "(máx: ", er(a), ")")), React.createElement("input", {
-                type: "number",
+            }, "(máx: ", er(a), ")"), React.createElement("span", {
+                className: "text-gray-500 text-xs ml-1"
+            }, "(mín: R$ 10,00)")), React.createElement("input", {
+                type: "text",
+                inputMode: "numeric",
+                pattern: "[0-9]*",
                 value: p.withdrawAmount || "",
-                onChange: e => x({
-                    ...p,
-                    withdrawAmount: e.target.value
-                }),
-                className: "w-full px-4 py-3 border rounded-lg text-lg " + (r || d ? "border-red-500 bg-red-50" : ""),
+                onChange: e => {
+                    const val = e.target.value.replace(/[^0-9]/g, '');
+                    x({...p, withdrawAmount: val});
+                },
+                placeholder: "Mínimo R$ 10,00",
+                className: "w-full px-4 py-3 border rounded-lg text-lg " + (r || d || (p.withdrawAmount && parseFloat(p.withdrawAmount) < 10) ? "border-red-500 bg-red-50" : ""),
                 disabled: 0 === m
-            }), r && React.createElement("p", {
+            }), p.withdrawAmount && parseFloat(p.withdrawAmount) > 0 && parseFloat(p.withdrawAmount) < 10 && React.createElement("p", {
+                className: "text-red-600 text-sm mt-1 font-semibold"
+            }, "❌ Valor mínimo é R$ 10,00"), r && React.createElement("p", {
                 className: "text-red-600 text-sm mt-1 font-semibold"
             }, "❌ Valor excede o limite da gratuidade (", er(a), ")"), d && !r && React.createElement("p", {
                 className: "text-red-600 text-sm mt-1 font-semibold"
-            }, "❌ Você já solicitou R$ ", l.toFixed(2), " na última hora. Escolha outro valor.")), p.withdrawAmount && parseFloat(p.withdrawAmount) > 0 && !r && !d && (() => {
+            }, "❌ Você já solicitou R$ ", l.toFixed(2), " na última hora. Escolha outro valor.")), p.withdrawAmount && parseFloat(p.withdrawAmount) >= 10 && !r && !d && (() => {
                 const e = (e => {
                     const t = G.find(e => "ativa" === e.status && e.remaining > 0),
                         a = !!t,
@@ -3040,9 +3048,9 @@ const hideLoadingScreen = () => {
                 }, er(e.final))))
             })(), React.createElement("button", {
                 onClick: Vl,
-                disabled: c || !p.withdrawAmount || r || d || 0 === m,
+                disabled: c || !p.withdrawAmount || parseFloat(p.withdrawAmount) < 10 || r || d || 0 === m,
                 className: "w-full bg-green-600 text-white py-3 rounded-lg font-bold disabled:opacity-50"
-            }, c ? "..." : 0 === m ? "🚫 Limite Atingido" : "💸 Solicitar"))
+            }, c ? "..." : 0 === m ? "🚫 Limite Atingido" : parseFloat(p.withdrawAmount || 0) < 10 ? "⚠️ Mínimo R$ 10" : "💸 Solicitar"))
         })(), React.createElement("h3", {
             className: "text-lg font-semibold mt-8 mb-4"
         }, "📋 Histórico"), 0 === M.length ? React.createElement("p", {
@@ -4873,7 +4881,7 @@ const hideLoadingScreen = () => {
                     });
                 return React.createElement("tr", {
                     key: e.id,
-                    className: `border-t hover:bg-gray-50 ${z.includes(e.id)?"bg-purple-50":""} ${!t||s||o||c?"":"bg-red-50 border-l-4 border-l-red-500"} ${n} ${!e.has_gratuity||o||s||c?"":"row-green"} ${e.is_restricted&&!s?"row-red":""}`
+                    className: `border-t hover:bg-gray-50 ${z.includes(e.id)?"bg-purple-50":""} ${!t||s||o||c?"":"bg-red-50 border-l-4 border-l-red-500"} ${n} ${!e.has_gratuity||o||s||c?"":"row-blue"} ${e.is_restricted&&!s?"row-red":""}`
                 }, React.createElement("td", {
                     className: "px-2 py-3 text-center"
                 }, React.createElement("input", {
@@ -4896,8 +4904,8 @@ const hideLoadingScreen = () => {
                 }, t ? "🚨" : a >= 90 ? "⚠️" : "⏱️", l > 0 ? `${l}h ${r}m` : `${r}min`, t && React.createElement("span", {
                     className: "text-[10px] ml-1"
                 }, "ATRASADO"))), React.createElement("td", {
-                    className: "px-2 py-3 text-xs truncate " + (s ? "text-red-800" : c ? "text-emerald-800" : o ? "text-green-800" : "")
-                }, e.user_name), React.createElement("td", {
+                    className: "px-2 py-3 text-xs " + (s ? "text-red-800" : c ? "text-emerald-800" : o ? "text-green-800" : "")
+                }, React.createElement("span", {className: "block max-w-[100px] break-words leading-tight"}, e.user_name)), React.createElement("td", {
                     className: "px-2 py-3 text-xs " + (s ? "text-red-800" : c ? "text-emerald-800" : o ? "text-green-800" : "")
                 }, e.cpf), React.createElement("td", {
                     className: "px-2 py-3 font-mono text-xs " + (s ? "text-red-800" : c ? "text-emerald-800" : o ? "text-green-800" : "")
@@ -4938,12 +4946,12 @@ const hideLoadingScreen = () => {
                 }, React.createElement("span", {
                     className: "text-[10px] truncate flex-1",
                     title: e.pix_key
-                }, e.pix_key), React.createElement("button", {
+                }, e.pix_key), !s && React.createElement("button", {
                     onClick: () => J(e),
                     className: "text-lg hover:scale-125 transition-transform",
                     title: "Gerar QR Code PIX"
                 }, "💠")), e.has_gratuity && React.createElement("p", {
-                    className: "text-[10px] font-bold text-emerald-700 mt-0.5"
+                    className: "text-[10px] font-bold text-blue-700 mt-0.5"
                 }, "🎁 GRATUIDADE")), React.createElement("td", {
                     className: "px-2 py-3 text-center"
                 }, "validado" === e.saldo_status ? React.createElement("div", {
@@ -5420,7 +5428,7 @@ const hideLoadingScreen = () => {
                         s = "aprovado" === e.status || "aprovado_gratuidade" === e.status;
                     return React.createElement("tr", {
                         key: e.id,
-                        className: `border-t hover:bg-gray-50 ${e.has_gratuity?"bg-emerald-50 border-l-4 border-l-emerald-500":""} ${e.is_restricted?"row-red":""}`
+                        className: `border-t hover:bg-gray-50 ${e.has_gratuity?"bg-blue-50 border-l-4 border-l-blue-500":""} ${e.is_restricted?"row-red":""}`
                     }, React.createElement("td", {
                         className: "px-4 py-3"
                     }, React.createElement("div", {
@@ -5454,7 +5462,7 @@ const hideLoadingScreen = () => {
                     }, e.pix_key)), React.createElement("td", {
                         className: "px-4 py-3 text-center"
                     }, e.has_gratuity ? React.createElement("span", {
-                        className: "text-xs font-bold text-emerald-700 bg-emerald-100 px-2 py-1 rounded"
+                        className: "text-xs font-bold text-blue-700 bg-blue-100 px-2 py-1 rounded"
                     }, "SIM") : React.createElement("span", {
                         className: "text-xs text-gray-400"
                     }, "-")), React.createElement("td", {
