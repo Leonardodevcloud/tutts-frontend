@@ -4821,12 +4821,13 @@ const hideLoadingScreen = () => {
             ))),
             e ? React.createElement("nav", {
                 className: "bg-gradient-to-r from-indigo-900 to-purple-900 shadow-lg"
-            }, React.createElement("div", {
-                className: "max-w-7xl mx-auto px-4 py-4 flex justify-between items-center"
-            }, React.createElement("div", {
-                className: "flex items-center gap-4"
             }, 
-            // Foto de perfil
+            // Primeira linha - Logo e usuário
+            React.createElement("div", {
+                className: "max-w-7xl mx-auto px-4 pt-3 pb-2 flex justify-between items-center border-b border-white/10"
+            }, React.createElement("div", {
+                className: "flex items-center gap-3"
+            }, 
             socialProfile?.profile_photo ? React.createElement("img", {
                 src: socialProfile.profile_photo,
                 className: "w-10 h-10 rounded-full object-cover border-2 border-white/50"
@@ -4834,41 +4835,11 @@ const hideLoadingScreen = () => {
                 className: "w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold border-2 border-white/50"
             }, l.fullName?.charAt(0)?.toUpperCase() || "?"),
             React.createElement("div", null, React.createElement("h1", {
-                className: "text-xl font-bold text-white"
+                className: "text-lg font-bold text-white"
             }, "👑 Admin Master"), React.createElement("p", {
                 className: "text-xs text-indigo-200"
-            }, socialProfile?.display_name || l.fullName)), React.createElement("div", {
-                className: "flex bg-white/10 rounded-lg p-1"
-            }, React.createElement("button", {
-                onClick: () => he("home"),
-                className: "px-4 py-2 rounded-lg text-sm font-semibold transition-all " + ("home" === Ee ? "bg-white text-purple-900" : "text-white hover:bg-white/10")
-            }, "🏠 Início"), React.createElement("button", {
-                onClick: () => he("solicitacoes"),
-                className: "px-4 py-2 rounded-lg text-sm font-semibold transition-all " + ("solicitacoes" === Ee ? "bg-white text-purple-900" : "text-white hover:bg-white/10")
-            }, "📋 Solicitações"), React.createElement("button", {
-                onClick: () => he("financeiro"),
-                className: "px-4 py-2 rounded-lg text-sm font-semibold transition-all " + ("financeiro" === Ee ? "bg-white text-green-800" : "text-white hover:bg-white/10")
-            }, "💰 Financeiro"), React.createElement("button", {
-                onClick: () => he("disponibilidade"),
-                className: "px-4 py-2 rounded-lg text-sm font-semibold transition-all " + ("disponibilidade" === Ee ? "bg-white text-blue-800" : "text-white hover:bg-white/10")
-            }, "📅 Disponibilidade"), React.createElement("button", {
-                onClick: () => {
-                    he("bi"), ll(), tl(), al(), dl(), pl()
-                },
-                className: "px-4 py-2 rounded-lg text-sm font-semibold transition-all " + ("bi" === Ee ? "bg-white text-orange-800" : "text-white hover:bg-white/10")
-            }, "📊 BI"), React.createElement("button", {
-                onClick: () => he("todo"),
-                className: "px-4 py-2 rounded-lg text-sm font-semibold transition-all " + ("todo" === Ee ? "bg-white text-indigo-800" : "text-white hover:bg-white/10")
-            }, "📋 TO-DO"), React.createElement("button", {
-                onClick: () => he("social"),
-                className: "px-4 py-2 rounded-lg text-sm font-semibold transition-all " + ("social" === Ee ? "bg-white text-purple-800" : "text-white hover:bg-white/10")
-            }, "💜 Social"), React.createElement("button", {
-                onClick: () => he("operacional"),
-                className: "px-4 py-2 rounded-lg text-sm font-semibold transition-all " + ("operacional" === Ee ? "bg-white text-teal-800" : "text-white hover:bg-white/10")
-            }, "⚙️ Operacional"), React.createElement("button", {
-                onClick: () => he("config"),
-                className: "px-4 py-2 rounded-lg text-sm font-semibold transition-all " + ("config" === Ee ? "bg-white text-gray-800" : "text-white hover:bg-white/10")
-            }, "🔧 Config"))), React.createElement("div", {
+            }, socialProfile?.display_name || l.fullName))), 
+            React.createElement("div", {
                 className: "flex items-center gap-3"
             }, React.createElement("div", {
                 className: "flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full"
@@ -4878,11 +4849,46 @@ const hideLoadingScreen = () => {
                 className: "text-xs text-indigo-200"
             }, f ? "Atualizando..." : E ? `${E.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}` : "⚡ 10s")), React.createElement("button", {
                 onClick: ul,
-                className: "px-4 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 text-sm font-semibold"
+                className: "px-3 py-1.5 bg-white/20 text-white rounded-lg hover:bg-white/30 text-sm font-semibold"
             }, "🔄"), React.createElement("button", {
                 onClick: () => o(null),
-                className: "px-4 py-2 text-white hover:bg-white/20 rounded-lg"
-            }, "Sair")))) : React.createElement("nav", {
+                className: "px-3 py-1.5 text-white hover:bg-white/20 rounded-lg text-sm"
+            }, "Sair"))),
+            // Segunda linha - Navegação
+            React.createElement("div", {
+                className: "max-w-7xl mx-auto px-4 py-2"
+            }, React.createElement("div", {
+                className: "flex flex-wrap gap-1"
+            }, React.createElement("button", {
+                onClick: () => he("home"),
+                className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("home" === Ee ? "bg-white text-purple-900" : "text-white hover:bg-white/10")
+            }, "🏠 Início"), React.createElement("button", {
+                onClick: () => he("solicitacoes"),
+                className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("solicitacoes" === Ee ? "bg-white text-purple-900" : "text-white hover:bg-white/10")
+            }, "📋 Solicitações"), React.createElement("button", {
+                onClick: () => he("financeiro"),
+                className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("financeiro" === Ee ? "bg-white text-green-800" : "text-white hover:bg-white/10")
+            }, "💰 Financeiro"), React.createElement("button", {
+                onClick: () => he("disponibilidade"),
+                className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("disponibilidade" === Ee ? "bg-white text-blue-800" : "text-white hover:bg-white/10")
+            }, "📅 Disponibilidade"), React.createElement("button", {
+                onClick: () => {
+                    he("bi"), ll(), tl(), al(), dl(), pl()
+                },
+                className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("bi" === Ee ? "bg-white text-orange-800" : "text-white hover:bg-white/10")
+            }, "📊 BI"), React.createElement("button", {
+                onClick: () => he("todo"),
+                className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("todo" === Ee ? "bg-white text-indigo-800" : "text-white hover:bg-white/10")
+            }, "📝 TO-DO"), React.createElement("button", {
+                onClick: () => he("social"),
+                className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("social" === Ee ? "bg-white text-pink-800" : "text-white hover:bg-white/10")
+            }, "💜 Social"), React.createElement("button", {
+                onClick: () => he("operacional"),
+                className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("operacional" === Ee ? "bg-white text-teal-800" : "text-white hover:bg-white/10")
+            }, "⚙️ Operacional"), React.createElement("button", {
+                onClick: () => he("config"),
+                className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("config" === Ee ? "bg-white text-gray-800" : "text-white hover:bg-white/10")
+            }, "🔧 Config")))) : React.createElement("nav", {
                 className: "bg-green-800 shadow-lg"
             }, React.createElement("div", {
                 className: "max-w-7xl mx-auto px-4 py-4 flex justify-between items-center"
@@ -12296,7 +12302,7 @@ const hideLoadingScreen = () => {
                 React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-3 gap-4"},
                     // Solicitações
                     React.createElement("button", {
-                        onClick: () => he("home"),
+                        onClick: () => he("solicitacoes"),
                         className: "bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 border-2 border-transparent hover:border-purple-300"
                     }, React.createElement("span", {className: "text-4xl block mb-3"}, "📋"),
                         React.createElement("p", {className: "font-bold text-gray-800"}, "Solicitações"),
@@ -12415,12 +12421,13 @@ const hideLoadingScreen = () => {
         ))),
         rr ? React.createElement("nav", {
             className: "bg-gradient-to-r from-indigo-900 to-purple-900 shadow-lg"
-        }, React.createElement("div", {
-            className: "max-w-7xl mx-auto px-4 py-4 flex justify-between items-center"
-        }, React.createElement("div", {
-            className: "flex items-center gap-4"
         }, 
-        // Foto de perfil
+        // Primeira linha - Logo e usuário
+        React.createElement("div", {
+            className: "max-w-7xl mx-auto px-4 pt-3 pb-2 flex justify-between items-center border-b border-white/10"
+        }, React.createElement("div", {
+            className: "flex items-center gap-3"
+        }, 
         socialProfile?.profile_photo ? React.createElement("img", {
             src: socialProfile.profile_photo,
             className: "w-10 h-10 rounded-full object-cover border-2 border-white/50"
@@ -12428,51 +12435,11 @@ const hideLoadingScreen = () => {
             className: "w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold border-2 border-white/50"
         }, l.fullName?.charAt(0)?.toUpperCase() || "?"),
         React.createElement("div", null, React.createElement("h1", {
-            className: "text-xl font-bold text-white"
+            className: "text-lg font-bold text-white"
         }, "👑 Admin Master"), React.createElement("p", {
             className: "text-xs text-indigo-200"
-        }, socialProfile?.display_name || l.fullName)), React.createElement("div", {
-            className: "flex bg-white/10 rounded-lg p-1"
-        }, React.createElement("button", {
-            onClick: () => he("home"),
-            className: "px-4 py-2 rounded-lg text-sm font-semibold transition-all " + ("home" === Ee ? "bg-white text-purple-900" : "text-white hover:bg-white/10")
-        }, "🏠 Início"), React.createElement("button", {
-            onClick: () => {
-                he("solicitacoes"), x(e => ({
-                    ...e,
-                    adminTab: "dashboard"
-                }))
-            },
-            className: "px-4 py-2 rounded-lg text-sm font-semibold transition-all " + ("solicitacoes" === Ee && "disponibilidade" !== p.adminTab ? "bg-white text-purple-900" : "text-white hover:bg-white/10")
-        }, "📋 Solicitações"), React.createElement("button", {
-            onClick: () => he("financeiro"),
-            className: "px-4 py-2 rounded-lg text-sm font-semibold transition-all " + ("financeiro" === Ee ? "bg-white text-green-800" : "text-white hover:bg-white/10")
-        }, "💰 Financeiro"), React.createElement("button", {
-            onClick: () => {
-                he("disponibilidade"), x(e => ({
-                    ...e,
-                    adminTab: "disponibilidade"
-                }))
-            },
-            className: "px-4 py-2 rounded-lg text-sm font-semibold transition-all " + ("disponibilidade" === Ee ? "bg-white text-blue-800" : "text-white hover:bg-white/10")
-        }, "📅 Disponibilidade"), React.createElement("button", {
-            onClick: () => {
-                he("bi"), ll(), tl(), al(), dl(), pl()
-            },
-            className: "px-4 py-2 rounded-lg text-sm font-semibold transition-all " + ("bi" === Ee ? "bg-white text-orange-800" : "text-white hover:bg-white/10")
-        }, "📊 BI"), React.createElement("button", {
-            onClick: () => he("todo"),
-            className: "px-4 py-2 rounded-lg text-sm font-semibold transition-all " + ("todo" === Ee ? "bg-white text-indigo-800" : "text-white hover:bg-white/10")
-        }, "📋 TO-DO"), React.createElement("button", {
-            onClick: () => he("social"),
-            className: "px-4 py-2 rounded-lg text-sm font-semibold transition-all " + ("social" === Ee ? "bg-white text-purple-800" : "text-white hover:bg-white/10")
-        }, "💜 Social"), React.createElement("button", {
-                onClick: () => he("operacional"),
-                className: "px-4 py-2 rounded-lg text-sm font-semibold transition-all " + ("operacional" === Ee ? "bg-white text-teal-800" : "text-white hover:bg-white/10")
-            }, "⚙️ Operacional"), React.createElement("button", {
-                onClick: () => he("config"),
-                className: "px-4 py-2 rounded-lg text-sm font-semibold transition-all " + ("config" === Ee ? "bg-white text-gray-800" : "text-white hover:bg-white/10")
-            }, "🔧 Config"))), React.createElement("div", {
+        }, socialProfile?.display_name || l.fullName))), 
+        React.createElement("div", {
             className: "flex items-center gap-3"
         }, React.createElement("div", {
             className: "flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full"
@@ -12482,11 +12449,51 @@ const hideLoadingScreen = () => {
             className: "text-xs text-indigo-200"
         }, f ? "Atualizando..." : E ? `${E.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}` : "⚡ 10s")), React.createElement("button", {
             onClick: ul,
-            className: "px-4 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 text-sm font-semibold"
+            className: "px-3 py-1.5 bg-white/20 text-white rounded-lg hover:bg-white/30 text-sm font-semibold"
         }, "🔄"), React.createElement("button", {
             onClick: () => o(null),
-            className: "px-4 py-2 text-white hover:bg-white/20 rounded-lg"
-        }, "Sair")))) : or ? React.createElement("nav", {
+            className: "px-3 py-1.5 text-white hover:bg-white/20 rounded-lg text-sm"
+        }, "Sair"))),
+        // Segunda linha - Navegação
+        React.createElement("div", {
+            className: "max-w-7xl mx-auto px-4 py-2"
+        }, React.createElement("div", {
+            className: "flex flex-wrap gap-1"
+        }, React.createElement("button", {
+            onClick: () => he("home"),
+            className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("home" === Ee ? "bg-white text-purple-900" : "text-white hover:bg-white/10")
+        }, "🏠 Início"), React.createElement("button", {
+            onClick: () => {
+                he("solicitacoes"), x(e => ({
+                    ...e,
+                    adminTab: "dashboard"
+                }))
+            },
+            className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("solicitacoes" === Ee ? "bg-white text-purple-900" : "text-white hover:bg-white/10")
+        }, "📋 Solicitações"), React.createElement("button", {
+            onClick: () => he("financeiro"),
+            className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("financeiro" === Ee ? "bg-white text-green-800" : "text-white hover:bg-white/10")
+        }, "💰 Financeiro"), React.createElement("button", {
+            onClick: () => he("disponibilidade"),
+            className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("disponibilidade" === Ee ? "bg-white text-blue-800" : "text-white hover:bg-white/10")
+        }, "📅 Disponibilidade"), React.createElement("button", {
+            onClick: () => {
+                he("bi"), ll(), tl(), al(), dl(), pl()
+            },
+            className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("bi" === Ee ? "bg-white text-orange-800" : "text-white hover:bg-white/10")
+        }, "📊 BI"), React.createElement("button", {
+            onClick: () => he("todo"),
+            className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("todo" === Ee ? "bg-white text-indigo-800" : "text-white hover:bg-white/10")
+        }, "📝 TO-DO"), React.createElement("button", {
+            onClick: () => he("social"),
+            className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("social" === Ee ? "bg-white text-pink-800" : "text-white hover:bg-white/10")
+        }, "💜 Social"), React.createElement("button", {
+            onClick: () => he("operacional"),
+            className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("operacional" === Ee ? "bg-white text-teal-800" : "text-white hover:bg-white/10")
+        }, "⚙️ Operacional"), React.createElement("button", {
+            onClick: () => he("config"),
+            className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("config" === Ee ? "bg-white text-gray-800" : "text-white hover:bg-white/10")
+        }, "🔧 Config")))) : or ? React.createElement("nav", {
             className: "bg-purple-900 shadow-lg"
         }, React.createElement("div", {
             className: "max-w-7xl mx-auto px-4 py-4 flex justify-between items-center"
