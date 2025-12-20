@@ -4892,7 +4892,7 @@ const hideLoadingScreen = () => {
                     },
                     className: "w-4 h-4"
                 })), React.createElement("td", {
-                    className: "px-2 py-3 text-xs " + (s ? "text-red-800" : c ? "text-blue-800" : o ? "text-green-800" : "")
+                    className: "px-2 py-3 text-xs " + (s ? "text-red-800 font-bold" : c ? "text-blue-800 font-bold" : o ? "text-green-800 font-bold" : "")
                 }, React.createElement("div", {
                     className: "flex flex-col"
                 }, React.createElement("span", {
@@ -4904,13 +4904,13 @@ const hideLoadingScreen = () => {
                 }, t ? "🚨" : a >= 90 ? "⚠️" : "⏱️", l > 0 ? `${l}h ${r}m` : `${r}min`, t && React.createElement("span", {
                     className: "text-[10px] ml-1"
                 }, "ATRASADO"))), React.createElement("td", {
-                    className: "px-2 py-3 text-xs " + (s ? "text-red-800" : c ? "text-blue-800" : o ? "text-green-800" : "")
+                    className: "px-2 py-3 text-xs " + (s ? "text-red-800 font-bold" : c ? "text-blue-800 font-bold" : o ? "text-green-800 font-bold" : "")
                 }, React.createElement("span", {className: "block max-w-[100px] break-words leading-tight"}, e.user_name)), React.createElement("td", {
-                    className: "px-2 py-3 text-xs " + (s ? "text-red-800" : c ? "text-blue-800" : o ? "text-green-800" : "")
+                    className: "px-2 py-3 text-xs " + (s ? "text-red-800 font-bold" : c ? "text-blue-800 font-bold" : o ? "text-green-800 font-bold" : "")
                 }, e.cpf), React.createElement("td", {
-                    className: "px-2 py-3 font-mono text-xs " + (s ? "text-red-800" : c ? "text-blue-800" : o ? "text-green-800" : "")
+                    className: "px-2 py-3 font-mono text-xs " + (s ? "text-red-800 font-bold" : c ? "text-blue-800 font-bold" : o ? "text-green-800 font-bold" : "")
                 }, e.user_cod), React.createElement("td", {
-                    className: "px-2 py-3 text-right font-semibold text-xs " + (s ? "text-red-800" : c ? "text-blue-800" : o ? "text-green-800" : "")
+                    className: "px-2 py-3 text-right text-xs " + (s ? "text-red-800 font-bold" : c ? "text-blue-800 font-bold" : o ? "text-green-800 font-bold" : "font-semibold")
                 }, er(e.requested_amount)), React.createElement("td", {
                     className: "px-2 py-3 text-center"
                 }, React.createElement("div", {
@@ -4938,9 +4938,9 @@ const hideLoadingScreen = () => {
                 }), e.debito && e.debito_at && React.createElement("span", {
                     className: "text-[10px] mt-1 " + (s ? "text-red-800" : c ? "text-blue-800" : o ? "text-green-800" : "text-gray-500")
                 }, new Date(e.debito_at).toLocaleDateString("pt-BR")))), React.createElement("td", {
-                    className: "px-2 py-3 text-right text-xs " + (s ? "text-red-800" : c ? "text-blue-800" : o ? "text-green-800" : "")
+                    className: "px-2 py-3 text-right text-xs " + (s ? "text-red-800 font-bold" : c ? "text-blue-800 font-bold" : o ? "text-green-800 font-bold" : "")
                 }, er(e.final_amount)), React.createElement("td", {
-                    className: "px-2 py-3 " + (s ? "text-red-800" : c ? "text-blue-800" : o ? "text-green-800" : "")
+                    className: "px-2 py-3 " + (s ? "text-red-800 font-bold" : c ? "text-blue-800 font-bold" : o ? "text-green-800 font-bold" : "")
                 }, React.createElement("div", {
                     className: "flex items-center gap-1"
                 }, React.createElement("span", {
