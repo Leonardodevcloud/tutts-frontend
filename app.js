@@ -2737,7 +2737,38 @@ const hideLoadingScreen = () => {
         }, i && React.createElement(Toast, i), n && React.createElement(LoadingOverlay, null), u && React.createElement(ImageModal, {
             imageUrl: u,
             onClose: () => g(null)
-        }), React.createElement("nav", {
+        }), 
+        // Modal de notificação de tarefas pendentes
+        todoNotifModal && todoPendentesNotif.length > 0 && React.createElement("div", {
+            className: "fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+        }, React.createElement("div", {
+            className: "bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+        }, React.createElement("div", {
+            className: "bg-gradient-to-r from-orange-500 to-red-500 p-4 text-white"
+        }, React.createElement("h2", {className: "text-xl font-bold flex items-center gap-2"}, "⚠️ Atenção!"),
+            React.createElement("p", {className: "text-orange-100 text-sm"}, "Você possui tarefas pendentes")
+        ), React.createElement("div", {className: "p-4 max-h-60 overflow-y-auto"},
+            React.createElement("p", {className: "text-gray-600 mb-3"}, "📋 ", todoPendentesNotif.length, " tarefa(s) precisam da sua atenção:"),
+            React.createElement("div", {className: "space-y-2"},
+                todoPendentesNotif.slice(0, 5).map(t => React.createElement("div", {
+                    key: t.id,
+                    className: "bg-orange-50 border-l-4 border-orange-500 p-3 rounded"
+                }, React.createElement("p", {className: "font-semibold text-gray-800"}, t.titulo),
+                    t.data_prazo && React.createElement("p", {className: "text-xs text-orange-600"}, "📅 Vence: ", new Date(t.data_prazo).toLocaleDateString("pt-BR"))
+                ))
+            ),
+            todoPendentesNotif.length > 5 && React.createElement("p", {className: "text-sm text-gray-500 mt-2"}, "... e mais ", todoPendentesNotif.length - 5, " tarefa(s)")
+        ), React.createElement("div", {className: "flex gap-3 p-4 border-t"},
+            React.createElement("button", {
+                onClick: () => setTodoNotifModal(false),
+                className: "flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300"
+            }, "Fechar"),
+            React.createElement("button", {
+                onClick: () => { setTodoNotifModal(false); he("todo"); },
+                className: "flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
+            }, "📋 Ir para Tarefas")
+        ))),
+        React.createElement("nav", {
             className: "bg-gradient-to-r from-purple-800 to-purple-900 shadow-lg"
         }, React.createElement("div", {
             className: "max-w-7xl mx-auto px-4 py-4 flex justify-between items-center"
@@ -4709,7 +4740,38 @@ const hideLoadingScreen = () => {
                 withdrawal: V,
                 onClose: () => J(null),
                 showToast: ja
-            }), e ? React.createElement("nav", {
+            }), 
+            // Modal de notificação de tarefas pendentes
+            todoNotifModal && todoPendentesNotif.length > 0 && React.createElement("div", {
+                className: "fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            }, React.createElement("div", {
+                className: "bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+            }, React.createElement("div", {
+                className: "bg-gradient-to-r from-orange-500 to-red-500 p-4 text-white"
+            }, React.createElement("h2", {className: "text-xl font-bold flex items-center gap-2"}, "⚠️ Atenção!"),
+                React.createElement("p", {className: "text-orange-100 text-sm"}, "Você possui tarefas pendentes")
+            ), React.createElement("div", {className: "p-4 max-h-60 overflow-y-auto"},
+                React.createElement("p", {className: "text-gray-600 mb-3"}, "📋 ", todoPendentesNotif.length, " tarefa(s) precisam da sua atenção:"),
+                React.createElement("div", {className: "space-y-2"},
+                    todoPendentesNotif.slice(0, 5).map(t => React.createElement("div", {
+                        key: t.id,
+                        className: "bg-orange-50 border-l-4 border-orange-500 p-3 rounded"
+                    }, React.createElement("p", {className: "font-semibold text-gray-800"}, t.titulo),
+                        t.data_prazo && React.createElement("p", {className: "text-xs text-orange-600"}, "📅 Vence: ", new Date(t.data_prazo).toLocaleDateString("pt-BR"))
+                    ))
+                ),
+                todoPendentesNotif.length > 5 && React.createElement("p", {className: "text-sm text-gray-500 mt-2"}, "... e mais ", todoPendentesNotif.length - 5, " tarefa(s)")
+            ), React.createElement("div", {className: "flex gap-3 p-4 border-t"},
+                React.createElement("button", {
+                    onClick: () => setTodoNotifModal(false),
+                    className: "flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300"
+                }, "Fechar"),
+                React.createElement("button", {
+                    onClick: () => { setTodoNotifModal(false); he("todo"); },
+                    className: "flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
+                }, "📋 Ir para Tarefas")
+            ))),
+            e ? React.createElement("nav", {
                 className: "bg-gradient-to-r from-indigo-900 to-purple-900 shadow-lg"
             }, React.createElement("div", {
                 className: "max-w-7xl mx-auto px-4 py-4 flex justify-between items-center"
@@ -9532,17 +9594,17 @@ const hideLoadingScreen = () => {
                                 onClick: () => setTodoFiltroCard(todoFiltroCard === "pendentes" ? null : "pendentes"),
                                 className: "px-3 py-1.5 rounded-lg flex items-center gap-2 text-sm font-semibold transition-all " + 
                                     (todoFiltroCard === "pendentes" ? "bg-yellow-500 text-white" : "bg-yellow-100 text-yellow-700 hover:bg-yellow-200")
-                            }, "⏳ ", pendentes.length),
+                            }, "⏳ Pendentes (", pendentes.length, ")"),
                             React.createElement("button", {
                                 onClick: () => setTodoFiltroCard(todoFiltroCard === "atrasadas" ? null : "atrasadas"),
                                 className: "px-3 py-1.5 rounded-lg flex items-center gap-2 text-sm font-semibold transition-all " + 
                                     (todoFiltroCard === "atrasadas" ? "bg-red-500 text-white" : "bg-red-100 text-red-700 hover:bg-red-200")
-                            }, "🔥 ", atrasadas.length),
+                            }, "🔥 Atrasadas (", atrasadas.length, ")"),
                             React.createElement("button", {
                                 onClick: () => setTodoFiltroCard(todoFiltroCard === "concluidas" ? null : "concluidas"),
                                 className: "px-3 py-1.5 rounded-lg flex items-center gap-2 text-sm font-semibold transition-all " + 
                                     (todoFiltroCard === "concluidas" ? "bg-green-500 text-white" : "bg-green-100 text-green-700 hover:bg-green-200")
-                            }, "✅ ", concluidas.length),
+                            }, "✅ Concluídas (", concluidas.length, ")"),
                             todoFiltroCard && React.createElement("button", {
                                 onClick: () => setTodoFiltroCard(null),
                                 className: "px-2 py-1.5 text-gray-400 hover:text-gray-600"
@@ -9628,7 +9690,29 @@ const hideLoadingScreen = () => {
                                 // Data e Atribuído
                                 React.createElement("div", {className: "text-xs text-gray-500 space-y-1"},
                                     t.data_prazo && React.createElement("p", null, "📅 ", new Date(t.data_prazo).toLocaleDateString("pt-BR")),
-                                    t.responsaveis && t.responsaveis.length > 0 && React.createElement("p", null, "👤 ", Array.isArray(t.responsaveis) ? t.responsaveis.join(", ") : t.responsaveis)
+                                    t.responsaveis && React.createElement("p", null, "👤 ", (() => {
+                                        try {
+                                            let resp = t.responsaveis;
+                                            // Se for string, tentar parsear
+                                            if (typeof resp === 'string') {
+                                                resp = JSON.parse(resp);
+                                            }
+                                            // Se não for array, retornar vazio
+                                            if (!Array.isArray(resp) || resp.length === 0) return null;
+                                            // Mapear para extrair nomes
+                                            const nomes = resp.map(r => {
+                                                if (typeof r === 'string') return r;
+                                                if (typeof r === 'object' && r !== null) {
+                                                    return r.nome || r.name || r.full_name || r.fullName || JSON.stringify(r);
+                                                }
+                                                return String(r);
+                                            }).filter(Boolean);
+                                            return nomes.length > 0 ? nomes.join(", ") : null;
+                                        } catch (e) {
+                                            console.error("Erro ao parsear responsaveis:", e, t.responsaveis);
+                                            return String(t.responsaveis);
+                                        }
+                                    })())
                                 ),
                                 
                                 // Botão de status
@@ -12097,7 +12181,38 @@ const hideLoadingScreen = () => {
         }, i && React.createElement(Toast, i), n && React.createElement(LoadingOverlay, null), u && React.createElement(ImageModal, {
             imageUrl: u,
             onClose: () => g(null)
-        }), rr ? React.createElement("nav", {
+        }), 
+        // Modal de notificação de tarefas pendentes
+        todoNotifModal && todoPendentesNotif.length > 0 && React.createElement("div", {
+            className: "fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+        }, React.createElement("div", {
+            className: "bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+        }, React.createElement("div", {
+            className: "bg-gradient-to-r from-orange-500 to-red-500 p-4 text-white"
+        }, React.createElement("h2", {className: "text-xl font-bold flex items-center gap-2"}, "⚠️ Atenção!"),
+            React.createElement("p", {className: "text-orange-100 text-sm"}, "Você possui tarefas pendentes")
+        ), React.createElement("div", {className: "p-4 max-h-60 overflow-y-auto"},
+            React.createElement("p", {className: "text-gray-600 mb-3"}, "📋 ", todoPendentesNotif.length, " tarefa(s) precisam da sua atenção:"),
+            React.createElement("div", {className: "space-y-2"},
+                todoPendentesNotif.slice(0, 5).map(t => React.createElement("div", {
+                    key: t.id,
+                    className: "bg-orange-50 border-l-4 border-orange-500 p-3 rounded"
+                }, React.createElement("p", {className: "font-semibold text-gray-800"}, t.titulo),
+                    t.data_prazo && React.createElement("p", {className: "text-xs text-orange-600"}, "📅 Vence: ", new Date(t.data_prazo).toLocaleDateString("pt-BR"))
+                ))
+            ),
+            todoPendentesNotif.length > 5 && React.createElement("p", {className: "text-sm text-gray-500 mt-2"}, "... e mais ", todoPendentesNotif.length - 5, " tarefa(s)")
+        ), React.createElement("div", {className: "flex gap-3 p-4 border-t"},
+            React.createElement("button", {
+                onClick: () => setTodoNotifModal(false),
+                className: "flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300"
+            }, "Fechar"),
+            React.createElement("button", {
+                onClick: () => { setTodoNotifModal(false); he("todo"); },
+                className: "flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
+            }, "📋 Ir para Tarefas")
+        ))),
+        rr ? React.createElement("nav", {
             className: "bg-gradient-to-r from-indigo-900 to-purple-900 shadow-lg"
         }, React.createElement("div", {
             className: "max-w-7xl mx-auto px-4 py-4 flex justify-between items-center"
