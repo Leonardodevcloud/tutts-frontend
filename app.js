@@ -1210,7 +1210,7 @@ const hideLoadingScreen = () => {
         useEffect(() => {
             if (l && l.role === "user" && l.codProfissional && !avisoCarregado) {
                 setAvisoCarregado(true);
-                fetch(`${API_URL}/avisos/usuario/${l.codProfissional}`)
+                fetch(`${API_URL}/avisos-op/usuario/${l.codProfissional}`)
                     .then(res => res.json())
                     .then(data => { if (data) setAvisoAtual(data); })
                     .catch(err => console.error(err));
@@ -1220,7 +1220,7 @@ const hideLoadingScreen = () => {
         // Função para fechar aviso
         const fecharAviso = async () => {
             if (avisoAtual && l) {
-                await fetch(`${API_URL}/avisos/${avisoAtual.id}/visualizar`, {
+                await fetch(`${API_URL}/avisos-op/${avisoAtual.id}/visualizar`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ user_cod: l.codProfissional })
@@ -1232,7 +1232,7 @@ const hideLoadingScreen = () => {
         // Funções do módulo Avisos (admin)
         const carregarAvisos = async () => {
             try {
-                const res = await fetch(`${API_URL}/avisos`);
+                const res = await fetch(`${API_URL}/avisos-op`);
                 const data = await res.json();
                 setAvisosData(data);
             } catch (err) { console.error(err); }
@@ -1240,7 +1240,7 @@ const hideLoadingScreen = () => {
         
         const carregarRegioes = async () => {
             try {
-                const res = await fetch(`${API_URL}/avisos/regioes`);
+                const res = await fetch(`${API_URL}/avisos-op/regioes`);
                 const data = await res.json();
                 setAvisosRegioes(data);
             } catch (err) { console.error(err); }
@@ -1248,7 +1248,7 @@ const hideLoadingScreen = () => {
         
         const salvarAviso = async () => {
             try {
-                const url = avisoEdit ? `${API_URL}/avisos/${avisoEdit.id}` : `${API_URL}/avisos`;
+                const url = avisoEdit ? `${API_URL}/avisos-op/${avisoEdit.id}` : `${API_URL}/avisos-op`;
                 const method = avisoEdit ? 'PUT' : 'POST';
                 
                 await fetch(url, {
@@ -1273,7 +1273,7 @@ const hideLoadingScreen = () => {
         const deletarAviso = async (id) => {
             if (!confirm('Tem certeza que deseja excluir este aviso?')) return;
             try {
-                await fetch(`${API_URL}/avisos/${id}`, { method: 'DELETE' });
+                await fetch(`${API_URL}/avisos-op/${id}`, { method: 'DELETE' });
                 ja('✅ Aviso excluído!', 'success');
                 carregarAvisos();
             } catch (err) {
@@ -10534,7 +10534,7 @@ const hideLoadingScreen = () => {
                                         className: "px-4 py-2 bg-blue-100 text-blue-700 rounded-lg font-semibold hover:bg-blue-200"
                                     }, "✏️ Editar"),
                                     React.createElement("button", {
-                                        onClick: async () => { await fetch(`${API_URL}/avisos/${aviso.id}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({...aviso, ativo: !aviso.ativo})}); carregarAvisos(); },
+                                        onClick: async () => { await fetch(`${API_URL}/avisos-op/${aviso.id}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({...aviso, ativo: !aviso.ativo})}); carregarAvisos(); },
                                         className: "px-4 py-2 rounded-lg font-semibold " + (aviso.ativo ? "bg-yellow-100 text-yellow-700 hover:bg-yellow-200" : "bg-green-100 text-green-700 hover:bg-green-200")
                                     }, aviso.ativo ? "⏸️ Desativar" : "▶️ Ativar"),
                                     React.createElement("button", {
