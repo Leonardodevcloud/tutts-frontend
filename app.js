@@ -4863,14 +4863,14 @@ const hideLoadingScreen = () => {
                 onClick: () => he("home"),
                 className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("home" === Ee ? "bg-white text-purple-900" : "text-white hover:bg-white/10")
             }, "🏠 Início"), React.createElement("button", {
-                onClick: () => he("solicitacoes"),
-                className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("solicitacoes" === Ee ? "bg-white text-purple-900" : "text-white hover:bg-white/10")
+                onClick: () => { he("solicitacoes"); x(e => ({...e, adminTab: "dashboard"})); },
+                className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("solicitacoes" === Ee && "disponibilidade" !== p.adminTab ? "bg-white text-purple-900" : "text-white hover:bg-white/10")
             }, "📋 Solicitações"), React.createElement("button", {
                 onClick: () => he("financeiro"),
                 className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("financeiro" === Ee ? "bg-white text-green-800" : "text-white hover:bg-white/10")
             }, "💰 Financeiro"), React.createElement("button", {
-                onClick: () => he("disponibilidade"),
-                className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("disponibilidade" === Ee ? "bg-white text-blue-800" : "text-white hover:bg-white/10")
+                onClick: () => { he("solicitacoes"); x(e => ({...e, adminTab: "disponibilidade"})); },
+                className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("solicitacoes" === Ee && "disponibilidade" === p.adminTab ? "bg-white text-blue-800" : "text-white hover:bg-white/10")
             }, "📅 Disponibilidade"), React.createElement("button", {
                 onClick: () => {
                     he("bi"), ll(), tl(), al(), dl(), pl()
@@ -12302,7 +12302,7 @@ const hideLoadingScreen = () => {
                 React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-3 gap-4"},
                     // Solicitações
                     React.createElement("button", {
-                        onClick: () => he("solicitacoes"),
+                        onClick: () => { he("solicitacoes"); x(e => ({...e, adminTab: "dashboard"})); },
                         className: "bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 border-2 border-transparent hover:border-purple-300"
                     }, React.createElement("span", {className: "text-4xl block mb-3"}, "📋"),
                         React.createElement("p", {className: "font-bold text-gray-800"}, "Solicitações"),
@@ -12321,7 +12321,7 @@ const hideLoadingScreen = () => {
                     
                     // Disponibilidade (só admin_master)
                     l.role === "admin_master" && React.createElement("button", {
-                        onClick: () => he("disponibilidade"),
+                        onClick: () => { he("solicitacoes"); x(e => ({...e, adminTab: "disponibilidade"})); },
                         className: "bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 border-2 border-transparent hover:border-blue-300"
                     }, React.createElement("span", {className: "text-4xl block mb-3"}, "📅"),
                         React.createElement("p", {className: "font-bold text-gray-800"}, "Disponibilidade"),
@@ -12474,8 +12474,8 @@ const hideLoadingScreen = () => {
             onClick: () => he("financeiro"),
             className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("financeiro" === Ee ? "bg-white text-green-800" : "text-white hover:bg-white/10")
         }, "💰 Financeiro"), React.createElement("button", {
-            onClick: () => he("disponibilidade"),
-            className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("disponibilidade" === Ee ? "bg-white text-blue-800" : "text-white hover:bg-white/10")
+            onClick: () => { he("solicitacoes"); x(e => ({...e, adminTab: "disponibilidade"})); },
+            className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("solicitacoes" === Ee && "disponibilidade" === p.adminTab ? "bg-white text-blue-800" : "text-white hover:bg-white/10")
         }, "📅 Disponibilidade"), React.createElement("button", {
             onClick: () => {
                 he("bi"), ll(), tl(), al(), dl(), pl()
