@@ -4383,7 +4383,17 @@ const hideLoadingScreen = () => {
             const e = "admin_master" === l.role;
             return React.createElement("div", {
                 className: "min-h-screen bg-gray-50"
-            }, i && React.createElement(Toast, i), n && React.createElement(LoadingOverlay, null), V && React.createElement(PixQRCodeModal, {
+            }, i && React.createElement(Toast, i), n && React.createElement(LoadingOverlay, null), React.createElement(ConfigModal, {
+                show: p.showConfigModal,
+                onClose: () => x({...p, showConfigModal: false}),
+                users: A,
+                loadUsers: Ia,
+                showToast: ja,
+                setLoading: s,
+                currentUser: l,
+                state: p,
+                setState: x
+            }), V && React.createElement(PixQRCodeModal, {
                 withdrawal: V,
                 onClose: () => J(null),
                 showToast: ja
@@ -10802,7 +10812,17 @@ const hideLoadingScreen = () => {
             or = "admin" === l.role;
         return React.createElement("div", {
             className: "min-h-screen bg-gray-50"
-        }, i && React.createElement(Toast, i), n && React.createElement(LoadingOverlay, null), u && React.createElement(ImageModal, {
+        }, i && React.createElement(Toast, i), n && React.createElement(LoadingOverlay, null), React.createElement(ConfigModal, {
+            show: p.showConfigModal,
+            onClose: () => x({...p, showConfigModal: false}),
+            users: A,
+            loadUsers: Ia,
+            showToast: ja,
+            setLoading: s,
+            currentUser: l,
+            state: p,
+            setState: x
+        }), u && React.createElement(ImageModal, {
             imageUrl: u,
             onClose: () => g(null)
         }), rr ? React.createElement("nav", {
@@ -10898,7 +10918,10 @@ const hideLoadingScreen = () => {
         }, React.createElement("button", {
             onClick: ul,
             className: "px-4 py-2 bg-purple-700 text-white rounded-lg hover:bg-purple-600 text-sm font-semibold"
-        }, "🔄 Atualizar"), React.createElement("button", {
+        }, "🔄 Atualizar"), "admin_master" === l.role && React.createElement("button", {
+            onClick: function() { x({...p, showConfigModal: true}); },
+            className: "px-4 py-2 bg-purple-700 text-white rounded-lg hover:bg-purple-600 text-sm font-semibold"
+        }, "⚙️"), React.createElement("button", {
             onClick: () => o(null),
             className: "px-4 py-2 text-white hover:bg-purple-800 rounded-lg"
         }, "Sair")))) : null, "disponibilidade" !== p.adminTab && React.createElement("div", {
@@ -14327,151 +14350,258 @@ const hideLoadingScreen = () => {
                 }
             },
             className: "px-4 py-2 bg-red-600 text-white rounded text-sm font-semibold"
-        }, "🗑️"))))))), p.showConfigModal && "admin_master" === l.role && React.createElement("div", {
-            className: "fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4",
-            onClick: () => x({...p, showConfigModal: false})
-        }, React.createElement("div", {
-            className: "bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden",
-            onClick: e => e.stopPropagation()
-        }, React.createElement("div", {
-            className: "bg-gradient-to-r from-purple-700 to-purple-900 text-white p-4"
-        }, React.createElement("div", {
-            className: "flex items-center justify-between"
-        }, React.createElement("div", {
-            className: "flex items-center gap-3"
-        }, React.createElement("span", {className: "text-2xl"}, "⚙️"), React.createElement("div", null,
-            React.createElement("h2", {className: "text-lg font-bold"}, "Configurações do Sistema"),
-            React.createElement("p", {className: "text-purple-200 text-sm"}, "Gestão de usuários e permissões")
-        )), React.createElement("button", {
-            onClick: () => x({...p, showConfigModal: false}),
-            className: "text-white/80 hover:text-white text-2xl font-bold"
-        }, "✕"))), React.createElement("div", {
-            className: "border-b"
-        }, React.createElement("div", {
-            className: "flex gap-1 px-4"
-        }, React.createElement("button", {
-            onClick: () => x({...p, configTab: "usuarios"}),
-            className: "px-4 py-3 text-sm font-semibold " + ((!p.configTab || p.configTab === "usuarios") ? "text-purple-700 border-b-2 border-purple-600" : "text-gray-500 hover:text-gray-700")
-        }, "👥 Gerenciar Usuários"), React.createElement("button", {
-            onClick: () => x({...p, configTab: "permissoes"}),
-            className: "px-4 py-3 text-sm font-semibold " + (p.configTab === "permissoes" ? "text-purple-700 border-b-2 border-purple-600" : "text-gray-500 hover:text-gray-700")
-        }, "🔐 Permissões ADM"))), React.createElement("div", {
-            className: "p-6 overflow-y-auto",
-            style: {maxHeight: "calc(90vh - 140px)"}
-        }, (!p.configTab || p.configTab === "usuarios") && React.createElement("div", null,
-            React.createElement("div", {className: "bg-purple-50 border border-purple-200 rounded-lg p-4 mb-6"},
-                React.createElement("h3", {className: "font-semibold mb-3"}, "➕ Criar Usuário"),
-                React.createElement("div", {className: "grid md:grid-cols-2 gap-4 mb-4"},
+        }, "🗑️"))))))))
+    };
+// Modal de Configurações - Componente Separado
+const ConfigModal = ({show, onClose, users, loadUsers, showToast, setLoading, currentUser, state, setState}) => {
+    if (!show || currentUser?.role !== "admin_master") return null;
+    
+    const [configTab, setConfigTab] = React.useState("usuarios");
+    const [newName, setNewName] = React.useState("");
+    const [newCod, setNewCod] = React.useState("");
+    const [newPass, setNewPass] = React.useState("");
+    const [newRole, setNewRole] = React.useState("user");
+    const [adminPerms, setAdminPerms] = React.useState({});
+    
+    const createUser = async () => {
+        if (!newName || !newCod || !newPass) {
+            showToast("Preencha todos os campos", "error");
+            return;
+        }
+        setLoading(true);
+        try {
+            await fetch(API_URL + "/users/register", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({fullName: newName, codProfissional: newCod, password: newPass, role: newRole})
+            });
+            showToast("✅ Usuário criado!", "success");
+            setNewName(""); setNewCod(""); setNewPass(""); setNewRole("user");
+            loadUsers();
+        } catch (err) {
+            showToast("Erro ao criar usuário", "error");
+        }
+        setLoading(false);
+    };
+    
+    const resetPassword = async (user) => {
+        const newPass = prompt("Nova senha para " + user.fullName + ":");
+        if (newPass && newPass.length >= 4) {
+            await fetch(API_URL + "/users/reset-password", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({codProfissional: user.codProfissional, newPassword: newPass})
+            });
+            showToast("✅ Senha alterada!", "success");
+        } else if (newPass) {
+            showToast("Senha muito curta (mín. 4 caracteres)", "error");
+        }
+    };
+    
+    const deleteUser = async (user) => {
+        if (confirm("⚠️ Excluir " + user.fullName + " (" + user.codProfissional + ")?\\n\\nEsta ação não pode ser desfeita!")) {
+            try {
+                await fetch(API_URL + "/users/" + user.codProfissional, {method: "DELETE"});
+                showToast("🗑️ Usuário excluído!", "success");
+                loadUsers();
+            } catch (err) {
+                showToast("Erro ao excluir", "error");
+            }
+        }
+    };
+    
+    const toggleAdminPerm = (cod, module) => {
+        setAdminPerms(prev => ({
+            ...prev,
+            [cod]: {
+                ...prev[cod],
+                [module]: !(prev[cod]?.[module] !== false)
+            }
+        }));
+    };
+    
+    const savePermissions = async () => {
+        // Salvar permissões no backend
+        for (const cod in adminPerms) {
+            try {
+                await fetch(API_URL + "/admin-permissions/" + cod, {
+                    method: "PUT",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({
+                        ativo: adminPerms[cod]?.ativo !== false,
+                        modulos: adminPerms[cod] || {}
+                    })
+                });
+            } catch (err) {
+                console.error("Erro ao salvar permissões:", err);
+            }
+        }
+        showToast("✅ Permissões salvas!", "success");
+    };
+    
+    return React.createElement("div", {
+        className: "fixed inset-0 bg-black bg-opacity-60 z-[9999] flex items-center justify-center p-4",
+        onClick: onClose
+    }, React.createElement("div", {
+        className: "bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden",
+        onClick: e => e.stopPropagation()
+    },
+        // Header
+        React.createElement("div", {className: "bg-gradient-to-r from-purple-700 to-purple-900 text-white p-4"},
+            React.createElement("div", {className: "flex items-center justify-between"},
+                React.createElement("div", {className: "flex items-center gap-3"},
+                    React.createElement("span", {className: "text-2xl"}, "⚙️"),
                     React.createElement("div", null,
-                        React.createElement("label", {className: "block text-sm font-semibold mb-1"}, "Nome"),
-                        React.createElement("input", {type: "text", value: p.newName || "", onChange: e => x({...p, newName: e.target.value}), className: "w-full px-3 py-2 border rounded"})
-                    ),
-                    React.createElement("div", null,
-                        React.createElement("label", {className: "block text-sm font-semibold mb-1"}, "Código"),
-                        React.createElement("input", {type: "text", value: p.newCod || "", onChange: e => x({...p, newCod: e.target.value}), className: "w-full px-3 py-2 border rounded"})
+                        React.createElement("h2", {className: "text-lg font-bold"}, "Configurações do Sistema"),
+                        React.createElement("p", {className: "text-purple-200 text-sm"}, "Gestão de usuários e permissões")
                     )
                 ),
-                React.createElement("div", {className: "grid md:grid-cols-2 gap-4 mb-4"},
-                    React.createElement("div", null,
-                        React.createElement("label", {className: "block text-sm font-semibold mb-1"}, "Senha"),
-                        React.createElement("input", {type: "password", value: p.newPass || "", onChange: e => x({...p, newPass: e.target.value}), className: "w-full px-3 py-2 border rounded"})
-                    ),
-                    React.createElement("div", null,
-                        React.createElement("label", {className: "block text-sm font-semibold mb-1"}, "Tipo"),
-                        React.createElement("select", {value: p.newRole || "user", onChange: e => x({...p, newRole: e.target.value}), className: "w-full px-3 py-2 border rounded bg-white"},
-                            React.createElement("option", {value: "user"}, "👤 Usuário"),
-                            React.createElement("option", {value: "admin"}, "👑 Admin"),
-                            React.createElement("option", {value: "admin_financeiro"}, "💰 Admin Financeiro")
-                        )
-                    )
-                ),
-                React.createElement("button", {
-                    onClick: async () => {
-                        if (p.newName && p.newCod && p.newPass) {
-                            s(!0);
-                            try {
-                                await fetch(API_URL + "/users/register", {
-                                    method: "POST",
-                                    headers: {"Content-Type": "application/json"},
-                                    body: JSON.stringify({fullName: p.newName, codProfissional: p.newCod, password: p.newPass, role: p.newRole || "user"})
-                                });
-                                ja("✅ Usuário criado!", "success");
-                                x({...p, newName: "", newCod: "", newPass: "", newRole: "user"});
-                                Ia();
-                            } catch (err) { ja("Erro ao criar usuário", "error"); }
-                            s(!1);
-                        } else { ja("Preencha todos os campos", "error"); }
-                    },
-                    className: "w-full px-6 py-2 bg-purple-600 text-white rounded font-semibold hover:bg-purple-700"
-                }, "➕ Criar Usuário")
-            ),
-            React.createElement("h3", {className: "font-semibold mb-3"}, "📋 Usuários Cadastrados (", A.length, ")"),
-            React.createElement("div", {className: "space-y-2", style: {maxHeight: "300px", overflowY: "auto"}},
-                A.map(e => React.createElement("div", {
-                    key: e.codProfissional,
-                    className: "border rounded-lg p-3 flex items-center justify-between hover:bg-gray-50"
-                },
-                React.createElement("div", null,
-                    React.createElement("p", {className: "font-semibold"}, e.fullName),
-                    React.createElement("p", {className: "text-sm text-gray-600"}, "COD: ", e.codProfissional, " • ", e.role === "admin_master" ? "👑 Master" : e.role === "admin" ? "👑 Admin" : e.role === "admin_financeiro" ? "💰 Financeiro" : "👤 User")
-                ),
-                React.createElement("div", {className: "flex gap-2 items-center"},
-                    React.createElement("button", {
-                        onClick: async () => {
-                            const newPass = prompt("Nova senha para " + e.fullName + ":");
-                            if (newPass && newPass.length >= 4) {
-                                await fetch(API_URL + "/users/reset-password", {
-                                    method: "POST",
-                                    headers: {"Content-Type": "application/json"},
-                                    body: JSON.stringify({codProfissional: e.codProfissional, newPassword: newPass})
-                                });
-                                ja("✅ Senha alterada!", "success");
-                            }
-                        },
-                        className: "px-3 py-1 bg-purple-600 text-white rounded text-sm"
-                    }, "🔑"),
-                    e.role !== "admin_master" && React.createElement("button", {
-                        onClick: async () => {
-                            if (confirm("Excluir " + e.fullName + "?")) {
-                                await fetch(API_URL + "/users/" + e.codProfissional, {method: "DELETE"});
-                                ja("🗑️ Excluído!", "success");
-                                Ia();
-                            }
-                        },
-                        className: "px-3 py-1 bg-red-600 text-white rounded text-sm"
-                    }, "🗑️")
-                )))
+                React.createElement("button", {onClick: onClose, className: "text-white/80 hover:text-white text-2xl font-bold"}, "✕")
             )
-        ), p.configTab === "permissoes" && React.createElement("div", null,
-            React.createElement("div", {className: "bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6"},
-                React.createElement("h3", {className: "font-semibold text-blue-800 mb-2"}, "🔐 Sistema de Permissões"),
-                React.createElement("p", {className: "text-sm text-blue-600"}, "Configure quais módulos cada administrador pode acessar.")
-            ),
-            React.createElement("h3", {className: "font-semibold mb-3"}, "👑 Administradores"),
-            A.filter(e => e.role === "admin" || e.role === "admin_financeiro").length === 0 
-                ? React.createElement("p", {className: "text-gray-500 text-center py-4"}, "Nenhum administrador cadastrado (exceto Master)")
-                : React.createElement("div", {className: "space-y-4"},
-                    A.filter(e => e.role === "admin" || e.role === "admin_financeiro").map(admin => 
-                        React.createElement("div", {key: admin.codProfissional, className: "border rounded-xl p-4 bg-white shadow-sm"},
-                            React.createElement("div", {className: "flex items-center justify-between mb-3"},
-                                React.createElement("div", null,
-                                    React.createElement("p", {className: "font-bold"}, admin.fullName),
-                                    React.createElement("p", {className: "text-sm text-gray-500"}, admin.role === "admin" ? "👑 Admin" : "💰 Admin Financeiro")
-                                )
-                            ),
-                            React.createElement("p", {className: "text-sm text-gray-600 mb-2"}, "📱 Módulos disponíveis:"),
-                            React.createElement("div", {className: "flex flex-wrap gap-2"},
-                                React.createElement("span", {className: "px-2 py-1 bg-green-100 text-green-700 rounded text-xs"}, "📋 Solicitações"),
-                                admin.role === "admin_financeiro" && React.createElement("span", {className: "px-2 py-1 bg-green-100 text-green-700 rounded text-xs"}, "💰 Financeiro"),
-                                React.createElement("span", {className: "px-2 py-1 bg-green-100 text-green-700 rounded text-xs"}, "⚙️ Operacional"),
-                                React.createElement("span", {className: "px-2 py-1 bg-green-100 text-green-700 rounded text-xs"}, "📅 Disponibilidade")
+        ),
+        // Tabs
+        React.createElement("div", {className: "border-b"},
+            React.createElement("div", {className: "flex gap-1 px-4"},
+                React.createElement("button", {
+                    onClick: () => setConfigTab("usuarios"),
+                    className: "px-4 py-3 text-sm font-semibold " + (configTab === "usuarios" ? "text-purple-700 border-b-2 border-purple-600" : "text-gray-500 hover:text-gray-700")
+                }, "👥 Gerenciar Usuários"),
+                React.createElement("button", {
+                    onClick: () => setConfigTab("permissoes"),
+                    className: "px-4 py-3 text-sm font-semibold " + (configTab === "permissoes" ? "text-purple-700 border-b-2 border-purple-600" : "text-gray-500 hover:text-gray-700")
+                }, "🔐 Permissões ADM")
+            )
+        ),
+        // Content
+        React.createElement("div", {className: "p-6 overflow-y-auto", style: {maxHeight: "calc(90vh - 140px)"}},
+            // Tab Usuários
+            configTab === "usuarios" && React.createElement("div", null,
+                // Criar usuário
+                React.createElement("div", {className: "bg-purple-50 border border-purple-200 rounded-lg p-4 mb-6"},
+                    React.createElement("h3", {className: "font-semibold mb-3"}, "➕ Criar Novo Usuário"),
+                    React.createElement("div", {className: "grid md:grid-cols-2 gap-4 mb-4"},
+                        React.createElement("div", null,
+                            React.createElement("label", {className: "block text-sm font-semibold mb-1"}, "Nome Completo"),
+                            React.createElement("input", {type: "text", value: newName, onChange: e => setNewName(e.target.value), className: "w-full px-3 py-2 border rounded", placeholder: "Ex: João Silva"})
+                        ),
+                        React.createElement("div", null,
+                            React.createElement("label", {className: "block text-sm font-semibold mb-1"}, "Código Profissional"),
+                            React.createElement("input", {type: "text", value: newCod, onChange: e => setNewCod(e.target.value), className: "w-full px-3 py-2 border rounded", placeholder: "Ex: 12345"})
+                        )
+                    ),
+                    React.createElement("div", {className: "grid md:grid-cols-2 gap-4 mb-4"},
+                        React.createElement("div", null,
+                            React.createElement("label", {className: "block text-sm font-semibold mb-1"}, "Senha"),
+                            React.createElement("input", {type: "password", value: newPass, onChange: e => setNewPass(e.target.value), className: "w-full px-3 py-2 border rounded", placeholder: "Mínimo 4 caracteres"})
+                        ),
+                        React.createElement("div", null,
+                            React.createElement("label", {className: "block text-sm font-semibold mb-1"}, "Tipo de Usuário"),
+                            React.createElement("select", {value: newRole, onChange: e => setNewRole(e.target.value), className: "w-full px-3 py-2 border rounded bg-white"},
+                                React.createElement("option", {value: "user"}, "👤 Usuário Comum"),
+                                React.createElement("option", {value: "admin"}, "👑 Administrador"),
+                                React.createElement("option", {value: "admin_financeiro"}, "💰 Admin Financeiro")
                             )
                         )
-                    )
+                    ),
+                    React.createElement("button", {onClick: createUser, className: "w-full px-6 py-2 bg-purple-600 text-white rounded font-semibold hover:bg-purple-700"}, "➕ Criar Usuário")
                 ),
-            React.createElement("div", {className: "mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg"},
-                React.createElement("p", {className: "text-sm text-yellow-700"}, "💡 As permissões granulares serão implementadas em breve. Por enquanto, os acessos são definidos pelo tipo de usuário (Admin ou Admin Financeiro).")
+                // Lista de usuários
+                React.createElement("h3", {className: "font-semibold mb-3"}, "📋 Usuários Cadastrados (", users.length, ")"),
+                React.createElement("div", {className: "space-y-2", style: {maxHeight: "350px", overflowY: "auto"}},
+                    users.map(user => React.createElement("div", {
+                        key: user.codProfissional,
+                        className: "border rounded-lg p-3 flex items-center justify-between hover:bg-gray-50"
+                    },
+                        React.createElement("div", null,
+                            React.createElement("p", {className: "font-semibold"}, user.fullName),
+                            React.createElement("p", {className: "text-sm text-gray-600"}, 
+                                "COD: ", user.codProfissional, " • ",
+                                user.role === "admin_master" ? "👑 Master" : 
+                                user.role === "admin" ? "👑 Admin" : 
+                                user.role === "admin_financeiro" ? "💰 Financeiro" : "👤 Usuário"
+                            )
+                        ),
+                        React.createElement("div", {className: "flex gap-2"},
+                            React.createElement("button", {
+                                onClick: () => resetPassword(user),
+                                className: "px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                            }, "🔑 Senha"),
+                            user.role !== "admin_master" && React.createElement("button", {
+                                onClick: () => deleteUser(user),
+                                className: "px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700"
+                            }, "🗑️")
+                        )
+                    ))
+                )
+            ),
+            // Tab Permissões
+            configTab === "permissoes" && React.createElement("div", null,
+                React.createElement("div", {className: "bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6"},
+                    React.createElement("h3", {className: "font-semibold text-blue-800 mb-2"}, "🔐 Sistema de Permissões"),
+                    React.createElement("p", {className: "text-sm text-blue-600"}, "Configure quais módulos cada administrador pode acessar. Clique nos módulos para ativar/desativar.")
+                ),
+                React.createElement("h3", {className: "font-semibold mb-3"}, "👑 Administradores"),
+                users.filter(u => u.role === "admin" || u.role === "admin_financeiro").length === 0
+                    ? React.createElement("p", {className: "text-gray-500 text-center py-4"}, "Nenhum administrador cadastrado (exceto Master)")
+                    : React.createElement("div", {className: "space-y-4"},
+                        users.filter(u => u.role === "admin" || u.role === "admin_financeiro").map(admin => 
+                            React.createElement("div", {key: admin.codProfissional, className: "border rounded-xl p-4 bg-white shadow-sm"},
+                                React.createElement("div", {className: "flex items-center justify-between mb-4"},
+                                    React.createElement("div", null,
+                                        React.createElement("p", {className: "font-bold text-lg"}, admin.fullName),
+                                        React.createElement("p", {className: "text-sm text-gray-500"}, 
+                                            "COD: ", admin.codProfissional, " • ",
+                                            admin.role === "admin" ? "👑 Admin" : "💰 Admin Financeiro"
+                                        )
+                                    ),
+                                    React.createElement("button", {
+                                        onClick: () => {
+                                            setAdminPerms(prev => ({
+                                                ...prev,
+                                                [admin.codProfissional]: {
+                                                    ...prev[admin.codProfissional],
+                                                    ativo: !(prev[admin.codProfissional]?.ativo !== false)
+                                                }
+                                            }));
+                                        },
+                                        className: "px-3 py-1 rounded-full text-xs font-bold " + 
+                                            ((adminPerms[admin.codProfissional]?.ativo !== false) 
+                                                ? "bg-green-100 text-green-700 hover:bg-green-200" 
+                                                : "bg-red-100 text-red-700 hover:bg-red-200")
+                                    }, (adminPerms[admin.codProfissional]?.ativo !== false) ? "✅ Ativo" : "❌ Inativo")
+                                ),
+                                React.createElement("p", {className: "text-sm font-semibold mb-2"}, "📱 Módulos (clique para alternar):"),
+                                React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-3 gap-2"},
+                                    [
+                                        {id: "solicitacoes", label: "📋 Solicitações", icon: "📋"},
+                                        {id: "financeiro", label: "💰 Financeiro", icon: "💰"},
+                                        {id: "operacional", label: "⚙️ Operacional", icon: "⚙️"},
+                                        {id: "disponibilidade", label: "📅 Disponibilidade", icon: "📅"},
+                                        {id: "bi", label: "📊 BI/Relatórios", icon: "📊"},
+                                        {id: "todo", label: "📝 TO-DO", icon: "📝"}
+                                    ].map(mod => React.createElement("button", {
+                                        key: mod.id,
+                                        onClick: () => toggleAdminPerm(admin.codProfissional, mod.id),
+                                        className: "flex items-center gap-2 p-2 rounded-lg border text-left text-sm transition-all " +
+                                            ((adminPerms[admin.codProfissional]?.[mod.id] !== false)
+                                                ? "border-green-300 bg-green-50 text-green-700 hover:bg-green-100"
+                                                : "border-gray-200 bg-gray-50 text-gray-500 hover:bg-gray-100")
+                                    },
+                                        React.createElement("span", null, mod.icon),
+                                        React.createElement("span", null, mod.label.split(" ")[1] || mod.label)
+                                    ))
+                                )
+                            )
+                        )
+                    ),
+                React.createElement("div", {className: "flex justify-end mt-6"},
+                    React.createElement("button", {
+                        onClick: savePermissions,
+                        className: "px-6 py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
+                    }, "💾 Salvar Permissões")
+                )
             )
-        )))))
-    };
+        )
+    ));
+};
 ReactDOM.render(React.createElement(App, null), document.getElementById("root"), hideLoadingScreen);
