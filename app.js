@@ -2,6 +2,23 @@ const {
     useState: useState,
     useEffect: useEffect
 } = React, API_URL = "https://tutts-backend-production.up.railway.app/api";
+
+// CONFIGURAÇÃO GLOBAL DE MÓDULOS E ABAS - Edite aqui para adicionar novos módulos/abas
+const SISTEMA_MODULOS_CONFIG = [
+    { id: "solicitacoes", label: "Solicitações", icon: "📋",
+      abas: [{id: "dashboard", label: "Dashboard"}, {id: "search", label: "Busca"}, {id: "ranking", label: "Ranking"}, {id: "relatorios", label: "Relatórios"}]
+    },
+    { id: "financeiro", label: "Financeiro", icon: "💰",
+      abas: [{id: "solicitacoes", label: "Solicitações"}, {id: "validacao", label: "Validação"}, {id: "conciliacao", label: "Conciliação"}, {id: "resumo", label: "Resumo"}, {id: "gratuidades", label: "Gratuidades"}, {id: "restritos", label: "Restritos"}, {id: "indicacoes", label: "Indicações"}, {id: "promonovatos", label: "Promo Novatos"}, {id: "loja", label: "Loja"}, {id: "relatorios", label: "Relatórios"}, {id: "horarios", label: "Horários"}, {id: "avisos", label: "Avisos"}, {id: "backup", label: "Backup"}]
+    },
+    { id: "operacional", label: "Operacional", icon: "⚙️",
+      abas: [{id: "indicacao", label: "Indicação"}, {id: "promonovatos", label: "Promo Novatos"}]
+    },
+    { id: "disponibilidade", label: "Disponibilidade", icon: "📅", abas: [] },
+    { id: "bi", label: "BI", icon: "📊", abas: [] },
+    { id: "todo", label: "TO-DO", icon: "📝", abas: [] }
+];
+
 fetch(`${API_URL.replace("/api","")}/health`).catch(() => {});
 const hideLoadingScreen = () => {
         const e = document.getElementById("loading-screen");
@@ -9873,15 +9890,13 @@ const hideLoadingScreen = () => {
                                     adminsPerms.forEach(function(adm) {
                                         const mods = Array.isArray(adm.allowed_modules) ? adm.allowed_modules : [];
                                         const tabs = adm.allowed_tabs && typeof adm.allowed_tabs === 'object' ? adm.allowed_tabs : {};
+                                        // Criar objeto de módulos dinamicamente
+                                        const modulosObj = {};
+                                        SISTEMA_MODULOS_CONFIG.forEach(function(mod) {
+                                            modulosObj[mod.id] = mods.length === 0 || mods.includes(mod.id);
+                                        });
                                         permsObj[adm.cod_profissional] = {
-                                            modulos: {
-                                                solicitacoes: mods.length === 0 || mods.includes("solicitacoes"),
-                                                financeiro: mods.length === 0 || mods.includes("financeiro"),
-                                                operacional: mods.length === 0 || mods.includes("operacional"),
-                                                disponibilidade: mods.length === 0 || mods.includes("disponibilidade"),
-                                                bi: mods.length === 0 || mods.includes("bi"),
-                                                todo: mods.length === 0 || mods.includes("todo")
-                                            },
+                                            modulos: modulosObj,
                                             abas: tabs
                                         };
                                     });
@@ -9912,15 +9927,13 @@ const hideLoadingScreen = () => {
                                                 adminsPerms.forEach(function(adm) {
                                                     const mods = Array.isArray(adm.allowed_modules) ? adm.allowed_modules : [];
                                                     const tabs = adm.allowed_tabs && typeof adm.allowed_tabs === 'object' ? adm.allowed_tabs : {};
+                                                    // Criar objeto de módulos dinamicamente
+                                                    const modulosObj = {};
+                                                    SISTEMA_MODULOS_CONFIG.forEach(function(mod) {
+                                                        modulosObj[mod.id] = mods.length === 0 || mods.includes(mod.id);
+                                                    });
                                                     permsObj[adm.cod_profissional] = {
-                                                        modulos: {
-                                                            solicitacoes: mods.length === 0 || mods.includes("solicitacoes"),
-                                                            financeiro: mods.length === 0 || mods.includes("financeiro"),
-                                                            operacional: mods.length === 0 || mods.includes("operacional"),
-                                                            disponibilidade: mods.length === 0 || mods.includes("disponibilidade"),
-                                                            bi: mods.length === 0 || mods.includes("bi"),
-                                                            todo: mods.length === 0 || mods.includes("todo")
-                                                        },
+                                                        modulos: modulosObj,
                                                         abas: tabs
                                                     };
                                                 });
@@ -9947,14 +9960,12 @@ const hideLoadingScreen = () => {
                                             
                                             if (!perms) continue;
                                             
+                                            // Usar configuração global para criar lista de módulos permitidos
                                             const allowedModules = [];
                                             const mods = perms.modulos || {};
-                                            if (mods.solicitacoes !== false) allowedModules.push("solicitacoes");
-                                            if (mods.financeiro !== false) allowedModules.push("financeiro");
-                                            if (mods.operacional !== false) allowedModules.push("operacional");
-                                            if (mods.disponibilidade !== false) allowedModules.push("disponibilidade");
-                                            if (mods.bi !== false) allowedModules.push("bi");
-                                            if (mods.todo !== false) allowedModules.push("todo");
+                                            SISTEMA_MODULOS_CONFIG.forEach(function(mod) {
+                                                if (mods[mod.id] !== false) allowedModules.push(mod.id);
+                                            });
                                             
                                             const allowedTabs = perms.abas || {};
                                             
@@ -9991,27 +10002,15 @@ const hideLoadingScreen = () => {
                                 const abas = perms.abas || {};
                                 const isExpanded = p.expandedAdmin === cod;
                                 
-                                // Contar módulos ativos
-                                const modulosAtivos = ["solicitacoes", "financeiro", "operacional", "disponibilidade", "bi", "todo"]
-                                    .filter(function(m) { return mods[m] !== false; }).length;
+                                // Usar configuração global
+                                const modulosConfig = SISTEMA_MODULOS_CONFIG;
+                                
+                                // Contar módulos ativos (dinâmico)
+                                const modulosAtivos = modulosConfig
+                                    .filter(function(m) { return mods[m.id] !== false; }).length;
                                 
                                 // Contar abas restritas
                                 const abasRestritas = Object.keys(abas).filter(function(k) { return abas[k] === false; }).length;
-                                
-                                const modulosConfig = [
-                                    { id: "solicitacoes", label: "Solicitações", icon: "📋", 
-                                      abas: [{id: "dashboard", label: "Dashboard"}, {id: "search", label: "Busca"}, {id: "ranking", label: "Ranking"}, {id: "relatorios", label: "Relatórios"}]
-                                    },
-                                    { id: "financeiro", label: "Financeiro", icon: "💰",
-                                      abas: [{id: "solicitacoes", label: "Solicitações"}, {id: "validacao", label: "Validação"}, {id: "conciliacao", label: "Conciliação"}, {id: "resumo", label: "Resumo"}, {id: "gratuidades", label: "Gratuidades"}, {id: "restritos", label: "Restritos"}, {id: "indicacoes", label: "Indicações"}, {id: "promonovatos", label: "Promo Novatos"}, {id: "loja", label: "Loja"}, {id: "relatorios", label: "Relatórios"}, {id: "horarios", label: "Horários"}, {id: "avisos", label: "Avisos"}, {id: "backup", label: "Backup"}]
-                                    },
-                                    { id: "operacional", label: "Operacional", icon: "⚙️",
-                                      abas: [{id: "indicacao", label: "Indicação"}, {id: "promonovatos", label: "Promo Novatos"}]
-                                    },
-                                    { id: "disponibilidade", label: "Disponibilidade", icon: "📅", abas: [] },
-                                    { id: "bi", label: "BI", icon: "📊", abas: [] },
-                                    { id: "todo", label: "TO-DO", icon: "📝", abas: [] }
-                                ];
                                 
                                 return React.createElement("div", {
                                     key: cod,
@@ -10037,7 +10036,7 @@ const hideLoadingScreen = () => {
                                         React.createElement("div", {className: "flex items-center gap-3"},
                                             React.createElement("div", {className: "text-right"},
                                                 React.createElement("p", {className: "text-sm font-medium " + (modulosAtivos === 6 ? "text-green-600" : "text-orange-600")},
-                                                    modulosAtivos + "/6 módulos"
+                                                    modulosAtivos + "/" + SISTEMA_MODULOS_CONFIG.length + " módulos"
                                                 ),
                                                 abasRestritas > 0 && React.createElement("p", {className: "text-xs text-red-500"}, abasRestritas + " abas restritas")
                                             ),
