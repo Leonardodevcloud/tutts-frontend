@@ -4441,7 +4441,7 @@ const hideLoadingScreen = () => {
                 onClick: () => he("financeiro"),
                 className: "px-4 py-2 rounded-lg text-sm font-semibold transition-all " + ("financeiro" === Ee ? "bg-white text-green-800" : "text-white hover:bg-white/10")
             }, "💰 Financeiro"), React.createElement("button", {
-                onClick: () => he("operacional"),
+                onClick: () => { he("operacional"); vl(); wl(); jl(); _l(); },
                 className: "px-4 py-2 rounded-lg text-sm font-semibold transition-all " + ("operacional" === Ee ? "bg-white text-pink-800" : "text-white hover:bg-white/10")
             }, "🚀 Operacional"), React.createElement("button", {
                 onClick: () => he("disponibilidade"),
@@ -9434,6 +9434,12 @@ const hideLoadingScreen = () => {
         // MÓDULO OPERACIONAL / ATIVAÇÃO
         // ============================================
         if ("admin_master" === l.role && "operacional" === Ee) {
+            // Carregar dados se ainda não carregados
+            if (ae.length === 0) vl(); // loadPromocoes
+            if (re.length === 0) wl(); // loadIndicacoes
+            if (ce.length === 0) jl(); // loadPromocoesNovatos
+            if (ne.length === 0) _l(); // loadInscricoesNovatos
+            
             return React.createElement("div", {
                 className: "min-h-screen bg-gray-50"
             }, i && React.createElement(Toast, i), n && React.createElement(LoadingOverlay, null), React.createElement("nav", {
@@ -11285,6 +11291,9 @@ const hideLoadingScreen = () => {
             onClick: () => he("financeiro"),
             className: "px-4 py-2 rounded-lg text-sm font-semibold transition-all " + ("financeiro" === Ee ? "bg-white text-green-800" : "text-white hover:bg-white/10")
         }, "💰 Financeiro"), React.createElement("button", {
+            onClick: () => { he("operacional"); vl(); wl(); jl(); _l(); },
+            className: "px-4 py-2 rounded-lg text-sm font-semibold transition-all " + ("operacional" === Ee ? "bg-white text-pink-800" : "text-white hover:bg-white/10")
+        }, "🚀 Operacional"), React.createElement("button", {
             onClick: () => {
                 he("solicitacoes"), x(e => ({
                     ...e,
@@ -11302,7 +11311,10 @@ const hideLoadingScreen = () => {
             className: "px-4 py-2 rounded-lg text-sm font-semibold transition-all " + ("todo" === Ee ? "bg-white text-indigo-800" : "text-white hover:bg-white/10")
         }, "📋 TO-DO"))), React.createElement("div", {
             className: "flex items-center gap-3"
-        }, React.createElement("div", {
+        }, React.createElement("button", {
+            onClick: () => he("configuracoes"),
+            className: "px-3 py-2 rounded-lg text-sm font-semibold transition-all " + ("configuracoes" === Ee ? "bg-white text-gray-800" : "text-white hover:bg-white/20")
+        }, "⚙️"), React.createElement("div", {
             className: "flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full"
         }, React.createElement("span", {
             className: "w-2 h-2 rounded-full " + (f ? "bg-yellow-400 animate-pulse" : "bg-green-400")
