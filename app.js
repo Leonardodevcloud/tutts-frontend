@@ -14896,7 +14896,7 @@ const hideLoadingScreen = () => {
                 onClick: async () => {
                     const e = p.dispDataPlanilha || (new Date).toISOString().split("T")[0],
                         t = new Date(e + "T12:00:00").toLocaleDateString("pt-BR");
-                    if (window.confirm(`⚠️ ATENÇÃO!\n\n📅 Data da planilha: ${t}\n\nIsso irá:\n• Salvar a planilha atual no Espelho (${t})\n• Registrar motoboys EM LOJA e SEM CONTATO\n• Remover motoboys com 3+ dias SEM CONTATO\n• Resetar todos os status para "A CONFIRMAR"\n• Limpar todas as observações\n• Converter linhas de reposição em excedentes\n\n✅ Os códigos e nomes serão MANTIDOS!\n\nDeseja continuar?`)) try {
+                    if (window.confirm(`⚠️ ATENÇÃO!\n\n📅 Data da planilha: ${t}\n\nIsso irá:\n• Salvar a planilha atual no Espelho (${t})\n• Registrar motoboys EM LOJA e SEM CONTATO\n• Remover motoboys com 3+ dias SEM CONTATO\n• Resetar todos os status para "A CONFIRMAR"\n• Converter linhas de reposição em excedentes\n\n✅ Códigos, nomes e OBSERVAÇÕES serão MANTIDOS!\n\nDeseja continuar?`)) try {
                         x(e => ({
                             ...e,
                             dispLoading: !0
