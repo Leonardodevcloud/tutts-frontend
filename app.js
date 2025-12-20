@@ -2923,21 +2923,6 @@ const hideLoadingScreen = () => {
         }, "Coberturas, valores e como acionar")), React.createElement("span", {
             className: "text-cyan-400 text-2xl"
         }, "›")), React.createElement("button", {
-            onClick: () => he("social"),
-            className: "w-full bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl shadow-lg p-6 flex items-center gap-4 hover:shadow-xl transition-all hover:scale-[1.02]"
-        }, React.createElement("div", {
-            className: "w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center text-3xl"
-        }, "💜"), React.createElement("div", {
-            className: "text-left flex-1"
-        }, React.createElement("h3", {
-            className: "text-lg font-bold text-white"
-        }, "Social"), React.createElement("p", {
-            className: "text-sm text-white/80"
-        }, "Conecte-se com a comunidade")), socialUnread > 0 && React.createElement("span", {
-            className: "bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full"
-        }, socialUnread > 9 ? "9+" : socialUnread), React.createElement("span", {
-            className: "text-white/60 text-2xl"
-        }, "›")), React.createElement("button", {
             onClick: () => {
                 ot(!0), st(0), Ga(), Za(), x({
                     ...p,
