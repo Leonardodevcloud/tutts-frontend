@@ -4687,7 +4687,15 @@ const hideLoadingScreen = () => {
                 className: "max-w-7xl mx-auto px-4 py-4 flex justify-between items-center"
             }, React.createElement("div", {
                 className: "flex items-center gap-3"
-            }, React.createElement("h1", {
+            }, 
+            // Foto de perfil
+            socialProfile?.profile_photo ? React.createElement("img", {
+                src: socialProfile.profile_photo,
+                className: "w-10 h-10 rounded-full object-cover border-2 border-white/50"
+            }) : React.createElement("div", {
+                className: "w-10 h-10 rounded-full bg-green-600 flex items-center justify-center text-white font-bold border-2 border-white/50"
+            }, l.fullName?.charAt(0)?.toUpperCase() || "?"),
+            React.createElement("h1", {
                 className: "text-xl font-bold text-white"
             }, "💰 Painel Financeiro"), 
             // Botões de navegação para admin comum
@@ -4713,7 +4721,11 @@ const hideLoadingScreen = () => {
                 (!l.permissions || !l.permissions.modulos || l.permissions.modulos.todo !== false) && React.createElement("button", {
                     onClick: () => he("todo"),
                     className: "px-3 py-1.5 rounded-lg text-xs font-semibold text-white hover:bg-white/10"
-                }, "📋 TO-DO")
+                }, "📋 TO-DO"),
+                React.createElement("button", {
+                    onClick: () => he("social"),
+                    className: "px-3 py-1.5 rounded-lg text-xs font-semibold text-white hover:bg-white/10"
+                }, "💜 Social")
             ),
             React.createElement("div", {
                 className: "flex items-center gap-2 bg-green-900/50 px-3 py-1 rounded-full"
@@ -9287,11 +9299,23 @@ const hideLoadingScreen = () => {
                 className: "w-72 bg-white shadow-lg flex flex-col"
             }, React.createElement("div", {
                 className: "bg-gradient-to-r from-purple-600 to-indigo-600 p-4 text-white"
-            }, React.createElement("h1", {
-                className: "text-xl font-bold flex items-center gap-2"
-            }, "📋 TO-DO Tutts"), React.createElement("p", {
-                className: "text-purple-200 text-sm"
-            }, "Gestão de Tarefas")), React.createElement("div", {
+            }, React.createElement("div", {className: "flex items-center gap-3"},
+                // Foto de perfil
+                socialProfile?.profile_photo ? React.createElement("img", {
+                    src: socialProfile.profile_photo,
+                    className: "w-10 h-10 rounded-full object-cover border-2 border-white/50"
+                }) : React.createElement("div", {
+                    className: "w-10 h-10 rounded-full bg-purple-500 flex items-center justify-center text-white font-bold border-2 border-white/50"
+                }, l.fullName?.charAt(0)?.toUpperCase() || "?"),
+                React.createElement("div", null,
+                    React.createElement("h1", {
+                        className: "text-xl font-bold flex items-center gap-2"
+                    }, "📋 TO-DO Tutts"), 
+                    React.createElement("p", {
+                        className: "text-purple-200 text-sm"
+                    }, socialProfile?.display_name || l.fullName)
+                )
+            )), React.createElement("div", {
                 className: "flex border-b"
             }, React.createElement("button", {
                 onClick: () => setTodoTab("tarefas"),
@@ -9947,10 +9971,10 @@ const hideLoadingScreen = () => {
                 // Aba Comunidade
                 socialTab === "comunidade" && React.createElement("div", null,
                     React.createElement("div", {className: "mb-4 text-center"},
-                        React.createElement("p", {className: "text-gray-600"}, "👥 ", socialUsers.length, " membros | 🟢 ", socialUsers.filter(u => u.is_online).length, " online")
+                        React.createElement("p", {className: "text-gray-600"}, "👥 ", socialUsers.filter(u => u.role === "admin" || u.role === "admin_master" || u.role === "admin_financeiro").length, " admins | 🟢 ", socialUsers.filter(u => u.is_online && (u.role === "admin" || u.role === "admin_master" || u.role === "admin_financeiro")).length, " online")
                     ),
                     React.createElement("div", {className: "grid gap-3"},
-                        socialUsers.filter(u => u.cod_profissional !== l.codProfissional).map(user => 
+                        socialUsers.filter(u => u.cod_profissional !== l.codProfissional && (u.role === "admin" || u.role === "admin_master" || u.role === "admin_financeiro")).map(user => 
                             React.createElement("div", {
                                 key: user.cod_profissional,
                                 className: "bg-white rounded-xl shadow p-4 flex items-center justify-between hover:shadow-lg transition-shadow"
@@ -10031,9 +10055,17 @@ const hideLoadingScreen = () => {
                 className: "max-w-7xl mx-auto px-4 py-4 flex justify-between items-center"
             }, React.createElement("div", {
                 className: "flex items-center gap-4"
-            }, React.createElement("div", null,
+            }, 
+            // Foto de perfil
+            socialProfile?.profile_photo ? React.createElement("img", {
+                src: socialProfile.profile_photo,
+                className: "w-10 h-10 rounded-full object-cover border-2 border-white/50"
+            }) : React.createElement("div", {
+                className: "w-10 h-10 rounded-full bg-teal-600 flex items-center justify-center text-white font-bold border-2 border-white/50"
+            }, l.fullName?.charAt(0)?.toUpperCase() || "?"),
+            React.createElement("div", null,
                 React.createElement("h1", {className: "text-xl font-bold text-white"}, "⚙️ Operacional / Ativação"),
-                React.createElement("p", {className: "text-xs text-teal-200"}, l.fullName)
+                React.createElement("p", {className: "text-xs text-teal-200"}, socialProfile?.display_name || l.fullName)
             ), React.createElement("div", {className: "flex bg-white/10 rounded-lg p-1"},
                 React.createElement("button", {
                     onClick: function() { he("solicitacoes"); },
@@ -10096,9 +10128,17 @@ const hideLoadingScreen = () => {
                 className: "max-w-7xl mx-auto px-4 py-4 flex justify-between items-center"
             }, React.createElement("div", {
                 className: "flex items-center gap-4"
-            }, React.createElement("div", null,
+            }, 
+            // Foto de perfil
+            socialProfile?.profile_photo ? React.createElement("img", {
+                src: socialProfile.profile_photo,
+                className: "w-10 h-10 rounded-full object-cover border-2 border-white/50"
+            }) : React.createElement("div", {
+                className: "w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center text-white font-bold border-2 border-white/50"
+            }, l.fullName?.charAt(0)?.toUpperCase() || "?"),
+            React.createElement("div", null,
                 React.createElement("h1", {className: "text-xl font-bold text-white"}, "🔧 Configurações do Sistema"),
-                React.createElement("p", {className: "text-xs text-gray-300"}, l.fullName)
+                React.createElement("p", {className: "text-xs text-gray-300"}, socialProfile?.display_name || l.fullName)
             ), React.createElement("div", {className: "flex bg-white/10 rounded-lg p-1"},
                 React.createElement("button", {
                     onClick: function() { he("solicitacoes"); },
@@ -10120,6 +10160,10 @@ const hideLoadingScreen = () => {
                     onClick: function() { he("todo"); },
                     className: "px-4 py-2 rounded-lg text-sm font-semibold text-white hover:bg-white/10"
                 }, "📋 TO-DO"),
+                React.createElement("button", {
+                    onClick: function() { he("social"); },
+                    className: "px-4 py-2 rounded-lg text-sm font-semibold text-white hover:bg-white/10"
+                }, "💜 Social"),
                 React.createElement("button", {
                     onClick: function() { he("config"); },
                     className: "px-4 py-2 rounded-lg text-sm font-semibold bg-white text-gray-800"
@@ -10575,7 +10619,15 @@ const hideLoadingScreen = () => {
                 className: "max-w-full mx-auto px-4 py-3 flex justify-between items-center"
             }, React.createElement("div", {
                 className: "flex items-center gap-4"
-            }, React.createElement("div", {
+            }, 
+            // Foto de perfil
+            socialProfile?.profile_photo ? React.createElement("img", {
+                src: socialProfile.profile_photo,
+                className: "w-10 h-10 rounded-full object-cover border-2 border-white/50"
+            }) : React.createElement("div", {
+                className: "w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold border-2 border-white/50"
+            }, l.fullName?.charAt(0)?.toUpperCase() || "?"),
+            React.createElement("div", {
                 className: "flex items-center gap-2"
             }, React.createElement("span", {
                 className: "text-2xl font-bold text-yellow-400"
@@ -11930,11 +11982,19 @@ const hideLoadingScreen = () => {
             className: "max-w-7xl mx-auto px-4 py-4 flex justify-between items-center"
         }, React.createElement("div", {
             className: "flex items-center gap-4"
-        }, React.createElement("div", null, React.createElement("h1", {
+        }, 
+        // Foto de perfil
+        socialProfile?.profile_photo ? React.createElement("img", {
+            src: socialProfile.profile_photo,
+            className: "w-10 h-10 rounded-full object-cover border-2 border-white/50"
+        }) : React.createElement("div", {
+            className: "w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold border-2 border-white/50"
+        }, l.fullName?.charAt(0)?.toUpperCase() || "?"),
+        React.createElement("div", null, React.createElement("h1", {
             className: "text-xl font-bold text-white"
         }, "👑 Admin Master"), React.createElement("p", {
             className: "text-xs text-indigo-200"
-        }, l.fullName)), React.createElement("div", {
+        }, socialProfile?.display_name || l.fullName)), React.createElement("div", {
             className: "flex bg-white/10 rounded-lg p-1"
         }, React.createElement("button", {
             onClick: () => {
@@ -11964,6 +12024,9 @@ const hideLoadingScreen = () => {
             onClick: () => he("todo"),
             className: "px-4 py-2 rounded-lg text-sm font-semibold transition-all " + ("todo" === Ee ? "bg-white text-indigo-800" : "text-white hover:bg-white/10")
         }, "📋 TO-DO"), React.createElement("button", {
+            onClick: () => he("social"),
+            className: "px-4 py-2 rounded-lg text-sm font-semibold transition-all " + ("social" === Ee ? "bg-white text-purple-800" : "text-white hover:bg-white/10")
+        }, "💜 Social"), React.createElement("button", {
                 onClick: () => he("operacional"),
                 className: "px-4 py-2 rounded-lg text-sm font-semibold transition-all " + ("operacional" === Ee ? "bg-white text-teal-800" : "text-white hover:bg-white/10")
             }, "⚙️ Operacional"), React.createElement("button", {
@@ -12056,7 +12119,12 @@ const hideLoadingScreen = () => {
         (!l.permissions || !l.permissions.modulos || l.permissions.modulos.todo !== false) && React.createElement("button", {
             onClick: () => he("todo"),
             className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("todo" === Ee ? "bg-white text-indigo-800" : "text-white hover:bg-white/10")
-        }, "📋 TO-DO")
+        }, "📋 TO-DO"),
+        // Social
+        React.createElement("button", {
+            onClick: () => he("social"),
+            className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("social" === Ee ? "bg-white text-purple-800" : "text-white hover:bg-white/10")
+        }, "💜 Social")
         ), React.createElement("div", {
             className: "flex items-center gap-2 bg-purple-800/50 px-3 py-1 rounded-full"
         }, React.createElement("span", {
