@@ -22,6 +22,9 @@ const SISTEMA_MODULOS_CONFIG = [
     },
     { id: "todo", label: "TO-DO", icon: "📝",
       abas: [{id: "tarefas", label: "Tarefas"}, {id: "metricas", label: "Métricas"}]
+    },
+    { id: "social", label: "Social", icon: "💜",
+      abas: [{id: "perfil", label: "Meu Perfil"}, {id: "comunidade", label: "Comunidade"}, {id: "mensagens", label: "Mensagens"}]
     }
 ];
 
@@ -740,12 +743,164 @@ const hideLoadingScreen = () => {
             km_min: 0,
             km_max: 15,
             prazo_minutos: 45
-        }]), [wa, _a] = useState(!1), [todoGrupos, setTodoGrupos] = useState([]), [todoTarefas, setTodoTarefas] = useState([]), [todoGrupoAtivo, setTodoGrupoAtivo] = useState(null), [todoMetricas, setTodoMetricas] = useState(null), [todoTab, setTodoTab] = useState("tarefas"), [todoFiltroStatus, setTodoFiltroStatus] = useState("todas"), [todoModal, setTodoModal] = useState(null), [todoLoading, setTodoLoading] = useState(false), [todoAdmins, setTodoAdmins] = useState([]), ja = (e, t = "success") => {
+        }]), [wa, _a] = useState(!1), [todoGrupos, setTodoGrupos] = useState([]), [todoTarefas, setTodoTarefas] = useState([]), [todoGrupoAtivo, setTodoGrupoAtivo] = useState(null), [todoMetricas, setTodoMetricas] = useState(null), [todoTab, setTodoTab] = useState("tarefas"), [todoFiltroStatus, setTodoFiltroStatus] = useState("todas"), [todoModal, setTodoModal] = useState(null), [todoLoading, setTodoLoading] = useState(false), [todoAdmins, setTodoAdmins] = useState([]),
+        // Estados do módulo Social
+        [socialProfile, setSocialProfile] = useState(null),
+        [socialUsers, setSocialUsers] = useState([]),
+        [socialMessages, setSocialMessages] = useState([]),
+        [socialUnread, setSocialUnread] = useState(0),
+        [socialTab, setSocialTab] = useState("perfil"),
+        [socialLoading, setSocialLoading] = useState(false),
+        [socialModalUser, setSocialModalUser] = useState(null),
+        ja = (e, t = "success") => {
             d({
                 message: e,
                 type: t
             }), setTimeout(() => d(null), 3e3)
         };
+        
+        // ==================== FUNÇÕES DO MÓDULO SOCIAL ====================
+        const loadSocialProfile = async (userCod) => {
+            try {
+                const res = await fetch(`${API_URL}/social/profile/${userCod}`);
+                if (res.ok) {
+                    const profile = await res.json();
+                    setSocialProfile(profile);
+                }
+            } catch (err) {
+                console.error("Erro ao carregar perfil social:", err);
+            }
+        };
+        
+        const saveSocialProfile = async (displayName, photoBase64) => {
+            try {
+                setSocialLoading(true);
+                const res = await fetch(`${API_URL}/social/profile/${l.codProfissional}`, {
+                    method: "PUT",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({ 
+                        display_name: displayName, 
+                        profile_photo: photoBase64 
+                    })
+                });
+                if (res.ok) {
+                    const profile = await res.json();
+                    setSocialProfile(profile);
+                    ja("✅ Perfil atualizado!", "success");
+                }
+            } catch (err) {
+                ja("Erro ao salvar perfil", "error");
+            } finally {
+                setSocialLoading(false);
+            }
+        };
+        
+        const updateOnlineStatus = async (isOnline) => {
+            if (!l?.codProfissional) return;
+            try {
+                await fetch(`${API_URL}/social/status`, {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({ user_cod: l.codProfissional, is_online: isOnline })
+                });
+            } catch (err) {
+                console.error("Erro ao atualizar status:", err);
+            }
+        };
+        
+        const loadSocialUsers = async () => {
+            try {
+                const res = await fetch(`${API_URL}/social/users`);
+                if (res.ok) {
+                    const users = await res.json();
+                    setSocialUsers(users);
+                }
+            } catch (err) {
+                console.error("Erro ao carregar usuários:", err);
+            }
+        };
+        
+        const loadSocialMessages = async () => {
+            if (!l?.codProfissional) return;
+            try {
+                const res = await fetch(`${API_URL}/social/messages/${l.codProfissional}`);
+                if (res.ok) {
+                    const msgs = await res.json();
+                    setSocialMessages(msgs);
+                }
+                // Carregar contagem de não lidas
+                const unreadRes = await fetch(`${API_URL}/social/messages/unread/${l.codProfissional}`);
+                if (unreadRes.ok) {
+                    const data = await unreadRes.json();
+                    setSocialUnread(data.count);
+                }
+            } catch (err) {
+                console.error("Erro ao carregar mensagens:", err);
+            }
+        };
+        
+        const sendSocialMessage = async (toUserCod, type, content) => {
+            try {
+                const res = await fetch(`${API_URL}/social/messages`, {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({
+                        from_user_cod: l.codProfissional,
+                        from_user_name: socialProfile?.display_name || l.fullName,
+                        to_user_cod: toUserCod,
+                        message_type: type,
+                        content: content
+                    })
+                });
+                if (res.ok) {
+                    ja("✅ Enviado!", "success");
+                    setSocialModalUser(null);
+                }
+            } catch (err) {
+                ja("Erro ao enviar", "error");
+            }
+        };
+        
+        const markMessagesAsRead = async () => {
+            if (!l?.codProfissional) return;
+            try {
+                await fetch(`${API_URL}/social/messages/read`, {
+                    method: "PATCH",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({ user_cod: l.codProfissional })
+                });
+                setSocialUnread(0);
+            } catch (err) {
+                console.error("Erro ao marcar como lido:", err);
+            }
+        };
+        // ==================== FIM FUNÇÕES MÓDULO SOCIAL ====================
+        
+        // Carregar perfil social e atualizar status online quando logar
+        useEffect(() => {
+            if (l?.codProfissional) {
+                loadSocialProfile(l.codProfissional);
+                updateOnlineStatus(true);
+                loadSocialMessages();
+                
+                // Atualizar status online periodicamente
+                const statusInterval = setInterval(() => {
+                    updateOnlineStatus(true);
+                    loadSocialMessages();
+                }, 60000); // A cada 1 minuto
+                
+                // Marcar como offline ao fechar
+                const handleBeforeUnload = () => updateOnlineStatus(false);
+                window.addEventListener('beforeunload', handleBeforeUnload);
+                
+                return () => {
+                    clearInterval(statusInterval);
+                    window.removeEventListener('beforeunload', handleBeforeUnload);
+                    updateOnlineStatus(false);
+                };
+            }
+        }, [l?.codProfissional]);
+        
         useEffect(() => {
             if (!l) return;
             const e = () => R(Date.now()),
@@ -2506,11 +2661,19 @@ const hideLoadingScreen = () => {
             className: "bg-gradient-to-r from-purple-800 to-purple-900 shadow-lg"
         }, React.createElement("div", {
             className: "max-w-7xl mx-auto px-4 py-4 flex justify-between items-center"
-        }, React.createElement("div", null, React.createElement("h1", {
+        }, React.createElement("div", {className: "flex items-center gap-3"}, 
+            // Foto de perfil
+            socialProfile?.profile_photo ? React.createElement("img", {
+                src: socialProfile.profile_photo,
+                className: "w-10 h-10 rounded-full object-cover border-2 border-white/50"
+            }) : React.createElement("div", {
+                className: "w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold border-2 border-white/50"
+            }, l.fullName?.charAt(0)?.toUpperCase() || "?"),
+            React.createElement("div", null, React.createElement("h1", {
             className: "text-xl font-bold text-white"
         }, "Central do Entregador Tutts"), React.createElement("p", {
             className: "text-sm text-purple-200"
-        }, l.fullName)), React.createElement("div", {
+        }, socialProfile?.display_name || l.fullName))), React.createElement("div", {
             className: "flex gap-2"
         }, p.userTab && React.createElement("button", {
             onClick: () => x({
@@ -2600,6 +2763,21 @@ const hideLoadingScreen = () => {
             className: "text-sm text-gray-500"
         }, "Coberturas, valores e como acionar")), React.createElement("span", {
             className: "text-cyan-400 text-2xl"
+        }, "›")), React.createElement("button", {
+            onClick: () => he("social"),
+            className: "w-full bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl shadow-lg p-6 flex items-center gap-4 hover:shadow-xl transition-all hover:scale-[1.02]"
+        }, React.createElement("div", {
+            className: "w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center text-3xl"
+        }, "💜"), React.createElement("div", {
+            className: "text-left flex-1"
+        }, React.createElement("h3", {
+            className: "text-lg font-bold text-white"
+        }, "Social"), React.createElement("p", {
+            className: "text-sm text-white/80"
+        }, "Conecte-se com a comunidade")), socialUnread > 0 && React.createElement("span", {
+            className: "bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full"
+        }, socialUnread > 9 ? "9+" : socialUnread), React.createElement("span", {
+            className: "text-white/60 text-2xl"
         }, "›")), React.createElement("button", {
             onClick: () => {
                 ot(!0), st(0), Ga(), Za(), x({
@@ -4481,6 +4659,9 @@ const hideLoadingScreen = () => {
                 onClick: () => he("todo"),
                 className: "px-4 py-2 rounded-lg text-sm font-semibold transition-all " + ("todo" === Ee ? "bg-white text-indigo-800" : "text-white hover:bg-white/10")
             }, "📋 TO-DO"), React.createElement("button", {
+                onClick: () => he("social"),
+                className: "px-4 py-2 rounded-lg text-sm font-semibold transition-all " + ("social" === Ee ? "bg-white text-purple-800" : "text-white hover:bg-white/10")
+            }, "💜 Social"), React.createElement("button", {
                 onClick: () => he("operacional"),
                 className: "px-4 py-2 rounded-lg text-sm font-semibold transition-all " + ("operacional" === Ee ? "bg-white text-teal-800" : "text-white hover:bg-white/10")
             }, "⚙️ Operacional"), React.createElement("button", {
@@ -9593,6 +9774,249 @@ const hideLoadingScreen = () => {
                 },
                 className: "flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
             }, todoModal.tipo === "editarTarefa" ? "Salvar Alterações" : "Criar Tarefa"))))))
+        }
+        
+        // ========== MÓDULO SOCIAL ==========
+        if ("social" === Ee) {
+            return React.createElement("div", {
+                className: "min-h-screen bg-gradient-to-br from-purple-50 to-pink-50"
+            }, i && React.createElement(Toast, i), n && React.createElement(LoadingOverlay, null),
+            
+            // Modal para enviar mensagem/reação
+            socialModalUser && React.createElement("div", {
+                className: "fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4",
+                onClick: () => setSocialModalUser(null)
+            }, React.createElement("div", {
+                className: "bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden",
+                onClick: e => e.stopPropagation()
+            }, React.createElement("div", {
+                className: "bg-gradient-to-r from-purple-600 to-pink-600 p-4 text-white"
+            }, React.createElement("div", {className: "flex items-center gap-3"},
+                socialModalUser.profile_photo ? React.createElement("img", {
+                    src: socialModalUser.profile_photo,
+                    className: "w-12 h-12 rounded-full object-cover border-2 border-white"
+                }) : React.createElement("div", {
+                    className: "w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-xl font-bold"
+                }, socialModalUser.display_name?.charAt(0)?.toUpperCase() || "?"),
+                React.createElement("div", null,
+                    React.createElement("p", {className: "font-bold"}, socialModalUser.display_name),
+                    React.createElement("p", {className: "text-sm text-purple-200"}, socialModalUser.is_online ? "🟢 Online" : "⚫ Offline")
+                )
+            )),
+            React.createElement("div", {className: "p-6"},
+                React.createElement("p", {className: "text-gray-600 text-sm mb-4 text-center italic"}, 
+                    "💜 Pratique a gentileza! Envie uma mensagem positiva ao seu colega."),
+                React.createElement("div", {className: "mb-4"},
+                    React.createElement("p", {className: "font-semibold text-gray-700 mb-2"}, "Enviar Reação:"),
+                    React.createElement("div", {className: "flex justify-center gap-3"},
+                        ["💜", "🥇", "😊", "😁", "🤩"].map(emoji => 
+                            React.createElement("button", {
+                                key: emoji,
+                                onClick: () => sendSocialMessage(socialModalUser.cod_profissional, "reaction", emoji),
+                                className: "text-3xl hover:scale-125 transition-transform p-2 hover:bg-purple-100 rounded-full"
+                            }, emoji)
+                        )
+                    )
+                ),
+                React.createElement("div", null,
+                    React.createElement("p", {className: "font-semibold text-gray-700 mb-2"}, "Ou envie uma mensagem:"),
+                    React.createElement("textarea", {
+                        placeholder: "Escreva uma mensagem gentil...",
+                        value: p.socialMsgText || "",
+                        onChange: e => x({...p, socialMsgText: e.target.value}),
+                        className: "w-full px-4 py-3 border border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 h-24 resize-none"
+                    }),
+                    React.createElement("button", {
+                        onClick: () => {
+                            if (p.socialMsgText?.trim()) {
+                                sendSocialMessage(socialModalUser.cod_profissional, "message", p.socialMsgText);
+                                x({...p, socialMsgText: ""});
+                            }
+                        },
+                        disabled: !p.socialMsgText?.trim(),
+                        className: "w-full mt-3 px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold disabled:opacity-50"
+                    }, "💌 Enviar Mensagem")
+                )
+            ))),
+            
+            // Navbar
+            React.createElement("nav", {
+                className: "bg-gradient-to-r from-purple-700 to-pink-700 shadow-lg"
+            }, React.createElement("div", {
+                className: "max-w-4xl mx-auto px-4 py-4 flex justify-between items-center"
+            }, React.createElement("div", {className: "flex items-center gap-3"},
+                socialProfile?.profile_photo ? React.createElement("img", {
+                    src: socialProfile.profile_photo,
+                    className: "w-10 h-10 rounded-full object-cover border-2 border-white/50"
+                }) : React.createElement("div", {
+                    className: "w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white font-bold"
+                }, l.fullName?.charAt(0)?.toUpperCase() || "?"),
+                React.createElement("h1", {className: "text-xl font-bold text-white"}, "💜 Social")
+            ),
+            React.createElement("div", {className: "flex items-center gap-2"},
+                React.createElement("button", {
+                    onClick: () => he("solicitacoes"),
+                    className: "px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 text-sm"
+                }, "← Voltar"),
+                React.createElement("button", {
+                    onClick: () => o(null),
+                    className: "px-4 py-2 text-white hover:bg-white/20 rounded-lg"
+                }, "Sair")
+            ))),
+            
+            // Tabs
+            React.createElement("div", {
+                className: "bg-white border-b sticky top-0 z-10"
+            }, React.createElement("div", {
+                className: "max-w-4xl mx-auto flex"
+            },
+                React.createElement("button", {
+                    onClick: () => setSocialTab("perfil"),
+                    className: "flex-1 py-4 text-center font-semibold " + (socialTab === "perfil" ? "text-purple-600 border-b-2 border-purple-600" : "text-gray-500")
+                }, "👤 Meu Perfil"),
+                React.createElement("button", {
+                    onClick: () => { setSocialTab("comunidade"); loadSocialUsers(); },
+                    className: "flex-1 py-4 text-center font-semibold " + (socialTab === "comunidade" ? "text-purple-600 border-b-2 border-purple-600" : "text-gray-500")
+                }, "👥 Comunidade"),
+                React.createElement("button", {
+                    onClick: () => { setSocialTab("mensagens"); loadSocialMessages(); markMessagesAsRead(); },
+                    className: "flex-1 py-4 text-center font-semibold relative " + (socialTab === "mensagens" ? "text-purple-600 border-b-2 border-purple-600" : "text-gray-500")
+                }, "💌 Mensagens", socialUnread > 0 && React.createElement("span", {
+                    className: "absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center"
+                }, socialUnread > 9 ? "9+" : socialUnread))
+            )),
+            
+            React.createElement("div", {className: "max-w-4xl mx-auto p-4"},
+                // Aba Perfil
+                socialTab === "perfil" && React.createElement("div", {className: "bg-white rounded-2xl shadow-lg p-6"},
+                    React.createElement("h2", {className: "text-xl font-bold text-gray-800 mb-6 text-center"}, "✨ Editar Meu Perfil"),
+                    React.createElement("div", {className: "flex flex-col items-center mb-6"},
+                        React.createElement("div", {className: "relative"},
+                            p.socialPhotoPreview || socialProfile?.profile_photo ? 
+                                React.createElement("img", {
+                                    src: p.socialPhotoPreview || socialProfile?.profile_photo,
+                                    className: "w-32 h-32 rounded-full object-cover border-4 border-purple-200"
+                                }) : 
+                                React.createElement("div", {
+                                    className: "w-32 h-32 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white text-4xl font-bold border-4 border-purple-200"
+                                }, l.fullName?.charAt(0)?.toUpperCase() || "?"),
+                            React.createElement("label", {
+                                className: "absolute bottom-0 right-0 bg-purple-600 text-white p-2 rounded-full cursor-pointer hover:bg-purple-700 shadow-lg"
+                            }, "📷", React.createElement("input", {
+                                type: "file",
+                                accept: "image/*",
+                                className: "hidden",
+                                onChange: e => {
+                                    const file = e.target.files[0];
+                                    if (file) {
+                                        if (file.size > 500000) {
+                                            ja("Imagem muito grande! Máximo 500KB", "error");
+                                            return;
+                                        }
+                                        const reader = new FileReader();
+                                        reader.onload = ev => x({...p, socialPhotoPreview: ev.target.result});
+                                        reader.readAsDataURL(file);
+                                    }
+                                }
+                            }))
+                        ),
+                        React.createElement("p", {className: "text-sm text-gray-500 mt-2"}, "Clique na 📷 para alterar")
+                    ),
+                    React.createElement("div", {className: "mb-4"},
+                        React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-1"}, "Nome de Exibição"),
+                        React.createElement("input", {
+                            type: "text",
+                            value: p.socialDisplayName !== undefined ? p.socialDisplayName : (socialProfile?.display_name || l.fullName || ""),
+                            onChange: e => x({...p, socialDisplayName: e.target.value}),
+                            className: "w-full px-4 py-3 border border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500",
+                            placeholder: "Como você quer ser chamado?"
+                        })
+                    ),
+                    React.createElement("button", {
+                        onClick: () => {
+                            const displayName = p.socialDisplayName !== undefined ? p.socialDisplayName : (socialProfile?.display_name || l.fullName);
+                            const photo = p.socialPhotoPreview || socialProfile?.profile_photo;
+                            saveSocialProfile(displayName, photo);
+                            x({...p, socialPhotoPreview: undefined, socialDisplayName: undefined});
+                        },
+                        disabled: socialLoading,
+                        className: "w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-bold text-lg disabled:opacity-50"
+                    }, socialLoading ? "Salvando..." : "💾 Salvar Perfil")
+                ),
+                
+                // Aba Comunidade
+                socialTab === "comunidade" && React.createElement("div", null,
+                    React.createElement("div", {className: "mb-4 text-center"},
+                        React.createElement("p", {className: "text-gray-600"}, "👥 ", socialUsers.length, " membros | 🟢 ", socialUsers.filter(u => u.is_online).length, " online")
+                    ),
+                    React.createElement("div", {className: "grid gap-3"},
+                        socialUsers.filter(u => u.cod_profissional !== l.codProfissional).map(user => 
+                            React.createElement("div", {
+                                key: user.cod_profissional,
+                                className: "bg-white rounded-xl shadow p-4 flex items-center justify-between hover:shadow-lg transition-shadow"
+                            },
+                                React.createElement("div", {className: "flex items-center gap-3"},
+                                    React.createElement("div", {className: "relative"},
+                                        user.profile_photo ? 
+                                            React.createElement("img", {
+                                                src: user.profile_photo,
+                                                className: "w-12 h-12 rounded-full object-cover"
+                                            }) : 
+                                            React.createElement("div", {
+                                                className: "w-12 h-12 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white font-bold"
+                                            }, user.display_name?.charAt(0)?.toUpperCase() || "?"),
+                                        React.createElement("span", {
+                                            className: "absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white " + (user.is_online ? "bg-green-500" : "bg-gray-400")
+                                        })
+                                    ),
+                                    React.createElement("div", null,
+                                        React.createElement("p", {className: "font-semibold text-gray-800"}, user.display_name),
+                                        React.createElement("p", {className: "text-xs text-gray-500"}, user.is_online ? "🟢 Online agora" : 
+                                            user.last_seen ? "Visto: " + new Date(user.last_seen).toLocaleString("pt-BR") : "Offline")
+                                    )
+                                ),
+                                React.createElement("button", {
+                                    onClick: () => setSocialModalUser(user),
+                                    className: "px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-semibold hover:from-purple-600 hover:to-pink-600"
+                                }, "💜 Interagir")
+                            )
+                        )
+                    )
+                ),
+                
+                // Aba Mensagens
+                socialTab === "mensagens" && React.createElement("div", null,
+                    socialMessages.length === 0 ? 
+                        React.createElement("div", {className: "bg-white rounded-2xl shadow-lg p-8 text-center"},
+                            React.createElement("span", {className: "text-6xl block mb-4"}, "💌"),
+                            React.createElement("p", {className: "text-gray-500"}, "Nenhuma mensagem ainda"),
+                            React.createElement("p", {className: "text-sm text-gray-400 mt-2"}, "Quando alguém enviar uma mensagem ou reação, aparecerá aqui!")
+                        ) :
+                        React.createElement("div", {className: "space-y-3"},
+                            socialMessages.map(msg => 
+                                React.createElement("div", {
+                                    key: msg.id,
+                                    className: "bg-white rounded-xl shadow p-4 " + (!msg.is_read ? "border-l-4 border-purple-500" : "")
+                                },
+                                    React.createElement("div", {className: "flex items-start gap-3"},
+                                        React.createElement("div", {
+                                            className: "w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white font-bold flex-shrink-0"
+                                        }, msg.from_user_name?.charAt(0)?.toUpperCase() || "?"),
+                                        React.createElement("div", {className: "flex-1"},
+                                            React.createElement("div", {className: "flex items-center justify-between"},
+                                                React.createElement("p", {className: "font-semibold text-gray-800"}, msg.from_user_name),
+                                                React.createElement("p", {className: "text-xs text-gray-400"}, new Date(msg.created_at).toLocaleString("pt-BR"))
+                                            ),
+                                            msg.message_type === "reaction" ?
+                                                React.createElement("p", {className: "text-4xl mt-2"}, msg.content) :
+                                                React.createElement("p", {className: "text-gray-600 mt-1 bg-purple-50 p-3 rounded-lg"}, msg.content)
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                )
+            ))
         }
         // ========== MÓDULO OPERACIONAL / ATIVAÇÃO ==========
         // Verificar permissão para Operacional (admin comum)
