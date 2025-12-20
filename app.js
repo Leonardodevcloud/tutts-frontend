@@ -9393,7 +9393,7 @@ const hideLoadingScreen = () => {
             else if (todoFiltroCard === "concluidas") tarefasFiltradas = concluidas;
             
             return React.createElement("div", {
-                className: "min-h-screen bg-gray-100 flex"
+                className: "h-screen bg-gray-100 flex overflow-hidden"
             }, i && React.createElement(Toast, i), todoLoading && React.createElement("div", {
                 className: "fixed inset-0 bg-black/50 flex items-center justify-center z-50"
             }, React.createElement("div", {
@@ -9435,7 +9435,7 @@ const hideLoadingScreen = () => {
             
             // Sidebar Esquerda
             React.createElement("div", {
-                className: "w-64 bg-white shadow-lg flex flex-col"
+                className: "w-64 bg-white shadow-lg flex flex-col h-screen"
             }, 
                 // Header
                 React.createElement("div", {
@@ -9549,9 +9549,9 @@ const hideLoadingScreen = () => {
             ),
             
             // Área Principal
-            React.createElement("div", {className: "flex-1 p-6 overflow-y-auto"},
-                // Header da área
-                React.createElement("div", {className: "flex justify-between items-center mb-6"},
+            React.createElement("div", {className: "flex-1 flex flex-col h-screen"},
+                // Header da área (FIXO)
+                React.createElement("div", {className: "bg-white shadow-sm p-6 flex justify-between items-center flex-shrink-0"},
                     React.createElement("div", null,
                         React.createElement("h2", {className: "text-2xl font-bold text-gray-800"}, 
                             todoViewMode === "meudia" ? "☀️ Meu Dia" : (todoGrupoAtivo?.icone + " " + todoGrupoAtivo?.nome || "Selecione uma lista")
@@ -9561,12 +9561,20 @@ const hideLoadingScreen = () => {
                             todoFiltroCard && (" - Filtro: " + (todoFiltroCard === "pendentes" ? "⏳ Pendentes" : todoFiltroCard === "atrasadas" ? "🔥 Atrasadas" : "✅ Concluídas"))
                         )
                     ),
-                    React.createElement("button", {
-                        onClick: () => setTodoModal({tipo: "novaTarefa"}),
-                        className: "px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 flex items-center gap-2",
-                        disabled: todoViewMode === "meudia" && !todoGrupoAtivo
-                    }, "➕ Nova Tarefa")
+                    React.createElement("div", {className: "flex items-center gap-3"},
+                        React.createElement("button", {
+                            onClick: () => he("solicitacoes"),
+                            className: "px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200"
+                        }, "← Voltar"),
+                        React.createElement("button", {
+                            onClick: () => setTodoModal({tipo: "novaTarefa"}),
+                            className: "px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 flex items-center gap-2"
+                        }, "➕ Nova Tarefa")
+                    )
                 ),
+                
+                // Área de conteúdo com scroll
+                React.createElement("div", {className: "flex-1 overflow-y-auto p-6"},
                 
                 // Grid Kanban (3 por linha)
                 tarefasFiltradas.length === 0 ? 
@@ -9696,6 +9704,7 @@ const hideLoadingScreen = () => {
                         )
                     )
                 )
+                ) // Fecha div de scroll
             ),
             
             // Modal de Novo Grupo
@@ -9829,7 +9838,7 @@ const hideLoadingScreen = () => {
                         onChange: e => setTodoModal({...todoModal, atribuidoPara: e.target.value}),
                         className: "w-full px-3 py-2 border rounded-lg bg-white"
                     }, React.createElement("option", {value: ""}, "Selecione..."),
-                        todoAdmins.map(a => React.createElement("option", {key: a.cod_profissional, value: a.full_name}, a.full_name)))
+                        todoAdmins.map(a => React.createElement("option", {key: a.cod || a.cod_profissional, value: a.nome || a.full_name}, a.nome || a.full_name)))
                 ),
                 todoModal.tipo === "novaTarefa" && React.createElement("div", null,
                     React.createElement("label", {className: "block text-sm font-semibold mb-1"}, "Grupo"),
