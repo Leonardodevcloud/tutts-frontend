@@ -4648,7 +4648,7 @@ const hideLoadingScreen = () => {
                 }, React.createElement("p", {
                     className: "text-sm text-gray-600"
                 }, "Aprov. Gratuidade"), React.createElement("p", {
-                    className: "text-2xl font-bold text-emerald-600"
+                    className: "text-2xl font-bold text-blue-600"
                 }, q.filter(e => "aprovado_gratuidade" === e.status).length)), React.createElement("div", {
                     className: "bg-white rounded-xl shadow p-4"
                 }, React.createElement("p", {
@@ -4785,7 +4785,7 @@ const hideLoadingScreen = () => {
                     ...p,
                     filterStatus: "aprovado_gratuidade"
                 }),
-                className: "px-4 py-2 rounded-lg font-semibold text-sm " + ("aprovado_gratuidade" === p.filterStatus ? "bg-emerald-600 text-white" : "bg-gray-100 hover:bg-gray-200")
+                className: "px-4 py-2 rounded-lg font-semibold text-sm " + ("aprovado_gratuidade" === p.filterStatus ? "bg-blue-600 text-white" : "bg-gray-100 hover:bg-gray-200")
             }, "🎁 Aprov. Gratuidade (", q.filter(e => "aprovado_gratuidade" === e.status).length, ")"), React.createElement("button", {
                 onClick: () => x({
                     ...p,
@@ -4872,7 +4872,7 @@ const hideLoadingScreen = () => {
                     o = "aprovado" === e.status,
                     c = "aprovado_gratuidade" === e.status,
                     s = "rejeitado" === e.status,
-                    n = s ? "font-bold text-red-800 bg-red-100" : c ? "font-bold bg-emerald-100 border-l-4 border-l-emerald-500" : o ? "font-bold bg-green-100" : "",
+                    n = s ? "font-bold text-red-800 bg-red-100" : c ? "font-bold text-blue-800 bg-blue-100 border-l-4 border-l-blue-500" : o ? "font-bold bg-green-100" : "",
                     m = new Date(e.created_at),
                     i = m.toLocaleDateString("pt-BR"),
                     d = m.toLocaleTimeString("pt-BR", {
@@ -4892,7 +4892,7 @@ const hideLoadingScreen = () => {
                     },
                     className: "w-4 h-4"
                 })), React.createElement("td", {
-                    className: "px-2 py-3 text-xs " + (s ? "text-red-800" : c ? "text-emerald-800" : o ? "text-green-800" : "")
+                    className: "px-2 py-3 text-xs " + (s ? "text-red-800" : c ? "text-blue-800" : o ? "text-green-800" : "")
                 }, React.createElement("div", {
                     className: "flex flex-col"
                 }, React.createElement("span", {
@@ -4904,13 +4904,13 @@ const hideLoadingScreen = () => {
                 }, t ? "🚨" : a >= 90 ? "⚠️" : "⏱️", l > 0 ? `${l}h ${r}m` : `${r}min`, t && React.createElement("span", {
                     className: "text-[10px] ml-1"
                 }, "ATRASADO"))), React.createElement("td", {
-                    className: "px-2 py-3 text-xs " + (s ? "text-red-800" : c ? "text-emerald-800" : o ? "text-green-800" : "")
+                    className: "px-2 py-3 text-xs " + (s ? "text-red-800" : c ? "text-blue-800" : o ? "text-green-800" : "")
                 }, React.createElement("span", {className: "block max-w-[100px] break-words leading-tight"}, e.user_name)), React.createElement("td", {
-                    className: "px-2 py-3 text-xs " + (s ? "text-red-800" : c ? "text-emerald-800" : o ? "text-green-800" : "")
+                    className: "px-2 py-3 text-xs " + (s ? "text-red-800" : c ? "text-blue-800" : o ? "text-green-800" : "")
                 }, e.cpf), React.createElement("td", {
-                    className: "px-2 py-3 font-mono text-xs " + (s ? "text-red-800" : c ? "text-emerald-800" : o ? "text-green-800" : "")
+                    className: "px-2 py-3 font-mono text-xs " + (s ? "text-red-800" : c ? "text-blue-800" : o ? "text-green-800" : "")
                 }, e.user_cod), React.createElement("td", {
-                    className: "px-2 py-3 text-right font-semibold text-xs " + (s ? "text-red-800" : c ? "text-emerald-800" : o ? "text-green-800" : "")
+                    className: "px-2 py-3 text-right font-semibold text-xs " + (s ? "text-red-800" : c ? "text-blue-800" : o ? "text-green-800" : "")
                 }, er(e.requested_amount)), React.createElement("td", {
                     className: "px-2 py-3 text-center"
                 }, React.createElement("div", {
@@ -4936,11 +4936,11 @@ const hideLoadingScreen = () => {
                     })(e.id, t.target.checked),
                     className: "w-4 h-4"
                 }), e.debito && e.debito_at && React.createElement("span", {
-                    className: "text-[10px] mt-1 " + (s ? "text-red-800" : c ? "text-emerald-800" : o ? "text-green-800" : "text-gray-500")
+                    className: "text-[10px] mt-1 " + (s ? "text-red-800" : c ? "text-blue-800" : o ? "text-green-800" : "text-gray-500")
                 }, new Date(e.debito_at).toLocaleDateString("pt-BR")))), React.createElement("td", {
-                    className: "px-2 py-3 text-right text-xs " + (s ? "text-red-800" : c ? "text-emerald-800" : o ? "text-green-800" : "")
+                    className: "px-2 py-3 text-right text-xs " + (s ? "text-red-800" : c ? "text-blue-800" : o ? "text-green-800" : "")
                 }, er(e.final_amount)), React.createElement("td", {
-                    className: "px-2 py-3 " + (s ? "text-red-800" : c ? "text-emerald-800" : o ? "text-green-800" : "")
+                    className: "px-2 py-3 " + (s ? "text-red-800" : c ? "text-blue-800" : o ? "text-green-800" : "")
                 }, React.createElement("div", {
                     className: "flex items-center gap-1"
                 }, React.createElement("span", {
@@ -5238,7 +5238,7 @@ const hideLoadingScreen = () => {
                     s = e.has_gratuity;
                 return React.createElement("tr", {
                     key: e.id,
-                    className: "border-t hover:bg-gray-50 " + (s ? "bg-emerald-50 border-l-4 border-l-emerald-500" : "")
+                    className: "border-t hover:bg-gray-50 " + (s ? "bg-blue-50 border-l-4 border-l-blue-500" : "")
                 }, React.createElement("td", {
                     className: "px-4 py-3"
                 }, React.createElement("div", {
@@ -5268,7 +5268,7 @@ const hideLoadingScreen = () => {
                 }, er(e.final_amount)), React.createElement("td", {
                     className: "px-4 py-3 text-center"
                 }, s ? React.createElement("span", {
-                    className: "text-xs font-bold text-emerald-700 bg-emerald-100 px-2 py-1 rounded"
+                    className: "text-xs font-bold text-blue-700 bg-blue-100 px-2 py-1 rounded"
                 }, "SIM") : React.createElement("span", {
                     className: "text-xs text-gray-400"
                 }, "-")), React.createElement("td", {
@@ -5339,7 +5339,7 @@ const hideLoadingScreen = () => {
                 }, React.createElement("p", {
                     className: "text-sm text-gray-600"
                 }, "Aprov. Gratuidade"), React.createElement("p", {
-                    className: "text-2xl font-bold text-emerald-600"
+                    className: "text-2xl font-bold text-blue-600"
                 }, e.filter(e => "aprovado_gratuidade" === e.status).length)), React.createElement("div", {
                     className: "bg-white rounded-xl shadow p-4"
                 }, React.createElement("p", {
@@ -5375,7 +5375,7 @@ const hideLoadingScreen = () => {
                         ...p,
                         resumoFilter: "aprovado_gratuidade"
                     }),
-                    className: "px-4 py-2 rounded-lg font-semibold text-sm " + ("aprovado_gratuidade" === p.resumoFilter ? "bg-emerald-600 text-white" : "bg-gray-100 hover:bg-gray-200")
+                    className: "px-4 py-2 rounded-lg font-semibold text-sm " + ("aprovado_gratuidade" === p.resumoFilter ? "bg-blue-600 text-white" : "bg-gray-100 hover:bg-gray-200")
                 }, "🎁 Aprov. Gratuidade (", e.filter(e => "aprovado_gratuidade" === e.status).length, ")"), React.createElement("button", {
                     onClick: () => x({
                         ...p,
@@ -5468,7 +5468,7 @@ const hideLoadingScreen = () => {
                     }, "-")), React.createElement("td", {
                         className: "px-4 py-3"
                     }, React.createElement("span", {
-                        className: "px-2 py-1 rounded text-xs font-bold " + ("aprovado" === e.status ? "bg-green-500 text-white" : "aprovado_gratuidade" === e.status ? "bg-emerald-500 text-white" : "rejeitado" === e.status ? "bg-red-500 text-white" : "inativo" === e.status ? "bg-orange-500 text-white" : "bg-yellow-500 text-white")
+                        className: "px-2 py-1 rounded text-xs font-bold " + ("aprovado" === e.status ? "bg-green-500 text-white" : "aprovado_gratuidade" === e.status ? "bg-blue-500 text-white" : "rejeitado" === e.status ? "bg-red-500 text-white" : "inativo" === e.status ? "bg-orange-500 text-white" : "bg-yellow-500 text-white")
                     }, "aguardando_aprovacao" === e.status ? "⏳ Aguardando" : "aprovado" === e.status ? "✅ Aprovado" : "aprovado_gratuidade" === e.status ? "🎁 c/ Gratuidade" : "rejeitado" === e.status ? "❌ Rejeitado" : "⚠️ Inativo"), e.reject_reason && "rejeitado" === e.status && React.createElement("p", {
                         className: "text-xs text-red-600 mt-1"
                     }, "Motivo: ", e.reject_reason), e.admin_name && "aguardando_aprovacao" !== e.status && React.createElement("p", {
@@ -8181,7 +8181,7 @@ const hideLoadingScreen = () => {
                 }, "Aprovados")), React.createElement("div", {
                     className: "bg-white rounded-xl shadow p-3 text-center"
                 }, React.createElement("p", {
-                    className: "text-2xl font-bold text-emerald-600"
+                    className: "text-2xl font-bold text-blue-600"
                 }, m.length), React.createElement("p", {
                     className: "text-xs text-gray-600"
                 }, "Com Gratuidade")), React.createElement("div", {
