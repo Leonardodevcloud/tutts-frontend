@@ -816,7 +816,8 @@ const hideLoadingScreen = () => {
                 }
             };
         useEffect(() => {
-            if (!l || "admin_financeiro" !== l.role && ("admin_master" !== l.role || "financeiro" !== Ee)) return;
+            const canAccessFinEff = "admin_financeiro" === l?.role || "admin_master" === l?.role || ("admin" === l?.role && l?.permissions?.modulos?.financeiro !== false);
+            if (!l || (!canAccessFinEff || ("admin_master" === l.role && "financeiro" !== Ee))) return;
             const e = async () => {
                 N(!0);
                 const e = p.finTab || "solicitacoes";
@@ -987,7 +988,8 @@ const hideLoadingScreen = () => {
             }
         };
         useEffect(() => {
-            if (!(l && ("admin_master" === l.role || "admin" === l.role) && "todo" === Ee)) return;
+            const canAccessTodoEff = "admin_master" === l?.role || ("admin" === l?.role && (!l?.permissions || !l?.permissions?.modulos || l?.permissions?.modulos?.todo !== false));
+            if (!(l && canAccessTodoEff && "todo" === Ee)) return;
             const init = async () => {
                 setTodoLoading(true);
                 const [grupos, admins] = await Promise.all([loadTodoGrupos(), loadTodoAdmins()]);
@@ -1924,10 +1926,23 @@ const hideLoadingScreen = () => {
                 });
                 if (!e.ok) throw new Error("Credenciais inválidas");
                 const t = await e.json();
+                // Carregar permissões se for admin
+                let perms = null;
+                if (t.role === "admin" || t.role === "admin_financeiro") {
+                    try {
+                        const permRes = await fetch(`${API_URL}/admin-permissions/${t.cod_profissional}`);
+                        if (permRes.ok) {
+                            perms = await permRes.json();
+                        }
+                    } catch (err) {
+                        console.log("Sem permissões definidas, usando padrão");
+                    }
+                }
                 o({
                     ...t,
                     codProfissional: t.cod_profissional,
-                    fullName: t.full_name
+                    fullName: t.full_name,
+                    permissions: perms
                 }), x({})
             } catch (e) {
                 ja(e.message, "error")
@@ -4379,7 +4394,9 @@ const hideLoadingScreen = () => {
             },
             className: "flex-1 px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-xl font-semibold hover:opacity-90"
         }, "✅ Confirmar Pedido"))))))));
-        if ("admin_financeiro" === l.role || "admin_master" === l.role && "financeiro" === Ee) {
+        // Verificar permissão para Financeiro (admin comum)
+        const canAccessFinanceiro = "admin_financeiro" === l.role || "admin_master" === l.role || ("admin" === l.role && l.permissions?.modulos?.financeiro !== false);
+        if ((canAccessFinanceiro && "financeiro" === Ee) || "admin_financeiro" === l.role) {
             const e = "admin_master" === l.role;
             return React.createElement("div", {
                 className: "min-h-screen bg-gray-50"
@@ -8893,7 +8910,9 @@ const hideLoadingScreen = () => {
                 }, React.createElement("li", null, "• Faça backups regularmente (recomendado: semanalmente)"), React.createElement("li", null, "• O arquivo JSON pode ser usado para restaurar dados"), React.createElement("li", null, "• O arquivo CSV pode ser aberto no Excel ou Google Sheets"), React.createElement("li", null, "• Guarde os backups em local seguro (Google Drive, OneDrive, etc.)"))))
             })())))
         }
-        if (("admin_master" === l.role || "admin" === l.role) && "todo" === Ee) {
+        // Verificar permissão para TO-DO (admin comum)
+        const canAccessTodo = "admin_master" === l.role || ("admin" === l.role && (!l.permissions || !l.permissions.modulos || l.permissions.modulos.todo !== false));
+        if (canAccessTodo && "todo" === Ee) {
             return React.createElement("div", {
                 className: "min-h-screen bg-gray-100 flex"
             }, i && React.createElement(Toast, i), todoLoading && React.createElement("div", {
@@ -9395,7 +9414,9 @@ const hideLoadingScreen = () => {
             }, todoModal.tipo === "editarTarefa" ? "Salvar Alterações" : "Criar Tarefa"))))))
         }
         // ========== MÓDULO OPERACIONAL / ATIVAÇÃO ==========
-        if (("admin_master" === l.role || "admin" === l.role) && "operacional" === Ee) {
+        // Verificar permissão para Operacional (admin comum)
+        const canAccessOperacional = "admin_master" === l.role || ("admin" === l.role && (!l.permissions || !l.permissions.modulos || l.permissions.modulos.operacional !== false));
+        if (canAccessOperacional && "operacional" === Ee) {
             return React.createElement("div", {
                 className: "min-h-screen bg-gray-50"
             }, i && React.createElement(Toast, i), n && React.createElement(LoadingOverlay, null),
@@ -9815,7 +9836,9 @@ const hideLoadingScreen = () => {
                 )
             ));
         }
-        if ("admin_master" === l.role && "bi" === Ee) {
+        // Verificar permissão para BI (admin comum)
+        const canAccessBI = "admin_master" === l.role || ("admin" === l.role && (!l.permissions || !l.permissions.modulos || l.permissions.modulos.bi !== false));
+        if (canAccessBI && "bi" === Ee) {
             return React.createElement("div", {
                 className: "min-h-screen bg-gray-100"
             }, i && React.createElement(Toast, i), n && React.createElement(LoadingOverlay, null), React.createElement("nav", {
@@ -11242,23 +11265,48 @@ const hideLoadingScreen = () => {
             className: "text-xl font-bold text-white"
         }, "Painel Admin"), React.createElement("div", {
             className: "flex bg-purple-800/50 rounded-lg p-1"
-        }, React.createElement("button", {
+        }, 
+        // Solicitações - verificar permissão
+        (!l.permissions || !l.permissions.modulos || l.permissions.modulos.solicitacoes !== false) && React.createElement("button", {
             onClick: () => {
                 he("solicitacoes"), x(e => ({
                     ...e,
                     adminTab: "dashboard"
                 }))
             },
-            className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("disponibilidade" !== p.adminTab ? "bg-white text-purple-900" : "text-white hover:bg-white/10")
-        }, "📋 Solicitações"), React.createElement("button", {
+            className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("solicitacoes" === Ee && "disponibilidade" !== p.adminTab ? "bg-white text-purple-900" : "text-white hover:bg-white/10")
+        }, "📋 Solicitações"),
+        // Financeiro - verificar permissão
+        (!l.permissions || !l.permissions.modulos || l.permissions.modulos.financeiro !== false) && React.createElement("button", {
+            onClick: () => he("financeiro"),
+            className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("financeiro" === Ee ? "bg-white text-green-800" : "text-white hover:bg-white/10")
+        }, "💰 Financeiro"),
+        // Operacional - verificar permissão
+        (!l.permissions || !l.permissions.modulos || l.permissions.modulos.operacional !== false) && React.createElement("button", {
+            onClick: () => he("operacional"),
+            className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("operacional" === Ee ? "bg-white text-teal-800" : "text-white hover:bg-white/10")
+        }, "⚙️ Operacional"),
+        // Disponibilidade - verificar permissão
+        (!l.permissions || !l.permissions.modulos || l.permissions.modulos.disponibilidade !== false) && React.createElement("button", {
             onClick: () => {
                 he("solicitacoes"), x(e => ({
                     ...e,
                     adminTab: "disponibilidade"
                 }))
             },
-            className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("disponibilidade" === p.adminTab ? "bg-white text-blue-800" : "text-white hover:bg-white/10")
-        }, "📅 Disponibilidade")), React.createElement("div", {
+            className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("solicitacoes" === Ee && "disponibilidade" === p.adminTab ? "bg-white text-blue-800" : "text-white hover:bg-white/10")
+        }, "📅 Disponibilidade"),
+        // BI - verificar permissão
+        (!l.permissions || !l.permissions.modulos || l.permissions.modulos.bi !== false) && React.createElement("button", {
+            onClick: () => { he("bi"); ll(); tl(); al(); dl(); pl(); },
+            className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("bi" === Ee ? "bg-white text-orange-800" : "text-white hover:bg-white/10")
+        }, "📊 BI"),
+        // TO-DO - verificar permissão
+        (!l.permissions || !l.permissions.modulos || l.permissions.modulos.todo !== false) && React.createElement("button", {
+            onClick: () => he("todo"),
+            className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("todo" === Ee ? "bg-white text-indigo-800" : "text-white hover:bg-white/10")
+        }, "📋 TO-DO")
+        ), React.createElement("div", {
             className: "flex items-center gap-2 bg-purple-800/50 px-3 py-1 rounded-full"
         }, React.createElement("span", {
             className: "w-2 h-2 rounded-full " + (f ? "bg-yellow-400 animate-pulse" : "bg-green-400")
@@ -11269,10 +11317,7 @@ const hideLoadingScreen = () => {
         }, React.createElement("button", {
             onClick: ul,
             className: "px-4 py-2 bg-purple-700 text-white rounded-lg hover:bg-purple-600 text-sm font-semibold"
-        }, "🔄 Atualizar"), "admin_master" === l.role && React.createElement("button", {
-            onClick: function() { x({...p, showConfigModal: true}); },
-            className: "px-4 py-2 bg-purple-700 text-white rounded-lg hover:bg-purple-600 text-sm font-semibold"
-        }, "⚙️"), React.createElement("button", {
+        }, "🔄 Atualizar"), React.createElement("button", {
             onClick: () => o(null),
             className: "px-4 py-2 text-white hover:bg-purple-800 rounded-lg"
         }, "Sair")))) : null, "disponibilidade" !== p.adminTab && React.createElement("div", {
