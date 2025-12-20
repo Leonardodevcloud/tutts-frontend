@@ -9769,6 +9769,31 @@ const hideLoadingScreen = () => {
                                 className: "px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700"
                             }, "🔄 Carregar do Servidor"),
                             React.createElement("button", {
+                                onClick: function() {
+                                    // Inicializar permissões para todos os admins
+                                    const adminsList = A.filter(function(u) { return u.role === "admin" || u.role === "admin_financeiro"; });
+                                    const newPerms = JSON.parse(JSON.stringify(p.adminPerms || {}));
+                                    adminsList.forEach(function(admin) {
+                                        if (!newPerms[admin.codProfissional]) {
+                                            newPerms[admin.codProfissional] = {
+                                                modulos: {
+                                                    solicitacoes: true,
+                                                    financeiro: true,
+                                                    operacional: true,
+                                                    disponibilidade: true,
+                                                    bi: true,
+                                                    todo: true
+                                                },
+                                                abas: {}
+                                            };
+                                        }
+                                    });
+                                    x({...p, adminPerms: newPerms});
+                                    ja("✅ Permissões inicializadas! Agora configure e salve.", "success");
+                                },
+                                className: "px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-semibold hover:bg-green-700"
+                            }, "⚡ Inicializar Todos"),
+                            React.createElement("button", {
                                 onClick: async function() {
                                     s(true);
                                     const adminsList = A.filter(function(u) { return u.role === "admin" || u.role === "admin_financeiro"; });
@@ -9779,18 +9804,24 @@ const hideLoadingScreen = () => {
                                         const cod = admin.codProfissional;
                                         const perms = p.adminPerms && p.adminPerms[cod] ? p.adminPerms[cod] : null;
                                         
-                                        if (!perms) continue;
+                                        if (!perms) {
+                                            console.log("Sem perms para", cod);
+                                            continue;
+                                        }
                                         
                                         const allowedModules = [];
-                                        const mods = perms.modulos || perms;
-                                        if (mods.solicitacoes === true) allowedModules.push("solicitacoes");
-                                        if (mods.financeiro === true) allowedModules.push("financeiro");
-                                        if (mods.operacional === true) allowedModules.push("operacional");
-                                        if (mods.disponibilidade === true) allowedModules.push("disponibilidade");
-                                        if (mods.bi === true) allowedModules.push("bi");
-                                        if (mods.todo === true) allowedModules.push("todo");
+                                        const mods = perms.modulos || {};
+                                        // Se não foi definido (undefined) ou é true, inclui no array
+                                        if (mods.solicitacoes !== false) allowedModules.push("solicitacoes");
+                                        if (mods.financeiro !== false) allowedModules.push("financeiro");
+                                        if (mods.operacional !== false) allowedModules.push("operacional");
+                                        if (mods.disponibilidade !== false) allowedModules.push("disponibilidade");
+                                        if (mods.bi !== false) allowedModules.push("bi");
+                                        if (mods.todo !== false) allowedModules.push("todo");
                                         
                                         const allowedTabs = perms.abas || {};
+                                        
+                                        console.log("Salvando para", cod, "modulos:", allowedModules, "abas:", allowedTabs);
                                         
                                         try {
                                             const res = await fetch(API_URL + "/admin-permissions/" + encodeURIComponent(cod), {
@@ -9798,12 +9829,17 @@ const hideLoadingScreen = () => {
                                                 headers: {"Content-Type": "application/json"},
                                                 body: JSON.stringify({ allowed_modules: allowedModules, allowed_tabs: allowedTabs })
                                             });
-                                            if (res.ok) savedCount++;
+                                            if (res.ok) {
+                                                savedCount++;
+                                                console.log("Salvo OK para", cod);
+                                            } else {
+                                                console.error("Erro HTTP para", cod, await res.text());
+                                            }
                                         } catch (err) {
                                             console.error("Erro:", err);
                                         }
                                     }
-                                    ja(savedCount > 0 ? "✅ Salvo para " + savedCount + " admin(s)!" : "⚠️ Nada para salvar", savedCount > 0 ? "success" : "warning");
+                                    ja(savedCount > 0 ? "✅ Salvo para " + savedCount + " admin(s)!" : "⚠️ Clique em 'Inicializar Todos' primeiro", savedCount > 0 ? "success" : "warning");
                                     s(false);
                                 },
                                 className: "px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-semibold hover:bg-purple-700"
@@ -9821,6 +9857,17 @@ const hideLoadingScreen = () => {
                             const perms = p.adminPerms && p.adminPerms[cod] ? p.adminPerms[cod] : { modulos: {}, abas: {} };
                             const mods = perms.modulos || {};
                             const abas = perms.abas || {};
+                            
+                            // Função helper para verificar se módulo está ativo (default: true)
+                            const isModuloAtivo = function(modId) {
+                                return mods[modId] !== false;
+                            };
+                            
+                            // Função helper para verificar se aba está ativa (default: true)
+                            const isAbaAtiva = function(modId, abaId) {
+                                const key = modId + "_" + abaId;
+                                return abas[key] !== false;
+                            };
                             
                             // Definição dos módulos e suas abas
                             const modulosConfig = [
