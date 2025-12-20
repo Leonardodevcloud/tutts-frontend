@@ -14,9 +14,15 @@ const SISTEMA_MODULOS_CONFIG = [
     { id: "operacional", label: "Operacional", icon: "⚙️",
       abas: [{id: "indicacao", label: "Indicação"}, {id: "promonovatos", label: "Promo Novatos"}]
     },
-    { id: "disponibilidade", label: "Disponibilidade", icon: "📅", abas: [] },
-    { id: "bi", label: "BI", icon: "📊", abas: [] },
-    { id: "todo", label: "TO-DO", icon: "📝", abas: [] }
+    { id: "disponibilidade", label: "Disponibilidade", icon: "📅",
+      abas: [{id: "panorama", label: "Panorama"}, {id: "principal", label: "Principal"}, {id: "faltosos", label: "Faltosos"}, {id: "espelho", label: "Espelho"}, {id: "relatorios", label: "Relatórios"}, {id: "motoboys", label: "Motoboys"}, {id: "restricoes", label: "Restrições"}, {id: "config", label: "Configurações"}]
+    },
+    { id: "bi", label: "BI", icon: "📊",
+      abas: [{id: "dashboard", label: "Dashboard"}, {id: "profissionais", label: "Por Profissional"}, {id: "os", label: "Análise por OS"}, {id: "upload", label: "Upload"}, {id: "config", label: "Configurações"}]
+    },
+    { id: "todo", label: "TO-DO", icon: "📝",
+      abas: [{id: "tarefas", label: "Tarefas"}, {id: "metricas", label: "Métricas"}]
+    }
 ];
 
 fetch(`${API_URL.replace("/api","")}/health`).catch(() => {});
