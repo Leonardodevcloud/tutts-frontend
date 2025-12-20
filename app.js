@@ -9839,19 +9839,22 @@ const hideLoadingScreen = () => {
                 React.createElement("p", {className: "text-gray-600 text-sm mb-4 text-center italic"}, 
                     "💜 Pratique a gentileza! Envie uma mensagem positiva ao seu colega."),
                 React.createElement("div", {className: "mb-4"},
-                    React.createElement("p", {className: "font-semibold text-gray-700 mb-2"}, "Enviar Reação:"),
+                    React.createElement("p", {className: "font-semibold text-gray-700 mb-2"}, "Escolha uma reação (opcional):"),
                     React.createElement("div", {className: "flex justify-center gap-3"},
                         ["💜", "🥇", "😊", "😁", "🤩"].map(emoji => 
                             React.createElement("button", {
                                 key: emoji,
-                                onClick: () => sendSocialMessage(socialModalUser.cod_profissional, "reaction", emoji),
-                                className: "text-3xl hover:scale-125 transition-transform p-2 hover:bg-purple-100 rounded-full"
+                                onClick: () => x({...p, socialSelectedEmoji: p.socialSelectedEmoji === emoji ? null : emoji}),
+                                className: "text-3xl transition-transform p-2 rounded-full " + 
+                                    (p.socialSelectedEmoji === emoji ? "bg-purple-200 scale-125 ring-2 ring-purple-500" : "hover:scale-110 hover:bg-purple-100")
                             }, emoji)
                         )
-                    )
+                    ),
+                    p.socialSelectedEmoji && React.createElement("p", {className: "text-center text-sm text-purple-600 mt-2"}, 
+                        "✓ Reação selecionada: ", p.socialSelectedEmoji)
                 ),
                 React.createElement("div", null,
-                    React.createElement("p", {className: "font-semibold text-gray-700 mb-2"}, "Ou envie uma mensagem:"),
+                    React.createElement("p", {className: "font-semibold text-gray-700 mb-2"}, "Escreva uma mensagem (opcional):"),
                     React.createElement("textarea", {
                         placeholder: "Escreva uma mensagem gentil...",
                         value: p.socialMsgText || "",
@@ -9860,14 +9863,30 @@ const hideLoadingScreen = () => {
                     }),
                     React.createElement("button", {
                         onClick: async () => {
-                            if (p.socialMsgText?.trim()) {
-                                await sendSocialMessage(socialModalUser.cod_profissional, "message", p.socialMsgText);
-                                x({...p, socialMsgText: ""});
+                            const hasEmoji = p.socialSelectedEmoji;
+                            const hasText = p.socialMsgText?.trim();
+                            
+                            if (!hasEmoji && !hasText) {
+                                ja("Selecione uma reação ou escreva uma mensagem", "error");
+                                return;
                             }
+                            
+                            // Envia reação se selecionada
+                            if (hasEmoji) {
+                                await sendSocialMessage(socialModalUser.cod_profissional, "reaction", p.socialSelectedEmoji);
+                            }
+                            
+                            // Envia mensagem de texto se preenchida
+                            if (hasText) {
+                                await sendSocialMessage(socialModalUser.cod_profissional, "message", p.socialMsgText);
+                            }
+                            
+                            // Limpa os campos
+                            x({...p, socialMsgText: "", socialSelectedEmoji: null});
                         },
-                        disabled: !p.socialMsgText?.trim(),
+                        disabled: !p.socialSelectedEmoji && !p.socialMsgText?.trim(),
                         className: "w-full mt-3 px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold disabled:opacity-50"
-                    }, "💌 Enviar Mensagem")
+                    }, "💌 Enviar")
                 )
             ))),
             
