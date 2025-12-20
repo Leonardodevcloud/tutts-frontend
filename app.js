@@ -4416,7 +4416,10 @@ const hideLoadingScreen = () => {
             }, "📊 BI"), React.createElement("button", {
                 onClick: () => he("todo"),
                 className: "px-4 py-2 rounded-lg text-sm font-semibold transition-all " + ("todo" === Ee ? "bg-white text-indigo-800" : "text-white hover:bg-white/10")
-            }, "📋 TO-DO"))), React.createElement("div", {
+            }, "📋 TO-DO"), React.createElement("button", {
+                onClick: () => he("operacional"),
+                className: "px-4 py-2 rounded-lg text-sm font-semibold transition-all " + ("operacional" === Ee ? "bg-white text-teal-800" : "text-white hover:bg-white/10")
+            }, "⚙️ Operacional"))), React.createElement("div", {
                 className: "flex items-center gap-3"
             }, React.createElement("div", {
                 className: "flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full"
@@ -4427,7 +4430,10 @@ const hideLoadingScreen = () => {
             }, f ? "Atualizando..." : E ? `${E.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}` : "⚡ 10s")), React.createElement("button", {
                 onClick: ul,
                 className: "px-4 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 text-sm font-semibold"
-            }, "🔄"), React.createElement("button", {
+            }, "🔄"), "admin_master" === l.role && React.createElement("button", {
+                onClick: () => x({...p, showConfigModal: true}),
+                className: "px-4 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 text-sm font-semibold"
+            }, "⚙️ Config"), React.createElement("button", {
                 onClick: () => o(null),
                 className: "px-4 py-2 text-white hover:bg-white/20 rounded-lg"
             }, "Sair")))) : React.createElement("nav", {
@@ -9388,6 +9394,408 @@ const hideLoadingScreen = () => {
                 className: "flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
             }, todoModal.tipo === "editarTarefa" ? "Salvar Alterações" : "Criar Tarefa"))))))
         }
+        
+    // ========== MÓDULO OPERACIONAL / ATIVAÇÃO ==========
+    if (("admin_master" === l.role || "admin" === l.role) && "operacional" === Ee) {
+        return React.createElement("div", {
+            className: "min-h-screen bg-gray-50"
+        }, i && React.createElement(Toast, i), n && React.createElement(LoadingOverlay, null),
+        // NAVBAR OPERACIONAL
+        React.createElement("nav", {
+            className: "bg-gradient-to-r from-teal-700 to-teal-900 shadow-lg"
+        }, React.createElement("div", {
+            className: "max-w-7xl mx-auto px-4 py-4 flex justify-between items-center"
+        }, React.createElement("div", {
+            className: "flex items-center gap-4"
+        }, React.createElement("div", null,
+            React.createElement("h1", {
+                className: "text-xl font-bold text-white"
+            }, "⚙️ Operacional / Ativação"),
+            React.createElement("p", {
+                className: "text-xs text-teal-200"
+            }, l.fullName)
+        ), React.createElement("div", {
+            className: "flex bg-white/10 rounded-lg p-1"
+        },
+        React.createElement("button", {
+            onClick: () => he("solicitacoes"),
+            className: "px-4 py-2 rounded-lg text-sm font-semibold text-white hover:bg-white/10"
+        }, "📋 Solicitações"),
+        "admin_master" === l.role && React.createElement("button", {
+            onClick: () => he("financeiro"),
+            className: "px-4 py-2 rounded-lg text-sm font-semibold text-white hover:bg-white/10"
+        }, "💰 Financeiro"),
+        React.createElement("button", {
+            onClick: () => he("operacional"),
+            className: "px-4 py-2 rounded-lg text-sm font-semibold bg-white text-teal-800"
+        }, "⚙️ Operacional")
+        )), React.createElement("div", {
+            className: "flex items-center gap-3"
+        }, React.createElement("button", {
+            onClick: ul,
+            className: "px-4 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 text-sm font-semibold"
+        }, "🔄"), React.createElement("button", {
+            onClick: () => o(null),
+            className: "px-4 py-2 text-white hover:bg-white/20 rounded-lg"
+        }, "Sair")))),
+        // ABAS DO MÓDULO OPERACIONAL
+        React.createElement("div", {
+            className: "bg-white border-b sticky top-0 z-10"
+        }, React.createElement("div", {
+            className: "max-w-7xl mx-auto px-4 flex gap-1 overflow-x-auto"
+        }, ["indicacoes", "promo-novatos"].map(e => React.createElement("button", {
+            key: e,
+            onClick: () => x({...p, opTab: e}),
+            className: "px-4 py-2.5 text-sm font-semibold whitespace-nowrap " + ((p.opTab || "indicacoes") === e ? "text-teal-700 border-b-2 border-teal-600 bg-teal-50" : "text-gray-600 hover:bg-gray-100")
+        }, "indicacoes" === e && "👥 Indicação", "promo-novatos" === e && "🚀 Promo Novato")))),
+        // CONTEÚDO - INDICAÇÕES
+        React.createElement("div", {
+            className: "max-w-7xl mx-auto p-6"
+        },
+        (!p.opTab || "indicacoes" === p.opTab) && React.createElement(React.Fragment, null,
+            // Modal Rejeitar Indicação
+            p.modalRejeitar && React.createElement("div", {
+                className: "fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+            }, React.createElement("div", {
+                className: "bg-white rounded-xl shadow-2xl p-6 max-w-md w-full"
+            }, React.createElement("h3", {
+                className: "text-xl font-bold text-red-600 mb-4"
+            }, "❌ Rejeitar Indicação"), React.createElement("div", {
+                className: "bg-gray-50 rounded-lg p-4 mb-4"
+            }, React.createElement("p", {
+                className: "text-sm"
+            }, React.createElement("strong", null, "Profissional:"), " ", p.modalRejeitar.user_name), React.createElement("p", {
+                className: "text-sm"
+            }, React.createElement("strong", null, "Indicado:"), " ", p.modalRejeitar.indicado_nome), React.createElement("p", {
+                className: "text-sm"
+            }, React.createElement("strong", null, "Região:"), " ", p.modalRejeitar.regiao)), React.createElement("div", {
+                className: "mb-4"
+            }, React.createElement("label", {
+                className: "block text-sm font-semibold mb-1"
+            }, "Motivo da Rejeição *"), React.createElement("textarea", {
+                value: p.motivoRejeicao || "",
+                onChange: e => x({
+                    ...p,
+                    motivoRejeicao: e.target.value
+                }),
+                className: "w-full px-4 py-2 border rounded-lg",
+                rows: "3",
+                placeholder: "Informe o motivo..."
+            })), React.createElement("div", {
+                className: "flex gap-3"
+            }, React.createElement("button", {
+                onClick: () => x({
+                    ...p,
+                    modalRejeitar: null,
+                    motivoRejeicao: ""
+                }),
+                className: "flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300"
+            }, "Cancelar"), React.createElement("button", {
+                onClick: async () => {
+                    if (p.motivoRejeicao) {
+                        s(!0);
+                        try {
+                            const response = await fetch(`${API_URL}/indicacoes/${p.modalRejeitar.id}/rejeitar`, {
+                                method: "PATCH",
+                                headers: {"Content-Type": "application/json"},
+                                body: JSON.stringify({
+                                    motivo_rejeicao: p.motivoRejeicao,
+                                    resolved_by: l.fullName
+                                })
+                            });
+                            if (!response.ok) throw new Error("Erro ao rejeitar");
+                            ja("❌ Indicação rejeitada", "success");
+                            x({...p, modalRejeitar: null, motivoRejeicao: ""});
+                            await wl();
+                        } catch (err) {
+                            ja(err.message, "error");
+                        }
+                        s(!1);
+                    } else {
+                        ja("Informe o motivo da rejeição", "error");
+                    }
+                },
+                disabled: !p.motivoRejeicao || c,
+                className: "flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 disabled:opacity-50"
+            }, c ? "..." : "❌ Rejeitar")))),
+            // Formulário Nova Promoção
+            React.createElement("div", {
+                className: "bg-white rounded-xl shadow p-6 mb-6"
+            }, React.createElement("div", {
+                className: "flex justify-between items-center mb-4"
+            }, React.createElement("h2", {
+                className: "text-xl font-bold text-teal-800"
+            }, p.editPromo ? "✏️ Editar Promoção" : "📣 Cadastrar Nova Promoção"), p.editPromo && React.createElement("button", {
+                onClick: () => x({...p, editPromo: null, promoRegiao: "", promoValor: "", promoDetalhes: ""}),
+                className: "text-sm text-gray-500 hover:text-gray-700"
+            }, "✕ Cancelar edição")), React.createElement("div", {
+                className: "grid md:grid-cols-2 gap-4 mb-4"
+            }, React.createElement("div", null, React.createElement("label", {
+                className: "block text-sm font-semibold mb-1"
+            }, "Região *"), React.createElement("input", {
+                type: "text",
+                value: p.promoRegiao || "",
+                onChange: e => x({...p, promoRegiao: e.target.value}),
+                className: "w-full px-4 py-2 border rounded-lg",
+                placeholder: "Ex: Salvador - BA"
+            })), React.createElement("div", null, React.createElement("label", {
+                className: "block text-sm font-semibold mb-1"
+            }, "Valor do Bônus (R$) *"), React.createElement("input", {
+                type: "number",
+                step: "0.01",
+                value: p.promoValor || "",
+                onChange: e => x({...p, promoValor: e.target.value}),
+                className: "w-full px-4 py-2 border rounded-lg",
+                placeholder: "Ex: 100.00"
+            }))), React.createElement("div", {
+                className: "mb-4"
+            }, React.createElement("label", {
+                className: "block text-sm font-semibold mb-1"
+            }, "Detalhes da Promoção (opcional)"), React.createElement("textarea", {
+                value: p.promoDetalhes || "",
+                onChange: e => x({...p, promoDetalhes: e.target.value}),
+                className: "w-full px-4 py-2 border rounded-lg",
+                rows: "3",
+                placeholder: "Ex: Vaga para instalador com experiência em fibra óptica..."
+            })), React.createElement("button", {
+                onClick: p.editPromo ? Ol : Ml,
+                disabled: c,
+                className: "w-full md:w-auto px-6 py-2 text-white rounded-lg font-semibold disabled:opacity-50 " + (p.editPromo ? "bg-blue-600 hover:bg-blue-700" : "bg-teal-600 hover:bg-teal-700")
+            }, c ? "..." : p.editPromo ? "💾 Salvar Alterações" : "➕ Criar Promoção")),
+            // Lista de Promoções
+            React.createElement("div", {
+                className: "bg-white rounded-xl shadow p-6 mb-6"
+            }, React.createElement("h3", {className: "font-semibold mb-4"}, "📋 Promoções Cadastradas"), 
+            0 === ee.length 
+                ? React.createElement("p", {className: "text-gray-500 text-center py-4"}, "Nenhuma promoção cadastrada") 
+                : React.createElement("div", {className: "grid md:grid-cols-4 gap-3"}, ee.map(e => React.createElement("div", {
+                    key: e.id,
+                    className: "border rounded-lg p-3 " + ("ativa" === e.status ? "border-teal-300 bg-teal-50" : "border-gray-300 bg-gray-50")
+                }, React.createElement("div", {className: "flex justify-between items-center mb-1"}, 
+                    React.createElement("span", {
+                        className: "px-2 py-0.5 rounded text-xs font-bold " + ("ativa" === e.status ? "bg-teal-500 text-white" : "bg-gray-500 text-white")
+                    }, "ativa" === e.status ? "ATIVA" : "INATIVA"),
+                    React.createElement("div", {className: "flex gap-1"},
+                        React.createElement("button", {
+                            onClick: () => x({...p, editPromo: e, promoRegiao: e.regiao, promoValor: e.valor_bonus, promoDetalhes: e.detalhes}),
+                            className: "text-blue-500 hover:text-blue-700 text-xs"
+                        }, "✏️"),
+                        React.createElement("button", {
+                            onClick: () => jl(e.id),
+                            className: "text-red-500 hover:text-red-700 text-xs"
+                        }, "🗑️")
+                    )
+                ), React.createElement("p", {className: "font-bold text-sm"}, e.regiao), 
+                React.createElement("p", {className: "text-teal-600 font-bold"}, "R$ ", parseFloat(e.valor_bonus).toFixed(2)),
+                e.detalhes && React.createElement("p", {className: "text-xs text-gray-500 mt-1 truncate"}, e.detalhes)
+            )))),
+            // Tabela de Indicações
+            React.createElement("div", {
+                className: "bg-white rounded-xl shadow p-6"
+            }, React.createElement("h3", {className: "font-semibold mb-4"}, "👥 Indicações Recebidas (", ae.length, ")"),
+            0 === ae.length 
+                ? React.createElement("p", {className: "text-gray-500 text-center py-8"}, "Nenhuma indicação recebida")
+                : React.createElement("div", {className: "overflow-x-auto"}, React.createElement("table", {
+                    className: "w-full text-sm"
+                }, React.createElement("thead", {className: "bg-gray-50"}, React.createElement("tr", null,
+                    React.createElement("th", {className: "px-2 py-3 text-left text-xs"}, "Data"),
+                    React.createElement("th", {className: "px-2 py-3 text-left text-xs"}, "Profissional"),
+                    React.createElement("th", {className: "px-2 py-3 text-left text-xs"}, "Indicado"),
+                    React.createElement("th", {className: "px-2 py-3 text-left text-xs"}, "Contato"),
+                    React.createElement("th", {className: "px-2 py-3 text-left text-xs"}, "Região"),
+                    React.createElement("th", {className: "px-2 py-3 text-center text-xs"}, "Bônus"),
+                    React.createElement("th", {className: "px-3 py-3 text-center"}, "Status"),
+                    React.createElement("th", {className: "px-3 py-3 text-center"}, "Ações")
+                )), React.createElement("tbody", null, ae.map(e => {
+                    const diasRestantes = Math.ceil((new Date(e.expires_at) - new Date()) / 864e5);
+                    const whatsappLink = e.indicado_contato ? `https://wa.me/55${e.indicado_contato.replace(/\D/g, "")}` : "#";
+                    return React.createElement("tr", {
+                        key: e.id,
+                        className: "border-t " + ("pendente" === e.status ? "bg-yellow-50" : "")
+                    },
+                    React.createElement("td", {className: "px-2 py-3 whitespace-nowrap text-xs"}, new Date(e.created_at).toLocaleDateString("pt-BR")),
+                    React.createElement("td", {className: "px-2 py-3"}, 
+                        React.createElement("p", {className: "font-semibold text-xs"}, e.user_name),
+                        React.createElement("p", {className: "text-xs text-gray-500"}, e.user_cod)
+                    ),
+                    React.createElement("td", {className: "px-2 py-3"}, 
+                        React.createElement("p", {className: "font-semibold text-xs"}, e.indicado_nome)
+                    ),
+                    React.createElement("td", {className: "px-2 py-3"}, 
+                        React.createElement("a", {
+                            href: whatsappLink,
+                            target: "_blank",
+                            rel: "noopener noreferrer",
+                            className: "text-green-600 hover:text-green-800 font-semibold text-xs"
+                        }, "📱 ", e.indicado_contato)
+                    ),
+                    React.createElement("td", {className: "px-2 py-3 text-xs"}, e.regiao),
+                    React.createElement("td", {className: "px-2 py-3 text-center font-bold text-green-600 text-xs"}, er(e.valor_bonus)),
+                    React.createElement("td", {className: "px-3 py-3 text-center"}, 
+                        React.createElement("span", {
+                            className: "px-2 py-1 rounded-full text-xs font-bold " + 
+                                ("pendente" === e.status ? "bg-yellow-500 text-white" : 
+                                 "aprovada" === e.status ? "bg-green-500 text-white" : 
+                                 "rejeitada" === e.status ? "bg-red-500 text-white" : "bg-gray-500 text-white")
+                        }, "pendente" === e.status ? "⏳ Pendente" : 
+                           "aprovada" === e.status ? "✅ Aprovada" : 
+                           "rejeitada" === e.status ? "❌ Rejeitada" : "⏰ Expirada")
+                    ),
+                    React.createElement("td", {className: "px-3 py-3 text-center"}, 
+                        "pendente" === e.status && React.createElement("div", {className: "flex gap-2 justify-center"},
+                            React.createElement("button", {
+                                onClick: async () => {
+                                    s(!0);
+                                    try {
+                                        const response = await fetch(`${API_URL}/indicacoes/${e.id}/aprovar`, {
+                                            method: "PATCH",
+                                            headers: {"Content-Type": "application/json"},
+                                            body: JSON.stringify({resolved_by: l.fullName})
+                                        });
+                                        if (!response.ok) throw new Error("Erro ao aprovar");
+                                        ja("✅ Indicação aprovada!", "success");
+                                        await wl();
+                                    } catch (err) {
+                                        ja(err.message, "error");
+                                    }
+                                    s(!1);
+                                },
+                                className: "px-3 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700"
+                            }, "✅ Aprovar"),
+                            React.createElement("button", {
+                                onClick: () => x({...p, modalRejeitar: e}),
+                                className: "px-3 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700"
+                            }, "❌ Rejeitar")
+                        )
+                    ))
+                }))))
+        ),
+        // CONTEÚDO - PROMO NOVATOS
+        "promo-novatos" === p.opTab && React.createElement(React.Fragment, null,
+            // Modal Rejeitar Novato
+            p.modalRejeitarNovatos && React.createElement("div", {
+                className: "fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+            }, React.createElement("div", {
+                className: "bg-white rounded-xl p-6 w-full max-w-md"
+            }, React.createElement("h3", {className: "text-lg font-bold mb-4"}, "❌ Rejeitar Inscrição"),
+            React.createElement("p", {className: "text-sm text-gray-600 mb-3"}, 
+                "Profissional: ", React.createElement("strong", null, p.modalRejeitarNovatos.user_name),
+                React.createElement("br", null),
+                "Cliente: ", React.createElement("strong", null, p.modalRejeitarNovatos.cliente)
+            ),
+            React.createElement("div", {className: "mb-4"},
+                React.createElement("label", {className: "block text-sm font-semibold mb-1"}, "Motivo da Rejeição *"),
+                React.createElement("textarea", {
+                    value: p.motivoRejeicaoNovato || "",
+                    onChange: e => x({...p, motivoRejeicaoNovato: e.target.value}),
+                    className: "w-full px-4 py-2 border rounded-lg",
+                    rows: "3",
+                    placeholder: "Informe o motivo..."
+                })
+            ),
+            React.createElement("div", {className: "flex gap-3"},
+                React.createElement("button", {
+                    onClick: () => x({...p, modalRejeitarNovatos: null, motivoRejeicaoNovato: ""}),
+                    className: "flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300"
+                }, "Cancelar"),
+                React.createElement("button", {
+                    onClick: () => handleRejeitarInscricaoNovato(p.modalRejeitarNovatos.id),
+                    disabled: !p.motivoRejeicaoNovato || c,
+                    className: "flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 disabled:opacity-50"
+                }, c ? "..." : "❌ Rejeitar")
+            ))),
+            // Estatísticas
+            React.createElement("div", {
+                className: "grid grid-cols-4 gap-4 mb-6"
+            },
+            React.createElement("div", {className: "bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-center"},
+                React.createElement("p", {className: "text-3xl font-bold text-yellow-600"}, ne.filter(e => "pendente" === e.status).length),
+                React.createElement("p", {className: "text-sm text-yellow-700"}, "Pendentes")
+            ),
+            React.createElement("div", {className: "bg-green-50 border border-green-200 rounded-xl p-4 text-center"},
+                React.createElement("p", {className: "text-3xl font-bold text-green-600"}, ne.filter(e => "aprovada" === e.status).length),
+                React.createElement("p", {className: "text-sm text-green-700"}, "Aprovadas")
+            ),
+            React.createElement("div", {className: "bg-red-50 border border-red-200 rounded-xl p-4 text-center"},
+                React.createElement("p", {className: "text-3xl font-bold text-red-600"}, ne.filter(e => "rejeitada" === e.status).length),
+                React.createElement("p", {className: "text-sm text-red-700"}, "Rejeitadas")
+            ),
+            React.createElement("div", {className: "bg-gray-50 border border-gray-200 rounded-xl p-4 text-center"},
+                React.createElement("p", {className: "text-3xl font-bold text-gray-600"}, ne.filter(e => "expirada" === e.status).length),
+                React.createElement("p", {className: "text-sm text-gray-700"}, "Expiradas")
+            )),
+            // Tabela de Inscrições
+            React.createElement("div", {className: "bg-white rounded-xl shadow p-6"},
+                React.createElement("h3", {className: "font-semibold mb-4"}, "🚀 Inscrições de Novatos"),
+                0 === ne.length 
+                    ? React.createElement("p", {className: "text-gray-500 text-center py-8"}, "Nenhuma inscrição recebida")
+                    : React.createElement("div", {className: "overflow-x-auto"}, React.createElement("table", {
+                        className: "w-full text-sm"
+                    }, React.createElement("thead", {className: "bg-gray-50"}, React.createElement("tr", null,
+                        React.createElement("th", {className: "px-2 py-3 text-left text-xs"}, "Data"),
+                        React.createElement("th", {className: "px-2 py-3 text-left text-xs"}, "Profissional"),
+                        React.createElement("th", {className: "px-2 py-3 text-left text-xs"}, "COD"),
+                        React.createElement("th", {className: "px-2 py-3 text-left text-xs"}, "Região"),
+                        React.createElement("th", {className: "px-2 py-3 text-left text-xs"}, "Cliente"),
+                        React.createElement("th", {className: "px-2 py-3 text-center text-xs"}, "Bônus"),
+                        React.createElement("th", {className: "px-3 py-3 text-center"}, "Status"),
+                        React.createElement("th", {className: "px-2 py-3 text-center text-xs"}, "Ações")
+                    )), React.createElement("tbody", null, ne.map(e => {
+                        const expirado = e.expires_at && new Date() > new Date(e.expires_at);
+                        return React.createElement("tr", {
+                            key: e.id,
+                            className: "border-b " + ("aprovada" === e.status ? "bg-green-50" : "rejeitada" === e.status ? "bg-red-50" : expirado && "pendente" === e.status ? "bg-gray-100" : "")
+                        },
+                        React.createElement("td", {className: "px-2 py-3 text-xs"}, new Date(e.created_at).toLocaleDateString("pt-BR")),
+                        React.createElement("td", {className: "px-2 py-3 text-xs font-medium"}, e.user_name),
+                        React.createElement("td", {className: "px-2 py-3 text-xs"}, e.user_cod),
+                        React.createElement("td", {className: "px-2 py-3 text-xs"}, e.regiao),
+                        React.createElement("td", {className: "px-2 py-3 text-xs"}, e.cliente),
+                        React.createElement("td", {className: "px-2 py-3 text-center text-xs font-bold text-green-600"}, er(e.valor_bonus)),
+                        React.createElement("td", {className: "px-3 py-3 text-center"},
+                            React.createElement("span", {
+                                className: "px-2 py-1 rounded-full text-xs font-bold " + 
+                                    ("pendente" === e.status ? (expirado ? "bg-gray-200 text-gray-700" : "bg-yellow-100 text-yellow-700") :
+                                     "aprovada" === e.status ? "bg-green-100 text-green-700" :
+                                     "rejeitada" === e.status ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-700")
+                            }, "pendente" === e.status && expirado ? "⏰ Expirada" :
+                               "pendente" === e.status ? "⏳ Pendente" :
+                               "aprovada" === e.status ? "✅ Aprovada" :
+                               "rejeitada" === e.status ? "❌ Rejeitada" : e.status)
+                        ),
+                        React.createElement("td", {className: "px-2 py-3 text-center"},
+                            "pendente" === e.status && !expirado && React.createElement("div", {className: "flex gap-1 justify-center"},
+                                React.createElement("button", {
+                                    onClick: async () => {
+                                        s(!0);
+                                        try {
+                                            await fetch(`${API_URL}/inscricoes-novatos/${e.id}/aprovar`, {
+                                                method: "PATCH",
+                                                headers: {"Content-Type": "application/json"},
+                                                body: JSON.stringify({resolved_by: l.fullName})
+                                            });
+                                            ja("✅ Inscrição aprovada!", "success");
+                                            await Sl();
+                                        } catch (err) {
+                                            ja("Erro ao aprovar", "error");
+                                        } finally {
+                                            s(!1);
+                                        }
+                                    },
+                                    className: "p-1 bg-green-500 text-white rounded text-xs hover:bg-green-600",
+                                    disabled: c
+                                }, "✓"),
+                                React.createElement("button", {
+                                    onClick: () => x({...p, modalRejeitarNovatos: e}),
+                                    className: "p-1 bg-red-500 text-white rounded text-xs hover:bg-red-600"
+                                }, "✗")
+                            )
+                        ))
+                    }))))
+            )
+        ))
+    )}
+    
         if ("admin_master" === l.role && "bi" === Ee) {
             return React.createElement("div", {
                 className: "min-h-screen bg-gray-100"
@@ -10843,14 +11251,14 @@ const hideLoadingScreen = () => {
             className: "bg-white border-b sticky top-0 z-10"
         }, React.createElement("div", {
             className: "max-w-7xl mx-auto px-4 flex gap-1 overflow-x-auto"
-        }, ["dashboard", "search", "ranking", "relatorios", "users"].map(e => React.createElement("button", {
+        }, ["dashboard", "search", "ranking", "relatorios"].map(e => React.createElement("button", {
             key: e,
             onClick: () => x({
                 ...p,
                 adminTab: e
             }),
             className: "px-4 py-2.5 text-sm font-semibold whitespace-nowrap " + (!p.adminTab && "dashboard" === e || p.adminTab === e ? "text-purple-900 border-b-2 border-purple-900" : "text-gray-600")
-        }, "dashboard" === e && "📊 Dashboard", "search" === e && "🔍 Busca Detalhada", "ranking" === e && "🏆 Ranking", "relatorios" === e && "📈 Relatórios", "users" === e && "👥 Usuários")))), React.createElement("div", {
+        }, "dashboard" === e && "📊 Dashboard", "search" === e && "🔍 Busca Detalhada", "ranking" === e && "🏆 Ranking", "relatorios" === e && "📈 Relatórios")))), React.createElement("div", {
             className: "max-w-7xl mx-auto p-6"
         }, (!p.adminTab || "dashboard" === p.adminTab) && React.createElement(React.Fragment, null, (() => {
             const e = e => {
