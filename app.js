@@ -1234,16 +1234,22 @@ const hideLoadingScreen = () => {
             try {
                 const res = await fetch(`${API_URL}/avisos-op`);
                 const data = await res.json();
-                setAvisosData(data);
-            } catch (err) { console.error(err); }
+                setAvisosData(Array.isArray(data) ? data : []);
+            } catch (err) { 
+                console.error(err); 
+                setAvisosData([]);
+            }
         };
         
         const carregarRegioes = async () => {
             try {
                 const res = await fetch(`${API_URL}/avisos-op/regioes`);
                 const data = await res.json();
-                setAvisosRegioes(data);
-            } catch (err) { console.error(err); }
+                setAvisosRegioes(Array.isArray(data) ? data : []);
+            } catch (err) { 
+                console.error(err); 
+                setAvisosRegioes([]);
+            }
         };
         
         const salvarAviso = async () => {
@@ -10498,11 +10504,11 @@ const hideLoadingScreen = () => {
                     ),
                     // Lista de avisos
                     React.createElement("div", {className: "grid gap-4"},
-                        avisosData.length === 0 ? React.createElement("div", {className: "bg-white rounded-xl p-8 text-center shadow"},
+                        (!avisosData || avisosData.length === 0) ? React.createElement("div", {className: "bg-white rounded-xl p-8 text-center shadow"},
                             React.createElement("span", {className: "text-5xl block mb-4"}, "📭"),
                             React.createElement("p", {className: "text-gray-500"}, "Nenhum aviso cadastrado"),
                             React.createElement("p", {className: "text-sm text-gray-400"}, "Clique em \"Novo Aviso\" para criar o primeiro")
-                        ) : avisosData.map(aviso => React.createElement("div", {
+                        ) : (Array.isArray(avisosData) ? avisosData : []).map(aviso => React.createElement("div", {
                             key: aviso.id,
                             className: "bg-white rounded-xl shadow-lg overflow-hidden " + (aviso.ativo ? "border-l-4 border-teal-500" : "border-l-4 border-gray-300 opacity-60")
                         },
