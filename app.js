@@ -13172,33 +13172,33 @@ const hideLoadingScreen = () => {
                 } catch (e) {
                     ja(e.message, "error")
                 } else ja("Digite o nome da região", "error")
-            }, c = async (t, a, l) => {
+            }, c = async (t, a, i) => {
                 const r = [...e.linhas || []],
                     o = r.findIndex(e => e.id === t);
                 if (-1 === o) return;
                 const c = r[o];
-                if ("cod_profissional" === a && l && "" !== l.trim()) try {
-                    const e = await fetch(`${API_URL}/disponibilidade/restricoes/verificar?cod_profissional=${l}&loja_id=${c.loja_id}`),
+                if ("cod_profissional" === a && i && "" !== i.trim()) try {
+                    const e = await fetch(`${API_URL}/disponibilidade/restricoes/verificar?cod_profissional=${i}&loja_id=${c.loja_id}`),
                         t = await e.json();
                     if (t.restrito) {
                         const e = t.todas_lojas ? "TODAS AS LOJAS" : `loja ${t.loja_codigo} - ${t.loja_nome}`;
-                        return void alert(`🚫 MOTOBOY RESTRITO!\n\nCódigo: ${l}\nRestrito em: ${e}\n\nMotivo: ${t.motivo}\n\nEste motoboy não pode ser inserido nesta loja.`)
+                        return void alert(`🚫 MOTOBOY RESTRITO!\n\nCódigo: ${i}\nRestrito em: ${e}\n\nMotivo: ${t.motivo}\n\nEste motoboy não pode ser inserido nesta loja.`)
                     }
                 } catch (e) {
                     console.error("Erro ao verificar restrição:", e)
                 }
                 r[o] = {
                     ...r[o],
-                    [a]: l
+                    [a]: i
                 };
                 let s = r[o].nome_profissional;
                 if ("cod_profissional" === a)
-                    if (l && "" !== l.trim()) {
-                        if (l.length >= 1) {
-                            const e = pe.find(e => e.codigo === l.toString());
+                    if (i && "" !== i.trim()) {
+                        if (i.length >= 1) {
+                            const e = pe.find(e => e.codigo === i.toString());
                             if (e) s = e.nome, r[o].nome_profissional = e.nome;
                             else {
-                                const e = A.find(e => e.codProfissional?.toLowerCase() === l.toLowerCase());
+                                const e = A.find(e => e.codProfissional?.toLowerCase() === i.toLowerCase());
                                 e ? (s = e.fullName, r[o].nome_profissional = e.fullName) : (s = "", r[o].nome_profissional = "")
                             }
                         }
@@ -13220,7 +13220,8 @@ const hideLoadingScreen = () => {
                                 cod_profissional: r[o].cod_profissional || null,
                                 nome_profissional: "cod_profissional" === a ? s || null : r[o].nome_profissional || null,
                                 status: r[o].status,
-                                observacao: r[o].observacao
+                                observacao: r[o].observacao,
+                                observacao_usuario: l.fullName || l.codProfissional || "Sistema"
                             })
                         })
                     } catch (e) {
@@ -15003,7 +15004,8 @@ const hideLoadingScreen = () => {
                                 cod_profissional: t.cod_profissional,
                                 nome_profissional: t.nome_profissional,
                                 status: "FALTANDO",
-                                observacao: a
+                                observacao: a,
+                                observacao_usuario: l.fullName || l.codProfissional || "Sistema"
                             })
                         }), await fetch(`${API_URL}/disponibilidade/faltosos`, {
                             method: "POST",
@@ -15205,14 +15207,20 @@ const hideLoadingScreen = () => {
                     }, "FALTANDO"), React.createElement("option", {
                         value: "SEM CONTATO"
                     }, "SEM CONTATO"))), React.createElement("td", {
-                        className: "px-1 py-0.5"
+                        className: "px-1 py-0.5 relative"
+                    }, React.createElement("div", {
+                        className: "flex items-center gap-1"
                     }, React.createElement("input", {
                         type: "text",
                         value: e.observacao || "",
                         onChange: t => c(e.id, "observacao", t.target.value),
                         placeholder: "...",
-                        className: "w-full px-1 py-0.5 border border-gray-200 rounded text-xs " + (e.is_excedente ? "bg-red-50/50" : e.is_reposicao ? "bg-blue-50/50" : "bg-white")
-                    })), React.createElement("td", {
+                        className: "w-full px-1 py-0.5 border border-gray-200 rounded text-xs " + (e.is_excedente ? "bg-red-50/50" : e.is_reposicao ? "bg-blue-50/50" : "bg-white"),
+                        title: e.observacao_criada_por ? `📝 Por: ${e.observacao_criada_por}\n📅 Em: ${e.observacao_criada_em ? new Date(e.observacao_criada_em).toLocaleString("pt-BR") : "N/A"}` : ""
+                    }), e.observacao && e.observacao_criada_por && React.createElement("span", {
+                        className: "text-xs text-purple-500 cursor-help",
+                        title: `📝 Por: ${e.observacao_criada_por}\n📅 Em: ${e.observacao_criada_em ? new Date(e.observacao_criada_em).toLocaleString("pt-BR") : "N/A"}`
+                    }, "ℹ️"))), React.createElement("td", {
                         className: "px-1 py-0.5 text-center"
                     }, React.createElement("button", {
                         onClick: () => (async e => {
