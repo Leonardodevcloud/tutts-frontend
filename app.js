@@ -762,7 +762,7 @@ const hideLoadingScreen = () => {
                     console.log("Background load error:", e)
                 }
             }, t = () => {
-                "user" === l.role && (e($a), e(qa), e(vl), e(_l), e(Al), e(kl), e(Dl), e(Il), e(Za), e(Ka)), "admin_financeiro" !== l.role && "admin_master" !== l.role || (e(za), e(Ba), e(gl), e(wl), e(Cl), e(Sl), e(Dl), e(Ll), e(Ia), e(Ja), e(Ha), e(Wa), e(Ya)), "admin" !== l.role && "admin_master" !== l.role || e(Ia), e(La)
+                "user" === l.role && (e($a), e(qa), e(vl), e(_l), e(Al), e(kl), e(Dl), e(Il), e(Za), e(Ka)), "admin_financeiro" !== l.role && "admin_master" !== l.role || (e(za), e(Ba), e(gl), e(wl), e(Cl), e(Sl), e(Dl), e(Ll), e(Ia), e(Ja), e(Ha), e(Wa), e(Ya)), "admin" !== l.role && "admin_master" !== l.role || e(Ia), "admin" === l.role && (!l.permissions || !l.permissions.modulos || l.permissions.modulos.financeiro !== false) && (e(wl), e(gl), e(Cl), e(Sl), e(Ll)), e(La)
             };
             (async () => {
                 "user" === l.role && await Promise.all([Oa(), Ga()]), "admin_financeiro" !== l.role && "admin_master" !== l.role || await Promise.all([Ua(), Va()])
@@ -816,7 +816,7 @@ const hideLoadingScreen = () => {
                 }
             };
         useEffect(() => {
-            const canAccessFinEff = "admin_financeiro" === l?.role || "admin_master" === l?.role || ("admin" === l?.role && (!l?.permissions || !l?.permissions?.modulos || l?.permissions?.modulos?.financeiro === true));
+            const canAccessFinEff = "admin_financeiro" === l?.role || "admin_master" === l?.role || ("admin" === l?.role && (!l?.permissions || !l?.permissions?.modulos || l?.permissions?.modulos?.financeiro !== false));
             if (!l || (!canAccessFinEff || ("admin_master" === l.role && "financeiro" !== Ee))) return;
             const e = async () => {
                 N(!0);
@@ -839,7 +839,7 @@ const hideLoadingScreen = () => {
                             await Ba();
                             break;
                         case "indicacoes":
-                            await vl(), await jl(), await _l();
+                            await wl(), await vl(), await jl(), await _l();
                             break;
                         case "promo-novatos":
                             await Cl(), await Sl(), await Ll();
@@ -1522,7 +1522,7 @@ const hideLoadingScreen = () => {
         }, ul = async () => {
             m(!0);
             try {
-                await La(), "admin" !== l.role && "admin_master" !== l.role || await Ia(), "user" === l.role && (await Oa(), await qa(), await vl(), await _l(), await Ga(), await Za()), "admin_financeiro" !== l.role && "admin_master" !== l.role || (await Ua(), await za(), await Ba(), await Va(), await gl(), await wl(), await Ia(), await Ja(), await Ha(), await Wa()), ja("🔄 Atualizado!", "success")
+                await La(), "admin" !== l.role && "admin_master" !== l.role || await Ia(), "user" === l.role && (await Oa(), await qa(), await vl(), await _l(), await Ga(), await Za()), "admin_financeiro" !== l.role && "admin_master" !== l.role || (await Ua(), await za(), await Ba(), await Va(), await gl(), await wl(), await Ia(), await Ja(), await Ha(), await Wa()), "admin" === l.role && (!l.permissions || !l.permissions.modulos || l.permissions.modulos.financeiro !== false) && (await wl(), await gl()), ja("🔄 Atualizado!", "success")
             } catch (e) {
                 ja("Erro", "error")
             }
