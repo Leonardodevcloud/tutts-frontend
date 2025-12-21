@@ -13549,6 +13549,7 @@ const hideLoadingScreen = () => {
                     }
                 })), clearTimeout(window.dispDebounce), window.dispDebounce = setTimeout(async () => {
                     try {
+                        const usuarioLogado = JSON.parse(sessionStorage.getItem("tutts_user") || "{}");
                         await fetch(`${API_URL}/disponibilidade/linhas/${t}`, {
                             method: "PUT",
                             headers: {
@@ -13559,7 +13560,7 @@ const hideLoadingScreen = () => {
                                 nome_profissional: "cod_profissional" === a ? s || null : r[o].nome_profissional || null,
                                 status: r[o].status,
                                 observacao: r[o].observacao,
-                                observacao_usuario: l?.fullName || "Sistema"
+                                observacao_usuario: usuarioLogado?.fullName || "Sistema"
                             })
                         })
                     } catch (e) {
@@ -15425,11 +15426,11 @@ const hideLoadingScreen = () => {
                     const a = (e.linhas || []).filter(e => e.loja_id === t.id),
                         l = (p.dispLojasAbertas || []).includes(t.id),
                         o = a.filter(e => "EM LOJA" === e.status).length,
-                        s = a.filter(e => !e.is_excedente && !e.is_reposicao).length,
+                        totalTitulares = a.filter(e => !e.is_excedente && !e.is_reposicao).length,
                         i = a.filter(e => "FALTANDO" === e.status).length;
                     a.filter(e => e.is_reposicao).length;
                     let d = "bg-gray-100 hover:bg-gray-200";
-                    return i > 0 ? d = "bg-red-100 hover:bg-red-200" : o >= s && s > 0 ? d = "bg-green-100 hover:bg-green-200" : o > 0 && (d = "bg-yellow-100 hover:bg-yellow-200"), React.createElement("div", {
+                    return i > 0 ? d = "bg-red-100 hover:bg-red-200" : o >= totalTitulares && totalTitulares > 0 ? d = "bg-green-100 hover:bg-green-200" : o > 0 && (d = "bg-yellow-100 hover:bg-yellow-200"), React.createElement("div", {
                         key: t.id,
                         className: "bg-white rounded-lg shadow overflow-hidden"
                     }, React.createElement("button", {
@@ -15457,13 +15458,13 @@ const hideLoadingScreen = () => {
                     }, i > 0 && React.createElement("span", {
                         className: "px-2 py-0.5 bg-red-500 text-white text-xs rounded-full font-semibold"
                     }, i, " faltando"), React.createElement("span", {
-                        className: "text-xs font-semibold px-2 py-0.5 rounded " + (o >= s ? "bg-green-200 text-green-800" : "bg-gray-200 text-gray-700")
-                    }, o, "/", s, " em loja"), React.createElement("button", {
-                        onClick: e => { e.stopPropagation(); s(t.id, 1, false); },
+                        className: "text-xs font-semibold px-2 py-0.5 rounded " + (o >= totalTitulares ? "bg-green-200 text-green-800" : "bg-gray-200 text-gray-700")
+                    }, o, "/", totalTitulares, " em loja"), React.createElement("button", {
+                        onClick: ev => { ev.stopPropagation(); s(t.id, 1, false); },
                         className: "px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded font-semibold hover:bg-purple-200 transition-colors",
                         title: "Adicionar 1 titular"
                     }, "➕ Titular"), React.createElement("button", {
-                        onClick: e => { e.stopPropagation(); s(t.id, 1, true); },
+                        onClick: ev => { ev.stopPropagation(); s(t.id, 1, true); },
                         className: "px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded font-semibold hover:bg-red-200 transition-colors",
                         title: "Adicionar 1 excedente"
                     }, "➕ Excedente"))), l && React.createElement("div", {
