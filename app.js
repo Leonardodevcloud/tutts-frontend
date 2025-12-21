@@ -12807,7 +12807,7 @@ const hideLoadingScreen = () => {
                     adminTab: "dashboard"
                 }))
             },
-            className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("solicitacoes" === Ee ? "bg-white text-purple-900" : "text-white hover:bg-white/10")
+            className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("solicitacoes" === Ee && "disponibilidade" !== p.adminTab ? "bg-white text-purple-900" : "text-white hover:bg-white/10")
         }, "📋 Solicitações"), React.createElement("button", {
             onClick: () => he("financeiro"),
             className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("financeiro" === Ee ? "bg-white text-green-800" : "text-white hover:bg-white/10")
