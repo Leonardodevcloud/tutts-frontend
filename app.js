@@ -2908,21 +2908,23 @@ const hideLoadingScreen = () => {
         }), 
         // Modal de Aviso
         avisoAtual && React.createElement("div", {
-            className: "fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
+            className: "fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-2 md:p-4"
         }, React.createElement("div", {
-            className: "bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+            className: "bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[95vh] overflow-hidden flex flex-col"
         }, 
             React.createElement("div", {
-                className: "bg-gradient-to-r from-teal-600 to-teal-700 p-4 text-white"
-            }, React.createElement("h2", {className: "text-xl font-bold flex items-center gap-2"}, "📢 ", avisoAtual.titulo)),
-            avisoAtual.imagem_url && React.createElement("img", {
+                className: "bg-gradient-to-r from-teal-600 to-teal-700 p-6 text-white flex-shrink-0"
+            }, React.createElement("h2", {className: "text-2xl md:text-3xl font-bold flex items-center gap-3"}, "📢 ", avisoAtual.titulo)),
+            avisoAtual.imagem_url && React.createElement("div", {
+                className: "flex-1 flex items-center justify-center bg-gray-100 p-4 overflow-auto"
+            }, React.createElement("img", {
                 src: avisoAtual.imagem_url,
-                className: "w-full max-h-64 object-contain bg-gray-100"
-            }),
-            React.createElement("div", {className: "p-6 text-center"},
+                className: "max-w-full max-h-[60vh] object-contain rounded-lg shadow-lg"
+            })),
+            React.createElement("div", {className: "p-6 text-center flex-shrink-0 bg-gray-50"},
                 React.createElement("button", {
                     onClick: fecharAviso,
-                    className: "w-full px-6 py-3 bg-teal-600 text-white rounded-xl font-semibold hover:bg-teal-700"
+                    className: "w-full max-w-md mx-auto px-8 py-4 bg-teal-600 text-white rounded-xl font-bold text-lg hover:bg-teal-700 shadow-lg hover:shadow-xl transition-all"
                 }, "✅ Entendi")
             )
         )),
@@ -10555,7 +10557,7 @@ const hideLoadingScreen = () => {
             ),
             // Modal de criar/editar aviso
             avisoModal && React.createElement("div", {className: "fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"},
-                React.createElement("div", {className: "bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"},
+                React.createElement("div", {className: "bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[95vh] overflow-y-auto"},
                     React.createElement("div", {className: "bg-gradient-to-r from-teal-600 to-teal-700 p-6 text-white"},
                         React.createElement("h2", {className: "text-xl font-bold"}, avisoEdit ? "✏️ Editar Aviso" : "➕ Novo Aviso"),
                         React.createElement("p", {className: "text-teal-100 text-sm"}, "Configure o aviso que será exibido aos usuários")
@@ -10584,7 +10586,7 @@ const hideLoadingScreen = () => {
                                 }),
                                 React.createElement("span", {className: "text-gray-700"}, "🌎 Todas as regiões")
                             ),
-                            !avisoForm.todas_regioes && React.createElement("div", {className: "max-h-40 overflow-y-auto border rounded-xl p-3 space-y-2"},
+                            !avisoForm.todas_regioes && React.createElement("div", {className: "max-h-64 overflow-y-auto border rounded-xl p-3 space-y-2 grid grid-cols-2 md:grid-cols-3 gap-2"},
                                 avisosRegioes.map(regiao => React.createElement("label", {
                                     key: regiao,
                                     className: "flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded"
