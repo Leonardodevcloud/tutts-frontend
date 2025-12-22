@@ -9936,7 +9936,7 @@ const hideLoadingScreen = () => {
                     ),
                     
                     // Info cards
-                    React.createElement("div", {className: "grid grid-cols-3 gap-3"},
+                    React.createElement("div", {className: "grid grid-cols-2 gap-3"},
                         React.createElement("div", {className: "bg-purple-50 p-3 rounded-lg text-center"},
                             React.createElement("p", {className: "text-xs text-purple-600 font-semibold"}, "Prioridade"),
                             React.createElement("p", {className: "font-bold text-purple-800"}, 
@@ -9950,46 +9950,6 @@ const hideLoadingScreen = () => {
                             React.createElement("p", {className: "font-bold text-blue-800"}, 
                                 todoTarefaDetalhe.data_prazo ? new Date(todoTarefaDetalhe.data_prazo).toLocaleDateString("pt-BR") : "Sem prazo"
                             )
-                        ),
-                        React.createElement("div", {className: "bg-green-50 p-3 rounded-lg text-center"},
-                            React.createElement("p", {className: "text-xs text-green-600 font-semibold"}, "Tempo Gasto"),
-                            React.createElement("p", {className: "font-bold text-green-800"}, 
-                                formatarTempoCurto(todoTarefaDetalhe.tempo_gasto_segundos || 0)
-                            )
-                        )
-                    ),
-                    
-                    // Timer
-                    React.createElement("div", {className: "bg-gray-50 rounded-xl p-4"},
-                        React.createElement("h4", {className: "font-semibold text-gray-700 mb-3 flex items-center gap-2"}, "⏱️ Timer"),
-                        React.createElement("div", {className: "flex items-center justify-between"},
-                            React.createElement("div", {className: "text-3xl font-mono font-bold " + (todoTarefaDetalhe.timer_ativo ? "text-green-600" : "text-gray-700")},
-                                formatarTempo(todoTarefaDetalhe.tempo_gasto_segundos || 0)
-                            ),
-                            React.createElement("div", {className: "flex gap-2"},
-                                todoTarefaDetalhe.timer_ativo ?
-                                    React.createElement("button", {
-                                        onClick: async () => {
-                                            await pararTodoTimer(todoTarefaDetalhe.id);
-                                            const res = await fetch(`${API_URL}/todo/tarefas/${todoTarefaDetalhe.id}`);
-                                            const updated = await res.json();
-                                            setTodoTarefaDetalhe(updated);
-                                        },
-                                        className: "px-4 py-2 bg-red-500 text-white rounded-lg font-semibold hover:bg-red-600 flex items-center gap-2"
-                                    }, "⏹️ Parar") :
-                                    React.createElement("button", {
-                                        onClick: async () => {
-                                            await iniciarTodoTimer(todoTarefaDetalhe.id);
-                                            const res = await fetch(`${API_URL}/todo/tarefas/${todoTarefaDetalhe.id}`);
-                                            const updated = await res.json();
-                                            setTodoTarefaDetalhe(updated);
-                                        },
-                                        className: "px-4 py-2 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 flex items-center gap-2"
-                                    }, "▶️ Iniciar")
-                            )
-                        ),
-                        todoTarefaDetalhe.tempo_estimado_minutos && React.createElement("p", {className: "text-sm text-gray-500 mt-2"},
-                            "Estimado: ", formatarTempoCurto(todoTarefaDetalhe.tempo_estimado_minutos * 60)
                         )
                     ),
                     
@@ -10186,24 +10146,35 @@ const hideLoadingScreen = () => {
                             )
                         ),
                         React.createElement("div", {className: "space-y-3 max-h-[calc(100vh-280px)] overflow-y-auto"},
-                            tarefasFiltradas.filter(t => (t.coluna_kanban || 'todo') === 'todo').map(t => 
+                            tarefasFiltradas.filter(t => (t.coluna_kanban || 'todo') === 'todo' && t.status !== 'concluida').map(t => 
                                 React.createElement("div", {
                                     key: t.id,
                                     draggable: true,
-                                    onDragStart: (e) => e.dataTransfer.setData('tarefaId', t.id.toString()),
-                                    onClick: () => abrirTodoDetalhe(t),
-                                    className: "bg-white rounded-lg p-3 shadow-sm border-l-4 cursor-pointer hover:shadow-md transition-all " +
+                                    onDragStart: (e) => {
+                                        e.dataTransfer.setData('tarefaId', t.id.toString());
+                                        e.dataTransfer.effectAllowed = 'move';
+                                    },
+                                    onClick: (e) => {
+                                        if (e.defaultPrevented) return;
+                                        abrirTodoDetalhe(t);
+                                    },
+                                    className: "bg-white rounded-lg p-3 shadow-sm border-l-4 cursor-grab active:cursor-grabbing hover:shadow-md transition-all " +
                                         (t.prioridade === 'urgente' ? 'border-l-red-500' : t.prioridade === 'alta' ? 'border-l-orange-500' : t.prioridade === 'media' ? 'border-l-yellow-500' : 'border-l-gray-300')
                                 },
                                     React.createElement("h4", {className: "font-semibold text-gray-800 mb-1"}, t.titulo),
-                                    t.data_prazo && React.createElement("span", {
-                                        className: "text-xs px-2 py-0.5 rounded-full " + (new Date(t.data_prazo) < hoje ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-600")
-                                    }, "📅 ", new Date(t.data_prazo).toLocaleDateString('pt-BR')),
-                                    t.qtd_subtarefas > 0 && React.createElement("span", {className: "text-xs ml-2 px-2 py-0.5 rounded-full bg-purple-100 text-purple-700"},
-                                        "☑️ ", t.qtd_subtarefas_concluidas || 0, "/", t.qtd_subtarefas
-                                    ),
-                                    t.timer_ativo && React.createElement("span", {className: "text-xs ml-2 px-2 py-0.5 rounded-full bg-green-100 text-green-700 animate-pulse"}, "⏱️")
+                                    React.createElement("div", {className: "flex flex-wrap gap-1 mt-2"},
+                                        t.data_prazo && React.createElement("span", {
+                                            className: "text-xs px-2 py-0.5 rounded-full " + (new Date(t.data_prazo) < hoje ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-600")
+                                        }, "📅 ", new Date(t.data_prazo).toLocaleDateString('pt-BR')),
+                                        t.qtd_subtarefas > 0 && React.createElement("span", {className: "text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-700"},
+                                            "☑️ ", t.qtd_subtarefas_concluidas || 0, "/", t.qtd_subtarefas
+                                        )
+                                    )
                                 )
+                            ),
+                            tarefasFiltradas.filter(t => (t.coluna_kanban || 'todo') === 'todo' && t.status !== 'concluida').length === 0 && React.createElement("div", {className: "text-center py-8 text-gray-400"},
+                                React.createElement("span", {className: "text-3xl block mb-2"}, "📋"),
+                                React.createElement("p", {className: "text-sm"}, "Nenhuma tarefa")
                             )
                         )
                     ),
@@ -10232,19 +10203,26 @@ const hideLoadingScreen = () => {
                                 React.createElement("div", {
                                     key: t.id,
                                     draggable: true,
-                                    onDragStart: (e) => e.dataTransfer.setData('tarefaId', t.id.toString()),
-                                    onClick: () => abrirTodoDetalhe(t),
-                                    className: "bg-white rounded-lg p-3 shadow-sm border-l-4 cursor-pointer hover:shadow-md transition-all " +
+                                    onDragStart: (e) => {
+                                        e.dataTransfer.setData('tarefaId', t.id.toString());
+                                        e.dataTransfer.effectAllowed = 'move';
+                                    },
+                                    onClick: (e) => {
+                                        if (e.defaultPrevented) return;
+                                        abrirTodoDetalhe(t);
+                                    },
+                                    className: "bg-white rounded-lg p-3 shadow-sm border-l-4 cursor-grab active:cursor-grabbing hover:shadow-md transition-all " +
                                         (t.prioridade === 'urgente' ? 'border-l-red-500' : t.prioridade === 'alta' ? 'border-l-orange-500' : t.prioridade === 'media' ? 'border-l-yellow-500' : 'border-l-gray-300')
                                 },
                                     React.createElement("h4", {className: "font-semibold text-gray-800 mb-1"}, t.titulo),
-                                    t.data_prazo && React.createElement("span", {
-                                        className: "text-xs px-2 py-0.5 rounded-full " + (new Date(t.data_prazo) < hoje ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-600")
-                                    }, "📅 ", new Date(t.data_prazo).toLocaleDateString('pt-BR')),
-                                    t.qtd_subtarefas > 0 && React.createElement("span", {className: "text-xs ml-2 px-2 py-0.5 rounded-full bg-purple-100 text-purple-700"},
-                                        "☑️ ", t.qtd_subtarefas_concluidas || 0, "/", t.qtd_subtarefas
-                                    ),
-                                    t.timer_ativo && React.createElement("span", {className: "text-xs ml-2 px-2 py-0.5 rounded-full bg-green-100 text-green-700 animate-pulse"}, "⏱️")
+                                    React.createElement("div", {className: "flex flex-wrap gap-1 mt-2"},
+                                        t.data_prazo && React.createElement("span", {
+                                            className: "text-xs px-2 py-0.5 rounded-full " + (new Date(t.data_prazo) < hoje ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-600")
+                                        }, "📅 ", new Date(t.data_prazo).toLocaleDateString('pt-BR')),
+                                        t.qtd_subtarefas > 0 && React.createElement("span", {className: "text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-700"},
+                                            "☑️ ", t.qtd_subtarefas_concluidas || 0, "/", t.qtd_subtarefas
+                                        )
+                                    )
                                 )
                             ),
                             tarefasFiltradas.filter(t => t.coluna_kanban === 'doing').length === 0 && React.createElement("div", {className: "text-center py-8 text-gray-400"},
@@ -10278,16 +10256,19 @@ const hideLoadingScreen = () => {
                                 React.createElement("div", {
                                     key: t.id,
                                     draggable: true,
-                                    onDragStart: (e) => e.dataTransfer.setData('tarefaId', t.id.toString()),
-                                    onClick: () => abrirTodoDetalhe(t),
-                                    className: "bg-white rounded-lg p-3 shadow-sm border-l-4 border-l-green-500 cursor-pointer hover:shadow-md transition-all opacity-75"
+                                    onDragStart: (e) => {
+                                        e.dataTransfer.setData('tarefaId', t.id.toString());
+                                        e.dataTransfer.effectAllowed = 'move';
+                                    },
+                                    onClick: (e) => {
+                                        if (e.defaultPrevented) return;
+                                        abrirTodoDetalhe(t);
+                                    },
+                                    className: "bg-white rounded-lg p-3 shadow-sm border-l-4 border-l-green-500 cursor-grab active:cursor-grabbing hover:shadow-md transition-all opacity-75"
                                 },
                                     React.createElement("h4", {className: "font-semibold text-gray-500 mb-1 line-through"}, t.titulo),
                                     t.data_conclusao && React.createElement("span", {className: "text-xs text-gray-400"},
                                         "Concluído em ", new Date(t.data_conclusao).toLocaleDateString('pt-BR')
-                                    ),
-                                    t.tempo_gasto_segundos > 0 && React.createElement("span", {className: "text-xs ml-2 px-2 py-0.5 rounded-full bg-blue-100 text-blue-700"},
-                                        "⏱️ ", formatarTempoCurto(t.tempo_gasto_segundos)
                                     )
                                 )
                             ),
@@ -10364,15 +10345,7 @@ const hideLoadingScreen = () => {
                                     t.qtd_subtarefas > 0 && React.createElement("span", {
                                         className: "text-xs px-2 py-0.5 rounded-full " + 
                                             (t.qtd_subtarefas_concluidas === t.qtd_subtarefas ? "bg-green-100 text-green-700" : "bg-purple-100 text-purple-700")
-                                    }, "☑️ ", t.qtd_subtarefas_concluidas || 0, "/", t.qtd_subtarefas),
-                                    // Indicador de Timer Ativo
-                                    t.timer_ativo && React.createElement("span", {
-                                        className: "text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 animate-pulse"
-                                    }, "⏱️ Ativo"),
-                                    // Tempo Gasto
-                                    t.tempo_gasto_segundos > 0 && !t.timer_ativo && React.createElement("span", {
-                                        className: "text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700"
-                                    }, "⏱️ ", formatarTempoCurto(t.tempo_gasto_segundos))
+                                    }, "☑️ ", t.qtd_subtarefas_concluidas || 0, "/", t.qtd_subtarefas)
                                 ),
                                 
                                 // Data e Atribuído
@@ -10532,15 +10505,15 @@ const hideLoadingScreen = () => {
             (todoModal?.tipo === "novaTarefa" || todoModal?.tipo === "editarTarefa") && React.createElement("div", {
                 className: "fixed inset-0 bg-black/50 flex items-center justify-center z-50"
             }, React.createElement("div", {
-                className: "bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden"
+                className: "bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col"
             }, React.createElement("div", {
-                className: "bg-gradient-to-r from-purple-600 to-indigo-600 p-4 text-white flex justify-between items-center"
+                className: "bg-gradient-to-r from-purple-600 to-indigo-600 p-4 text-white flex justify-between items-center flex-shrink-0"
             }, React.createElement("h2", {className: "text-xl font-bold"}, todoModal.tipo === "novaTarefa" ? "📝 Nova Tarefa" : "✏️ Editar Tarefa"),
                 React.createElement("button", {
                     onClick: () => setTodoModal(null),
                     className: "text-white/80 hover:text-white text-xl"
                 }, "✕")
-            ), React.createElement("div", {className: "p-6 space-y-4"},
+            ), React.createElement("div", {className: "p-6 space-y-4 overflow-y-auto flex-1"},
                 React.createElement("div", null,
                     React.createElement("label", {className: "block text-sm font-semibold mb-1"}, "Título *"),
                     React.createElement("input", {
@@ -10599,6 +10572,57 @@ const hideLoadingScreen = () => {
                     }, React.createElement("option", {value: ""}, "Selecione um grupo..."),
                         todoGrupos.map(g => React.createElement("option", {key: g.id, value: g.id}, g.icone + " " + g.nome)))
                 ),
+                
+                // CHECKLIST - na criação e edição
+                React.createElement("div", {className: "border-t pt-4"},
+                    React.createElement("label", {className: "block text-sm font-semibold mb-2"}, "☑️ Checklist (opcional)"),
+                    React.createElement("div", {className: "space-y-2 mb-3"},
+                        (todoModal.checklist || []).map((item, idx) =>
+                            React.createElement("div", {
+                                key: idx,
+                                className: "flex items-center gap-2 bg-gray-50 p-2 rounded-lg"
+                            },
+                                React.createElement("span", {className: "w-5 h-5 rounded border-2 border-gray-300 flex items-center justify-center text-xs"}, idx + 1),
+                                React.createElement("span", {className: "flex-1 text-sm text-gray-700"}, item),
+                                React.createElement("button", {
+                                    onClick: () => {
+                                        const newChecklist = [...(todoModal.checklist || [])];
+                                        newChecklist.splice(idx, 1);
+                                        setTodoModal({...todoModal, checklist: newChecklist});
+                                    },
+                                    className: "text-red-400 hover:text-red-600"
+                                }, "×")
+                            )
+                        )
+                    ),
+                    React.createElement("div", {className: "flex gap-2"},
+                        React.createElement("input", {
+                            type: "text",
+                            id: "novo-checklist-item",
+                            placeholder: "Adicionar item ao checklist...",
+                            className: "flex-1 px-3 py-2 border rounded-lg text-sm",
+                            onKeyPress: (e) => {
+                                if (e.key === 'Enter' && e.target.value.trim()) {
+                                    const newChecklist = [...(todoModal.checklist || []), e.target.value.trim()];
+                                    setTodoModal({...todoModal, checklist: newChecklist});
+                                    e.target.value = '';
+                                }
+                            }
+                        }),
+                        React.createElement("button", {
+                            onClick: () => {
+                                const input = document.getElementById('novo-checklist-item');
+                                if (input && input.value.trim()) {
+                                    const newChecklist = [...(todoModal.checklist || []), input.value.trim()];
+                                    setTodoModal({...todoModal, checklist: newChecklist});
+                                    input.value = '';
+                                }
+                            },
+                            className: "px-3 py-2 bg-purple-100 text-purple-700 rounded-lg text-sm font-semibold hover:bg-purple-200"
+                        }, "+ Add")
+                    )
+                ),
+                
                 React.createElement("div", {className: "flex gap-3 pt-4"},
                     React.createElement("button", {
                         onClick: () => setTodoModal(null),
@@ -10618,7 +10642,7 @@ const hideLoadingScreen = () => {
                             }
                             
                             if (todoModal.tipo === "novaTarefa") {
-                                await fetch(`${API_URL}/todo/tarefas`, {
+                                const res = await fetch(`${API_URL}/todo/tarefas`, {
                                     method: "POST",
                                     headers: {"Content-Type": "application/json"},
                                     body: JSON.stringify({
@@ -10632,6 +10656,19 @@ const hideLoadingScreen = () => {
                                         criado_por_nome: l.fullName
                                     })
                                 });
+                                const novaTarefa = await res.json();
+                                
+                                // Criar subtarefas do checklist
+                                if (todoModal.checklist && todoModal.checklist.length > 0) {
+                                    for (let i = 0; i < todoModal.checklist.length; i++) {
+                                        await fetch(`${API_URL}/todo/tarefas/${novaTarefa.id}/subtarefas`, {
+                                            method: "POST",
+                                            headers: {"Content-Type": "application/json"},
+                                            body: JSON.stringify({ titulo: todoModal.checklist[i], ordem: i })
+                                        });
+                                    }
+                                }
+                                
                                 ja("✅ Tarefa criada!", "success");
                             } else {
                                 await fetch(`${API_URL}/todo/tarefas/${todoModal.tarefa.id}`, {
