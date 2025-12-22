@@ -2314,7 +2314,7 @@ const hideLoadingScreen = () => {
             }
         }, 
         // Função para rejeitar inscrição de novato
-        Rl = async (id) => {
+        rejeitarInscNovato = async (id) => {
             if (!p.motivoRejeicaoNovato?.trim()) {
                 ja("Informe o motivo da rejeição", "error");
                 return;
@@ -6923,7 +6923,7 @@ const hideLoadingScreen = () => {
                 }),
                 className: "flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300"
             }, "Cancelar"), React.createElement("button", {
-                onClick: () => Rl(p.modalRejeitarNovatos.id),
+                onClick: () => rejeitarInscNovato(p.modalRejeitarNovatos.id),
                 disabled: !p.motivoRejeicaoNovato || c,
                 className: "flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 disabled:opacity-50"
             }, c ? "..." : "❌ Rejeitar")))), React.createElement("div", {
