@@ -2312,7 +2312,41 @@ const hideLoadingScreen = () => {
             } catch (e) {
                 console.error("Erro ao carregar inscrições novatos:", e)
             }
-        }, kl = async () => {
+        }, 
+        // Função para rejeitar inscrição de novato
+        Rl = async (id) => {
+            if (!p.motivoRejeicaoNovato?.trim()) {
+                ja("Informe o motivo da rejeição", "error");
+                return;
+            }
+            s(!0);
+            try {
+                const response = await fetch(`${API_URL}/inscricoes-novatos/${id}/rejeitar`, {
+                    method: "PATCH",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        motivo_rejeicao: p.motivoRejeicaoNovato,
+                        resolved_by: l.fullName
+                    })
+                });
+                if (!response.ok) throw new Error("Erro ao rejeitar");
+                ja("❌ Inscrição rejeitada!", "success");
+                x({
+                    ...p,
+                    modalRejeitarNovatos: null,
+                    motivoRejeicaoNovato: ""
+                });
+                await Sl();
+            } catch (e) {
+                console.error("Erro ao rejeitar inscrição:", e);
+                ja("Erro ao rejeitar inscrição", "error");
+            } finally {
+                s(!1);
+            }
+        },
+        kl = async () => {
             try {
                 const e = await fetch(`${API_URL}/inscricoes-novatos/usuario/${l.codProfissional}`);
                 de(await e.json())
@@ -6889,7 +6923,7 @@ const hideLoadingScreen = () => {
                 }),
                 className: "flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300"
             }, "Cancelar"), React.createElement("button", {
-                onClick: () => handleRejeitarInscricaoNovato(p.modalRejeitarNovatos.id),
+                onClick: () => Rl(p.modalRejeitarNovatos.id),
                 disabled: !p.motivoRejeicaoNovato || c,
                 className: "flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 disabled:opacity-50"
             }, c ? "..." : "❌ Rejeitar")))), React.createElement("div", {
