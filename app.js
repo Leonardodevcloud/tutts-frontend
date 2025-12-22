@@ -798,6 +798,13 @@ const hideLoadingScreen = () => {
         [todoFiltroCard, setTodoFiltroCard] = useState(null), // "pendentes", "atrasadas", "concluidas"
         [todoNotifModal, setTodoNotifModal] = useState(false),
         [todoPendentesNotif, setTodoPendentesNotif] = useState([]),
+        // NOVOS ESTADOS - Kanban, Subtarefas, Timer
+        [todoViewType, setTodoViewType] = useState("lista"), // "lista" | "kanban"
+        [todoSubtarefas, setTodoSubtarefas] = useState({}), // {tarefa_id: [subtarefas]}
+        [todoTimerTarefa, setTodoTimerTarefa] = useState(null), // Tarefa com timer ativo
+        [todoTimerSegundos, setTodoTimerSegundos] = useState(0),
+        [todoTemplates, setTodoTemplates] = useState([]),
+        [todoTarefaDetalhe, setTodoTarefaDetalhe] = useState(null), // Modal de detalhe da tarefa
         // Estados do módulo Social
         [socialProfile, setSocialProfile] = useState(null),
         [socialUsers, setSocialUsers] = useState([]),
@@ -1377,6 +1384,166 @@ const hideLoadingScreen = () => {
                 console.error("Erro ao carregar Meu Dia:", err);
                 return [];
             }
+        };
+        
+        // ============================================
+        // NOVAS FUNÇÕES TO-DO - KANBAN, SUBTAREFAS, TIMER
+        // ============================================
+        
+        // Função auxiliar para formatar tempo em HH:MM:SS
+        const formatarTempo = (segundos) => {
+            if (!segundos || segundos < 0) return "00:00:00";
+            const h = Math.floor(segundos / 3600);
+            const m = Math.floor((segundos % 3600) / 60);
+            const s = Math.floor(segundos % 60);
+            return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        };
+        
+        // Função auxiliar para formatar tempo curto (ex: 2h 30min)
+        const formatarTempoCurto = (segundos) => {
+            if (!segundos || segundos < 0) return "0min";
+            const h = Math.floor(segundos / 3600);
+            const m = Math.floor((segundos % 3600) / 60);
+            if (h > 0) return `${h}h ${m}min`;
+            return `${m}min`;
+        };
+        
+        // Carregar subtarefas de uma tarefa
+        const loadTodoSubtarefas = async (tarefaId) => {
+            try {
+                const res = await fetch(`${API_URL}/todo/tarefas/${tarefaId}/subtarefas`);
+                const subs = await res.json();
+                setTodoSubtarefas(prev => ({ ...prev, [tarefaId]: subs }));
+                return subs;
+            } catch (err) {
+                console.error("Erro ao carregar subtarefas:", err);
+                return [];
+            }
+        };
+        
+        // Adicionar subtarefa
+        const addTodoSubtarefa = async (tarefaId, titulo) => {
+            try {
+                const subs = todoSubtarefas[tarefaId] || [];
+                await fetch(`${API_URL}/todo/tarefas/${tarefaId}/subtarefas`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ titulo, ordem: subs.length })
+                });
+                await loadTodoSubtarefas(tarefaId);
+                // Atualizar lista de tarefas
+                if (todoViewMode === "meudia") await loadTodoMeuDia();
+                else if (todoGrupoAtivo) await loadTodoTarefas(todoGrupoAtivo.id);
+            } catch (err) {
+                console.error("Erro ao adicionar subtarefa:", err);
+            }
+        };
+        
+        // Toggle subtarefa concluída
+        const toggleTodoSubtarefa = async (subId, concluida, tarefaId) => {
+            try {
+                await fetch(`${API_URL}/todo/subtarefas/${subId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        concluida: !concluida,
+                        user_cod: l.codProfissional,
+                        user_name: l.fullName
+                    })
+                });
+                await loadTodoSubtarefas(tarefaId);
+                // Atualizar lista de tarefas
+                if (todoViewMode === "meudia") await loadTodoMeuDia();
+                else if (todoGrupoAtivo) await loadTodoTarefas(todoGrupoAtivo.id);
+            } catch (err) {
+                console.error("Erro ao atualizar subtarefa:", err);
+            }
+        };
+        
+        // Excluir subtarefa
+        const deleteTodoSubtarefa = async (subId, tarefaId) => {
+            try {
+                await fetch(`${API_URL}/todo/subtarefas/${subId}`, { method: 'DELETE' });
+                await loadTodoSubtarefas(tarefaId);
+                if (todoViewMode === "meudia") await loadTodoMeuDia();
+                else if (todoGrupoAtivo) await loadTodoTarefas(todoGrupoAtivo.id);
+            } catch (err) {
+                console.error("Erro ao excluir subtarefa:", err);
+            }
+        };
+        
+        // Iniciar timer
+        const iniciarTodoTimer = async (tarefaId) => {
+            try {
+                await fetch(`${API_URL}/todo/tarefas/${tarefaId}/timer/iniciar`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_cod: l.codProfissional,
+                        user_name: l.fullName
+                    })
+                });
+                setTodoTimerTarefa(tarefaId);
+                setTodoTimerSegundos(0);
+                ja("⏱️ Timer iniciado!", "success");
+                // Atualizar lista
+                if (todoViewMode === "meudia") await loadTodoMeuDia();
+                else if (todoGrupoAtivo) await loadTodoTarefas(todoGrupoAtivo.id);
+            } catch (err) {
+                console.error("Erro ao iniciar timer:", err);
+                ja("Erro ao iniciar timer", "error");
+            }
+        };
+        
+        // Parar timer
+        const pararTodoTimer = async (tarefaId) => {
+            try {
+                await fetch(`${API_URL}/todo/tarefas/${tarefaId}/timer/parar`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_cod: l.codProfissional,
+                        user_name: l.fullName
+                    })
+                });
+                setTodoTimerTarefa(null);
+                setTodoTimerSegundos(0);
+                ja("⏹️ Timer parado e tempo registrado!", "success");
+                // Atualizar lista
+                if (todoViewMode === "meudia") await loadTodoMeuDia();
+                else if (todoGrupoAtivo) await loadTodoTarefas(todoGrupoAtivo.id);
+            } catch (err) {
+                console.error("Erro ao parar timer:", err);
+                ja("Erro ao parar timer", "error");
+            }
+        };
+        
+        // Mover tarefa no Kanban
+        const moverTodoKanban = async (tarefaId, colunaDestino) => {
+            try {
+                await fetch(`${API_URL}/todo/tarefas/${tarefaId}/kanban`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        coluna_kanban: colunaDestino,
+                        user_cod: l.codProfissional,
+                        user_name: l.fullName
+                    })
+                });
+                ja(`✅ Tarefa movida para ${colunaDestino === 'todo' ? 'A Fazer' : colunaDestino === 'doing' ? 'Fazendo' : 'Concluído'}!`, "success");
+                // Atualizar lista
+                if (todoViewMode === "meudia") await loadTodoMeuDia();
+                else if (todoGrupoAtivo) await loadTodoTarefas(todoGrupoAtivo.id);
+            } catch (err) {
+                console.error("Erro ao mover tarefa:", err);
+                ja("Erro ao mover tarefa", "error");
+            }
+        };
+        
+        // Abrir detalhe da tarefa
+        const abrirTodoDetalhe = async (tarefa) => {
+            setTodoTarefaDetalhe(tarefa);
+            await loadTodoSubtarefas(tarefa.id);
         };
         
         // Função para verificar tarefas pendentes e mostrar notificação
@@ -9736,6 +9903,203 @@ const hideLoadingScreen = () => {
                 )
             ),
             
+            // Modal de Detalhe da Tarefa (Subtarefas, Timer, etc)
+            todoTarefaDetalhe && React.createElement("div", {
+                className: "fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            }, React.createElement("div", {
+                className: "bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
+            },
+                // Header
+                React.createElement("div", {
+                    className: "bg-gradient-to-r from-purple-600 to-indigo-600 p-4 text-white flex justify-between items-start"
+                },
+                    React.createElement("div", {className: "flex-1"},
+                        React.createElement("h2", {className: "text-xl font-bold"}, todoTarefaDetalhe.titulo),
+                        React.createElement("p", {className: "text-purple-200 text-sm mt-1"}, 
+                            todoTarefaDetalhe.grupo_nome || "Sem grupo", " • ", 
+                            todoTarefaDetalhe.status === "concluida" ? "✅ Concluída" : 
+                            todoTarefaDetalhe.status === "em_andamento" ? "🔄 Em andamento" : "📋 Pendente"
+                        )
+                    ),
+                    React.createElement("button", {
+                        onClick: () => setTodoTarefaDetalhe(null),
+                        className: "text-white/70 hover:text-white text-2xl"
+                    }, "×")
+                ),
+                
+                // Conteúdo com scroll
+                React.createElement("div", {className: "flex-1 overflow-y-auto p-4 space-y-6"},
+                    // Descrição
+                    todoTarefaDetalhe.descricao && React.createElement("div", null,
+                        React.createElement("h4", {className: "font-semibold text-gray-700 mb-2"}, "📝 Descrição"),
+                        React.createElement("p", {className: "text-gray-600 bg-gray-50 p-3 rounded-lg"}, todoTarefaDetalhe.descricao)
+                    ),
+                    
+                    // Info cards
+                    React.createElement("div", {className: "grid grid-cols-3 gap-3"},
+                        React.createElement("div", {className: "bg-purple-50 p-3 rounded-lg text-center"},
+                            React.createElement("p", {className: "text-xs text-purple-600 font-semibold"}, "Prioridade"),
+                            React.createElement("p", {className: "font-bold text-purple-800"}, 
+                                todoTarefaDetalhe.prioridade === "urgente" ? "🔴 Urgente" :
+                                todoTarefaDetalhe.prioridade === "alta" ? "🟠 Alta" :
+                                todoTarefaDetalhe.prioridade === "media" ? "🟡 Média" : "🟢 Baixa"
+                            )
+                        ),
+                        React.createElement("div", {className: "bg-blue-50 p-3 rounded-lg text-center"},
+                            React.createElement("p", {className: "text-xs text-blue-600 font-semibold"}, "Prazo"),
+                            React.createElement("p", {className: "font-bold text-blue-800"}, 
+                                todoTarefaDetalhe.data_prazo ? new Date(todoTarefaDetalhe.data_prazo).toLocaleDateString("pt-BR") : "Sem prazo"
+                            )
+                        ),
+                        React.createElement("div", {className: "bg-green-50 p-3 rounded-lg text-center"},
+                            React.createElement("p", {className: "text-xs text-green-600 font-semibold"}, "Tempo Gasto"),
+                            React.createElement("p", {className: "font-bold text-green-800"}, 
+                                formatarTempoCurto(todoTarefaDetalhe.tempo_gasto_segundos || 0)
+                            )
+                        )
+                    ),
+                    
+                    // Timer
+                    React.createElement("div", {className: "bg-gray-50 rounded-xl p-4"},
+                        React.createElement("h4", {className: "font-semibold text-gray-700 mb-3 flex items-center gap-2"}, "⏱️ Timer"),
+                        React.createElement("div", {className: "flex items-center justify-between"},
+                            React.createElement("div", {className: "text-3xl font-mono font-bold " + (todoTarefaDetalhe.timer_ativo ? "text-green-600" : "text-gray-700")},
+                                formatarTempo(todoTarefaDetalhe.tempo_gasto_segundos || 0)
+                            ),
+                            React.createElement("div", {className: "flex gap-2"},
+                                todoTarefaDetalhe.timer_ativo ?
+                                    React.createElement("button", {
+                                        onClick: async () => {
+                                            await pararTodoTimer(todoTarefaDetalhe.id);
+                                            const res = await fetch(`${API_URL}/todo/tarefas/${todoTarefaDetalhe.id}`);
+                                            const updated = await res.json();
+                                            setTodoTarefaDetalhe(updated);
+                                        },
+                                        className: "px-4 py-2 bg-red-500 text-white rounded-lg font-semibold hover:bg-red-600 flex items-center gap-2"
+                                    }, "⏹️ Parar") :
+                                    React.createElement("button", {
+                                        onClick: async () => {
+                                            await iniciarTodoTimer(todoTarefaDetalhe.id);
+                                            const res = await fetch(`${API_URL}/todo/tarefas/${todoTarefaDetalhe.id}`);
+                                            const updated = await res.json();
+                                            setTodoTarefaDetalhe(updated);
+                                        },
+                                        className: "px-4 py-2 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 flex items-center gap-2"
+                                    }, "▶️ Iniciar")
+                            )
+                        ),
+                        todoTarefaDetalhe.tempo_estimado_minutos && React.createElement("p", {className: "text-sm text-gray-500 mt-2"},
+                            "Estimado: ", formatarTempoCurto(todoTarefaDetalhe.tempo_estimado_minutos * 60)
+                        )
+                    ),
+                    
+                    // Subtarefas/Checklist
+                    React.createElement("div", {className: "bg-gray-50 rounded-xl p-4"},
+                        React.createElement("div", {className: "flex items-center justify-between mb-3"},
+                            React.createElement("h4", {className: "font-semibold text-gray-700 flex items-center gap-2"}, 
+                                "☑️ Checklist",
+                                (todoSubtarefas[todoTarefaDetalhe.id]?.length || 0) > 0 && React.createElement("span", {className: "text-sm font-normal text-gray-500"},
+                                    "(" + (todoSubtarefas[todoTarefaDetalhe.id]?.filter(s => s.concluida).length || 0) + "/" + (todoSubtarefas[todoTarefaDetalhe.id]?.length || 0) + ")"
+                                )
+                            ),
+                            (todoSubtarefas[todoTarefaDetalhe.id]?.length || 0) > 0 && React.createElement("span", {
+                                className: "text-sm font-bold " + ((todoSubtarefas[todoTarefaDetalhe.id]?.filter(s => s.concluida).length || 0) === (todoSubtarefas[todoTarefaDetalhe.id]?.length || 0) ? "text-green-600" : "text-purple-600")
+                            }, Math.round(((todoSubtarefas[todoTarefaDetalhe.id]?.filter(s => s.concluida).length || 0) / (todoSubtarefas[todoTarefaDetalhe.id]?.length || 1)) * 100), "%")
+                        ),
+                        
+                        // Barra de progresso
+                        (todoSubtarefas[todoTarefaDetalhe.id]?.length || 0) > 0 && React.createElement("div", {className: "w-full bg-gray-200 rounded-full h-2 mb-3"},
+                            React.createElement("div", {
+                                className: "h-2 rounded-full transition-all " + ((todoSubtarefas[todoTarefaDetalhe.id]?.filter(s => s.concluida).length || 0) === (todoSubtarefas[todoTarefaDetalhe.id]?.length || 0) ? "bg-green-500" : "bg-purple-500"),
+                                style: { width: Math.round(((todoSubtarefas[todoTarefaDetalhe.id]?.filter(s => s.concluida).length || 0) / (todoSubtarefas[todoTarefaDetalhe.id]?.length || 1)) * 100) + "%" }
+                            })
+                        ),
+                        
+                        // Lista de subtarefas
+                        React.createElement("div", {className: "space-y-2 mb-3"},
+                            (todoSubtarefas[todoTarefaDetalhe.id] || []).map(sub =>
+                                React.createElement("div", {
+                                    key: sub.id,
+                                    className: "flex items-center gap-2 p-2 rounded-lg " + (sub.concluida ? "bg-green-50" : "bg-white") + " group"
+                                },
+                                    React.createElement("button", {
+                                        onClick: () => toggleTodoSubtarefa(sub.id, sub.concluida, todoTarefaDetalhe.id),
+                                        className: "w-5 h-5 rounded border-2 flex items-center justify-center transition-colors " + 
+                                            (sub.concluida ? "bg-green-500 border-green-500 text-white" : "border-gray-300 hover:border-purple-500")
+                                    }, sub.concluida && "✓"),
+                                    React.createElement("span", {
+                                        className: "flex-1 text-sm " + (sub.concluida ? "line-through text-gray-400" : "text-gray-700")
+                                    }, sub.titulo),
+                                    React.createElement("button", {
+                                        onClick: () => deleteTodoSubtarefa(sub.id, todoTarefaDetalhe.id),
+                                        className: "opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 transition-opacity"
+                                    }, "×")
+                                )
+                            )
+                        ),
+                        
+                        // Input para nova subtarefa
+                        React.createElement("div", {className: "flex gap-2"},
+                            React.createElement("input", {
+                                type: "text",
+                                placeholder: "Adicionar item...",
+                                className: "flex-1 px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500",
+                                onKeyPress: async (e) => {
+                                    if (e.key === 'Enter' && e.target.value.trim()) {
+                                        await addTodoSubtarefa(todoTarefaDetalhe.id, e.target.value.trim());
+                                        e.target.value = '';
+                                    }
+                                }
+                            }),
+                            React.createElement("button", {
+                                onClick: async () => {
+                                    const input = document.querySelector('input[placeholder="Adicionar item..."]');
+                                    if (input && input.value.trim()) {
+                                        await addTodoSubtarefa(todoTarefaDetalhe.id, input.value.trim());
+                                        input.value = '';
+                                    }
+                                },
+                                className: "px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-semibold hover:bg-purple-700"
+                            }, "+ Adicionar")
+                        )
+                    )
+                ),
+                
+                // Footer com ações
+                React.createElement("div", {className: "border-t p-4 flex justify-between items-center bg-gray-50"},
+                    React.createElement("button", {
+                        onClick: () => {
+                            setTodoModal({tipo: "editarTarefa", tarefa: todoTarefaDetalhe});
+                            setTodoTarefaDetalhe(null);
+                        },
+                        className: "px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300"
+                    }, "✏️ Editar"),
+                    React.createElement("div", {className: "flex gap-2"},
+                        todoTarefaDetalhe.status !== "concluida" && React.createElement("button", {
+                            onClick: async () => {
+                                await fetch(`${API_URL}/todo/tarefas/${todoTarefaDetalhe.id}`, {
+                                    method: 'PUT',
+                                    headers: {'Content-Type': 'application/json'},
+                                    body: JSON.stringify({status: 'concluida', user_cod: l.codProfissional, user_name: l.fullName})
+                                });
+                                setTodoTarefaDetalhe(null);
+                                ja("✅ Tarefa concluída!", "success");
+                                if (todoViewMode === "meudia") await loadTodoMeuDia();
+                                else if (todoGrupoAtivo) {
+                                    const tarefas = await loadTodoTarefas(todoGrupoAtivo.id);
+                                    setTodoTarefas(tarefas);
+                                }
+                            },
+                            className: "px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700"
+                        }, "✅ Concluir Tarefa"),
+                        React.createElement("button", {
+                            onClick: () => setTodoTarefaDetalhe(null),
+                            className: "px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
+                        }, "Fechar")
+                    )
+                )
+            )),
+            
             // Área Principal
             React.createElement("div", {className: "flex-1 flex flex-col h-screen"},
                 // Header da área (FIXO) com filtros
@@ -9773,6 +10137,19 @@ const hideLoadingScreen = () => {
                         )
                     ),
                     React.createElement("div", {className: "flex items-center gap-3"},
+                        // Toggle Lista/Kanban
+                        React.createElement("div", {className: "flex bg-gray-100 rounded-lg p-1"},
+                            React.createElement("button", {
+                                onClick: () => setTodoViewType("lista"),
+                                className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + 
+                                    (todoViewType === "lista" ? "bg-white shadow text-purple-700" : "text-gray-600 hover:text-gray-800")
+                            }, "📋 Lista"),
+                            React.createElement("button", {
+                                onClick: () => setTodoViewType("kanban"),
+                                className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + 
+                                    (todoViewType === "kanban" ? "bg-white shadow text-purple-700" : "text-gray-600 hover:text-gray-800")
+                            }, "📊 Kanban")
+                        ),
                         React.createElement("button", {
                             onClick: () => he("home"),
                             className: "px-4 py-2 text-gray-600 rounded-lg font-semibold hover:bg-gray-100"
@@ -9787,7 +10164,142 @@ const hideLoadingScreen = () => {
                 // Área de conteúdo com scroll
                 React.createElement("div", {className: "flex-1 overflow-y-auto p-6 bg-gray-50"},
                 
-                // Grid Kanban (3 por linha)
+                // KANBAN VIEW
+                todoViewType === "kanban" ? React.createElement("div", {className: "flex gap-4 h-full"},
+                    // Coluna A FAZER
+                    React.createElement("div", {
+                        className: "flex-1 bg-yellow-50 rounded-xl p-4 min-w-[300px]",
+                        onDragOver: (e) => e.preventDefault(),
+                        onDrop: async (e) => {
+                            e.preventDefault();
+                            const tarefaId = e.dataTransfer.getData('tarefaId');
+                            if (tarefaId) await moverTodoKanban(parseInt(tarefaId), 'todo');
+                        }
+                    },
+                        React.createElement("div", {className: "flex items-center justify-between mb-4 pb-2 border-b-2 border-yellow-200"},
+                            React.createElement("div", {className: "flex items-center gap-2"},
+                                React.createElement("span", {className: "text-xl"}, "📋"),
+                                React.createElement("h3", {className: "font-bold text-gray-800"}, "A Fazer"),
+                                React.createElement("span", {className: "px-2 py-0.5 rounded-full text-xs font-bold bg-yellow-200 text-yellow-800"},
+                                    tarefasFiltradas.filter(t => (t.coluna_kanban || 'todo') === 'todo').length
+                                )
+                            )
+                        ),
+                        React.createElement("div", {className: "space-y-3 max-h-[calc(100vh-280px)] overflow-y-auto"},
+                            tarefasFiltradas.filter(t => (t.coluna_kanban || 'todo') === 'todo').map(t => 
+                                React.createElement("div", {
+                                    key: t.id,
+                                    draggable: true,
+                                    onDragStart: (e) => e.dataTransfer.setData('tarefaId', t.id.toString()),
+                                    onClick: () => abrirTodoDetalhe(t),
+                                    className: "bg-white rounded-lg p-3 shadow-sm border-l-4 cursor-pointer hover:shadow-md transition-all " +
+                                        (t.prioridade === 'urgente' ? 'border-l-red-500' : t.prioridade === 'alta' ? 'border-l-orange-500' : t.prioridade === 'media' ? 'border-l-yellow-500' : 'border-l-gray-300')
+                                },
+                                    React.createElement("h4", {className: "font-semibold text-gray-800 mb-1"}, t.titulo),
+                                    t.data_prazo && React.createElement("span", {
+                                        className: "text-xs px-2 py-0.5 rounded-full " + (new Date(t.data_prazo) < hoje ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-600")
+                                    }, "📅 ", new Date(t.data_prazo).toLocaleDateString('pt-BR')),
+                                    t.qtd_subtarefas > 0 && React.createElement("span", {className: "text-xs ml-2 px-2 py-0.5 rounded-full bg-purple-100 text-purple-700"},
+                                        "☑️ ", t.qtd_subtarefas_concluidas || 0, "/", t.qtd_subtarefas
+                                    ),
+                                    t.timer_ativo && React.createElement("span", {className: "text-xs ml-2 px-2 py-0.5 rounded-full bg-green-100 text-green-700 animate-pulse"}, "⏱️")
+                                )
+                            )
+                        )
+                    ),
+                    
+                    // Coluna FAZENDO
+                    React.createElement("div", {
+                        className: "flex-1 bg-blue-50 rounded-xl p-4 min-w-[300px]",
+                        onDragOver: (e) => e.preventDefault(),
+                        onDrop: async (e) => {
+                            e.preventDefault();
+                            const tarefaId = e.dataTransfer.getData('tarefaId');
+                            if (tarefaId) await moverTodoKanban(parseInt(tarefaId), 'doing');
+                        }
+                    },
+                        React.createElement("div", {className: "flex items-center justify-between mb-4 pb-2 border-b-2 border-blue-200"},
+                            React.createElement("div", {className: "flex items-center gap-2"},
+                                React.createElement("span", {className: "text-xl"}, "🔄"),
+                                React.createElement("h3", {className: "font-bold text-gray-800"}, "Fazendo"),
+                                React.createElement("span", {className: "px-2 py-0.5 rounded-full text-xs font-bold bg-blue-200 text-blue-800"},
+                                    tarefasFiltradas.filter(t => t.coluna_kanban === 'doing').length
+                                )
+                            )
+                        ),
+                        React.createElement("div", {className: "space-y-3 max-h-[calc(100vh-280px)] overflow-y-auto"},
+                            tarefasFiltradas.filter(t => t.coluna_kanban === 'doing').map(t => 
+                                React.createElement("div", {
+                                    key: t.id,
+                                    draggable: true,
+                                    onDragStart: (e) => e.dataTransfer.setData('tarefaId', t.id.toString()),
+                                    onClick: () => abrirTodoDetalhe(t),
+                                    className: "bg-white rounded-lg p-3 shadow-sm border-l-4 cursor-pointer hover:shadow-md transition-all " +
+                                        (t.prioridade === 'urgente' ? 'border-l-red-500' : t.prioridade === 'alta' ? 'border-l-orange-500' : t.prioridade === 'media' ? 'border-l-yellow-500' : 'border-l-gray-300')
+                                },
+                                    React.createElement("h4", {className: "font-semibold text-gray-800 mb-1"}, t.titulo),
+                                    t.data_prazo && React.createElement("span", {
+                                        className: "text-xs px-2 py-0.5 rounded-full " + (new Date(t.data_prazo) < hoje ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-600")
+                                    }, "📅 ", new Date(t.data_prazo).toLocaleDateString('pt-BR')),
+                                    t.qtd_subtarefas > 0 && React.createElement("span", {className: "text-xs ml-2 px-2 py-0.5 rounded-full bg-purple-100 text-purple-700"},
+                                        "☑️ ", t.qtd_subtarefas_concluidas || 0, "/", t.qtd_subtarefas
+                                    ),
+                                    t.timer_ativo && React.createElement("span", {className: "text-xs ml-2 px-2 py-0.5 rounded-full bg-green-100 text-green-700 animate-pulse"}, "⏱️")
+                                )
+                            ),
+                            tarefasFiltradas.filter(t => t.coluna_kanban === 'doing').length === 0 && React.createElement("div", {className: "text-center py-8 text-gray-400"},
+                                React.createElement("span", {className: "text-3xl block mb-2"}, "🔄"),
+                                React.createElement("p", {className: "text-sm"}, "Arraste tarefas para cá")
+                            )
+                        )
+                    ),
+                    
+                    // Coluna CONCLUÍDO
+                    React.createElement("div", {
+                        className: "flex-1 bg-green-50 rounded-xl p-4 min-w-[300px]",
+                        onDragOver: (e) => e.preventDefault(),
+                        onDrop: async (e) => {
+                            e.preventDefault();
+                            const tarefaId = e.dataTransfer.getData('tarefaId');
+                            if (tarefaId) await moverTodoKanban(parseInt(tarefaId), 'done');
+                        }
+                    },
+                        React.createElement("div", {className: "flex items-center justify-between mb-4 pb-2 border-b-2 border-green-200"},
+                            React.createElement("div", {className: "flex items-center gap-2"},
+                                React.createElement("span", {className: "text-xl"}, "✅"),
+                                React.createElement("h3", {className: "font-bold text-gray-800"}, "Concluído"),
+                                React.createElement("span", {className: "px-2 py-0.5 rounded-full text-xs font-bold bg-green-200 text-green-800"},
+                                    tarefasFiltradas.filter(t => t.coluna_kanban === 'done' || t.status === 'concluida').length
+                                )
+                            )
+                        ),
+                        React.createElement("div", {className: "space-y-3 max-h-[calc(100vh-280px)] overflow-y-auto"},
+                            tarefasFiltradas.filter(t => t.coluna_kanban === 'done' || t.status === 'concluida').map(t => 
+                                React.createElement("div", {
+                                    key: t.id,
+                                    draggable: true,
+                                    onDragStart: (e) => e.dataTransfer.setData('tarefaId', t.id.toString()),
+                                    onClick: () => abrirTodoDetalhe(t),
+                                    className: "bg-white rounded-lg p-3 shadow-sm border-l-4 border-l-green-500 cursor-pointer hover:shadow-md transition-all opacity-75"
+                                },
+                                    React.createElement("h4", {className: "font-semibold text-gray-500 mb-1 line-through"}, t.titulo),
+                                    t.data_conclusao && React.createElement("span", {className: "text-xs text-gray-400"},
+                                        "Concluído em ", new Date(t.data_conclusao).toLocaleDateString('pt-BR')
+                                    ),
+                                    t.tempo_gasto_segundos > 0 && React.createElement("span", {className: "text-xs ml-2 px-2 py-0.5 rounded-full bg-blue-100 text-blue-700"},
+                                        "⏱️ ", formatarTempoCurto(t.tempo_gasto_segundos)
+                                    )
+                                )
+                            ),
+                            tarefasFiltradas.filter(t => t.coluna_kanban === 'done' || t.status === 'concluida').length === 0 && React.createElement("div", {className: "text-center py-8 text-gray-400"},
+                                React.createElement("span", {className: "text-3xl block mb-2"}, "✅"),
+                                React.createElement("p", {className: "text-sm"}, "Nenhuma tarefa concluída")
+                            )
+                        )
+                    )
+                ) :
+                
+                // LISTA VIEW (original)
                 tarefasFiltradas.length === 0 ? 
                     React.createElement("div", {className: "text-center py-12"},
                         React.createElement("span", {className: "text-6xl block mb-4"}, todoViewMode === "meudia" ? "🎉" : "📋"),
@@ -9802,7 +10314,8 @@ const hideLoadingScreen = () => {
                             
                             return React.createElement("div", {
                                 key: t.id,
-                                className: "bg-white rounded-xl shadow-md p-4 border-l-4 hover:shadow-lg transition-shadow " + 
+                                onClick: () => abrirTodoDetalhe(t),
+                                className: "bg-white rounded-xl shadow-md p-4 border-l-4 hover:shadow-lg transition-shadow cursor-pointer " + 
                                     (t.status === "concluida" ? "border-green-500 opacity-75" : 
                                      isAtrasada ? "border-red-500" : 
                                      isHoje ? "border-orange-500" : 
@@ -9814,11 +10327,12 @@ const hideLoadingScreen = () => {
                                     React.createElement("h3", {className: "font-bold text-gray-800 flex-1 " + (t.status === "concluida" ? "line-through text-gray-500" : "")}, t.titulo),
                                     React.createElement("div", {className: "flex gap-1"},
                                         React.createElement("button", {
-                                            onClick: () => setTodoModal({tipo: "editarTarefa", tarefa: t}),
+                                            onClick: (e) => { e.stopPropagation(); setTodoModal({tipo: "editarTarefa", tarefa: t}); },
                                             className: "p-1 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded"
                                         }, "✏️"),
                                         React.createElement("button", {
-                                            onClick: async () => {
+                                            onClick: async (e) => {
+                                                e.stopPropagation();
                                                 if (confirm("Excluir esta tarefa?")) {
                                                     await fetch(`${API_URL}/todo/tarefas/${t.id}`, {method: "DELETE"});
                                                     if (todoViewMode === "meudia") await loadTodoMeuDia();
@@ -9845,7 +10359,20 @@ const hideLoadingScreen = () => {
                                              t.prioridade === "media" ? "bg-yellow-100 text-yellow-700" : "bg-blue-100 text-blue-700")
                                     }, t.prioridade === "alta" ? "🔴 Alta" : t.prioridade === "media" ? "🟡 Média" : "🔵 Baixa"),
                                     isAtrasada && React.createElement("span", {className: "text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700"}, "🔥 Atrasada"),
-                                    isHoje && !isAtrasada && React.createElement("span", {className: "text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-700"}, "📅 Hoje")
+                                    isHoje && !isAtrasada && React.createElement("span", {className: "text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-700"}, "📅 Hoje"),
+                                    // Indicador de Subtarefas
+                                    t.qtd_subtarefas > 0 && React.createElement("span", {
+                                        className: "text-xs px-2 py-0.5 rounded-full " + 
+                                            (t.qtd_subtarefas_concluidas === t.qtd_subtarefas ? "bg-green-100 text-green-700" : "bg-purple-100 text-purple-700")
+                                    }, "☑️ ", t.qtd_subtarefas_concluidas || 0, "/", t.qtd_subtarefas),
+                                    // Indicador de Timer Ativo
+                                    t.timer_ativo && React.createElement("span", {
+                                        className: "text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 animate-pulse"
+                                    }, "⏱️ Ativo"),
+                                    // Tempo Gasto
+                                    t.tempo_gasto_segundos > 0 && !t.timer_ativo && React.createElement("span", {
+                                        className: "text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700"
+                                    }, "⏱️ ", formatarTempoCurto(t.tempo_gasto_segundos))
                                 ),
                                 
                                 // Data e Atribuído
