@@ -10128,11 +10128,21 @@ const hideLoadingScreen = () => {
                 todoViewType === "kanban" ? React.createElement("div", {className: "flex gap-4 h-full"},
                     // Coluna A FAZER
                     React.createElement("div", {
-                        className: "flex-1 bg-yellow-50 rounded-xl p-4 min-w-[300px]",
-                        onDragOver: (e) => e.preventDefault(),
+                        className: "flex-1 bg-yellow-50 rounded-xl p-4 min-w-[300px] transition-all",
+                        onDragOver: (e) => { 
+                            e.preventDefault(); 
+                            e.stopPropagation();
+                            e.currentTarget.style.opacity = '0.7';
+                        },
+                        onDragLeave: (e) => {
+                            e.currentTarget.style.opacity = '1';
+                        },
                         onDrop: async (e) => {
                             e.preventDefault();
-                            const tarefaId = e.dataTransfer.getData('tarefaId');
+                            e.stopPropagation();
+                            e.currentTarget.style.opacity = '1';
+                            const tarefaId = e.dataTransfer.getData('text/plain');
+                            console.log('Drop na coluna TODO, tarefaId:', tarefaId);
                             if (tarefaId) await moverTodoKanban(parseInt(tarefaId), 'todo');
                         }
                     },
@@ -10141,7 +10151,7 @@ const hideLoadingScreen = () => {
                                 React.createElement("span", {className: "text-xl"}, "📋"),
                                 React.createElement("h3", {className: "font-bold text-gray-800"}, "A Fazer"),
                                 React.createElement("span", {className: "px-2 py-0.5 rounded-full text-xs font-bold bg-yellow-200 text-yellow-800"},
-                                    tarefasFiltradas.filter(t => (t.coluna_kanban || 'todo') === 'todo').length
+                                    tarefasFiltradas.filter(t => (t.coluna_kanban || 'todo') === 'todo' && t.status !== 'concluida').length
                                 )
                             )
                         ),
@@ -10149,20 +10159,21 @@ const hideLoadingScreen = () => {
                             tarefasFiltradas.filter(t => (t.coluna_kanban || 'todo') === 'todo' && t.status !== 'concluida').map(t => 
                                 React.createElement("div", {
                                     key: t.id,
-                                    draggable: true,
+                                    draggable: "true",
                                     onDragStart: (e) => {
-                                        e.dataTransfer.setData('tarefaId', t.id.toString());
+                                        e.dataTransfer.setData('text/plain', t.id.toString());
                                         e.dataTransfer.effectAllowed = 'move';
+                                        e.currentTarget.style.opacity = '0.5';
                                     },
-                                    onClick: (e) => {
-                                        if (e.defaultPrevented) return;
-                                        abrirTodoDetalhe(t);
+                                    onDragEnd: (e) => {
+                                        e.currentTarget.style.opacity = '1';
                                     },
-                                    className: "bg-white rounded-lg p-3 shadow-sm border-l-4 cursor-grab active:cursor-grabbing hover:shadow-md transition-all " +
+                                    onClick: () => abrirTodoDetalhe(t),
+                                    className: "bg-white rounded-lg p-3 shadow-sm border-l-4 cursor-grab active:cursor-grabbing hover:shadow-md transition-all select-none " +
                                         (t.prioridade === 'urgente' ? 'border-l-red-500' : t.prioridade === 'alta' ? 'border-l-orange-500' : t.prioridade === 'media' ? 'border-l-yellow-500' : 'border-l-gray-300')
                                 },
-                                    React.createElement("h4", {className: "font-semibold text-gray-800 mb-1"}, t.titulo),
-                                    React.createElement("div", {className: "flex flex-wrap gap-1 mt-2"},
+                                    React.createElement("h4", {className: "font-semibold text-gray-800 mb-1 pointer-events-none"}, t.titulo),
+                                    React.createElement("div", {className: "flex flex-wrap gap-1 mt-2 pointer-events-none"},
                                         t.data_prazo && React.createElement("span", {
                                             className: "text-xs px-2 py-0.5 rounded-full " + (new Date(t.data_prazo) < hoje ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-600")
                                         }, "📅 ", new Date(t.data_prazo).toLocaleDateString('pt-BR')),
@@ -10181,11 +10192,21 @@ const hideLoadingScreen = () => {
                     
                     // Coluna FAZENDO
                     React.createElement("div", {
-                        className: "flex-1 bg-blue-50 rounded-xl p-4 min-w-[300px]",
-                        onDragOver: (e) => e.preventDefault(),
+                        className: "flex-1 bg-blue-50 rounded-xl p-4 min-w-[300px] transition-all",
+                        onDragOver: (e) => { 
+                            e.preventDefault(); 
+                            e.stopPropagation();
+                            e.currentTarget.style.opacity = '0.7';
+                        },
+                        onDragLeave: (e) => {
+                            e.currentTarget.style.opacity = '1';
+                        },
                         onDrop: async (e) => {
                             e.preventDefault();
-                            const tarefaId = e.dataTransfer.getData('tarefaId');
+                            e.stopPropagation();
+                            e.currentTarget.style.opacity = '1';
+                            const tarefaId = e.dataTransfer.getData('text/plain');
+                            console.log('Drop na coluna DOING, tarefaId:', tarefaId);
                             if (tarefaId) await moverTodoKanban(parseInt(tarefaId), 'doing');
                         }
                     },
@@ -10202,20 +10223,21 @@ const hideLoadingScreen = () => {
                             tarefasFiltradas.filter(t => t.coluna_kanban === 'doing').map(t => 
                                 React.createElement("div", {
                                     key: t.id,
-                                    draggable: true,
+                                    draggable: "true",
                                     onDragStart: (e) => {
-                                        e.dataTransfer.setData('tarefaId', t.id.toString());
+                                        e.dataTransfer.setData('text/plain', t.id.toString());
                                         e.dataTransfer.effectAllowed = 'move';
+                                        e.currentTarget.style.opacity = '0.5';
                                     },
-                                    onClick: (e) => {
-                                        if (e.defaultPrevented) return;
-                                        abrirTodoDetalhe(t);
+                                    onDragEnd: (e) => {
+                                        e.currentTarget.style.opacity = '1';
                                     },
-                                    className: "bg-white rounded-lg p-3 shadow-sm border-l-4 cursor-grab active:cursor-grabbing hover:shadow-md transition-all " +
+                                    onClick: () => abrirTodoDetalhe(t),
+                                    className: "bg-white rounded-lg p-3 shadow-sm border-l-4 cursor-grab active:cursor-grabbing hover:shadow-md transition-all select-none " +
                                         (t.prioridade === 'urgente' ? 'border-l-red-500' : t.prioridade === 'alta' ? 'border-l-orange-500' : t.prioridade === 'media' ? 'border-l-yellow-500' : 'border-l-gray-300')
                                 },
-                                    React.createElement("h4", {className: "font-semibold text-gray-800 mb-1"}, t.titulo),
-                                    React.createElement("div", {className: "flex flex-wrap gap-1 mt-2"},
+                                    React.createElement("h4", {className: "font-semibold text-gray-800 mb-1 pointer-events-none"}, t.titulo),
+                                    React.createElement("div", {className: "flex flex-wrap gap-1 mt-2 pointer-events-none"},
                                         t.data_prazo && React.createElement("span", {
                                             className: "text-xs px-2 py-0.5 rounded-full " + (new Date(t.data_prazo) < hoje ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-600")
                                         }, "📅 ", new Date(t.data_prazo).toLocaleDateString('pt-BR')),
@@ -10234,11 +10256,21 @@ const hideLoadingScreen = () => {
                     
                     // Coluna CONCLUÍDO
                     React.createElement("div", {
-                        className: "flex-1 bg-green-50 rounded-xl p-4 min-w-[300px]",
-                        onDragOver: (e) => e.preventDefault(),
+                        className: "flex-1 bg-green-50 rounded-xl p-4 min-w-[300px] transition-all",
+                        onDragOver: (e) => { 
+                            e.preventDefault(); 
+                            e.stopPropagation();
+                            e.currentTarget.style.opacity = '0.7';
+                        },
+                        onDragLeave: (e) => {
+                            e.currentTarget.style.opacity = '1';
+                        },
                         onDrop: async (e) => {
                             e.preventDefault();
-                            const tarefaId = e.dataTransfer.getData('tarefaId');
+                            e.stopPropagation();
+                            e.currentTarget.style.opacity = '1';
+                            const tarefaId = e.dataTransfer.getData('text/plain');
+                            console.log('Drop na coluna DONE, tarefaId:', tarefaId);
                             if (tarefaId) await moverTodoKanban(parseInt(tarefaId), 'done');
                         }
                     },
@@ -10255,19 +10287,20 @@ const hideLoadingScreen = () => {
                             tarefasFiltradas.filter(t => t.coluna_kanban === 'done' || t.status === 'concluida').map(t => 
                                 React.createElement("div", {
                                     key: t.id,
-                                    draggable: true,
+                                    draggable: "true",
                                     onDragStart: (e) => {
-                                        e.dataTransfer.setData('tarefaId', t.id.toString());
+                                        e.dataTransfer.setData('text/plain', t.id.toString());
                                         e.dataTransfer.effectAllowed = 'move';
+                                        e.currentTarget.style.opacity = '0.5';
                                     },
-                                    onClick: (e) => {
-                                        if (e.defaultPrevented) return;
-                                        abrirTodoDetalhe(t);
+                                    onDragEnd: (e) => {
+                                        e.currentTarget.style.opacity = '1';
                                     },
-                                    className: "bg-white rounded-lg p-3 shadow-sm border-l-4 border-l-green-500 cursor-grab active:cursor-grabbing hover:shadow-md transition-all opacity-75"
+                                    onClick: () => abrirTodoDetalhe(t),
+                                    className: "bg-white rounded-lg p-3 shadow-sm border-l-4 border-l-green-500 cursor-grab active:cursor-grabbing hover:shadow-md transition-all opacity-75 select-none"
                                 },
-                                    React.createElement("h4", {className: "font-semibold text-gray-500 mb-1 line-through"}, t.titulo),
-                                    t.data_conclusao && React.createElement("span", {className: "text-xs text-gray-400"},
+                                    React.createElement("h4", {className: "font-semibold text-gray-500 mb-1 line-through pointer-events-none"}, t.titulo),
+                                    t.data_conclusao && React.createElement("span", {className: "text-xs text-gray-400 pointer-events-none"},
                                         "Concluído em ", new Date(t.data_conclusao).toLocaleDateString('pt-BR')
                                     )
                                 )
