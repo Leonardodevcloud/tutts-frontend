@@ -10169,7 +10169,7 @@ const hideLoadingScreen = () => {
                                         e.currentTarget.style.opacity = '1';
                                     },
                                     onClick: () => abrirTodoDetalhe(t),
-                                    className: "bg-white rounded-lg p-3 shadow-sm border-l-4 cursor-grab active:cursor-grabbing hover:shadow-md transition-all select-none " +
+                                    className: "bg-white rounded-lg p-3 shadow-sm border-l-4 cursor-move hover:shadow-md transition-all select-none " +
                                         (t.prioridade === 'urgente' ? 'border-l-red-500' : t.prioridade === 'alta' ? 'border-l-orange-500' : t.prioridade === 'media' ? 'border-l-yellow-500' : 'border-l-gray-300')
                                 },
                                     React.createElement("h4", {className: "font-semibold text-gray-800 mb-1 pointer-events-none"}, t.titulo),
@@ -10233,7 +10233,7 @@ const hideLoadingScreen = () => {
                                         e.currentTarget.style.opacity = '1';
                                     },
                                     onClick: () => abrirTodoDetalhe(t),
-                                    className: "bg-white rounded-lg p-3 shadow-sm border-l-4 cursor-grab active:cursor-grabbing hover:shadow-md transition-all select-none " +
+                                    className: "bg-white rounded-lg p-3 shadow-sm border-l-4 cursor-move hover:shadow-md transition-all select-none " +
                                         (t.prioridade === 'urgente' ? 'border-l-red-500' : t.prioridade === 'alta' ? 'border-l-orange-500' : t.prioridade === 'media' ? 'border-l-yellow-500' : 'border-l-gray-300')
                                 },
                                     React.createElement("h4", {className: "font-semibold text-gray-800 mb-1 pointer-events-none"}, t.titulo),
@@ -10297,7 +10297,7 @@ const hideLoadingScreen = () => {
                                         e.currentTarget.style.opacity = '1';
                                     },
                                     onClick: () => abrirTodoDetalhe(t),
-                                    className: "bg-white rounded-lg p-3 shadow-sm border-l-4 border-l-green-500 cursor-grab active:cursor-grabbing hover:shadow-md transition-all opacity-75 select-none"
+                                    className: "bg-white rounded-lg p-3 shadow-sm border-l-4 border-l-green-500 cursor-move hover:shadow-md transition-all opacity-75 select-none"
                                 },
                                     React.createElement("h4", {className: "font-semibold text-gray-500 mb-1 line-through pointer-events-none"}, t.titulo),
                                     t.data_conclusao && React.createElement("span", {className: "text-xs text-gray-400 pointer-events-none"},
