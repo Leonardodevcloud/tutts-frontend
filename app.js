@@ -5516,30 +5516,38 @@ const hideLoadingScreen = () => {
             }, React.createElement("button", {
                 onClick: () => he("home"),
                 className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("home" === Ee ? "bg-white text-purple-900" : "text-white hover:bg-white/10")
-            }, "🏠 Início"), React.createElement("button", {
+            }, "🏠 Início"), 
+            hasModuleAccess(l, "solicitacoes") && React.createElement("button", {
                 onClick: () => { he("solicitacoes"); x(e => ({...e, adminTab: "dashboard"})); },
                 className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("solicitacoes" === Ee && "disponibilidade" !== p.adminTab ? "bg-white text-purple-900" : "text-white hover:bg-white/10")
-            }, "📋 Solicitações"), React.createElement("button", {
+            }, "📋 Solicitações"), 
+            hasModuleAccess(l, "financeiro") && React.createElement("button", {
                 onClick: () => he("financeiro"),
                 className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("financeiro" === Ee ? "bg-white text-green-800" : "text-white hover:bg-white/10")
-            }, "💰 Financeiro"), React.createElement("button", {
+            }, "💰 Financeiro"), 
+            hasModuleAccess(l, "disponibilidade") && React.createElement("button", {
                 onClick: () => { he("solicitacoes"); x(e => ({...e, adminTab: "disponibilidade"})); },
                 className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("solicitacoes" === Ee && "disponibilidade" === p.adminTab ? "bg-white text-blue-800" : "text-white hover:bg-white/10")
-            }, "📅 Disponibilidade"), React.createElement("button", {
+            }, "📅 Disponibilidade"), 
+            hasModuleAccess(l, "bi") && React.createElement("button", {
                 onClick: () => {
                     he("bi"), ll(), tl(), al(), dl(), pl()
                 },
                 className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("bi" === Ee ? "bg-white text-orange-800" : "text-white hover:bg-white/10")
-            }, "📊 BI"), React.createElement("button", {
+            }, "📊 BI"), 
+            hasModuleAccess(l, "todo") && React.createElement("button", {
                 onClick: () => he("todo"),
                 className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("todo" === Ee ? "bg-white text-indigo-800" : "text-white hover:bg-white/10")
-            }, "📝 TO-DO"), React.createElement("button", {
+            }, "📝 TO-DO"), 
+            React.createElement("button", {
                 onClick: () => he("social"),
                 className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("social" === Ee ? "bg-white text-pink-800" : "text-white hover:bg-white/10")
-            }, "💜 Social"), React.createElement("button", {
+            }, "💜 Social"), 
+            hasModuleAccess(l, "operacional") && React.createElement("button", {
                 onClick: () => he("operacional"),
                 className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("operacional" === Ee ? "bg-white text-teal-800" : "text-white hover:bg-white/10")
-            }, "⚙️ Operacional"), React.createElement("button", {
+            }, "⚙️ Operacional"), 
+            l.role === "admin_master" && React.createElement("button", {
                 onClick: () => he("config"),
                 className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("config" === Ee ? "bg-white text-gray-800" : "text-white hover:bg-white/10")
             }, "🔧 Config")))) : React.createElement("nav", {
@@ -11418,23 +11426,23 @@ const hideLoadingScreen = () => {
                     onClick: function() { he("home"); },
                     className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all text-white hover:bg-white/10"
                 }, "🏠 Início"),
-                React.createElement("button", {
+                hasModuleAccess(l, "solicitacoes") && React.createElement("button", {
                     onClick: function() { he("solicitacoes"); x(e => ({...e, adminTab: "dashboard"})); },
                     className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all text-white hover:bg-white/10"
                 }, "📋 Solicitações"),
-                "admin_master" === l.role && React.createElement("button", {
+                hasModuleAccess(l, "financeiro") && React.createElement("button", {
                     onClick: function() { he("financeiro"); },
                     className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all text-white hover:bg-white/10"
                 }, "💰 Financeiro"),
-                React.createElement("button", {
+                hasModuleAccess(l, "disponibilidade") && React.createElement("button", {
                     onClick: function() { he("solicitacoes"); x(e => ({...e, adminTab: "disponibilidade"})); },
                     className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all text-white hover:bg-white/10"
                 }, "📅 Disponibilidade"),
-                React.createElement("button", {
+                hasModuleAccess(l, "bi") && React.createElement("button", {
                     onClick: function() { he("bi"); ll(); tl(); al(); dl(); pl(); },
                     className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all text-white hover:bg-white/10"
                 }, "📊 BI"),
-                React.createElement("button", {
+                hasModuleAccess(l, "todo") && React.createElement("button", {
                     onClick: function() { he("todo"); },
                     className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all text-white hover:bg-white/10"
                 }, "📝 TO-DO"),
@@ -11446,7 +11454,7 @@ const hideLoadingScreen = () => {
                     onClick: function() { he("operacional"); },
                     className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all bg-white text-teal-800"
                 }, "⚙️ Operacional"),
-                React.createElement("button", {
+                l.role === "admin_master" && React.createElement("button", {
                     onClick: function() { he("config"); },
                     className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all text-white hover:bg-white/10"
                 }, "🔧 Config")
@@ -12300,23 +12308,23 @@ const hideLoadingScreen = () => {
                     onClick: function() { he("home"); },
                     className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all text-white hover:bg-white/10"
                 }, "🏠 Início"),
-                React.createElement("button", {
+                hasModuleAccess(l, "solicitacoes") && React.createElement("button", {
                     onClick: function() { he("solicitacoes"); x(e => ({...e, adminTab: "dashboard"})); },
                     className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all text-white hover:bg-white/10"
                 }, "📋 Solicitações"),
-                React.createElement("button", {
+                hasModuleAccess(l, "financeiro") && React.createElement("button", {
                     onClick: function() { he("financeiro"); },
                     className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all text-white hover:bg-white/10"
                 }, "💰 Financeiro"),
-                React.createElement("button", {
+                hasModuleAccess(l, "disponibilidade") && React.createElement("button", {
                     onClick: function() { he("solicitacoes"); x(e => ({...e, adminTab: "disponibilidade"})); },
                     className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all text-white hover:bg-white/10"
                 }, "📅 Disponibilidade"),
-                React.createElement("button", {
+                hasModuleAccess(l, "bi") && React.createElement("button", {
                     onClick: function() { he("bi"); ll(); tl(); al(); dl(); pl(); },
                     className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all text-white hover:bg-white/10"
                 }, "📊 BI"),
-                React.createElement("button", {
+                hasModuleAccess(l, "todo") && React.createElement("button", {
                     onClick: function() { he("todo"); },
                     className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all text-white hover:bg-white/10"
                 }, "📝 TO-DO"),
@@ -12324,11 +12332,11 @@ const hideLoadingScreen = () => {
                     onClick: function() { he("social"); },
                     className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all text-white hover:bg-white/10"
                 }, "💜 Social"),
-                React.createElement("button", {
+                hasModuleAccess(l, "operacional") && React.createElement("button", {
                     onClick: function() { he("operacional"); },
                     className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all text-white hover:bg-white/10"
                 }, "⚙️ Operacional"),
-                React.createElement("button", {
+                l.role === "admin_master" && React.createElement("button", {
                     onClick: function() { he("config"); },
                     className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all bg-white text-gray-800"
                 }, "🔧 Config")
@@ -14380,7 +14388,8 @@ const hideLoadingScreen = () => {
         }, React.createElement("button", {
             onClick: () => he("home"),
             className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("home" === Ee ? "bg-white text-purple-900" : "text-white hover:bg-white/10")
-        }, "🏠 Início"), React.createElement("button", {
+        }, "🏠 Início"), 
+        hasModuleAccess(l, "solicitacoes") && React.createElement("button", {
             onClick: () => {
                 he("solicitacoes"), x(e => ({
                     ...e,
@@ -14388,27 +14397,34 @@ const hideLoadingScreen = () => {
                 }))
             },
             className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("solicitacoes" === Ee && "disponibilidade" !== p.adminTab ? "bg-white text-purple-900" : "text-white hover:bg-white/10")
-        }, "📋 Solicitações"), React.createElement("button", {
+        }, "📋 Solicitações"), 
+        hasModuleAccess(l, "financeiro") && React.createElement("button", {
             onClick: () => he("financeiro"),
             className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("financeiro" === Ee ? "bg-white text-green-800" : "text-white hover:bg-white/10")
-        }, "💰 Financeiro"), React.createElement("button", {
+        }, "💰 Financeiro"), 
+        hasModuleAccess(l, "disponibilidade") && React.createElement("button", {
             onClick: () => { he("solicitacoes"); x(e => ({...e, adminTab: "disponibilidade"})); },
             className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("solicitacoes" === Ee && "disponibilidade" === p.adminTab ? "bg-white text-blue-800" : "text-white hover:bg-white/10")
-        }, "📅 Disponibilidade"), React.createElement("button", {
+        }, "📅 Disponibilidade"), 
+        hasModuleAccess(l, "bi") && React.createElement("button", {
             onClick: () => {
                 he("bi"), ll(), tl(), al(), dl(), pl()
             },
             className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("bi" === Ee ? "bg-white text-orange-800" : "text-white hover:bg-white/10")
-        }, "📊 BI"), React.createElement("button", {
+        }, "📊 BI"), 
+        hasModuleAccess(l, "todo") && React.createElement("button", {
             onClick: () => he("todo"),
             className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("todo" === Ee ? "bg-white text-indigo-800" : "text-white hover:bg-white/10")
-        }, "📝 TO-DO"), React.createElement("button", {
+        }, "📝 TO-DO"), 
+        React.createElement("button", {
             onClick: () => he("social"),
             className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("social" === Ee ? "bg-white text-pink-800" : "text-white hover:bg-white/10")
-        }, "💜 Social"), React.createElement("button", {
+        }, "💜 Social"), 
+        hasModuleAccess(l, "operacional") && React.createElement("button", {
             onClick: () => he("operacional"),
             className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("operacional" === Ee ? "bg-white text-teal-800" : "text-white hover:bg-white/10")
-        }, "⚙️ Operacional"), React.createElement("button", {
+        }, "⚙️ Operacional"), 
+        l.role === "admin_master" && React.createElement("button", {
             onClick: () => he("config"),
             className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("config" === Ee ? "bg-white text-gray-800" : "text-white hover:bg-white/10")
         }, "🔧 Config")))) : or ? React.createElement("nav", {
