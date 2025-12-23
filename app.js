@@ -12,7 +12,7 @@ const SISTEMA_MODULOS_CONFIG = [
       abas: [{id: "solicitacoes", label: "Solicitações"}, {id: "validacao", label: "Validação"}, {id: "conciliacao", label: "Conciliação"}, {id: "resumo", label: "Resumo"}, {id: "gratuidades", label: "Gratuidades"}, {id: "restritos", label: "Restritos"}, {id: "indicacoes", label: "Indicações"}, {id: "promonovatos", label: "Promo Novatos"}, {id: "loja", label: "Loja"}, {id: "relatorios", label: "Relatórios"}, {id: "horarios", label: "Horários"}, {id: "avisos", label: "Avisos"}, {id: "backup", label: "Backup"}]
     },
     { id: "operacional", label: "Operacional", icon: "⚙️",
-      abas: [{id: "indicacao", label: "Indicação"}, {id: "promonovatos", label: "Promo Novatos"}]
+      abas: [{id: "indicacao", label: "Indicação"}, {id: "promonovatos", label: "Promo Novatos"}, {id: "novas-operacoes", label: "Novas Operações"}]
     },
     { id: "disponibilidade", label: "Disponibilidade", icon: "📅",
       abas: [{id: "panorama", label: "Panorama"}, {id: "principal", label: "Principal"}, {id: "faltosos", label: "Faltosos"}, {id: "espelho", label: "Espelho"}, {id: "relatorios", label: "Relatórios"}, {id: "motoboys", label: "Motoboys"}, {id: "restricoes", label: "Restrições"}, {id: "config", label: "Configurações"}]
@@ -831,6 +831,34 @@ const hideLoadingScreen = () => {
             recorrencia_intervalo: 24,
             imagem_url: ''
         }),
+        // Estados do módulo Operações
+        [operacoesData, setOperacoesData] = useState([]),
+        [operacaoModal, setOperacaoModal] = useState(false),
+        [operacaoEdit, setOperacaoEdit] = useState(null),
+        [operacaoForm, setOperacaoForm] = useState({
+            regiao: '',
+            nome_cliente: '',
+            endereco: '',
+            modelo: 'nuvem',
+            quantidade_motos: 1,
+            obrigatoriedade_bau: false,
+            possui_garantido: false,
+            valor_garantido: '',
+            data_inicio: '',
+            observacoes: '',
+            faixas_km: [
+                { km_inicio: 1, km_fim: 10, valor_motoboy: '' },
+                { km_inicio: 11, km_fim: 15, valor_motoboy: '' },
+                { km_inicio: 16, km_fim: 20, valor_motoboy: '' },
+                { km_inicio: 21, km_fim: 25, valor_motoboy: '' },
+                { km_inicio: 26, km_fim: 30, valor_motoboy: '' },
+                { km_inicio: 31, km_fim: 35, valor_motoboy: '' },
+                { km_inicio: 36, km_fim: 40, valor_motoboy: '' },
+                { km_inicio: 41, km_fim: 45, valor_motoboy: '' },
+                { km_inicio: 46, km_fim: 50, valor_motoboy: '' },
+                { km_inicio: 51, km_fim: 60, valor_motoboy: '' }
+            ]
+        }),
         ja = (e, t = "success") => {
             d({
                 message: e,
@@ -1256,6 +1284,18 @@ const hideLoadingScreen = () => {
             } catch (err) { 
                 console.error(err); 
                 setAvisosRegioes([]);
+            }
+        };
+        
+        // Função para carregar operações
+        const carregarOperacoes = async () => {
+            try {
+                const res = await fetch(`${API_URL}/operacoes`);
+                const data = await res.json();
+                setOperacoesData(Array.isArray(data) ? data : []);
+            } catch (err) { 
+                console.error('Erro ao carregar operações:', err); 
+                setOperacoesData([]);
             }
         };
         
@@ -11129,7 +11169,12 @@ const hideLoadingScreen = () => {
                     "admin_master" === l.role && React.createElement("button", {
                         onClick: function() { x(e => ({...e, opTab: "avisos"})); },
                         className: "px-4 py-2.5 text-sm font-semibold whitespace-nowrap " + (p.opTab === "avisos" ? "text-teal-700 border-b-2 border-teal-600 bg-teal-50" : "text-gray-600 hover:bg-gray-100")
-                    }, "📢 Avisos")
+                    }, "📢 Avisos"),
+                    // Aba Novas Operações (só admin_master)
+                    "admin_master" === l.role && React.createElement("button", {
+                        onClick: function() { x(e => ({...e, opTab: "novas-operacoes"})); carregarOperacoes(); },
+                        className: "px-4 py-2.5 text-sm font-semibold whitespace-nowrap " + (p.opTab === "novas-operacoes" ? "text-teal-700 border-b-2 border-teal-600 bg-teal-50" : "text-gray-600 hover:bg-gray-100")
+                    }, "🏢 Novas Operações")
                 )
             ),
             // Conteúdo das abas
@@ -11356,6 +11401,419 @@ const hideLoadingScreen = () => {
                             disabled: !avisoForm.titulo || !avisoForm.data_inicio || !avisoForm.data_fim || (!avisoForm.todas_regioes && avisoForm.regioes.length === 0),
                             className: "flex-1 px-4 py-3 bg-teal-600 text-white rounded-xl font-semibold hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
                         }, avisoEdit ? "💾 Salvar Alterações" : "➕ Criar Aviso")
+                    )
+                )
+            ),
+            // ==================== CONTEÚDO NOVAS OPERAÇÕES ====================
+            p.opTab === "novas-operacoes" && React.createElement("div", {className: "space-y-6"},
+                // Header
+                React.createElement("div", {className: "flex flex-col md:flex-row justify-between items-start md:items-center gap-4"},
+                    React.createElement("div", null,
+                        React.createElement("h2", {className: "text-2xl font-bold text-gray-800"}, "🏢 Novas Operações"),
+                        React.createElement("p", {className: "text-gray-600"}, "Cadastre e gerencie operações de entrega")
+                    ),
+                    React.createElement("button", {
+                        onClick: () => { 
+                            setOperacaoEdit(null); 
+                            setOperacaoForm({
+                                regiao: '',
+                                nome_cliente: '',
+                                endereco: '',
+                                modelo: 'nuvem',
+                                quantidade_motos: 1,
+                                obrigatoriedade_bau: false,
+                                possui_garantido: false,
+                                valor_garantido: '',
+                                data_inicio: '',
+                                observacoes: '',
+                                faixas_km: [
+                                    { km_inicio: 1, km_fim: 10, valor_motoboy: '' },
+                                    { km_inicio: 11, km_fim: 15, valor_motoboy: '' },
+                                    { km_inicio: 16, km_fim: 20, valor_motoboy: '' },
+                                    { km_inicio: 21, km_fim: 25, valor_motoboy: '' },
+                                    { km_inicio: 26, km_fim: 30, valor_motoboy: '' },
+                                    { km_inicio: 31, km_fim: 35, valor_motoboy: '' },
+                                    { km_inicio: 36, km_fim: 40, valor_motoboy: '' },
+                                    { km_inicio: 41, km_fim: 45, valor_motoboy: '' },
+                                    { km_inicio: 46, km_fim: 50, valor_motoboy: '' },
+                                    { km_inicio: 51, km_fim: 60, valor_motoboy: '' }
+                                ]
+                            }); 
+                            setOperacaoModal(true); 
+                        },
+                        className: "px-6 py-3 bg-teal-600 text-white rounded-xl font-semibold hover:bg-teal-700 flex items-center gap-2 shadow-lg"
+                    }, "➕ Nova Operação")
+                ),
+                
+                // Cards de estatísticas
+                React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-4 gap-4"},
+                    React.createElement("div", {className: "bg-white rounded-xl p-4 shadow border-l-4 border-teal-500"},
+                        React.createElement("p", {className: "text-sm text-gray-500"}, "Total"),
+                        React.createElement("p", {className: "text-2xl font-bold text-teal-600"}, operacoesData?.length || 0)
+                    ),
+                    React.createElement("div", {className: "bg-white rounded-xl p-4 shadow border-l-4 border-green-500"},
+                        React.createElement("p", {className: "text-sm text-gray-500"}, "Ativas"),
+                        React.createElement("p", {className: "text-2xl font-bold text-green-600"}, operacoesData?.filter(o => o.status === 'ativo').length || 0)
+                    ),
+                    React.createElement("div", {className: "bg-white rounded-xl p-4 shadow border-l-4 border-blue-500"},
+                        React.createElement("p", {className: "text-sm text-gray-500"}, "Motos Totais"),
+                        React.createElement("p", {className: "text-2xl font-bold text-blue-600"}, operacoesData?.reduce((acc, o) => acc + (o.quantidade_motos || 0), 0) || 0)
+                    ),
+                    React.createElement("div", {className: "bg-white rounded-xl p-4 shadow border-l-4 border-purple-500"},
+                        React.createElement("p", {className: "text-sm text-gray-500"}, "Com Garantido"),
+                        React.createElement("p", {className: "text-2xl font-bold text-purple-600"}, operacoesData?.filter(o => o.possui_garantido).length || 0)
+                    )
+                ),
+                
+                // Lista de operações
+                React.createElement("div", {className: "bg-white rounded-xl shadow overflow-hidden"},
+                    React.createElement("div", {className: "bg-gray-50 px-6 py-4 border-b"},
+                        React.createElement("h3", {className: "font-semibold text-gray-800"}, "📋 Operações Cadastradas")
+                    ),
+                    (!operacoesData || operacoesData.length === 0) ? 
+                        React.createElement("div", {className: "p-12 text-center"},
+                            React.createElement("span", {className: "text-6xl block mb-4"}, "📭"),
+                            React.createElement("p", {className: "text-gray-500 text-lg"}, "Nenhuma operação cadastrada"),
+                            React.createElement("p", {className: "text-gray-400 text-sm"}, "Clique em \"Nova Operação\" para começar")
+                        ) :
+                        React.createElement("div", {className: "divide-y"},
+                            operacoesData.map(op => React.createElement("div", {
+                                key: op.id,
+                                className: "p-6 hover:bg-gray-50 transition-colors " + (op.status !== 'ativo' ? 'opacity-60' : '')
+                            },
+                                React.createElement("div", {className: "flex flex-col lg:flex-row lg:items-center justify-between gap-4"},
+                                    // Info principal
+                                    React.createElement("div", {className: "flex-1"},
+                                        React.createElement("div", {className: "flex flex-wrap items-center gap-3 mb-2"},
+                                            React.createElement("h4", {className: "text-lg font-bold text-gray-800"}, op.nome_cliente),
+                                            React.createElement("span", {
+                                                className: "px-2 py-0.5 rounded-full text-xs font-semibold " + 
+                                                (op.modelo === 'nuvem' ? 'bg-blue-100 text-blue-700' : 
+                                                 op.modelo === 'dedicado' ? 'bg-purple-100 text-purple-700' : 
+                                                 'bg-yellow-100 text-yellow-700')
+                                            }, op.modelo === 'nuvem' ? '☁️ Nuvem' : op.modelo === 'dedicado' ? '🎯 Dedicado' : '⚡ Flash'),
+                                            React.createElement("span", {
+                                                className: "px-2 py-0.5 rounded-full text-xs font-semibold " + 
+                                                (op.status === 'ativo' ? 'bg-green-100 text-green-700' : 
+                                                 op.status === 'pausado' ? 'bg-yellow-100 text-yellow-700' : 
+                                                 'bg-gray-100 text-gray-600')
+                                            }, op.status === 'ativo' ? '✅ Ativo' : op.status === 'pausado' ? '⏸️ Pausado' : '❌ ' + op.status)
+                                        ),
+                                        React.createElement("div", {className: "flex flex-wrap gap-4 text-sm text-gray-600"},
+                                            React.createElement("span", null, "📍 ", op.regiao),
+                                            React.createElement("span", null, "📌 ", op.endereco?.substring(0, 40), op.endereco?.length > 40 ? '...' : ''),
+                                            React.createElement("span", null, "🏍️ ", op.quantidade_motos, " moto(s)"),
+                                            op.obrigatoriedade_bau && React.createElement("span", {className: "text-orange-600"}, "📦 Baú obrigatório"),
+                                            op.possui_garantido && React.createElement("span", {className: "text-green-600"}, "💰 Garantido: R$ ", parseFloat(op.valor_garantido || 0).toFixed(2))
+                                        ),
+                                        React.createElement("p", {className: "text-xs text-gray-400 mt-2"}, 
+                                            "📅 Início: ", new Date(op.data_inicio).toLocaleDateString('pt-BR'),
+                                            " • Criado por: ", op.criado_por || '-'
+                                        )
+                                    ),
+                                    // Ações
+                                    React.createElement("div", {className: "flex gap-2"},
+                                        React.createElement("button", {
+                                            onClick: () => {
+                                                setOperacaoEdit(op);
+                                                setOperacaoForm({
+                                                    regiao: op.regiao || '',
+                                                    nome_cliente: op.nome_cliente || '',
+                                                    endereco: op.endereco || '',
+                                                    modelo: op.modelo || 'nuvem',
+                                                    quantidade_motos: op.quantidade_motos || 1,
+                                                    obrigatoriedade_bau: op.obrigatoriedade_bau || false,
+                                                    possui_garantido: op.possui_garantido || false,
+                                                    valor_garantido: op.valor_garantido || '',
+                                                    data_inicio: op.data_inicio?.split('T')[0] || '',
+                                                    observacoes: op.observacoes || '',
+                                                    faixas_km: op.faixas_km && op.faixas_km.length > 0 ? op.faixas_km : [
+                                                        { km_inicio: 1, km_fim: 10, valor_motoboy: '' },
+                                                        { km_inicio: 11, km_fim: 15, valor_motoboy: '' },
+                                                        { km_inicio: 16, km_fim: 20, valor_motoboy: '' },
+                                                        { km_inicio: 21, km_fim: 25, valor_motoboy: '' },
+                                                        { km_inicio: 26, km_fim: 30, valor_motoboy: '' },
+                                                        { km_inicio: 31, km_fim: 35, valor_motoboy: '' },
+                                                        { km_inicio: 36, km_fim: 40, valor_motoboy: '' },
+                                                        { km_inicio: 41, km_fim: 45, valor_motoboy: '' },
+                                                        { km_inicio: 46, km_fim: 50, valor_motoboy: '' },
+                                                        { km_inicio: 51, km_fim: 60, valor_motoboy: '' }
+                                                    ]
+                                                });
+                                                setOperacaoModal(true);
+                                            },
+                                            className: "px-4 py-2 bg-blue-100 text-blue-700 rounded-lg font-semibold hover:bg-blue-200 text-sm"
+                                        }, "✏️ Editar"),
+                                        React.createElement("button", {
+                                            onClick: async () => {
+                                                const novoStatus = op.status === 'ativo' ? 'pausado' : 'ativo';
+                                                await fetch(`${API_URL}/operacoes/${op.id}`, {
+                                                    method: 'PUT',
+                                                    headers: {'Content-Type': 'application/json'},
+                                                    body: JSON.stringify({ status: novoStatus })
+                                                });
+                                                carregarOperacoes();
+                                                ja(novoStatus === 'ativo' ? '✅ Operação ativada!' : '⏸️ Operação pausada!', 'success');
+                                            },
+                                            className: "px-4 py-2 rounded-lg font-semibold text-sm " + 
+                                                (op.status === 'ativo' ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' : 'bg-green-100 text-green-700 hover:bg-green-200')
+                                        }, op.status === 'ativo' ? '⏸️' : '▶️'),
+                                        React.createElement("button", {
+                                            onClick: async () => {
+                                                if (confirm(`Excluir operação "${op.nome_cliente}"?`)) {
+                                                    await fetch(`${API_URL}/operacoes/${op.id}`, { method: 'DELETE' });
+                                                    carregarOperacoes();
+                                                    ja('🗑️ Operação excluída!', 'success');
+                                                }
+                                            },
+                                            className: "px-4 py-2 bg-red-100 text-red-700 rounded-lg font-semibold hover:bg-red-200 text-sm"
+                                        }, "🗑️")
+                                    )
+                                ),
+                                // Faixas de KM (expansível)
+                                op.faixas_km && op.faixas_km.length > 0 && React.createElement("div", {className: "mt-4 pt-4 border-t"},
+                                    React.createElement("p", {className: "text-sm font-semibold text-gray-700 mb-2"}, "💰 Valores por Faixa de KM:"),
+                                    React.createElement("div", {className: "flex flex-wrap gap-2"},
+                                        op.faixas_km.filter(f => f.valor_motoboy > 0).map((faixa, idx) => 
+                                            React.createElement("span", {
+                                                key: idx,
+                                                className: "px-3 py-1 bg-teal-50 text-teal-700 rounded-lg text-sm"
+                                            }, faixa.km_inicio, "-", faixa.km_fim, "km: R$ ", parseFloat(faixa.valor_motoboy).toFixed(2))
+                                        )
+                                    )
+                                )
+                            ))
+                        )
+                )
+            ),
+            // ==================== MODAL NOVA OPERAÇÃO ====================
+            operacaoModal && React.createElement("div", {className: "fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"},
+                React.createElement("div", {className: "bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[95vh] overflow-y-auto"},
+                    // Header do Modal
+                    React.createElement("div", {className: "bg-gradient-to-r from-teal-600 to-teal-700 p-6 text-white sticky top-0 z-10"},
+                        React.createElement("div", {className: "flex justify-between items-center"},
+                            React.createElement("div", null,
+                                React.createElement("h2", {className: "text-xl font-bold"}, operacaoEdit ? "✏️ Editar Operação" : "➕ Nova Operação"),
+                                React.createElement("p", {className: "text-teal-100 text-sm"}, "Preencha os dados da operação")
+                            ),
+                            React.createElement("button", {
+                                onClick: () => setOperacaoModal(false),
+                                className: "text-white/80 hover:text-white text-2xl"
+                            }, "✕")
+                        )
+                    ),
+                    // Conteúdo do Modal
+                    React.createElement("div", {className: "p-6 space-y-6"},
+                        // Seção: Dados Básicos
+                        React.createElement("div", {className: "bg-gray-50 rounded-xl p-4"},
+                            React.createElement("h3", {className: "font-semibold text-gray-800 mb-4 flex items-center gap-2"}, "📋 Dados Básicos"),
+                            React.createElement("div", {className: "grid md:grid-cols-2 gap-4"},
+                                // Região
+                                React.createElement("div", null,
+                                    React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-1"}, "Região *"),
+                                    React.createElement("input", {
+                                        type: "text",
+                                        value: operacaoForm.regiao,
+                                        onChange: e => setOperacaoForm(f => ({...f, regiao: e.target.value})),
+                                        placeholder: "Ex: Brasília, Goiânia, São Paulo...",
+                                        className: "w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                                    })
+                                ),
+                                // Nome do Cliente
+                                React.createElement("div", null,
+                                    React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-1"}, "Nome do Cliente *"),
+                                    React.createElement("input", {
+                                        type: "text",
+                                        value: operacaoForm.nome_cliente,
+                                        onChange: e => setOperacaoForm(f => ({...f, nome_cliente: e.target.value})),
+                                        placeholder: "Nome da empresa/loja",
+                                        className: "w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                                    })
+                                ),
+                                // Endereço (colspan 2)
+                                React.createElement("div", {className: "md:col-span-2"},
+                                    React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-1"}, "Endereço *"),
+                                    React.createElement("input", {
+                                        type: "text",
+                                        value: operacaoForm.endereco,
+                                        onChange: e => setOperacaoForm(f => ({...f, endereco: e.target.value})),
+                                        placeholder: "Endereço completo da operação",
+                                        className: "w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                                    })
+                                )
+                            )
+                        ),
+                        
+                        // Seção: Configurações
+                        React.createElement("div", {className: "bg-gray-50 rounded-xl p-4"},
+                            React.createElement("h3", {className: "font-semibold text-gray-800 mb-4 flex items-center gap-2"}, "⚙️ Configurações"),
+                            React.createElement("div", {className: "grid md:grid-cols-3 gap-4"},
+                                // Modelo
+                                React.createElement("div", null,
+                                    React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-1"}, "Modelo *"),
+                                    React.createElement("select", {
+                                        value: operacaoForm.modelo,
+                                        onChange: e => setOperacaoForm(f => ({...f, modelo: e.target.value})),
+                                        className: "w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-teal-500 bg-white"
+                                    },
+                                        React.createElement("option", {value: "nuvem"}, "☁️ Nuvem"),
+                                        React.createElement("option", {value: "dedicado"}, "🎯 Dedicado"),
+                                        React.createElement("option", {value: "flash"}, "⚡ Flash")
+                                    )
+                                ),
+                                // Quantidade de Motos
+                                React.createElement("div", null,
+                                    React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-1"}, "Quantidade de Motos *"),
+                                    React.createElement("input", {
+                                        type: "number",
+                                        min: "1",
+                                        value: operacaoForm.quantidade_motos,
+                                        onChange: e => setOperacaoForm(f => ({...f, quantidade_motos: parseInt(e.target.value) || 1})),
+                                        className: "w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-teal-500"
+                                    })
+                                ),
+                                // Data de Início
+                                React.createElement("div", null,
+                                    React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-1"}, "Data de Início *"),
+                                    React.createElement("input", {
+                                        type: "date",
+                                        value: operacaoForm.data_inicio,
+                                        onChange: e => setOperacaoForm(f => ({...f, data_inicio: e.target.value})),
+                                        className: "w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-teal-500"
+                                    })
+                                )
+                            ),
+                            // Checkboxes
+                            React.createElement("div", {className: "grid md:grid-cols-2 gap-4 mt-4"},
+                                // Obrigatoriedade de Baú
+                                React.createElement("label", {className: "flex items-center gap-3 p-4 bg-white rounded-xl border cursor-pointer hover:bg-gray-50"},
+                                    React.createElement("input", {
+                                        type: "checkbox",
+                                        checked: operacaoForm.obrigatoriedade_bau,
+                                        onChange: e => setOperacaoForm(f => ({...f, obrigatoriedade_bau: e.target.checked})),
+                                        className: "w-5 h-5 rounded text-teal-600"
+                                    }),
+                                    React.createElement("div", null,
+                                        React.createElement("span", {className: "font-semibold text-gray-700"}, "📦 Obrigatoriedade de Baú"),
+                                        React.createElement("p", {className: "text-sm text-gray-500"}, "Motoboy precisa ter baú?")
+                                    )
+                                ),
+                                // Garantido
+                                React.createElement("label", {className: "flex items-center gap-3 p-4 bg-white rounded-xl border cursor-pointer hover:bg-gray-50"},
+                                    React.createElement("input", {
+                                        type: "checkbox",
+                                        checked: operacaoForm.possui_garantido,
+                                        onChange: e => setOperacaoForm(f => ({...f, possui_garantido: e.target.checked, valor_garantido: e.target.checked ? operacaoForm.valor_garantido : ''})),
+                                        className: "w-5 h-5 rounded text-teal-600"
+                                    }),
+                                    React.createElement("div", null,
+                                        React.createElement("span", {className: "font-semibold text-gray-700"}, "💰 Possui Garantido"),
+                                        React.createElement("p", {className: "text-sm text-gray-500"}, "Loja paga garantido?")
+                                    )
+                                )
+                            ),
+                            // Campo de Valor Garantido (aparece se possui_garantido)
+                            operacaoForm.possui_garantido && React.createElement("div", {className: "mt-4"},
+                                React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-1"}, "💰 Valor do Garantido (R$)"),
+                                React.createElement("input", {
+                                    type: "number",
+                                    step: "0.01",
+                                    min: "0",
+                                    value: operacaoForm.valor_garantido,
+                                    onChange: e => setOperacaoForm(f => ({...f, valor_garantido: e.target.value})),
+                                    placeholder: "0.00",
+                                    className: "w-full md:w-1/3 px-4 py-3 border rounded-xl focus:ring-2 focus:ring-teal-500"
+                                })
+                            )
+                        ),
+                        
+                        // Seção: Faixas de KM
+                        React.createElement("div", {className: "bg-gray-50 rounded-xl p-4"},
+                            React.createElement("h3", {className: "font-semibold text-gray-800 mb-4 flex items-center gap-2"}, "💰 Valores Pagos aos Motoboys por Faixa de KM"),
+                            React.createElement("p", {className: "text-sm text-gray-500 mb-4"}, "Preencha os valores de cada faixa de quilometragem"),
+                            React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-5 gap-3"},
+                                operacaoForm.faixas_km.map((faixa, idx) => 
+                                    React.createElement("div", {key: idx, className: "bg-white p-3 rounded-xl border"},
+                                        React.createElement("p", {className: "text-xs font-semibold text-gray-600 mb-2 text-center"}, 
+                                            faixa.km_inicio, " km à ", faixa.km_fim, " km"
+                                        ),
+                                        React.createElement("div", {className: "relative"},
+                                            React.createElement("span", {className: "absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"}, "R$"),
+                                            React.createElement("input", {
+                                                type: "number",
+                                                step: "0.01",
+                                                min: "0",
+                                                value: faixa.valor_motoboy || '',
+                                                onChange: e => {
+                                                    const novasFaixas = [...operacaoForm.faixas_km];
+                                                    novasFaixas[idx].valor_motoboy = e.target.value;
+                                                    setOperacaoForm(f => ({...f, faixas_km: novasFaixas}));
+                                                },
+                                                placeholder: "0.00",
+                                                className: "w-full pl-9 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 text-center"
+                                            })
+                                        )
+                                    )
+                                )
+                            )
+                        ),
+                        
+                        // Seção: Observações
+                        React.createElement("div", {className: "bg-gray-50 rounded-xl p-4"},
+                            React.createElement("h3", {className: "font-semibold text-gray-800 mb-4 flex items-center gap-2"}, "📝 Observações"),
+                            React.createElement("textarea", {
+                                value: operacaoForm.observacoes,
+                                onChange: e => setOperacaoForm(f => ({...f, observacoes: e.target.value})),
+                                placeholder: "Informações adicionais sobre a operação...",
+                                rows: 3,
+                                className: "w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-teal-500"
+                            })
+                        ),
+                        
+                        // Botões
+                        React.createElement("div", {className: "flex gap-3 pt-4"},
+                            React.createElement("button", {
+                                onClick: () => setOperacaoModal(false),
+                                className: "flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-xl font-semibold hover:bg-gray-300"
+                            }, "Cancelar"),
+                            React.createElement("button", {
+                                onClick: async () => {
+                                    // Validações
+                                    if (!operacaoForm.regiao || !operacaoForm.nome_cliente || !operacaoForm.endereco || !operacaoForm.data_inicio) {
+                                        ja('❌ Preencha todos os campos obrigatórios!', 'error');
+                                        return;
+                                    }
+                                    
+                                    s(true);
+                                    try {
+                                        const url = operacaoEdit 
+                                            ? `${API_URL}/operacoes/${operacaoEdit.id}`
+                                            : `${API_URL}/operacoes`;
+                                        
+                                        const response = await fetch(url, {
+                                            method: operacaoEdit ? 'PUT' : 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({
+                                                ...operacaoForm,
+                                                criado_por: l.fullName
+                                            })
+                                        });
+                                        
+                                        if (response.ok) {
+                                            ja(operacaoEdit ? '✅ Operação atualizada!' : '✅ Operação criada!', 'success');
+                                            setOperacaoModal(false);
+                                            carregarOperacoes();
+                                        } else {
+                                            throw new Error('Erro ao salvar');
+                                        }
+                                    } catch (error) {
+                                        ja('❌ Erro ao salvar operação', 'error');
+                                    }
+                                    s(false);
+                                },
+                                className: "flex-1 px-6 py-3 bg-teal-600 text-white rounded-xl font-semibold hover:bg-teal-700"
+                            }, operacaoEdit ? "💾 Salvar Alterações" : "➕ Criar Operação")
+                        )
                     )
                 )
             ));
