@@ -3,6 +3,40 @@ const {
     useEffect: useEffect
 } = React, API_URL = "https://tutts-backend-production.up.railway.app/api";
 
+// Função helper para verificar permissões de módulo
+// Retorna true se o usuário tem acesso ao módulo
+function hasModuleAccess(user, moduleId) {
+    if (!user) return false;
+    
+    // Admin master tem acesso a tudo
+    if (user.role === "admin_master") return true;
+    
+    // Admin financeiro tem acesso apenas ao financeiro e solicitações
+    if (user.role === "admin_financeiro") {
+        return ["financeiro", "solicitacoes", "disponibilidade"].includes(moduleId);
+    }
+    
+    // User comum não tem acesso a módulos admin
+    if (user.role === "user") return false;
+    
+    // Admin normal - verificar permissões
+    if (user.role === "admin") {
+        // Se não tem permissões configuradas, dar acesso a tudo
+        if (!user.permissions || !user.permissions.modulos) return true;
+        
+        // Se hasConfig é false, significa que nunca foi configurado
+        if (user.permissions.hasConfig === false) return true;
+        
+        // Verificar permissão específica do módulo
+        const perm = user.permissions.modulos[moduleId];
+        // Se a permissão é undefined ou true, tem acesso
+        // Se é false, não tem acesso
+        return perm !== false;
+    }
+    
+    return false;
+}
+
 // CONFIGURAÇÃO GLOBAL DE MÓDULOS E ABAS - Edite aqui para adicionar novos módulos/abas
 const SISTEMA_MODULOS_CONFIG = [
     { id: "solicitacoes", label: "Solicitações", icon: "📋",
@@ -2869,16 +2903,23 @@ const hideLoadingScreen = () => {
                             const permData = await permRes.json();
                             const allowedMods = Array.isArray(permData.allowed_modules) ? permData.allowed_modules : [];
                             const allowedTabs = permData.allowed_tabs && typeof permData.allowed_tabs === 'object' ? permData.allowed_tabs : {};
+                            
+                            // Se não há módulos configurados, dar acesso a todos (primeira vez)
+                            // Se há módulos configurados, usar apenas os que estão na lista
+                            const hasConfig = allowedMods.length > 0;
+                            
                             perms = {
                                 allowed_modules: allowedMods,
                                 allowed_tabs: allowedTabs,
+                                hasConfig: hasConfig,
                                 modulos: {
-                                    solicitacoes: allowedMods.length === 0 || allowedMods.includes("solicitacoes"),
-                                    financeiro: allowedMods.length === 0 || allowedMods.includes("financeiro"),
-                                    operacional: allowedMods.length === 0 || allowedMods.includes("operacional"),
-                                    disponibilidade: allowedMods.length === 0 || allowedMods.includes("disponibilidade"),
-                                    bi: allowedMods.length === 0 || allowedMods.includes("bi"),
-                                    todo: allowedMods.length === 0 || allowedMods.includes("todo")
+                                    solicitacoes: !hasConfig || allowedMods.includes("solicitacoes"),
+                                    financeiro: !hasConfig || allowedMods.includes("financeiro"),
+                                    operacional: !hasConfig || allowedMods.includes("operacional"),
+                                    disponibilidade: !hasConfig || allowedMods.includes("disponibilidade"),
+                                    bi: !hasConfig || allowedMods.includes("bi"),
+                                    todo: !hasConfig || allowedMods.includes("todo"),
+                                    config: !hasConfig || allowedMods.includes("config")
                                 },
                                 abas: allowedTabs
                             };
@@ -5392,7 +5433,7 @@ const hideLoadingScreen = () => {
         }, "✅ Confirmar Pedido"))))))));
         }
         // Verificar permissão para Financeiro (admin comum)
-        const canAccessFinanceiro = "admin_financeiro" === l.role || "admin_master" === l.role || ("admin" === l.role && (!l.permissions || !l.permissions.modulos || l.permissions.modulos.financeiro === true));
+        const canAccessFinanceiro = hasModuleAccess(l, "financeiro");
         if ((canAccessFinanceiro && "financeiro" === Ee) || "admin_financeiro" === l.role) {
             const e = "admin_master" === l.role;
             return React.createElement("div", {
@@ -5522,7 +5563,7 @@ const hideLoadingScreen = () => {
             "admin" === l.role && React.createElement("div", {
                 className: "flex bg-green-900/50 rounded-lg p-1 ml-3"
             },
-                (!l.permissions || !l.permissions.modulos || l.permissions.modulos.solicitacoes !== false) && React.createElement("button", {
+                hasModuleAccess(l, "solicitacoes") && React.createElement("button", {
                     onClick: () => he("home"),
                     className: "px-3 py-1.5 rounded-lg text-xs font-semibold text-white hover:bg-white/10"
                 }, "📋 Solicitações"),
@@ -5530,15 +5571,15 @@ const hideLoadingScreen = () => {
                     onClick: () => he("financeiro"),
                     className: "px-3 py-1.5 rounded-lg text-xs font-semibold bg-white text-green-800"
                 }, "💰 Financeiro"),
-                (!l.permissions || !l.permissions.modulos || l.permissions.modulos.operacional !== false) && React.createElement("button", {
+                hasModuleAccess(l, "operacional") && React.createElement("button", {
                     onClick: () => he("operacional"),
                     className: "px-3 py-1.5 rounded-lg text-xs font-semibold text-white hover:bg-white/10"
                 }, "⚙️ Operacional"),
-                (!l.permissions || !l.permissions.modulos || l.permissions.modulos.bi !== false) && React.createElement("button", {
+                hasModuleAccess(l, "bi") && React.createElement("button", {
                     onClick: () => { he("bi"); ll(); tl(); al(); dl(); pl(); },
                     className: "px-3 py-1.5 rounded-lg text-xs font-semibold text-white hover:bg-white/10"
                 }, "📊 BI"),
-                (!l.permissions || !l.permissions.modulos || l.permissions.modulos.todo !== false) && React.createElement("button", {
+                hasModuleAccess(l, "todo") && React.createElement("button", {
                     onClick: () => he("todo"),
                     className: "px-3 py-1.5 rounded-lg text-xs font-semibold text-white hover:bg-white/10"
                 }, "📋 TO-DO"),
@@ -10105,7 +10146,7 @@ const hideLoadingScreen = () => {
             })())))
         }
         // Verificar permissão para TO-DO (admin comum)
-        const canAccessTodo = "admin_master" === l.role || ("admin" === l.role && (!l.permissions || !l.permissions.modulos || l.permissions.modulos.todo === true));
+        const canAccessTodo = hasModuleAccess(l, "todo");
         if (canAccessTodo && "todo" === Ee) {
             // Calcular métricas das tarefas atuais
             const tarefasAtuais = todoViewMode === "meudia" ? todoMeuDia : todoTarefas;
@@ -11339,7 +11380,7 @@ const hideLoadingScreen = () => {
         }
         // ========== MÓDULO OPERACIONAL / ATIVAÇÃO ==========
         // Verificar permissão para Operacional (admin comum)
-        const canAccessOperacional = "admin_master" === l.role || ("admin" === l.role && (!l.permissions || !l.permissions.modulos || l.permissions.modulos.operacional === true));
+        const canAccessOperacional = hasModuleAccess(l, "operacional");
         if (canAccessOperacional && "operacional" === Ee) {
             return React.createElement("div", {
                 className: "min-h-screen bg-gray-50"
@@ -12729,7 +12770,7 @@ const hideLoadingScreen = () => {
             ));
         }
         // Verificar permissão para BI (admin comum)
-        const canAccessBI = "admin_master" === l.role || ("admin" === l.role && (!l.permissions || !l.permissions.modulos || l.permissions.modulos.bi === true));
+        const canAccessBI = hasModuleAccess(l, "bi");
         if (canAccessBI && "bi" === Ee) {
             return React.createElement("div", {
                 className: "min-h-screen bg-gray-100"
@@ -14178,7 +14219,7 @@ const hideLoadingScreen = () => {
                     ),
                     
                     // Financeiro
-                    (l.role === "admin_master" || l.role === "admin_financeiro" || (l.role === "admin" && (!l.permissions || !l.permissions.modulos || l.permissions.modulos.financeiro !== false))) &&
+                    hasModuleAccess(l, "financeiro") &&
                     React.createElement("button", {
                         onClick: () => he("financeiro"),
                         className: "bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 border-2 border-transparent hover:border-green-300"
@@ -14187,8 +14228,8 @@ const hideLoadingScreen = () => {
                         React.createElement("p", {className: "text-sm text-gray-500"}, "Saques e valores")
                     ),
                     
-                    // Disponibilidade (só admin_master)
-                    l.role === "admin_master" && React.createElement("button", {
+                    // Disponibilidade
+                    hasModuleAccess(l, "disponibilidade") && React.createElement("button", {
                         onClick: () => { he("solicitacoes"); x(e => ({...e, adminTab: "disponibilidade"})); },
                         className: "bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 border-2 border-transparent hover:border-blue-300"
                     }, React.createElement("span", {className: "text-4xl block mb-3"}, "📅"),
@@ -14197,7 +14238,7 @@ const hideLoadingScreen = () => {
                     ),
                     
                     // TO-DO
-                    (l.role === "admin_master" || (l.role === "admin" && (!l.permissions || !l.permissions.modulos || l.permissions.modulos.todo !== false))) &&
+                    hasModuleAccess(l, "todo") &&
                     React.createElement("button", {
                         onClick: () => he("todo"),
                         className: "bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 border-2 border-transparent hover:border-indigo-300"
@@ -14209,8 +14250,8 @@ const hideLoadingScreen = () => {
                         }, todoMeuDia.length, " pendente(s)")
                     ),
                     
-                    // BI (só admin_master)
-                    l.role === "admin_master" && React.createElement("button", {
+                    // BI
+                    hasModuleAccess(l, "bi") && React.createElement("button", {
                         onClick: () => he("bi"),
                         className: "bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 border-2 border-transparent hover:border-orange-300"
                     }, React.createElement("span", {className: "text-4xl block mb-3"}, "📊"),
@@ -14231,7 +14272,7 @@ const hideLoadingScreen = () => {
                     ),
                     
                     // Operacional
-                    (l.role === "admin_master" || (l.role === "admin" && (!l.permissions || !l.permissions.modulos || l.permissions.modulos.operacional !== false))) &&
+                    hasModuleAccess(l, "operacional") &&
                     React.createElement("button", {
                         onClick: () => he("operacional"),
                         className: "bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 border-2 border-transparent hover:border-teal-300"
@@ -14381,8 +14422,8 @@ const hideLoadingScreen = () => {
         }, "Painel Admin"), React.createElement("div", {
             className: "flex bg-purple-800/50 rounded-lg p-1"
         }, 
-        // Solicitações - verificar permissão (se não tem permissions definido, mostra tudo)
-        (!l.permissions || !l.permissions.modulos || l.permissions.modulos.solicitacoes !== false) && React.createElement("button", {
+        // Solicitações - verificar permissão
+        hasModuleAccess(l, "solicitacoes") && React.createElement("button", {
             onClick: () => {
                 // Determinar primeira aba permitida
                 const todasAbas = ["dashboard", "search", "ranking", "relatorios"];
@@ -14401,7 +14442,7 @@ const hideLoadingScreen = () => {
             className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("solicitacoes" === Ee && "disponibilidade" !== p.adminTab ? "bg-white text-purple-900" : "text-white hover:bg-white/10")
         }, "📋 Solicitações"),
         // Financeiro - verificar permissão
-        (!l.permissions || !l.permissions.modulos || l.permissions.modulos.financeiro !== false) && React.createElement("button", {
+        hasModuleAccess(l, "financeiro") && React.createElement("button", {
             onClick: () => {
                 // Determinar primeira aba permitida
                 const todasAbas = ["solicitacoes", "validacao", "conciliacao", "resumo", "gratuidades", "restritos", "indicacoes", "promo-novatos", "loja", "relatorios", "horarios", "avisos", "backup"];
@@ -14420,12 +14461,12 @@ const hideLoadingScreen = () => {
             className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("financeiro" === Ee ? "bg-white text-green-800" : "text-white hover:bg-white/10")
         }, "💰 Financeiro"),
         // Operacional - verificar permissão
-        (!l.permissions || !l.permissions.modulos || l.permissions.modulos.operacional !== false) && React.createElement("button", {
+        hasModuleAccess(l, "operacional") && React.createElement("button", {
             onClick: () => he("operacional"),
             className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("operacional" === Ee ? "bg-white text-teal-800" : "text-white hover:bg-white/10")
         }, "⚙️ Operacional"),
         // Disponibilidade - verificar permissão
-        (!l.permissions || !l.permissions.modulos || l.permissions.modulos.disponibilidade !== false) && React.createElement("button", {
+        hasModuleAccess(l, "disponibilidade") && React.createElement("button", {
             onClick: () => {
                 he("home"), x(e => ({
                     ...e,
@@ -14435,12 +14476,12 @@ const hideLoadingScreen = () => {
             className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("solicitacoes" === Ee && "disponibilidade" === p.adminTab ? "bg-white text-blue-800" : "text-white hover:bg-white/10")
         }, "📅 Disponibilidade"),
         // BI - verificar permissão
-        (!l.permissions || !l.permissions.modulos || l.permissions.modulos.bi !== false) && React.createElement("button", {
+        hasModuleAccess(l, "bi") && React.createElement("button", {
             onClick: () => { he("bi"); ll(); tl(); al(); dl(); pl(); },
             className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("bi" === Ee ? "bg-white text-orange-800" : "text-white hover:bg-white/10")
         }, "📊 BI"),
         // TO-DO - verificar permissão
-        (!l.permissions || !l.permissions.modulos || l.permissions.modulos.todo !== false) && React.createElement("button", {
+        hasModuleAccess(l, "todo") && React.createElement("button", {
             onClick: () => he("todo"),
             className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("todo" === Ee ? "bg-white text-indigo-800" : "text-white hover:bg-white/10")
         }, "📋 TO-DO"),
