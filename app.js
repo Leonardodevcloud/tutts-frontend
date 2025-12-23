@@ -1328,8 +1328,6 @@ const hideLoadingScreen = () => {
         // Função para gerar relatório PDF da operação
         const gerarRelatorioOperacao = async (op) => {
             const contador = calcularContadorRegressivo(op.data_inicio);
-            const checklist = checklistMotos[op.id] || {};
-            const motosEncontradas = Object.values(checklist).filter(v => v).length;
             
             // Carregar jsPDF dinamicamente se não existir
             if (!window.jspdf) {
@@ -1342,278 +1340,235 @@ const hideLoadingScreen = () => {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
             
-            // Cores da Tutts (Roxo)
-            const roxoPrimario = [124, 58, 237]; // #7c3aed
-            const roxoEscuro = [109, 40, 217]; // #6d28d9
-            const roxoClaro = [139, 92, 246]; // #8b5cf6
-            const roxoMuitoClaro = [237, 233, 254]; // #ede9fe
+            // Cores oficiais da Tutts
+            const roxoTutts = [85, 7, 118]; // #550776
+            const laranjaLutts = [243, 118, 1]; // #f37601
             const branco = [255, 255, 255];
-            const cinzaEscuro = [31, 41, 55];
-            const cinza = [107, 114, 128];
-            const verde = [34, 197, 94];
-            const verdeClaro = [220, 252, 231];
-            const amarelo = [234, 179, 8];
-            const amareloClaro = [254, 249, 195];
-            const azul = [59, 130, 246];
-            const azulClaro = [219, 234, 254];
-            const laranja = [249, 115, 22];
-            const laranjaClaro = [255, 237, 213];
+            const cinzaEscuro = [51, 51, 51];
+            const cinzaMedio = [102, 102, 102];
+            const cinzaClaro = [245, 245, 245];
+            const cinzaBorda = [220, 220, 220];
             
-            // ===== HEADER ROXO =====
-            doc.setFillColor(...roxoPrimario);
-            doc.rect(0, 0, 210, 45, 'F');
+            // ===== HEADER =====
+            doc.setFillColor(...roxoTutts);
+            doc.rect(0, 0, 210, 50, 'F');
             
-            // Faixa decorativa
-            doc.setFillColor(...roxoEscuro);
-            doc.rect(0, 40, 210, 5, 'F');
+            // Linha decorativa laranja
+            doc.setFillColor(...laranjaLutts);
+            doc.rect(0, 50, 210, 3, 'F');
             
-            // Logo/Ícone
+            // Logo Tutts (círculo branco com texto)
             doc.setFillColor(...branco);
-            doc.circle(25, 22, 12, 'F');
-            doc.setTextColor(...roxoPrimario);
-            doc.setFontSize(16);
+            doc.circle(30, 25, 15, 'F');
+            doc.setTextColor(...roxoTutts);
+            doc.setFontSize(12);
             doc.setFont('helvetica', 'bold');
-            doc.text('TUTTS', 25, 24, { align: 'center' });
+            doc.text('tutts', 30, 27, { align: 'center' });
             
-            // Título
+            // Seta laranja estilizada (simulando a logo)
+            doc.setFillColor(...laranjaLutts);
+            doc.triangle(22, 18, 38, 18, 38, 22, 'F');
+            
+            // Título do relatório
             doc.setTextColor(...branco);
-            doc.setFontSize(22);
-            doc.setFont('helvetica', 'bold');
-            doc.text(op.nome_cliente, 105, 18, { align: 'center' });
-            
-            // Subtítulo
-            doc.setFontSize(11);
-            doc.setFont('helvetica', 'normal');
-            doc.text('Relatório de Operação', 105, 28, { align: 'center' });
-            
-            // Badges no header
-            const badgeY = 35;
-            doc.setFillColor(...branco);
-            doc.roundedRect(70, badgeY - 4, 30, 8, 2, 2, 'F');
-            doc.roundedRect(105, badgeY - 4, 35, 8, 2, 2, 'F');
-            doc.setFontSize(8);
-            doc.setTextColor(...roxoPrimario);
-            doc.text(op.modelo === 'nuvem' ? 'NUVEM' : op.modelo === 'dedicado' ? 'DEDICADO' : 'FLASH', 85, badgeY, { align: 'center' });
-            doc.setTextColor(op.status === 'ativo' ? 34 : op.status === 'concluido' ? 59 : 234, op.status === 'ativo' ? 197 : op.status === 'concluido' ? 130 : 179, op.status === 'ativo' ? 94 : op.status === 'concluido' ? 246 : 8);
-            doc.text(op.status === 'ativo' ? 'ATIVO' : op.status === 'concluido' ? 'CONCLUÍDO' : 'PAUSADO', 122, badgeY, { align: 'center' });
-            
-            let y = 58;
-            
-            // ===== BOX CONTADOR REGRESSIVO =====
-            const contadorColor = contador.status === 'hoje' ? verdeClaro : 
-                                 contador.status === 'amanha' ? amareloClaro : 
-                                 contador.status === 'iniciado' ? azulClaro : laranjaClaro;
-            const contadorBorder = contador.status === 'hoje' ? verde : 
-                                  contador.status === 'amanha' ? amarelo : 
-                                  contador.status === 'iniciado' ? azul : laranja;
-            
-            doc.setFillColor(...contadorColor);
-            doc.roundedRect(15, y, 180, 28, 4, 4, 'F');
-            doc.setDrawColor(...contadorBorder);
-            doc.setLineWidth(0.8);
-            doc.roundedRect(15, y, 180, 28, 4, 4, 'S');
-            
-            doc.setTextColor(...cinzaEscuro);
-            doc.setFontSize(18);
-            doc.setFont('helvetica', 'bold');
-            doc.text(contador.texto, 105, y + 12, { align: 'center' });
             doc.setFontSize(10);
             doc.setFont('helvetica', 'normal');
-            doc.setTextColor(...cinza);
-            doc.text('Data de Início: ' + new Date(op.data_inicio).toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' }), 105, y + 22, { align: 'center' });
+            doc.text('RELATÓRIO DE OPERAÇÃO', 130, 15, { align: 'center' });
             
-            y += 38;
-            
-            // ===== SEÇÃO: INFORMAÇÕES GERAIS =====
-            doc.setFillColor(...roxoPrimario);
-            doc.roundedRect(15, y, 180, 10, 2, 2, 'F');
-            doc.setTextColor(...branco);
-            doc.setFontSize(11);
+            // Nome do cliente
+            doc.setFontSize(20);
             doc.setFont('helvetica', 'bold');
-            doc.text('INFORMAÇÕES GERAIS', 20, y + 7);
-            y += 15;
+            const nomeCliente = op.nome_cliente.length > 30 ? op.nome_cliente.substring(0, 30) + '...' : op.nome_cliente;
+            doc.text(nomeCliente, 130, 28, { align: 'center' });
             
-            // Grid de informações
-            const infoBoxes = [
-                { label: 'Região', value: op.regiao || '-', icon: '📍' },
-                { label: 'Quantidade de Motos', value: op.quantidade_motos + ' moto(s)', icon: '🏍️' },
-                { label: 'Obrigatoriedade de Baú', value: op.obrigatoriedade_bau ? 'Sim' : 'Não', icon: '📦' },
-                { label: 'Garantido pela Loja', value: op.possui_garantido ? 'R$ ' + parseFloat(op.valor_garantido || 0).toFixed(2) : 'Não', icon: '💰' }
+            // Data de emissão
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'normal');
+            doc.text('Emitido em ' + new Date().toLocaleDateString('pt-BR') + ' às ' + new Date().toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'}), 130, 40, { align: 'center' });
+            
+            let y = 65;
+            
+            // ===== DATA DE INÍCIO - DESTAQUE =====
+            doc.setFillColor(...cinzaClaro);
+            doc.roundedRect(15, y, 180, 22, 3, 3, 'F');
+            doc.setDrawColor(...laranjaLutts);
+            doc.setLineWidth(1);
+            doc.line(15, y, 15, y + 22);
+            
+            doc.setFontSize(9);
+            doc.setTextColor(...cinzaMedio);
+            doc.setFont('helvetica', 'normal');
+            doc.text('DATA DE INÍCIO DA OPERAÇÃO', 22, y + 7);
+            
+            doc.setFontSize(14);
+            doc.setTextColor(...cinzaEscuro);
+            doc.setFont('helvetica', 'bold');
+            doc.text(new Date(op.data_inicio).toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' }), 22, y + 16);
+            
+            // Badge do contador
+            const contadorWidth = doc.getTextWidth(contador.texto) + 16;
+            doc.setFillColor(...laranjaLutts);
+            doc.roundedRect(195 - contadorWidth, y + 5, contadorWidth, 12, 2, 2, 'F');
+            doc.setFontSize(9);
+            doc.setTextColor(...branco);
+            doc.setFont('helvetica', 'bold');
+            doc.text(contador.texto, 195 - contadorWidth/2, y + 13, { align: 'center' });
+            
+            y += 32;
+            
+            // ===== INFORMAÇÕES DA OPERAÇÃO =====
+            doc.setFontSize(11);
+            doc.setTextColor(...roxoTutts);
+            doc.setFont('helvetica', 'bold');
+            doc.text('INFORMAÇÕES DA OPERAÇÃO', 15, y);
+            doc.setDrawColor(...roxoTutts);
+            doc.setLineWidth(0.5);
+            doc.line(15, y + 2, 195, y + 2);
+            
+            y += 12;
+            
+            // Tabela de informações
+            const tableData = [
+                ['Região', op.regiao || '-'],
+                ['Modelo', op.modelo === 'nuvem' ? 'Nuvem' : op.modelo === 'dedicado' ? 'Dedicado' : 'Flash'],
+                ['Quantidade de Motos', op.quantidade_motos + ' moto(s)'],
+                ['Obrigatoriedade de Baú', op.obrigatoriedade_bau ? 'Sim' : 'Não'],
+                ['Garantido pela Loja', op.possui_garantido ? 'Sim - R$ ' + parseFloat(op.valor_garantido || 0).toFixed(2) : 'Não']
             ];
             
-            infoBoxes.forEach((info, idx) => {
-                const boxX = idx % 2 === 0 ? 15 : 105;
-                const boxY = y + Math.floor(idx / 2) * 18;
-                
-                doc.setFillColor(...roxoMuitoClaro);
-                doc.roundedRect(boxX, boxY, 85, 15, 2, 2, 'F');
-                doc.setDrawColor(...roxoClaro);
-                doc.setLineWidth(0.3);
-                doc.roundedRect(boxX, boxY, 85, 15, 2, 2, 'S');
-                
-                doc.setFontSize(8);
-                doc.setTextColor(...roxoPrimario);
-                doc.setFont('helvetica', 'bold');
-                doc.text(info.label.toUpperCase(), boxX + 5, boxY + 5);
-                
-                doc.setFontSize(11);
-                doc.setTextColor(...cinzaEscuro);
+            tableData.forEach((row, idx) => {
+                if (idx % 2 === 0) {
+                    doc.setFillColor(...cinzaClaro);
+                    doc.rect(15, y - 4, 180, 10, 'F');
+                }
+                doc.setFontSize(10);
+                doc.setTextColor(...cinzaMedio);
                 doc.setFont('helvetica', 'normal');
-                doc.text(String(info.value), boxX + 5, boxY + 12);
+                doc.text(row[0], 20, y + 2);
+                doc.setTextColor(...cinzaEscuro);
+                doc.setFont('helvetica', 'bold');
+                doc.text(row[1], 100, y + 2);
+                y += 10;
             });
             
-            y += 40;
+            y += 5;
             
-            // Endereço (largura total)
-            doc.setFillColor(...roxoMuitoClaro);
-            doc.roundedRect(15, y, 180, 15, 2, 2, 'F');
-            doc.setDrawColor(...roxoClaro);
-            doc.roundedRect(15, y, 180, 15, 2, 2, 'S');
-            doc.setFontSize(8);
-            doc.setTextColor(...roxoPrimario);
-            doc.setFont('helvetica', 'bold');
-            doc.text('ENDEREÇO', 20, y + 5);
+            // Endereço
+            doc.setFillColor(...cinzaClaro);
+            doc.roundedRect(15, y, 180, 18, 2, 2, 'F');
+            doc.setFontSize(9);
+            doc.setTextColor(...cinzaMedio);
+            doc.setFont('helvetica', 'normal');
+            doc.text('ENDEREÇO COMPLETO', 20, y + 6);
             doc.setFontSize(10);
             doc.setTextColor(...cinzaEscuro);
             doc.setFont('helvetica', 'normal');
-            doc.text(op.endereco || '-', 20, y + 12);
+            const enderecoText = op.endereco || '-';
+            const enderecoLines = doc.splitTextToSize(enderecoText, 165);
+            doc.text(enderecoLines[0], 20, y + 14);
             
-            y += 22;
+            y += 28;
             
-            // ===== SEÇÃO: CHECKLIST DE MOTOS =====
-            doc.setFillColor(...roxoPrimario);
-            doc.roundedRect(15, y, 180, 10, 2, 2, 'F');
-            doc.setTextColor(...branco);
-            doc.setFontSize(11);
-            doc.setFont('helvetica', 'bold');
-            doc.text('CHECKLIST DE MOTOS (' + motosEncontradas + '/' + op.quantidade_motos + ' encontradas)', 20, y + 7);
-            y += 15;
-            
-            // Grid de motos
-            const motosPerRow = 5;
-            const motoWidth = 34;
-            const motoHeight = 12;
-            
-            for (let i = 0; i < op.quantidade_motos; i++) {
-                const motoX = 15 + (i % motosPerRow) * (motoWidth + 2);
-                const motoY = y + Math.floor(i / motosPerRow) * (motoHeight + 3);
-                
-                const isChecked = checklist[i];
-                if (isChecked) {
-                    doc.setFillColor(220, 252, 231);
-                } else {
-                    doc.setFillColor(254, 226, 226);
-                }
-                doc.roundedRect(motoX, motoY, motoWidth, motoHeight, 2, 2, 'F');
-                if (isChecked) {
-                    doc.setDrawColor(34, 197, 94);
-                } else {
-                    doc.setDrawColor(239, 68, 68);
-                }
-                doc.setLineWidth(0.5);
-                doc.roundedRect(motoX, motoY, motoWidth, motoHeight, 2, 2, 'S');
-                
-                doc.setFontSize(9);
-                if (isChecked) {
-                    doc.setTextColor(22, 163, 74);
-                } else {
-                    doc.setTextColor(185, 28, 28);
-                }
-                doc.setFont('helvetica', 'bold');
-                doc.text((isChecked ? '✓ ' : '○ ') + 'Moto ' + (i + 1), motoX + motoWidth/2, motoY + 8, { align: 'center' });
-                
-                if (y + Math.floor(i / motosPerRow) * (motoHeight + 3) > 240) {
-                    doc.addPage();
-                    y = 20;
-                }
-            }
-            
-            y += Math.ceil(op.quantidade_motos / motosPerRow) * (motoHeight + 3) + 8;
-            
-            // ===== SEÇÃO: FAIXAS DE KM =====
+            // ===== VALORES POR FAIXA DE KM =====
             if (op.faixas_km && op.faixas_km.filter(f => f.valor_motoboy > 0).length > 0) {
-                if (y > 220) { doc.addPage(); y = 20; }
-                
-                doc.setFillColor(...roxoPrimario);
-                doc.roundedRect(15, y, 180, 10, 2, 2, 'F');
-                doc.setTextColor(...branco);
                 doc.setFontSize(11);
+                doc.setTextColor(...roxoTutts);
                 doc.setFont('helvetica', 'bold');
-                doc.text('VALORES POR FAIXA DE KM', 20, y + 7);
-                y += 15;
+                doc.text('TABELA DE VALORES POR QUILOMETRAGEM', 15, y);
+                doc.setDrawColor(...roxoTutts);
+                doc.setLineWidth(0.5);
+                doc.line(15, y + 2, 195, y + 2);
+                
+                y += 10;
                 
                 const faixas = op.faixas_km.filter(f => f.valor_motoboy > 0);
-                const faixaWidth = 35;
-                const faixasPerRow = 5;
+                
+                // Cabeçalho da tabela
+                doc.setFillColor(...roxoTutts);
+                doc.rect(15, y, 90, 8, 'F');
+                doc.rect(105, y, 90, 8, 'F');
+                doc.setFontSize(9);
+                doc.setTextColor(...branco);
+                doc.setFont('helvetica', 'bold');
+                doc.text('FAIXA DE KM', 60, y + 5.5, { align: 'center' });
+                doc.text('VALOR MOTOBOY', 150, y + 5.5, { align: 'center' });
+                
+                y += 8;
                 
                 faixas.forEach((faixa, idx) => {
-                    const faixaX = 15 + (idx % faixasPerRow) * (faixaWidth + 2);
-                    const faixaY = y + Math.floor(idx / faixasPerRow) * 20;
-                    
-                    doc.setFillColor(...roxoMuitoClaro);
-                    doc.roundedRect(faixaX, faixaY, faixaWidth, 17, 2, 2, 'F');
-                    doc.setDrawColor(...roxoClaro);
-                    doc.roundedRect(faixaX, faixaY, faixaWidth, 17, 2, 2, 'S');
-                    
-                    doc.setFontSize(8);
-                    doc.setTextColor(...roxoPrimario);
-                    doc.setFont('helvetica', 'bold');
-                    doc.text(faixa.km_inicio + '-' + faixa.km_fim + ' km', faixaX + faixaWidth/2, faixaY + 6, { align: 'center' });
+                    if (idx % 2 === 0) {
+                        doc.setFillColor(...cinzaClaro);
+                        doc.rect(15, y, 180, 8, 'F');
+                    }
+                    doc.setDrawColor(...cinzaBorda);
+                    doc.setLineWidth(0.2);
+                    doc.line(15, y + 8, 195, y + 8);
                     
                     doc.setFontSize(10);
                     doc.setTextColor(...cinzaEscuro);
+                    doc.setFont('helvetica', 'normal');
+                    doc.text(faixa.km_inicio + ' km - ' + faixa.km_fim + ' km', 60, y + 5.5, { align: 'center' });
                     doc.setFont('helvetica', 'bold');
-                    doc.text('R$ ' + parseFloat(faixa.valor_motoboy).toFixed(2), faixaX + faixaWidth/2, faixaY + 13, { align: 'center' });
+                    doc.text('R$ ' + parseFloat(faixa.valor_motoboy).toFixed(2), 150, y + 5.5, { align: 'center' });
+                    y += 8;
                 });
                 
-                y += Math.ceil(faixas.length / faixasPerRow) * 20 + 8;
+                y += 10;
             }
             
-            // ===== SEÇÃO: OBSERVAÇÕES =====
+            // ===== OBSERVAÇÕES =====
             if (op.observacoes) {
                 if (y > 230) { doc.addPage(); y = 20; }
                 
-                doc.setFillColor(...roxoPrimario);
-                doc.roundedRect(15, y, 180, 10, 2, 2, 'F');
-                doc.setTextColor(...branco);
                 doc.setFontSize(11);
+                doc.setTextColor(...roxoTutts);
                 doc.setFont('helvetica', 'bold');
-                doc.text('OBSERVAÇÕES', 20, y + 7);
-                y += 15;
+                doc.text('OBSERVAÇÕES', 15, y);
+                doc.setDrawColor(...roxoTutts);
+                doc.setLineWidth(0.5);
+                doc.line(15, y + 2, 195, y + 2);
                 
-                doc.setFillColor(255, 251, 235);
+                y += 10;
+                
+                doc.setFillColor(...cinzaClaro);
                 const obsLines = doc.splitTextToSize(op.observacoes, 170);
-                const obsHeight = obsLines.length * 5 + 10;
+                const obsHeight = Math.max(obsLines.length * 5 + 8, 15);
                 doc.roundedRect(15, y, 180, obsHeight, 2, 2, 'F');
-                doc.setDrawColor(252, 211, 77);
-                doc.roundedRect(15, y, 180, obsHeight, 2, 2, 'S');
                 
                 doc.setFontSize(10);
                 doc.setTextColor(...cinzaEscuro);
                 doc.setFont('helvetica', 'normal');
-                doc.text(obsLines, 20, y + 8);
+                doc.text(obsLines, 20, y + 7);
                 
-                y += obsHeight + 8;
+                y += obsHeight + 10;
             }
             
             // ===== FOOTER =====
-            const footerY = 280;
-            doc.setFillColor(...roxoMuitoClaro);
-            doc.rect(0, footerY, 210, 17, 'F');
-            doc.setDrawColor(...roxoClaro);
-            doc.line(0, footerY, 210, footerY);
+            const footerY = 275;
             
+            // Linha separadora
+            doc.setDrawColor(...cinzaBorda);
+            doc.setLineWidth(0.3);
+            doc.line(15, footerY, 195, footerY);
+            
+            // Informações do footer
             doc.setFontSize(8);
-            doc.setTextColor(...cinza);
-            doc.text('Relatório gerado em ' + new Date().toLocaleString('pt-BR') + '  |  Criado por: ' + (op.criado_por || '-'), 105, footerY + 6, { align: 'center' });
+            doc.setTextColor(...cinzaMedio);
+            doc.setFont('helvetica', 'normal');
+            doc.text('Documento gerado automaticamente pelo Sistema Tutts', 15, footerY + 6);
+            doc.text('Responsável: ' + (op.criado_por || '-'), 15, footerY + 11);
             
-            doc.setTextColor(...roxoPrimario);
+            // Logo no footer
+            doc.setFillColor(...roxoTutts);
+            doc.roundedRect(160, footerY + 2, 35, 12, 2, 2, 'F');
+            doc.setFontSize(10);
+            doc.setTextColor(...branco);
             doc.setFont('helvetica', 'bold');
-            doc.text('Sistema Tutts - Central do Entregador', 105, footerY + 12, { align: 'center' });
+            doc.text('tutts', 177.5, footerY + 10, { align: 'center' });
             
             // Download do PDF
-            doc.save('Relatorio_' + op.nome_cliente.replace(/[^a-zA-Z0-9]/g, '_') + '.pdf');
-            ja('📄 Relatório PDF baixado com sucesso!', 'success');
+            doc.save('Tutts_Operacao_' + op.nome_cliente.replace(/[^a-zA-Z0-9]/g, '_') + '.pdf');
+            ja('📄 Relatório PDF baixado!', 'success');
         };
         
         const salvarAviso = async () => {
