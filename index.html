@@ -85,6 +85,15 @@
       to { transform: translateY(0); opacity: 1; }
     }
     
+    /* Update Banner */
+    .update-banner {
+      animation: slideDown 0.5s ease-out;
+    }
+    @keyframes slideDown {
+      from { transform: translateY(-100%); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    
     /* Toggle Switch Mobile Optimization */
     button[role="switch"] {
       -webkit-tap-highlight-color: transparent;
@@ -92,7 +101,6 @@
       -webkit-user-select: none;
       touch-action: manipulation;
       -webkit-touch-callout: none;
-      /* Área de toque ampliada */
       position: relative;
       padding: 12px !important;
     }
@@ -104,7 +112,6 @@
       backface-visibility: hidden;
       -webkit-backface-visibility: hidden;
     }
-    /* Aumentar área clicável no mobile */
     @media (max-width: 768px) {
       button[role="switch"] {
         min-width: 100px !important;
@@ -121,6 +128,17 @@
     <div class="loading-subtitle">Carregando...</div>
   </div>
   
+  <!-- Update Available Banner -->
+  <div id="update-banner" style="display: none;" class="fixed top-0 left-0 right-0 bg-gradient-to-r from-green-500 to-green-600 text-white py-3 px-4 z-[10000] update-banner shadow-lg">
+    <div class="flex items-center justify-center gap-4 max-w-lg mx-auto">
+      <span class="text-xl">🔄</span>
+      <span class="font-medium">Nova versão disponível!</span>
+      <button id="update-btn" class="px-4 py-1.5 bg-white text-green-600 rounded-lg font-bold text-sm hover:bg-green-50 transition-all">
+        Atualizar Agora
+      </button>
+    </div>
+  </div>
+  
   <div id="root"></div>
   
   <!-- React Production (mais rápido) -->
@@ -129,7 +147,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
   
   <!-- App pré-compilado (SEM BABEL!) -->
-  <script src="app.js?v=20241214_004"></script>
+  <script src="app.js"></script>
   
   <!-- PWA Install Banner Component -->
   <div id="pwa-install-banner" style="display: none;" class="fixed bottom-4 left-4 right-4 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-2xl shadow-2xl p-4 z-50 pwa-install-banner">
@@ -152,14 +170,82 @@
     </div>
   </div>
 
-  <!-- PWA Service Worker Registration -->
+  <!-- PWA Service Worker Registration with Update Detection -->
   <script>
-    // Registrar Service Worker
+    // Variáveis globais
+    let newWorker = null;
+    const updateBanner = document.getElementById('update-banner');
+    const updateBtn = document.getElementById('update-btn');
+
+    // Função para mostrar banner de atualização
+    function showUpdateBanner() {
+      if (updateBanner) {
+        updateBanner.style.display = 'block';
+      }
+    }
+
+    // Botão de atualizar
+    if (updateBtn) {
+      updateBtn.addEventListener('click', () => {
+        if (newWorker) {
+          // Diz ao novo SW para assumir imediatamente
+          newWorker.postMessage({ type: 'SKIP_WAITING' });
+        }
+        // Recarrega a página
+        window.location.reload(true);
+      });
+    }
+
+    // Registrar Service Worker com detecção de atualização
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
-          .then(reg => console.log('✅ Service Worker registrado:', reg.scope))
-          .catch(err => console.log('❌ Service Worker erro:', err));
+      window.addEventListener('load', async () => {
+        try {
+          const registration = await navigator.serviceWorker.register('/sw.js');
+          console.log('✅ Service Worker registrado:', registration.scope);
+          
+          // Detecta quando há um novo SW esperando
+          registration.addEventListener('updatefound', () => {
+            newWorker = registration.installing;
+            console.log('🔄 Nova versão do Service Worker encontrada!');
+            
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                // Novo SW instalado, mas o antigo ainda controla a página
+                console.log('📦 Nova versão pronta! Mostrando banner...');
+                showUpdateBanner();
+              }
+            });
+          });
+          
+          // Verifica por atualizações a cada 60 segundos
+          setInterval(() => {
+            registration.update();
+          }, 60000);
+          
+          // Verifica imediatamente por atualizações
+          registration.update();
+          
+        } catch (err) {
+          console.log('❌ Service Worker erro:', err);
+        }
+      });
+      
+      // Escuta mensagens do SW
+      navigator.serviceWorker.addEventListener('message', (event) => {
+        if (event.data && event.data.type === 'SW_UPDATED') {
+          console.log('🔔 SW notificou atualização:', event.data.version);
+          showUpdateBanner();
+        }
+      });
+      
+      // Recarrega quando o novo SW assumir controle
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!refreshing) {
+          refreshing = true;
+          console.log('🔄 Novo Service Worker assumiu, recarregando...');
+          window.location.reload(true);
+        }
       });
     }
 
@@ -173,7 +259,6 @@
       e.preventDefault();
       deferredPrompt = e;
       
-      // Verificar se já foi dismissado
       if (localStorage.getItem('pwa-dismissed') !== 'true') {
         setTimeout(() => {
           installBanner.style.display = 'block';
