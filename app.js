@@ -999,17 +999,23 @@ const hideLoadingScreen = () => {
         };
         
         const proximoPasso = () => {
-            if (tutorialPasso < TUTORIAL_PASSOS.length - 1) {
-                setTutorialPasso(tutorialPasso + 1);
-            } else {
-                finalizarTutorial();
-            }
+            setTutorialPasso(atual => {
+                if (atual < TUTORIAL_PASSOS.length - 1) {
+                    return atual + 1;
+                } else {
+                    finalizarTutorial();
+                    return atual;
+                }
+            });
         };
         
         const passoAnterior = () => {
-            if (tutorialPasso > 0) {
-                setTutorialPasso(tutorialPasso - 1);
-            }
+            setTutorialPasso(atual => {
+                if (atual > 0) {
+                    return atual - 1;
+                }
+                return atual;
+            });
         };
         
         const finalizarTutorial = () => {
