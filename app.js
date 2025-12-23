@@ -3701,8 +3701,76 @@ const hideLoadingScreen = () => {
             imageUrl: u,
             onClose: () => g(null)
         }), 
-        // Tutorial do Usuário
-        React.createElement(TutorialOverlay, null),
+        // Tutorial do Usuário - Renderização Direta
+        tutorialAtivo && React.createElement("div", {
+            className: "fixed inset-0 z-[100] flex items-center justify-center p-4",
+            style: { backgroundColor: "rgba(0,0,0,0.85)" },
+            onClick: () => { setTutorialAtivo(false); setTutorialPasso(0); localStorage.setItem('tutts_tutorial_visto_' + l?.codProfissional, 'true'); }
+        },
+            React.createElement("div", {
+                className: "bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden",
+                onClick: (e) => e.stopPropagation()
+            },
+                // Header
+                React.createElement("div", {
+                    className: "bg-gradient-to-r from-purple-600 via-purple-700 to-indigo-700 p-6 text-white relative overflow-hidden"
+                },
+                    React.createElement("div", {className: "absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2"}),
+                    React.createElement("div", {className: "absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/2"}),
+                    React.createElement("div", {className: "relative"},
+                        React.createElement("div", {className: "flex items-center justify-between mb-2"},
+                            React.createElement("span", {className: "text-sm bg-white/20 px-3 py-1 rounded-full"}, 
+                                "Passo ", tutorialPasso + 1, " de ", TUTORIAL_PASSOS.length
+                            ),
+                            React.createElement("button", {
+                                onClick: () => { setTutorialAtivo(false); setTutorialPasso(0); localStorage.setItem('tutts_tutorial_visto_' + l?.codProfissional, 'true'); },
+                                className: "text-white/70 hover:text-white text-sm hover:bg-white/10 px-3 py-1 rounded transition-all"
+                            }, "✕ Pular")
+                        ),
+                        React.createElement("div", {className: "text-5xl mb-3"}, TUTORIAL_PASSOS[tutorialPasso]?.icone),
+                        React.createElement("h2", {className: "text-2xl font-bold"}, TUTORIAL_PASSOS[tutorialPasso]?.titulo)
+                    )
+                ),
+                // Barra de progresso
+                React.createElement("div", {className: "h-1 bg-gray-200"},
+                    React.createElement("div", {
+                        className: "h-full bg-gradient-to-r from-purple-500 to-indigo-500 transition-all duration-500",
+                        style: { width: (((tutorialPasso + 1) / TUTORIAL_PASSOS.length) * 100) + "%" }
+                    })
+                ),
+                // Conteúdo
+                React.createElement("div", {className: "p-6"},
+                    React.createElement("p", {className: "text-gray-600 text-lg leading-relaxed"}, TUTORIAL_PASSOS[tutorialPasso]?.descricao),
+                    React.createElement("div", {className: "flex justify-center gap-2 mt-6"},
+                        TUTORIAL_PASSOS.map((_, idx) => 
+                            React.createElement("div", {
+                                key: idx,
+                                className: "w-2 h-2 rounded-full transition-all " + (idx === tutorialPasso ? "bg-purple-600 w-6" : idx < tutorialPasso ? "bg-purple-300" : "bg-gray-300")
+                            })
+                        )
+                    )
+                ),
+                // Botões
+                React.createElement("div", {className: "flex gap-3 p-6 pt-0"},
+                    tutorialPasso > 0 && React.createElement("button", {
+                        onClick: () => setTutorialPasso(tutorialPasso - 1),
+                        className: "flex-1 px-6 py-3 border-2 border-purple-200 text-purple-700 rounded-xl font-semibold hover:bg-purple-50"
+                    }, "← Anterior"),
+                    React.createElement("button", {
+                        onClick: () => {
+                            if (tutorialPasso < TUTORIAL_PASSOS.length - 1) {
+                                setTutorialPasso(tutorialPasso + 1);
+                            } else {
+                                setTutorialAtivo(false);
+                                setTutorialPasso(0);
+                                localStorage.setItem('tutts_tutorial_visto_' + l?.codProfissional, 'true');
+                            }
+                        },
+                        className: "flex-1 px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl font-semibold hover:from-purple-700 hover:to-indigo-700 shadow-lg"
+                    }, tutorialPasso === TUTORIAL_PASSOS.length - 1 ? "Começar! 🚀" : "Próximo →")
+                )
+            )
+        ),
         // Modal de Aviso
         avisoAtual && React.createElement("div", {
             className: "fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-2 md:p-4"
