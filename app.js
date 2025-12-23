@@ -1342,7 +1342,7 @@ const hideLoadingScreen = () => {
             
             // Cores oficiais da Tutts
             const roxoTutts = [85, 7, 118]; // #550776
-            const laranjaLutts = [243, 118, 1]; // #f37601
+            const laranjaTutts = [243, 118, 1]; // #f37601
             const branco = [255, 255, 255];
             const cinzaEscuro = [51, 51, 51];
             const cinzaMedio = [102, 102, 102];
@@ -1354,44 +1354,42 @@ const hideLoadingScreen = () => {
             doc.rect(0, 0, 210, 50, 'F');
             
             // Linha decorativa laranja
-            doc.setFillColor(...laranjaLutts);
+            doc.setFillColor(...laranjaTutts);
             doc.rect(0, 50, 210, 3, 'F');
             
-            // Logo Tutts (círculo branco com texto)
-            doc.setFillColor(...branco);
-            doc.circle(30, 25, 15, 'F');
-            doc.setTextColor(...roxoTutts);
-            doc.setFontSize(12);
+            // Logo Tutts - texto branco direto no header roxo
+            doc.setTextColor(...branco);
+            doc.setFontSize(22);
             doc.setFont('helvetica', 'bold');
-            doc.text('tutts', 30, 27, { align: 'center' });
+            doc.text('tutts', 25, 22);
             
-            // Seta laranja estilizada (simulando a logo)
-            doc.setFillColor(...laranjaLutts);
-            doc.triangle(22, 18, 38, 18, 38, 22, 'F');
+            // Seta laranja da logo
+            doc.setFillColor(...laranjaTutts);
+            doc.triangle(18, 14, 45, 14, 50, 10, 'F');
             
-            // Título do relatório
+            // Título do relatório - centralizado
             doc.setTextColor(...branco);
             doc.setFontSize(10);
             doc.setFont('helvetica', 'normal');
-            doc.text('RELATÓRIO DE OPERAÇÃO', 130, 15, { align: 'center' });
+            doc.text('RELATÓRIO DE OPERAÇÃO', 195, 12, { align: 'right' });
             
-            // Nome do cliente
-            doc.setFontSize(20);
+            // Nome do cliente - centralizado
+            doc.setFontSize(18);
             doc.setFont('helvetica', 'bold');
-            const nomeCliente = op.nome_cliente.length > 30 ? op.nome_cliente.substring(0, 30) + '...' : op.nome_cliente;
-            doc.text(nomeCliente, 130, 28, { align: 'center' });
+            const nomeCliente = op.nome_cliente.length > 35 ? op.nome_cliente.substring(0, 35) + '...' : op.nome_cliente;
+            doc.text(nomeCliente, 195, 26, { align: 'right' });
             
             // Data de emissão
             doc.setFontSize(9);
             doc.setFont('helvetica', 'normal');
-            doc.text('Emitido em ' + new Date().toLocaleDateString('pt-BR') + ' às ' + new Date().toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'}), 130, 40, { align: 'center' });
+            doc.text('Emitido em ' + new Date().toLocaleDateString('pt-BR') + ' às ' + new Date().toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'}), 195, 38, { align: 'right' });
             
             let y = 65;
             
             // ===== DATA DE INÍCIO - DESTAQUE =====
             doc.setFillColor(...cinzaClaro);
             doc.roundedRect(15, y, 180, 22, 3, 3, 'F');
-            doc.setDrawColor(...laranjaLutts);
+            doc.setDrawColor(...laranjaTutts);
             doc.setLineWidth(1);
             doc.line(15, y, 15, y + 22);
             
@@ -1407,7 +1405,7 @@ const hideLoadingScreen = () => {
             
             // Badge do contador
             const contadorWidth = doc.getTextWidth(contador.texto) + 16;
-            doc.setFillColor(...laranjaLutts);
+            doc.setFillColor(...laranjaTutts);
             doc.roundedRect(195 - contadorWidth, y + 5, contadorWidth, 12, 2, 2, 'F');
             doc.setFontSize(9);
             doc.setTextColor(...branco);
@@ -1420,7 +1418,7 @@ const hideLoadingScreen = () => {
             doc.setFontSize(11);
             doc.setTextColor(...roxoTutts);
             doc.setFont('helvetica', 'bold');
-            doc.text('INFORMAÇÕES DA OPERAÇÃO', 15, y);
+            doc.text('INFORMAÇÕES DA OPERAÇÃO', 105, y, { align: 'center' });
             doc.setDrawColor(...roxoTutts);
             doc.setLineWidth(0.5);
             doc.line(15, y + 2, 195, y + 2);
@@ -1474,7 +1472,7 @@ const hideLoadingScreen = () => {
                 doc.setFontSize(11);
                 doc.setTextColor(...roxoTutts);
                 doc.setFont('helvetica', 'bold');
-                doc.text('TABELA DE VALORES POR QUILOMETRAGEM', 15, y);
+                doc.text('TABELA DE VALORES POR QUILOMETRAGEM', 105, y, { align: 'center' });
                 doc.setDrawColor(...roxoTutts);
                 doc.setLineWidth(0.5);
                 doc.line(15, y + 2, 195, y + 2);
@@ -1523,7 +1521,7 @@ const hideLoadingScreen = () => {
                 doc.setFontSize(11);
                 doc.setTextColor(...roxoTutts);
                 doc.setFont('helvetica', 'bold');
-                doc.text('OBSERVAÇÕES', 15, y);
+                doc.text('OBSERVAÇÕES', 105, y, { align: 'center' });
                 doc.setDrawColor(...roxoTutts);
                 doc.setLineWidth(0.5);
                 doc.line(15, y + 2, 195, y + 2);
@@ -1558,13 +1556,15 @@ const hideLoadingScreen = () => {
             doc.text('Documento gerado automaticamente pelo Sistema Tutts', 15, footerY + 6);
             doc.text('Responsável: ' + (op.criado_por || '-'), 15, footerY + 11);
             
-            // Logo no footer
-            doc.setFillColor(...roxoTutts);
-            doc.roundedRect(160, footerY + 2, 35, 12, 2, 2, 'F');
-            doc.setFontSize(10);
-            doc.setTextColor(...branco);
+            // Logo no footer - sem círculo branco
+            doc.setFontSize(14);
+            doc.setTextColor(...roxoTutts);
             doc.setFont('helvetica', 'bold');
-            doc.text('tutts', 177.5, footerY + 10, { align: 'center' });
+            doc.text('tutts', 185, footerY + 10, { align: 'center' });
+            
+            // Seta laranja pequena no footer
+            doc.setFillColor(...laranjaTutts);
+            doc.triangle(172, 5 + footerY, 188, 5 + footerY, 191, 3 + footerY, 'F');
             
             // Download do PDF
             doc.save('Tutts_Operacao_' + op.nome_cliente.replace(/[^a-zA-Z0-9]/g, '_') + '.pdf');
