@@ -1049,13 +1049,37 @@ const hideLoadingScreen = () => {
             const passo = TUTORIAL_PASSOS[tutorialPasso];
             const progresso = ((tutorialPasso + 1) / TUTORIAL_PASSOS.length) * 100;
             
+            const handleProximo = () => {
+                if (tutorialPasso < TUTORIAL_PASSOS.length - 1) {
+                    setTutorialPasso(tutorialPasso + 1);
+                } else {
+                    setTutorialAtivo(false);
+                    setTutorialPasso(0);
+                    localStorage.setItem('tutts_tutorial_visto_' + l?.codProfissional, 'true');
+                }
+            };
+            
+            const handleAnterior = () => {
+                if (tutorialPasso > 0) {
+                    setTutorialPasso(tutorialPasso - 1);
+                }
+            };
+            
+            const handlePular = () => {
+                setTutorialAtivo(false);
+                setTutorialPasso(0);
+                localStorage.setItem('tutts_tutorial_visto_' + l?.codProfissional, 'true');
+            };
+            
             return React.createElement("div", {
                 className: "fixed inset-0 z-[100] flex items-center justify-center p-4",
-                style: { backgroundColor: "rgba(0,0,0,0.85)" }
+                style: { backgroundColor: "rgba(0,0,0,0.85)" },
+                onClick: (e) => { if (e.target === e.currentTarget) handlePular(); }
             },
                 // Card do Tutorial
                 React.createElement("div", {
-                    className: "bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all"
+                    className: "bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all",
+                    onClick: (e) => e.stopPropagation()
                 },
                     // Header com gradiente
                     React.createElement("div", {
@@ -1075,8 +1099,9 @@ const hideLoadingScreen = () => {
                                     "Passo ", tutorialPasso + 1, " de ", TUTORIAL_PASSOS.length
                                 ),
                                 React.createElement("button", {
-                                    onClick: pularTutorial,
-                                    className: "text-white/70 hover:text-white text-sm hover:bg-white/10 px-2 py-1 rounded transition-all"
+                                    type: "button",
+                                    onClick: handlePular,
+                                    className: "text-white/70 hover:text-white text-sm hover:bg-white/10 px-2 py-1 rounded transition-all cursor-pointer"
                                 }, "Pular ✕")
                             ),
                             React.createElement("div", {className: "text-5xl mb-3"}, passo.icone),
@@ -1110,12 +1135,14 @@ const hideLoadingScreen = () => {
                     // Botões de navegação
                     React.createElement("div", {className: "flex gap-3 p-6 pt-0"},
                         tutorialPasso > 0 && React.createElement("button", {
-                            onClick: passoAnterior,
-                            className: "flex-1 px-6 py-3 border-2 border-purple-200 text-purple-700 rounded-xl font-semibold hover:bg-purple-50 transition-all"
+                            type: "button",
+                            onClick: handleAnterior,
+                            className: "flex-1 px-6 py-3 border-2 border-purple-200 text-purple-700 rounded-xl font-semibold hover:bg-purple-50 transition-all cursor-pointer"
                         }, "← Anterior"),
                         React.createElement("button", {
-                            onClick: proximoPasso,
-                            className: "flex-1 px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl font-semibold hover:from-purple-700 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl"
+                            type: "button",
+                            onClick: handleProximo,
+                            className: "flex-1 px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl font-semibold hover:from-purple-700 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl cursor-pointer"
                         }, tutorialPasso === TUTORIAL_PASSOS.length - 1 ? "Começar! 🚀" : "Próximo →")
                     )
                 )
