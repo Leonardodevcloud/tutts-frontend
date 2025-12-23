@@ -46,7 +46,7 @@ const SISTEMA_MODULOS_CONFIG = [
       abas: [{id: "solicitacoes", label: "Solicitações"}, {id: "validacao", label: "Validação"}, {id: "conciliacao", label: "Conciliação"}, {id: "resumo", label: "Resumo"}, {id: "gratuidades", label: "Gratuidades"}, {id: "restritos", label: "Restritos"}, {id: "indicacoes", label: "Indicações"}, {id: "promonovatos", label: "Promo Novatos"}, {id: "loja", label: "Loja"}, {id: "relatorios", label: "Relatórios"}, {id: "horarios", label: "Horários"}, {id: "avisos", label: "Avisos"}, {id: "backup", label: "Backup"}]
     },
     { id: "operacional", label: "Operacional", icon: "⚙️",
-      abas: [{id: "indicacao", label: "Indicação"}, {id: "promonovatos", label: "Promo Novatos"}, {id: "novas-operacoes", label: "Novas Operações"}]
+      abas: [{id: "indicacao", label: "Indicação"}, {id: "promonovatos", label: "Promo Novatos"}, {id: "avisos", label: "Avisos"}, {id: "novas-operacoes", label: "Novas Operações"}]
     },
     { id: "disponibilidade", label: "Disponibilidade", icon: "📅",
       abas: [{id: "panorama", label: "Panorama"}, {id: "principal", label: "Principal"}, {id: "faltosos", label: "Faltosos"}, {id: "espelho", label: "Espelho"}, {id: "relatorios", label: "Relatórios"}, {id: "motoboys", label: "Motoboys"}, {id: "restricoes", label: "Restrições"}, {id: "config", label: "Configurações"}]
@@ -11482,13 +11482,23 @@ const hideLoadingScreen = () => {
                         onClick: function() { x(e => ({...e, opTab: "promo-novatos"})); },
                         className: "px-4 py-2.5 text-sm font-semibold whitespace-nowrap " + (p.opTab === "promo-novatos" ? "text-teal-700 border-b-2 border-teal-600 bg-teal-50" : "text-gray-600 hover:bg-gray-100")
                     }, "🚀 Promo Novato"),
-                    // Aba Avisos (só admin_master)
-                    "admin_master" === l.role && React.createElement("button", {
+                    // Aba Avisos - verifica permissão
+                    (function() {
+                        if ("admin_master" === l.role) return true;
+                        const abas = l.permissions && l.permissions.abas ? l.permissions.abas : {};
+                        if (Object.keys(abas).length === 0) return true;
+                        return abas["operacional_avisos"] !== false;
+                    })() && React.createElement("button", {
                         onClick: function() { x(e => ({...e, opTab: "avisos"})); },
                         className: "px-4 py-2.5 text-sm font-semibold whitespace-nowrap " + (p.opTab === "avisos" ? "text-teal-700 border-b-2 border-teal-600 bg-teal-50" : "text-gray-600 hover:bg-gray-100")
                     }, "📢 Avisos"),
-                    // Aba Novas Operações (só admin_master)
-                    "admin_master" === l.role && React.createElement("button", {
+                    // Aba Novas Operações - verifica permissão
+                    (function() {
+                        if ("admin_master" === l.role) return true;
+                        const abas = l.permissions && l.permissions.abas ? l.permissions.abas : {};
+                        if (Object.keys(abas).length === 0) return true;
+                        return abas["operacional_novas-operacoes"] !== false;
+                    })() && React.createElement("button", {
                         onClick: function() { x(e => ({...e, opTab: "novas-operacoes"})); carregarOperacoes(); },
                         className: "px-4 py-2.5 text-sm font-semibold whitespace-nowrap " + (p.opTab === "novas-operacoes" ? "text-teal-700 border-b-2 border-teal-600 bg-teal-50" : "text-gray-600 hover:bg-gray-100")
                     }, "🏢 Novas Operações")
@@ -14218,6 +14228,7 @@ const hideLoadingScreen = () => {
                 // Botões de Acesso Rápido
                 React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-3 gap-4"},
                     // Solicitações
+                    hasModuleAccess(l, "solicitacoes") &&
                     React.createElement("button", {
                         onClick: () => { he("solicitacoes"); x(e => ({...e, adminTab: "dashboard"})); },
                         className: "bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 border-2 border-transparent hover:border-purple-300"
