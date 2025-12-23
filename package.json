@@ -1,0 +1,18 @@
+{
+  "name": "sistema-tutts-frontend",
+  "version": "1.0.0",
+  "description": "Central do Entregador Tutts - Frontend PWA",
+  "scripts": {
+    "build": "node build.js",
+    "deploy": "node build.js && git add . && git commit -m \"Deploy $(date +%Y%m%d_%H%M%S)\" && git push",
+    "deploy:vercel": "node build.js && vercel --prod"
+  },
+  "keywords": [
+    "tutts",
+    "entregador",
+    "pwa",
+    "delivery"
+  ],
+  "author": "Breno",
+  "license": "ISC"
+}
