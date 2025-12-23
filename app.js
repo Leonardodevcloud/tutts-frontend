@@ -37,6 +37,34 @@ function hasModuleAccess(user, moduleId) {
     return false;
 }
 
+// Função helper para encontrar a primeira aba permitida de um módulo
+function getFirstAllowedTab(user, moduleId, defaultTab) {
+    if (!user) return defaultTab;
+    
+    // Admin master tem acesso a tudo
+    if (user.role === "admin_master") return defaultTab;
+    
+    // Encontrar configuração do módulo
+    const moduloConfig = SISTEMA_MODULOS_CONFIG.find(m => m.id === moduleId);
+    if (!moduloConfig || !moduloConfig.abas) return defaultTab;
+    
+    // Se não tem permissões de abas configuradas, retorna o default
+    const abas = user.permissions && user.permissions.abas ? user.permissions.abas : {};
+    if (Object.keys(abas).length === 0) return defaultTab;
+    
+    // Procurar primeira aba permitida
+    for (let i = 0; i < moduloConfig.abas.length; i++) {
+        const aba = moduloConfig.abas[i];
+        const abaKey = moduleId + "_" + aba.id.replace("-", "");
+        if (abas[abaKey] !== false) {
+            return aba.id;
+        }
+    }
+    
+    // Se nenhuma aba permitida, retorna o default
+    return defaultTab;
+}
+
 // CONFIGURAÇÃO GLOBAL DE MÓDULOS E ABAS - Edite aqui para adicionar novos módulos/abas
 const SISTEMA_MODULOS_CONFIG = [
     { id: "solicitacoes", label: "Solicitações", icon: "📋",
@@ -5522,7 +5550,7 @@ const hideLoadingScreen = () => {
                 className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("solicitacoes" === Ee && "disponibilidade" !== p.adminTab ? "bg-white text-purple-900" : "text-white hover:bg-white/10")
             }, "📋 Solicitações"), 
             hasModuleAccess(l, "financeiro") && React.createElement("button", {
-                onClick: () => he("financeiro"),
+                onClick: () => { he("financeiro"); x(e => ({...e, finTab: getFirstAllowedTab(l, "financeiro", "solicitacoes")})); },
                 className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("financeiro" === Ee ? "bg-white text-green-800" : "text-white hover:bg-white/10")
             }, "💰 Financeiro"), 
             hasModuleAccess(l, "disponibilidade") && React.createElement("button", {
@@ -5576,7 +5604,7 @@ const hideLoadingScreen = () => {
                     className: "px-3 py-1.5 rounded-lg text-xs font-semibold text-white hover:bg-white/10"
                 }, "📋 Solicitações"),
                 React.createElement("button", {
-                    onClick: () => he("financeiro"),
+                    onClick: () => { he("financeiro"); x(e => ({...e, finTab: getFirstAllowedTab(l, "financeiro", "solicitacoes")})); },
                     className: "px-3 py-1.5 rounded-lg text-xs font-semibold bg-white text-green-800"
                 }, "💰 Financeiro"),
                 hasModuleAccess(l, "operacional") && React.createElement("button", {
@@ -11431,7 +11459,7 @@ const hideLoadingScreen = () => {
                     className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all text-white hover:bg-white/10"
                 }, "📋 Solicitações"),
                 hasModuleAccess(l, "financeiro") && React.createElement("button", {
-                    onClick: function() { he("financeiro"); },
+                    onClick: function() { he("financeiro"); x(e => ({...e, finTab: getFirstAllowedTab(l, "financeiro", "solicitacoes")})); },
                     className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all text-white hover:bg-white/10"
                 }, "💰 Financeiro"),
                 hasModuleAccess(l, "disponibilidade") && React.createElement("button", {
@@ -12323,7 +12351,7 @@ const hideLoadingScreen = () => {
                     className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all text-white hover:bg-white/10"
                 }, "📋 Solicitações"),
                 hasModuleAccess(l, "financeiro") && React.createElement("button", {
-                    onClick: function() { he("financeiro"); },
+                    onClick: function() { he("financeiro"); x(e => ({...e, finTab: getFirstAllowedTab(l, "financeiro", "solicitacoes")})); },
                     className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all text-white hover:bg-white/10"
                 }, "💰 Financeiro"),
                 hasModuleAccess(l, "disponibilidade") && React.createElement("button", {
@@ -14240,7 +14268,7 @@ const hideLoadingScreen = () => {
                     // Financeiro
                     hasModuleAccess(l, "financeiro") &&
                     React.createElement("button", {
-                        onClick: () => he("financeiro"),
+                        onClick: () => { he("financeiro"); x(e => ({...e, finTab: getFirstAllowedTab(l, "financeiro", "solicitacoes")})); },
                         className: "bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 border-2 border-transparent hover:border-green-300"
                     }, React.createElement("span", {className: "text-4xl block mb-3"}, "💰"),
                         React.createElement("p", {className: "font-bold text-gray-800"}, "Financeiro"),
@@ -14410,7 +14438,7 @@ const hideLoadingScreen = () => {
             className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("solicitacoes" === Ee && "disponibilidade" !== p.adminTab ? "bg-white text-purple-900" : "text-white hover:bg-white/10")
         }, "📋 Solicitações"), 
         hasModuleAccess(l, "financeiro") && React.createElement("button", {
-            onClick: () => he("financeiro"),
+            onClick: () => { he("financeiro"); x(e => ({...e, finTab: getFirstAllowedTab(l, "financeiro", "solicitacoes")})); },
             className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("financeiro" === Ee ? "bg-white text-green-800" : "text-white hover:bg-white/10")
         }, "💰 Financeiro"), 
         hasModuleAccess(l, "disponibilidade") && React.createElement("button", {
