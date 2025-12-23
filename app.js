@@ -1340,9 +1340,6 @@ const hideLoadingScreen = () => {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
             
-            // Logo Tutts em Base64
-            const logoTuttsBase64 = 'data:image/png;base64,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';
-            
             // Cores oficiais da Tutts
             const roxoTutts = [85, 7, 118]; // #550776
             const laranjaTutts = [243, 118, 1]; // #f37601
@@ -1360,8 +1357,15 @@ const hideLoadingScreen = () => {
             doc.setFillColor(...laranjaTutts);
             doc.rect(0, 50, 210, 3, 'F');
             
-            // Logo Tutts (imagem real)
-            doc.addImage(logoTuttsBase64, 'PNG', 10, 10, 30, 30);
+            // Logo Tutts (texto estilizado)
+            doc.setTextColor(...branco);
+            doc.setFontSize(28);
+            doc.setFont('helvetica', 'bold');
+            doc.text('tutts', 12, 32);
+            
+            // Seta laranja simulando a logo
+            doc.setFillColor(...laranjaTutts);
+            doc.triangle(12, 18, 48, 18, 52, 12, 'F');
             
             // Título do relatório - alinhado à direita
             doc.setTextColor(...branco);
@@ -1552,8 +1556,11 @@ const hideLoadingScreen = () => {
             doc.text('Documento gerado automaticamente pelo Sistema Tutts', 15, footerY + 6);
             doc.text('Responsável: ' + (op.criado_por || '-'), 15, footerY + 11);
             
-            // Logo pequena no footer
-            doc.addImage(logoTuttsBase64, 'PNG', 175, footerY + 1, 15, 15);
+            // Logo texto no footer
+            doc.setFontSize(12);
+            doc.setTextColor(...roxoTutts);
+            doc.setFont('helvetica', 'bold');
+            doc.text('tutts', 190, footerY + 10, { align: 'right' });
             
             // Download do PDF
             doc.save('Tutts_Operacao_' + op.nome_cliente.replace(/[^a-zA-Z0-9]/g, '_') + '.pdf');
