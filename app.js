@@ -862,6 +862,7 @@ const hideLoadingScreen = () => {
         // Estados para checklist de motos e expansão de cards
         [operacaoExpandida, setOperacaoExpandida] = useState(null),
         [checklistMotos, setChecklistMotos] = useState({}),
+        [operacaoSubTab, setOperacaoSubTab] = useState('execucao'),
         ja = (e, t = "success") => {
             d({
                 message: e,
@@ -1330,161 +1331,151 @@ const hideLoadingScreen = () => {
             const checklist = checklistMotos[op.id] || {};
             const motosEncontradas = Object.values(checklist).filter(v => v).length;
             
-            // Criar iframe oculto para gerar PDF
-            const iframe = document.createElement('iframe');
-            iframe.style.position = 'absolute';
-            iframe.style.top = '-10000px';
-            document.body.appendChild(iframe);
+            // Carregar jsPDF dinamicamente se não existir
+            if (!window.jspdf) {
+                const script = document.createElement('script');
+                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+                document.head.appendChild(script);
+                await new Promise(resolve => script.onload = resolve);
+            }
             
-            const doc = iframe.contentWindow.document;
-            doc.open();
-            doc.write(`
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <title>Relatório - ${op.nome_cliente}</title>
-    <style>
-        @page { size: A4; margin: 15mm; }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; color: #333; line-height: 1.5; }
-        .header { background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%); color: white; padding: 25px; text-align: center; border-radius: 8px 8px 0 0; margin-bottom: 0; }
-        .header h1 { font-size: 24px; margin-bottom: 5px; }
-        .header p { opacity: 0.9; font-size: 12px; }
-        .content { padding: 20px; background: #fff; }
-        .countdown-box { background: ${contador.status === 'hoje' ? '#dcfce7' : contador.status === 'amanha' ? '#fef3c7' : contador.status === 'iniciado' ? '#dbeafe' : '#f3f4f6'}; border: 2px solid ${contador.status === 'hoje' ? '#22c55e' : contador.status === 'amanha' ? '#f59e0b' : contador.status === 'iniciado' ? '#3b82f6' : '#d1d5db'}; border-radius: 10px; padding: 15px; margin-bottom: 20px; text-align: center; }
-        .countdown-text { font-size: 20px; font-weight: 700; color: ${contador.status === 'hoje' ? '#166534' : contador.status === 'amanha' ? '#92400e' : contador.status === 'iniciado' ? '#1e40af' : '#374151'}; }
-        .countdown-date { font-size: 14px; color: #555; margin-top: 5px; }
-        .section { margin-bottom: 18px; }
-        .section-title { font-size: 13px; font-weight: 700; color: #0d9488; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 2px solid #e5e7eb; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .field { background: #f9fafb; padding: 10px 12px; border-radius: 6px; border-left: 3px solid #0d9488; }
-        .field-label { font-size: 10px; color: #6b7280; text-transform: uppercase; font-weight: 600; }
-        .field-value { font-size: 13px; color: #1f2937; font-weight: 500; margin-top: 2px; }
-        .field-full { grid-column: span 2; }
-        .badge { display: inline-block; padding: 4px 10px; border-radius: 15px; font-size: 11px; font-weight: 600; }
-        .badge-green { background: #dcfce7; color: #166534; }
-        .badge-yellow { background: #fef3c7; color: #92400e; }
-        .badge-blue { background: #dbeafe; color: #1e40af; }
-        .badge-purple { background: #f3e8ff; color: #7c3aed; }
-        .faixas-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        .faixas-table th, .faixas-table td { border: 1px solid #e5e7eb; padding: 8px 12px; text-align: center; }
-        .faixas-table th { background: #f0fdfa; color: #0d9488; font-size: 11px; }
-        .faixas-table td { font-weight: 600; }
-        .checklist-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 10px; }
-        .checklist-item { background: #f9fafb; padding: 8px; border-radius: 6px; text-align: center; font-size: 11px; border: 1px solid #e5e7eb; }
-        .checklist-ok { background: #dcfce7; border-color: #22c55e; color: #166534; }
-        .checklist-pending { background: #fee2e2; border-color: #ef4444; color: #991b1b; }
-        .obs-box { background: #fffbeb; border: 1px solid #fcd34d; border-radius: 6px; padding: 12px; margin-top: 10px; }
-        .footer { background: #f9fafb; padding: 15px; text-align: center; border-top: 1px solid #e5e7eb; font-size: 10px; color: #6b7280; margin-top: 20px; border-radius: 0 0 8px 8px; }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1>🏢 ${op.nome_cliente}</h1>
-        <p>Relatório de Operação • Sistema Tutts</p>
-    </div>
-    
-    <div class="content">
-        <div class="countdown-box">
-            <div class="countdown-text">${contador.texto}</div>
-            <div class="countdown-date">📅 ${new Date(op.data_inicio).toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}</div>
-        </div>
-        
-        <div class="section">
-            <div class="section-title">📋 Informações Gerais</div>
-            <div class="grid">
-                <div class="field">
-                    <div class="field-label">Região</div>
-                    <div class="field-value">📍 ${op.regiao || '-'}</div>
-                </div>
-                <div class="field">
-                    <div class="field-label">Status</div>
-                    <div class="field-value"><span class="badge ${op.status === 'ativo' ? 'badge-green' : op.status === 'concluido' ? 'badge-blue' : 'badge-yellow'}">${op.status === 'ativo' ? '✅ Ativo' : op.status === 'concluido' ? '✔️ Concluído' : '⏸️ ' + op.status}</span></div>
-                </div>
-                <div class="field">
-                    <div class="field-label">Modelo de Operação</div>
-                    <div class="field-value"><span class="badge ${op.modelo === 'nuvem' ? 'badge-blue' : op.modelo === 'dedicado' ? 'badge-purple' : 'badge-yellow'}">${op.modelo === 'nuvem' ? '☁️ Nuvem' : op.modelo === 'dedicado' ? '🎯 Dedicado' : '⚡ Flash'}</span></div>
-                </div>
-                <div class="field">
-                    <div class="field-label">Quantidade de Motos</div>
-                    <div class="field-value">🏍️ ${op.quantidade_motos} moto(s)</div>
-                </div>
-                <div class="field field-full">
-                    <div class="field-label">Endereço</div>
-                    <div class="field-value">📌 ${op.endereco || '-'}</div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="section">
-            <div class="section-title">⚙️ Configurações</div>
-            <div class="grid">
-                <div class="field">
-                    <div class="field-label">Obrigatoriedade de Baú</div>
-                    <div class="field-value">${op.obrigatoriedade_bau ? '✅ Sim, obrigatório' : '❌ Não obrigatório'}</div>
-                </div>
-                <div class="field">
-                    <div class="field-label">Garantido pela Loja</div>
-                    <div class="field-value">${op.possui_garantido ? '✅ Sim - R$ ' + parseFloat(op.valor_garantido || 0).toFixed(2) : '❌ Não possui'}</div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="section">
-            <div class="section-title">🏍️ Checklist de Motos (${motosEncontradas}/${op.quantidade_motos})</div>
-            <div class="checklist-grid">
-                ${Array.from({length: op.quantidade_motos}, (_, i) => 
-                    '<div class="checklist-item ' + (checklist[i] ? 'checklist-ok' : 'checklist-pending') + '">' +
-                    (checklist[i] ? '✓' : '○') + ' Moto ' + (i + 1) +
-                    '</div>'
-                ).join('')}
-            </div>
-        </div>
-        
-        ${op.faixas_km && op.faixas_km.filter(f => f.valor_motoboy > 0).length > 0 ? 
-        '<div class="section">' +
-            '<div class="section-title">💰 Valores por Faixa de KM</div>' +
-            '<table class="faixas-table">' +
-                '<tr>' + op.faixas_km.filter(f => f.valor_motoboy > 0).map(f => '<th>' + f.km_inicio + '-' + f.km_fim + ' km</th>').join('') + '</tr>' +
-                '<tr>' + op.faixas_km.filter(f => f.valor_motoboy > 0).map(f => '<td>R$ ' + parseFloat(f.valor_motoboy).toFixed(2) + '</td>').join('') + '</tr>' +
-            '</table>' +
-        '</div>' : ''}
-        
-        ${op.observacoes ? 
-        '<div class="section">' +
-            '<div class="section-title">📝 Observações</div>' +
-            '<div class="obs-box">' + op.observacoes + '</div>' +
-        '</div>' : ''}
-    </div>
-    
-    <div class="footer">
-        <p>Relatório gerado em ${new Date().toLocaleString('pt-BR')} • Criado por: ${op.criado_por || '-'}</p>
-        <p>Sistema Tutts - Central do Entregador</p>
-    </div>
-</body>
-</html>`);
-            doc.close();
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
             
-            // Aguardar carregar e imprimir como PDF
-            iframe.contentWindow.onload = function() {
-                setTimeout(() => {
-                    iframe.contentWindow.print();
-                    setTimeout(() => document.body.removeChild(iframe), 1000);
-                }, 250);
-            };
+            // Cores
+            const teal = [13, 148, 136];
+            const gray = [107, 114, 128];
+            const dark = [31, 41, 55];
             
-            // Fallback se onload não disparar
-            setTimeout(() => {
-                if (document.body.contains(iframe)) {
-                    iframe.contentWindow.print();
-                    setTimeout(() => {
-                        if (document.body.contains(iframe)) {
-                            document.body.removeChild(iframe);
-                        }
-                    }, 1000);
-                }
-            }, 1500);
+            // Header
+            doc.setFillColor(...teal);
+            doc.rect(0, 0, 210, 40, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(24);
+            doc.setFont('helvetica', 'bold');
+            doc.text(op.nome_cliente, 105, 20, { align: 'center' });
+            doc.setFontSize(11);
+            doc.setFont('helvetica', 'normal');
+            doc.text('Relatório de Operação - Sistema Tutts', 105, 30, { align: 'center' });
+            
+            let y = 55;
+            
+            // Box do Contador Regressivo
+            const boxColor = contador.status === 'hoje' ? [220, 252, 231] : 
+                            contador.status === 'amanha' ? [254, 243, 199] : 
+                            contador.status === 'iniciado' ? [219, 234, 254] : [243, 244, 246];
+            doc.setFillColor(...boxColor);
+            doc.roundedRect(15, y, 180, 25, 3, 3, 'F');
+            doc.setTextColor(...dark);
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.text(contador.texto, 105, y + 10, { align: 'center' });
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.text('Data de Início: ' + new Date(op.data_inicio).toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' }), 105, y + 18, { align: 'center' });
+            
+            y += 35;
+            
+            // Seção: Informações Gerais
+            doc.setFillColor(...teal);
+            doc.rect(15, y, 180, 8, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(11);
+            doc.setFont('helvetica', 'bold');
+            doc.text('INFORMAÇÕES GERAIS', 20, y + 6);
+            y += 15;
+            
+            doc.setTextColor(...dark);
+            doc.setFontSize(10);
+            const infos = [
+                ['Região:', op.regiao || '-'],
+                ['Endereço:', op.endereco || '-'],
+                ['Modelo:', op.modelo === 'nuvem' ? 'Nuvem' : op.modelo === 'dedicado' ? 'Dedicado' : 'Flash'],
+                ['Status:', op.status === 'ativo' ? 'Ativo' : op.status === 'concluido' ? 'Concluído' : op.status],
+                ['Quantidade de Motos:', op.quantidade_motos + ' moto(s)'],
+                ['Obrigatoriedade de Baú:', op.obrigatoriedade_bau ? 'Sim' : 'Não'],
+                ['Garantido pela Loja:', op.possui_garantido ? 'Sim - R$ ' + parseFloat(op.valor_garantido || 0).toFixed(2) : 'Não']
+            ];
+            
+            infos.forEach(([label, value]) => {
+                doc.setFont('helvetica', 'bold');
+                doc.text(label, 20, y);
+                doc.setFont('helvetica', 'normal');
+                doc.text(String(value), 70, y);
+                y += 7;
+            });
+            
+            y += 5;
+            
+            // Seção: Checklist de Motos
+            doc.setFillColor(...teal);
+            doc.rect(15, y, 180, 8, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(11);
+            doc.setFont('helvetica', 'bold');
+            doc.text('CHECKLIST DE MOTOS (' + motosEncontradas + '/' + op.quantidade_motos + ')', 20, y + 6);
+            y += 15;
+            
+            doc.setTextColor(...dark);
+            doc.setFontSize(10);
+            for (let i = 0; i < op.quantidade_motos; i++) {
+                const status = checklist[i] ? '[X] Encontrada' : '[ ] Pendente';
+                doc.text('Moto ' + (i + 1) + ': ' + status, 20, y);
+                y += 6;
+                if (y > 270) { doc.addPage(); y = 20; }
+            }
+            
+            y += 5;
+            
+            // Seção: Faixas de KM
+            if (op.faixas_km && op.faixas_km.filter(f => f.valor_motoboy > 0).length > 0) {
+                doc.setFillColor(...teal);
+                doc.rect(15, y, 180, 8, 'F');
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(11);
+                doc.setFont('helvetica', 'bold');
+                doc.text('VALORES POR FAIXA DE KM', 20, y + 6);
+                y += 15;
+                
+                doc.setTextColor(...dark);
+                doc.setFontSize(10);
+                op.faixas_km.filter(f => f.valor_motoboy > 0).forEach(faixa => {
+                    doc.text(faixa.km_inicio + '-' + faixa.km_fim + ' km: R$ ' + parseFloat(faixa.valor_motoboy).toFixed(2), 20, y);
+                    y += 6;
+                    if (y > 270) { doc.addPage(); y = 20; }
+                });
+                y += 5;
+            }
+            
+            // Seção: Observações
+            if (op.observacoes) {
+                doc.setFillColor(...teal);
+                doc.rect(15, y, 180, 8, 'F');
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(11);
+                doc.setFont('helvetica', 'bold');
+                doc.text('OBSERVAÇÕES', 20, y + 6);
+                y += 15;
+                
+                doc.setTextColor(...dark);
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'normal');
+                const obsLines = doc.splitTextToSize(op.observacoes, 170);
+                doc.text(obsLines, 20, y);
+                y += obsLines.length * 5 + 5;
+            }
+            
+            // Footer
+            doc.setFillColor(249, 250, 251);
+            doc.rect(0, 280, 210, 17, 'F');
+            doc.setTextColor(...gray);
+            doc.setFontSize(8);
+            doc.text('Relatório gerado em ' + new Date().toLocaleString('pt-BR') + ' | Criado por: ' + (op.criado_por || '-'), 105, 287, { align: 'center' });
+            doc.text('Sistema Tutts - Central do Entregador', 105, 292, { align: 'center' });
+            
+            // Download do PDF
+            doc.save('Relatorio_' + op.nome_cliente.replace(/[^a-zA-Z0-9]/g, '_') + '.pdf');
+            ja('📄 Relatório PDF baixado!', 'success');
         };
         
         const salvarAviso = async () => {
@@ -11640,33 +11631,56 @@ const hideLoadingScreen = () => {
                         React.createElement("p", {className: "text-sm text-gray-500"}, "Total"),
                         React.createElement("p", {className: "text-2xl font-bold text-teal-600"}, operacoesData?.length || 0)
                     ),
+                    React.createElement("div", {className: "bg-white rounded-xl p-4 shadow border-l-4 border-orange-500"},
+                        React.createElement("p", {className: "text-sm text-gray-500"}, "Em Execução"),
+                        React.createElement("p", {className: "text-2xl font-bold text-orange-600"}, operacoesData?.filter(o => o.status !== 'concluido').length || 0)
+                    ),
                     React.createElement("div", {className: "bg-white rounded-xl p-4 shadow border-l-4 border-green-500"},
-                        React.createElement("p", {className: "text-sm text-gray-500"}, "Ativas"),
-                        React.createElement("p", {className: "text-2xl font-bold text-green-600"}, operacoesData?.filter(o => o.status === 'ativo').length || 0)
+                        React.createElement("p", {className: "text-sm text-gray-500"}, "Concluídas"),
+                        React.createElement("p", {className: "text-2xl font-bold text-green-600"}, operacoesData?.filter(o => o.status === 'concluido').length || 0)
                     ),
                     React.createElement("div", {className: "bg-white rounded-xl p-4 shadow border-l-4 border-blue-500"},
                         React.createElement("p", {className: "text-sm text-gray-500"}, "Motos Totais"),
                         React.createElement("p", {className: "text-2xl font-bold text-blue-600"}, operacoesData?.reduce((acc, o) => acc + (o.quantidade_motos || 0), 0) || 0)
-                    ),
-                    React.createElement("div", {className: "bg-white rounded-xl p-4 shadow border-l-4 border-purple-500"},
-                        React.createElement("p", {className: "text-sm text-gray-500"}, "Com Garantido"),
-                        React.createElement("p", {className: "text-2xl font-bold text-purple-600"}, operacoesData?.filter(o => o.possui_garantido).length || 0)
                     )
                 ),
                 
-                // Lista de operações
+                // Sub-abas: Em Execução / Concluídas
                 React.createElement("div", {className: "bg-white rounded-xl shadow overflow-hidden"},
-                    React.createElement("div", {className: "bg-gray-50 px-6 py-4 border-b"},
-                        React.createElement("h3", {className: "font-semibold text-gray-800"}, "📋 Operações Cadastradas")
+                    // Tabs
+                    React.createElement("div", {className: "flex border-b"},
+                        React.createElement("button", {
+                            onClick: () => setOperacaoSubTab('execucao'),
+                            className: "flex-1 px-6 py-4 text-center font-semibold transition-all " + 
+                                (operacaoSubTab === 'execucao' ? 'bg-orange-50 text-orange-700 border-b-2 border-orange-500' : 'text-gray-500 hover:bg-gray-50')
+                        }, "🚀 Em Execução (", operacoesData?.filter(o => o.status !== 'concluido').length || 0, ")"),
+                        React.createElement("button", {
+                            onClick: () => setOperacaoSubTab('concluidas'),
+                            className: "flex-1 px-6 py-4 text-center font-semibold transition-all " + 
+                                (operacaoSubTab === 'concluidas' ? 'bg-green-50 text-green-700 border-b-2 border-green-500' : 'text-gray-500 hover:bg-gray-50')
+                        }, "✅ Concluídas (", operacoesData?.filter(o => o.status === 'concluido').length || 0, ")")
                     ),
-                    (!operacoesData || operacoesData.length === 0) ? 
-                        React.createElement("div", {className: "p-12 text-center"},
-                            React.createElement("span", {className: "text-6xl block mb-4"}, "📭"),
-                            React.createElement("p", {className: "text-gray-500 text-lg"}, "Nenhuma operação cadastrada"),
-                            React.createElement("p", {className: "text-gray-400 text-sm"}, "Clique em \"Nova Operação\" para começar")
-                        ) :
-                        React.createElement("div", {className: "divide-y"},
-                            operacoesData.map(op => {
+                    
+                    // Lista de operações filtrada
+                    (function() {
+                        const operacoesFiltradas = operacaoSubTab === 'execucao' 
+                            ? operacoesData?.filter(o => o.status !== 'concluido') || []
+                            : operacoesData?.filter(o => o.status === 'concluido') || [];
+                        
+                        if (operacoesFiltradas.length === 0) {
+                            return React.createElement("div", {className: "p-12 text-center"},
+                                React.createElement("span", {className: "text-6xl block mb-4"}, operacaoSubTab === 'execucao' ? "📭" : "🎉"),
+                                React.createElement("p", {className: "text-gray-500 text-lg"}, 
+                                    operacaoSubTab === 'execucao' ? "Nenhuma operação em execução" : "Nenhuma operação concluída ainda"
+                                ),
+                                React.createElement("p", {className: "text-gray-400 text-sm"}, 
+                                    operacaoSubTab === 'execucao' ? "Clique em \"Nova Operação\" para começar" : "As operações concluídas aparecerão aqui"
+                                )
+                            );
+                        }
+                        
+                        return React.createElement("div", {className: "divide-y"},
+                            operacoesFiltradas.map(op => {
                                 const contador = calcularContadorRegressivo(op.data_inicio);
                                 const checklist = checklistMotos[op.id] || {};
                                 const motosEncontradas = Object.values(checklist).filter(v => v).length;
@@ -11674,7 +11688,7 @@ const hideLoadingScreen = () => {
                                 
                                 return React.createElement("div", {
                                     key: op.id,
-                                    className: "p-6 hover:bg-gray-50 transition-colors " + (op.status === 'concluido' ? 'bg-green-50' : op.status !== 'ativo' ? 'opacity-60' : '')
+                                    className: "p-6 hover:bg-gray-50 transition-colors"
                                 },
                                     React.createElement("div", {className: "flex flex-col lg:flex-row lg:items-start justify-between gap-4"},
                                         // Info principal
@@ -11739,7 +11753,7 @@ const hideLoadingScreen = () => {
                                             React.createElement("button", {
                                                 onClick: () => gerarRelatorioOperacao(op),
                                                 className: "px-4 py-2 bg-teal-100 text-teal-700 rounded-lg font-semibold hover:bg-teal-200 text-sm"
-                                            }, "📄 Relatório"),
+                                            }, "📄 PDF"),
                                             React.createElement("button", {
                                                 onClick: () => {
                                                     setOperacaoEdit(op);
@@ -11797,6 +11811,13 @@ const hideLoadingScreen = () => {
                                             }, "🗑️")
                                         )
                                     ),
+                                    
+                                    // OBSERVAÇÕES (sempre visível se existir)
+                                    op.observacoes && React.createElement("div", {className: "mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg"},
+                                        React.createElement("p", {className: "text-sm font-semibold text-yellow-800 mb-1"}, "📝 Observações:"),
+                                        React.createElement("p", {className: "text-sm text-yellow-900"}, op.observacoes)
+                                    ),
+                                    
                                     // Faixas de KM
                                     op.faixas_km && op.faixas_km.filter(f => f.valor_motoboy > 0).length > 0 && React.createElement("div", {className: "mt-4 pt-4 border-t"},
                                         React.createElement("p", {className: "text-sm font-semibold text-gray-700 mb-2"}, "💰 Valores por Faixa de KM:"),
@@ -11809,8 +11830,9 @@ const hideLoadingScreen = () => {
                                             )
                                         )
                                     ),
-                                    // Checklist de Motos
-                                    React.createElement("div", {className: "mt-4 pt-4 border-t"},
+                                    
+                                    // Checklist de Motos (só para não concluídas)
+                                    op.status !== 'concluido' && React.createElement("div", {className: "mt-4 pt-4 border-t"},
                                         React.createElement("div", {className: "flex items-center justify-between mb-3"},
                                             React.createElement("p", {className: "text-sm font-semibold text-gray-700 flex items-center gap-2"}, 
                                                 "🏍️ Checklist de Motos",
@@ -11847,7 +11869,8 @@ const hideLoadingScreen = () => {
                                             )
                                         )
                                     ),
-                                    // Botão Demanda Concluída
+                                    
+                                    // Botão Demanda Concluída (só para não concluídas)
                                     op.status !== 'concluido' && React.createElement("div", {className: "mt-4 pt-4 border-t flex justify-end"},
                                         React.createElement("button", {
                                             onClick: async () => {
@@ -11868,14 +11891,11 @@ const hideLoadingScreen = () => {
                                             },
                                             className: "px-6 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg font-semibold hover:from-green-600 hover:to-emerald-700 shadow flex items-center gap-2"
                                         }, "✅ Demanda Concluída")
-                                    ),
-                                    // Badge se já concluída
-                                    op.status === 'concluido' && React.createElement("div", {className: "mt-4 pt-4 border-t flex justify-end"},
-                                        React.createElement("span", {className: "px-4 py-2 bg-blue-100 text-blue-700 rounded-lg font-semibold"}, "✔️ Demanda Concluída")
                                     )
                                 );
                             })
-                        )
+                        );
+                    })()
                 )
                 )
             ),
