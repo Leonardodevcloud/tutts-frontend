@@ -1324,168 +1324,167 @@ const hideLoadingScreen = () => {
             }
         };
         
-        // Função para gerar relatório PDF/HTML da operação
-        const gerarRelatorioOperacao = (op) => {
+        // Função para gerar relatório PDF da operação
+        const gerarRelatorioOperacao = async (op) => {
             const contador = calcularContadorRegressivo(op.data_inicio);
             const checklist = checklistMotos[op.id] || {};
             const motosEncontradas = Object.values(checklist).filter(v => v).length;
             
-            const html = `
+            // Criar iframe oculto para gerar PDF
+            const iframe = document.createElement('iframe');
+            iframe.style.position = 'absolute';
+            iframe.style.top = '-10000px';
+            document.body.appendChild(iframe);
+            
+            const doc = iframe.contentWindow.document;
+            doc.open();
+            doc.write(`
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Relatório - ${op.nome_cliente}</title>
     <style>
+        @page { size: A4; margin: 15mm; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f5f5; padding: 20px; }
-        .container { max-width: 800px; margin: 0 auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
-        .header { background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%); color: white; padding: 30px; text-align: center; }
-        .header h1 { font-size: 28px; margin-bottom: 8px; }
-        .header p { opacity: 0.9; font-size: 14px; }
-        .logo { font-size: 40px; margin-bottom: 10px; }
-        .content { padding: 30px; }
-        .section { margin-bottom: 25px; }
-        .section-title { font-size: 16px; font-weight: 700; color: #0d9488; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #e5e7eb; display: flex; align-items: center; gap: 8px; }
-        .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
-        .field { background: #f9fafb; padding: 12px 16px; border-radius: 8px; border-left: 3px solid #0d9488; }
-        .field-label { font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px; }
-        .field-value { font-size: 15px; color: #1f2937; font-weight: 500; }
-        .status-badge { display: inline-block; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; }
-        .status-ativo { background: #dcfce7; color: #166534; }
-        .status-pausado { background: #fef3c7; color: #92400e; }
-        .countdown { background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); padding: 20px; border-radius: 12px; text-align: center; margin-bottom: 25px; }
-        .countdown.hoje { background: linear-gradient(135deg, #dcfce7 0%, #86efac 100%); }
-        .countdown.iniciado { background: linear-gradient(135deg, #dbeafe 0%, #93c5fd 100%); }
-        .countdown-text { font-size: 24px; font-weight: 700; color: #1f2937; }
-        .countdown-sub { font-size: 13px; color: #6b7280; margin-top: 5px; }
-        .faixas-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
-        .faixa { background: #f0fdfa; padding: 10px; border-radius: 8px; text-align: center; border: 1px solid #99f6e4; }
-        .faixa-km { font-size: 11px; color: #0d9488; font-weight: 600; }
-        .faixa-valor { font-size: 14px; color: #1f2937; font-weight: 700; margin-top: 4px; }
-        .checklist { margin-top: 15px; }
-        .checklist-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: #f9fafb; border-radius: 6px; margin-bottom: 6px; }
-        .checklist-check { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; }
-        .checklist-ok { background: #dcfce7; color: #166534; }
-        .checklist-pending { background: #fee2e2; color: #991b1b; }
-        .footer { background: #f9fafb; padding: 20px 30px; text-align: center; border-top: 1px solid #e5e7eb; }
-        .footer p { font-size: 12px; color: #6b7280; }
-        .obs-box { background: #fffbeb; border: 1px solid #fcd34d; border-radius: 8px; padding: 15px; margin-top: 10px; }
-        .obs-text { font-size: 14px; color: #92400e; }
-        @media print { body { padding: 0; background: white; } .container { box-shadow: none; } }
+        body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; color: #333; line-height: 1.5; }
+        .header { background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%); color: white; padding: 25px; text-align: center; border-radius: 8px 8px 0 0; margin-bottom: 0; }
+        .header h1 { font-size: 24px; margin-bottom: 5px; }
+        .header p { opacity: 0.9; font-size: 12px; }
+        .content { padding: 20px; background: #fff; }
+        .countdown-box { background: ${contador.status === 'hoje' ? '#dcfce7' : contador.status === 'amanha' ? '#fef3c7' : contador.status === 'iniciado' ? '#dbeafe' : '#f3f4f6'}; border: 2px solid ${contador.status === 'hoje' ? '#22c55e' : contador.status === 'amanha' ? '#f59e0b' : contador.status === 'iniciado' ? '#3b82f6' : '#d1d5db'}; border-radius: 10px; padding: 15px; margin-bottom: 20px; text-align: center; }
+        .countdown-text { font-size: 20px; font-weight: 700; color: ${contador.status === 'hoje' ? '#166534' : contador.status === 'amanha' ? '#92400e' : contador.status === 'iniciado' ? '#1e40af' : '#374151'}; }
+        .countdown-date { font-size: 14px; color: #555; margin-top: 5px; }
+        .section { margin-bottom: 18px; }
+        .section-title { font-size: 13px; font-weight: 700; color: #0d9488; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 2px solid #e5e7eb; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .field { background: #f9fafb; padding: 10px 12px; border-radius: 6px; border-left: 3px solid #0d9488; }
+        .field-label { font-size: 10px; color: #6b7280; text-transform: uppercase; font-weight: 600; }
+        .field-value { font-size: 13px; color: #1f2937; font-weight: 500; margin-top: 2px; }
+        .field-full { grid-column: span 2; }
+        .badge { display: inline-block; padding: 4px 10px; border-radius: 15px; font-size: 11px; font-weight: 600; }
+        .badge-green { background: #dcfce7; color: #166534; }
+        .badge-yellow { background: #fef3c7; color: #92400e; }
+        .badge-blue { background: #dbeafe; color: #1e40af; }
+        .badge-purple { background: #f3e8ff; color: #7c3aed; }
+        .faixas-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .faixas-table th, .faixas-table td { border: 1px solid #e5e7eb; padding: 8px 12px; text-align: center; }
+        .faixas-table th { background: #f0fdfa; color: #0d9488; font-size: 11px; }
+        .faixas-table td { font-weight: 600; }
+        .checklist-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 10px; }
+        .checklist-item { background: #f9fafb; padding: 8px; border-radius: 6px; text-align: center; font-size: 11px; border: 1px solid #e5e7eb; }
+        .checklist-ok { background: #dcfce7; border-color: #22c55e; color: #166534; }
+        .checklist-pending { background: #fee2e2; border-color: #ef4444; color: #991b1b; }
+        .obs-box { background: #fffbeb; border: 1px solid #fcd34d; border-radius: 6px; padding: 12px; margin-top: 10px; }
+        .footer { background: #f9fafb; padding: 15px; text-align: center; border-top: 1px solid #e5e7eb; font-size: 10px; color: #6b7280; margin-top: 20px; border-radius: 0 0 8px 8px; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <div class="logo">🏢</div>
-            <h1>${op.nome_cliente}</h1>
-            <p>Relatório de Operação • Sistema Tutts</p>
-        </div>
-        
-        <div class="content">
-            <div class="countdown ${contador.status}">
-                <div class="countdown-text">${contador.texto}</div>
-                <div class="countdown-sub">Data de Início: ${new Date(op.data_inicio).toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>
-            </div>
-            
-            <div class="section">
-                <div class="section-title">📋 Informações Gerais</div>
-                <div class="grid">
-                    <div class="field">
-                        <div class="field-label">Região</div>
-                        <div class="field-value">${op.regiao || '-'}</div>
-                    </div>
-                    <div class="field">
-                        <div class="field-label">Status</div>
-                        <div class="field-value"><span class="status-badge status-${op.status}">${op.status === 'ativo' ? '✅ Ativo' : op.status === 'pausado' ? '⏸️ Pausado' : op.status}</span></div>
-                    </div>
-                    <div class="field">
-                        <div class="field-label">Modelo</div>
-                        <div class="field-value">${op.modelo === 'nuvem' ? '☁️ Nuvem' : op.modelo === 'dedicado' ? '🎯 Dedicado' : '⚡ Flash'}</div>
-                    </div>
-                    <div class="field">
-                        <div class="field-label">Quantidade de Motos</div>
-                        <div class="field-value">🏍️ ${op.quantidade_motos} moto(s)</div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="section">
-                <div class="section-title">📍 Localização</div>
-                <div class="field" style="grid-column: span 2;">
-                    <div class="field-label">Endereço Completo</div>
-                    <div class="field-value">${op.endereco || '-'}</div>
-                </div>
-            </div>
-            
-            <div class="section">
-                <div class="section-title">⚙️ Configurações</div>
-                <div class="grid">
-                    <div class="field">
-                        <div class="field-label">Obrigatoriedade de Baú</div>
-                        <div class="field-value">${op.obrigatoriedade_bau ? '✅ Sim, obrigatório' : '❌ Não obrigatório'}</div>
-                    </div>
-                    <div class="field">
-                        <div class="field-label">Garantido pela Loja</div>
-                        <div class="field-value">${op.possui_garantido ? '✅ Sim - R$ ' + parseFloat(op.valor_garantido || 0).toFixed(2) : '❌ Não possui'}</div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="section">
-                <div class="section-title">🏍️ Checklist de Motos (${motosEncontradas}/${op.quantidade_motos})</div>
-                <div class="checklist">
-                    ${Array.from({length: op.quantidade_motos}, (_, i) => `
-                        <div class="checklist-item">
-                            <div class="checklist-check ${checklist[i] ? 'checklist-ok' : 'checklist-pending'}">${checklist[i] ? '✓' : '○'}</div>
-                            <span>Moto ${i + 1}</span>
-                            <span style="margin-left: auto; font-size: 12px; color: ${checklist[i] ? '#166534' : '#991b1b'};">${checklist[i] ? 'Encontrada' : 'Pendente'}</span>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
-            
-            ${op.faixas_km && op.faixas_km.filter(f => f.valor_motoboy > 0).length > 0 ? `
-            <div class="section">
-                <div class="section-title">💰 Valores por Faixa de KM</div>
-                <div class="faixas-grid">
-                    ${op.faixas_km.filter(f => f.valor_motoboy > 0).map(f => `
-                        <div class="faixa">
-                            <div class="faixa-km">${f.km_inicio}-${f.km_fim} km</div>
-                            <div class="faixa-valor">R$ ${parseFloat(f.valor_motoboy).toFixed(2)}</div>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
-            ` : ''}
-            
-            ${op.observacoes ? `
-            <div class="section">
-                <div class="section-title">📝 Observações</div>
-                <div class="obs-box">
-                    <div class="obs-text">${op.observacoes}</div>
-                </div>
-            </div>
-            ` : ''}
-        </div>
-        
-        <div class="footer">
-            <p>Relatório gerado em ${new Date().toLocaleString('pt-BR')} • Criado por: ${op.criado_por || '-'}</p>
-            <p style="margin-top: 5px;">Sistema Tutts - Central do Entregador</p>
-        </div>
+    <div class="header">
+        <h1>🏢 ${op.nome_cliente}</h1>
+        <p>Relatório de Operação • Sistema Tutts</p>
     </div>
     
-    <script>
-        window.onload = function() { window.print(); }
-    </script>
+    <div class="content">
+        <div class="countdown-box">
+            <div class="countdown-text">${contador.texto}</div>
+            <div class="countdown-date">📅 ${new Date(op.data_inicio).toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}</div>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">📋 Informações Gerais</div>
+            <div class="grid">
+                <div class="field">
+                    <div class="field-label">Região</div>
+                    <div class="field-value">📍 ${op.regiao || '-'}</div>
+                </div>
+                <div class="field">
+                    <div class="field-label">Status</div>
+                    <div class="field-value"><span class="badge ${op.status === 'ativo' ? 'badge-green' : op.status === 'concluido' ? 'badge-blue' : 'badge-yellow'}">${op.status === 'ativo' ? '✅ Ativo' : op.status === 'concluido' ? '✔️ Concluído' : '⏸️ ' + op.status}</span></div>
+                </div>
+                <div class="field">
+                    <div class="field-label">Modelo de Operação</div>
+                    <div class="field-value"><span class="badge ${op.modelo === 'nuvem' ? 'badge-blue' : op.modelo === 'dedicado' ? 'badge-purple' : 'badge-yellow'}">${op.modelo === 'nuvem' ? '☁️ Nuvem' : op.modelo === 'dedicado' ? '🎯 Dedicado' : '⚡ Flash'}</span></div>
+                </div>
+                <div class="field">
+                    <div class="field-label">Quantidade de Motos</div>
+                    <div class="field-value">🏍️ ${op.quantidade_motos} moto(s)</div>
+                </div>
+                <div class="field field-full">
+                    <div class="field-label">Endereço</div>
+                    <div class="field-value">📌 ${op.endereco || '-'}</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">⚙️ Configurações</div>
+            <div class="grid">
+                <div class="field">
+                    <div class="field-label">Obrigatoriedade de Baú</div>
+                    <div class="field-value">${op.obrigatoriedade_bau ? '✅ Sim, obrigatório' : '❌ Não obrigatório'}</div>
+                </div>
+                <div class="field">
+                    <div class="field-label">Garantido pela Loja</div>
+                    <div class="field-value">${op.possui_garantido ? '✅ Sim - R$ ' + parseFloat(op.valor_garantido || 0).toFixed(2) : '❌ Não possui'}</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">🏍️ Checklist de Motos (${motosEncontradas}/${op.quantidade_motos})</div>
+            <div class="checklist-grid">
+                ${Array.from({length: op.quantidade_motos}, (_, i) => 
+                    '<div class="checklist-item ' + (checklist[i] ? 'checklist-ok' : 'checklist-pending') + '">' +
+                    (checklist[i] ? '✓' : '○') + ' Moto ' + (i + 1) +
+                    '</div>'
+                ).join('')}
+            </div>
+        </div>
+        
+        ${op.faixas_km && op.faixas_km.filter(f => f.valor_motoboy > 0).length > 0 ? 
+        '<div class="section">' +
+            '<div class="section-title">💰 Valores por Faixa de KM</div>' +
+            '<table class="faixas-table">' +
+                '<tr>' + op.faixas_km.filter(f => f.valor_motoboy > 0).map(f => '<th>' + f.km_inicio + '-' + f.km_fim + ' km</th>').join('') + '</tr>' +
+                '<tr>' + op.faixas_km.filter(f => f.valor_motoboy > 0).map(f => '<td>R$ ' + parseFloat(f.valor_motoboy).toFixed(2) + '</td>').join('') + '</tr>' +
+            '</table>' +
+        '</div>' : ''}
+        
+        ${op.observacoes ? 
+        '<div class="section">' +
+            '<div class="section-title">📝 Observações</div>' +
+            '<div class="obs-box">' + op.observacoes + '</div>' +
+        '</div>' : ''}
+    </div>
+    
+    <div class="footer">
+        <p>Relatório gerado em ${new Date().toLocaleString('pt-BR')} • Criado por: ${op.criado_por || '-'}</p>
+        <p>Sistema Tutts - Central do Entregador</p>
+    </div>
 </body>
-</html>`;
+</html>`);
+            doc.close();
             
-            const blob = new Blob([html], { type: 'text/html' });
-            const url = URL.createObjectURL(blob);
-            window.open(url, '_blank');
+            // Aguardar carregar e imprimir como PDF
+            iframe.contentWindow.onload = function() {
+                setTimeout(() => {
+                    iframe.contentWindow.print();
+                    setTimeout(() => document.body.removeChild(iframe), 1000);
+                }, 250);
+            };
+            
+            // Fallback se onload não disparar
+            setTimeout(() => {
+                if (document.body.contains(iframe)) {
+                    iframe.contentWindow.print();
+                    setTimeout(() => {
+                        if (document.body.contains(iframe)) {
+                            document.body.removeChild(iframe);
+                        }
+                    }, 1000);
+                }
+            }, 1500);
         };
         
         const salvarAviso = async () => {
@@ -11672,19 +11671,17 @@ const hideLoadingScreen = () => {
                                 const checklist = checklistMotos[op.id] || {};
                                 const motosEncontradas = Object.values(checklist).filter(v => v).length;
                                 const todasMotosEncontradas = motosEncontradas === op.quantidade_motos;
-                                const isExpanded = operacaoExpandida === op.id;
                                 
                                 return React.createElement("div", {
                                     key: op.id,
-                                    className: "p-6 hover:bg-gray-50 transition-colors " + (op.status === 'concluido' ? 'bg-green-50 opacity-75' : op.status !== 'ativo' ? 'opacity-60' : '')
+                                    className: "p-6 hover:bg-gray-50 transition-colors " + (op.status === 'concluido' ? 'bg-green-50' : op.status !== 'ativo' ? 'opacity-60' : '')
                                 },
-                                    // Header do Card com Contador Regressivo
                                     React.createElement("div", {className: "flex flex-col lg:flex-row lg:items-start justify-between gap-4"},
                                         // Info principal
                                         React.createElement("div", {className: "flex-1"},
                                             // Nome e badges
-                                            React.createElement("div", {className: "flex flex-wrap items-center gap-3 mb-3"},
-                                                React.createElement("h4", {className: "text-xl font-bold text-gray-800"}, op.nome_cliente),
+                                            React.createElement("div", {className: "flex flex-wrap items-center gap-3 mb-2"},
+                                                React.createElement("h4", {className: "text-lg font-bold text-gray-800"}, op.nome_cliente),
                                                 React.createElement("span", {
                                                     className: "px-2 py-0.5 rounded-full text-xs font-semibold " + 
                                                     (op.modelo === 'nuvem' ? 'bg-blue-100 text-blue-700' : 
@@ -11699,55 +11696,50 @@ const hideLoadingScreen = () => {
                                                      'bg-gray-100 text-gray-600')
                                                 }, op.status === 'ativo' ? '✅ Ativo' : op.status === 'concluido' ? '✔️ Concluído' : op.status === 'pausado' ? '⏸️ Pausado' : '❌ ' + op.status)
                                             ),
-                                            
-                                            // CONTADOR REGRESSIVO DESTACADO
+                                            // Informações
+                                            React.createElement("div", {className: "flex flex-wrap gap-4 text-sm text-gray-600"},
+                                                React.createElement("span", null, "📍 ", op.regiao),
+                                                React.createElement("span", null, "📌 ", op.endereco?.substring(0, 40), op.endereco?.length > 40 ? '...' : ''),
+                                                React.createElement("span", null, "🏍️ ", op.quantidade_motos, " moto(s)"),
+                                                op.obrigatoriedade_bau && React.createElement("span", {className: "text-orange-600"}, "📦 Baú obrigatório"),
+                                                op.possui_garantido && React.createElement("span", {className: "text-green-600"}, "💰 Garantido: R$ ", parseFloat(op.valor_garantido || 0).toFixed(2))
+                                            ),
+                                            // DATA DE INÍCIO DESTACADA COM CONTADOR
                                             React.createElement("div", {
-                                                className: "mb-4 p-4 rounded-xl " + 
-                                                (contador.status === 'hoje' ? 'bg-gradient-to-r from-green-100 to-emerald-100 border-2 border-green-400' :
-                                                 contador.status === 'amanha' ? 'bg-gradient-to-r from-yellow-100 to-amber-100 border-2 border-yellow-400' :
-                                                 contador.status === 'proximo' ? 'bg-gradient-to-r from-orange-100 to-amber-100 border-2 border-orange-300' :
-                                                 contador.status === 'iniciado' ? 'bg-gradient-to-r from-blue-100 to-cyan-100 border-2 border-blue-300' :
+                                                className: "mt-3 inline-flex items-center gap-3 px-4 py-2 rounded-lg " +
+                                                (contador.status === 'hoje' ? 'bg-green-100 border-2 border-green-400' :
+                                                 contador.status === 'amanha' ? 'bg-yellow-100 border-2 border-yellow-400' :
+                                                 contador.status === 'proximo' ? 'bg-orange-100 border-2 border-orange-300' :
+                                                 contador.status === 'iniciado' ? 'bg-blue-100 border-2 border-blue-300' :
                                                  'bg-gray-100 border border-gray-300')
                                             },
-                                                React.createElement("div", {className: "flex items-center justify-between"},
-                                                    React.createElement("div", null,
-                                                        React.createElement("p", {className: "text-xs font-semibold text-gray-500 uppercase tracking-wide"}, "📅 Data de Início"),
-                                                        React.createElement("p", {className: "text-lg font-bold text-gray-800"}, 
-                                                            new Date(op.data_inicio).toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })
-                                                        )
-                                                    ),
-                                                    React.createElement("div", {className: "text-right"},
-                                                        React.createElement("p", {
-                                                            className: "text-2xl font-black " +
-                                                            (contador.status === 'hoje' ? 'text-green-600' :
-                                                             contador.status === 'amanha' ? 'text-yellow-600' :
-                                                             contador.status === 'proximo' ? 'text-orange-600' :
-                                                             contador.status === 'iniciado' ? 'text-blue-600' :
-                                                             'text-gray-600')
-                                                        }, contador.texto),
-                                                        contador.status !== 'iniciado' && contador.dias > 0 && React.createElement("p", {className: "text-xs text-gray-500"}, "para o início")
+                                                React.createElement("span", {className: "text-lg"}, "📅"),
+                                                React.createElement("div", null,
+                                                    React.createElement("p", {className: "text-xs text-gray-500 font-medium"}, "Data de Início"),
+                                                    React.createElement("p", {className: "font-bold text-gray-800"}, 
+                                                        new Date(op.data_inicio).toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })
                                                     )
-                                                )
+                                                ),
+                                                React.createElement("span", {
+                                                    className: "px-3 py-1 rounded-full text-sm font-bold " +
+                                                    (contador.status === 'hoje' ? 'bg-green-500 text-white' :
+                                                     contador.status === 'amanha' ? 'bg-yellow-500 text-white' :
+                                                     contador.status === 'proximo' ? 'bg-orange-500 text-white' :
+                                                     contador.status === 'iniciado' ? 'bg-blue-500 text-white' :
+                                                     'bg-gray-500 text-white')
+                                                }, contador.texto)
                                             ),
-                                            
-                                            // Informações básicas
-                                            React.createElement("div", {className: "flex flex-wrap gap-4 text-sm text-gray-600 mb-3"},
-                                                React.createElement("span", null, "📍 ", op.regiao),
-                                                React.createElement("span", null, "📌 ", op.endereco?.substring(0, 50), op.endereco?.length > 50 ? '...' : ''),
-                                                React.createElement("span", {className: "font-semibold"}, "🏍️ ", op.quantidade_motos, " moto(s)"),
-                                                op.obrigatoriedade_bau && React.createElement("span", {className: "text-orange-600 font-semibold"}, "📦 Baú obrigatório"),
-                                                op.possui_garantido && React.createElement("span", {className: "text-green-600 font-semibold"}, "💰 Garantido: R$ ", parseFloat(op.valor_garantido || 0).toFixed(2))
+                                            // Criado por
+                                            React.createElement("p", {className: "text-xs text-gray-400 mt-2"}, 
+                                                "Criado por: ", op.criado_por || '-'
                                             )
                                         ),
-                                        
-                                        // Ações principais
+                                        // Ações
                                         React.createElement("div", {className: "flex flex-wrap gap-2"},
-                                            // Botão Gerar Relatório
                                             React.createElement("button", {
                                                 onClick: () => gerarRelatorioOperacao(op),
-                                                className: "px-4 py-2 bg-teal-100 text-teal-700 rounded-lg font-semibold hover:bg-teal-200 text-sm flex items-center gap-1"
+                                                className: "px-4 py-2 bg-teal-100 text-teal-700 rounded-lg font-semibold hover:bg-teal-200 text-sm"
                                             }, "📄 Relatório"),
-                                            // Botão Editar
                                             React.createElement("button", {
                                                 onClick: () => {
                                                     setOperacaoEdit(op);
@@ -11779,7 +11771,6 @@ const hideLoadingScreen = () => {
                                                 },
                                                 className: "px-4 py-2 bg-blue-100 text-blue-700 rounded-lg font-semibold hover:bg-blue-200 text-sm"
                                             }, "✏️ Editar"),
-                                            // Botão Pausar/Ativar
                                             op.status !== 'concluido' && React.createElement("button", {
                                                 onClick: async () => {
                                                     const novoStatus = op.status === 'ativo' ? 'pausado' : 'ativo';
@@ -11794,7 +11785,6 @@ const hideLoadingScreen = () => {
                                                 className: "px-4 py-2 rounded-lg font-semibold text-sm " + 
                                                     (op.status === 'ativo' ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' : 'bg-green-100 text-green-700 hover:bg-green-200')
                                             }, op.status === 'ativo' ? '⏸️' : '▶️'),
-                                            // Botão Excluir
                                             React.createElement("button", {
                                                 onClick: async () => {
                                                     if (confirm(`Excluir operação "${op.nome_cliente}"?`)) {
@@ -11804,110 +11794,84 @@ const hideLoadingScreen = () => {
                                                     }
                                                 },
                                                 className: "px-4 py-2 bg-red-100 text-red-700 rounded-lg font-semibold hover:bg-red-200 text-sm"
-                                            }, "🗑️"),
-                                            // Botão Expandir/Recolher
-                                            React.createElement("button", {
-                                                onClick: () => setOperacaoExpandida(isExpanded ? null : op.id),
-                                                className: "px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 text-sm"
-                                            }, isExpanded ? "▲ Recolher" : "▼ Expandir")
+                                            }, "🗑️")
                                         )
                                     ),
-                                    
-                                    // Área Expandida - Checklist de Motos + Ações
-                                    isExpanded && React.createElement("div", {className: "mt-4 pt-4 border-t space-y-4"},
-                                        // Checklist de Motos
-                                        React.createElement("div", {className: "bg-gray-50 rounded-xl p-4"},
-                                            React.createElement("div", {className: "flex items-center justify-between mb-3"},
-                                                React.createElement("h5", {className: "font-bold text-gray-800 flex items-center gap-2"}, 
-                                                    "🏍️ Checklist de Motos",
-                                                    React.createElement("span", {
-                                                        className: "px-2 py-0.5 rounded-full text-xs font-semibold " +
-                                                        (todasMotosEncontradas ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700')
-                                                    }, motosEncontradas, "/", op.quantidade_motos, " encontradas")
-                                                ),
-                                                todasMotosEncontradas && React.createElement("span", {className: "text-green-600 font-semibold text-sm"}, "✅ Todas as motos confirmadas!")
+                                    // Faixas de KM
+                                    op.faixas_km && op.faixas_km.filter(f => f.valor_motoboy > 0).length > 0 && React.createElement("div", {className: "mt-4 pt-4 border-t"},
+                                        React.createElement("p", {className: "text-sm font-semibold text-gray-700 mb-2"}, "💰 Valores por Faixa de KM:"),
+                                        React.createElement("div", {className: "flex flex-wrap gap-2"},
+                                            op.faixas_km.filter(f => f.valor_motoboy > 0).map((faixa, idx) => 
+                                                React.createElement("span", {
+                                                    key: idx,
+                                                    className: "px-3 py-1 bg-teal-50 text-teal-700 rounded-lg text-sm"
+                                                }, faixa.km_inicio, "-", faixa.km_fim, "km: R$ ", parseFloat(faixa.valor_motoboy).toFixed(2))
+                                            )
+                                        )
+                                    ),
+                                    // Checklist de Motos
+                                    React.createElement("div", {className: "mt-4 pt-4 border-t"},
+                                        React.createElement("div", {className: "flex items-center justify-between mb-3"},
+                                            React.createElement("p", {className: "text-sm font-semibold text-gray-700 flex items-center gap-2"}, 
+                                                "🏍️ Checklist de Motos",
+                                                React.createElement("span", {
+                                                    className: "px-2 py-0.5 rounded-full text-xs font-semibold " +
+                                                    (todasMotosEncontradas ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700')
+                                                }, motosEncontradas, "/", op.quantidade_motos)
                                             ),
-                                            React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2"},
-                                                Array.from({length: op.quantidade_motos}, (_, i) => 
-                                                    React.createElement("label", {
-                                                        key: i,
-                                                        className: "flex items-center gap-2 p-3 rounded-lg cursor-pointer transition-all " +
-                                                        (checklist[i] ? 'bg-green-100 border-2 border-green-400' : 'bg-white border-2 border-gray-200 hover:border-gray-300')
-                                                    },
-                                                        React.createElement("input", {
-                                                            type: "checkbox",
-                                                            checked: checklist[i] || false,
-                                                            onChange: (e) => {
-                                                                setChecklistMotos(prev => ({
-                                                                    ...prev,
-                                                                    [op.id]: {
-                                                                        ...prev[op.id],
-                                                                        [i]: e.target.checked
-                                                                    }
-                                                                }));
-                                                            },
-                                                            className: "w-5 h-5 rounded text-green-600"
-                                                        }),
-                                                        React.createElement("span", {className: "font-semibold " + (checklist[i] ? 'text-green-700' : 'text-gray-600')}, "Moto ", i + 1),
-                                                        checklist[i] && React.createElement("span", {className: "text-green-600"}, "✓")
-                                                    )
-                                                )
-                                            )
+                                            todasMotosEncontradas && React.createElement("span", {className: "text-green-600 text-sm font-semibold"}, "✅ Completo!")
                                         ),
-                                        
-                                        // Faixas de KM
-                                        op.faixas_km && op.faixas_km.filter(f => f.valor_motoboy > 0).length > 0 && React.createElement("div", {className: "bg-teal-50 rounded-xl p-4"},
-                                            React.createElement("h5", {className: "font-bold text-teal-800 mb-3"}, "💰 Valores por Faixa de KM"),
-                                            React.createElement("div", {className: "flex flex-wrap gap-2"},
-                                                op.faixas_km.filter(f => f.valor_motoboy > 0).map((faixa, idx) => 
-                                                    React.createElement("span", {
-                                                        key: idx,
-                                                        className: "px-4 py-2 bg-white text-teal-700 rounded-lg text-sm font-semibold border border-teal-200"
-                                                    }, faixa.km_inicio, "-", faixa.km_fim, "km: R$ ", parseFloat(faixa.valor_motoboy).toFixed(2))
-                                                )
-                                            )
-                                        ),
-                                        
-                                        // Observações
-                                        op.observacoes && React.createElement("div", {className: "bg-yellow-50 rounded-xl p-4 border border-yellow-200"},
-                                            React.createElement("h5", {className: "font-bold text-yellow-800 mb-2"}, "📝 Observações"),
-                                            React.createElement("p", {className: "text-yellow-900"}, op.observacoes)
-                                        ),
-                                        
-                                        // Botão Demanda Concluída
-                                        op.status !== 'concluido' && React.createElement("div", {className: "flex justify-center pt-2"},
-                                            React.createElement("button", {
-                                                onClick: async () => {
-                                                    if (!todasMotosEncontradas) {
-                                                        if (!confirm(`Atenção! Apenas ${motosEncontradas} de ${op.quantidade_motos} motos foram confirmadas. Deseja concluir mesmo assim?`)) {
-                                                            return;
-                                                        }
-                                                    }
-                                                    if (confirm(`✅ Confirma a conclusão da demanda "${op.nome_cliente}"?\n\nMotos encontradas: ${motosEncontradas}/${op.quantidade_motos}`)) {
-                                                        await fetch(`${API_URL}/operacoes/${op.id}`, {
-                                                            method: 'PUT',
-                                                            headers: {'Content-Type': 'application/json'},
-                                                            body: JSON.stringify({ status: 'concluido' })
-                                                        });
-                                                        carregarOperacoes();
-                                                        ja('🎉 Demanda concluída com sucesso!', 'success');
-                                                    }
+                                        React.createElement("div", {className: "flex flex-wrap gap-2"},
+                                            Array.from({length: op.quantidade_motos}, (_, i) => 
+                                                React.createElement("label", {
+                                                    key: i,
+                                                    className: "flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all text-sm " +
+                                                    (checklist[i] ? 'bg-green-100 border border-green-400' : 'bg-gray-100 border border-gray-300 hover:border-gray-400')
                                                 },
-                                                className: "px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-bold text-lg hover:from-green-600 hover:to-emerald-700 shadow-lg flex items-center gap-2"
-                                            }, "✅ Demanda Concluída")
-                                        ),
-                                        
-                                        // Se já concluída, mostrar badge
-                                        op.status === 'concluido' && React.createElement("div", {className: "flex justify-center"},
-                                            React.createElement("div", {className: "px-6 py-3 bg-green-100 text-green-700 rounded-xl font-bold flex items-center gap-2"},
-                                                "✔️ Esta demanda foi concluída"
+                                                    React.createElement("input", {
+                                                        type: "checkbox",
+                                                        checked: checklist[i] || false,
+                                                        onChange: (e) => {
+                                                            setChecklistMotos(prev => ({
+                                                                ...prev,
+                                                                [op.id]: {
+                                                                    ...prev[op.id],
+                                                                    [i]: e.target.checked
+                                                                }
+                                                            }));
+                                                        },
+                                                        className: "w-4 h-4 rounded text-green-600"
+                                                    }),
+                                                    React.createElement("span", {className: checklist[i] ? 'text-green-700 font-semibold' : 'text-gray-600'}, "Moto ", i + 1)
+                                                )
                                             )
                                         )
                                     ),
-                                    
-                                    // Info do criador (sempre visível)
-                                    React.createElement("p", {className: "text-xs text-gray-400 mt-3"}, 
-                                        "Criado por: ", op.criado_por || '-', " • ID: ", op.id
+                                    // Botão Demanda Concluída
+                                    op.status !== 'concluido' && React.createElement("div", {className: "mt-4 pt-4 border-t flex justify-end"},
+                                        React.createElement("button", {
+                                            onClick: async () => {
+                                                if (!todasMotosEncontradas) {
+                                                    if (!confirm(`⚠️ Apenas ${motosEncontradas} de ${op.quantidade_motos} motos foram confirmadas.\n\nDeseja concluir mesmo assim?`)) {
+                                                        return;
+                                                    }
+                                                }
+                                                if (confirm(`✅ Confirmar conclusão da demanda "${op.nome_cliente}"?`)) {
+                                                    await fetch(`${API_URL}/operacoes/${op.id}`, {
+                                                        method: 'PUT',
+                                                        headers: {'Content-Type': 'application/json'},
+                                                        body: JSON.stringify({ status: 'concluido' })
+                                                    });
+                                                    carregarOperacoes();
+                                                    ja('🎉 Demanda concluída com sucesso!', 'success');
+                                                }
+                                            },
+                                            className: "px-6 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg font-semibold hover:from-green-600 hover:to-emerald-700 shadow flex items-center gap-2"
+                                        }, "✅ Demanda Concluída")
+                                    ),
+                                    // Badge se já concluída
+                                    op.status === 'concluido' && React.createElement("div", {className: "mt-4 pt-4 border-t flex justify-end"},
+                                        React.createElement("span", {className: "px-4 py-2 bg-blue-100 text-blue-700 rounded-lg font-semibold"}, "✔️ Demanda Concluída")
                                     )
                                 );
                             })
