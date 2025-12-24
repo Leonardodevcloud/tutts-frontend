@@ -80,7 +80,7 @@ const SISTEMA_MODULOS_CONFIG = [
       abas: [{id: "panorama", label: "Panorama"}, {id: "principal", label: "Principal"}, {id: "faltosos", label: "Faltosos"}, {id: "espelho", label: "Espelho"}, {id: "relatorios", label: "Relatórios"}, {id: "motoboys", label: "Motoboys"}, {id: "restricoes", label: "Restrições"}, {id: "config", label: "Configurações"}]
     },
     { id: "bi", label: "BI", icon: "📊",
-      abas: [{id: "dashboard", label: "Dashboard"}, {id: "profissionais", label: "Por Profissional"}, {id: "os", label: "Análise por OS"}, {id: "upload", label: "Upload"}, {id: "config", label: "Configurações"}]
+      abas: [{id: "dashboard", label: "Dashboard"}, {id: "acompanhamento", label: "Acompanhamento"}, {id: "profissionais", label: "Por Profissional"}, {id: "os", label: "Análise por OS"}, {id: "upload", label: "Upload"}, {id: "config", label: "Configurações"}]
     },
     { id: "todo", label: "TO-DO", icon: "📝",
       abas: [{id: "tarefas", label: "Tarefas"}, {id: "metricas", label: "Métricas"}]
@@ -13538,6 +13538,11 @@ const hideLoadingScreen = () => {
                 className: "px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-all " + ("dashboard" === Et ? "border-purple-600 text-purple-600 bg-purple-50" : "border-transparent text-gray-600 hover:text-gray-800")
             }, "📊 Dashboard"), React.createElement("button", {
                 onClick: () => {
+                    ht("acompanhamento")
+                },
+                className: "px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-all " + ("acompanhamento" === Et ? "border-purple-600 text-purple-600 bg-purple-50" : "border-transparent text-gray-600 hover:text-gray-800")
+            }, "📈 Acompanhamento"), React.createElement("button", {
+                onClick: () => {
                     ht("profissionais"), el()
                 },
                 className: "px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-all " + ("profissionais" === Et ? "border-purple-600 text-purple-600 bg-purple-50" : "border-transparent text-gray-600 hover:text-gray-800")
@@ -14123,7 +14128,160 @@ const hideLoadingScreen = () => {
                 className: "text-sm text-gray-700"
             }, e.faixa, " KM"), e.total > 0 && React.createElement("span", {
                 className: "text-orange-500"
-            }, "🔥"))))))))), "profissionais" === Et && React.createElement("div", {
+            }, "🔥"))))))))), "acompanhamento" === Et && React.createElement("div", {
+                className: "space-y-6"
+            }, React.createElement("div", {
+                className: "grid grid-cols-2 md:grid-cols-4 gap-4"
+            }, React.createElement("div", {
+                className: "bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl p-4 shadow-lg"
+            }, React.createElement("p", {
+                className: "text-sm opacity-80"
+            }, "📦 Total de OS"), React.createElement("p", {
+                className: "text-3xl font-bold"
+            }, ft?.total_os?.toLocaleString("pt-BR") || "0")), React.createElement("div", {
+                className: "bg-gradient-to-br from-green-500 to-green-600 text-white rounded-xl p-4 shadow-lg"
+            }, React.createElement("p", {
+                className: "text-sm opacity-80"
+            }, "⏱️ Taxa no Prazo"), React.createElement("p", {
+                className: "text-3xl font-bold"
+            }, (ft?.taxa_prazo || 0).toFixed(1), "%")), React.createElement("div", {
+                className: "bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-xl p-4 shadow-lg"
+            }, React.createElement("p", {
+                className: "text-sm opacity-80"
+            }, "💰 Valor Total"), React.createElement("p", {
+                className: "text-3xl font-bold"
+            }, "R$ ", (ft?.valor_total || 0).toLocaleString("pt-BR", {minimumFractionDigits: 2}))), React.createElement("div", {
+                className: "bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-xl p-4 shadow-lg"
+            }, React.createElement("p", {
+                className: "text-sm opacity-80"
+            }, "🏍️ Valor Motoboy"), React.createElement("p", {
+                className: "text-3xl font-bold"
+            }, "R$ ", (ft?.valor_prof_total || 0).toLocaleString("pt-BR", {minimumFractionDigits: 2})))), React.createElement("div", {
+                className: "bg-white rounded-xl shadow-lg p-6"
+            }, React.createElement("h3", {
+                className: "text-lg font-bold text-gray-800 mb-4"
+            }, "🏢 Filtros Ativos"), React.createElement("div", {
+                className: "flex flex-wrap gap-2"
+            }, ua.cod_cliente && ua.cod_cliente.length > 0 ? ua.cod_cliente.map(function(c) {
+                return React.createElement("span", {
+                    key: c,
+                    className: "px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium"
+                }, "🏪 Cliente: ", c)
+            }) : React.createElement("span", {
+                className: "text-gray-500"
+            }, "Todos os clientes"), ua.centro_custo && ua.centro_custo.length > 0 && ua.centro_custo.map(function(cc) {
+                return React.createElement("span", {
+                    key: cc,
+                    className: "px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium"
+                }, "📁 ", cc)
+            }))), React.createElement("div", {
+                className: "bg-white rounded-xl shadow-lg p-6"
+            }, React.createElement("h3", {
+                className: "text-lg font-bold text-gray-800 mb-4"
+            }, "📈 Evolução Diária - Últimos 30 Dias"), React.createElement("div", {
+                className: "overflow-x-auto"
+            }, React.createElement("table", {
+                className: "w-full text-sm"
+            }, React.createElement("thead", null, React.createElement("tr", {
+                className: "bg-gray-100"
+            }, React.createElement("th", {
+                className: "px-4 py-3 text-left font-bold"
+            }, "📅 Data"), React.createElement("th", {
+                className: "px-4 py-3 text-center font-bold"
+            }, "📦 OS"), React.createElement("th", {
+                className: "px-4 py-3 text-center font-bold"
+            }, "✅ Prazo"), React.createElement("th", {
+                className: "px-4 py-3 text-center font-bold"
+            }, "📊 Taxa"), React.createElement("th", {
+                className: "px-4 py-3 text-right font-bold"
+            }, "💰 Valor"), React.createElement("th", {
+                className: "px-4 py-3 text-right font-bold"
+            }, "🏍️ Motoboy"), React.createElement("th", {
+                className: "px-4 py-3 text-center font-bold"
+            }, "📍 Dist. Média"), React.createElement("th", {
+                className: "px-4 py-3 text-center font-bold"
+            }, "⏱️ Tempo Médio"))), React.createElement("tbody", null, (wt || []).slice(0, 30).map(function(d, i) {
+                return React.createElement("tr", {
+                    key: i,
+                    className: "border-b hover:bg-purple-50 transition-colors " + (i % 2 === 0 ? "bg-white" : "bg-gray-50")
+                }, React.createElement("td", {
+                    className: "px-4 py-3 font-semibold text-gray-800"
+                }, d.data_formatada || new Date(d.data).toLocaleDateString("pt-BR")), React.createElement("td", {
+                    className: "px-4 py-3 text-center"
+                }, React.createElement("span", {
+                    className: "px-3 py-1 bg-blue-100 text-blue-700 rounded-full font-bold"
+                }, d.total_os)), React.createElement("td", {
+                    className: "px-4 py-3 text-center"
+                }, React.createElement("span", {
+                    className: "text-green-600 font-medium"
+                }, d.dentro_prazo), " / ", React.createElement("span", {
+                    className: "text-red-600 font-medium"
+                }, d.fora_prazo)), React.createElement("td", {
+                    className: "px-4 py-3 text-center"
+                }, React.createElement("span", {
+                    className: "px-3 py-1 rounded-full text-sm font-bold " + (parseFloat(d.taxa_prazo) >= 90 ? "bg-green-100 text-green-700" : parseFloat(d.taxa_prazo) >= 70 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700")
+                }, d.taxa_prazo, "%")), React.createElement("td", {
+                    className: "px-4 py-3 text-right text-purple-700 font-semibold"
+                }, "R$ ", parseFloat(d.valor_total || 0).toLocaleString("pt-BR", {minimumFractionDigits: 2})), React.createElement("td", {
+                    className: "px-4 py-3 text-right text-orange-600 font-semibold"
+                }, "R$ ", parseFloat(d.valor_motoboy || 0).toLocaleString("pt-BR", {minimumFractionDigits: 2})), React.createElement("td", {
+                    className: "px-4 py-3 text-center text-teal-600 font-medium"
+                }, parseFloat(d.distancia_media || 0).toFixed(1), " km"), React.createElement("td", {
+                    className: "px-4 py-3 text-center text-indigo-600 font-medium"
+                }, d.tempo_medio || 0, " min"))
+            }))))), React.createElement("div", {
+                className: "grid grid-cols-1 md:grid-cols-2 gap-6"
+            }, React.createElement("div", {
+                className: "bg-white rounded-xl shadow-lg p-6"
+            }, React.createElement("h3", {
+                className: "text-lg font-bold text-gray-800 mb-4"
+            }, "🏆 Top 10 Clientes por Volume"), React.createElement("div", {
+                className: "space-y-3"
+            }, (yt || []).slice(0, 10).map(function(c, i) {
+                return React.createElement("div", {
+                    key: i,
+                    className: "flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-purple-50 transition-colors"
+                }, React.createElement("div", {
+                    className: "flex items-center gap-3"
+                }, React.createElement("span", {
+                    className: "w-8 h-8 flex items-center justify-center rounded-full font-bold text-white " + (i === 0 ? "bg-yellow-500" : i === 1 ? "bg-gray-400" : i === 2 ? "bg-orange-400" : "bg-purple-500")
+                }, i + 1), React.createElement("div", null, React.createElement("p", {
+                    className: "font-semibold text-gray-800"
+                }, c.nome_cliente || "Cliente " + c.cod_cliente), React.createElement("p", {
+                    className: "text-xs text-gray-500"
+                }, "Cod: ", c.cod_cliente))), React.createElement("div", {
+                    className: "text-right"
+                }, React.createElement("p", {
+                    className: "font-bold text-blue-600"
+                }, c.total_os, " OS"), React.createElement("p", {
+                    className: "text-xs font-medium " + (parseFloat(c.taxa_prazo) >= 90 ? "text-green-600" : parseFloat(c.taxa_prazo) >= 70 ? "text-yellow-600" : "text-red-600")
+                }, c.taxa_prazo, "% no prazo")))
+            }))), React.createElement("div", {
+                className: "bg-white rounded-xl shadow-lg p-6"
+            }, React.createElement("h3", {
+                className: "text-lg font-bold text-gray-800 mb-4"
+            }, "📁 Top 10 Centros de Custo"), React.createElement("div", {
+                className: "space-y-3"
+            }, (_t || []).slice(0, 10).map(function(cc, i) {
+                return React.createElement("div", {
+                    key: i,
+                    className: "flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-green-50 transition-colors"
+                }, React.createElement("div", {
+                    className: "flex items-center gap-3"
+                }, React.createElement("span", {
+                    className: "w-8 h-8 flex items-center justify-center rounded-full font-bold text-white bg-green-500"
+                }, i + 1), React.createElement("div", null, React.createElement("p", {
+                    className: "font-semibold text-gray-800"
+                }, cc.centro_custo || "Centro " + i), React.createElement("p", {
+                    className: "text-xs text-gray-500"
+                }, "Cliente: ", cc.cod_cliente))), React.createElement("div", {
+                    className: "text-right"
+                }, React.createElement("p", {
+                    className: "font-bold text-green-600"
+                }, cc.total_os, " OS"), React.createElement("p", {
+                    className: "text-xs font-medium " + (parseFloat(cc.taxa_prazo) >= 90 ? "text-green-600" : "text-red-600")
+                }, cc.taxa_prazo, "% no prazo")))
+            }))))), "profissionais" === Et && React.createElement("div", {
                 className: "bg-white rounded-lg shadow overflow-hidden"
             }, React.createElement("div", {
                 className: "bg-purple-100 px-4 py-3"
