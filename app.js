@@ -13538,7 +13538,23 @@ const hideLoadingScreen = () => {
                 className: "px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-all " + ("dashboard" === Et ? "border-purple-600 text-purple-600 bg-purple-50" : "border-transparent text-gray-600 hover:text-gray-800")
             }, "📊 Dashboard"), React.createElement("button", {
                 onClick: () => {
-                    ht("acompanhamento")
+                    ht("acompanhamento");
+                    // Carregar dados de acompanhamento
+                    (async () => {
+                        try {
+                            Ra(!0);
+                            const params = Xa();
+                            const response = await fetch(`${API_URL}/bi/acompanhamento-periodico?${params}`);
+                            const data = await response.json();
+                            console.log("📈 Dados acompanhamento:", data);
+                            if (data.porData) {
+                                window.acompDados = data;
+                            }
+                        } catch (e) {
+                            console.error("Erro ao carregar acompanhamento:", e);
+                        }
+                        Ra(!1);
+                    })();
                 },
                 className: "px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-all " + ("acompanhamento" === Et ? "border-purple-600 text-purple-600 bg-purple-50" : "border-transparent text-gray-600 hover:text-gray-800")
             }, "📈 Acompanhamento"), React.createElement("button", {
@@ -14321,7 +14337,7 @@ const hideLoadingScreen = () => {
             }),
             // Linha do gráfico
             React.createElement("polyline", {
-                points: (Array.isArray(wt) ? wt : []).slice(0, 30).map(function(d, i, arr) {
+                points: (Array.isArray(window.acompDados?.porData) ? window.acompDados.porData : []).slice(0, 30).map(function(d, i, arr) {
                     var maxVal = Math.max.apply(null, arr.map(function(x) { return parseInt(x.total_os) || 0; })) || 1;
                     var x = 50 + (i * (730 / Math.max(arr.length - 1, 1)));
                     var y = 180 - ((parseInt(d.total_os) || 0) / maxVal * 160);
@@ -14334,7 +14350,7 @@ const hideLoadingScreen = () => {
                 strokeLinejoin: "round"
             }),
             // Pontos com tooltip
-            (Array.isArray(wt) ? wt : []).slice(0, 30).map(function(d, i, arr) {
+            (Array.isArray(window.acompDados?.porData) ? window.acompDados.porData : []).slice(0, 30).map(function(d, i, arr) {
                 var maxVal = Math.max.apply(null, arr.map(function(x) { return parseInt(x.total_os) || 0; })) || 1;
                 var x = 50 + (i * (730 / Math.max(arr.length - 1, 1)));
                 var y = 180 - ((parseInt(d.total_os) || 0) / maxVal * 160);
@@ -14374,14 +14390,14 @@ const hideLoadingScreen = () => {
             }, [0, 50, 100, 150, 200].map(function(y, i) {
                 return React.createElement("line", {key: "grid-"+i, x1: 50, y1: y, x2: 780, y2: y, stroke: "#E5E7EB", strokeDasharray: "4,4"});
             }), React.createElement("polyline", {
-                points: (Array.isArray(wt) ? wt : []).slice(0, 30).map(function(d, i, arr) {
+                points: (Array.isArray(window.acompDados?.porData) ? window.acompDados.porData : []).slice(0, 30).map(function(d, i, arr) {
                     var maxVal = Math.max.apply(null, arr.map(function(x) { return parseInt(x.total_os) || 0; })) || 1;
                     var x = 50 + (i * (730 / Math.max(arr.length - 1, 1)));
                     var y = 180 - ((parseInt(d.total_os) || 0) / maxVal * 160);
                     return x + "," + y;
                 }).join(" "),
                 fill: "none", stroke: "#6366F1", strokeWidth: "3"
-            }), (Array.isArray(wt) ? wt : []).slice(0, 30).map(function(d, i, arr) {
+            }), (Array.isArray(window.acompDados?.porData) ? window.acompDados.porData : []).slice(0, 30).map(function(d, i, arr) {
                 var maxVal = Math.max.apply(null, arr.map(function(x) { return parseInt(x.total_os) || 0; })) || 1;
                 var x = 50 + (i * (730 / Math.max(arr.length - 1, 1)));
                 var y = 180 - ((parseInt(d.total_os) || 0) / maxVal * 160);
@@ -14403,14 +14419,14 @@ const hideLoadingScreen = () => {
             }, [0, 50, 100, 150, 200].map(function(y, i) {
                 return React.createElement("line", {key: "grid-"+i, x1: 50, y1: y, x2: 780, y2: y, stroke: "#E5E7EB", strokeDasharray: "4,4"});
             }), React.createElement("polyline", {
-                points: (Array.isArray(wt) ? wt : []).slice(0, 30).map(function(d, i, arr) {
+                points: (Array.isArray(window.acompDados?.porData) ? window.acompDados.porData : []).slice(0, 30).map(function(d, i, arr) {
                     var maxVal = Math.max.apply(null, arr.map(function(x) { return parseInt(x.dentro_prazo) || 0; })) || 1;
                     var x = 50 + (i * (730 / Math.max(arr.length - 1, 1)));
                     var y = 180 - ((parseInt(d.dentro_prazo) || 0) / maxVal * 160);
                     return x + "," + y;
                 }).join(" "),
                 fill: "none", stroke: "#22C55E", strokeWidth: "3"
-            }), (Array.isArray(wt) ? wt : []).slice(0, 30).map(function(d, i, arr) {
+            }), (Array.isArray(window.acompDados?.porData) ? window.acompDados.porData : []).slice(0, 30).map(function(d, i, arr) {
                 var maxVal = Math.max.apply(null, arr.map(function(x) { return parseInt(x.dentro_prazo) || 0; })) || 1;
                 var x = 50 + (i * (730 / Math.max(arr.length - 1, 1)));
                 var y = 180 - ((parseInt(d.dentro_prazo) || 0) / maxVal * 160);
@@ -14432,14 +14448,14 @@ const hideLoadingScreen = () => {
             }, [0, 50, 100, 150, 200].map(function(y, i) {
                 return React.createElement("line", {key: "grid-"+i, x1: 50, y1: y, x2: 780, y2: y, stroke: "#E5E7EB", strokeDasharray: "4,4"});
             }), React.createElement("polyline", {
-                points: (Array.isArray(wt) ? wt : []).slice(0, 30).map(function(d, i, arr) {
+                points: (Array.isArray(window.acompDados?.porData) ? window.acompDados.porData : []).slice(0, 30).map(function(d, i, arr) {
                     var maxVal = Math.max.apply(null, arr.map(function(x) { return parseInt(x.fora_prazo) || 0; })) || 1;
                     var x = 50 + (i * (730 / Math.max(arr.length - 1, 1)));
                     var y = 180 - ((parseInt(d.fora_prazo) || 0) / maxVal * 160);
                     return x + "," + y;
                 }).join(" "),
                 fill: "none", stroke: "#EF4444", strokeWidth: "3"
-            }), (Array.isArray(wt) ? wt : []).slice(0, 30).map(function(d, i, arr) {
+            }), (Array.isArray(window.acompDados?.porData) ? window.acompDados.porData : []).slice(0, 30).map(function(d, i, arr) {
                 var maxVal = Math.max.apply(null, arr.map(function(x) { return parseInt(x.fora_prazo) || 0; })) || 1;
                 var x = 50 + (i * (730 / Math.max(arr.length - 1, 1)));
                 var y = 180 - ((parseInt(d.fora_prazo) || 0) / maxVal * 160);
@@ -14461,14 +14477,14 @@ const hideLoadingScreen = () => {
             }, [0, 50, 100, 150, 200].map(function(y, i) {
                 return React.createElement("line", {key: "grid-"+i, x1: 50, y1: y, x2: 780, y2: y, stroke: "#E5E7EB", strokeDasharray: "4,4"});
             }), React.createElement("polyline", {
-                points: (Array.isArray(wt) ? wt : []).slice(0, 30).map(function(d, i, arr) {
+                points: (Array.isArray(window.acompDados?.porData) ? window.acompDados.porData : []).slice(0, 30).map(function(d, i, arr) {
                     var maxVal = Math.max.apply(null, arr.map(function(x) { return parseFloat(x.valor_total) || 0; })) || 1;
                     var x = 50 + (i * (730 / Math.max(arr.length - 1, 1)));
                     var y = 180 - ((parseFloat(d.valor_total) || 0) / maxVal * 160);
                     return x + "," + y;
                 }).join(" "),
                 fill: "none", stroke: "#8B5CF6", strokeWidth: "3"
-            }), (Array.isArray(wt) ? wt : []).slice(0, 30).map(function(d, i, arr) {
+            }), (Array.isArray(window.acompDados?.porData) ? window.acompDados.porData : []).slice(0, 30).map(function(d, i, arr) {
                 var maxVal = Math.max.apply(null, arr.map(function(x) { return parseFloat(x.valor_total) || 0; })) || 1;
                 var x = 50 + (i * (730 / Math.max(arr.length - 1, 1)));
                 var y = 180 - ((parseFloat(d.valor_total) || 0) / maxVal * 160);
@@ -14490,14 +14506,14 @@ const hideLoadingScreen = () => {
             }, [0, 50, 100, 150, 200].map(function(y, i) {
                 return React.createElement("line", {key: "grid-"+i, x1: 50, y1: y, x2: 780, y2: y, stroke: "#E5E7EB", strokeDasharray: "4,4"});
             }), React.createElement("polyline", {
-                points: (Array.isArray(wt) ? wt : []).slice(0, 30).map(function(d, i, arr) {
+                points: (Array.isArray(window.acompDados?.porData) ? window.acompDados.porData : []).slice(0, 30).map(function(d, i, arr) {
                     var maxVal = Math.max.apply(null, arr.map(function(x) { return parseFloat(x.valor_motoboy) || 0; })) || 1;
                     var x = 50 + (i * (730 / Math.max(arr.length - 1, 1)));
                     var y = 180 - ((parseFloat(d.valor_motoboy) || 0) / maxVal * 160);
                     return x + "," + y;
                 }).join(" "),
                 fill: "none", stroke: "#F97316", strokeWidth: "3"
-            }), (Array.isArray(wt) ? wt : []).slice(0, 30).map(function(d, i, arr) {
+            }), (Array.isArray(window.acompDados?.porData) ? window.acompDados.porData : []).slice(0, 30).map(function(d, i, arr) {
                 var maxVal = Math.max.apply(null, arr.map(function(x) { return parseFloat(x.valor_motoboy) || 0; })) || 1;
                 var x = 50 + (i * (730 / Math.max(arr.length - 1, 1)));
                 var y = 180 - ((parseFloat(d.valor_motoboy) || 0) / maxVal * 160);
@@ -14519,14 +14535,14 @@ const hideLoadingScreen = () => {
             }, [0, 50, 100, 150, 200].map(function(y, i) {
                 return React.createElement("line", {key: "grid-"+i, x1: 50, y1: y, x2: 780, y2: y, stroke: "#E5E7EB", strokeDasharray: "4,4"});
             }), React.createElement("polyline", {
-                points: (Array.isArray(wt) ? wt : []).slice(0, 30).map(function(d, i, arr) {
+                points: (Array.isArray(window.acompDados?.porData) ? window.acompDados.porData : []).slice(0, 30).map(function(d, i, arr) {
                     var maxVal = Math.max.apply(null, arr.map(function(x) { return parseFloat(x.tempo_medio) || 0; })) || 1;
                     var x = 50 + (i * (730 / Math.max(arr.length - 1, 1)));
                     var y = 180 - ((parseFloat(d.tempo_medio) || 0) / maxVal * 160);
                     return x + "," + y;
                 }).join(" "),
                 fill: "none", stroke: "#14B8A6", strokeWidth: "3"
-            }), (Array.isArray(wt) ? wt : []).slice(0, 30).map(function(d, i, arr) {
+            }), (Array.isArray(window.acompDados?.porData) ? window.acompDados.porData : []).slice(0, 30).map(function(d, i, arr) {
                 var maxVal = Math.max.apply(null, arr.map(function(x) { return parseFloat(x.tempo_medio) || 0; })) || 1;
                 var x = 50 + (i * (730 / Math.max(arr.length - 1, 1)));
                 var y = 180 - ((parseFloat(d.tempo_medio) || 0) / maxVal * 160);
@@ -14548,7 +14564,7 @@ const hideLoadingScreen = () => {
             }, [0, 50, 100, 150, 200].map(function(y, i) {
                 return React.createElement("line", {key: "grid-"+i, x1: 50, y1: y, x2: 780, y2: y, stroke: "#E5E7EB", strokeDasharray: "4,4"});
             }), React.createElement("polyline", {
-                points: (Array.isArray(wt) ? wt : []).slice(0, 30).map(function(d, i, arr) {
+                points: (Array.isArray(window.acompDados?.porData) ? window.acompDados.porData : []).slice(0, 30).map(function(d, i, arr) {
                     var ticket = (parseFloat(d.valor_total) || 0) / (parseInt(d.total_os) || 1);
                     var maxVal = Math.max.apply(null, arr.map(function(x) { return (parseFloat(x.valor_total) || 0) / (parseInt(x.total_os) || 1); })) || 1;
                     var x = 50 + (i * (730 / Math.max(arr.length - 1, 1)));
@@ -14556,7 +14572,7 @@ const hideLoadingScreen = () => {
                     return x + "," + y;
                 }).join(" "),
                 fill: "none", stroke: "#6366F1", strokeWidth: "3"
-            }), (Array.isArray(wt) ? wt : []).slice(0, 30).map(function(d, i, arr) {
+            }), (Array.isArray(window.acompDados?.porData) ? window.acompDados.porData : []).slice(0, 30).map(function(d, i, arr) {
                 var ticket = (parseFloat(d.valor_total) || 0) / (parseInt(d.total_os) || 1);
                 var maxVal = Math.max.apply(null, arr.map(function(x) { return (parseFloat(x.valor_total) || 0) / (parseInt(x.total_os) || 1); })) || 1;
                 var x = 50 + (i * (730 / Math.max(arr.length - 1, 1)));
