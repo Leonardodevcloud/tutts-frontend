@@ -14200,7 +14200,7 @@ const hideLoadingScreen = () => {
                 className: "px-4 py-3 text-center font-bold"
             }, "📍 Dist. Média"), React.createElement("th", {
                 className: "px-4 py-3 text-center font-bold"
-            }, "⏱️ Tempo Médio"))), React.createElement("tbody", null, (wt || []).slice(0, 30).map(function(d, i) {
+            }, "⏱️ Tempo Médio"))), React.createElement("tbody", null, (Array.isArray(wt) ? wt : []).slice(0, 30).map(function(d, i) {
                 return React.createElement("tr", {
                     key: i,
                     className: "border-b hover:bg-purple-50 transition-colors " + (i % 2 === 0 ? "bg-white" : "bg-gray-50")
@@ -14237,7 +14237,7 @@ const hideLoadingScreen = () => {
                 className: "text-lg font-bold text-gray-800 mb-4"
             }, "🏆 Top 10 Clientes por Volume"), React.createElement("div", {
                 className: "space-y-3"
-            }, (yt || []).slice(0, 10).map(function(c, i) {
+            }, (Array.isArray(yt) ? yt : []).slice(0, 10).map(function(c, i) {
                 return React.createElement("div", {
                     key: i,
                     className: "flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-purple-50 transition-colors"
@@ -14262,7 +14262,7 @@ const hideLoadingScreen = () => {
                 className: "text-lg font-bold text-gray-800 mb-4"
             }, "📁 Top 10 Centros de Custo"), React.createElement("div", {
                 className: "space-y-3"
-            }, (_t || []).slice(0, 10).map(function(cc, i) {
+            }, (Array.isArray(_t) ? _t : []).slice(0, 10).map(function(cc, i) {
                 return React.createElement("div", {
                     key: i,
                     className: "flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-green-50 transition-colors"
