@@ -14130,158 +14130,455 @@ const hideLoadingScreen = () => {
                 className: "text-orange-500"
             }, "🔥"))))))))), "acompanhamento" === Et && React.createElement("div", {
                 className: "space-y-6"
-            }, React.createElement("div", {
-                className: "grid grid-cols-2 md:grid-cols-4 gap-4"
-            }, React.createElement("div", {
-                className: "bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl p-4 shadow-lg"
-            }, React.createElement("p", {
-                className: "text-sm opacity-80"
-            }, "📦 Total de OS"), React.createElement("p", {
-                className: "text-3xl font-bold"
-            }, ft?.total_os?.toLocaleString("pt-BR") || "0")), React.createElement("div", {
-                className: "bg-gradient-to-br from-green-500 to-green-600 text-white rounded-xl p-4 shadow-lg"
-            }, React.createElement("p", {
-                className: "text-sm opacity-80"
-            }, "⏱️ Taxa no Prazo"), React.createElement("p", {
-                className: "text-3xl font-bold"
-            }, (ft?.taxa_prazo || 0).toFixed(1), "%")), React.createElement("div", {
-                className: "bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-xl p-4 shadow-lg"
-            }, React.createElement("p", {
-                className: "text-sm opacity-80"
-            }, "💰 Valor Total"), React.createElement("p", {
-                className: "text-3xl font-bold"
-            }, "R$ ", (ft?.valor_total || 0).toLocaleString("pt-BR", {minimumFractionDigits: 2}))), React.createElement("div", {
-                className: "bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-xl p-4 shadow-lg"
-            }, React.createElement("p", {
-                className: "text-sm opacity-80"
-            }, "🏍️ Valor Motoboy"), React.createElement("p", {
-                className: "text-3xl font-bold"
-            }, "R$ ", (ft?.valor_prof_total || 0).toLocaleString("pt-BR", {minimumFractionDigits: 2})))), React.createElement("div", {
+            }, 
+            // Seção 1: Clientes e Centros de Custo do Filtro Principal
+            React.createElement("div", {
                 className: "bg-white rounded-xl shadow-lg p-6"
-            }, React.createElement("h3", {
-                className: "text-lg font-bold text-gray-800 mb-4"
-            }, "🏢 Filtros Ativos"), React.createElement("div", {
-                className: "flex flex-wrap gap-2"
-            }, ua.cod_cliente && ua.cod_cliente.length > 0 ? ua.cod_cliente.map(function(c) {
-                return React.createElement("span", {
-                    key: c,
-                    className: "px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium"
-                }, "🏪 Cliente: ", c)
-            }) : React.createElement("span", {
-                className: "text-gray-500"
-            }, "Todos os clientes"), ua.centro_custo && ua.centro_custo.length > 0 && ua.centro_custo.map(function(cc) {
-                return React.createElement("span", {
-                    key: cc,
-                    className: "px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium"
-                }, "📁 ", cc)
-            }))), React.createElement("div", {
-                className: "bg-white rounded-xl shadow-lg p-6"
-            }, React.createElement("h3", {
-                className: "text-lg font-bold text-gray-800 mb-4"
-            }, "📈 Evolução Diária - Últimos 30 Dias"), React.createElement("div", {
-                className: "overflow-x-auto"
-            }, React.createElement("table", {
-                className: "w-full text-sm"
-            }, React.createElement("thead", null, React.createElement("tr", {
-                className: "bg-gray-100"
-            }, React.createElement("th", {
-                className: "px-4 py-3 text-left font-bold"
-            }, "📅 Data"), React.createElement("th", {
-                className: "px-4 py-3 text-center font-bold"
-            }, "📦 OS"), React.createElement("th", {
-                className: "px-4 py-3 text-center font-bold"
-            }, "✅ Prazo"), React.createElement("th", {
-                className: "px-4 py-3 text-center font-bold"
-            }, "📊 Taxa"), React.createElement("th", {
-                className: "px-4 py-3 text-right font-bold"
-            }, "💰 Valor"), React.createElement("th", {
-                className: "px-4 py-3 text-right font-bold"
-            }, "🏍️ Motoboy"), React.createElement("th", {
-                className: "px-4 py-3 text-center font-bold"
-            }, "📍 Dist. Média"), React.createElement("th", {
-                className: "px-4 py-3 text-center font-bold"
-            }, "⏱️ Tempo Médio"))), React.createElement("tbody", null, (Array.isArray(wt) ? wt : []).slice(0, 30).map(function(d, i) {
-                return React.createElement("tr", {
-                    key: i,
-                    className: "border-b hover:bg-purple-50 transition-colors " + (i % 2 === 0 ? "bg-white" : "bg-gray-50")
-                }, React.createElement("td", {
-                    className: "px-4 py-3 font-semibold text-gray-800"
-                }, d.data_formatada || new Date(d.data).toLocaleDateString("pt-BR")), React.createElement("td", {
-                    className: "px-4 py-3 text-center"
-                }, React.createElement("span", {
-                    className: "px-3 py-1 bg-blue-100 text-blue-700 rounded-full font-bold"
-                }, d.total_os)), React.createElement("td", {
-                    className: "px-4 py-3 text-center"
-                }, React.createElement("span", {
-                    className: "text-green-600 font-medium"
-                }, d.dentro_prazo), " / ", React.createElement("span", {
-                    className: "text-red-600 font-medium"
-                }, d.fora_prazo)), React.createElement("td", {
-                    className: "px-4 py-3 text-center"
-                }, React.createElement("span", {
-                    className: "px-3 py-1 rounded-full text-sm font-bold " + (parseFloat(d.taxa_prazo) >= 90 ? "bg-green-100 text-green-700" : parseFloat(d.taxa_prazo) >= 70 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700")
-                }, d.taxa_prazo, "%")), React.createElement("td", {
-                    className: "px-4 py-3 text-right text-purple-700 font-semibold"
-                }, "R$ ", parseFloat(d.valor_total || 0).toLocaleString("pt-BR", {minimumFractionDigits: 2})), React.createElement("td", {
-                    className: "px-4 py-3 text-right text-orange-600 font-semibold"
-                }, "R$ ", parseFloat(d.valor_motoboy || 0).toLocaleString("pt-BR", {minimumFractionDigits: 2})), React.createElement("td", {
-                    className: "px-4 py-3 text-center text-teal-600 font-medium"
-                }, parseFloat(d.distancia_media || 0).toFixed(1), " km"), React.createElement("td", {
-                    className: "px-4 py-3 text-center text-indigo-600 font-medium"
-                }, d.tempo_medio || 0, " min"))
-            }))))), React.createElement("div", {
-                className: "grid grid-cols-1 md:grid-cols-2 gap-6"
-            }, React.createElement("div", {
-                className: "bg-white rounded-xl shadow-lg p-6"
-            }, React.createElement("h3", {
-                className: "text-lg font-bold text-gray-800 mb-4"
-            }, "🏆 Top 10 Clientes por Volume"), React.createElement("div", {
+            }, React.createElement("h2", {
+                className: "text-xl font-bold text-purple-800 mb-4 flex items-center gap-2"
+            }, "🏢 Clientes e Centros de Custo"), React.createElement("div", {
                 className: "space-y-3"
-            }, (Array.isArray(yt) ? yt : []).slice(0, 10).map(function(c, i) {
+            }, ua.cod_cliente && ua.cod_cliente.length > 0 ? ua.cod_cliente.map(function(clienteId) {
+                var centrosDoCliente = (Array.isArray(kt) ? kt : []).filter(function(cc) {
+                    return String(cc.cod_cliente) === String(clienteId) || (Tt[clienteId] || []).includes(cc.centro_custo);
+                });
                 return React.createElement("div", {
-                    key: i,
-                    className: "flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-purple-50 transition-colors"
+                    key: clienteId,
+                    className: "bg-purple-50 rounded-lg p-4"
                 }, React.createElement("div", {
-                    className: "flex items-center gap-3"
+                    className: "flex items-center gap-2 mb-2"
                 }, React.createElement("span", {
-                    className: "w-8 h-8 flex items-center justify-center rounded-full font-bold text-white " + (i === 0 ? "bg-yellow-500" : i === 1 ? "bg-gray-400" : i === 2 ? "bg-orange-400" : "bg-purple-500")
-                }, i + 1), React.createElement("div", null, React.createElement("p", {
-                    className: "font-semibold text-gray-800"
-                }, c.nome_cliente || "Cliente " + c.cod_cliente), React.createElement("p", {
-                    className: "text-xs text-gray-500"
-                }, "Cod: ", c.cod_cliente))), React.createElement("div", {
-                    className: "text-right"
-                }, React.createElement("p", {
-                    className: "font-bold text-blue-600"
-                }, c.total_os, " OS"), React.createElement("p", {
-                    className: "text-xs font-medium " + (parseFloat(c.taxa_prazo) >= 90 ? "text-green-600" : parseFloat(c.taxa_prazo) >= 70 ? "text-yellow-600" : "text-red-600")
-                }, c.taxa_prazo, "% no prazo")))
-            }))), React.createElement("div", {
+                    className: "text-2xl"
+                }, "🏪"), React.createElement("span", {
+                    className: "font-bold text-purple-800"
+                }, "Cliente: ", il(clienteId) || clienteId)), React.createElement("div", {
+                    className: "flex flex-wrap gap-2 ml-8"
+                }, ua.centro_custo && ua.centro_custo.length > 0 ? ua.centro_custo.filter(function(cc) {
+                    return (Tt[clienteId] || []).includes(cc);
+                }).map(function(cc) {
+                    return React.createElement("span", {
+                        key: cc,
+                        className: "px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium"
+                    }, "📁 ", cc);
+                }) : React.createElement("span", {
+                    className: "text-gray-500 text-sm"
+                }, "Todos os centros de custo")));
+            }) : React.createElement("div", {
+                className: "text-center py-8 text-gray-500"
+            }, React.createElement("p", {
+                className: "text-lg"
+            }, "Nenhum cliente selecionado no filtro principal"), React.createElement("p", {
+                className: "text-sm"
+            }, "Use o botão 🔍 Filtros para selecionar clientes e centros de custo")))),
+            
+            // Seção 2: Subfiltros (Checkboxes)
+            React.createElement("div", {
                 className: "bg-white rounded-xl shadow-lg p-6"
             }, React.createElement("h3", {
                 className: "text-lg font-bold text-gray-800 mb-4"
-            }, "📁 Top 10 Centros de Custo"), React.createElement("div", {
-                className: "space-y-3"
-            }, (Array.isArray(_t) ? _t : []).slice(0, 10).map(function(cc, i) {
-                return React.createElement("div", {
-                    key: i,
-                    className: "flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-green-50 transition-colors"
-                }, React.createElement("div", {
-                    className: "flex items-center gap-3"
-                }, React.createElement("span", {
-                    className: "w-8 h-8 flex items-center justify-center rounded-full font-bold text-white bg-green-500"
-                }, i + 1), React.createElement("div", null, React.createElement("p", {
-                    className: "font-semibold text-gray-800"
-                }, cc.centro_custo || "Centro " + i), React.createElement("p", {
-                    className: "text-xs text-gray-500"
-                }, "Cliente: ", cc.cod_cliente))), React.createElement("div", {
-                    className: "text-right"
-                }, React.createElement("p", {
-                    className: "font-bold text-green-600"
-                }, cc.total_os, " OS"), React.createElement("p", {
-                    className: "text-xs font-medium " + (parseFloat(cc.taxa_prazo) >= 90 ? "text-green-600" : "text-red-600")
-                }, cc.taxa_prazo, "% no prazo")))
-            }))))), "profissionais" === Et && React.createElement("div", {
+            }, "📊 Selecione as Métricas para Visualizar"), React.createElement("div", {
+                className: "grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3"
+            }, 
+            // Coluna 1 - Básicos
+            React.createElement("div", {
+                className: "space-y-2"
+            }, React.createElement("label", {
+                className: "flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 cursor-pointer"
+            }, React.createElement("input", {
+                type: "checkbox",
+                checked: window.acompSubfiltros?.os || false,
+                onChange: function() { window.acompSubfiltros = {...(window.acompSubfiltros || {}), os: !window.acompSubfiltros?.os}; el(); },
+                className: "w-4 h-4 text-blue-600 rounded"
+            }), React.createElement("span", {className: "text-sm"}, "OS")), React.createElement("label", {
+                className: "flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 cursor-pointer"
+            }, React.createElement("input", {
+                type: "checkbox",
+                checked: window.acompSubfiltros?.entregas || false,
+                onChange: function() { window.acompSubfiltros = {...(window.acompSubfiltros || {}), entregas: !window.acompSubfiltros?.entregas}; el(); },
+                className: "w-4 h-4 text-blue-600 rounded"
+            }), React.createElement("span", {className: "text-sm"}, "Entregas")), React.createElement("label", {
+                className: "flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 cursor-pointer"
+            }, React.createElement("input", {
+                type: "checkbox",
+                checked: window.acompSubfiltros?.noPrazo || false,
+                onChange: function() { window.acompSubfiltros = {...(window.acompSubfiltros || {}), noPrazo: !window.acompSubfiltros?.noPrazo}; el(); },
+                className: "w-4 h-4 text-green-600 rounded"
+            }), React.createElement("span", {className: "text-sm"}, "No Prazo")), React.createElement("label", {
+                className: "flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 cursor-pointer"
+            }, React.createElement("input", {
+                type: "checkbox",
+                checked: window.acompSubfiltros?.foraPrazo || false,
+                onChange: function() { window.acompSubfiltros = {...(window.acompSubfiltros || {}), foraPrazo: !window.acompSubfiltros?.foraPrazo}; el(); },
+                className: "w-4 h-4 text-red-600 rounded"
+            }), React.createElement("span", {className: "text-sm"}, "Fora Prazo")), React.createElement("label", {
+                className: "flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 cursor-pointer"
+            }, React.createElement("input", {
+                type: "checkbox",
+                checked: window.acompSubfiltros?.retornos || false,
+                onChange: function() { window.acompSubfiltros = {...(window.acompSubfiltros || {}), retornos: !window.acompSubfiltros?.retornos}; el(); },
+                className: "w-4 h-4 text-orange-600 rounded"
+            }), React.createElement("span", {className: "text-sm"}, "Retornos")), React.createElement("label", {
+                className: "flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 cursor-pointer"
+            }, React.createElement("input", {
+                type: "checkbox",
+                checked: window.acompSubfiltros?.valorTotal || false,
+                onChange: function() { window.acompSubfiltros = {...(window.acompSubfiltros || {}), valorTotal: !window.acompSubfiltros?.valorTotal}; el(); },
+                className: "w-4 h-4 text-purple-600 rounded"
+            }), React.createElement("span", {className: "text-sm"}, "Valor Total"))),
+            
+            // Coluna 2 - Valores
+            React.createElement("div", {
+                className: "space-y-2"
+            }, React.createElement("label", {
+                className: "flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 cursor-pointer"
+            }, React.createElement("input", {
+                type: "checkbox",
+                checked: window.acompSubfiltros?.valorProf || false,
+                onChange: function() { window.acompSubfiltros = {...(window.acompSubfiltros || {}), valorProf: !window.acompSubfiltros?.valorProf}; el(); },
+                className: "w-4 h-4 text-orange-600 rounded"
+            }), React.createElement("span", {className: "text-sm"}, "Valor Prof.")), React.createElement("label", {
+                className: "flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 cursor-pointer"
+            }, React.createElement("input", {
+                type: "checkbox",
+                checked: window.acompSubfiltros?.fatTotal || false,
+                onChange: function() { window.acompSubfiltros = {...(window.acompSubfiltros || {}), fatTotal: !window.acompSubfiltros?.fatTotal}; el(); },
+                className: "w-4 h-4 text-green-600 rounded"
+            }), React.createElement("span", {className: "text-sm"}, "Fat. Total")), React.createElement("label", {
+                className: "flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 cursor-pointer"
+            }, React.createElement("input", {
+                type: "checkbox",
+                checked: window.acompSubfiltros?.ticketMedio || false,
+                onChange: function() { window.acompSubfiltros = {...(window.acompSubfiltros || {}), ticketMedio: !window.acompSubfiltros?.ticketMedio}; el(); },
+                className: "w-4 h-4 text-indigo-600 rounded"
+            }), React.createElement("span", {className: "text-sm"}, "Ticket Médio")), React.createElement("label", {
+                className: "flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 cursor-pointer"
+            }, React.createElement("input", {
+                type: "checkbox",
+                checked: window.acompSubfiltros?.tempoMedioEntrega || false,
+                onChange: function() { window.acompSubfiltros = {...(window.acompSubfiltros || {}), tempoMedioEntrega: !window.acompSubfiltros?.tempoMedioEntrega}; el(); },
+                className: "w-4 h-4 text-teal-600 rounded"
+            }), React.createElement("span", {className: "text-sm"}, "Temp. Médio Entrega")), React.createElement("label", {
+                className: "flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 cursor-pointer"
+            }, React.createElement("input", {
+                type: "checkbox",
+                checked: window.acompSubfiltros?.tempoMedioAlocacao || false,
+                onChange: function() { window.acompSubfiltros = {...(window.acompSubfiltros || {}), tempoMedioAlocacao: !window.acompSubfiltros?.tempoMedioAlocacao}; el(); },
+                className: "w-4 h-4 text-cyan-600 rounded"
+            }), React.createElement("span", {className: "text-sm"}, "Temp. Médio Alocação")), React.createElement("label", {
+                className: "flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 cursor-pointer"
+            }, React.createElement("input", {
+                type: "checkbox",
+                checked: window.acompSubfiltros?.tempoMedioColeta || false,
+                onChange: function() { window.acompSubfiltros = {...(window.acompSubfiltros || {}), tempoMedioColeta: !window.acompSubfiltros?.tempoMedioColeta}; el(); },
+                className: "w-4 h-4 text-amber-600 rounded"
+            }), React.createElement("span", {className: "text-sm"}, "Temp. Médio Coleta"))),
+            
+            // Coluna 3 - Outros
+            React.createElement("div", {
+                className: "space-y-2"
+            }, React.createElement("label", {
+                className: "flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 cursor-pointer"
+            }, React.createElement("input", {
+                type: "checkbox",
+                checked: window.acompSubfiltros?.totalEntregadores || false,
+                onChange: function() { window.acompSubfiltros = {...(window.acompSubfiltros || {}), totalEntregadores: !window.acompSubfiltros?.totalEntregadores}; el(); },
+                className: "w-4 h-4 text-blue-600 rounded"
+            }), React.createElement("span", {className: "text-sm"}, "Total Entregadores")), React.createElement("label", {
+                className: "flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 cursor-pointer"
+            }, React.createElement("input", {
+                type: "checkbox",
+                checked: window.acompSubfiltros?.mediaEntProf || false,
+                onChange: function() { window.acompSubfiltros = {...(window.acompSubfiltros || {}), mediaEntProf: !window.acompSubfiltros?.mediaEntProf}; el(); },
+                className: "w-4 h-4 text-violet-600 rounded"
+            }), React.createElement("span", {className: "text-sm"}, "Média Ent. Profissional")), React.createElement("label", {
+                className: "flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 cursor-pointer"
+            }, React.createElement("input", {
+                type: "checkbox",
+                checked: window.acompSubfiltros?.evolucaoSemanal || false,
+                onChange: function() { window.acompSubfiltros = {...(window.acompSubfiltros || {}), evolucaoSemanal: !window.acompSubfiltros?.evolucaoSemanal}; el(); },
+                className: "w-4 h-4 text-pink-600 rounded"
+            }), React.createElement("span", {className: "text-sm"}, "Evolução Semanal"))))),
+            
+            // Seção 3: Gráficos de Linha
+            React.createElement("div", {
+                className: "space-y-6"
+            }, 
+            // Gráfico OS
+            window.acompSubfiltros?.os && React.createElement("div", {
+                className: "bg-white rounded-xl shadow-lg p-6"
+            }, React.createElement("h3", {
+                className: "text-lg font-bold text-blue-800 mb-4 flex items-center gap-2"
+            }, "📦 OS por Período"), React.createElement("div", {
+                className: "relative h-64 border rounded-lg p-4"
+            }, React.createElement("svg", {
+                viewBox: "0 0 800 200",
+                className: "w-full h-full",
+                preserveAspectRatio: "xMidYMid meet"
+            }, 
+            // Grid
+            [0, 50, 100, 150, 200].map(function(y, i) {
+                return React.createElement("line", {key: "grid-"+i, x1: 50, y1: y, x2: 780, y2: y, stroke: "#E5E7EB", strokeDasharray: "4,4"});
+            }),
+            // Linha do gráfico
+            React.createElement("polyline", {
+                points: (Array.isArray(wt) ? wt : []).slice(0, 30).map(function(d, i, arr) {
+                    var maxVal = Math.max.apply(null, arr.map(function(x) { return parseInt(x.total_os) || 0; })) || 1;
+                    var x = 50 + (i * (730 / Math.max(arr.length - 1, 1)));
+                    var y = 180 - ((parseInt(d.total_os) || 0) / maxVal * 160);
+                    return x + "," + y;
+                }).join(" "),
+                fill: "none",
+                stroke: "#3B82F6",
+                strokeWidth: "3",
+                strokeLinecap: "round",
+                strokeLinejoin: "round"
+            }),
+            // Pontos com tooltip
+            (Array.isArray(wt) ? wt : []).slice(0, 30).map(function(d, i, arr) {
+                var maxVal = Math.max.apply(null, arr.map(function(x) { return parseInt(x.total_os) || 0; })) || 1;
+                var x = 50 + (i * (730 / Math.max(arr.length - 1, 1)));
+                var y = 180 - ((parseInt(d.total_os) || 0) / maxVal * 160);
+                return React.createElement("g", {key: "ponto-"+i},
+                    React.createElement("circle", {
+                        cx: x, cy: y, r: 6, fill: "#3B82F6", stroke: "white", strokeWidth: 2,
+                        style: {cursor: "pointer"},
+                        onMouseEnter: function(e) { 
+                            var tooltip = document.getElementById("tooltip-os");
+                            if(tooltip) { tooltip.style.display = "block"; tooltip.style.left = e.pageX + "px"; tooltip.style.top = (e.pageY - 60) + "px"; 
+                            tooltip.innerHTML = "<strong>" + (d.data_formatada || d.data) + "</strong><br/>OS: " + d.total_os; }
+                        },
+                        onMouseLeave: function() { var tooltip = document.getElementById("tooltip-os"); if(tooltip) tooltip.style.display = "none"; }
+                    })
+                );
+            })), 
+            // Legenda
+            React.createElement("div", {
+                className: "absolute top-2 right-2 flex items-center gap-2 bg-white/90 px-3 py-1 rounded-lg shadow text-sm"
+            }, React.createElement("span", {className: "w-4 h-1 bg-blue-500 rounded"}), React.createElement("span", null, "Total OS"))),
+            // Tooltip container
+            React.createElement("div", {
+                id: "tooltip-os",
+                style: {display: "none", position: "fixed", backgroundColor: "#1F2937", color: "white", padding: "8px 12px", borderRadius: "8px", fontSize: "12px", zIndex: 1000, pointerEvents: "none"}
+            })),
+            
+            // Gráfico Entregas
+            window.acompSubfiltros?.entregas && React.createElement("div", {
+                className: "bg-white rounded-xl shadow-lg p-6"
+            }, React.createElement("h3", {
+                className: "text-lg font-bold text-indigo-800 mb-4"
+            }, "📬 Entregas por Período"), React.createElement("div", {
+                className: "relative h-64 border rounded-lg p-4"
+            }, React.createElement("svg", {
+                viewBox: "0 0 800 200",
+                className: "w-full h-full"
+            }, [0, 50, 100, 150, 200].map(function(y, i) {
+                return React.createElement("line", {key: "grid-"+i, x1: 50, y1: y, x2: 780, y2: y, stroke: "#E5E7EB", strokeDasharray: "4,4"});
+            }), React.createElement("polyline", {
+                points: (Array.isArray(wt) ? wt : []).slice(0, 30).map(function(d, i, arr) {
+                    var maxVal = Math.max.apply(null, arr.map(function(x) { return parseInt(x.total_os) || 0; })) || 1;
+                    var x = 50 + (i * (730 / Math.max(arr.length - 1, 1)));
+                    var y = 180 - ((parseInt(d.total_os) || 0) / maxVal * 160);
+                    return x + "," + y;
+                }).join(" "),
+                fill: "none", stroke: "#6366F1", strokeWidth: "3"
+            }), (Array.isArray(wt) ? wt : []).slice(0, 30).map(function(d, i, arr) {
+                var maxVal = Math.max.apply(null, arr.map(function(x) { return parseInt(x.total_os) || 0; })) || 1;
+                var x = 50 + (i * (730 / Math.max(arr.length - 1, 1)));
+                var y = 180 - ((parseInt(d.total_os) || 0) / maxVal * 160);
+                return React.createElement("circle", {key: i, cx: x, cy: y, r: 5, fill: "#6366F1", stroke: "white", strokeWidth: 2});
+            })), React.createElement("div", {
+                className: "absolute top-2 right-2 flex items-center gap-2 bg-white/90 px-3 py-1 rounded-lg shadow text-sm"
+            }, React.createElement("span", {className: "w-4 h-1 bg-indigo-500 rounded"}), React.createElement("span", null, "Entregas")))),
+            
+            // Gráfico No Prazo
+            window.acompSubfiltros?.noPrazo && React.createElement("div", {
+                className: "bg-white rounded-xl shadow-lg p-6"
+            }, React.createElement("h3", {
+                className: "text-lg font-bold text-green-800 mb-4"
+            }, "✅ No Prazo por Período"), React.createElement("div", {
+                className: "relative h-64 border rounded-lg p-4"
+            }, React.createElement("svg", {
+                viewBox: "0 0 800 200",
+                className: "w-full h-full"
+            }, [0, 50, 100, 150, 200].map(function(y, i) {
+                return React.createElement("line", {key: "grid-"+i, x1: 50, y1: y, x2: 780, y2: y, stroke: "#E5E7EB", strokeDasharray: "4,4"});
+            }), React.createElement("polyline", {
+                points: (Array.isArray(wt) ? wt : []).slice(0, 30).map(function(d, i, arr) {
+                    var maxVal = Math.max.apply(null, arr.map(function(x) { return parseInt(x.dentro_prazo) || 0; })) || 1;
+                    var x = 50 + (i * (730 / Math.max(arr.length - 1, 1)));
+                    var y = 180 - ((parseInt(d.dentro_prazo) || 0) / maxVal * 160);
+                    return x + "," + y;
+                }).join(" "),
+                fill: "none", stroke: "#22C55E", strokeWidth: "3"
+            }), (Array.isArray(wt) ? wt : []).slice(0, 30).map(function(d, i, arr) {
+                var maxVal = Math.max.apply(null, arr.map(function(x) { return parseInt(x.dentro_prazo) || 0; })) || 1;
+                var x = 50 + (i * (730 / Math.max(arr.length - 1, 1)));
+                var y = 180 - ((parseInt(d.dentro_prazo) || 0) / maxVal * 160);
+                return React.createElement("circle", {key: i, cx: x, cy: y, r: 5, fill: "#22C55E", stroke: "white", strokeWidth: 2});
+            })), React.createElement("div", {
+                className: "absolute top-2 right-2 flex items-center gap-2 bg-white/90 px-3 py-1 rounded-lg shadow text-sm"
+            }, React.createElement("span", {className: "w-4 h-1 bg-green-500 rounded"}), React.createElement("span", null, "No Prazo")))),
+            
+            // Gráfico Fora Prazo
+            window.acompSubfiltros?.foraPrazo && React.createElement("div", {
+                className: "bg-white rounded-xl shadow-lg p-6"
+            }, React.createElement("h3", {
+                className: "text-lg font-bold text-red-800 mb-4"
+            }, "❌ Fora do Prazo por Período"), React.createElement("div", {
+                className: "relative h-64 border rounded-lg p-4"
+            }, React.createElement("svg", {
+                viewBox: "0 0 800 200",
+                className: "w-full h-full"
+            }, [0, 50, 100, 150, 200].map(function(y, i) {
+                return React.createElement("line", {key: "grid-"+i, x1: 50, y1: y, x2: 780, y2: y, stroke: "#E5E7EB", strokeDasharray: "4,4"});
+            }), React.createElement("polyline", {
+                points: (Array.isArray(wt) ? wt : []).slice(0, 30).map(function(d, i, arr) {
+                    var maxVal = Math.max.apply(null, arr.map(function(x) { return parseInt(x.fora_prazo) || 0; })) || 1;
+                    var x = 50 + (i * (730 / Math.max(arr.length - 1, 1)));
+                    var y = 180 - ((parseInt(d.fora_prazo) || 0) / maxVal * 160);
+                    return x + "," + y;
+                }).join(" "),
+                fill: "none", stroke: "#EF4444", strokeWidth: "3"
+            }), (Array.isArray(wt) ? wt : []).slice(0, 30).map(function(d, i, arr) {
+                var maxVal = Math.max.apply(null, arr.map(function(x) { return parseInt(x.fora_prazo) || 0; })) || 1;
+                var x = 50 + (i * (730 / Math.max(arr.length - 1, 1)));
+                var y = 180 - ((parseInt(d.fora_prazo) || 0) / maxVal * 160);
+                return React.createElement("circle", {key: i, cx: x, cy: y, r: 5, fill: "#EF4444", stroke: "white", strokeWidth: 2});
+            })), React.createElement("div", {
+                className: "absolute top-2 right-2 flex items-center gap-2 bg-white/90 px-3 py-1 rounded-lg shadow text-sm"
+            }, React.createElement("span", {className: "w-4 h-1 bg-red-500 rounded"}), React.createElement("span", null, "Fora Prazo")))),
+            
+            // Gráfico Valor Total
+            window.acompSubfiltros?.valorTotal && React.createElement("div", {
+                className: "bg-white rounded-xl shadow-lg p-6"
+            }, React.createElement("h3", {
+                className: "text-lg font-bold text-purple-800 mb-4"
+            }, "💰 Valor Total por Período"), React.createElement("div", {
+                className: "relative h-64 border rounded-lg p-4"
+            }, React.createElement("svg", {
+                viewBox: "0 0 800 200",
+                className: "w-full h-full"
+            }, [0, 50, 100, 150, 200].map(function(y, i) {
+                return React.createElement("line", {key: "grid-"+i, x1: 50, y1: y, x2: 780, y2: y, stroke: "#E5E7EB", strokeDasharray: "4,4"});
+            }), React.createElement("polyline", {
+                points: (Array.isArray(wt) ? wt : []).slice(0, 30).map(function(d, i, arr) {
+                    var maxVal = Math.max.apply(null, arr.map(function(x) { return parseFloat(x.valor_total) || 0; })) || 1;
+                    var x = 50 + (i * (730 / Math.max(arr.length - 1, 1)));
+                    var y = 180 - ((parseFloat(d.valor_total) || 0) / maxVal * 160);
+                    return x + "," + y;
+                }).join(" "),
+                fill: "none", stroke: "#8B5CF6", strokeWidth: "3"
+            }), (Array.isArray(wt) ? wt : []).slice(0, 30).map(function(d, i, arr) {
+                var maxVal = Math.max.apply(null, arr.map(function(x) { return parseFloat(x.valor_total) || 0; })) || 1;
+                var x = 50 + (i * (730 / Math.max(arr.length - 1, 1)));
+                var y = 180 - ((parseFloat(d.valor_total) || 0) / maxVal * 160);
+                return React.createElement("circle", {key: i, cx: x, cy: y, r: 5, fill: "#8B5CF6", stroke: "white", strokeWidth: 2});
+            })), React.createElement("div", {
+                className: "absolute top-2 right-2 flex items-center gap-2 bg-white/90 px-3 py-1 rounded-lg shadow text-sm"
+            }, React.createElement("span", {className: "w-4 h-1 bg-purple-500 rounded"}), React.createElement("span", null, "Valor Total")))),
+            
+            // Gráfico Valor Prof
+            window.acompSubfiltros?.valorProf && React.createElement("div", {
+                className: "bg-white rounded-xl shadow-lg p-6"
+            }, React.createElement("h3", {
+                className: "text-lg font-bold text-orange-800 mb-4"
+            }, "🏍️ Valor Profissional por Período"), React.createElement("div", {
+                className: "relative h-64 border rounded-lg p-4"
+            }, React.createElement("svg", {
+                viewBox: "0 0 800 200",
+                className: "w-full h-full"
+            }, [0, 50, 100, 150, 200].map(function(y, i) {
+                return React.createElement("line", {key: "grid-"+i, x1: 50, y1: y, x2: 780, y2: y, stroke: "#E5E7EB", strokeDasharray: "4,4"});
+            }), React.createElement("polyline", {
+                points: (Array.isArray(wt) ? wt : []).slice(0, 30).map(function(d, i, arr) {
+                    var maxVal = Math.max.apply(null, arr.map(function(x) { return parseFloat(x.valor_motoboy) || 0; })) || 1;
+                    var x = 50 + (i * (730 / Math.max(arr.length - 1, 1)));
+                    var y = 180 - ((parseFloat(d.valor_motoboy) || 0) / maxVal * 160);
+                    return x + "," + y;
+                }).join(" "),
+                fill: "none", stroke: "#F97316", strokeWidth: "3"
+            }), (Array.isArray(wt) ? wt : []).slice(0, 30).map(function(d, i, arr) {
+                var maxVal = Math.max.apply(null, arr.map(function(x) { return parseFloat(x.valor_motoboy) || 0; })) || 1;
+                var x = 50 + (i * (730 / Math.max(arr.length - 1, 1)));
+                var y = 180 - ((parseFloat(d.valor_motoboy) || 0) / maxVal * 160);
+                return React.createElement("circle", {key: i, cx: x, cy: y, r: 5, fill: "#F97316", stroke: "white", strokeWidth: 2});
+            })), React.createElement("div", {
+                className: "absolute top-2 right-2 flex items-center gap-2 bg-white/90 px-3 py-1 rounded-lg shadow text-sm"
+            }, React.createElement("span", {className: "w-4 h-1 bg-orange-500 rounded"}), React.createElement("span", null, "Valor Prof.")))),
+            
+            // Gráfico Tempo Médio Entrega
+            window.acompSubfiltros?.tempoMedioEntrega && React.createElement("div", {
+                className: "bg-white rounded-xl shadow-lg p-6"
+            }, React.createElement("h3", {
+                className: "text-lg font-bold text-teal-800 mb-4"
+            }, "⏱️ Tempo Médio de Entrega por Período"), React.createElement("div", {
+                className: "relative h-64 border rounded-lg p-4"
+            }, React.createElement("svg", {
+                viewBox: "0 0 800 200",
+                className: "w-full h-full"
+            }, [0, 50, 100, 150, 200].map(function(y, i) {
+                return React.createElement("line", {key: "grid-"+i, x1: 50, y1: y, x2: 780, y2: y, stroke: "#E5E7EB", strokeDasharray: "4,4"});
+            }), React.createElement("polyline", {
+                points: (Array.isArray(wt) ? wt : []).slice(0, 30).map(function(d, i, arr) {
+                    var maxVal = Math.max.apply(null, arr.map(function(x) { return parseFloat(x.tempo_medio) || 0; })) || 1;
+                    var x = 50 + (i * (730 / Math.max(arr.length - 1, 1)));
+                    var y = 180 - ((parseFloat(d.tempo_medio) || 0) / maxVal * 160);
+                    return x + "," + y;
+                }).join(" "),
+                fill: "none", stroke: "#14B8A6", strokeWidth: "3"
+            }), (Array.isArray(wt) ? wt : []).slice(0, 30).map(function(d, i, arr) {
+                var maxVal = Math.max.apply(null, arr.map(function(x) { return parseFloat(x.tempo_medio) || 0; })) || 1;
+                var x = 50 + (i * (730 / Math.max(arr.length - 1, 1)));
+                var y = 180 - ((parseFloat(d.tempo_medio) || 0) / maxVal * 160);
+                return React.createElement("circle", {key: i, cx: x, cy: y, r: 5, fill: "#14B8A6", stroke: "white", strokeWidth: 2});
+            })), React.createElement("div", {
+                className: "absolute top-2 right-2 flex items-center gap-2 bg-white/90 px-3 py-1 rounded-lg shadow text-sm"
+            }, React.createElement("span", {className: "w-4 h-1 bg-teal-500 rounded"}), React.createElement("span", null, "Tempo Médio")))),
+            
+            // Gráfico Ticket Médio
+            window.acompSubfiltros?.ticketMedio && React.createElement("div", {
+                className: "bg-white rounded-xl shadow-lg p-6"
+            }, React.createElement("h3", {
+                className: "text-lg font-bold text-indigo-800 mb-4"
+            }, "🎫 Ticket Médio por Período"), React.createElement("div", {
+                className: "relative h-64 border rounded-lg p-4"
+            }, React.createElement("svg", {
+                viewBox: "0 0 800 200",
+                className: "w-full h-full"
+            }, [0, 50, 100, 150, 200].map(function(y, i) {
+                return React.createElement("line", {key: "grid-"+i, x1: 50, y1: y, x2: 780, y2: y, stroke: "#E5E7EB", strokeDasharray: "4,4"});
+            }), React.createElement("polyline", {
+                points: (Array.isArray(wt) ? wt : []).slice(0, 30).map(function(d, i, arr) {
+                    var ticket = (parseFloat(d.valor_total) || 0) / (parseInt(d.total_os) || 1);
+                    var maxVal = Math.max.apply(null, arr.map(function(x) { return (parseFloat(x.valor_total) || 0) / (parseInt(x.total_os) || 1); })) || 1;
+                    var x = 50 + (i * (730 / Math.max(arr.length - 1, 1)));
+                    var y = 180 - (ticket / maxVal * 160);
+                    return x + "," + y;
+                }).join(" "),
+                fill: "none", stroke: "#6366F1", strokeWidth: "3"
+            }), (Array.isArray(wt) ? wt : []).slice(0, 30).map(function(d, i, arr) {
+                var ticket = (parseFloat(d.valor_total) || 0) / (parseInt(d.total_os) || 1);
+                var maxVal = Math.max.apply(null, arr.map(function(x) { return (parseFloat(x.valor_total) || 0) / (parseInt(x.total_os) || 1); })) || 1;
+                var x = 50 + (i * (730 / Math.max(arr.length - 1, 1)));
+                var y = 180 - (ticket / maxVal * 160);
+                return React.createElement("circle", {key: i, cx: x, cy: y, r: 5, fill: "#6366F1", stroke: "white", strokeWidth: 2});
+            })), React.createElement("div", {
+                className: "absolute top-2 right-2 flex items-center gap-2 bg-white/90 px-3 py-1 rounded-lg shadow text-sm"
+            }, React.createElement("span", {className: "w-4 h-1 bg-indigo-500 rounded"}), React.createElement("span", null, "Ticket Médio")))),
+            
+            // Mensagem quando nenhum subfiltro selecionado
+            !window.acompSubfiltros?.os && !window.acompSubfiltros?.entregas && !window.acompSubfiltros?.noPrazo && 
+            !window.acompSubfiltros?.foraPrazo && !window.acompSubfiltros?.valorTotal && !window.acompSubfiltros?.valorProf &&
+            !window.acompSubfiltros?.tempoMedioEntrega && !window.acompSubfiltros?.ticketMedio &&
+            !window.acompSubfiltros?.retornos && !window.acompSubfiltros?.fatTotal && !window.acompSubfiltros?.tempoMedioAlocacao &&
+            !window.acompSubfiltros?.tempoMedioColeta && !window.acompSubfiltros?.totalEntregadores && !window.acompSubfiltros?.mediaEntProf &&
+            !window.acompSubfiltros?.evolucaoSemanal &&
+            React.createElement("div", {
+                className: "bg-yellow-50 border-2 border-yellow-200 rounded-xl p-8 text-center"
+            }, React.createElement("div", {className: "text-4xl mb-4"}, "👆"), React.createElement("p", {
+                className: "text-yellow-800 font-semibold text-lg"
+            }, "Selecione pelo menos uma métrica acima para visualizar os gráficos"))
+            )), "profissionais" === Et && React.createElement("div", {
                 className: "bg-white rounded-lg shadow overflow-hidden"
             }, React.createElement("div", {
                 className: "bg-purple-100 px-4 py-3"
