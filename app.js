@@ -4031,11 +4031,13 @@ const hideLoadingScreen = () => {
                         className: "rounded-2xl p-6 border",
                         style: { backgroundColor: "rgba(243,118,1,0.15)", borderColor: "rgba(243,118,1,0.4)" }
                     },
-                        // Imagem da moto com baú - BASE64
+                        // Imagem da moto com baú - LAZY LOADING
                         React.createElement("div", {className: "flex justify-center mb-6 animate-scaleIn", style: { animationDelay: "0.3s", opacity: 0, animationFillMode: "forwards" }},
                             React.createElement("img", {
                                 src: "https://github.com/Leonardodevcloud/tutts-frontend/blob/main/Layer%200%20copy%20(1).png?raw=true",
                                 alt: "Moto com baú",
+                                loading: "lazy",
+                                decoding: "async",
                                 className: "max-w-full h-auto max-h-52 object-contain rounded-xl shadow-2xl hover:scale-105 transition-transform"
                             })
                         ),
