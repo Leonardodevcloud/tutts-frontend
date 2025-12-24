@@ -3880,11 +3880,50 @@ const hideLoadingScreen = () => {
             React.createElement("span", {className: "text-2xl group-hover:translate-x-1 transition-transform", style: { color: "#f37601" }}, "›")
         ),
         
-        // ========== MODAL LANDING PAGE ==========
+        // ========== MODAL LANDING PAGE COM ANIMAÇÕES ==========
         sobreTuttsAberto && React.createElement("div", {
             className: "fixed inset-0 z-[100] overflow-y-auto",
             style: { background: "linear-gradient(180deg, #550976 0%, #3d0656 50%, #2a0340 100%)" }
         },
+            // CSS para animações
+            React.createElement("style", null, `
+                @keyframes fadeInUp {
+                    from { opacity: 0; transform: translateY(40px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                @keyframes fadeInLeft {
+                    from { opacity: 0; transform: translateX(-40px); }
+                    to { opacity: 1; transform: translateX(0); }
+                }
+                @keyframes fadeInRight {
+                    from { opacity: 0; transform: translateX(40px); }
+                    to { opacity: 1; transform: translateX(0); }
+                }
+                @keyframes scaleIn {
+                    from { opacity: 0; transform: scale(0.8); }
+                    to { opacity: 1; transform: scale(1); }
+                }
+                @keyframes float {
+                    0%, 100% { transform: translateY(0px); }
+                    50% { transform: translateY(-10px); }
+                }
+                @keyframes pulse {
+                    0%, 100% { transform: scale(1); }
+                    50% { transform: scale(1.05); }
+                }
+                .animate-fadeInUp { animation: fadeInUp 0.6s ease-out forwards; }
+                .animate-fadeInLeft { animation: fadeInLeft 0.6s ease-out forwards; }
+                .animate-fadeInRight { animation: fadeInRight 0.6s ease-out forwards; }
+                .animate-scaleIn { animation: scaleIn 0.5s ease-out forwards; }
+                .animate-float { animation: float 3s ease-in-out infinite; }
+                .animate-pulse-slow { animation: pulse 2s ease-in-out infinite; }
+                .delay-100 { animation-delay: 0.1s; }
+                .delay-200 { animation-delay: 0.2s; }
+                .delay-300 { animation-delay: 0.3s; }
+                .delay-400 { animation-delay: 0.4s; }
+                .delay-500 { animation-delay: 0.5s; }
+            `),
+            
             // Header fixo
             React.createElement("div", {
                 className: "sticky top-0 z-10 backdrop-blur-lg border-b border-white/10",
@@ -3892,12 +3931,12 @@ const hideLoadingScreen = () => {
             },
                 React.createElement("div", {className: "max-w-4xl mx-auto px-4 py-4 flex items-center justify-between"},
                     React.createElement("div", {className: "flex items-center gap-3"},
-                        React.createElement("span", {className: "text-3xl"}, "🚀"),
+                        React.createElement("span", {className: "text-3xl animate-float"}, "🚀"),
                         React.createElement("h1", {className: "text-xl font-bold text-white"}, "Conheça a Tutts")
                     ),
                     React.createElement("button", {
                         onClick: () => setSobreTuttsAberto(false),
-                        className: "w-10 h-10 rounded-full flex items-center justify-center text-white transition-all hover:scale-110",
+                        className: "w-10 h-10 rounded-full flex items-center justify-center text-white transition-all hover:scale-110 hover:rotate-90",
                         style: { backgroundColor: "#f37601" }
                     }, "✕")
                 )
@@ -3907,9 +3946,9 @@ const hideLoadingScreen = () => {
             React.createElement("div", {className: "max-w-4xl mx-auto px-4 py-8"},
                 
                 // Hero Section
-                React.createElement("div", {className: "text-center mb-12"},
+                React.createElement("div", {className: "text-center mb-12 animate-fadeInUp"},
                     React.createElement("div", {
-                        className: "w-24 h-24 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-2xl",
+                        className: "w-24 h-24 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-2xl animate-pulse-slow",
                         style: { backgroundColor: "#f37601" }
                     }, React.createElement("span", {className: "text-5xl"}, "🏍️")),
                     React.createElement("h1", {className: "text-3xl md:text-4xl font-bold text-white mb-4"}, 
@@ -3922,10 +3961,10 @@ const hideLoadingScreen = () => {
                 ),
                 
                 // Seção 1: Modelo de Trabalho
-                React.createElement("div", {className: "mb-10"},
+                React.createElement("div", {className: "mb-10 animate-fadeInUp", style: { animationDelay: "0.1s", opacity: 0, animationFillMode: "forwards" }},
                     React.createElement("div", {className: "flex items-center gap-3 mb-6"},
                         React.createElement("div", {
-                            className: "w-10 h-10 rounded-xl flex items-center justify-center",
+                            className: "w-10 h-10 rounded-xl flex items-center justify-center animate-pulse-slow",
                             style: { backgroundColor: "#f37601" }
                         },
                             React.createElement("span", {className: "text-xl"}, "💼")
@@ -3936,12 +3975,12 @@ const hideLoadingScreen = () => {
                     React.createElement("div", {className: "grid md:grid-cols-2 gap-4"},
                         // Card Nuvem
                         React.createElement("div", {
-                            className: "rounded-2xl p-6 border transition-all hover:scale-[1.02]",
-                            style: { backgroundColor: "rgba(255,255,255,0.1)", borderColor: "rgba(243,118,1,0.3)" }
+                            className: "rounded-2xl p-6 border transition-all hover:scale-105 hover:shadow-2xl animate-fadeInLeft",
+                            style: { backgroundColor: "rgba(255,255,255,0.1)", borderColor: "rgba(243,118,1,0.3)", animationDelay: "0.2s", opacity: 0, animationFillMode: "forwards" }
                         },
                             React.createElement("div", {className: "flex items-center gap-3 mb-4"},
                                 React.createElement("div", {
-                                    className: "w-12 h-12 rounded-xl flex items-center justify-center shadow-lg",
+                                    className: "w-12 h-12 rounded-xl flex items-center justify-center shadow-lg animate-float",
                                     style: { background: "linear-gradient(135deg, #3b82f6, #06b6d4)" }
                                 },
                                     React.createElement("span", {className: "text-2xl"}, "☁️")
@@ -3956,13 +3995,13 @@ const hideLoadingScreen = () => {
                         ),
                         // Card Dedicada
                         React.createElement("div", {
-                            className: "rounded-2xl p-6 border transition-all hover:scale-[1.02]",
-                            style: { backgroundColor: "rgba(255,255,255,0.1)", borderColor: "rgba(243,118,1,0.3)" }
+                            className: "rounded-2xl p-6 border transition-all hover:scale-105 hover:shadow-2xl animate-fadeInRight",
+                            style: { backgroundColor: "rgba(255,255,255,0.1)", borderColor: "rgba(243,118,1,0.3)", animationDelay: "0.3s", opacity: 0, animationFillMode: "forwards" }
                         },
                             React.createElement("div", {className: "flex items-center gap-3 mb-4"},
                                 React.createElement("div", {
-                                    className: "w-12 h-12 rounded-xl flex items-center justify-center shadow-lg",
-                                    style: { backgroundColor: "#f37601" }
+                                    className: "w-12 h-12 rounded-xl flex items-center justify-center shadow-lg animate-float",
+                                    style: { backgroundColor: "#f37601", animationDelay: "0.5s" }
                                 },
                                     React.createElement("span", {className: "text-2xl"}, "🏪")
                                 ),
@@ -3978,7 +4017,7 @@ const hideLoadingScreen = () => {
                 ),
                 
                 // Seção 2: Necessidade de Baú
-                React.createElement("div", {className: "mb-10"},
+                React.createElement("div", {className: "mb-10 animate-fadeInUp", style: { animationDelay: "0.2s", opacity: 0, animationFillMode: "forwards" }},
                     React.createElement("div", {className: "flex items-center gap-3 mb-6"},
                         React.createElement("div", {
                             className: "w-10 h-10 rounded-xl flex items-center justify-center",
@@ -3992,12 +4031,12 @@ const hideLoadingScreen = () => {
                         className: "rounded-2xl p-6 border",
                         style: { backgroundColor: "rgba(243,118,1,0.15)", borderColor: "rgba(243,118,1,0.4)" }
                     },
-                        // Imagem da moto com baú
-                        React.createElement("div", {className: "flex justify-center mb-6"},
+                        // Imagem da moto com baú - BASE64
+                        React.createElement("div", {className: "flex justify-center mb-6 animate-scaleIn", style: { animationDelay: "0.3s", opacity: 0, animationFillMode: "forwards" }},
                             React.createElement("img", {
-                                src: "https://i.ibb.co/KxHqV9Mq/Layer-0-copy-1.png",
+                                src: "data:image/jpeg;base64,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",
                                 alt: "Moto com baú",
-                                className: "max-w-full h-auto max-h-48 object-contain rounded-xl"
+                                className: "max-w-full h-auto max-h-52 object-contain rounded-xl shadow-2xl hover:scale-105 transition-transform"
                             })
                         ),
                         React.createElement("p", {className: "text-lg mb-6", style: { color: "rgba(255,255,255,0.9)" }},
@@ -4017,10 +4056,10 @@ const hideLoadingScreen = () => {
                             ].map((item, idx) => 
                                 React.createElement("div", {
                                     key: idx,
-                                    className: "rounded-xl p-4 text-center transition-all hover:scale-105",
-                                    style: { backgroundColor: "rgba(85,9,118,0.5)" }
+                                    className: "rounded-xl p-4 text-center transition-all hover:scale-110 animate-fadeInUp",
+                                    style: { backgroundColor: "rgba(85,9,118,0.5)", animationDelay: (0.4 + idx * 0.1) + "s", opacity: 0, animationFillMode: "forwards" }
                                 },
-                                    React.createElement("span", {className: "text-3xl block mb-2"}, item.icon),
+                                    React.createElement("span", {className: "text-3xl block mb-2 animate-float", style: { animationDelay: idx * 0.2 + "s" }}, item.icon),
                                     React.createElement("span", {className: "text-white text-sm font-medium"}, item.text)
                                 )
                             )
@@ -4029,10 +4068,10 @@ const hideLoadingScreen = () => {
                 ),
                 
                 // Seção 3: Taxas Administrativas
-                React.createElement("div", {className: "mb-10"},
+                React.createElement("div", {className: "mb-10 animate-fadeInUp", style: { animationDelay: "0.3s", opacity: 0, animationFillMode: "forwards" }},
                     React.createElement("div", {className: "flex items-center gap-3 mb-6"},
                         React.createElement("div", {
-                            className: "w-10 h-10 rounded-xl flex items-center justify-center",
+                            className: "w-10 h-10 rounded-xl flex items-center justify-center animate-pulse-slow",
                             style: { backgroundColor: "#22c55e" }
                         },
                             React.createElement("span", {className: "text-xl"}, "💰")
@@ -4087,10 +4126,10 @@ const hideLoadingScreen = () => {
                 ),
                 
                 // Seção 4: Canhotos
-                React.createElement("div", {className: "mb-10"},
+                React.createElement("div", {className: "mb-10 animate-fadeInUp", style: { animationDelay: "0.4s", opacity: 0, animationFillMode: "forwards" }},
                     React.createElement("div", {className: "flex items-center gap-3 mb-6"},
                         React.createElement("div", {
-                            className: "w-10 h-10 rounded-xl flex items-center justify-center",
+                            className: "w-10 h-10 rounded-xl flex items-center justify-center animate-pulse-slow",
                             style: { backgroundColor: "#550976" }
                         },
                             React.createElement("span", {className: "text-xl"}, "📝")
@@ -4135,10 +4174,10 @@ const hideLoadingScreen = () => {
                 ),
                 
                 // Seção 5: Incentivos
-                React.createElement("div", {className: "mb-10"},
+                React.createElement("div", {className: "mb-10 animate-fadeInUp", style: { animationDelay: "0.5s", opacity: 0, animationFillMode: "forwards" }},
                     React.createElement("div", {className: "flex items-center gap-3 mb-6"},
                         React.createElement("div", {
-                            className: "w-10 h-10 rounded-xl flex items-center justify-center",
+                            className: "w-10 h-10 rounded-xl flex items-center justify-center animate-pulse-slow",
                             style: { backgroundColor: "#f37601" }
                         },
                             React.createElement("span", {className: "text-xl"}, "🎯")
