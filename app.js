@@ -14534,10 +14534,32 @@ const hideLoadingScreen = () => {
             
             // Mensagem se não tem dados
             !acompLoading && !acompDados && React.createElement("div", {
-                className: "bg-gray-50 border-2 border-gray-200 rounded-xl p-8 text-center"
+                className: "bg-blue-50 border-2 border-blue-200 rounded-xl p-8 text-center"
             }, React.createElement("div", {className: "text-5xl mb-4"}, "📊"), React.createElement("p", {
-                className: "text-gray-600 font-semibold"
-            }, "Use o filtro principal para selecionar o período e clique novamente na aba para carregar os dados"))
+                className: "text-blue-800 font-semibold text-lg mb-2"
+            }, "Carregando dados do BI..."), React.createElement("p", {
+                className: "text-blue-600 mb-4"
+            }, "Os dados vêm da planilha que foi feita upload na aba Upload"), React.createElement("button", {
+                onClick: carregarAcompanhamento,
+                className: "px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition"
+            }, "🔄 Carregar Dados")),
+            
+            // Mensagem se carregou mas está vazio
+            !acompLoading && acompDados && (!acompDados.porData || acompDados.porData.length === 0) && React.createElement("div", {
+                className: "bg-yellow-50 border-2 border-yellow-200 rounded-xl p-8 text-center"
+            }, React.createElement("div", {className: "text-5xl mb-4"}, "⚠️"), React.createElement("p", {
+                className: "text-yellow-800 font-semibold text-lg mb-2"
+            }, "Nenhum dado encontrado para o período selecionado"), React.createElement("p", {
+                className: "text-yellow-600 mb-4"
+            }, "Verifique se já fez upload da planilha e se as datas estão corretas"), React.createElement("div", {
+                className: "flex justify-center gap-4"
+            }, React.createElement("button", {
+                onClick: function() { _a(true); },
+                className: "px-6 py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition"
+            }, "🔍 Ajustar Filtros"), React.createElement("button", {
+                onClick: carregarAcompanhamento,
+                className: "px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition"
+            }, "🔄 Tentar Novamente")))
             
             ), "profissionais" === Et && React.createElement("div", {
                 className: "bg-white rounded-lg shadow overflow-hidden"
