@@ -3866,25 +3866,29 @@ const hideLoadingScreen = () => {
         // ========== BOTÃO CONHEÇA A TUTTS ==========
         React.createElement("button", {
             onClick: () => setSobreTuttsAberto(true),
-            className: "w-full mb-6 bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 rounded-2xl p-5 flex items-center gap-4 shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] group"
+            className: "w-full mb-6 rounded-2xl p-5 flex items-center gap-4 shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] group",
+            style: { background: "linear-gradient(135deg, #550976 0%, #6b1190 50%, #550976 100%)" }
         },
             React.createElement("div", {
-                className: "w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform"
+                className: "w-14 h-14 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform",
+                style: { backgroundColor: "#f37601" }
             }, React.createElement("span", {className: "text-3xl"}, "🚀")),
             React.createElement("div", {className: "text-left flex-1"},
                 React.createElement("h3", {className: "text-lg font-bold text-white"}, "Conheça como funciona a Tutts"),
-                React.createElement("p", {className: "text-sm text-purple-200"}, "Tudo sobre modalidades, taxas, incentivos e mais")
+                React.createElement("p", {className: "text-sm", style: { color: "rgba(255,255,255,0.7)" }}, "Tudo sobre modalidades, taxas, incentivos e mais")
             ),
-            React.createElement("span", {className: "text-white/60 text-2xl group-hover:translate-x-1 transition-transform"}, "›")
+            React.createElement("span", {className: "text-2xl group-hover:translate-x-1 transition-transform", style: { color: "#f37601" }}, "›")
         ),
         
         // ========== MODAL LANDING PAGE ==========
         sobreTuttsAberto && React.createElement("div", {
-            className: "fixed inset-0 z-[100] bg-gradient-to-br from-purple-900 via-indigo-900 to-purple-950 overflow-y-auto"
+            className: "fixed inset-0 z-[100] overflow-y-auto",
+            style: { background: "linear-gradient(180deg, #550976 0%, #3d0656 50%, #2a0340 100%)" }
         },
             // Header fixo
             React.createElement("div", {
-                className: "sticky top-0 z-10 bg-purple-900/95 backdrop-blur-lg border-b border-white/10"
+                className: "sticky top-0 z-10 backdrop-blur-lg border-b border-white/10",
+                style: { backgroundColor: "rgba(85, 9, 118, 0.95)" }
             },
                 React.createElement("div", {className: "max-w-4xl mx-auto px-4 py-4 flex items-center justify-between"},
                     React.createElement("div", {className: "flex items-center gap-3"},
@@ -3893,7 +3897,8 @@ const hideLoadingScreen = () => {
                     ),
                     React.createElement("button", {
                         onClick: () => setSobreTuttsAberto(false),
-                        className: "w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-all"
+                        className: "w-10 h-10 rounded-full flex items-center justify-center text-white transition-all hover:scale-110",
+                        style: { backgroundColor: "#f37601" }
                     }, "✕")
                 )
             ),
@@ -3904,13 +3909,14 @@ const hideLoadingScreen = () => {
                 // Hero Section
                 React.createElement("div", {className: "text-center mb-12"},
                     React.createElement("div", {
-                        className: "w-24 h-24 bg-gradient-to-br from-orange-400 to-pink-500 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-2xl"
+                        className: "w-24 h-24 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-2xl",
+                        style: { backgroundColor: "#f37601" }
                     }, React.createElement("span", {className: "text-5xl"}, "🏍️")),
                     React.createElement("h1", {className: "text-3xl md:text-4xl font-bold text-white mb-4"}, 
                         "Bem-vindo à ", 
-                        React.createElement("span", {className: "text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-pink-500"}, "Tutts")
+                        React.createElement("span", {style: { color: "#f37601" }}, "Tutts")
                     ),
-                    React.createElement("p", {className: "text-lg text-purple-200 max-w-2xl mx-auto leading-relaxed"},
+                    React.createElement("p", {className: "text-lg max-w-2xl mx-auto leading-relaxed", style: { color: "rgba(255,255,255,0.8)" }},
                         "Atue de forma autônoma, com flexibilidade e oportunidades reais de ganho, em um modelo pensado especialmente para o segmento de peças automotivas."
                     )
                 ),
@@ -3918,42 +3924,53 @@ const hideLoadingScreen = () => {
                 // Seção 1: Modelo de Trabalho
                 React.createElement("div", {className: "mb-10"},
                     React.createElement("div", {className: "flex items-center gap-3 mb-6"},
-                        React.createElement("div", {className: "w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center"},
+                        React.createElement("div", {
+                            className: "w-10 h-10 rounded-xl flex items-center justify-center",
+                            style: { backgroundColor: "#f37601" }
+                        },
                             React.createElement("span", {className: "text-xl"}, "💼")
                         ),
                         React.createElement("h2", {className: "text-2xl font-bold text-white"}, "Modelo de Trabalho")
                     ),
-                    React.createElement("p", {className: "text-purple-200 mb-6"}, "Na Tutts, você pode rodar em duas modalidades:"),
+                    React.createElement("p", {className: "mb-6", style: { color: "rgba(255,255,255,0.7)" }}, "Na Tutts, você pode rodar em duas modalidades:"),
                     React.createElement("div", {className: "grid md:grid-cols-2 gap-4"},
                         // Card Nuvem
                         React.createElement("div", {
-                            className: "bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-2xl p-6 border border-blue-400/30 hover:border-blue-400/60 transition-all"
+                            className: "rounded-2xl p-6 border transition-all hover:scale-[1.02]",
+                            style: { backgroundColor: "rgba(255,255,255,0.1)", borderColor: "rgba(243,118,1,0.3)" }
                         },
                             React.createElement("div", {className: "flex items-center gap-3 mb-4"},
-                                React.createElement("div", {className: "w-12 h-12 bg-gradient-to-br from-blue-400 to-cyan-400 rounded-xl flex items-center justify-center shadow-lg"},
+                                React.createElement("div", {
+                                    className: "w-12 h-12 rounded-xl flex items-center justify-center shadow-lg",
+                                    style: { background: "linear-gradient(135deg, #3b82f6, #06b6d4)" }
+                                },
                                     React.createElement("span", {className: "text-2xl"}, "☁️")
                                 ),
                                 React.createElement("h3", {className: "text-xl font-bold text-white"}, "Modalidade Nuvem")
                             ),
-                            React.createElement("p", {className: "text-blue-100 leading-relaxed"},
+                            React.createElement("p", {className: "leading-relaxed", style: { color: "rgba(255,255,255,0.8)" }},
                                 "Você permanece online no aplicativo e recebe pedidos eventuais, que aparecem diretamente na sua tela. ",
-                                React.createElement("span", {className: "text-cyan-300 font-semibold"}, "Ideal para quem busca flexibilidade"),
+                                React.createElement("span", {className: "font-semibold", style: { color: "#f37601" }}, "Ideal para quem busca flexibilidade"),
                                 " e quer rodar conforme a disponibilidade."
                             )
                         ),
                         // Card Dedicada
                         React.createElement("div", {
-                            className: "bg-gradient-to-br from-orange-500/20 to-red-500/20 rounded-2xl p-6 border border-orange-400/30 hover:border-orange-400/60 transition-all"
+                            className: "rounded-2xl p-6 border transition-all hover:scale-[1.02]",
+                            style: { backgroundColor: "rgba(255,255,255,0.1)", borderColor: "rgba(243,118,1,0.3)" }
                         },
                             React.createElement("div", {className: "flex items-center gap-3 mb-4"},
-                                React.createElement("div", {className: "w-12 h-12 bg-gradient-to-br from-orange-400 to-red-400 rounded-xl flex items-center justify-center shadow-lg"},
+                                React.createElement("div", {
+                                    className: "w-12 h-12 rounded-xl flex items-center justify-center shadow-lg",
+                                    style: { backgroundColor: "#f37601" }
+                                },
                                     React.createElement("span", {className: "text-2xl"}, "🏪")
                                 ),
                                 React.createElement("h3", {className: "text-xl font-bold text-white"}, "Modalidade Dedicada")
                             ),
-                            React.createElement("p", {className: "text-orange-100 leading-relaxed"},
+                            React.createElement("p", {className: "leading-relaxed", style: { color: "rgba(255,255,255,0.8)" }},
                                 "A demanda é direcionada para você durante o horário de atendimento da loja parceira. ",
-                                React.createElement("span", {className: "text-yellow-300 font-semibold"}, "Operação mais previsível"),
+                                React.createElement("span", {className: "font-semibold", style: { color: "#f37601" }}, "Operação mais previsível"),
                                 ", com fluxo constante de entregas."
                             )
                         )
@@ -3963,20 +3980,34 @@ const hideLoadingScreen = () => {
                 // Seção 2: Necessidade de Baú
                 React.createElement("div", {className: "mb-10"},
                     React.createElement("div", {className: "flex items-center gap-3 mb-6"},
-                        React.createElement("div", {className: "w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center"},
+                        React.createElement("div", {
+                            className: "w-10 h-10 rounded-xl flex items-center justify-center",
+                            style: { backgroundColor: "#f37601" }
+                        },
                             React.createElement("span", {className: "text-xl"}, "📦")
                         ),
                         React.createElement("h2", {className: "text-2xl font-bold text-white"}, "Necessidade de Baú")
                     ),
-                    React.createElement("div", {className: "bg-gradient-to-br from-amber-500/20 to-orange-500/20 rounded-2xl p-6 border border-amber-400/30"},
-                        React.createElement("p", {className: "text-amber-100 mb-6 text-lg"},
+                    React.createElement("div", {
+                        className: "rounded-2xl p-6 border",
+                        style: { backgroundColor: "rgba(243,118,1,0.15)", borderColor: "rgba(243,118,1,0.4)" }
+                    },
+                        // Imagem da moto com baú
+                        React.createElement("div", {className: "flex justify-center mb-6"},
+                            React.createElement("img", {
+                                src: "https://i.ibb.co/KxHqV9Mq/Layer-0-copy-1.png",
+                                alt: "Moto com baú",
+                                className: "max-w-full h-auto max-h-48 object-contain rounded-xl"
+                            })
+                        ),
+                        React.createElement("p", {className: "text-lg mb-6", style: { color: "rgba(255,255,255,0.9)" }},
                             "Como o foco é o transporte de peças automotivas, ",
-                            React.createElement("span", {className: "text-red-300 font-bold"}, "não é permitido o uso de bags"),
+                            React.createElement("span", {className: "font-bold", style: { color: "#ff6b6b" }}, "não é permitido o uso de bags"),
                             ". É ",
-                            React.createElement("span", {className: "text-green-300 font-bold"}, "obrigatório o uso de baú ou caixote"),
+                            React.createElement("span", {className: "font-bold", style: { color: "#51cf66" }}, "obrigatório o uso de baú ou caixote"),
                             "."
                         ),
-                        React.createElement("p", {className: "text-amber-200 mb-4"}, "Essa exigência garante:"),
+                        React.createElement("p", {className: "mb-4", style: { color: "rgba(255,255,255,0.7)" }}, "Essa exigência garante:"),
                         React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-4 gap-3"},
                             [
                                 {icon: "🛡️", text: "Maior segurança"},
@@ -3986,7 +4017,8 @@ const hideLoadingScreen = () => {
                             ].map((item, idx) => 
                                 React.createElement("div", {
                                     key: idx,
-                                    className: "bg-white/10 rounded-xl p-4 text-center hover:bg-white/20 transition-all"
+                                    className: "rounded-xl p-4 text-center transition-all hover:scale-105",
+                                    style: { backgroundColor: "rgba(85,9,118,0.5)" }
                                 },
                                     React.createElement("span", {className: "text-3xl block mb-2"}, item.icon),
                                     React.createElement("span", {className: "text-white text-sm font-medium"}, item.text)
@@ -3999,39 +4031,54 @@ const hideLoadingScreen = () => {
                 // Seção 3: Taxas Administrativas
                 React.createElement("div", {className: "mb-10"},
                     React.createElement("div", {className: "flex items-center gap-3 mb-6"},
-                        React.createElement("div", {className: "w-10 h-10 bg-green-500 rounded-xl flex items-center justify-center"},
+                        React.createElement("div", {
+                            className: "w-10 h-10 rounded-xl flex items-center justify-center",
+                            style: { backgroundColor: "#22c55e" }
+                        },
                             React.createElement("span", {className: "text-xl"}, "💰")
                         ),
                         React.createElement("h2", {className: "text-2xl font-bold text-white"}, "Taxas Administrativas")
                     ),
-                    React.createElement("div", {className: "bg-gradient-to-br from-green-500/20 to-emerald-500/20 rounded-2xl p-6 border border-green-400/30"},
-                        React.createElement("p", {className: "text-green-100 text-lg mb-6"},
+                    React.createElement("div", {
+                        className: "rounded-2xl p-6 border",
+                        style: { backgroundColor: "rgba(34,197,94,0.15)", borderColor: "rgba(34,197,94,0.4)" }
+                    },
+                        React.createElement("p", {className: "text-lg mb-6", style: { color: "rgba(255,255,255,0.9)" }},
                             "Com a Tutts, seu dinheiro fica na palma da mão. Solicite o saque em ",
-                            React.createElement("span", {className: "text-yellow-300 font-bold text-2xl"}, "até 1 hora"),
+                            React.createElement("span", {className: "font-bold text-2xl", style: { color: "#f37601" }}, "até 1 hora"),
                             "!"
                         ),
                         React.createElement("div", {className: "grid md:grid-cols-2 gap-4 mb-6"},
-                            React.createElement("div", {className: "bg-white/10 rounded-xl p-5"},
+                            React.createElement("div", {
+                                className: "rounded-xl p-5",
+                                style: { backgroundColor: "rgba(255,255,255,0.1)" }
+                            },
                                 React.createElement("div", {className: "flex items-center gap-3 mb-2"},
                                     React.createElement("span", {className: "text-2xl"}, "✅"),
                                     React.createElement("span", {className: "text-white font-bold"}, "Saque Emergencial")
                                 ),
-                                React.createElement("p", {className: "text-green-200"}, "Liberação de 100% do saldo disponível")
+                                React.createElement("p", {style: { color: "rgba(255,255,255,0.8)" }}, "Liberação de 100% do saldo disponível")
                             ),
-                            React.createElement("div", {className: "bg-white/10 rounded-xl p-5"},
+                            React.createElement("div", {
+                                className: "rounded-xl p-5",
+                                style: { backgroundColor: "rgba(255,255,255,0.1)" }
+                            },
                                 React.createElement("div", {className: "flex items-center gap-3 mb-2"},
                                     React.createElement("span", {className: "text-2xl"}, "📊"),
                                     React.createElement("span", {className: "text-white font-bold"}, "Taxa Administrativa")
                                 ),
-                                React.createElement("p", {className: "text-green-200"}, "Apenas ", React.createElement("span", {className: "text-yellow-300 font-bold text-xl"}, "4,5%"), " sobre o valor")
+                                React.createElement("p", {style: { color: "rgba(255,255,255,0.8)" }}, "Apenas ", React.createElement("span", {className: "font-bold text-xl", style: { color: "#f37601" }}, "4,5%"), " sobre o valor")
                             )
                         ),
-                        React.createElement("div", {className: "bg-gradient-to-r from-purple-500/30 to-pink-500/30 rounded-xl p-5 border border-purple-400/30"},
+                        React.createElement("div", {
+                            className: "rounded-xl p-5 border",
+                            style: { backgroundColor: "rgba(85,9,118,0.4)", borderColor: "rgba(243,118,1,0.3)" }
+                        },
                             React.createElement("p", {className: "text-white flex items-start gap-3"},
                                 React.createElement("span", {className: "text-2xl"}, "🎉"),
                                 React.createElement("span", null,
                                     "A Tutts frequentemente disponibiliza ",
-                                    React.createElement("span", {className: "font-bold text-pink-300"}, "promoções com isenção dessa taxa"),
+                                    React.createElement("span", {className: "font-bold", style: { color: "#f37601" }}, "promoções com isenção dessa taxa"),
                                     ", aumentando ainda mais sua rentabilidade!"
                                 )
                             )
@@ -4042,15 +4089,21 @@ const hideLoadingScreen = () => {
                 // Seção 4: Canhotos
                 React.createElement("div", {className: "mb-10"},
                     React.createElement("div", {className: "flex items-center gap-3 mb-6"},
-                        React.createElement("div", {className: "w-10 h-10 bg-indigo-500 rounded-xl flex items-center justify-center"},
+                        React.createElement("div", {
+                            className: "w-10 h-10 rounded-xl flex items-center justify-center",
+                            style: { backgroundColor: "#550976" }
+                        },
                             React.createElement("span", {className: "text-xl"}, "📝")
                         ),
                         React.createElement("h2", {className: "text-2xl font-bold text-white"}, "Uso de Canhotos")
                     ),
-                    React.createElement("div", {className: "bg-gradient-to-br from-indigo-500/20 to-purple-500/20 rounded-2xl p-6 border border-indigo-400/30"},
-                        React.createElement("p", {className: "text-indigo-100 text-lg mb-6"},
+                    React.createElement("div", {
+                        className: "rounded-2xl p-6 border",
+                        style: { backgroundColor: "rgba(85,9,118,0.3)", borderColor: "rgba(243,118,1,0.3)" }
+                    },
+                        React.createElement("p", {className: "text-lg mb-6", style: { color: "rgba(255,255,255,0.9)" }},
                             "É ",
-                            React.createElement("span", {className: "text-yellow-300 font-bold"}, "obrigatório o preenchimento do canhoto"),
+                            React.createElement("span", {className: "font-bold", style: { color: "#f37601" }}, "obrigatório o preenchimento do canhoto"),
                             " da nota fiscal pelo cliente."
                         ),
                         React.createElement("div", {className: "space-y-3 mb-6"},
@@ -4061,15 +4114,19 @@ const hideLoadingScreen = () => {
                             ].map((item, idx) => 
                                 React.createElement("div", {
                                     key: idx,
-                                    className: "bg-white/10 rounded-xl p-4 flex items-center gap-4"
+                                    className: "rounded-xl p-4 flex items-center gap-4",
+                                    style: { backgroundColor: "rgba(255,255,255,0.1)" }
                                 },
                                     React.createElement("span", {className: "text-2xl"}, item.icon),
                                     React.createElement("span", {className: "text-white font-medium"}, item.text)
                                 )
                             )
                         ),
-                        React.createElement("div", {className: "bg-red-500/20 rounded-xl p-4 border border-red-400/30"},
-                            React.createElement("p", {className: "text-red-100 font-semibold flex items-center gap-2"},
+                        React.createElement("div", {
+                            className: "rounded-xl p-4 border",
+                            style: { backgroundColor: "rgba(239,68,68,0.2)", borderColor: "rgba(239,68,68,0.4)" }
+                        },
+                            React.createElement("p", {className: "font-semibold flex items-center gap-2", style: { color: "#fca5a5" }},
                                 React.createElement("span", {className: "text-xl"}, "⚠️"),
                                 "Somente com essas etapas a entrega será validada!"
                             )
@@ -4080,19 +4137,28 @@ const hideLoadingScreen = () => {
                 // Seção 5: Incentivos
                 React.createElement("div", {className: "mb-10"},
                     React.createElement("div", {className: "flex items-center gap-3 mb-6"},
-                        React.createElement("div", {className: "w-10 h-10 bg-pink-500 rounded-xl flex items-center justify-center"},
+                        React.createElement("div", {
+                            className: "w-10 h-10 rounded-xl flex items-center justify-center",
+                            style: { backgroundColor: "#f37601" }
+                        },
                             React.createElement("span", {className: "text-xl"}, "🎯")
                         ),
                         React.createElement("h2", {className: "text-2xl font-bold text-white"}, "Sistema de Incentivos")
                     ),
-                    React.createElement("div", {className: "bg-gradient-to-br from-pink-500/20 to-rose-500/20 rounded-2xl p-6 border border-pink-400/30"},
-                        React.createElement("p", {className: "text-pink-100 text-lg mb-6"},
+                    React.createElement("div", {
+                        className: "rounded-2xl p-6 border",
+                        style: { backgroundColor: "rgba(243,118,1,0.15)", borderColor: "rgba(243,118,1,0.4)" }
+                    },
+                        React.createElement("p", {className: "text-lg mb-6", style: { color: "rgba(255,255,255,0.9)" }},
                             "A Tutts conta com um sistema de ",
-                            React.createElement("span", {className: "text-yellow-300 font-bold"}, "incentivos progressivos"),
+                            React.createElement("span", {className: "font-bold", style: { color: "#f37601" }}, "incentivos progressivos"),
                             ", liberado conforme você avança e se mantém ativo."
                         ),
-                        React.createElement("div", {className: "bg-yellow-500/20 rounded-xl p-5 border border-yellow-400/30 mb-6"},
-                            React.createElement("p", {className: "text-yellow-100 font-semibold mb-4 flex items-center gap-2"},
+                        React.createElement("div", {
+                            className: "rounded-xl p-5 border mb-6",
+                            style: { backgroundColor: "rgba(85,9,118,0.4)", borderColor: "rgba(243,118,1,0.3)" }
+                        },
+                            React.createElement("p", {className: "font-semibold mb-4 flex items-center gap-2", style: { color: "#f37601" }},
                                 React.createElement("span", {className: "text-xl"}, "📢"),
                                 "Fique atento:"
                             ),
@@ -4100,16 +4166,20 @@ const hideLoadingScreen = () => {
                                 ["Grupos oficiais", "Status", "Avisos na Central"].map((item, idx) => 
                                     React.createElement("span", {
                                         key: idx,
-                                        className: "px-4 py-2 bg-white/20 rounded-full text-white font-medium"
+                                        className: "px-4 py-2 rounded-full text-white font-medium",
+                                        style: { backgroundColor: "rgba(255,255,255,0.15)" }
                                     }, item)
                                 )
                             )
                         ),
-                        React.createElement("div", {className: "bg-gradient-to-r from-green-400 to-emerald-500 rounded-xl p-6 text-center"},
+                        React.createElement("div", {
+                            className: "rounded-xl p-6 text-center",
+                            style: { background: "linear-gradient(135deg, #f37601 0%, #ff9f43 100%)" }
+                        },
                             React.createElement("p", {className: "text-white text-xl font-bold mb-2"},
                                 "🚀 Promoções e incentivos para impulsionar seus ganhos!"
                             ),
-                            React.createElement("p", {className: "text-green-100"},
+                            React.createElement("p", {style: { color: "rgba(255,255,255,0.9)" }},
                                 "Acompanhe de perto e aproveite cada oportunidade."
                             )
                         )
@@ -4120,7 +4190,8 @@ const hideLoadingScreen = () => {
                 React.createElement("div", {className: "text-center pt-6 pb-10"},
                     React.createElement("button", {
                         onClick: () => setSobreTuttsAberto(false),
-                        className: "px-8 py-4 bg-gradient-to-r from-orange-500 to-pink-500 text-white font-bold text-lg rounded-2xl shadow-lg hover:shadow-xl transition-all hover:scale-105"
+                        className: "px-8 py-4 text-white font-bold text-lg rounded-2xl shadow-lg hover:shadow-xl transition-all hover:scale-105",
+                        style: { background: "linear-gradient(135deg, #f37601 0%, #ff6b35 100%)" }
                     }, "✅ Entendi, vamos começar!")
                 )
             )
