@@ -2383,17 +2383,28 @@ const hideLoadingScreen = () => {
             try {
                 setAcompLoading(true);
                 const params = Xa();
-                console.log("📈 Carregando acompanhamento:", params.toString());
+                console.log("📈 Carregando acompanhamento - Filtros ua:", JSON.stringify(ua));
+                console.log("📈 Carregando acompanhamento - Params:", params.toString());
                 const response = await fetch(API_URL + "/bi/acompanhamento-periodico?" + params);
                 const data = await response.json();
-                console.log("📈 Dados:", data);
+                console.log("📈 Dados recebidos:", data);
                 setAcompDados(data);
             } catch (e) {
                 console.error("Erro acompanhamento:", e);
             } finally {
                 setAcompLoading(false);
             }
-        }, el = async () => {
+        };
+        
+        // useEffect para recarregar acompanhamento quando filtros mudam
+        useEffect(() => {
+            if (Et === "acompanhamento") {
+                console.log("📈 Filtros alterados, recarregando acompanhamento...");
+                carregarAcompanhamento();
+            }
+        }, [ua.data_inicio, ua.data_fim, ua.cod_cliente, ua.centro_custo, ua.categoria]);
+        
+        const el = async () => {
             try {
                 Ra(!0);
                 const e = Xa();
