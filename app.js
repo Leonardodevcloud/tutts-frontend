@@ -2378,7 +2378,7 @@ const hideLoadingScreen = () => {
             }
         }, Xa = () => {
             const e = new URLSearchParams;
-            return ua.data_inicio && e.append("data_inicio", ua.data_inicio), ua.data_fim && e.append("data_fim", ua.data_fim), ua.cod_cliente && e.append("cod_cliente", ua.cod_cliente), ua.centro_custo && e.append("centro_custo", ua.centro_custo), ua.cod_prof && e.append("cod_prof", ua.cod_prof), ua.categoria && e.append("categoria", ua.categoria), ua.cidade && e.append("cidade", ua.cidade), ua.status_prazo && e.append("status_prazo", ua.status_prazo), e
+            return ua.data_inicio && e.append("data_inicio", ua.data_inicio), ua.data_fim && e.append("data_fim", ua.data_fim), ua.cod_cliente && ua.cod_cliente.length > 0 && e.append("cod_cliente", Array.isArray(ua.cod_cliente) ? ua.cod_cliente.join(",") : ua.cod_cliente), ua.centro_custo && ua.centro_custo.length > 0 && e.append("centro_custo", Array.isArray(ua.centro_custo) ? ua.centro_custo.join(",") : ua.centro_custo), ua.cod_prof && e.append("cod_prof", ua.cod_prof), ua.categoria && e.append("categoria", ua.categoria), ua.cidade && e.append("cidade", ua.cidade), ua.status_prazo && e.append("status_prazo", ua.status_prazo), e
         }, carregarAcompanhamento = async () => {
             try {
                 setAcompLoading(true);
