@@ -2436,6 +2436,18 @@ const hideLoadingScreen = () => {
             }
         }, [ua.data_inicio, ua.data_fim, ua.cod_cliente, ua.centro_custo, ua.categoria]);
         
+        // useEffect para CARREGAR DADOS DO BI AUTOMATICAMENTE quando entrar no módulo
+        useEffect(() => {
+            if (Ee === "bi") {
+                console.log("📊 Módulo BI aberto, carregando filtros e máscaras...");
+                ll();  // Carrega filtros (clientes, centros de custo, datas, etc)
+                dl();  // Carrega máscaras
+                tl();  // Carrega relatórios
+                al();  // Carrega notas de clientes
+                pl();  // Carrega regiões
+            }
+        }, [Ee]);
+        
         // useEffect para CARREGAR DASHBOARD AUTOMATICAMENTE quando entrar na página
         useEffect(() => {
             if (Et === "dashboard") {
