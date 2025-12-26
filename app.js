@@ -2480,26 +2480,23 @@ const hideLoadingScreen = () => {
                     const container = document.getElementById('mapa-calor-leaflet');
                     if (container) {
                         console.log('🗺️ Renderizando mapa com', mapaCalorDados.pontos.length, 'pontos...');
-                        // Usar initMapaCalor que já tem lógica de atualização interna
                         if (window.initMapaCalor) {
                             window.initMapaCalor(mapaCalorDados.pontos);
                         }
                     } else {
-                        console.log('⏳ Container não encontrado, tentando novamente...');
+                        console.log('⏳ Container não encontrado');
                     }
                 }, 300);
                 return () => clearTimeout(timer);
             }
         }, [mapaCalorDados, mapaCalorLoading]);
         
-        // useEffect para destruir mapa APENAS quando sair do dashboard
+        // useEffect para destruir mapa quando SAIR do dashboard
         useEffect(() => {
-            return () => {
-                // Cleanup quando o componente desmonta ou Et muda
-                if (window.destroyMapaCalor) {
-                    window.destroyMapaCalor();
-                }
-            };
+            if (Et !== "dashboard" && window.destroyMapaCalor) {
+                console.log('🗺️ Saiu do dashboard, destruindo mapa...');
+                window.destroyMapaCalor();
+            }
         }, [Et]);
         
         const el = async () => {
