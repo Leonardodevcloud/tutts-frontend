@@ -14441,6 +14441,8 @@ const hideLoadingScreen = () => {
                                 hora_chegada: e["Hora Chegada"],
                                 data_saida: e["Data Saida"],
                                 hora_saida: e["Hora Saida"],
+                                latitude: e.Latitude || e.latitude || e.Lat || e.lat,
+                                longitude: e.Longitude || e.longitude || e.Long || e.lng,
                                 categoria: e.Categoria,
                                 valor: e.Valor,
                                 distancia: e["Distância"],
