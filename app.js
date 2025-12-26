@@ -2476,17 +2476,24 @@ const hideLoadingScreen = () => {
         // useEffect para RENDERIZAR O MAPA quando os dados chegarem
         useEffect(() => {
             if (Et === "dashboard" && mapaCalorVisivel && !mapaCalorLoading && mapaCalorDados && mapaCalorDados.pontos) {
-                const timer = setTimeout(() => {
+                // Função para tentar inicializar o mapa
+                const tentarInicializar = (tentativa) => {
                     const container = document.getElementById('mapa-calor-leaflet');
                     if (container) {
                         console.log('🗺️ Renderizando mapa com', mapaCalorDados.pontos.length, 'pontos...');
                         if (window.initMapaCalor) {
                             window.initMapaCalor(mapaCalorDados.pontos);
                         }
+                    } else if (tentativa < 20) {
+                        console.log('⏳ Container não encontrado, tentativa', tentativa + 1);
+                        setTimeout(() => tentarInicializar(tentativa + 1), 200);
                     } else {
-                        console.log('⏳ Container não encontrado');
+                        console.error('❌ Container não encontrado após 20 tentativas');
                     }
-                }, 300);
+                };
+                
+                // Iniciar com delay para dar tempo do React renderizar
+                const timer = setTimeout(() => tentarInicializar(0), 100);
                 return () => clearTimeout(timer);
             }
         }, [mapaCalorDados, mapaCalorLoading]);
