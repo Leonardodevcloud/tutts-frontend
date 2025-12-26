@@ -2453,10 +2453,11 @@ const hideLoadingScreen = () => {
         // useEffect para INICIALIZAR O LEAFLET quando mapaCalorDados mudar
         useEffect(() => {
             if (Et === "dashboard" && mapaCalorVisivel && mapaCalorDados && mapaCalorDados.pontos && window.initMapaCalor) {
-                // Pequeno delay para garantir que o DOM está pronto
+                // Delay maior para garantir que o DOM está completamente renderizado
                 const timer = setTimeout(() => {
+                    console.log('🗺️ Chamando initMapaCalor do useEffect...');
                     window.initMapaCalor(mapaCalorDados.pontos);
-                }, 150);
+                }, 500);
                 return () => clearTimeout(timer);
             }
         }, [Et, mapaCalorVisivel, mapaCalorDados]);
