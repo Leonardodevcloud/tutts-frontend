@@ -529,11 +529,103 @@
     };
     
     window.atualizarMapaCalor = function(pontos) {
-      // Forçar atualização - destruir e recriar
-      window.destroyMapaCalor();
-      setTimeout(function() {
-        window.initMapaCalor(pontos);
-      }, 100);
+      console.log('🗺️ atualizarMapaCalor chamado com', pontos ? pontos.length : 0, 'pontos');
+      
+      var container = document.getElementById('mapa-calor-leaflet');
+      if (!container) {
+        console.log('⏳ Container não existe, aguardando...');
+        setTimeout(function() {
+          window.atualizarMapaCalor(pontos);
+        }, 200);
+        return;
+      }
+      
+      // Se o mapa já existe, apenas atualizar os marcadores
+      if (mapaLeaflet && mapaInicializado && markersLayer) {
+        console.log('🗺️ Atualizando marcadores no mapa existente...');
+        markersLayer.clearLayers();
+        
+        if (!pontos || pontos.length === 0) {
+          console.log('Sem pontos para exibir');
+          return;
+        }
+        
+        // Resetar cache de pontos para permitir atualização
+        ultimosPontos = JSON.stringify(pontos);
+        
+        // Calcular max para intensidade
+        var maxCount = Math.max.apply(null, pontos.map(function(p) { return p.count || 1; }));
+        
+        // Adicionar círculos para cada ponto
+        pontos.forEach(function(ponto) {
+          if (!ponto.lat || !ponto.lng) return;
+          
+          var intensity = (ponto.count || 1) / maxCount;
+          var radius = 300 + intensity * 1500;
+          var color = '#8b5cf6';
+          
+          if (ponto.taxaPrazo !== undefined) {
+            if (ponto.taxaPrazo >= 80) color = '#22c55e';
+            else if (ponto.taxaPrazo >= 60) color = '#eab308';
+            else color = '#ef4444';
+          }
+          
+          var circle = L.circle([ponto.lat, ponto.lng], {
+            color: color,
+            fillColor: color,
+            fillOpacity: 0.3 + intensity * 0.3,
+            radius: radius,
+            weight: 1
+          });
+          
+          var popupContent = '<div class="mapa-popup">' +
+            '<b>' + (ponto.cidade || ponto.bairro || 'Local') + '</b><br>' +
+            '📦 ' + (ponto.count || 0) + ' entregas<br>';
+          
+          if (ponto.taxaPrazo !== undefined) {
+            popupContent += '✅ ' + ponto.taxaPrazo + '% no prazo<br>';
+          }
+          popupContent += '</div>';
+          
+          circle.bindPopup(popupContent);
+          circle.addTo(markersLayer);
+          
+          var marker = L.circleMarker([ponto.lat, ponto.lng], {
+            radius: 5 + intensity * 12,
+            fillColor: color,
+            color: '#fff',
+            weight: 2,
+            opacity: 1,
+            fillOpacity: 0.9
+          });
+          
+          marker.bindPopup(popupContent);
+          marker.addTo(markersLayer);
+        });
+        
+        // Ajustar view
+        try {
+          var validPoints = pontos.filter(function(p) { return p.lat && p.lng; });
+          if (validPoints.length > 0) {
+            var bounds = L.latLngBounds(validPoints.map(function(p) { return [p.lat, p.lng]; }));
+            mapaLeaflet.fitBounds(bounds, { padding: [50, 50] });
+          }
+        } catch(e) {
+          console.error('Erro ao ajustar bounds:', e);
+        }
+        
+        setTimeout(function() {
+          if (mapaLeaflet) mapaLeaflet.invalidateSize();
+        }, 100);
+        
+      } else {
+        // Mapa não existe, criar novo
+        console.log('🗺️ Mapa não existe, criando novo...');
+        window.destroyMapaCalor();
+        setTimeout(function() {
+          window.initMapaCalor(pontos);
+        }, 150);
+      }
     };
   </script>
 </body>
