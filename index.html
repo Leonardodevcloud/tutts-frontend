@@ -30,13 +30,27 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   
   <style>
-    /* Mapa Leaflet */
+    /* Mapa Leaflet - IMPORTANTE */
     #mapa-calor-leaflet {
-      z-index: 1;
-      background-color: #e5e7eb;
+      z-index: 1 !important;
+      background-color: #e5e7eb !important;
+      min-height: 500px !important;
+      width: 100% !important;
+    }
+    #mapa-calor-leaflet .leaflet-pane {
+      z-index: 1 !important;
+    }
+    #mapa-calor-leaflet .leaflet-tile-pane {
+      z-index: 2 !important;
+    }
+    #mapa-calor-leaflet .leaflet-overlay-pane {
+      z-index: 4 !important;
+    }
+    #mapa-calor-leaflet .leaflet-marker-pane {
+      z-index: 6 !important;
     }
     #mapa-calor-leaflet .leaflet-control-container {
-      z-index: 10;
+      z-index: 10 !important;
     }
     
     /* Loading Screen */
@@ -313,10 +327,20 @@
     window.initMapaCalor = function(pontos, tentativa) {
       tentativa = tentativa || 0;
       
+      // Verificar se Leaflet está carregado
+      if (typeof L === 'undefined') {
+        console.error('❌ Leaflet (L) não está definido! Biblioteca não carregou.');
+        if (tentativa < 10) {
+          setTimeout(function() { window.initMapaCalor(pontos, tentativa + 1); }, 500);
+        }
+        return;
+      }
+      
       console.log('🗺️ initMapaCalor:', pontos ? pontos.length : 0, 'pontos, tentativa', tentativa + 1);
       
       var container = document.getElementById('mapa-calor-leaflet');
       if (!container) {
+        console.log('⏳ Container não encontrado, tentativa', tentativa + 1);
         if (tentativa < 15) {
           setTimeout(function() { window.initMapaCalor(pontos, tentativa + 1); }, 200);
           return;
@@ -325,7 +349,10 @@
         return;
       }
       
+      console.log('📐 Container dimensões:', container.offsetWidth, 'x', container.offsetHeight);
+      
       if (container.offsetWidth === 0 || container.offsetHeight === 0) {
+        console.log('⏳ Container sem dimensões, tentativa', tentativa + 1);
         if (tentativa < 15) {
           setTimeout(function() { window.initMapaCalor(pontos, tentativa + 1); }, 200);
           return;
@@ -334,15 +361,15 @@
       
       // Se mapa existe e está ok, apenas atualizar marcadores
       if (mapaLeaflet && mapaInicializado && markersLayer) {
-        console.log('🗺️ Atualizando marcadores...');
+        console.log('🗺️ Atualizando marcadores no mapa existente...');
         markersLayer.clearLayers();
       } else {
         // Criar mapa novo
-        console.log('🗺️ Criando mapa novo...');
+        console.log('🗺️ Criando mapa novo no container...');
         
         // Limpar tudo antes
         if (mapaLeaflet) {
-          try { mapaLeaflet.remove(); } catch(e) {}
+          try { mapaLeaflet.remove(); } catch(e) { console.log('Erro ao remover mapa antigo:', e); }
         }
         mapaLeaflet = null;
         markersLayer = null;
@@ -352,14 +379,28 @@
         
         try {
           mapaLeaflet = L.map('mapa-calor-leaflet', { preferCanvas: true }).setView([-16.6869, -49.2648], 11);
+          console.log('✅ Mapa L.map criado');
+          
           L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap',
             maxZoom: 18
           }).addTo(mapaLeaflet);
+          console.log('✅ TileLayer adicionado');
+          
           markersLayer = L.layerGroup().addTo(mapaLeaflet);
           mapaInicializado = true;
+          console.log('✅ Mapa inicializado com sucesso!');
+          
+          // Forçar invalidateSize após criar
+          setTimeout(function() {
+            if (mapaLeaflet) {
+              mapaLeaflet.invalidateSize();
+              console.log('✅ invalidateSize executado');
+            }
+          }, 100);
+          
         } catch(e) {
-          console.error('Erro ao criar mapa:', e);
+          console.error('❌ Erro ao criar mapa:', e);
           if (tentativa < 5) {
             setTimeout(function() { window.initMapaCalor(pontos, tentativa + 1); }, 300);
           }
