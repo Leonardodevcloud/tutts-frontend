@@ -25,11 +25,20 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js" defer></script>
   
-  <!-- LEAFLET CSS E JS PARA O MAPA -->
+  <!-- Leaflet para mapas -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   
   <style>
+    /* Mapa Leaflet */
+    #mapa-calor-leaflet {
+      z-index: 1;
+      background-color: #e5e7eb;
+    }
+    #mapa-calor-leaflet .leaflet-control-container {
+      z-index: 10;
+    }
+    
     /* Loading Screen */
     #loading-screen {
       position: fixed;
@@ -121,34 +130,6 @@
         min-width: 100px !important;
         min-height: 56px !important;
       }
-    }
-    
-    /* ESTILOS DO MAPA LEAFLET */
-    #mapa-calor-leaflet {
-      height: 500px;
-      width: 100%;
-      border-radius: 12px;
-      z-index: 1;
-    }
-    .leaflet-container {
-      font-family: system-ui, -apple-system, sans-serif;
-    }
-    .mapa-popup {
-      font-size: 12px;
-    }
-    .mapa-popup b {
-      color: #7c3aed;
-    }
-    .cluster-marker {
-      background: rgba(124, 58, 237, 0.8);
-      border: 3px solid white;
-      border-radius: 50%;
-      color: white;
-      font-weight: bold;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
     }
   </style>
 </head>
@@ -328,199 +309,125 @@
     var mapaLeaflet = null;
     var markersLayer = null;
     var mapaInicializado = false;
-    var ultimosPontos = null;
-    var tentativasInit = 0;
     
     window.initMapaCalor = function(pontos, tentativa) {
       tentativa = tentativa || 0;
       
-      // Verificar se os pontos são os mesmos (evitar re-renderização)
-      var pontosStr = JSON.stringify(pontos);
-      if (mapaInicializado && ultimosPontos === pontosStr && mapaLeaflet) {
-        console.log('🗺️ Mapa já inicializado com mesmos pontos, ignorando...');
-        return;
-      }
-      
-      console.log('🗺️ Inicializando mapa com', pontos ? pontos.length : 0, 'pontos (tentativa ' + (tentativa + 1) + ')');
+      console.log('🗺️ initMapaCalor:', pontos ? pontos.length : 0, 'pontos, tentativa', tentativa + 1);
       
       var container = document.getElementById('mapa-calor-leaflet');
       if (!container) {
-        if (tentativa < 10) {
-          console.log('⏳ Container não encontrado, tentando novamente em 300ms...');
-          setTimeout(function() {
-            window.initMapaCalor(pontos, tentativa + 1);
-          }, 300);
-          return;
-        } else {
-          console.error('❌ Container do mapa não encontrado após 10 tentativas!');
+        if (tentativa < 15) {
+          setTimeout(function() { window.initMapaCalor(pontos, tentativa + 1); }, 200);
           return;
         }
+        console.error('❌ Container não encontrado após 15 tentativas');
+        return;
       }
       
-      // Verificar se container tem dimensões
       if (container.offsetWidth === 0 || container.offsetHeight === 0) {
-        if (tentativa < 10) {
-          console.log('⏳ Container sem dimensões, tentando novamente em 300ms...');
-          setTimeout(function() {
-            window.initMapaCalor(pontos, tentativa + 1);
-          }, 300);
+        if (tentativa < 15) {
+          setTimeout(function() { window.initMapaCalor(pontos, tentativa + 1); }, 200);
           return;
         }
       }
       
-      // Se já existe um mapa, apenas atualizar os marcadores
-      if (mapaLeaflet && mapaInicializado) {
-        console.log('🗺️ Atualizando marcadores existentes...');
-        if (markersLayer) {
-          markersLayer.clearLayers();
-        }
+      // Se mapa existe e está ok, apenas atualizar marcadores
+      if (mapaLeaflet && mapaInicializado && markersLayer) {
+        console.log('🗺️ Atualizando marcadores...');
+        markersLayer.clearLayers();
       } else {
         // Criar mapa novo
         console.log('🗺️ Criando mapa novo...');
         
-        // Limpar container se tiver mapa bugado
-        if (container._leaflet_id) {
-          try {
-            if (mapaLeaflet) {
-              mapaLeaflet.remove();
-            }
-          } catch(e) {}
-          mapaLeaflet = null;
-          markersLayer = null;
-          container._leaflet_id = null;
-          container.innerHTML = '';
+        // Limpar tudo antes
+        if (mapaLeaflet) {
+          try { mapaLeaflet.remove(); } catch(e) {}
         }
+        mapaLeaflet = null;
+        markersLayer = null;
+        mapaInicializado = false;
+        container._leaflet_id = null;
+        container.innerHTML = '';
         
         try {
-          mapaLeaflet = L.map('mapa-calor-leaflet', {
-            preferCanvas: true // Melhor performance
-          }).setView([-16.6869, -49.2648], 11);
-          
-          // Adicionar tile layer do OpenStreetMap
+          mapaLeaflet = L.map('mapa-calor-leaflet', { preferCanvas: true }).setView([-16.6869, -49.2648], 11);
           L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap',
             maxZoom: 18
           }).addTo(mapaLeaflet);
-          
-          // Criar layer group para os marcadores
           markersLayer = L.layerGroup().addTo(mapaLeaflet);
+          mapaInicializado = true;
         } catch(e) {
           console.error('Erro ao criar mapa:', e);
           if (tentativa < 5) {
-            container._leaflet_id = null;
-            container.innerHTML = '';
-            mapaLeaflet = null;
-            setTimeout(function() {
-              window.initMapaCalor(pontos, tentativa + 1);
-            }, 500);
-            return;
+            setTimeout(function() { window.initMapaCalor(pontos, tentativa + 1); }, 300);
           }
+          return;
         }
       }
-      
-      ultimosPontos = pontosStr;
-      mapaInicializado = true;
       
       if (!pontos || pontos.length === 0) {
         console.log('Sem pontos para exibir');
         return;
       }
       
-      // Calcular max para intensidade
       var maxCount = Math.max.apply(null, pontos.map(function(p) { return p.count || 1; }));
       
-      // Adicionar círculos para cada ponto
       pontos.forEach(function(ponto) {
         if (!ponto.lat || !ponto.lng) return;
         
         var intensity = (ponto.count || 1) / maxCount;
-        var radius = 300 + intensity * 1500; // Raio de 300m a 1800m
-        var color = '#8b5cf6'; // Roxo padrão
+        var radius = 300 + intensity * 1500;
+        var color = '#8b5cf6';
         
-        // Cor baseada na taxa de prazo se disponível
         if (ponto.taxaPrazo !== undefined) {
-          if (ponto.taxaPrazo >= 80) color = '#22c55e'; // Verde
-          else if (ponto.taxaPrazo >= 60) color = '#eab308'; // Amarelo
-          else color = '#ef4444'; // Vermelho
+          if (ponto.taxaPrazo >= 80) color = '#22c55e';
+          else if (ponto.taxaPrazo >= 60) color = '#eab308';
+          else color = '#ef4444';
         }
         
-        // Criar círculo de área
         var circle = L.circle([ponto.lat, ponto.lng], {
-          color: color,
-          fillColor: color,
+          color: color, fillColor: color,
           fillOpacity: 0.3 + intensity * 0.3,
-          radius: radius,
-          weight: 1
+          radius: radius, weight: 1
         });
         
-        // Popup com informações
-        var popupContent = '<div class="mapa-popup">' +
-          '<b>' + (ponto.cidade || ponto.bairro || 'Local') + '</b><br>' +
-          '📦 ' + (ponto.count || 0) + ' entregas<br>';
+        var popup = '<b>' + (ponto.cidade || ponto.bairro || 'Local') + '</b><br>📦 ' + (ponto.count || 0) + ' entregas';
+        if (ponto.taxaPrazo !== undefined) popup += '<br>✅ ' + ponto.taxaPrazo + '% no prazo';
         
-        if (ponto.taxaPrazo !== undefined) {
-          popupContent += '✅ ' + ponto.taxaPrazo + '% no prazo<br>';
-        }
-        if (ponto.noPrazo !== undefined) {
-          popupContent += '🟢 ' + ponto.noPrazo + ' no prazo<br>';
-        }
-        if (ponto.foraPrazo !== undefined) {
-          popupContent += '🔴 ' + ponto.foraPrazo + ' atrasadas';
-        }
-        
-        popupContent += '</div>';
-        
-        circle.bindPopup(popupContent);
+        circle.bindPopup(popup);
         circle.addTo(markersLayer);
         
-        // Adicionar marcador central (ponto)
         var marker = L.circleMarker([ponto.lat, ponto.lng], {
           radius: 5 + intensity * 12,
-          fillColor: color,
-          color: '#fff',
-          weight: 2,
-          opacity: 1,
-          fillOpacity: 0.9
+          fillColor: color, color: '#fff',
+          weight: 2, opacity: 1, fillOpacity: 0.9
         });
-        
-        marker.bindPopup(popupContent);
+        marker.bindPopup(popup);
         marker.addTo(markersLayer);
       });
       
-      // Ajustar view para mostrar todos os pontos
-      if (pontos.length > 0) {
-        try {
-          var validPoints = pontos.filter(function(p) { return p.lat && p.lng; });
-          if (validPoints.length > 0) {
-            var bounds = L.latLngBounds(validPoints.map(function(p) { return [p.lat, p.lng]; }));
-            mapaLeaflet.fitBounds(bounds, { padding: [50, 50] });
-          }
-        } catch(e) {
-          console.error('Erro ao ajustar bounds:', e);
+      // Ajustar zoom para mostrar todos os pontos
+      try {
+        var validPoints = pontos.filter(function(p) { return p.lat && p.lng; });
+        if (validPoints.length > 0) {
+          var bounds = L.latLngBounds(validPoints.map(function(p) { return [p.lat, p.lng]; }));
+          mapaLeaflet.fitBounds(bounds, { padding: [50, 50] });
         }
-      }
+      } catch(e) {}
       
-      // Forçar redimensionamento
-      setTimeout(function() {
-        if (mapaLeaflet) mapaLeaflet.invalidateSize();
-      }, 200);
+      setTimeout(function() { if (mapaLeaflet) mapaLeaflet.invalidateSize(); }, 200);
     };
     
     window.destroyMapaCalor = function() {
       console.log('🗺️ Destruindo mapa...');
       if (mapaLeaflet) {
-        try {
-          mapaLeaflet.remove();
-        } catch(e) {
-          console.log('Erro ao remover mapa:', e);
-        }
+        try { mapaLeaflet.remove(); } catch(e) {}
         mapaLeaflet = null;
         markersLayer = null;
       }
       mapaInicializado = false;
-      ultimosPontos = null;
-      
-      // Limpar container
       var container = document.getElementById('mapa-calor-leaflet');
       if (container) {
         container._leaflet_id = null;
@@ -529,103 +436,7 @@
     };
     
     window.atualizarMapaCalor = function(pontos) {
-      console.log('🗺️ atualizarMapaCalor chamado com', pontos ? pontos.length : 0, 'pontos');
-      
-      var container = document.getElementById('mapa-calor-leaflet');
-      if (!container) {
-        console.log('⏳ Container não existe, aguardando...');
-        setTimeout(function() {
-          window.atualizarMapaCalor(pontos);
-        }, 200);
-        return;
-      }
-      
-      // Se o mapa já existe, apenas atualizar os marcadores
-      if (mapaLeaflet && mapaInicializado && markersLayer) {
-        console.log('🗺️ Atualizando marcadores no mapa existente...');
-        markersLayer.clearLayers();
-        
-        if (!pontos || pontos.length === 0) {
-          console.log('Sem pontos para exibir');
-          return;
-        }
-        
-        // Resetar cache de pontos para permitir atualização
-        ultimosPontos = JSON.stringify(pontos);
-        
-        // Calcular max para intensidade
-        var maxCount = Math.max.apply(null, pontos.map(function(p) { return p.count || 1; }));
-        
-        // Adicionar círculos para cada ponto
-        pontos.forEach(function(ponto) {
-          if (!ponto.lat || !ponto.lng) return;
-          
-          var intensity = (ponto.count || 1) / maxCount;
-          var radius = 300 + intensity * 1500;
-          var color = '#8b5cf6';
-          
-          if (ponto.taxaPrazo !== undefined) {
-            if (ponto.taxaPrazo >= 80) color = '#22c55e';
-            else if (ponto.taxaPrazo >= 60) color = '#eab308';
-            else color = '#ef4444';
-          }
-          
-          var circle = L.circle([ponto.lat, ponto.lng], {
-            color: color,
-            fillColor: color,
-            fillOpacity: 0.3 + intensity * 0.3,
-            radius: radius,
-            weight: 1
-          });
-          
-          var popupContent = '<div class="mapa-popup">' +
-            '<b>' + (ponto.cidade || ponto.bairro || 'Local') + '</b><br>' +
-            '📦 ' + (ponto.count || 0) + ' entregas<br>';
-          
-          if (ponto.taxaPrazo !== undefined) {
-            popupContent += '✅ ' + ponto.taxaPrazo + '% no prazo<br>';
-          }
-          popupContent += '</div>';
-          
-          circle.bindPopup(popupContent);
-          circle.addTo(markersLayer);
-          
-          var marker = L.circleMarker([ponto.lat, ponto.lng], {
-            radius: 5 + intensity * 12,
-            fillColor: color,
-            color: '#fff',
-            weight: 2,
-            opacity: 1,
-            fillOpacity: 0.9
-          });
-          
-          marker.bindPopup(popupContent);
-          marker.addTo(markersLayer);
-        });
-        
-        // Ajustar view
-        try {
-          var validPoints = pontos.filter(function(p) { return p.lat && p.lng; });
-          if (validPoints.length > 0) {
-            var bounds = L.latLngBounds(validPoints.map(function(p) { return [p.lat, p.lng]; }));
-            mapaLeaflet.fitBounds(bounds, { padding: [50, 50] });
-          }
-        } catch(e) {
-          console.error('Erro ao ajustar bounds:', e);
-        }
-        
-        setTimeout(function() {
-          if (mapaLeaflet) mapaLeaflet.invalidateSize();
-        }, 100);
-        
-      } else {
-        // Mapa não existe, criar novo
-        console.log('🗺️ Mapa não existe, criando novo...');
-        window.destroyMapaCalor();
-        setTimeout(function() {
-          window.initMapaCalor(pontos);
-        }, 150);
-      }
+      window.initMapaCalor(pontos);
     };
   </script>
 </body>
