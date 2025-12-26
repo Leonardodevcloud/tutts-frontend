@@ -327,15 +327,18 @@
     // ============================================
     var mapaLeaflet = null;
     var markersLayer = null;
+    var mapaInicializado = false;
+    var ultimosPontos = null;
     
     window.initMapaCalor = function(pontos) {
-      console.log('🗺️ Inicializando mapa com', pontos ? pontos.length : 0, 'pontos');
-      
-      // Se já existe um mapa, destruir
-      if (mapaLeaflet) {
-        mapaLeaflet.remove();
-        mapaLeaflet = null;
+      // Verificar se os pontos são os mesmos (evitar re-renderização)
+      var pontosStr = JSON.stringify(pontos);
+      if (mapaInicializado && ultimosPontos === pontosStr) {
+        console.log('🗺️ Mapa já inicializado com mesmos pontos, ignorando...');
+        return;
       }
+      
+      console.log('🗺️ Inicializando mapa com', pontos ? pontos.length : 0, 'pontos');
       
       var container = document.getElementById('mapa-calor-leaflet');
       if (!container) {
@@ -343,17 +346,38 @@
         return;
       }
       
-      // Criar mapa centrado em Goiânia
-      mapaLeaflet = L.map('mapa-calor-leaflet').setView([-16.6869, -49.2648], 11);
+      // Se já existe um mapa, apenas atualizar os marcadores
+      if (mapaLeaflet && mapaInicializado) {
+        console.log('🗺️ Atualizando marcadores existentes...');
+        if (markersLayer) {
+          markersLayer.clearLayers();
+        }
+      } else {
+        // Criar mapa novo
+        console.log('🗺️ Criando mapa novo...');
+        
+        // Limpar container se tiver mapa bugado
+        if (container._leaflet_id) {
+          container._leaflet_id = null;
+          container.innerHTML = '';
+        }
+        
+        mapaLeaflet = L.map('mapa-calor-leaflet', {
+          preferCanvas: true // Melhor performance
+        }).setView([-16.6869, -49.2648], 11);
+        
+        // Adicionar tile layer do OpenStreetMap
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap',
+          maxZoom: 18
+        }).addTo(mapaLeaflet);
+        
+        // Criar layer group para os marcadores
+        markersLayer = L.layerGroup().addTo(mapaLeaflet);
+      }
       
-      // Adicionar tile layer do OpenStreetMap
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors',
-        maxZoom: 18
-      }).addTo(mapaLeaflet);
-      
-      // Criar layer group para os marcadores
-      markersLayer = L.layerGroup().addTo(mapaLeaflet);
+      ultimosPontos = pontosStr;
+      mapaInicializado = true;
       
       if (!pontos || pontos.length === 0) {
         console.log('Sem pontos para exibir');
@@ -378,13 +402,13 @@
           else color = '#ef4444'; // Vermelho
         }
         
-        // Criar círculo
+        // Criar círculo de área
         var circle = L.circle([ponto.lat, ponto.lng], {
           color: color,
           fillColor: color,
-          fillOpacity: 0.4 + intensity * 0.4,
+          fillOpacity: 0.3 + intensity * 0.3,
           radius: radius,
-          weight: 2
+          weight: 1
         });
         
         // Popup com informações
@@ -407,9 +431,9 @@
         circle.bindPopup(popupContent);
         circle.addTo(markersLayer);
         
-        // Adicionar marcador central
+        // Adicionar marcador central (ponto)
         var marker = L.circleMarker([ponto.lat, ponto.lng], {
-          radius: 6 + intensity * 10,
+          radius: 5 + intensity * 12,
           fillColor: color,
           color: '#fff',
           weight: 2,
@@ -423,22 +447,38 @@
       
       // Ajustar view para mostrar todos os pontos
       if (pontos.length > 0) {
-        var bounds = L.latLngBounds(pontos.map(function(p) { return [p.lat, p.lng]; }));
-        mapaLeaflet.fitBounds(bounds, { padding: [50, 50] });
+        try {
+          var validPoints = pontos.filter(function(p) { return p.lat && p.lng; });
+          if (validPoints.length > 0) {
+            var bounds = L.latLngBounds(validPoints.map(function(p) { return [p.lat, p.lng]; }));
+            mapaLeaflet.fitBounds(bounds, { padding: [50, 50] });
+          }
+        } catch(e) {
+          console.error('Erro ao ajustar bounds:', e);
+        }
       }
       
       // Forçar redimensionamento
       setTimeout(function() {
         if (mapaLeaflet) mapaLeaflet.invalidateSize();
-      }, 100);
+      }, 200);
     };
     
     window.destroyMapaCalor = function() {
+      console.log('🗺️ Destruindo mapa...');
       if (mapaLeaflet) {
         mapaLeaflet.remove();
         mapaLeaflet = null;
         markersLayer = null;
+        mapaInicializado = false;
+        ultimosPontos = null;
       }
+    };
+    
+    window.atualizarMapaCalor = function(pontos) {
+      // Forçar atualização mesmo com mesmos pontos
+      ultimosPontos = null;
+      window.initMapaCalor(pontos);
     };
   </script>
 </body>
