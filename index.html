@@ -509,18 +509,31 @@
     window.destroyMapaCalor = function() {
       console.log('🗺️ Destruindo mapa...');
       if (mapaLeaflet) {
-        mapaLeaflet.remove();
+        try {
+          mapaLeaflet.remove();
+        } catch(e) {
+          console.log('Erro ao remover mapa:', e);
+        }
         mapaLeaflet = null;
         markersLayer = null;
-        mapaInicializado = false;
-        ultimosPontos = null;
+      }
+      mapaInicializado = false;
+      ultimosPontos = null;
+      
+      // Limpar container
+      var container = document.getElementById('mapa-calor-leaflet');
+      if (container) {
+        container._leaflet_id = null;
+        container.innerHTML = '';
       }
     };
     
     window.atualizarMapaCalor = function(pontos) {
-      // Forçar atualização mesmo com mesmos pontos
-      ultimosPontos = null;
-      window.initMapaCalor(pontos);
+      // Forçar atualização - destruir e recriar
+      window.destroyMapaCalor();
+      setTimeout(function() {
+        window.initMapaCalor(pontos);
+      }, 100);
     };
   </script>
 </body>
