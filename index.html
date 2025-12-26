@@ -329,21 +329,43 @@
     var markersLayer = null;
     var mapaInicializado = false;
     var ultimosPontos = null;
+    var tentativasInit = 0;
     
-    window.initMapaCalor = function(pontos) {
+    window.initMapaCalor = function(pontos, tentativa) {
+      tentativa = tentativa || 0;
+      
       // Verificar se os pontos são os mesmos (evitar re-renderização)
       var pontosStr = JSON.stringify(pontos);
-      if (mapaInicializado && ultimosPontos === pontosStr) {
+      if (mapaInicializado && ultimosPontos === pontosStr && mapaLeaflet) {
         console.log('🗺️ Mapa já inicializado com mesmos pontos, ignorando...');
         return;
       }
       
-      console.log('🗺️ Inicializando mapa com', pontos ? pontos.length : 0, 'pontos');
+      console.log('🗺️ Inicializando mapa com', pontos ? pontos.length : 0, 'pontos (tentativa ' + (tentativa + 1) + ')');
       
       var container = document.getElementById('mapa-calor-leaflet');
       if (!container) {
-        console.error('Container do mapa não encontrado!');
-        return;
+        if (tentativa < 10) {
+          console.log('⏳ Container não encontrado, tentando novamente em 300ms...');
+          setTimeout(function() {
+            window.initMapaCalor(pontos, tentativa + 1);
+          }, 300);
+          return;
+        } else {
+          console.error('❌ Container do mapa não encontrado após 10 tentativas!');
+          return;
+        }
+      }
+      
+      // Verificar se container tem dimensões
+      if (container.offsetWidth === 0 || container.offsetHeight === 0) {
+        if (tentativa < 10) {
+          console.log('⏳ Container sem dimensões, tentando novamente em 300ms...');
+          setTimeout(function() {
+            window.initMapaCalor(pontos, tentativa + 1);
+          }, 300);
+          return;
+        }
       }
       
       // Se já existe um mapa, apenas atualizar os marcadores
@@ -358,22 +380,42 @@
         
         // Limpar container se tiver mapa bugado
         if (container._leaflet_id) {
+          try {
+            if (mapaLeaflet) {
+              mapaLeaflet.remove();
+            }
+          } catch(e) {}
+          mapaLeaflet = null;
+          markersLayer = null;
           container._leaflet_id = null;
           container.innerHTML = '';
         }
         
-        mapaLeaflet = L.map('mapa-calor-leaflet', {
-          preferCanvas: true // Melhor performance
-        }).setView([-16.6869, -49.2648], 11);
-        
-        // Adicionar tile layer do OpenStreetMap
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '© OpenStreetMap',
-          maxZoom: 18
-        }).addTo(mapaLeaflet);
-        
-        // Criar layer group para os marcadores
-        markersLayer = L.layerGroup().addTo(mapaLeaflet);
+        try {
+          mapaLeaflet = L.map('mapa-calor-leaflet', {
+            preferCanvas: true // Melhor performance
+          }).setView([-16.6869, -49.2648], 11);
+          
+          // Adicionar tile layer do OpenStreetMap
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap',
+            maxZoom: 18
+          }).addTo(mapaLeaflet);
+          
+          // Criar layer group para os marcadores
+          markersLayer = L.layerGroup().addTo(mapaLeaflet);
+        } catch(e) {
+          console.error('Erro ao criar mapa:', e);
+          if (tentativa < 5) {
+            container._leaflet_id = null;
+            container.innerHTML = '';
+            mapaLeaflet = null;
+            setTimeout(function() {
+              window.initMapaCalor(pontos, tentativa + 1);
+            }, 500);
+            return;
+          }
+        }
       }
       
       ultimosPontos = pontosStr;
