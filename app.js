@@ -2436,6 +2436,14 @@ const hideLoadingScreen = () => {
             }
         }, [ua.data_inicio, ua.data_fim, ua.cod_cliente, ua.centro_custo, ua.categoria]);
         
+        // useEffect para CARREGAR DASHBOARD AUTOMATICAMENTE quando entrar na página
+        useEffect(() => {
+            if (Et === "dashboard") {
+                console.log("📊 Dashboard aberto, carregando dados...");
+                el();
+            }
+        }, [Et]);
+        
         // useEffect para carregar mapa de calor quando estiver no dashboard
         useEffect(() => {
             if (Et === "dashboard" && mapaCalorVisivel && !mapaCalorDados) {
@@ -2445,8 +2453,16 @@ const hideLoadingScreen = () => {
         
         // useEffect para recarregar mapa quando filtros mudam
         useEffect(() => {
-            if (Et === "dashboard" && mapaCalorVisivel) {
-                carregarMapaCalor();
+            if (Et === "dashboard" && mapaCalorVisivel && mapaCalorDados) {
+                // Destruir mapa antigo antes de recarregar
+                if (window.destroyMapaCalor) {
+                    window.destroyMapaCalor();
+                }
+                // Pequeno delay antes de recarregar
+                const timer = setTimeout(() => {
+                    carregarMapaCalor();
+                }, 100);
+                return () => clearTimeout(timer);
             }
         }, [ua.data_inicio, ua.data_fim, ua.cod_cliente, ua.centro_custo, ua.categoria]);
         
