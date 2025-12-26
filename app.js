@@ -2456,7 +2456,7 @@ const hideLoadingScreen = () => {
             }
         }, [Et]);
         
-        // useEffect para carregar mapa de calor quando estiver no dashboard
+        // useEffect para carregar mapa de calor quando estiver no dashboard (primeira vez)
         useEffect(() => {
             if (Et === "dashboard" && mapaCalorVisivel && !mapaCalorDados && !mapaCalorLoading) {
                 carregarMapaCalor();
@@ -2465,42 +2465,35 @@ const hideLoadingScreen = () => {
         
         // useEffect para recarregar mapa quando filtros mudam
         useEffect(() => {
-            if (Et === "dashboard" && mapaCalorVisivel) {
-                // Destruir mapa antigo antes de recarregar
-                if (window.destroyMapaCalor) {
-                    window.destroyMapaCalor();
-                }
-                // Pequeno delay antes de recarregar
-                const timer = setTimeout(() => {
-                    carregarMapaCalor();
-                }, 100);
-                return () => clearTimeout(timer);
+            if (Et === "dashboard" && mapaCalorVisivel && mapaCalorDados) {
+                // Recarregar dados do mapa com novos filtros
+                carregarMapaCalor();
             }
         }, [ua.data_inicio, ua.data_fim, ua.cod_cliente, ua.centro_custo, ua.categoria]);
         
-        // useEffect para INICIALIZAR O LEAFLET quando mapaCalorDados mudar E loading terminar
+        // useEffect para INICIALIZAR/ATUALIZAR O LEAFLET quando mapaCalorDados mudar E loading terminar
         useEffect(() => {
-            if (Et === "dashboard" && mapaCalorVisivel && !mapaCalorLoading && mapaCalorDados && mapaCalorDados.pontos && window.initMapaCalor) {
+            if (Et === "dashboard" && mapaCalorVisivel && !mapaCalorLoading && mapaCalorDados && mapaCalorDados.pontos) {
                 // Delay para garantir que o DOM está completamente renderizado
                 const timer = setTimeout(() => {
                     const container = document.getElementById('mapa-calor-leaflet');
-                    if (container) {
-                        console.log('🗺️ Container encontrado, inicializando mapa...');
-                        window.initMapaCalor(mapaCalorDados.pontos);
-                    } else {
-                        console.log('⏳ Container ainda não existe, aguardando...');
+                    if (container && window.atualizarMapaCalor) {
+                        console.log('🗺️ Atualizando mapa com', mapaCalorDados.pontos.length, 'pontos...');
+                        window.atualizarMapaCalor(mapaCalorDados.pontos);
+                    } else if (!container) {
+                        console.log('⏳ Container ainda não existe');
                     }
-                }, 300);
+                }, 400);
                 return () => clearTimeout(timer);
             }
         }, [Et, mapaCalorVisivel, mapaCalorLoading, mapaCalorDados]);
         
-        // useEffect para destruir mapa quando sair do dashboard
+        // useEffect para destruir mapa quando sair do dashboard ou ocultar
         useEffect(() => {
-            if (Et !== "dashboard" && window.destroyMapaCalor) {
+            if ((Et !== "dashboard" || !mapaCalorVisivel) && window.destroyMapaCalor) {
                 window.destroyMapaCalor();
             }
-        }, [Et]);
+        }, [Et, mapaCalorVisivel]);
         
         const el = async () => {
             try {
