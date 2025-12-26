@@ -870,6 +870,10 @@ const hideLoadingScreen = () => {
         [acompDados, setAcompDados] = useState(null),
         [acompLoading, setAcompLoading] = useState(false),
         [acompFiltros, setAcompFiltros] = useState({os: false, entregas: false, noPrazo: false, foraPrazo: false, retornos: false, valorTotal: false, valorProf: false, fatTotal: false, ticketMedio: false, tempoMedioEntrega: false, tempoMedioAlocacao: false, tempoMedioColeta: false, totalEntregadores: false, mediaEntProfissional: false, evolucaoSemanal: false}),
+        // Estados do Mapa de Calor
+        [mapaCalorDados, setMapaCalorDados] = useState(null),
+        [mapaCalorLoading, setMapaCalorLoading] = useState(false),
+        [mapaCalorVisivel, setMapaCalorVisivel] = useState(true),
         // Estados do módulo Social
         [socialProfile, setSocialProfile] = useState(null),
         [socialUsers, setSocialUsers] = useState([]),
@@ -2379,6 +2383,20 @@ const hideLoadingScreen = () => {
         }, Xa = () => {
             const e = new URLSearchParams;
             return ua.data_inicio && e.append("data_inicio", ua.data_inicio), ua.data_fim && e.append("data_fim", ua.data_fim), ua.cod_cliente && ua.cod_cliente.length > 0 && e.append("cod_cliente", Array.isArray(ua.cod_cliente) ? ua.cod_cliente.join(",") : ua.cod_cliente), ua.centro_custo && ua.centro_custo.length > 0 && e.append("centro_custo", Array.isArray(ua.centro_custo) ? ua.centro_custo.join(",") : ua.centro_custo), ua.cod_prof && e.append("cod_prof", ua.cod_prof), ua.categoria && e.append("categoria", ua.categoria), ua.cidade && e.append("cidade", ua.cidade), ua.status_prazo && e.append("status_prazo", ua.status_prazo), e
+        }, carregarMapaCalor = async () => {
+            try {
+                setMapaCalorLoading(true);
+                const params = Xa();
+                console.log("🗺️ Carregando mapa de calor:", params.toString());
+                const response = await fetch(API_URL + "/bi/mapa-calor?" + params);
+                const data = await response.json();
+                console.log("🗺️ Dados mapa:", data);
+                setMapaCalorDados(data);
+            } catch (e) {
+                console.error("Erro mapa calor:", e);
+            } finally {
+                setMapaCalorLoading(false);
+            }
         }, carregarAcompanhamento = async () => {
             try {
                 setAcompLoading(true);
@@ -2401,6 +2419,20 @@ const hideLoadingScreen = () => {
             if (Et === "acompanhamento") {
                 console.log("📈 Filtros alterados, recarregando acompanhamento...");
                 carregarAcompanhamento();
+            }
+        }, [ua.data_inicio, ua.data_fim, ua.cod_cliente, ua.centro_custo, ua.categoria]);
+        
+        // useEffect para carregar mapa de calor quando estiver no dashboard
+        useEffect(() => {
+            if (Et === "dashboard" && mapaCalorVisivel && !mapaCalorDados) {
+                carregarMapaCalor();
+            }
+        }, [Et, mapaCalorVisivel]);
+        
+        // useEffect para recarregar mapa quando filtros mudam
+        useEffect(() => {
+            if (Et === "dashboard" && mapaCalorVisivel) {
+                carregarMapaCalor();
             }
         }, [ua.data_inicio, ua.data_fim, ua.cod_cliente, ua.centro_custo, ua.categoria]);
         
