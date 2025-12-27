@@ -2573,6 +2573,7 @@ const hideLoadingScreen = () => {
             }
         }, ll = async () => {
             try {
+                Ra(!0); // Mostra loading
                 const [e, t, a, l, r, o, c, s, n, m] = await Promise.all([fetch(`${API_URL}/bi/clientes`).then(e => e.json()), fetch(`${API_URL}/bi/centros-custo`).then(e => e.json()), fetch(`${API_URL}/bi/profissionais`).then(e => e.json()), fetch(`${API_URL}/bi/datas`).then(e => e.json()), fetch(`${API_URL}/bi/uploads`).then(e => e.json()), fetch(`${API_URL}/bi/cidades`).then(e => e.json()).catch(() => []), fetch(`${API_URL}/bi/cliente-centros`).then(e => e.json()).catch(() => ({})), fetch(`${API_URL}/bi/categorias`).then(e => e.json()).catch(() => []), fetch(`${API_URL}/bi/regioes`).then(e => e.json()).catch(() => []), fetch(`${API_URL}/bi/dados-filtro`).then(e => e.json()).catch(() => [])]), i = (e || []).sort((e, t) => (parseInt(e.cod_cliente) || 0) - (parseInt(t.cod_cliente) || 0));
                 if (Ct(i), St(t || []), Pt(t || []), Dt(c || {}), It(a || []), $t(l || []), Ot(r || []), Yt(o || []), oa(s || []), xa(s || []), la(n || []), ma(m || []), da(i), l && l.length > 0) {
                     const e = e => {
@@ -2586,10 +2587,16 @@ const hideLoadingScreen = () => {
                             cod_cliente: [],
                             centro_custo: []
                         };
-                    console.log("📊 Datas formatadas:", t.data_inicio, "até", t.data_fim), ga(t), setTimeout(() => ol(t), 100)
-                } else ol({})
+                    console.log("📊 Datas formatadas:", t.data_inicio, "até", t.data_fim), ga(t);
+                    // Carrega o dashboard com os filtros configurados (sem setTimeout)
+                    await ol(t);
+                } else {
+                    await ol({});
+                }
+                Ra(!1); // Esconde loading
             } catch (e) {
-                console.error("Erro ao carregar dropdowns:", e)
+                console.error("Erro ao carregar dropdowns:", e);
+                Ra(!1);
             }
         }, rl = e => {
             const t = na;
@@ -2758,6 +2765,11 @@ const hideLoadingScreen = () => {
             } catch (e) {
                 console.error("Erro ao carregar regiões:", e)
             }
+        }, carregarBI = async () => {
+            // Carrega máscaras e regiões PRIMEIRO (necessários para exibir nomes)
+            await Promise.all([dl(), pl(), tl(), al()]);
+            // Depois carrega os filtros e dados do dashboard
+            await ll();
         }, xl = async () => {
             try {
                 Ra(!0);
@@ -6300,7 +6312,7 @@ const hideLoadingScreen = () => {
             }, "📅 Disponibilidade"), 
             hasModuleAccess(l, "bi") && React.createElement("button", {
                 onClick: () => {
-                    he("bi"), ll(), tl(), al(), dl(), pl()
+                    he("bi"), carregarBI()
                 },
                 className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("bi" === Ee ? "bg-white text-orange-800" : "text-white hover:bg-white/10")
             }, "📊 BI"), 
@@ -6353,7 +6365,7 @@ const hideLoadingScreen = () => {
                     className: "px-3 py-1.5 rounded-lg text-xs font-semibold text-white hover:bg-white/10"
                 }, "⚙️ Operacional"),
                 hasModuleAccess(l, "bi") && React.createElement("button", {
-                    onClick: () => { he("bi"); ll(); tl(); al(); dl(); pl(); },
+                    onClick: () => { he("bi"); carregarBI(); },
                     className: "px-3 py-1.5 rounded-lg text-xs font-semibold text-white hover:bg-white/10"
                 }, "📊 BI"),
                 hasModuleAccess(l, "todo") && React.createElement("button", {
@@ -12208,7 +12220,7 @@ const hideLoadingScreen = () => {
                     className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all text-white hover:bg-white/10"
                 }, "📅 Disponibilidade"),
                 hasModuleAccess(l, "bi") && React.createElement("button", {
-                    onClick: function() { he("bi"); ll(); tl(); al(); dl(); pl(); },
+                    onClick: function() { he("bi"); carregarBI(); },
                     className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all text-white hover:bg-white/10"
                 }, "📊 BI"),
                 hasModuleAccess(l, "todo") && React.createElement("button", {
@@ -13100,7 +13112,7 @@ const hideLoadingScreen = () => {
                     className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all text-white hover:bg-white/10"
                 }, "📅 Disponibilidade"),
                 hasModuleAccess(l, "bi") && React.createElement("button", {
-                    onClick: function() { he("bi"); ll(); tl(); al(); dl(); pl(); },
+                    onClick: function() { he("bi"); carregarBI(); },
                     className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all text-white hover:bg-white/10"
                 }, "📊 BI"),
                 hasModuleAccess(l, "todo") && React.createElement("button", {
@@ -15127,7 +15139,7 @@ const hideLoadingScreen = () => {
                     
                     // BI
                     hasModuleAccess(l, "bi") && React.createElement("button", {
-                        onClick: () => he("bi"),
+                        onClick: () => { he("bi"); carregarBI(); },
                         className: "bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 border-2 border-transparent hover:border-orange-300"
                     }, React.createElement("span", {className: "text-4xl block mb-3"}, "📊"),
                         React.createElement("p", {className: "font-bold text-gray-800"}, "BI"),
@@ -15275,7 +15287,7 @@ const hideLoadingScreen = () => {
         }, "📅 Disponibilidade"), 
         hasModuleAccess(l, "bi") && React.createElement("button", {
             onClick: () => {
-                he("bi"), ll(), tl(), al(), dl(), pl()
+                he("bi"), carregarBI()
             },
             className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("bi" === Ee ? "bg-white text-orange-800" : "text-white hover:bg-white/10")
         }, "📊 BI"), 
@@ -15360,7 +15372,7 @@ const hideLoadingScreen = () => {
         }, "📅 Disponibilidade"),
         // BI - verificar permissão
         hasModuleAccess(l, "bi") && React.createElement("button", {
-            onClick: () => { he("bi"); ll(); tl(); al(); dl(); pl(); },
+            onClick: () => { he("bi"); carregarBI(); },
             className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("bi" === Ee ? "bg-white text-orange-800" : "text-white hover:bg-white/10")
         }, "📊 BI"),
         // TO-DO - verificar permissão
