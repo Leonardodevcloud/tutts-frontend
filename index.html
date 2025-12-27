@@ -413,10 +413,13 @@
         return;
       }
       
+      console.log('🗺️ Adicionando', pontos.length, 'pontos ao mapa...');
       var maxCount = Math.max.apply(null, pontos.map(function(p) { return p.count || 1; }));
+      var pontosAdicionados = 0;
       
       pontos.forEach(function(ponto) {
         if (!ponto.lat || !ponto.lng) return;
+        pontosAdicionados++;
         
         var intensity = (ponto.count || 1) / maxCount;
         var radius = 300 + intensity * 1500;
@@ -449,16 +452,24 @@
         marker.addTo(markersLayer);
       });
       
+      console.log('✅ Pontos adicionados:', pontosAdicionados);
+      
       // Ajustar zoom para mostrar todos os pontos
       try {
         var validPoints = pontos.filter(function(p) { return p.lat && p.lng; });
         if (validPoints.length > 0) {
           var bounds = L.latLngBounds(validPoints.map(function(p) { return [p.lat, p.lng]; }));
           mapaLeaflet.fitBounds(bounds, { padding: [50, 50] });
+          console.log('✅ Bounds ajustados');
         }
-      } catch(e) {}
+      } catch(e) { console.log('Erro ao ajustar bounds:', e); }
       
-      setTimeout(function() { if (mapaLeaflet) mapaLeaflet.invalidateSize(); }, 200);
+      setTimeout(function() { 
+        if (mapaLeaflet) {
+          mapaLeaflet.invalidateSize();
+          console.log('✅ Mapa atualizado com sucesso!');
+        }
+      }, 200);
     };
     
     window.destroyMapaCalor = function() {
