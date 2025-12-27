@@ -2432,6 +2432,17 @@ const hideLoadingScreen = () => {
             }
         }, [ua.data_inicio, ua.data_fim, ua.cod_cliente, ua.centro_custo, ua.categoria]);
         
+        // useEffect para CARREGAR DADOS DO BI automaticamente quando entrar no módulo
+        useEffect(() => {
+            if (Ee === "bi") {
+                console.log("📊 Entrando no módulo BI, carregando dados automaticamente...");
+                ll();
+                tl();
+                al();
+                pl();
+            }
+        }, [Ee]);
+        
         // useEffect para carregar mapa de calor quando estiver no dashboard
         useEffect(() => {
             if (Et === "dashboard" && mapaCalorVisivel && !mapaCalorDados && !ba) {
