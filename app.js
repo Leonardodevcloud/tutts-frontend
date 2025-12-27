@@ -845,7 +845,7 @@ const hideLoadingScreen = () => {
             categoria: "",
             status_prazo: "",
             regiao: ""
-        }), [ba, Ra] = useState(!1), [Ea, ha] = useState(null), [fa, Na] = useState([{
+        }), [ba, Ra] = useState(!1), [Ea, ha] = useState(null), [driveImportando, setDriveImportando] = useState(null), [fa, Na] = useState([{
             km_min: 0,
             km_max: 15,
             prazo_minutos: 45
@@ -14530,21 +14530,27 @@ const hideLoadingScreen = () => {
                 className: "bg-white rounded-xl shadow p-6"
             }, React.createElement("h2", {
                 className: "text-xl font-bold text-purple-900 mb-6"
-            }, "📤 Upload de Planilha"), React.createElement("div", {
+            }, "📤 Upload de Planilha"), 
+            // Upload Manual
+            React.createElement("div", {
                 className: "border-2 border-dashed border-purple-300 rounded-xl p-10 text-center bg-purple-50"
-            }, Ea ? React.createElement("div", null, React.createElement("div", {
-                className: "animate-spin text-5xl mb-4"
-            }, "⏳"), React.createElement("p", {
-                className: "text-purple-600"
-            }, Ea)) : React.createElement(React.Fragment, null, React.createElement("p", {
+            }, React.createElement("p", {
                 className: "text-5xl mb-4"
             }, "📄"), React.createElement("p", {
-                className: "text-purple-600 mb-4"
-            }, "Selecione uma planilha Excel (.xlsx)"), React.createElement("input", {
+                className: "text-purple-700 font-semibold mb-2"
+            }, "Arraste ou selecione uma planilha Excel"), React.createElement("p", {
+                className: "text-purple-600 text-sm mb-4"
+            }, "Apenas OS novas serão inseridas (duplicadas são ignoradas)"), Ea ? React.createElement("div", null, React.createElement("div", {
+                className: "animate-spin text-4xl mb-2"
+            }, "⏳"), React.createElement("p", {
+                className: "text-purple-600 text-sm"
+            }, Ea)) : React.createElement(React.Fragment, null, React.createElement("input", {
                 type: "file",
                 accept: ".xlsx,.xls",
                 onChange: e => {
-                    e.target.files[0] && ((async e => {
+                    const arquivo = e.target.files[0];
+                    const arquivoNome = arquivo?.name || "arquivo.xlsx";
+                    arquivo && ((async e => {
                         try {
                             ha("Lendo arquivo...");
                             const t = await e.arrayBuffer(),
@@ -14598,22 +14604,25 @@ const hideLoadingScreen = () => {
                                         "Content-Type": "application/json"
                                     },
                                     body: JSON.stringify({
-                                        entregas: o
+                                        entregas: o,
+                                        usuario_id: l?.cod || l?.id,
+                                        usuario_nome: l?.fullName || l?.username,
+                                        nome_arquivo: arquivoNome
                                     })
                                 }),
                                 s = await c.json();
-                            s.success ? (ja(`✅ Upload concluído! ${s.inseridos} novos, ${s.atualizados} atualizados`, "success"), el(), ll()) : ja("❌ Erro no upload: " + s.error, "error")
+                            s.success ? (ja(`✅ Upload concluído! ${s.inseridos} inseridos, ${s.ignorados} ignorados (OS duplicada)`, "success"), el(), ll()) : ja("❌ Erro no upload: " + s.error, "error")
                         } catch (e) {
                             console.error("Erro no upload:", e), ja("❌ Erro ao processar arquivo: " + e.message, "error")
                         }
                         ha(null)
-                    })(e.target.files[0]), e.target.value = "")
+                    })(arquivo), e.target.value = "")
                 },
                 className: "hidden",
                 id: "bi-upload-file"
             }), React.createElement("label", {
                 htmlFor: "bi-upload-file",
-                className: "px-6 py-3 bg-purple-600 text-white rounded-lg font-semibold cursor-pointer hover:bg-purple-700 inline-block"
+                className: "px-5 py-2 bg-purple-600 text-white rounded-lg font-semibold cursor-pointer hover:bg-purple-700 inline-block text-sm"
             }, "📤 Selecionar Arquivo")))), React.createElement("div", {
                 className: "bg-white rounded-xl shadow p-6"
             }, React.createElement("h2", {
