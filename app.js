@@ -2588,7 +2588,11 @@ const hideLoadingScreen = () => {
             }
         }, ll = async () => {
             try {
-                const [e, t, a, l, r, o, c, s, n, m] = await Promise.all([fetch(`${API_URL}/bi/clientes`).then(e => e.json()), fetch(`${API_URL}/bi/centros-custo`).then(e => e.json()), fetch(`${API_URL}/bi/profissionais`).then(e => e.json()), fetch(`${API_URL}/bi/datas`).then(e => e.json()), fetch(`${API_URL}/bi/uploads`).then(e => e.json()), fetch(`${API_URL}/bi/cidades`).then(e => e.json()).catch(() => []), fetch(`${API_URL}/bi/cliente-centros`).then(e => e.json()).catch(() => ({})), fetch(`${API_URL}/bi/categorias`).then(e => e.json()).catch(() => []), fetch(`${API_URL}/bi/regioes`).then(e => e.json()).catch(() => []), fetch(`${API_URL}/bi/dados-filtro`).then(e => e.json()).catch(() => [])]), i = (e || []).sort((e, t) => (parseInt(e.cod_cliente) || 0) - (parseInt(t.cod_cliente) || 0));
+                // Carregar máscaras PRIMEIRO junto com os outros dados
+                const [e, t, a, l, r, o, c, s, n, m, mascarasData] = await Promise.all([fetch(`${API_URL}/bi/clientes`).then(e => e.json()), fetch(`${API_URL}/bi/centros-custo`).then(e => e.json()), fetch(`${API_URL}/bi/profissionais`).then(e => e.json()), fetch(`${API_URL}/bi/datas`).then(e => e.json()), fetch(`${API_URL}/bi/uploads`).then(e => e.json()), fetch(`${API_URL}/bi/cidades`).then(e => e.json()).catch(() => []), fetch(`${API_URL}/bi/cliente-centros`).then(e => e.json()).catch(() => ({})), fetch(`${API_URL}/bi/categorias`).then(e => e.json()).catch(() => []), fetch(`${API_URL}/bi/regioes`).then(e => e.json()).catch(() => []), fetch(`${API_URL}/bi/dados-filtro`).then(e => e.json()).catch(() => []), fetch(`${API_URL}/bi/mascaras`).then(e => e.json()).catch(() => [])]), i = (e || []).sort((e, t) => (parseInt(e.cod_cliente) || 0) - (parseInt(t.cod_cliente) || 0));
+                // Setar máscaras ANTES de tudo
+                ta(mascarasData || []);
+                console.log("📊 Máscaras carregadas:", (mascarasData || []).length);
                 if (Ct(i), St(t || []), Pt(t || []), Dt(c || {}), It(a || []), $t(l || []), Ot(r || []), Yt(o || []), oa(s || []), xa(s || []), la(n || []), ma(m || []), da(i), l && l.length > 0) {
                     const e = e => {
                             if (!e) return "";
