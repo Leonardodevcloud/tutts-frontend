@@ -14538,28 +14538,37 @@ const hideLoadingScreen = () => {
                 className: "text-5xl mb-4"
             }, "📄"), React.createElement("p", {
                 className: "text-purple-700 font-semibold mb-2"
-            }, "Arraste ou selecione uma planilha Excel"), React.createElement("p", {
+            }, "Arraste ou selecione planilhas Excel"), React.createElement("p", {
                 className: "text-purple-600 text-sm mb-4"
-            }, "Apenas OS novas serão inseridas (duplicadas são ignoradas)"), Ea ? React.createElement("div", null, React.createElement("div", {
+            }, "Você pode selecionar múltiplos arquivos • Apenas OS novas serão inseridas"), Ea ? React.createElement("div", null, React.createElement("div", {
                 className: "animate-spin text-4xl mb-2"
             }, "⏳"), React.createElement("p", {
                 className: "text-purple-600 text-sm"
             }, Ea)) : React.createElement(React.Fragment, null, React.createElement("input", {
                 type: "file",
                 accept: ".xlsx,.xls",
-                onChange: e => {
-                    const arquivo = e.target.files[0];
-                    const arquivoNome = arquivo?.name || "arquivo.xlsx";
-                    arquivo && ((async e => {
+                multiple: true,
+                onChange: async (e) => {
+                    const arquivos = Array.from(e.target.files);
+                    if (arquivos.length === 0) return;
+                    
+                    // Pegar usuário logado
+                    const usuarioLogado = l;
+                    console.log("👤 Usuário logado:", usuarioLogado);
+                    
+                    let totalInseridos = 0;
+                    let totalIgnorados = 0;
+                    let arquivosProcessados = 0;
+                    
+                    for (const arquivo of arquivos) {
                         try {
-                            ha("Lendo arquivo...");
-                            const t = await e.arrayBuffer(),
-                                a = XLSX.read(t, {
-                                    type: "array"
-                                }),
-                                l = a.Sheets[a.SheetNames[0]],
-                                r = XLSX.utils.sheet_to_json(l);
-                            ha(`Processando ${r.length} linhas...`);
+                            ha(`Processando ${arquivo.name} (${arquivosProcessados + 1}/${arquivos.length})...`);
+                            
+                            const t = await arquivo.arrayBuffer();
+                            const a = XLSX.read(t, { type: "array" });
+                            const sheet = a.Sheets[a.SheetNames[0]];
+                            const r = XLSX.utils.sheet_to_json(sheet);
+                            
                             const o = r.map(e => ({
                                 os: e.OS,
                                 num_pedido: e["Nº Pedido"],
@@ -14597,33 +14606,54 @@ const hideLoadingScreen = () => {
                                 ocorrencia: e["Ocorrência"],
                                 velocidade_media: e["Velocidade Média"]
                             })).filter(e => e.os);
-                            console.log("📋 Primeira entrega:", o[0]), console.log("📋 Centro custo:", o[0]?.centro_custo), console.log("📋 Colunas do Excel:", Object.keys(r[0] || {})), ha(`Enviando ${o.length} entregas...`);
-                            const c = await fetch(`${API_URL}/bi/entregas/upload`, {
-                                    method: "POST",
-                                    headers: {
-                                        "Content-Type": "application/json"
-                                    },
-                                    body: JSON.stringify({
-                                        entregas: o,
-                                        usuario_id: l?.cod || l?.id,
-                                        usuario_nome: l?.fullName || l?.username,
-                                        nome_arquivo: arquivoNome
-                                    })
-                                }),
-                                s = await c.json();
-                            s.success ? (ja(`✅ Upload concluído! ${s.inseridos} inseridos, ${s.ignorados} ignorados (OS duplicada)`, "success"), el(), ll()) : ja("❌ Erro no upload: " + s.error, "error")
-                        } catch (e) {
-                            console.error("Erro no upload:", e), ja("❌ Erro ao processar arquivo: " + e.message, "error")
+                            
+                            ha(`Enviando ${o.length} entregas de ${arquivo.name}...`);
+                            
+                            // Extrair nome do usuário de forma robusta
+                            const nomeUsuario = usuarioLogado?.fullName || usuarioLogado?.full_name || usuarioLogado?.username || usuarioLogado?.name || "Admin";
+                            const idUsuario = usuarioLogado?.codProfissional || usuarioLogado?.cod_profissional || usuarioLogado?.cod || usuarioLogado?.id || "";
+                            
+                            console.log("📤 Enviando upload com usuario:", nomeUsuario, "id:", idUsuario);
+                            
+                            const response = await fetch(`${API_URL}/bi/entregas/upload`, {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                    entregas: o,
+                                    usuario_id: idUsuario,
+                                    usuario_nome: nomeUsuario,
+                                    nome_arquivo: arquivo.name
+                                })
+                            });
+                            
+                            const result = await response.json();
+                            if (result.success) {
+                                totalInseridos += result.inseridos || 0;
+                                totalIgnorados += result.ignorados || 0;
+                                arquivosProcessados++;
+                            }
+                        } catch (err) {
+                            console.error(`Erro em ${arquivo.name}:`, err);
                         }
-                        ha(null)
-                    })(arquivo), e.target.value = "")
+                    }
+                    
+                    ha(null);
+                    e.target.value = "";
+                    
+                    if (arquivosProcessados > 0) {
+                        ja(`✅ ${arquivosProcessados} arquivo(s) processado(s)! ${totalInseridos} inseridos, ${totalIgnorados} ignorados`, "success");
+                        el();
+                        ll();
+                    } else {
+                        ja("❌ Nenhum arquivo foi processado", "error");
+                    }
                 },
                 className: "hidden",
                 id: "bi-upload-file"
             }), React.createElement("label", {
                 htmlFor: "bi-upload-file",
-                className: "px-5 py-2 bg-purple-600 text-white rounded-lg font-semibold cursor-pointer hover:bg-purple-700 inline-block text-sm"
-            }, "📤 Selecionar Arquivo")))), React.createElement("div", {
+                className: "px-6 py-3 bg-purple-600 text-white rounded-lg font-semibold cursor-pointer hover:bg-purple-700 inline-block"
+            }, "📤 Selecionar Arquivo(s)")))), React.createElement("div", {
                 className: "bg-white rounded-xl shadow p-6"
             }, React.createElement("h2", {
                 className: "text-xl font-bold text-purple-900 mb-4"
