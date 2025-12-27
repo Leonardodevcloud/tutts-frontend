@@ -14632,24 +14632,37 @@ const hideLoadingScreen = () => {
             }, "Nenhum upload realizado ainda") : React.createElement("div", {
                 className: "space-y-3"
             }, Mt.map((e, t) => React.createElement("div", {
-                key: t,
+                key: e.id || t,
                 className: "flex items-center justify-between p-4 bg-purple-50 rounded-lg border border-purple-200"
-            }, React.createElement("div", null, React.createElement("p", {
-                className: "font-semibold text-purple-900"
-            }, "📅 Upload de ", new Date(e.data_upload).toLocaleDateString("pt-BR")), React.createElement("p", {
-                className: "text-sm text-purple-600"
-            }, e.total_registros, " registros • Período: ", e.data_inicial ? new Date(e.data_inicial).toLocaleDateString("pt-BR") : "-", " a ", e.data_final ? new Date(e.data_final).toLocaleDateString("pt-BR") : "-")), React.createElement("button", {
-                onClick: () => (async e => {
-                    if (confirm(`Excluir todos os registros do upload de ${new Date(e).toLocaleDateString("pt-BR")}?`)) try {
-                        const t = await fetch(`${API_URL}/bi/uploads/${e}`, {
-                                method: "DELETE"
-                            }),
+            }, React.createElement("div", {className: "flex-1"}, 
+                React.createElement("div", {className: "flex items-center gap-3 mb-1"},
+                    React.createElement("p", {className: "font-semibold text-purple-900"}, 
+                        "📄 ", e.nome_arquivo || "Arquivo Excel"
+                    ),
+                    e.usuario_nome && React.createElement("span", {
+                        className: "text-xs bg-purple-200 text-purple-700 px-2 py-0.5 rounded-full"
+                    }, "👤 ", e.usuario_nome)
+                ),
+                React.createElement("div", {className: "flex items-center gap-4 text-sm text-purple-600"},
+                    React.createElement("span", null, "📅 ", e.data_upload ? new Date(e.data_upload).toLocaleDateString("pt-BR") + " às " + new Date(e.data_upload).toLocaleTimeString("pt-BR", {hour: "2-digit", minute: "2-digit"}) : "-"),
+                    e.linhas_inseridas !== undefined ? React.createElement("span", null, "✅ ", e.linhas_inseridas, " inseridas") : React.createElement("span", null, e.total_registros, " registros"),
+                    e.linhas_ignoradas > 0 && React.createElement("span", {className: "text-orange-600"}, "⏭️ ", e.linhas_ignoradas, " ignoradas")
+                )
+            ), React.createElement("button", {
+                onClick: () => (async (uploadData) => {
+                    const dataStr = uploadData.data_upload ? new Date(uploadData.data_upload).toLocaleDateString("pt-BR") : "este upload";
+                    if (confirm(`Excluir upload de ${dataStr}?`)) try {
+                        // Se tem ID, usa o novo endpoint
+                        const endpoint = uploadData.id 
+                            ? `${API_URL}/bi/uploads/historico/${uploadData.id}`
+                            : `${API_URL}/bi/uploads/${uploadData.data_upload}`;
+                        const t = await fetch(endpoint, { method: "DELETE" }),
                             a = await t.json();
-                        ja(`✅ ${a.deletados} registros excluídos!`, "success"), ll(), el()
-                    } catch (e) {
+                        ja(`✅ Upload excluído!`, "success"), ll(), el()
+                    } catch (err) {
                         ja("Erro ao excluir", "error")
                     }
-                })(e.data_upload),
+                })(e),
                 className: "px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 font-semibold text-sm"
             }, "🗑️ Excluir"))))), React.createElement("div", {
                 className: "bg-blue-50 border border-blue-200 rounded-xl p-4"
