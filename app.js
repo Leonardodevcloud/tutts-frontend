@@ -2473,11 +2473,9 @@ const hideLoadingScreen = () => {
             }
         }, [ua.data_inicio, ua.data_fim, ua.cod_cliente, ua.centro_custo, ua.categoria]);
         
-        // useEffect para RENDERIZAR O MAPA quando os dados chegarem E o loading do BI terminar
+        // useEffect para RENDERIZAR O MAPA quando os dados chegarem
         useEffect(() => {
-            // Só tenta renderizar quando: está no dashboard, mapa visível, não está carregando BI, tem dados do mapa
-            if (Et === "dashboard" && mapaCalorVisivel && !mapaCalorLoading && !ba && mapaCalorDados && mapaCalorDados.pontos) {
-                // Função para tentar inicializar o mapa
+            if (Et === "dashboard" && mapaCalorVisivel && !mapaCalorLoading && mapaCalorDados && mapaCalorDados.pontos) {
                 const tentarInicializar = (tentativa) => {
                     const container = document.getElementById('mapa-calor-leaflet');
                     if (container) {
@@ -2493,11 +2491,10 @@ const hideLoadingScreen = () => {
                     }
                 };
                 
-                // Iniciar com delay para dar tempo do React renderizar
                 const timer = setTimeout(() => tentarInicializar(0), 100);
                 return () => clearTimeout(timer);
             }
-        }, [mapaCalorDados, mapaCalorLoading]);
+        }, [Et, mapaCalorVisivel, mapaCalorDados, mapaCalorLoading]);
         
         const el = async () => {
             try {
