@@ -14773,7 +14773,32 @@ const hideLoadingScreen = () => {
             }), React.createElement("label", {
                 htmlFor: "bi-update-alocado-file",
                 className: "px-4 py-2 bg-pink-500 text-white rounded-lg font-semibold cursor-pointer hover:bg-pink-600 inline-block text-sm"
-            }, "🕐 Atualizar Alocação")))), React.createElement("div", {
+            }, "🕐 Atualizar Alocação")), 
+            // Botão para inicializar prazos DAX
+            React.createElement("div", {
+                className: "mt-4 pt-4 border-t border-green-200"
+            }, React.createElement("p", {
+                className: "text-green-600 text-sm mb-2"
+            }, "📊 Inicializar prazos com regras do DAX (cliente 767 = 2h fixo, outros = faixas por km):"), React.createElement("button", {
+                onClick: async () => {
+                    if (!confirm("Isso vai atualizar todos os prazos com as regras do DAX. Continuar?")) return;
+                    ha("Inicializando prazos DAX...");
+                    try {
+                        const r = await fetch(`${API_URL}/bi/inicializar-prazos-dax`, { method: "POST" });
+                        const j = await r.json();
+                        if (j.success) {
+                            ja(`✅ Prazos inicializados! ${j.registrosAtualizados} registros atualizados`, "success");
+                            el();
+                        } else {
+                            ja(`❌ Erro: ${j.error}`, "error");
+                        }
+                    } catch (err) {
+                        ja(`❌ Erro: ${err.message}`, "error");
+                    }
+                    ha(null);
+                },
+                className: "px-4 py-2 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 text-sm"
+            }, "📊 Inicializar Prazos DAX")))), React.createElement("div", {
                 className: "bg-white rounded-xl shadow p-6"
             }, React.createElement("h2", {
                 className: "text-xl font-bold text-purple-900 mb-4"
