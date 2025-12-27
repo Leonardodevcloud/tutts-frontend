@@ -328,7 +328,7 @@
     // ============================================
     // FUNÇÕES DO MAPA LEAFLET
     // ============================================
-    window.mapaLeaflet = null;
+    var mapaLeaflet = null;
     var markersLayer = null;
     var mapaInicializado = false;
     
@@ -356,38 +356,29 @@
       
       console.log('📐 Container:', container.offsetWidth, 'x', container.offsetHeight);
       
-      // Verificar se já existe um mapa válido
-      if (window.mapaLeaflet && window.mapaLeaflet._container) {
-        console.log('🔄 Mapa já existe, atualizando marcadores...');
-        // Apenas atualizar os marcadores
-        if (markersLayer) {
-          markersLayer.clearLayers();
-        }
-      } else {
-        // Criar novo mapa
-        console.log('🆕 Criando novo mapa...');
-        if (window.mapaLeaflet) {
-          try { window.mapaLeaflet.remove(); } catch(e) {}
-          window.mapaLeaflet = null;
-          markersLayer = null;
-        }
-        container._leaflet_id = null;
-        container.innerHTML = '';
-        mapaInicializado = false;
-        
-        try {
-          window.mapaLeaflet = L.map('mapa-calor-leaflet', { preferCanvas: true }).setView([-16.6869, -49.2648], 11);
-          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap',
-            maxZoom: 18
-          }).addTo(window.mapaLeaflet);
-          markersLayer = L.layerGroup().addTo(window.mapaLeaflet);
-          mapaInicializado = true;
-          console.log('✅ Mapa criado com sucesso!');
-        } catch(e) {
-          console.error('❌ Erro ao criar mapa:', e);
-          return;
-        }
+      // SEMPRE destruir e recriar o mapa para evitar problemas
+      console.log('🆕 Criando/recriando mapa...');
+      if (mapaLeaflet) {
+        try { mapaLeaflet.remove(); } catch(e) {}
+        mapaLeaflet = null;
+        markersLayer = null;
+      }
+      container._leaflet_id = null;
+      container.innerHTML = '';
+      mapaInicializado = false;
+      
+      try {
+        mapaLeaflet = L.map('mapa-calor-leaflet', { preferCanvas: true }).setView([-16.6869, -49.2648], 11);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap',
+          maxZoom: 18
+        }).addTo(mapaLeaflet);
+        markersLayer = L.layerGroup().addTo(mapaLeaflet);
+        mapaInicializado = true;
+        console.log('✅ Mapa criado com sucesso!');
+      } catch(e) {
+        console.error('❌ Erro ao criar mapa:', e);
+        return;
       }
       
       if (!pontos || pontos.length === 0) {
@@ -429,23 +420,57 @@
       try {
         var valid = pontos.filter(function(p) { return p.lat && p.lng; });
         if (valid.length > 0) {
-          window.mapaLeaflet.fitBounds(L.latLngBounds(valid.map(function(p) { return [p.lat, p.lng]; })), { padding: [50, 50] });
+          mapaLeaflet.fitBounds(L.latLngBounds(valid.map(function(p) { return [p.lat, p.lng]; })), { padding: [50, 50] });
           console.log('✅ Bounds ajustados para', valid.length, 'pontos válidos');
         }
       } catch(e) { console.log('Erro ao ajustar bounds:', e); }
       
       setTimeout(function() { 
-        if (window.mapaLeaflet) {
-          window.mapaLeaflet.invalidateSize();
+        if (mapaLeaflet) {
+          mapaLeaflet.invalidateSize();
           console.log('✅ Mapa finalizado!');
+          
+          // DEBUG: Verificar se o mapa existe no DOM
+          var container = document.getElementById('mapa-calor-leaflet');
+          if (container) {
+            console.log('🔍 DEBUG - Container innerHTML length:', container.innerHTML.length);
+            console.log('🔍 DEBUG - Container children:', container.children.length);
+            console.log('🔍 DEBUG - Container style:', container.style.cssText);
+            console.log('🔍 DEBUG - mapaLeaflet._container:', mapaLeaflet._container ? 'existe' : 'NÃO EXISTE');
+            
+            // FORÇAR VISIBILIDADE
+            container.style.zIndex = '9999';
+            container.style.position = 'relative';
+            container.style.visibility = 'visible';
+            container.style.opacity = '1';
+            container.style.display = 'block';
+            container.style.overflow = 'visible';
+            
+            // Forçar nos filhos também
+            var leafletContainer = container.querySelector('.leaflet-container');
+            if (leafletContainer) {
+              leafletContainer.style.zIndex = '9999';
+              leafletContainer.style.visibility = 'visible';
+              leafletContainer.style.opacity = '1';
+              console.log('🔧 CSS forçado no leaflet-container');
+            }
+            
+            // Forçar invalidateSize novamente
+            setTimeout(function() {
+              if (mapaLeaflet) {
+                mapaLeaflet.invalidateSize();
+                console.log('🔧 invalidateSize chamado novamente');
+              }
+            }, 500);
+          }
         }
       }, 100);
     };
     
     window.destroyMapaCalor = function() {
-      if (window.mapaLeaflet) {
-        try { window.mapaLeaflet.remove(); } catch(e) {}
-        window.mapaLeaflet = null;
+      if (mapaLeaflet) {
+        try { mapaLeaflet.remove(); } catch(e) {}
+        mapaLeaflet = null;
         markersLayer = null;
       }
       mapaInicializado = false;
