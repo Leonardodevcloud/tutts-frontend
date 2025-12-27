@@ -403,6 +403,15 @@
         if (mapaLeaflet) {
           mapaLeaflet.invalidateSize();
           console.log('✅ Mapa finalizado!');
+          
+          // DEBUG: Verificar se o mapa existe no DOM
+          var container = document.getElementById('mapa-calor-leaflet');
+          if (container) {
+            console.log('🔍 DEBUG - Container innerHTML length:', container.innerHTML.length);
+            console.log('🔍 DEBUG - Container children:', container.children.length);
+            console.log('🔍 DEBUG - Container style:', container.style.cssText);
+            console.log('🔍 DEBUG - mapaLeaflet._container:', mapaLeaflet._container ? 'existe' : 'NÃO EXISTE');
+          }
         }
       }, 100);
     };
