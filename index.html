@@ -30,9 +30,35 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   
   <style>
-    /* Mapa Leaflet */
+    /* Mapa Leaflet - FORÇAR VISIBILIDADE */
     #mapa-calor-leaflet {
-      z-index: 1 !important;
+      z-index: 100 !important;
+      position: relative !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+      display: block !important;
+    }
+    #mapa-calor-leaflet * {
+      visibility: visible !important;
+    }
+    .leaflet-container {
+      z-index: 100 !important;
+      background: #fff !important;
+    }
+    .leaflet-pane {
+      z-index: 100 !important;
+    }
+    .leaflet-tile-pane {
+      z-index: 200 !important;
+    }
+    .leaflet-overlay-pane {
+      z-index: 400 !important;
+    }
+    .leaflet-marker-pane {
+      z-index: 600 !important;
+    }
+    .leaflet-control-container {
+      z-index: 800 !important;
     }
     
     /* Loading Screen */
