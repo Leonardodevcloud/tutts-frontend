@@ -2497,15 +2497,7 @@ const hideLoadingScreen = () => {
                 const timer = setTimeout(() => tentarInicializar(0), 100);
                 return () => clearTimeout(timer);
             }
-        }, [mapaCalorDados, mapaCalorLoading, ba]);
-        
-        // useEffect para destruir mapa quando SAIR do dashboard
-        useEffect(() => {
-            if (Et !== "dashboard" && window.destroyMapaCalor) {
-                console.log('🗺️ Saiu do dashboard, destruindo mapa...');
-                window.destroyMapaCalor();
-            }
-        }, [Et]);
+        }, [mapaCalorDados, mapaCalorLoading]);
         
         const el = async () => {
             try {
