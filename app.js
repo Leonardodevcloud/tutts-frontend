@@ -2445,6 +2445,23 @@ const hideLoadingScreen = () => {
             }
         }, [ua.data_inicio, ua.data_fim, ua.cod_cliente, ua.centro_custo, ua.categoria]);
         
+        // useEffect para RENDERIZAR o mapa quando os dados estiverem disponíveis
+        useEffect(() => {
+            if (Et === "dashboard" && mapaCalorVisivel && mapaCalorDados && !mapaCalorLoading) {
+                console.log("🗺️ Dados do mapa disponíveis, inicializando Leaflet...");
+                // Aguarda o DOM estar pronto
+                setTimeout(() => {
+                    if (window.initMapaCalor && mapaCalorDados.pontos) {
+                        window.initMapaCalor(mapaCalorDados.pontos);
+                    } else if (window.initMapaCalor && Array.isArray(mapaCalorDados)) {
+                        window.initMapaCalor(mapaCalorDados);
+                    } else {
+                        console.log("⚠️ Dados do mapa em formato inesperado:", mapaCalorDados);
+                    }
+                }, 200);
+            }
+        }, [Et, mapaCalorVisivel, mapaCalorDados, mapaCalorLoading]);
+        
         const el = async () => {
             try {
                 Ra(!0);
