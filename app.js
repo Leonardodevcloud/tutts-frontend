@@ -2387,11 +2387,13 @@ const hideLoadingScreen = () => {
         }, carregarMapaCalor = async () => {
             try {
                 setMapaCalorLoading(true);
+                // Limpar dados antigos para forçar re-renderização
+                setMapaCalorDados(null);
                 const params = Xa();
                 console.log("🗺️ Carregando mapa de calor:", params.toString());
                 const response = await fetch(API_URL + "/bi/mapa-calor?" + params);
                 const data = await response.json();
-                console.log("🗺️ Dados mapa:", data);
+                console.log("🗺️ Dados mapa recebidos:", data);
                 setMapaCalorDados(data);
             } catch (e) {
                 console.error("Erro mapa calor:", e);
@@ -2441,6 +2443,10 @@ const hideLoadingScreen = () => {
         // useEffect para recarregar mapa quando filtros mudam
         useEffect(() => {
             if (Et === "dashboard" && mapaCalorVisivel) {
+                // Destruir mapa antes de recarregar para forçar re-renderização
+                if (window.destroyMapaCalor) {
+                    window.destroyMapaCalor();
+                }
                 carregarMapaCalor();
             }
         }, [ua.data_inicio, ua.data_fim, ua.cod_cliente, ua.centro_custo, ua.categoria]);
@@ -2451,14 +2457,12 @@ const hideLoadingScreen = () => {
                 console.log("🗺️ Dados do mapa disponíveis, inicializando Leaflet...");
                 // Aguarda o DOM estar pronto
                 setTimeout(() => {
-                    if (window.initMapaCalor && mapaCalorDados.pontos) {
-                        window.initMapaCalor(mapaCalorDados.pontos);
-                    } else if (window.initMapaCalor && Array.isArray(mapaCalorDados)) {
-                        window.initMapaCalor(mapaCalorDados);
-                    } else {
-                        console.log("⚠️ Dados do mapa em formato inesperado:", mapaCalorDados);
+                    if (window.initMapaCalor) {
+                        const pontos = mapaCalorDados.pontos || (Array.isArray(mapaCalorDados) ? mapaCalorDados : []);
+                        console.log("🗺️ Renderizando mapa com", pontos.length, "pontos");
+                        window.initMapaCalor(pontos);
                     }
-                }, 200);
+                }, 300);
             }
         }, [Et, mapaCalorVisivel, mapaCalorDados, mapaCalorLoading]);
         
