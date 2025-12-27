@@ -2435,22 +2435,24 @@ const hideLoadingScreen = () => {
         
         // useEffect para carregar mapa de calor quando estiver no dashboard
         useEffect(() => {
-            if (Et === "dashboard" && mapaCalorVisivel && !mapaCalorDados) {
+            if (Et === "dashboard" && mapaCalorVisivel && !mapaCalorDados && !ba) {
                 carregarMapaCalor();
             }
-        }, [Et, mapaCalorVisivel]);
+        }, [Et, mapaCalorVisivel, ba]);
         
         // useEffect para recarregar mapa quando filtros mudam
         useEffect(() => {
-            if (Et === "dashboard" && mapaCalorVisivel) {
+            if (Et === "dashboard" && mapaCalorVisivel && !ba) {
                 carregarMapaCalor();
             }
         }, [ua.data_inicio, ua.data_fim, ua.cod_cliente, ua.centro_custo, ua.categoria]);
         
-        // useEffect para RENDERIZAR o mapa quando os dados estiverem disponíveis
+        // useEffect para RENDERIZAR o mapa quando os dados estiverem disponíveis E loading terminar
         useEffect(() => {
-            if (Et === "dashboard" && mapaCalorVisivel && mapaCalorDados && !mapaCalorLoading) {
-                console.log("🗺️ Dados do mapa disponíveis, preparando inicialização...");
+            // IMPORTANTE: Só renderizar quando ba (loading geral) for false!
+            // Porque enquanto ba=true, o container #mapa-calor-leaflet não existe no DOM
+            if (Et === "dashboard" && mapaCalorVisivel && mapaCalorDados && !mapaCalorLoading && !ba) {
+                console.log("🗺️ Dados do mapa disponíveis e loading concluído, preparando inicialização...");
                 
                 // Função para verificar se o container existe e tem dimensões
                 const tentarInicializarMapa = (tentativa) => {
@@ -2478,7 +2480,7 @@ const hideLoadingScreen = () => {
                 // Aguardar um ciclo de renderização do React
                 setTimeout(() => tentarInicializarMapa(0), 100);
             }
-        }, [Et, mapaCalorVisivel, mapaCalorDados, mapaCalorLoading]);
+        }, [Et, mapaCalorVisivel, mapaCalorDados, mapaCalorLoading, ba]);
         
         const el = async () => {
             try {
