@@ -845,7 +845,7 @@ const hideLoadingScreen = () => {
             categoria: "",
             status_prazo: "",
             regiao: ""
-        }), [ba, Ra] = useState(!1), [Ea, ha] = useState(null), [driveImportando, setDriveImportando] = useState(null), [fa, Na] = useState([{
+        }), [ba, Ra] = useState(!1), [loadingMessage, setLoadingMessage] = useState("Carregando dados..."), [loadingProgress, setLoadingProgress] = useState(0), [Ea, ha] = useState(null), [driveImportando, setDriveImportando] = useState(null), [fa, Na] = useState([{
             km_min: 0,
             km_max: 15,
             prazo_minutos: 45
@@ -2387,11 +2387,14 @@ const hideLoadingScreen = () => {
         }, carregarMapaCalor = async () => {
             try {
                 setMapaCalorLoading(true);
+                setLoadingMessage("Carregando mapa de calor...");
                 setMapaCalorDados(null);
                 const params = Xa();
                 console.log("🗺️ Carregando mapa de calor:", params.toString());
+                setLoadingMessage("Buscando coordenadas das entregas...");
                 const response = await fetch(API_URL + "/bi/mapa-calor?" + params);
                 const data = await response.json();
+                setLoadingMessage("Renderizando mapa...");
                 console.log("🗺️ Dados mapa recebidos:", data);
                 setMapaCalorDados(data);
             } catch (e) {
@@ -2402,9 +2405,11 @@ const hideLoadingScreen = () => {
         }, carregarAcompanhamento = async () => {
             try {
                 setAcompLoading(true);
+                setLoadingMessage("Carregando acompanhamento periódico...");
                 const params = Xa();
                 console.log("📈 Carregando acompanhamento - Filtros ua:", JSON.stringify(ua));
                 console.log("📈 Carregando acompanhamento - Params:", params.toString());
+                setLoadingMessage("Analisando dados do período...");
                 const response = await fetch(API_URL + "/bi/acompanhamento-periodico?" + params);
                 const data = await response.json();
                 console.log("📈 Dados recebidos:", data);
@@ -2474,10 +2479,13 @@ const hideLoadingScreen = () => {
         const el = async () => {
             try {
                 Ra(!0);
+                setLoadingMessage("Carregando dashboard...");
                 const e = Xa();
                 console.log("📊 Carregando dashboard com filtros:", e.toString() || "(sem filtros)");
+                setLoadingMessage("Buscando métricas de desempenho...");
                 const t = await fetch(`${API_URL}/bi/dashboard-completo?${e}`),
                     a = await t.json();
+                setLoadingMessage("Processando dados...");
                 console.log("📊 Dados recebidos:", a), Nt(a.metricas || {}), Bt(a.porCliente || []), Jt(a.porProfissional || []);
                 const l = a.dadosGraficos || [],
                     r = [{
@@ -2601,9 +2609,12 @@ const hideLoadingScreen = () => {
             try {
                 console.log("📊 ll() - Iniciando carregamento do BI...");
                 Ra(!0); // Mostrar loading
+                setLoadingMessage("Carregando dados do sistema...");
                 // Carregar máscaras PRIMEIRO junto com os outros dados
+                setLoadingMessage("Buscando clientes e profissionais...");
                 const [e, t, a, l, r, o, c, s, n, m, mascarasData] = await Promise.all([fetch(`${API_URL}/bi/clientes`).then(e => e.json()), fetch(`${API_URL}/bi/centros-custo`).then(e => e.json()), fetch(`${API_URL}/bi/profissionais`).then(e => e.json()), fetch(`${API_URL}/bi/datas`).then(e => e.json()), fetch(`${API_URL}/bi/uploads`).then(e => e.json()), fetch(`${API_URL}/bi/cidades`).then(e => e.json()).catch(() => []), fetch(`${API_URL}/bi/cliente-centros`).then(e => e.json()).catch(() => ({})), fetch(`${API_URL}/bi/categorias`).then(e => e.json()).catch(() => []), fetch(`${API_URL}/bi/regioes`).then(e => e.json()).catch(() => []), fetch(`${API_URL}/bi/dados-filtro`).then(e => e.json()).catch(() => []), fetch(`${API_URL}/bi/mascaras`).then(e => e.json()).catch(() => [])]), i = (e || []).sort((e, t) => (parseInt(e.cod_cliente) || 0) - (parseInt(t.cod_cliente) || 0));
                 // Setar máscaras ANTES de tudo
+                setLoadingMessage("Aplicando configurações...");
                 ta(mascarasData || []);
                 console.log("📊 Máscaras carregadas:", (mascarasData || []).length);
                 console.log("📊 Datas recebidas:", l?.length || 0);
@@ -2629,6 +2640,7 @@ const hideLoadingScreen = () => {
                     console.log("📊 Sem datas, usando filtros vazios");
                 }
                 // Sempre chamar ol para carregar o dashboard
+                setLoadingMessage("Carregando dashboard principal...");
                 console.log("📊 Chamando ol() com filtros:", JSON.stringify(novosFiltros));
                 await ol(novosFiltros);
                 console.log("📊 ll() - Carregamento concluído!");
@@ -13898,12 +13910,44 @@ const hideLoadingScreen = () => {
             }, "🔍 Aplicar Filtros")))), React.createElement("div", {
                 className: "max-w-full mx-auto p-4"
             }, ba ? React.createElement("div", {
-                className: "text-center py-20"
+                className: "flex flex-col items-center justify-center py-20"
+            }, 
+            // Container principal do loading
+            React.createElement("div", {
+                className: "w-full max-w-md"
+            },
+            // Ícone animado
+            React.createElement("div", {
+                className: "flex justify-center mb-6"
             }, React.createElement("div", {
-                className: "animate-spin text-5xl"
-            }, "⏳"), React.createElement("p", {
-                className: "text-gray-500 mt-4"
-            }, "Carregando dados...")) : React.createElement(React.Fragment, null, "dashboard" === Et && React.createElement(React.Fragment, null, React.createElement("div", {
+                className: "relative"
+            }, React.createElement("div", {
+                className: "w-20 h-20 border-4 border-purple-200 rounded-full"
+            }), React.createElement("div", {
+                className: "absolute top-0 left-0 w-20 h-20 border-4 border-purple-600 rounded-full border-t-transparent animate-spin"
+            }), React.createElement("div", {
+                className: "absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-2xl"
+            }, "📊"))),
+            // Barra de progresso
+            React.createElement("div", {
+                className: "w-full bg-purple-100 rounded-full h-3 mb-4 overflow-hidden"
+            }, React.createElement("div", {
+                className: "h-full bg-gradient-to-r from-purple-500 via-purple-600 to-purple-500 rounded-full transition-all duration-300 animate-pulse",
+                style: { 
+                    width: "100%",
+                    backgroundSize: "200% 100%",
+                    animation: "shimmer 1.5s infinite linear"
+                }
+            })),
+            // Mensagem dinâmica
+            React.createElement("p", {
+                className: "text-center text-purple-700 font-medium mb-2"
+            }, loadingMessage),
+            // Dicas/textos secundários
+            React.createElement("p", {
+                className: "text-center text-gray-400 text-sm animate-pulse"
+            }, ["Processando milhares de registros...", "Analisando métricas de desempenho...", "Calculando indicadores...", "Organizando dados por região...", "Gerando visualizações..."][Math.floor(Date.now() / 2000) % 5])
+            )) : React.createElement(React.Fragment, null, "dashboard" === Et && React.createElement(React.Fragment, null, React.createElement("div", {
                 className: "grid grid-cols-2 md:grid-cols-5 gap-4 mb-4"
             }, React.createElement("div", {
                 className: "bg-purple-700 text-white rounded-lg p-4 text-center"
