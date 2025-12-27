@@ -14075,7 +14075,7 @@ const hideLoadingScreen = () => {
                 className: "px-3 py-2 text-right text-purple-900"
             }, "Ent/Entregador"), React.createElement("th", {
                 className: "px-3 py-2 text-right text-purple-900"
-            }, "Últ. Entrega"))), React.createElement("tbody", null, (zt || []).slice(0, 15).map((e, t) => React.createElement(React.Fragment, {
+            }, "Últ. Entrega"))), React.createElement("tbody", null, (zt || []).map((e, t) => React.createElement(React.Fragment, {
                 key: t
             }, React.createElement("tr", {
                 className: "border-b hover:bg-purple-50 " + (t % 2 == 0 ? "bg-white" : "bg-gray-50")
