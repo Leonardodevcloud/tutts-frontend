@@ -14008,6 +14008,12 @@ const hideLoadingScreen = () => {
             }, "Média Entrega"), React.createElement("p", {
                 className: "text-3xl font-bold"
             }, cl(ft?.tempo_medio))), React.createElement("div", {
+                className: "bg-pink-600 text-white rounded-lg p-4 text-center"
+            }, React.createElement("p", {
+                className: "text-xs opacity-80"
+            }, "Média Alocação"), React.createElement("p", {
+                className: "text-3xl font-bold"
+            }, cl(ft?.tempo_medio_alocacao))), React.createElement("div", {
                 className: "bg-purple-500 text-white rounded-lg p-4 text-center"
             }, React.createElement("p", {
                 className: "text-xs opacity-80"
