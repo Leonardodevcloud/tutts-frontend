@@ -14703,7 +14703,77 @@ const hideLoadingScreen = () => {
             }), React.createElement("label", {
                 htmlFor: "bi-upload-file",
                 className: "px-6 py-3 bg-purple-600 text-white rounded-lg font-semibold cursor-pointer hover:bg-purple-700 inline-block"
-            }, "📤 Selecionar Arquivo(s)")))), React.createElement("div", {
+            }, "📤 Selecionar Arquivo(s)")),
+            // Botão para atualizar alocação em registros existentes
+            React.createElement("div", {
+                className: "mt-4 pt-4 border-t border-purple-200"
+            }, React.createElement("p", {
+                className: "text-purple-600 text-sm mb-2"
+            }, "🔄 Atualizar apenas Data/Hora Alocado (para registros existentes):"), React.createElement("input", {
+                type: "file",
+                accept: ".xlsx,.xls",
+                multiple: true,
+                onChange: async (e) => {
+                    const arquivos = Array.from(e.target.files);
+                    if (arquivos.length === 0) return;
+                    
+                    let totalAtualizados = 0;
+                    let totalErros = 0;
+                    
+                    for (const arquivo of arquivos) {
+                        try {
+                            ha(`Atualizando alocação de ${arquivo.name}...`);
+                            
+                            const t = await arquivo.arrayBuffer();
+                            const a = XLSX.read(t, { type: "array" });
+                            const sheet = a.Sheets[a.SheetNames[0]];
+                            const r = XLSX.utils.sheet_to_json(sheet);
+                            
+                            const entregas = r.map(row => ({
+                                os: row.OS,
+                                ponto: row.Ponto || row['Ponto_Entrega'] || 1,
+                                data_hora_alocado: row["Data/Hora Alocado"]
+                            })).filter(e => e.os && e.data_hora_alocado);
+                            
+                            if (entregas.length === 0) {
+                                console.log("Nenhum registro com Data/Hora Alocado encontrado");
+                                continue;
+                            }
+                            
+                            ha(`Enviando ${entregas.length} registros para atualização...`);
+                            
+                            const response = await fetch(`${API_URL}/bi/entregas/atualizar-alocado`, {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ entregas })
+                            });
+                            
+                            const result = await response.json();
+                            if (result.success) {
+                                totalAtualizados += result.atualizados || 0;
+                                totalErros += result.erros || 0;
+                            }
+                        } catch (err) {
+                            console.error(`Erro em ${arquivo.name}:`, err);
+                            totalErros++;
+                        }
+                    }
+                    
+                    ha(null);
+                    if (totalAtualizados > 0) {
+                        ja(`✅ ${totalAtualizados} registros atualizados com Data/Hora Alocado!`, "success");
+                        el(); // Recarregar dashboard
+                    } else {
+                        ja(`⚠️ Nenhum registro atualizado. Verifique se a planilha tem a coluna "Data/Hora Alocado"`, "warning");
+                    }
+                    e.target.value = "";
+                },
+                className: "hidden",
+                id: "bi-update-alocado-file"
+            }), React.createElement("label", {
+                htmlFor: "bi-update-alocado-file",
+                className: "px-4 py-2 bg-pink-500 text-white rounded-lg font-semibold cursor-pointer hover:bg-pink-600 inline-block text-sm"
+            }, "🕐 Atualizar Alocação")))), React.createElement("div", {
                 className: "bg-white rounded-xl shadow p-6"
             }, React.createElement("h2", {
                 className: "text-xl font-bold text-purple-900 mb-4"
