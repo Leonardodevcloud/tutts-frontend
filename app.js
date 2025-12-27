@@ -2473,9 +2473,9 @@ const hideLoadingScreen = () => {
             }
         }, [ua.data_inicio, ua.data_fim, ua.cod_cliente, ua.centro_custo, ua.categoria]);
         
-        // useEffect para RENDERIZAR O MAPA quando os dados chegarem
+        // useEffect para RENDERIZAR O MAPA quando os dados chegarem E o módulo BI estiver ativo
         useEffect(() => {
-            if (Et === "dashboard" && mapaCalorVisivel && !mapaCalorLoading && mapaCalorDados && mapaCalorDados.pontos) {
+            if (Ee === "bi" && Et === "dashboard" && mapaCalorVisivel && !mapaCalorLoading && mapaCalorDados && mapaCalorDados.pontos) {
                 const tentarInicializar = (tentativa) => {
                     const container = document.getElementById('mapa-calor-leaflet');
                     if (container) {
@@ -2483,18 +2483,18 @@ const hideLoadingScreen = () => {
                         if (window.initMapaCalor) {
                             window.initMapaCalor(mapaCalorDados.pontos);
                         }
-                    } else if (tentativa < 20) {
+                    } else if (tentativa < 30) {
                         console.log('⏳ Container não encontrado, tentativa', tentativa + 1);
                         setTimeout(() => tentarInicializar(tentativa + 1), 200);
                     } else {
-                        console.error('❌ Container não encontrado após 20 tentativas');
+                        console.error('❌ Container não encontrado após 30 tentativas');
                     }
                 };
                 
-                const timer = setTimeout(() => tentarInicializar(0), 100);
+                const timer = setTimeout(() => tentarInicializar(0), 300);
                 return () => clearTimeout(timer);
             }
-        }, [Et, mapaCalorVisivel, mapaCalorDados, mapaCalorLoading]);
+        }, [Ee, Et, mapaCalorVisivel, mapaCalorDados, mapaCalorLoading]);
         
         const el = async () => {
             try {
