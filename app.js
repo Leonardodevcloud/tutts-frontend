@@ -2443,10 +2443,6 @@ const hideLoadingScreen = () => {
         // useEffect para recarregar mapa quando filtros mudam
         useEffect(() => {
             if (Et === "dashboard" && mapaCalorVisivel) {
-                // Destruir mapa antes de recarregar para forçar re-renderização
-                if (window.destroyMapaCalor) {
-                    window.destroyMapaCalor();
-                }
                 carregarMapaCalor();
             }
         }, [ua.data_inicio, ua.data_fim, ua.cod_cliente, ua.centro_custo, ua.categoria]);
@@ -2454,15 +2450,33 @@ const hideLoadingScreen = () => {
         // useEffect para RENDERIZAR o mapa quando os dados estiverem disponíveis
         useEffect(() => {
             if (Et === "dashboard" && mapaCalorVisivel && mapaCalorDados && !mapaCalorLoading) {
-                console.log("🗺️ Dados do mapa disponíveis, inicializando Leaflet...");
-                // Aguarda o DOM estar pronto
-                setTimeout(() => {
-                    if (window.initMapaCalor) {
-                        const pontos = mapaCalorDados.pontos || (Array.isArray(mapaCalorDados) ? mapaCalorDados : []);
-                        console.log("🗺️ Renderizando mapa com", pontos.length, "pontos");
-                        window.initMapaCalor(pontos);
+                console.log("🗺️ Dados do mapa disponíveis, preparando inicialização...");
+                
+                // Função para verificar se o container existe e tem dimensões
+                const tentarInicializarMapa = (tentativa) => {
+                    const container = document.getElementById('mapa-calor-leaflet');
+                    if (container && container.offsetWidth > 0 && container.offsetHeight > 0) {
+                        console.log("🗺️ Container pronto! Dimensões:", container.offsetWidth, "x", container.offsetHeight);
+                        if (window.initMapaCalor) {
+                            const pontos = mapaCalorDados.pontos || (Array.isArray(mapaCalorDados) ? mapaCalorDados : []);
+                            console.log("🗺️ Renderizando mapa com", pontos.length, "pontos");
+                            window.initMapaCalor(pontos);
+                        }
+                    } else if (tentativa < 30) {
+                        console.log("⏳ Aguardando container... tentativa", tentativa + 1);
+                        setTimeout(() => tentarInicializarMapa(tentativa + 1), 100);
+                    } else {
+                        console.log("❌ Container não ficou pronto após 30 tentativas");
                     }
-                }, 300);
+                };
+                
+                // Destruir mapa existente antes de criar novo
+                if (window.destroyMapaCalor) {
+                    window.destroyMapaCalor();
+                }
+                
+                // Aguardar um ciclo de renderização do React
+                setTimeout(() => tentarInicializarMapa(0), 100);
             }
         }, [Et, mapaCalorVisivel, mapaCalorDados, mapaCalorLoading]);
         
