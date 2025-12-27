@@ -2593,20 +2593,26 @@ const hideLoadingScreen = () => {
                 // Setar máscaras ANTES de tudo
                 ta(mascarasData || []);
                 console.log("📊 Máscaras carregadas:", (mascarasData || []).length);
-                if (Ct(i), St(t || []), Pt(t || []), Dt(c || {}), It(a || []), $t(l || []), Ot(r || []), Yt(o || []), oa(s || []), xa(s || []), la(n || []), ma(m || []), da(i), l && l.length > 0) {
-                    const e = e => {
-                            if (!e) return "";
-                            return new Date(e).toISOString().split("T")[0]
+                Ct(i); St(t || []); Pt(t || []); Dt(c || {}); It(a || []); $t(l || []); Ot(r || []); Yt(o || []); oa(s || []); xa(s || []); la(n || []); ma(m || []); da(i);
+                if (l && l.length > 0) {
+                    const formatDate = d => {
+                            if (!d) return "";
+                            return new Date(d).toISOString().split("T")[0]
                         },
-                        t = {
+                        novosFiltros = {
                             ...ua,
-                            data_inicio: e(l[l.length - 1].data),
-                            data_fim: e(l[0].data),
+                            data_inicio: formatDate(l[l.length - 1].data),
+                            data_fim: formatDate(l[0].data),
                             cod_cliente: [],
                             centro_custo: []
                         };
-                    console.log("📊 Datas formatadas:", t.data_inicio, "até", t.data_fim), ga(t), setTimeout(() => ol(t), 100)
-                } else ol({})
+                    console.log("📊 Datas formatadas:", novosFiltros.data_inicio, "até", novosFiltros.data_fim);
+                    ga(novosFiltros);
+                    // Chamar ol diretamente com os filtros, sem depender do estado
+                    ol(novosFiltros);
+                } else {
+                    ol({});
+                }
             } catch (e) {
                 console.error("Erro ao carregar dropdowns:", e)
             }
@@ -14214,12 +14220,12 @@ const hideLoadingScreen = () => {
                 className: "text-sm text-gray-700"
             }, e.faixa, " KM"), e.total > 0 && React.createElement("span", {
                 className: "text-orange-500"
-            }, "🔥"))))))))), "dashboard" === Et && React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-6 mt-6 max-w-4xl mx-auto"}, 
+            }, "🔥"))))))))), "dashboard" === Et && React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-6 mt-6 max-w-4xl mx-auto", style: {overflow: "hidden"}}, 
                 React.createElement("div", {className: "flex items-center justify-between mb-4"}, 
                     React.createElement("h3", {className: "text-lg font-bold text-gray-800"}, "🗺️ Acompanhamento Regional"),
                     React.createElement("button", {onClick: function() { setMapaCalorVisivel(!mapaCalorVisivel); if (!mapaCalorVisivel && window.destroyMapaCalor) window.destroyMapaCalor(); }, className: "px-3 py-1 text-sm rounded-lg " + (mapaCalorVisivel ? "bg-purple-600 text-white" : "bg-gray-200 text-gray-600")}, mapaCalorVisivel ? "👁️ Ocultar" : "👁️ Mostrar")
                 ), 
-                mapaCalorVisivel && React.createElement("div", {style: {position: "relative", minHeight: "600px"}},
+                mapaCalorVisivel && React.createElement("div", {style: {position: "relative", minHeight: "600px", overflow: "hidden", borderRadius: "12px"}},
                     React.createElement("div", {id: "mapa-calor-leaflet", style: {height: "600px", width: "100%", borderRadius: "12px", backgroundColor: "#e5e7eb"}}),
                     mapaCalorLoading && React.createElement("div", {style: {position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(255,255,255,0.8)", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "12px", zIndex: 1000}}, React.createElement("div", {className: "text-center"}, React.createElement("div", {className: "animate-spin text-4xl"}, "⏳"), React.createElement("span", {className: "text-gray-600"}, "Carregando mapa...")))
                 )
