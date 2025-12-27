@@ -437,6 +437,31 @@
             console.log('🔍 DEBUG - Container children:', container.children.length);
             console.log('🔍 DEBUG - Container style:', container.style.cssText);
             console.log('🔍 DEBUG - mapaLeaflet._container:', mapaLeaflet._container ? 'existe' : 'NÃO EXISTE');
+            
+            // FORÇAR VISIBILIDADE
+            container.style.zIndex = '9999';
+            container.style.position = 'relative';
+            container.style.visibility = 'visible';
+            container.style.opacity = '1';
+            container.style.display = 'block';
+            container.style.overflow = 'visible';
+            
+            // Forçar nos filhos também
+            var leafletContainer = container.querySelector('.leaflet-container');
+            if (leafletContainer) {
+              leafletContainer.style.zIndex = '9999';
+              leafletContainer.style.visibility = 'visible';
+              leafletContainer.style.opacity = '1';
+              console.log('🔧 CSS forçado no leaflet-container');
+            }
+            
+            // Forçar invalidateSize novamente
+            setTimeout(function() {
+              if (mapaLeaflet) {
+                mapaLeaflet.invalidateSize();
+                console.log('🔧 invalidateSize chamado novamente');
+              }
+            }, 500);
           }
         }
       }, 100);
