@@ -14257,7 +14257,7 @@ const hideLoadingScreen = () => {
                 className: "text-sm text-gray-700"
             }, e.faixa, " KM"), e.total > 0 && React.createElement("span", {
                 className: "text-orange-500"
-            }, "🔥"))))))))), "dashboard" === Et && (console.log("🗺️ Renderizando seção do mapa, mapaCalorVisivel:", mapaCalorVisivel), React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-6 mt-6"}, 
+            }, "🔥"))))))))), "dashboard" === Et && React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-6 mt-6"}, 
                 React.createElement("div", {className: "flex items-center justify-between mb-4"}, 
                     React.createElement("h3", {className: "text-lg font-bold text-gray-800"}, "🗺️ Acompanhamento Regional"),
                     React.createElement("button", {onClick: function() { setMapaCalorVisivel(!mapaCalorVisivel); if (!mapaCalorVisivel && window.destroyMapaCalor) window.destroyMapaCalor(); }, className: "px-3 py-1 text-sm rounded-lg " + (mapaCalorVisivel ? "bg-purple-600 text-white" : "bg-gray-200 text-gray-600")}, mapaCalorVisivel ? "👁️ Ocultar" : "👁️ Mostrar")
