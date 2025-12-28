@@ -875,6 +875,8 @@ const hideLoadingScreen = () => {
         // Estados do Cliente 767
         [cliente767Dados, setCliente767Dados] = useState(null),
         [cliente767Loading, setCliente767Loading] = useState(false),
+        [cliente767ModalFiltro, setCliente767ModalFiltro] = useState(false),
+        [cliente767Filtros, setCliente767Filtros] = useState({ data_inicio: '', data_fim: '' }),
         // Estados do Mapa de Calor
         [mapaCalorDados, setMapaCalorDados] = useState(null),
         [mapaCalorLoading, setMapaCalorLoading] = useState(false),
@@ -2449,8 +2451,9 @@ const hideLoadingScreen = () => {
                 setCliente767Loading(true);
                 setLoadingMessage("Carregando dados do Cliente 767...");
                 const params = new URLSearchParams();
-                if (ua.data_inicio) params.append("data_inicio", ua.data_inicio);
-                if (ua.data_fim) params.append("data_fim", ua.data_fim);
+                // Usar filtros específicos do Cliente 767
+                if (cliente767Filtros.data_inicio) params.append("data_inicio", cliente767Filtros.data_inicio);
+                if (cliente767Filtros.data_fim) params.append("data_fim", cliente767Filtros.data_fim);
                 
                 const response = await fetch(API_URL + "/bi/cliente-767?" + params);
                 const data = await response.json();
@@ -14524,9 +14527,75 @@ const hideLoadingScreen = () => {
                 React.createElement("div", {className: "bg-gradient-to-r from-orange-500 to-amber-600 rounded-xl p-6 text-white"}, 
                     React.createElement("h2", {className: "text-2xl font-bold mb-2"}, "🏢 Cliente 767 - Prazo Especial"),
                     React.createElement("p", {className: "opacity-90"}, "Prazo de entrega: 120 minutos (2 horas)"),
-                    React.createElement("div", {className: "mt-3 flex gap-3"}, 
-                        React.createElement("button", {onClick: function(){ _a(true); }, className: "px-4 py-2 bg-white/20 rounded-lg text-sm font-semibold hover:bg-white/30"}, "🔍 Filtrar Datas"),
+                    React.createElement("div", {className: "mt-3 flex flex-wrap gap-3 items-center"}, 
+                        cliente767Filtros.data_inicio && React.createElement("span", {className: "px-3 py-1 bg-white/20 rounded-lg text-sm"}, "📅 De: ", cliente767Filtros.data_inicio),
+                        cliente767Filtros.data_fim && React.createElement("span", {className: "px-3 py-1 bg-white/20 rounded-lg text-sm"}, "📅 Até: ", cliente767Filtros.data_fim),
+                        React.createElement("button", {onClick: function(){ setCliente767ModalFiltro(true); }, className: "px-4 py-2 bg-white/20 rounded-lg text-sm font-semibold hover:bg-white/30"}, "🔍 Filtrar Datas"),
                         React.createElement("button", {onClick: carregarCliente767, className: "px-4 py-2 bg-white/20 rounded-lg text-sm font-semibold hover:bg-white/30"}, "🔄 Recarregar")
+                    )
+                ),
+                
+                // Modal de Filtro específico do Cliente 767
+                cliente767ModalFiltro && React.createElement("div", {className: "fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"},
+                    React.createElement("div", {className: "bg-white rounded-xl shadow-2xl w-full max-w-md"},
+                        React.createElement("div", {className: "bg-orange-600 text-white px-6 py-4 rounded-t-xl flex justify-between items-center"},
+                            React.createElement("h3", {className: "text-lg font-bold"}, "🔍 Filtrar Período - Cliente 767"),
+                            React.createElement("button", {onClick: function(){ setCliente767ModalFiltro(false); }, className: "text-white hover:bg-white/20 rounded-lg px-3 py-1 text-xl"}, "✕")
+                        ),
+                        React.createElement("div", {className: "p-6 space-y-4"},
+                            React.createElement("div", null,
+                                React.createElement("label", {className: "block text-sm font-medium text-gray-700 mb-1"}, "Data Início"),
+                                React.createElement("input", {
+                                    type: "date",
+                                    value: cliente767Filtros.data_inicio,
+                                    onChange: function(e) { setCliente767Filtros(function(f) { return {...f, data_inicio: e.target.value}; }); },
+                                    className: "w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                                })
+                            ),
+                            React.createElement("div", null,
+                                React.createElement("label", {className: "block text-sm font-medium text-gray-700 mb-1"}, "Data Fim"),
+                                React.createElement("input", {
+                                    type: "date",
+                                    value: cliente767Filtros.data_fim,
+                                    onChange: function(e) { setCliente767Filtros(function(f) { return {...f, data_fim: e.target.value}; }); },
+                                    className: "w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                                })
+                            ),
+                            React.createElement("div", {className: "flex gap-2 pt-2"},
+                                React.createElement("button", {
+                                    onClick: function() {
+                                        var hoje = new Date();
+                                        var primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().split('T')[0];
+                                        var ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).toISOString().split('T')[0];
+                                        setCliente767Filtros({ data_inicio: primeiroDia, data_fim: ultimoDia });
+                                    },
+                                    className: "flex-1 px-3 py-2 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-200"
+                                }, "Mês Atual"),
+                                React.createElement("button", {
+                                    onClick: function() {
+                                        var hoje = new Date();
+                                        var primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1).toISOString().split('T')[0];
+                                        var ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth(), 0).toISOString().split('T')[0];
+                                        setCliente767Filtros({ data_inicio: primeiroDia, data_fim: ultimoDia });
+                                    },
+                                    className: "flex-1 px-3 py-2 bg-purple-100 text-purple-700 rounded-lg text-sm font-medium hover:bg-purple-200"
+                                }, "Mês Anterior"),
+                                React.createElement("button", {
+                                    onClick: function() { setCliente767Filtros({ data_inicio: '', data_fim: '' }); },
+                                    className: "px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200"
+                                }, "Limpar")
+                            )
+                        ),
+                        React.createElement("div", {className: "px-6 pb-6 flex gap-3"},
+                            React.createElement("button", {
+                                onClick: function() { setCliente767ModalFiltro(false); },
+                                className: "flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50"
+                            }, "Cancelar"),
+                            React.createElement("button", {
+                                onClick: function() { setCliente767ModalFiltro(false); carregarCliente767(); },
+                                className: "flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg font-medium hover:bg-orange-700"
+                            }, "Aplicar Filtro")
+                        )
                     )
                 ),
                 
