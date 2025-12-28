@@ -14488,7 +14488,7 @@ const hideLoadingScreen = () => {
                                             }, expandido ? "➖" : "➕")
                                         ),
                                         React.createElement("td", {className: "px-3 py-2 font-medium text-gray-800 whitespace-nowrap sticky left-0 " + (i % 2 === 0 ? "bg-white" : "bg-gray-50")}, 
-                                            c.cod_cliente, " - ", c.cliente
+                                            c.cod_cliente, " - ", il(c.cod_cliente) || c.cliente
                                         ),
                                         acompFiltrosOrdem.map(function(filtro) {
                                             if (filtro === "os") return React.createElement("td", {key: filtro, className: "px-2 py-2 text-center font-bold text-blue-600"}, c.os);
