@@ -14596,6 +14596,79 @@ const hideLoadingScreen = () => {
                         )
                     ),
                     
+                    // =============================================
+                    // INDICADOR DE META MENSAL
+                    // =============================================
+                    cliente767Dados.indicadorMeta && React.createElement("div", {className: "bg-gradient-to-r " + (cliente767Dados.indicadorMeta.meta_atingivel ? (cliente767Dados.indicadorMeta.taxa_minima_restante <= 0 ? "from-green-500 to-emerald-600" : "from-blue-500 to-indigo-600") : "from-red-500 to-rose-600") + " rounded-xl p-5 text-white shadow-lg"},
+                        React.createElement("div", {className: "flex items-center justify-between mb-4"},
+                            React.createElement("h3", {className: "text-lg font-bold flex items-center gap-2"}, "🎯 Meta Mensal de 95%"),
+                            React.createElement("span", {className: "text-sm opacity-80"}, cliente767Dados.indicadorMeta.mes_referencia)
+                        ),
+                        React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-4 gap-4 mb-4"},
+                            React.createElement("div", {className: "bg-white/20 rounded-lg p-3"},
+                                React.createElement("p", {className: "text-xs opacity-80"}, "Taxa Atual"),
+                                React.createElement("p", {className: "text-2xl font-bold"}, cliente767Dados.indicadorMeta.taxa_atual, "%")
+                            ),
+                            React.createElement("div", {className: "bg-white/20 rounded-lg p-3"},
+                                React.createElement("p", {className: "text-xs opacity-80"}, "Dias Restantes"),
+                                React.createElement("p", {className: "text-2xl font-bold"}, cliente767Dados.indicadorMeta.dias_restantes)
+                            ),
+                            React.createElement("div", {className: "bg-white/20 rounded-lg p-3"},
+                                React.createElement("p", {className: "text-xs opacity-80"}, "No Prazo / Total"),
+                                React.createElement("p", {className: "text-xl font-bold"}, cliente767Dados.indicadorMeta.dentro_prazo_ate_agora, " / ", cliente767Dados.indicadorMeta.total_entregas_ate_agora)
+                            ),
+                            React.createElement("div", {className: "bg-white/20 rounded-lg p-3"},
+                                React.createElement("p", {className: "text-xs opacity-80"}, "Taxa Mínima Necessária"),
+                                React.createElement("p", {className: "text-2xl font-bold"}, cliente767Dados.indicadorMeta.taxa_minima_restante > 100 ? ">100" : cliente767Dados.indicadorMeta.taxa_minima_restante, "%")
+                            )
+                        ),
+                        React.createElement("div", {className: "bg-white/10 rounded-lg p-3"},
+                            React.createElement("div", {className: "flex items-center gap-2"},
+                                React.createElement("span", {className: "text-2xl"}, cliente767Dados.indicadorMeta.meta_atingivel ? (cliente767Dados.indicadorMeta.taxa_minima_restante <= 0 ? "✅" : "📊") : "⚠️"),
+                                React.createElement("div", null,
+                                    React.createElement("p", {className: "font-bold"}, cliente767Dados.indicadorMeta.mensagem),
+                                    cliente767Dados.indicadorMeta.dias_restantes > 0 && cliente767Dados.indicadorMeta.taxa_minima_restante > 0 && cliente767Dados.indicadorMeta.taxa_minima_restante <= 100 && React.createElement("p", {className: "text-sm opacity-80"}, "Faltam ", cliente767Dados.indicadorMeta.entregas_no_prazo_faltam, " entregas no prazo de ~", cliente767Dados.indicadorMeta.entregas_estimadas_restantes, " estimadas")
+                                )
+                            )
+                        )
+                    ),
+                    
+                    // =============================================
+                    // TABELA POR CENTRO DE CUSTO
+                    // =============================================
+                    cliente767Dados.porCentroCusto && cliente767Dados.porCentroCusto.length > 0 && React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-4"},
+                        React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-4"}, "🏪 Desempenho por Centro de Custo"),
+                        React.createElement("div", {className: "overflow-x-auto"},
+                            React.createElement("table", {className: "w-full text-sm"},
+                                React.createElement("thead", null,
+                                    React.createElement("tr", {className: "bg-purple-50"},
+                                        React.createElement("th", {className: "px-3 py-2 text-left font-bold"}, "Centro de Custo"),
+                                        React.createElement("th", {className: "px-3 py-2 text-center font-bold"}, "OS"),
+                                        React.createElement("th", {className: "px-3 py-2 text-center font-bold"}, "Entregas"),
+                                        React.createElement("th", {className: "px-3 py-2 text-center font-bold text-green-700"}, "No Prazo"),
+                                        React.createElement("th", {className: "px-3 py-2 text-center font-bold text-red-700"}, "Fora Prazo"),
+                                        React.createElement("th", {className: "px-3 py-2 text-center font-bold"}, "Taxa")
+                                    )
+                                ),
+                                React.createElement("tbody", null,
+                                    cliente767Dados.porCentroCusto.map(function(cc, i) {
+                                        var taxa = parseFloat(cc.taxa_prazo) || 0;
+                                        return React.createElement("tr", {key: i, className: i%2===0?"bg-white":"bg-gray-50"},
+                                            React.createElement("td", {className: "px-3 py-2 font-medium"}, cc.centro_custo),
+                                            React.createElement("td", {className: "px-3 py-2 text-center text-blue-600 font-bold"}, cc.total_os),
+                                            React.createElement("td", {className: "px-3 py-2 text-center text-sky-600"}, cc.total_entregas),
+                                            React.createElement("td", {className: "px-3 py-2 text-center text-green-600 font-medium"}, cc.dentro_prazo),
+                                            React.createElement("td", {className: "px-3 py-2 text-center text-red-600 font-medium"}, cc.fora_prazo),
+                                            React.createElement("td", {className: "px-3 py-2 text-center"},
+                                                React.createElement("span", {className: "px-2 py-1 rounded text-xs font-bold " + (taxa >= 95 ? "bg-green-100 text-green-700" : taxa >= 80 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700")}, cc.taxa_prazo + "%")
+                                            )
+                                        );
+                                    })
+                                )
+                            )
+                        )
+                    ),
+                    
                     // Tabela por data
                     cliente767Dados.porData && cliente767Dados.porData.length > 0 && React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-4"},
                         React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-4"}, "📅 Evolução Diária"),
