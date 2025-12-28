@@ -13967,9 +13967,7 @@ const hideLoadingScreen = () => {
                 className: "text-sm font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2"
             }, "💰 Métricas Financeiras"), React.createElement("div", {
                 className: "grid grid-cols-2 md:grid-cols-5 gap-4"
-            }, 
-            // Card: Valor Total
-            React.createElement("div", {
+            }, React.createElement("div", {
                 className: "bg-white rounded-2xl p-5 shadow-lg border-l-4 border-emerald-500 hover:shadow-xl transition-all duration-300"
             }, React.createElement("div", {
                 className: "flex items-center justify-between mb-3"
@@ -13983,10 +13981,7 @@ const hideLoadingScreen = () => {
                 className: "text-2xl font-bold text-gray-800 mb-1"
             }, sl(ft?.valor_total || 0)), React.createElement("p", {
                 className: "text-xs text-gray-500 font-medium"
-            }, "Valor Total")),
-            
-            // Card: Valor Profissional
-            React.createElement("div", {
+            }, "Valor Total")), React.createElement("div", {
                 className: "bg-white rounded-2xl p-5 shadow-lg border-l-4 border-blue-500 hover:shadow-xl transition-all duration-300"
             }, React.createElement("div", {
                 className: "flex items-center justify-between mb-3"
@@ -14000,10 +13995,7 @@ const hideLoadingScreen = () => {
                 className: "text-2xl font-bold text-gray-800 mb-1"
             }, sl(ft?.valor_prof_total || 0)), React.createElement("p", {
                 className: "text-xs text-gray-500 font-medium"
-            }, "Valor Profissional")),
-            
-            // Card: Faturamento
-            React.createElement("div", {
+            }, "Valor Profissional")), React.createElement("div", {
                 className: "bg-gradient-to-br from-purple-600 to-purple-800 rounded-2xl p-5 shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden"
             }, React.createElement("div", {
                 className: "absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -mr-10 -mt-10"
@@ -14021,10 +14013,7 @@ const hideLoadingScreen = () => {
                 className: "text-2xl font-bold text-white mb-1"
             }, sl(nl(ft?.valor_total) - nl(ft?.valor_prof_total))), React.createElement("p", {
                 className: "text-xs text-purple-200 font-medium"
-            }, "Faturamento"))),
-            
-            // Card: Ticket Médio
-            React.createElement("div", {
+            }, "Faturamento"))), React.createElement("div", {
                 className: "bg-white rounded-2xl p-5 shadow-lg border-l-4 border-amber-500 hover:shadow-xl transition-all duration-300"
             }, React.createElement("div", {
                 className: "flex items-center justify-between mb-3"
@@ -14038,10 +14027,7 @@ const hideLoadingScreen = () => {
                 className: "text-2xl font-bold text-gray-800 mb-1"
             }, sl(ft?.ticket_medio || 0)), React.createElement("p", {
                 className: "text-xs text-gray-500 font-medium"
-            }, "Ticket Médio")),
-            
-            // Card: Entrega x Entregadores
-            React.createElement("div", {
+            }, "Ticket Médio")), React.createElement("div", {
                 className: "bg-white rounded-2xl p-5 shadow-lg border-l-4 border-violet-500 hover:shadow-xl transition-all duration-300"
             }, React.createElement("div", {
                 className: "flex items-center justify-between mb-3"
@@ -14064,9 +14050,7 @@ const hideLoadingScreen = () => {
                 className: "text-sm font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2"
             }, "📦 Métricas Operacionais"), React.createElement("div", {
                 className: "grid grid-cols-2 md:grid-cols-4 gap-4"
-            }, 
-            // Card: Quantidade OS
-            React.createElement("div", {
+            }, React.createElement("div", {
                 className: "bg-white rounded-2xl p-5 shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden"
             }, React.createElement("div", {
                 className: "absolute bottom-0 right-0 w-24 h-24 bg-gradient-to-tl from-indigo-100 to-transparent rounded-tl-full"
@@ -14080,10 +14064,7 @@ const hideLoadingScreen = () => {
                 className: "text-3xl font-bold text-gray-800 mb-1"
             }, nl(ft?.total_os).toLocaleString("pt-BR")), React.createElement("p", {
                 className: "text-sm text-gray-500 font-medium"
-            }, "Quantidade OS"))),
-            
-            // Card: Total Entregas
-            React.createElement("div", {
+            }, "Quantidade OS"))), React.createElement("div", {
                 className: "bg-white rounded-2xl p-5 shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden"
             }, React.createElement("div", {
                 className: "absolute bottom-0 right-0 w-24 h-24 bg-gradient-to-tl from-cyan-100 to-transparent rounded-tl-full"
@@ -14097,10 +14078,7 @@ const hideLoadingScreen = () => {
                 className: "text-3xl font-bold text-gray-800 mb-1"
             }, nl(ft?.total_entregas).toLocaleString("pt-BR")), React.createElement("p", {
                 className: "text-sm text-gray-500 font-medium"
-            }, "Total Entregas"))),
-            
-            // Card: Retornos
-            React.createElement("div", {
+            }, "Total Entregas"))), React.createElement("div", {
                 className: "bg-white rounded-2xl p-5 shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden"
             }, React.createElement("div", {
                 className: "absolute bottom-0 right-0 w-24 h-24 bg-gradient-to-tl from-orange-100 to-transparent rounded-tl-full"
@@ -14114,10 +14092,7 @@ const hideLoadingScreen = () => {
                 className: "text-3xl font-bold text-gray-800 mb-1"
             }, nl(ft?.total_retornos).toLocaleString("pt-BR")), React.createElement("p", {
                 className: "text-sm text-gray-500 font-medium"
-            }, "Retornos"))),
-            
-            // Card: Entregadores Ativos
-            React.createElement("div", {
+            }, "Retornos"))), React.createElement("div", {
                 className: "bg-white rounded-2xl p-5 shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden"
             }, React.createElement("div", {
                 className: "absolute bottom-0 right-0 w-24 h-24 bg-gradient-to-tl from-teal-100 to-transparent rounded-tl-full"
@@ -14140,14 +14115,10 @@ const hideLoadingScreen = () => {
                 className: "text-sm font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2"
             }, "⏱️ Métricas de Tempo"), React.createElement("div", {
                 className: "grid grid-cols-2 md:grid-cols-3 gap-4"
-            }, 
-            // Card: Tempo Médio de Entrega
-            React.createElement("div", {
+            }, React.createElement("div", {
                 className: "bg-gradient-to-br from-sky-500 to-blue-600 rounded-2xl p-5 shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden"
             }, React.createElement("div", {
                 className: "absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"
-            }), React.createElement("div", {
-                className: "absolute bottom-0 left-0 w-20 h-20 bg-white/5 rounded-full -ml-10 -mb-10"
             }), React.createElement("div", {
                 className: "relative z-10"
             }, React.createElement("div", {
@@ -14162,15 +14133,10 @@ const hideLoadingScreen = () => {
                 className: "text-4xl font-bold text-white mb-2"
             }, cl(ft?.tempo_medio)), React.createElement("p", {
                 className: "text-sm text-sky-100 font-medium"
-            }, "Tempo Médio de Entrega"))),
-            
-            // Card: Tempo Médio de Coleta (NOVO)
-            React.createElement("div", {
+            }, "Tempo Médio de Entrega"))), React.createElement("div", {
                 className: "bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl p-5 shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden"
             }, React.createElement("div", {
                 className: "absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"
-            }), React.createElement("div", {
-                className: "absolute bottom-0 left-0 w-20 h-20 bg-white/5 rounded-full -ml-10 -mb-10"
             }), React.createElement("div", {
                 className: "relative z-10"
             }, React.createElement("div", {
@@ -14185,15 +14151,10 @@ const hideLoadingScreen = () => {
                 className: "text-4xl font-bold text-white mb-2"
             }, cl(ft?.tempo_medio_coleta || ft?.tempo_medio_alocacao)), React.createElement("p", {
                 className: "text-sm text-amber-100 font-medium"
-            }, "Tempo Médio de Coleta"))),
-            
-            // Card: Tempo Médio de Alocação
-            React.createElement("div", {
+            }, "Tempo Médio de Coleta"))), React.createElement("div", {
                 className: "bg-gradient-to-br from-pink-500 to-rose-600 rounded-2xl p-5 shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden"
             }, React.createElement("div", {
                 className: "absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"
-            }), React.createElement("div", {
-                className: "absolute bottom-0 left-0 w-20 h-20 bg-white/5 rounded-full -ml-10 -mb-10"
             }), React.createElement("div", {
                 className: "relative z-10"
             }, React.createElement("div", {
@@ -14208,145 +14169,63 @@ const hideLoadingScreen = () => {
                 className: "text-4xl font-bold text-white mb-2"
             }, cl(ft?.tempo_medio_alocacao)), React.createElement("p", {
                 className: "text-sm text-pink-100 font-medium"
-            }, "Tempo Médio Alocação")))),
+            }, "Tempo Médio Alocação"))))),
             
-            // === SEÇÃO 4: STATUS DE PRAZO (NOVO) ===
+            // === SEÇÃO 4: STATUS DE PRAZO ===
             React.createElement("div", {
                 className: "mb-6"
             }, React.createElement("h3", {
                 className: "text-sm font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2"
             }, "✅ Status de Prazo"), React.createElement("div", {
                 className: "grid grid-cols-1 md:grid-cols-2 gap-4"
-            }, 
-            // Card: No Prazo
-            React.createElement("div", {
+            }, React.createElement("div", {
                 className: "bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-green-100"
             }, React.createElement("div", {
-                className: "flex items-center justify-between"
+                className: "flex items-center gap-4"
             }, React.createElement("div", {
-                className: "flex-1"
-            }, React.createElement("div", {
-                className: "flex items-center gap-3 mb-4"
-            }, React.createElement("div", {
-                className: "w-14 h-14 rounded-2xl bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center shadow-lg"
+                className: "w-16 h-16 rounded-2xl bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center shadow-lg flex-shrink-0"
             }, React.createElement("span", {
                 className: "text-2xl"
-            }, "✅")), React.createElement("div", null, React.createElement("p", {
+            }, "✅")), React.createElement("div", {
+                className: "flex-1"
+            }, React.createElement("p", {
                 className: "text-sm text-gray-500 font-medium"
             }, "Entregas no Prazo"), React.createElement("p", {
                 className: "text-3xl font-bold text-gray-800"
-            }, nl(ft?.dentro_prazo).toLocaleString("pt-BR")))), React.createElement("div", {
-                className: "flex items-center gap-3"
+            }, nl(ft?.dentro_prazo).toLocaleString("pt-BR")), React.createElement("div", {
+                className: "flex items-center gap-2 mt-2"
             }, React.createElement("div", {
-                className: "flex-1 h-3 bg-gray-100 rounded-full overflow-hidden"
+                className: "flex-1 h-2 bg-gray-100 rounded-full overflow-hidden"
             }, React.createElement("div", {
-                className: "h-full bg-gradient-to-r from-green-400 to-emerald-500 rounded-full transition-all duration-500",
-                style: { width: `${(nl(ft?.dentro_prazo) / (nl(ft?.total_entregas) || 1) * 100)}%` }
+                className: "h-full bg-gradient-to-r from-green-400 to-emerald-500 rounded-full",
+                style: { width: (nl(ft?.dentro_prazo) / (nl(ft?.total_entregas) || 1) * 100) + "%" }
             })), React.createElement("span", {
-                className: "text-2xl font-bold text-green-600 min-w-[80px] text-right"
-            }, (nl(ft?.dentro_prazo) / (nl(ft?.total_entregas) || 1) * 100).toFixed(1), "%"))), React.createElement("div", {
-                className: "w-24 h-24 relative hidden md:block"
-            }, React.createElement("svg", {
-                className: "transform -rotate-90 w-24 h-24"
-            }, React.createElement("circle", {
-                cx: "48",
-                cy: "48",
-                r: "40",
-                stroke: "#e5e7eb",
-                strokeWidth: "8",
-                fill: "transparent"
-            }), React.createElement("circle", {
-                cx: "48",
-                cy: "48",
-                r: "40",
-                stroke: "url(#greenGradient)",
-                strokeWidth: "8",
-                fill: "transparent",
-                strokeDasharray: `${(nl(ft?.dentro_prazo) / (nl(ft?.total_entregas) || 1) * 251.2)} 251.2`,
-                strokeLinecap: "round"
-            }), React.createElement("defs", null, React.createElement("linearGradient", {
-                id: "greenGradient",
-                x1: "0%",
-                y1: "0%",
-                x2: "100%",
-                y2: "0%"
-            }, React.createElement("stop", {
-                offset: "0%",
-                stopColor: "#4ade80"
-            }), React.createElement("stop", {
-                offset: "100%",
-                stopColor: "#10b981"
-            })))), React.createElement("div", {
-                className: "absolute inset-0 flex items-center justify-center"
-            }, React.createElement("span", {
                 className: "text-lg font-bold text-green-600"
-            }, (nl(ft?.dentro_prazo) / (nl(ft?.total_entregas) || 1) * 100).toFixed(0), "%"))))),
-            
-            // Card: Fora do Prazo
-            React.createElement("div", {
+            }, (nl(ft?.dentro_prazo) / (nl(ft?.total_entregas) || 1) * 100).toFixed(1), "%"))))), React.createElement("div", {
                 className: "bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-red-100"
             }, React.createElement("div", {
-                className: "flex items-center justify-between"
+                className: "flex items-center gap-4"
             }, React.createElement("div", {
-                className: "flex-1"
-            }, React.createElement("div", {
-                className: "flex items-center gap-3 mb-4"
-            }, React.createElement("div", {
-                className: "w-14 h-14 rounded-2xl bg-gradient-to-br from-red-400 to-rose-600 flex items-center justify-center shadow-lg"
+                className: "w-16 h-16 rounded-2xl bg-gradient-to-br from-red-400 to-rose-600 flex items-center justify-center shadow-lg flex-shrink-0"
             }, React.createElement("span", {
                 className: "text-2xl"
-            }, "❌")), React.createElement("div", null, React.createElement("p", {
+            }, "❌")), React.createElement("div", {
+                className: "flex-1"
+            }, React.createElement("p", {
                 className: "text-sm text-gray-500 font-medium"
             }, "Entregas Fora do Prazo"), React.createElement("p", {
                 className: "text-3xl font-bold text-gray-800"
-            }, nl(ft?.fora_prazo).toLocaleString("pt-BR")))), React.createElement("div", {
-                className: "flex items-center gap-3"
+            }, nl(ft?.fora_prazo).toLocaleString("pt-BR")), React.createElement("div", {
+                className: "flex items-center gap-2 mt-2"
             }, React.createElement("div", {
-                className: "flex-1 h-3 bg-gray-100 rounded-full overflow-hidden"
+                className: "flex-1 h-2 bg-gray-100 rounded-full overflow-hidden"
             }, React.createElement("div", {
-                className: "h-full bg-gradient-to-r from-red-400 to-rose-500 rounded-full transition-all duration-500",
-                style: { width: `${(nl(ft?.fora_prazo) / (nl(ft?.total_entregas) || 1) * 100)}%` }
+                className: "h-full bg-gradient-to-r from-red-400 to-rose-500 rounded-full",
+                style: { width: (nl(ft?.fora_prazo) / (nl(ft?.total_entregas) || 1) * 100) + "%" }
             })), React.createElement("span", {
-                className: "text-2xl font-bold text-red-600 min-w-[80px] text-right"
-            }, (nl(ft?.fora_prazo) / (nl(ft?.total_entregas) || 1) * 100).toFixed(1), "%"))), React.createElement("div", {
-                className: "w-24 h-24 relative hidden md:block"
-            }, React.createElement("svg", {
-                className: "transform -rotate-90 w-24 h-24"
-            }, React.createElement("circle", {
-                cx: "48",
-                cy: "48",
-                r: "40",
-                stroke: "#e5e7eb",
-                strokeWidth: "8",
-                fill: "transparent"
-            }), React.createElement("circle", {
-                cx: "48",
-                cy: "48",
-                r: "40",
-                stroke: "url(#redGradient)",
-                strokeWidth: "8",
-                fill: "transparent",
-                strokeDasharray: `${(nl(ft?.fora_prazo) / (nl(ft?.total_entregas) || 1) * 251.2)} 251.2`,
-                strokeLinecap: "round"
-            }), React.createElement("defs", null, React.createElement("linearGradient", {
-                id: "redGradient",
-                x1: "0%",
-                y1: "0%",
-                x2: "100%",
-                y2: "0%"
-            }, React.createElement("stop", {
-                offset: "0%",
-                stopColor: "#f87171"
-            }), React.createElement("stop", {
-                offset: "100%",
-                stopColor: "#e11d48"
-            })))), React.createElement("div", {
-                className: "absolute inset-0 flex items-center justify-center"
-            }, React.createElement("span", {
                 className: "text-lg font-bold text-red-600"
-            }, (nl(ft?.fora_prazo) / (nl(ft?.total_entregas) || 1) * 100).toFixed(0), "%"))))))),
+            }, (nl(ft?.fora_prazo) / (nl(ft?.total_entregas) || 1) * 100).toFixed(1), "%"))))))),
             
-            // Continua com a tabela de resumo
             React.createElement("div", {
                 className: "bg-white rounded-lg shadow overflow-hidden"
             }, React.createElement("div", {
