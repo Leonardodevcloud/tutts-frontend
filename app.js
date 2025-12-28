@@ -876,7 +876,7 @@ const hideLoadingScreen = () => {
         [cliente767Dados, setCliente767Dados] = useState(null),
         [cliente767Loading, setCliente767Loading] = useState(false),
         [cliente767ModalFiltro, setCliente767ModalFiltro] = useState(false),
-        [cliente767Filtros, setCliente767Filtros] = useState({ data_inicio: '', data_fim: '' }),
+        [cliente767Filtros, setCliente767Filtros] = useState({ data_inicio: '', data_fim: '', centros_custo: [] }),
         // Estados do Mapa de Calor
         [mapaCalorDados, setMapaCalorDados] = useState(null),
         [mapaCalorLoading, setMapaCalorLoading] = useState(false),
@@ -2454,6 +2454,9 @@ const hideLoadingScreen = () => {
                 // Usar filtros específicos do Cliente 767
                 if (cliente767Filtros.data_inicio) params.append("data_inicio", cliente767Filtros.data_inicio);
                 if (cliente767Filtros.data_fim) params.append("data_fim", cliente767Filtros.data_fim);
+                if (cliente767Filtros.centros_custo && cliente767Filtros.centros_custo.length > 0) {
+                    params.append("centro_custo", cliente767Filtros.centros_custo.join(","));
+                }
                 
                 const response = await fetch(API_URL + "/bi/cliente-767?" + params);
                 const data = await response.json();
@@ -14527,47 +14530,51 @@ const hideLoadingScreen = () => {
                 React.createElement("div", {className: "bg-gradient-to-r from-orange-500 to-amber-600 rounded-xl p-6 text-white"}, 
                     React.createElement("h2", {className: "text-2xl font-bold mb-2"}, "🏢 Cliente 767 - Prazo Especial"),
                     React.createElement("p", {className: "opacity-90"}, "Prazo de entrega: 120 minutos (2 horas)"),
-                    React.createElement("div", {className: "mt-3 flex flex-wrap gap-3 items-center"}, 
+                    React.createElement("div", {className: "mt-3 flex flex-wrap gap-2 items-center"}, 
                         cliente767Filtros.data_inicio && React.createElement("span", {className: "px-3 py-1 bg-white/20 rounded-lg text-sm"}, "📅 De: ", cliente767Filtros.data_inicio),
                         cliente767Filtros.data_fim && React.createElement("span", {className: "px-3 py-1 bg-white/20 rounded-lg text-sm"}, "📅 Até: ", cliente767Filtros.data_fim),
-                        React.createElement("button", {onClick: function(){ setCliente767ModalFiltro(true); }, className: "px-4 py-2 bg-white/20 rounded-lg text-sm font-semibold hover:bg-white/30"}, "🔍 Filtrar Datas"),
+                        cliente767Filtros.centros_custo && cliente767Filtros.centros_custo.length > 0 && React.createElement("span", {className: "px-3 py-1 bg-white/20 rounded-lg text-sm"}, "🏪 ", cliente767Filtros.centros_custo.length, " CC"),
+                        React.createElement("button", {onClick: function(){ setCliente767ModalFiltro(true); }, className: "px-4 py-2 bg-white/20 rounded-lg text-sm font-semibold hover:bg-white/30"}, "🔍 Filtros"),
                         React.createElement("button", {onClick: carregarCliente767, className: "px-4 py-2 bg-white/20 rounded-lg text-sm font-semibold hover:bg-white/30"}, "🔄 Recarregar")
                     )
                 ),
                 
                 // Modal de Filtro específico do Cliente 767
                 cliente767ModalFiltro && React.createElement("div", {className: "fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"},
-                    React.createElement("div", {className: "bg-white rounded-xl shadow-2xl w-full max-w-md"},
-                        React.createElement("div", {className: "bg-orange-600 text-white px-6 py-4 rounded-t-xl flex justify-between items-center"},
-                            React.createElement("h3", {className: "text-lg font-bold"}, "🔍 Filtrar Período - Cliente 767"),
+                    React.createElement("div", {className: "bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"},
+                        React.createElement("div", {className: "sticky top-0 bg-orange-600 text-white px-6 py-4 rounded-t-xl flex justify-between items-center"},
+                            React.createElement("h3", {className: "text-lg font-bold"}, "🔍 Filtrar - Cliente 767"),
                             React.createElement("button", {onClick: function(){ setCliente767ModalFiltro(false); }, className: "text-white hover:bg-white/20 rounded-lg px-3 py-1 text-xl"}, "✕")
                         ),
                         React.createElement("div", {className: "p-6 space-y-4"},
-                            React.createElement("div", null,
-                                React.createElement("label", {className: "block text-sm font-medium text-gray-700 mb-1"}, "Data Início"),
-                                React.createElement("input", {
-                                    type: "date",
-                                    value: cliente767Filtros.data_inicio,
-                                    onChange: function(e) { setCliente767Filtros(function(f) { return {...f, data_inicio: e.target.value}; }); },
-                                    className: "w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                                })
+                            // Filtros de Data
+                            React.createElement("div", {className: "grid grid-cols-2 gap-4"},
+                                React.createElement("div", null,
+                                    React.createElement("label", {className: "block text-sm font-medium text-gray-700 mb-1"}, "Data Início"),
+                                    React.createElement("input", {
+                                        type: "date",
+                                        value: cliente767Filtros.data_inicio,
+                                        onChange: function(e) { setCliente767Filtros(function(f) { return {...f, data_inicio: e.target.value}; }); },
+                                        className: "w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                                    })
+                                ),
+                                React.createElement("div", null,
+                                    React.createElement("label", {className: "block text-sm font-medium text-gray-700 mb-1"}, "Data Fim"),
+                                    React.createElement("input", {
+                                        type: "date",
+                                        value: cliente767Filtros.data_fim,
+                                        onChange: function(e) { setCliente767Filtros(function(f) { return {...f, data_fim: e.target.value}; }); },
+                                        className: "w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                                    })
+                                )
                             ),
-                            React.createElement("div", null,
-                                React.createElement("label", {className: "block text-sm font-medium text-gray-700 mb-1"}, "Data Fim"),
-                                React.createElement("input", {
-                                    type: "date",
-                                    value: cliente767Filtros.data_fim,
-                                    onChange: function(e) { setCliente767Filtros(function(f) { return {...f, data_fim: e.target.value}; }); },
-                                    className: "w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                                })
-                            ),
-                            React.createElement("div", {className: "flex gap-2 pt-2"},
+                            React.createElement("div", {className: "flex gap-2"},
                                 React.createElement("button", {
                                     onClick: function() {
                                         var hoje = new Date();
                                         var primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().split('T')[0];
                                         var ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).toISOString().split('T')[0];
-                                        setCliente767Filtros({ data_inicio: primeiroDia, data_fim: ultimoDia });
+                                        setCliente767Filtros(function(f) { return {...f, data_inicio: primeiroDia, data_fim: ultimoDia}; });
                                     },
                                     className: "flex-1 px-3 py-2 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-200"
                                 }, "Mês Atual"),
@@ -14576,17 +14583,69 @@ const hideLoadingScreen = () => {
                                         var hoje = new Date();
                                         var primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1).toISOString().split('T')[0];
                                         var ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth(), 0).toISOString().split('T')[0];
-                                        setCliente767Filtros({ data_inicio: primeiroDia, data_fim: ultimoDia });
+                                        setCliente767Filtros(function(f) { return {...f, data_inicio: primeiroDia, data_fim: ultimoDia}; });
                                     },
                                     className: "flex-1 px-3 py-2 bg-purple-100 text-purple-700 rounded-lg text-sm font-medium hover:bg-purple-200"
-                                }, "Mês Anterior"),
-                                React.createElement("button", {
-                                    onClick: function() { setCliente767Filtros({ data_inicio: '', data_fim: '' }); },
-                                    className: "px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200"
-                                }, "Limpar")
-                            )
+                                }, "Mês Anterior")
+                            ),
+                            
+                            // Filtro de Centro de Custo
+                            React.createElement("div", null,
+                                React.createElement("label", {className: "block text-sm font-medium text-gray-700 mb-2"}, "🏪 Centro de Custo"),
+                                React.createElement("div", {className: "border rounded-lg p-3 max-h-48 overflow-y-auto bg-gray-50"},
+                                    cliente767Dados && cliente767Dados.centrosCustoDisponiveis && cliente767Dados.centrosCustoDisponiveis.length > 0 ? 
+                                        React.createElement(React.Fragment, null,
+                                            React.createElement("div", {className: "flex gap-2 mb-2 pb-2 border-b"},
+                                                React.createElement("button", {
+                                                    onClick: function() { 
+                                                        setCliente767Filtros(function(f) { 
+                                                            return {...f, centros_custo: cliente767Dados.centrosCustoDisponiveis.slice()}; 
+                                                        }); 
+                                                    },
+                                                    className: "px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium hover:bg-green-200"
+                                                }, "Selecionar Todos"),
+                                                React.createElement("button", {
+                                                    onClick: function() { 
+                                                        setCliente767Filtros(function(f) { return {...f, centros_custo: []}; }); 
+                                                    },
+                                                    className: "px-2 py-1 bg-red-100 text-red-700 rounded text-xs font-medium hover:bg-red-200"
+                                                }, "Limpar Seleção")
+                                            ),
+                                            cliente767Dados.centrosCustoDisponiveis.map(function(cc) {
+                                                var selecionado = cliente767Filtros.centros_custo.includes(cc);
+                                                return React.createElement("label", {
+                                                    key: cc,
+                                                    className: "flex items-center gap-2 p-2 rounded cursor-pointer hover:bg-white " + (selecionado ? "bg-orange-100" : "")
+                                                },
+                                                    React.createElement("input", {
+                                                        type: "checkbox",
+                                                        checked: selecionado,
+                                                        onChange: function() {
+                                                            setCliente767Filtros(function(f) {
+                                                                var novosCentros = selecionado 
+                                                                    ? f.centros_custo.filter(function(c) { return c !== cc; })
+                                                                    : f.centros_custo.concat([cc]);
+                                                                return {...f, centros_custo: novosCentros};
+                                                            });
+                                                        },
+                                                        className: "w-4 h-4 text-orange-600 rounded focus:ring-orange-500"
+                                                    }),
+                                                    React.createElement("span", {className: "text-sm " + (selecionado ? "font-medium text-orange-700" : "text-gray-700")}, cc)
+                                                );
+                                            })
+                                        )
+                                    : React.createElement("p", {className: "text-gray-500 text-sm text-center py-4"}, "Carregue os dados primeiro para ver os centros de custo disponíveis")
+                                ),
+                                cliente767Filtros.centros_custo.length > 0 && React.createElement("p", {className: "text-xs text-orange-600 mt-1"}, cliente767Filtros.centros_custo.length, " centro(s) selecionado(s)")
+                            ),
+                            
+                            // Botão Limpar Tudo
+                            React.createElement("button", {
+                                onClick: function() { setCliente767Filtros({ data_inicio: '', data_fim: '', centros_custo: [] }); },
+                                className: "w-full px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200"
+                            }, "🗑️ Limpar Todos os Filtros")
                         ),
-                        React.createElement("div", {className: "px-6 pb-6 flex gap-3"},
+                        React.createElement("div", {className: "sticky bottom-0 bg-white px-6 py-4 border-t flex gap-3"},
                             React.createElement("button", {
                                 onClick: function() { setCliente767ModalFiltro(false); },
                                 className: "flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50"
@@ -14594,7 +14653,7 @@ const hideLoadingScreen = () => {
                             React.createElement("button", {
                                 onClick: function() { setCliente767ModalFiltro(false); carregarCliente767(); },
                                 className: "flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg font-medium hover:bg-orange-700"
-                            }, "Aplicar Filtro")
+                            }, "Aplicar Filtros")
                         )
                     )
                 ),
