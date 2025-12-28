@@ -15086,9 +15086,25 @@ const hideLoadingScreen = () => {
                     return String(h).padStart(2, "0") + ":" + String(m).padStart(2, "0") + ":00";
                 })()), 
                 React.createElement("td", {className: "px-3 py-2 text-right text-green-700"}, Vt.reduce((e, t) => e + nl(t.dentro_prazo), 0).toLocaleString("pt-BR")), 
-                React.createElement("td", {className: "px-3 py-2 text-right"}, "-"), 
+                // % No Prazo Total
+                React.createElement("td", {className: "px-3 py-2 text-right"}, (function() {
+                    var totalDentro = Vt.reduce((e, t) => e + nl(t.dentro_prazo), 0);
+                    var totalFora = Vt.reduce((e, t) => e + nl(t.fora_prazo), 0);
+                    var total = totalDentro + totalFora;
+                    if (total === 0) return "-";
+                    var pct = (totalDentro / total * 100).toFixed(1);
+                    return React.createElement("span", {className: "px-2 py-0.5 rounded text-xs font-bold " + (pct >= 80 ? "bg-green-100 text-green-700" : pct >= 60 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700")}, pct + "%");
+                })()), 
                 React.createElement("td", {className: "px-3 py-2 text-right text-red-700"}, Vt.reduce((e, t) => e + nl(t.fora_prazo), 0).toLocaleString("pt-BR")), 
-                React.createElement("td", {className: "px-3 py-2 text-right"}, "-"), 
+                // % Fora Prazo Total
+                React.createElement("td", {className: "px-3 py-2 text-right"}, (function() {
+                    var totalDentro = Vt.reduce((e, t) => e + nl(t.dentro_prazo), 0);
+                    var totalFora = Vt.reduce((e, t) => e + nl(t.fora_prazo), 0);
+                    var total = totalDentro + totalFora;
+                    if (total === 0) return "-";
+                    var pct = (totalFora / total * 100).toFixed(1);
+                    return pct + "%";
+                })()), 
                 React.createElement("td", {className: "px-3 py-2 text-right"}, Vt.reduce((e, t) => e + parseFloat(t.distancia_total || 0), 0).toLocaleString("pt-BR", {maximumFractionDigits: 1}), " km"), 
                 React.createElement("td", {className: "px-3 py-2 text-right"}, Vt.reduce((e, t) => e + nl(t.retornos || 0), 0)), 
                 React.createElement("td", {className: "px-3 py-2 text-right"}, sl(Vt.reduce((e, t) => e + nl(t.valor_prof), 0)))
