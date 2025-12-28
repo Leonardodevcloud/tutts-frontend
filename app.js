@@ -2412,7 +2412,8 @@ const hideLoadingScreen = () => {
             setAcompFiltros(prev => {
                 const novoEstado = !prev[filtro];
                 if (novoEstado) {
-                    setAcompFiltrosOrdem(ordemAtual => [...ordemAtual, filtro]);
+                    // Adiciona ao INÍCIO para aparecer logo após a coluna Clientes
+                    setAcompFiltrosOrdem(ordemAtual => [filtro, ...ordemAtual]);
                 } else {
                     setAcompFiltrosOrdem(ordemAtual => ordemAtual.filter(f => f !== filtro));
                 }
