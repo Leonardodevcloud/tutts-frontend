@@ -13960,271 +13960,190 @@ const hideLoadingScreen = () => {
             }, ["Processando milhares de registros...", "Analisando métricas de desempenho...", "Calculando indicadores...", "Organizando dados por região...", "Gerando visualizações..."][Math.floor(Date.now() / 2000) % 5])
             )) : React.createElement(React.Fragment, null, "dashboard" === Et && React.createElement(React.Fragment, null, 
             
-            // === SEÇÃO 1: MÉTRICAS FINANCEIRAS ===
+            // === LINHA 1: FINANCEIRO (5 cards compactos) ===
             React.createElement("div", {
-                className: "mb-6"
-            }, React.createElement("h3", {
-                className: "text-sm font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2"
-            }, "💰 Métricas Financeiras"), React.createElement("div", {
-                className: "grid grid-cols-2 md:grid-cols-5 gap-4"
+                className: "grid grid-cols-5 gap-2 mb-3"
             }, React.createElement("div", {
-                className: "bg-white rounded-2xl p-5 shadow-lg border-l-4 border-emerald-500 hover:shadow-xl transition-all duration-300"
+                className: "bg-white rounded-lg p-3 shadow border-l-3 border-emerald-500"
             }, React.createElement("div", {
-                className: "flex items-center justify-between mb-3"
-            }, React.createElement("div", {
-                className: "w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-lg"
+                className: "flex items-center gap-2 mb-1"
             }, React.createElement("span", {
-                className: "text-xl"
-            }, "💵")), React.createElement("span", {
-                className: "text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full"
+                className: "text-base"
+            }, "💵"), React.createElement("span", {
+                className: "text-[10px] text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded"
             }, "Cliente")), React.createElement("p", {
-                className: "text-2xl font-bold text-gray-800 mb-1"
+                className: "text-lg font-bold text-gray-800"
             }, sl(ft?.valor_total || 0)), React.createElement("p", {
-                className: "text-xs text-gray-500 font-medium"
+                className: "text-[10px] text-gray-500"
             }, "Valor Total")), React.createElement("div", {
-                className: "bg-white rounded-2xl p-5 shadow-lg border-l-4 border-blue-500 hover:shadow-xl transition-all duration-300"
+                className: "bg-white rounded-lg p-3 shadow border-l-3 border-blue-500"
             }, React.createElement("div", {
-                className: "flex items-center justify-between mb-3"
-            }, React.createElement("div", {
-                className: "w-12 h-12 rounded-xl bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center shadow-lg"
+                className: "flex items-center gap-2 mb-1"
             }, React.createElement("span", {
-                className: "text-xl"
-            }, "👷")), React.createElement("span", {
-                className: "text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded-full"
+                className: "text-base"
+            }, "👷"), React.createElement("span", {
+                className: "text-[10px] text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded"
             }, "Entregador")), React.createElement("p", {
-                className: "text-2xl font-bold text-gray-800 mb-1"
+                className: "text-lg font-bold text-gray-800"
             }, sl(ft?.valor_prof_total || 0)), React.createElement("p", {
-                className: "text-xs text-gray-500 font-medium"
+                className: "text-[10px] text-gray-500"
             }, "Valor Profissional")), React.createElement("div", {
-                className: "bg-gradient-to-br from-purple-600 to-purple-800 rounded-2xl p-5 shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden"
+                className: "bg-gradient-to-br from-purple-600 to-purple-800 rounded-lg p-3 shadow"
             }, React.createElement("div", {
-                className: "absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -mr-10 -mt-10"
-            }), React.createElement("div", {
-                className: "relative z-10"
-            }, React.createElement("div", {
-                className: "flex items-center justify-between mb-3"
-            }, React.createElement("div", {
-                className: "w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center backdrop-blur-sm"
+                className: "flex items-center gap-2 mb-1"
             }, React.createElement("span", {
-                className: "text-xl"
-            }, "📈")), React.createElement("span", {
-                className: "text-xs font-medium text-purple-200 bg-white/20 px-2 py-1 rounded-full"
+                className: "text-base"
+            }, "📈"), React.createElement("span", {
+                className: "text-[10px] text-purple-200 bg-white/20 px-1.5 py-0.5 rounded"
             }, "Lucro")), React.createElement("p", {
-                className: "text-2xl font-bold text-white mb-1"
+                className: "text-lg font-bold text-white"
             }, sl(nl(ft?.valor_total) - nl(ft?.valor_prof_total))), React.createElement("p", {
-                className: "text-xs text-purple-200 font-medium"
-            }, "Faturamento"))), React.createElement("div", {
-                className: "bg-white rounded-2xl p-5 shadow-lg border-l-4 border-amber-500 hover:shadow-xl transition-all duration-300"
+                className: "text-[10px] text-purple-200"
+            }, "Faturamento")), React.createElement("div", {
+                className: "bg-white rounded-lg p-3 shadow border-l-3 border-amber-500"
             }, React.createElement("div", {
-                className: "flex items-center justify-between mb-3"
-            }, React.createElement("div", {
-                className: "w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg"
+                className: "flex items-center gap-2 mb-1"
             }, React.createElement("span", {
-                className: "text-xl"
-            }, "🎫")), React.createElement("span", {
-                className: "text-xs font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded-full"
+                className: "text-base"
+            }, "🎫"), React.createElement("span", {
+                className: "text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded"
             }, "Por OS")), React.createElement("p", {
-                className: "text-2xl font-bold text-gray-800 mb-1"
+                className: "text-lg font-bold text-gray-800"
             }, sl(ft?.ticket_medio || 0)), React.createElement("p", {
-                className: "text-xs text-gray-500 font-medium"
+                className: "text-[10px] text-gray-500"
             }, "Ticket Médio")), React.createElement("div", {
-                className: "bg-white rounded-2xl p-5 shadow-lg border-l-4 border-violet-500 hover:shadow-xl transition-all duration-300"
+                className: "bg-white rounded-lg p-3 shadow border-l-3 border-violet-500"
             }, React.createElement("div", {
-                className: "flex items-center justify-between mb-3"
+                className: "flex items-center gap-2 mb-1"
+            }, React.createElement("span", {
+                className: "text-base"
+            }, "📊"), React.createElement("span", {
+                className: "text-[10px] text-violet-600 bg-violet-50 px-1.5 py-0.5 rounded"
+            }, "Média")), React.createElement("p", {
+                className: "text-lg font-bold text-gray-800"
+            }, nl(ft?.media_entregas_por_prof).toFixed(2)), React.createElement("p", {
+                className: "text-[10px] text-gray-500"
+            }, "Ent/Entregador"))),
+            
+            // === LINHA 2: OPERACIONAL + TEMPO (7 cards compactos) ===
+            React.createElement("div", {
+                className: "grid grid-cols-7 gap-2 mb-3"
             }, React.createElement("div", {
-                className: "w-12 h-12 rounded-xl bg-gradient-to-br from-violet-400 to-violet-600 flex items-center justify-center shadow-lg"
+                className: "bg-white rounded-lg p-3 shadow"
+            }, React.createElement("span", {
+                className: "text-base"
+            }, "📋"), React.createElement("p", {
+                className: "text-xl font-bold text-gray-800"
+            }, nl(ft?.total_os).toLocaleString("pt-BR")), React.createElement("p", {
+                className: "text-[10px] text-gray-500"
+            }, "Qtd OS")), React.createElement("div", {
+                className: "bg-white rounded-lg p-3 shadow"
+            }, React.createElement("span", {
+                className: "text-base"
+            }, "🚚"), React.createElement("p", {
+                className: "text-xl font-bold text-gray-800"
+            }, nl(ft?.total_entregas).toLocaleString("pt-BR")), React.createElement("p", {
+                className: "text-[10px] text-gray-500"
+            }, "Entregas")), React.createElement("div", {
+                className: "bg-white rounded-lg p-3 shadow"
+            }, React.createElement("span", {
+                className: "text-base"
+            }, "🔄"), React.createElement("p", {
+                className: "text-xl font-bold text-gray-800"
+            }, nl(ft?.total_retornos).toLocaleString("pt-BR")), React.createElement("p", {
+                className: "text-[10px] text-gray-500"
+            }, "Retornos")), React.createElement("div", {
+                className: "bg-white rounded-lg p-3 shadow"
+            }, React.createElement("span", {
+                className: "text-base"
+            }, "🏍️"), React.createElement("p", {
+                className: "text-xl font-bold text-gray-800"
+            }, nl(ft?.total_profissionais).toLocaleString("pt-BR")), React.createElement("p", {
+                className: "text-[10px] text-gray-500"
+            }, "Entregadores")), React.createElement("div", {
+                className: "bg-gradient-to-br from-sky-500 to-blue-600 rounded-lg p-3 shadow"
+            }, React.createElement("div", {
+                className: "flex items-center gap-1 mb-1"
+            }, React.createElement("span", {
+                className: "text-base"
+            }, "🚀"), React.createElement("span", {
+                className: "text-[10px] text-sky-100 bg-white/20 px-1 py-0.5 rounded"
+            }, "Entrega")), React.createElement("p", {
+                className: "text-xl font-bold text-white"
+            }, cl(ft?.tempo_medio)), React.createElement("p", {
+                className: "text-[10px] text-sky-100"
+            }, "Tempo Médio")), React.createElement("div", {
+                className: "bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg p-3 shadow"
+            }, React.createElement("div", {
+                className: "flex items-center gap-1 mb-1"
+            }, React.createElement("span", {
+                className: "text-base"
+            }, "📦"), React.createElement("span", {
+                className: "text-[10px] text-amber-100 bg-white/20 px-1 py-0.5 rounded"
+            }, "Coleta")), React.createElement("p", {
+                className: "text-xl font-bold text-white"
+            }, cl(ft?.tempo_medio_coleta || ft?.tempo_medio_alocacao)), React.createElement("p", {
+                className: "text-[10px] text-amber-100"
+            }, "Tempo Médio")), React.createElement("div", {
+                className: "bg-gradient-to-br from-pink-500 to-rose-600 rounded-lg p-3 shadow"
+            }, React.createElement("div", {
+                className: "flex items-center gap-1 mb-1"
+            }, React.createElement("span", {
+                className: "text-base"
+            }, "⏳"), React.createElement("span", {
+                className: "text-[10px] text-pink-100 bg-white/20 px-1 py-0.5 rounded"
+            }, "Alocação")), React.createElement("p", {
+                className: "text-xl font-bold text-white"
+            }, cl(ft?.tempo_medio_alocacao)), React.createElement("p", {
+                className: "text-[10px] text-pink-100"
+            }, "Tempo Médio"))),
+            
+            // === LINHA 3: STATUS DE PRAZO (2 cards compactos) ===
+            React.createElement("div", {
+                className: "grid grid-cols-2 gap-2 mb-4"
+            }, React.createElement("div", {
+                className: "bg-white rounded-lg p-3 shadow border-l-4 border-green-500"
+            }, React.createElement("div", {
+                className: "flex items-center justify-between"
+            }, React.createElement("div", {
+                className: "flex items-center gap-2"
             }, React.createElement("span", {
                 className: "text-xl"
-            }, "📊")), React.createElement("span", {
-                className: "text-xs font-medium text-violet-600 bg-violet-50 px-2 py-1 rounded-full"
-            }, "Média")), React.createElement("p", {
-                className: "text-2xl font-bold text-gray-800 mb-1"
-            }, nl(ft?.media_entregas_por_prof).toFixed(2)), React.createElement("p", {
-                className: "text-xs text-gray-500 font-medium"
-            }, "Entrega/Entregador")))),
-            
-            // === SEÇÃO 2: MÉTRICAS OPERACIONAIS ===
-            React.createElement("div", {
-                className: "mb-6"
-            }, React.createElement("h3", {
-                className: "text-sm font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2"
-            }, "📦 Métricas Operacionais"), React.createElement("div", {
-                className: "grid grid-cols-2 md:grid-cols-4 gap-4"
+            }, "✅"), React.createElement("div", null, React.createElement("p", {
+                className: "text-[10px] text-gray-500"
+            }, "No Prazo"), React.createElement("p", {
+                className: "text-xl font-bold text-gray-800"
+            }, nl(ft?.dentro_prazo).toLocaleString("pt-BR")))), React.createElement("div", {
+                className: "flex items-center gap-2"
             }, React.createElement("div", {
-                className: "bg-white rounded-2xl p-5 shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden"
-            }, React.createElement("div", {
-                className: "absolute bottom-0 right-0 w-24 h-24 bg-gradient-to-tl from-indigo-100 to-transparent rounded-tl-full"
-            }), React.createElement("div", {
-                className: "relative z-10"
-            }, React.createElement("div", {
-                className: "w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center mb-3"
-            }, React.createElement("span", {
-                className: "text-lg"
-            }, "📋")), React.createElement("p", {
-                className: "text-3xl font-bold text-gray-800 mb-1"
-            }, nl(ft?.total_os).toLocaleString("pt-BR")), React.createElement("p", {
-                className: "text-sm text-gray-500 font-medium"
-            }, "Quantidade OS"))), React.createElement("div", {
-                className: "bg-white rounded-2xl p-5 shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden"
-            }, React.createElement("div", {
-                className: "absolute bottom-0 right-0 w-24 h-24 bg-gradient-to-tl from-cyan-100 to-transparent rounded-tl-full"
-            }), React.createElement("div", {
-                className: "relative z-10"
-            }, React.createElement("div", {
-                className: "w-10 h-10 rounded-lg bg-cyan-100 flex items-center justify-center mb-3"
-            }, React.createElement("span", {
-                className: "text-lg"
-            }, "🚚")), React.createElement("p", {
-                className: "text-3xl font-bold text-gray-800 mb-1"
-            }, nl(ft?.total_entregas).toLocaleString("pt-BR")), React.createElement("p", {
-                className: "text-sm text-gray-500 font-medium"
-            }, "Total Entregas"))), React.createElement("div", {
-                className: "bg-white rounded-2xl p-5 shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden"
-            }, React.createElement("div", {
-                className: "absolute bottom-0 right-0 w-24 h-24 bg-gradient-to-tl from-orange-100 to-transparent rounded-tl-full"
-            }), React.createElement("div", {
-                className: "relative z-10"
-            }, React.createElement("div", {
-                className: "w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center mb-3"
-            }, React.createElement("span", {
-                className: "text-lg"
-            }, "🔄")), React.createElement("p", {
-                className: "text-3xl font-bold text-gray-800 mb-1"
-            }, nl(ft?.total_retornos).toLocaleString("pt-BR")), React.createElement("p", {
-                className: "text-sm text-gray-500 font-medium"
-            }, "Retornos"))), React.createElement("div", {
-                className: "bg-white rounded-2xl p-5 shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden"
-            }, React.createElement("div", {
-                className: "absolute bottom-0 right-0 w-24 h-24 bg-gradient-to-tl from-teal-100 to-transparent rounded-tl-full"
-            }), React.createElement("div", {
-                className: "relative z-10"
-            }, React.createElement("div", {
-                className: "w-10 h-10 rounded-lg bg-teal-100 flex items-center justify-center mb-3"
-            }, React.createElement("span", {
-                className: "text-lg"
-            }, "🏍️")), React.createElement("p", {
-                className: "text-3xl font-bold text-gray-800 mb-1"
-            }, nl(ft?.total_profissionais).toLocaleString("pt-BR")), React.createElement("p", {
-                className: "text-sm text-gray-500 font-medium"
-            }, "Entregadores"))))),
-            
-            // === SEÇÃO 3: MÉTRICAS DE TEMPO ===
-            React.createElement("div", {
-                className: "mb-6"
-            }, React.createElement("h3", {
-                className: "text-sm font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2"
-            }, "⏱️ Métricas de Tempo"), React.createElement("div", {
-                className: "grid grid-cols-2 md:grid-cols-3 gap-4"
-            }, React.createElement("div", {
-                className: "bg-gradient-to-br from-sky-500 to-blue-600 rounded-2xl p-5 shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden"
-            }, React.createElement("div", {
-                className: "absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"
-            }), React.createElement("div", {
-                className: "relative z-10"
-            }, React.createElement("div", {
-                className: "flex items-center gap-2 mb-4"
-            }, React.createElement("div", {
-                className: "w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center backdrop-blur-sm"
-            }, React.createElement("span", {
-                className: "text-lg"
-            }, "🚀")), React.createElement("span", {
-                className: "text-xs font-semibold text-sky-100 bg-white/20 px-3 py-1 rounded-full"
-            }, "Ciclo Completo")), React.createElement("p", {
-                className: "text-4xl font-bold text-white mb-2"
-            }, cl(ft?.tempo_medio)), React.createElement("p", {
-                className: "text-sm text-sky-100 font-medium"
-            }, "Tempo Médio de Entrega"))), React.createElement("div", {
-                className: "bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl p-5 shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden"
-            }, React.createElement("div", {
-                className: "absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"
-            }), React.createElement("div", {
-                className: "relative z-10"
-            }, React.createElement("div", {
-                className: "flex items-center gap-2 mb-4"
-            }, React.createElement("div", {
-                className: "w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center backdrop-blur-sm"
-            }, React.createElement("span", {
-                className: "text-lg"
-            }, "📦")), React.createElement("span", {
-                className: "text-xs font-semibold text-amber-100 bg-white/20 px-3 py-1 rounded-full"
-            }, "Pegar Pedido")), React.createElement("p", {
-                className: "text-4xl font-bold text-white mb-2"
-            }, cl(ft?.tempo_medio_coleta || ft?.tempo_medio_alocacao)), React.createElement("p", {
-                className: "text-sm text-amber-100 font-medium"
-            }, "Tempo Médio de Coleta"))), React.createElement("div", {
-                className: "bg-gradient-to-br from-pink-500 to-rose-600 rounded-2xl p-5 shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden"
-            }, React.createElement("div", {
-                className: "absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"
-            }), React.createElement("div", {
-                className: "relative z-10"
-            }, React.createElement("div", {
-                className: "flex items-center gap-2 mb-4"
-            }, React.createElement("div", {
-                className: "w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center backdrop-blur-sm"
-            }, React.createElement("span", {
-                className: "text-lg"
-            }, "⏳")), React.createElement("span", {
-                className: "text-xs font-semibold text-pink-100 bg-white/20 px-3 py-1 rounded-full"
-            }, "Até Aceitar")), React.createElement("p", {
-                className: "text-4xl font-bold text-white mb-2"
-            }, cl(ft?.tempo_medio_alocacao)), React.createElement("p", {
-                className: "text-sm text-pink-100 font-medium"
-            }, "Tempo Médio Alocação"))))),
-            
-            // === SEÇÃO 4: STATUS DE PRAZO ===
-            React.createElement("div", {
-                className: "mb-6"
-            }, React.createElement("h3", {
-                className: "text-sm font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2"
-            }, "✅ Status de Prazo"), React.createElement("div", {
-                className: "grid grid-cols-1 md:grid-cols-2 gap-4"
-            }, React.createElement("div", {
-                className: "bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-green-100"
-            }, React.createElement("div", {
-                className: "flex items-center gap-4"
-            }, React.createElement("div", {
-                className: "w-16 h-16 rounded-2xl bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center shadow-lg flex-shrink-0"
-            }, React.createElement("span", {
-                className: "text-2xl"
-            }, "✅")), React.createElement("div", {
-                className: "flex-1"
-            }, React.createElement("p", {
-                className: "text-sm text-gray-500 font-medium"
-            }, "Entregas no Prazo"), React.createElement("p", {
-                className: "text-3xl font-bold text-gray-800"
-            }, nl(ft?.dentro_prazo).toLocaleString("pt-BR")), React.createElement("div", {
-                className: "flex items-center gap-2 mt-2"
-            }, React.createElement("div", {
-                className: "flex-1 h-2 bg-gray-100 rounded-full overflow-hidden"
+                className: "w-24 h-2 bg-gray-100 rounded-full overflow-hidden"
             }, React.createElement("div", {
                 className: "h-full bg-gradient-to-r from-green-400 to-emerald-500 rounded-full",
                 style: { width: (nl(ft?.dentro_prazo) / (nl(ft?.total_entregas) || 1) * 100) + "%" }
             })), React.createElement("span", {
-                className: "text-lg font-bold text-green-600"
-            }, (nl(ft?.dentro_prazo) / (nl(ft?.total_entregas) || 1) * 100).toFixed(1), "%"))))), React.createElement("div", {
-                className: "bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-red-100"
+                className: "text-lg font-bold text-green-600 min-w-[50px] text-right"
+            }, (nl(ft?.dentro_prazo) / (nl(ft?.total_entregas) || 1) * 100).toFixed(1), "%")))), React.createElement("div", {
+                className: "bg-white rounded-lg p-3 shadow border-l-4 border-red-500"
             }, React.createElement("div", {
-                className: "flex items-center gap-4"
+                className: "flex items-center justify-between"
             }, React.createElement("div", {
-                className: "w-16 h-16 rounded-2xl bg-gradient-to-br from-red-400 to-rose-600 flex items-center justify-center shadow-lg flex-shrink-0"
+                className: "flex items-center gap-2"
             }, React.createElement("span", {
-                className: "text-2xl"
-            }, "❌")), React.createElement("div", {
-                className: "flex-1"
-            }, React.createElement("p", {
-                className: "text-sm text-gray-500 font-medium"
-            }, "Entregas Fora do Prazo"), React.createElement("p", {
-                className: "text-3xl font-bold text-gray-800"
-            }, nl(ft?.fora_prazo).toLocaleString("pt-BR")), React.createElement("div", {
-                className: "flex items-center gap-2 mt-2"
+                className: "text-xl"
+            }, "❌"), React.createElement("div", null, React.createElement("p", {
+                className: "text-[10px] text-gray-500"
+            }, "Fora do Prazo"), React.createElement("p", {
+                className: "text-xl font-bold text-gray-800"
+            }, nl(ft?.fora_prazo).toLocaleString("pt-BR")))), React.createElement("div", {
+                className: "flex items-center gap-2"
             }, React.createElement("div", {
-                className: "flex-1 h-2 bg-gray-100 rounded-full overflow-hidden"
+                className: "w-24 h-2 bg-gray-100 rounded-full overflow-hidden"
             }, React.createElement("div", {
                 className: "h-full bg-gradient-to-r from-red-400 to-rose-500 rounded-full",
                 style: { width: (nl(ft?.fora_prazo) / (nl(ft?.total_entregas) || 1) * 100) + "%" }
             })), React.createElement("span", {
-                className: "text-lg font-bold text-red-600"
-            }, (nl(ft?.fora_prazo) / (nl(ft?.total_entregas) || 1) * 100).toFixed(1), "%"))))))),
+                className: "text-lg font-bold text-red-600 min-w-[50px] text-right"
+            }, (nl(ft?.fora_prazo) / (nl(ft?.total_entregas) || 1) * 100).toFixed(1), "%"))))),
             
             React.createElement("div", {
                 className: "bg-white rounded-lg shadow overflow-hidden"
