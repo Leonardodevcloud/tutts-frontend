@@ -877,6 +877,10 @@ const hideLoadingScreen = () => {
         [cliente767Loading, setCliente767Loading] = useState(false),
         [cliente767ModalFiltro, setCliente767ModalFiltro] = useState(false),
         [cliente767Filtros, setCliente767Filtros] = useState({ data_inicio: '', data_fim: '', centros_custo: [] }),
+        // Estados de paginação e OS dos profissionais
+        [profPaginaAtual, setProfPaginaAtual] = useState(1),
+        [profOsExpandido, setProfOsExpandido] = useState({}), // {cod_prof: [lista de OS]}
+        [profOsLoading, setProfOsLoading] = useState(null), // cod_prof que está carregando
         // Estados do Mapa de Calor
         [mapaCalorDados, setMapaCalorDados] = useState(null),
         [mapaCalorLoading, setMapaCalorLoading] = useState(false),
@@ -2516,6 +2520,43 @@ const hideLoadingScreen = () => {
                 }, 200);
             }
         }, [Et, mapaCalorVisivel, mapaCalorDados, mapaCalorLoading, ba]);
+        
+        // Função para carregar OS de um profissional específico
+        const carregarOsProfissional = async (codProf) => {
+            try {
+                setProfOsLoading(codProf);
+                const params = new URLSearchParams();
+                if (ua.data_inicio) params.append("data_inicio", ua.data_inicio);
+                if (ua.data_fim) params.append("data_fim", ua.data_fim);
+                
+                const response = await fetch(`${API_URL}/bi/os-profissional/${codProf}?${params}`);
+                const data = await response.json();
+                
+                setProfOsExpandido(prev => ({
+                    ...prev,
+                    [codProf]: data.oss || []
+                }));
+            } catch (e) {
+                console.error("Erro ao carregar OS do profissional:", e);
+            } finally {
+                setProfOsLoading(null);
+            }
+        };
+        
+        // Toggle expandir profissional - carrega OS se necessário
+        const toggleProfissionalExpand = (codProf, index) => {
+            const chave = `prof-${index}`;
+            if (Kt[chave]) {
+                // Está expandido, apenas fecha
+                ml(chave);
+            } else {
+                // Vai expandir, carrega OS se ainda não tiver
+                if (!profOsExpandido[codProf]) {
+                    carregarOsProfissional(codProf);
+                }
+                ml(chave);
+            }
+        };
         
         const el = async () => {
             try {
@@ -14886,132 +14927,179 @@ const hideLoadingScreen = () => {
             "profissionais" === Et && React.createElement("div", {
                 className: "bg-white rounded-lg shadow overflow-hidden"
             }, React.createElement("div", {
-                className: "bg-purple-100 px-4 py-3"
+                className: "bg-purple-100 px-4 py-3 flex justify-between items-center"
             }, React.createElement("h3", {
                 className: "font-bold text-purple-900"
-            }, "Análise por Profissional")), React.createElement("div", {
+            }, "Análise por Profissional"), React.createElement("span", {
+                className: "text-sm text-purple-700"
+            }, Vt.length, " profissional(is)")), React.createElement("div", {
                 className: "overflow-x-auto"
             }, React.createElement("table", {
                 className: "w-full text-sm"
             }, React.createElement("thead", {
                 className: "bg-purple-50"
             }, React.createElement("tr", null, React.createElement("th", {
-                className: "px-3 py-2 text-left text-purple-900"
+                className: "px-3 py-2 text-left text-purple-900 w-10"
             }), React.createElement("th", {
                 className: "px-3 py-2 text-left text-purple-900"
-            }, "Nome prof."), React.createElement("th", {
+            }, "Profissional"), React.createElement("th", {
                 className: "px-3 py-2 text-right text-purple-900"
             }, "Entregas"), React.createElement("th", {
                 className: "px-3 py-2 text-right text-purple-900"
-            }, "Médio Alocado"), React.createElement("th", {
+            }, "T.Alocação"), React.createElement("th", {
                 className: "px-3 py-2 text-right text-purple-900"
-            }, "Médio Coleta"), React.createElement("th", {
+            }, "T.Coleta"), React.createElement("th", {
                 className: "px-3 py-2 text-right text-purple-900"
-            }, "Médio Entrega"), React.createElement("th", {
+            }, "T.Entrega"), React.createElement("th", {
                 className: "px-3 py-2 text-right text-purple-900"
             }, "No Prazo"), React.createElement("th", {
                 className: "px-3 py-2 text-right text-purple-900"
-            }, "No Prazo %"), React.createElement("th", {
+            }, "%"), React.createElement("th", {
                 className: "px-3 py-2 text-right text-purple-900"
-            }, "Fora Prazo"), React.createElement("th", {
+            }, "Fora"), React.createElement("th", {
                 className: "px-3 py-2 text-right text-purple-900"
-            }, "Fora %"), React.createElement("th", {
+            }, "%"), React.createElement("th", {
                 className: "px-3 py-2 text-right text-purple-900"
             }, "Distância"), React.createElement("th", {
                 className: "px-3 py-2 text-right text-purple-900"
             }, "Retorno"), React.createElement("th", {
                 className: "px-3 py-2 text-right text-purple-900"
-            }, "Val. Prof."))), React.createElement("tbody", null, Vt.map((e, t) => React.createElement(React.Fragment, {
-                key: t
-            }, React.createElement("tr", {
-                className: "border-b hover:bg-purple-50 " + (t % 2 == 0 ? "bg-white" : "bg-gray-50")
-            }, React.createElement("td", {
-                className: "px-3 py-2"
-            }, React.createElement("button", {
-                onClick: () => ml(`prof-${t}`),
-                className: "text-purple-600 hover:text-purple-800 font-bold"
-            }, Kt[`prof-${t}`] ? "➖" : "➕")), React.createElement("td", {
-                className: "px-3 py-2 font-medium"
-            }, e.cod_prof, " - ", e.nome_prof), React.createElement("td", {
-                className: "px-3 py-2 text-right"
-            }, nl(e.total_entregas).toLocaleString("pt-BR")), React.createElement("td", {
-                className: "px-3 py-2 text-right"
-            }, cl(e.tempo_alocado)), React.createElement("td", {
-                className: "px-3 py-2 text-right"
-            }, cl(e.tempo_coleta)), React.createElement("td", {
-                className: "px-3 py-2 text-right"
-            }, cl(e.tempo_medio)), React.createElement("td", {
-                className: "px-3 py-2 text-right text-green-600 font-medium"
-            }, nl(e.dentro_prazo).toLocaleString("pt-BR")), React.createElement("td", {
-                className: "px-3 py-2 text-right text-green-600"
-            }, (nl(e.dentro_prazo) / (nl(e.total_entregas) || 1) * 100).toFixed(2), "%"), React.createElement("td", {
-                className: "px-3 py-2 text-right text-red-600 font-medium"
-            }, nl(e.fora_prazo).toLocaleString("pt-BR")), React.createElement("td", {
-                className: "px-3 py-2 text-right text-red-600"
-            }, (nl(e.fora_prazo) / (nl(e.total_entregas) || 1) * 100).toFixed(2), "%"), React.createElement("td", {
-                className: "px-3 py-2 text-right"
-            }, parseFloat(e.distancia_total || 0).toLocaleString("pt-BR", {
-                maximumFractionDigits: 2
-            }), " km"), React.createElement("td", {
-                className: "px-3 py-2 text-right"
-            }, e.retornos || 0), React.createElement("td", {
-                className: "px-3 py-2 text-right"
-            }, sl(e.valor_prof))), Kt[`prof-${t}`] && React.createElement("tr", {
-                className: "bg-blue-100"
-            }, React.createElement("td", {
-                colSpan: "13",
-                className: "px-6 py-3"
-            }, React.createElement("div", {
-                className: "text-sm grid grid-cols-2 md:grid-cols-4 gap-4"
-            }, React.createElement("div", null, React.createElement("span", {
-                className: "font-semibold text-blue-800"
-            }, "📊 Média por Entrega: "), React.createElement("span", {
-                className: "text-blue-700"
-            }, cl(e.tempo_medio))), React.createElement("div", null, React.createElement("span", {
-                className: "font-semibold text-blue-800"
-            }, "📍 Distância Total: "), React.createElement("span", {
-                className: "text-blue-700"
-            }, parseFloat(e.distancia_total || 0).toLocaleString("pt-BR", {
-                maximumFractionDigits: 2
-            }), " km")), React.createElement("div", null, React.createElement("span", {
-                className: "font-semibold text-blue-800"
-            }, "✅ Taxa de Acerto: "), React.createElement("span", {
-                className: "text-green-700 font-bold"
-            }, (nl(e.dentro_prazo) / (nl(e.total_entregas) || 1) * 100).toFixed(1), "%")), React.createElement("div", null, React.createElement("span", {
-                className: "font-semibold text-blue-800"
-            }, "💰 Valor Total: "), React.createElement("span", {
-                className: "text-blue-700"
-            }, sl(e.valor_prof))))))))), React.createElement("tfoot", {
+            }, "Valor"))), React.createElement("tbody", null, 
+                // Paginação: 20 por página
+                Vt.slice((profPaginaAtual - 1) * 20, profPaginaAtual * 20).map((e, t) => {
+                    var indexReal = (profPaginaAtual - 1) * 20 + t;
+                    var expandido = Kt["prof-" + indexReal];
+                    var osDoProf = profOsExpandido[e.cod_prof] || [];
+                    var carregandoOS = profOsLoading === e.cod_prof;
+                    return React.createElement(React.Fragment, {key: indexReal},
+                        React.createElement("tr", {
+                            className: "border-b hover:bg-purple-50 " + (t % 2 == 0 ? "bg-white" : "bg-gray-50")
+                        }, 
+                            React.createElement("td", {className: "px-3 py-2"}, 
+                                React.createElement("button", {
+                                    onClick: function() { toggleProfissionalExpand(e.cod_prof, indexReal); },
+                                    className: "text-purple-600 hover:text-purple-800 font-bold"
+                                }, expandido ? "➖" : "➕")
+                            ), 
+                            React.createElement("td", {className: "px-3 py-2 font-medium"}, e.cod_prof, " - ", e.nome_prof), 
+                            React.createElement("td", {className: "px-3 py-2 text-right font-bold text-blue-600"}, nl(e.total_entregas).toLocaleString("pt-BR")), 
+                            React.createElement("td", {className: "px-3 py-2 text-right text-pink-600"}, cl(e.tempo_alocado)), 
+                            React.createElement("td", {className: "px-3 py-2 text-right text-fuchsia-600"}, cl(e.tempo_coleta)), 
+                            React.createElement("td", {className: "px-3 py-2 text-right text-rose-600"}, cl(e.tempo_medio)), 
+                            React.createElement("td", {className: "px-3 py-2 text-right text-green-600 font-medium"}, nl(e.dentro_prazo).toLocaleString("pt-BR")), 
+                            React.createElement("td", {className: "px-3 py-2 text-right"}, 
+                                React.createElement("span", {className: "px-2 py-0.5 rounded text-xs font-bold " + ((nl(e.dentro_prazo) / (nl(e.total_entregas) || 1) * 100) >= 80 ? "bg-green-100 text-green-700" : (nl(e.dentro_prazo) / (nl(e.total_entregas) || 1) * 100) >= 60 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700")}, (nl(e.dentro_prazo) / (nl(e.total_entregas) || 1) * 100).toFixed(1), "%")
+                            ), 
+                            React.createElement("td", {className: "px-3 py-2 text-right text-red-600 font-medium"}, nl(e.fora_prazo).toLocaleString("pt-BR")), 
+                            React.createElement("td", {className: "px-3 py-2 text-right text-red-500"}, (nl(e.fora_prazo) / (nl(e.total_entregas) || 1) * 100).toFixed(1), "%"), 
+                            React.createElement("td", {className: "px-3 py-2 text-right text-gray-600"}, parseFloat(e.distancia_total || 0).toLocaleString("pt-BR", {maximumFractionDigits: 1}), " km"), 
+                            React.createElement("td", {className: "px-3 py-2 text-right text-orange-600"}, e.retornos || 0), 
+                            React.createElement("td", {className: "px-3 py-2 text-right text-purple-600 font-medium"}, sl(e.valor_prof))
+                        ),
+                        // Linha expandida com tabela de OS
+                        expandido && React.createElement("tr", {className: "bg-blue-50"},
+                            React.createElement("td", {colSpan: "13", className: "px-4 py-3"},
+                                carregandoOS ? 
+                                    React.createElement("div", {className: "text-center py-4"},
+                                        React.createElement("span", {className: "animate-spin inline-block mr-2"}, "⏳"),
+                                        "Carregando OS..."
+                                    ) :
+                                osDoProf.length > 0 ?
+                                    React.createElement("div", null,
+                                        React.createElement("h4", {className: "font-bold text-blue-800 mb-2"}, "📋 OS Realizadas (", osDoProf.length, ")"),
+                                        React.createElement("div", {className: "overflow-x-auto max-h-64 overflow-y-auto"},
+                                            React.createElement("table", {className: "w-full text-xs"},
+                                                React.createElement("thead", {className: "bg-blue-100 sticky top-0"},
+                                                    React.createElement("tr", null,
+                                                        React.createElement("th", {className: "px-2 py-1 text-left"}, "OS"),
+                                                        React.createElement("th", {className: "px-2 py-1 text-left"}, "Cliente"),
+                                                        React.createElement("th", {className: "px-2 py-1 text-left"}, "Centro Custo"),
+                                                        React.createElement("th", {className: "px-2 py-1 text-center"}, "Data"),
+                                                        React.createElement("th", {className: "px-2 py-1 text-center"}, "T.Alocação"),
+                                                        React.createElement("th", {className: "px-2 py-1 text-center"}, "T.Entrega"),
+                                                        React.createElement("th", {className: "px-2 py-1 text-center"}, "Dist."),
+                                                        React.createElement("th", {className: "px-2 py-1 text-center"}, "Status"),
+                                                        React.createElement("th", {className: "px-2 py-1 text-right"}, "Valor")
+                                                    )
+                                                ),
+                                                React.createElement("tbody", null,
+                                                    osDoProf.map(function(os, idx) {
+                                                        return React.createElement("tr", {key: os.os + "-" + idx, className: idx % 2 === 0 ? "bg-white" : "bg-blue-50/50"},
+                                                            React.createElement("td", {className: "px-2 py-1 font-mono font-bold text-blue-700"}, os.os),
+                                                            React.createElement("td", {className: "px-2 py-1"}, os.cod_cliente, " - ", (os.cliente || "").substring(0, 20)),
+                                                            React.createElement("td", {className: "px-2 py-1 text-gray-600"}, (os.centro_custo || "-").substring(0, 15)),
+                                                            React.createElement("td", {className: "px-2 py-1 text-center"}, os.data_solicitado ? new Date(os.data_solicitado).toLocaleDateString("pt-BR") : "-"),
+                                                            React.createElement("td", {className: "px-2 py-1 text-center text-pink-600"}, os.tempo_alocacao ? (Math.floor(os.tempo_alocacao / 60) + ":" + String(os.tempo_alocacao % 60).padStart(2, "0")) : "-"),
+                                                            React.createElement("td", {className: "px-2 py-1 text-center text-rose-600"}, os.tempo_entrega ? (Math.floor(os.tempo_entrega / 60) + ":" + String(os.tempo_entrega % 60).padStart(2, "0")) : "-"),
+                                                            React.createElement("td", {className: "px-2 py-1 text-center"}, (os.distancia || 0).toFixed(1), "km"),
+                                                            React.createElement("td", {className: "px-2 py-1 text-center"},
+                                                                React.createElement("span", {className: "px-1 py-0.5 rounded text-xs font-bold " + (os.dentro_prazo === true ? "bg-green-100 text-green-700" : os.dentro_prazo === false ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-600")}, os.dentro_prazo === true ? "✓" : os.dentro_prazo === false ? "✗" : "?")
+                                                            ),
+                                                            React.createElement("td", {className: "px-2 py-1 text-right text-purple-600"}, "R$", (os.valor_prof || 0).toFixed(2))
+                                                        );
+                                                    })
+                                                )
+                                            )
+                                        )
+                                    ) :
+                                    React.createElement("div", {className: "text-center py-4 text-gray-500"}, "Nenhuma OS encontrada para este período")
+                            )
+                        )
+                    );
+                })
+            ), React.createElement("tfoot", {
                 className: "bg-purple-200 font-bold"
-            }, React.createElement("tr", null, React.createElement("td", {
-                className: "px-3 py-2"
-            }), React.createElement("td", {
-                className: "px-3 py-2"
-            }, "Total"), React.createElement("td", {
-                className: "px-3 py-2 text-right"
-            }, Vt.reduce((e, t) => e + nl(t.total_entregas), 0).toLocaleString("pt-BR")), React.createElement("td", {
-                className: "px-3 py-2 text-right"
-            }, "-"), React.createElement("td", {
-                className: "px-3 py-2 text-right"
-            }, "-"), React.createElement("td", {
-                className: "px-3 py-2 text-right"
-            }, "-"), React.createElement("td", {
-                className: "px-3 py-2 text-right text-green-700"
-            }, Vt.reduce((e, t) => e + nl(t.dentro_prazo), 0).toLocaleString("pt-BR")), React.createElement("td", {
-                className: "px-3 py-2 text-right"
-            }, "-"), React.createElement("td", {
-                className: "px-3 py-2 text-right text-red-700"
-            }, Vt.reduce((e, t) => e + nl(t.fora_prazo), 0).toLocaleString("pt-BR")), React.createElement("td", {
-                className: "px-3 py-2 text-right"
-            }, "-"), React.createElement("td", {
-                className: "px-3 py-2 text-right"
-            }, Vt.reduce((e, t) => e + parseFloat(t.distancia_total || 0), 0).toLocaleString("pt-BR", {
-                maximumFractionDigits: 2
-            }), " km"), React.createElement("td", {
-                className: "px-3 py-2 text-right"
-            }, Vt.reduce((e, t) => e + nl(t.retornos), 0)), React.createElement("td", {
-                className: "px-3 py-2 text-right"
-            }, sl(Vt.reduce((e, t) => e + nl(t.valor_prof), 0)))))))), "os" === Et && React.createElement("div", {
+            }, React.createElement("tr", null, 
+                React.createElement("td", {className: "px-3 py-2"}), 
+                React.createElement("td", {className: "px-3 py-2"}, "Total (", Vt.length, " prof.)"), 
+                React.createElement("td", {className: "px-3 py-2 text-right"}, Vt.reduce((e, t) => e + nl(t.total_entregas), 0).toLocaleString("pt-BR")), 
+                React.createElement("td", {className: "px-3 py-2 text-right"}, "-"), 
+                React.createElement("td", {className: "px-3 py-2 text-right"}, "-"), 
+                React.createElement("td", {className: "px-3 py-2 text-right"}, "-"), 
+                React.createElement("td", {className: "px-3 py-2 text-right text-green-700"}, Vt.reduce((e, t) => e + nl(t.dentro_prazo), 0).toLocaleString("pt-BR")), 
+                React.createElement("td", {className: "px-3 py-2 text-right"}, "-"), 
+                React.createElement("td", {className: "px-3 py-2 text-right text-red-700"}, Vt.reduce((e, t) => e + nl(t.fora_prazo), 0).toLocaleString("pt-BR")), 
+                React.createElement("td", {className: "px-3 py-2 text-right"}, "-"), 
+                React.createElement("td", {className: "px-3 py-2 text-right"}, Vt.reduce((e, t) => e + parseFloat(t.distancia_total || 0), 0).toLocaleString("pt-BR", {maximumFractionDigits: 1}), " km"), 
+                React.createElement("td", {className: "px-3 py-2 text-right"}, Vt.reduce((e, t) => e + nl(t.retornos || 0), 0)), 
+                React.createElement("td", {className: "px-3 py-2 text-right"}, sl(Vt.reduce((e, t) => e + nl(t.valor_prof), 0)))
+            )))),
+            // Paginação
+            Vt.length > 20 && React.createElement("div", {className: "bg-purple-50 px-4 py-3 flex justify-center items-center gap-2"},
+                React.createElement("button", {
+                    onClick: function() { setProfPaginaAtual(1); },
+                    disabled: profPaginaAtual === 1,
+                    className: "px-3 py-1 rounded " + (profPaginaAtual === 1 ? "bg-gray-200 text-gray-400" : "bg-purple-600 text-white hover:bg-purple-700")
+                }, "«"),
+                React.createElement("button", {
+                    onClick: function() { setProfPaginaAtual(Math.max(1, profPaginaAtual - 1)); },
+                    disabled: profPaginaAtual === 1,
+                    className: "px-3 py-1 rounded " + (profPaginaAtual === 1 ? "bg-gray-200 text-gray-400" : "bg-purple-600 text-white hover:bg-purple-700")
+                }, "‹"),
+                Array.from({length: Math.ceil(Vt.length / 20)}, function(_, i) { return i + 1; })
+                    .filter(function(p) { return p === 1 || p === Math.ceil(Vt.length / 20) || Math.abs(p - profPaginaAtual) <= 2; })
+                    .map(function(p, idx, arr) {
+                        var showEllipsis = idx > 0 && p - arr[idx - 1] > 1;
+                        return React.createElement(React.Fragment, {key: p},
+                            showEllipsis && React.createElement("span", {className: "px-2 text-gray-500"}, "..."),
+                            React.createElement("button", {
+                                onClick: function() { setProfPaginaAtual(p); },
+                                className: "px-3 py-1 rounded " + (profPaginaAtual === p ? "bg-purple-800 text-white font-bold" : "bg-purple-100 text-purple-700 hover:bg-purple-200")
+                            }, p)
+                        );
+                    }),
+                React.createElement("button", {
+                    onClick: function() { setProfPaginaAtual(Math.min(Math.ceil(Vt.length / 20), profPaginaAtual + 1)); },
+                    disabled: profPaginaAtual === Math.ceil(Vt.length / 20),
+                    className: "px-3 py-1 rounded " + (profPaginaAtual === Math.ceil(Vt.length / 20) ? "bg-gray-200 text-gray-400" : "bg-purple-600 text-white hover:bg-purple-700")
+                }, "›"),
+                React.createElement("button", {
+                    onClick: function() { setProfPaginaAtual(Math.ceil(Vt.length / 20)); },
+                    disabled: profPaginaAtual === Math.ceil(Vt.length / 20),
+                    className: "px-3 py-1 rounded " + (profPaginaAtual === Math.ceil(Vt.length / 20) ? "bg-gray-200 text-gray-400" : "bg-purple-600 text-white hover:bg-purple-700")
+                }, "»"),
+                React.createElement("span", {className: "ml-4 text-sm text-purple-700"}, "Página ", profPaginaAtual, " de ", Math.ceil(Vt.length / 20))
+            )), "os" === Et && React.createElement("div", {
                 className: "bg-white rounded-lg shadow overflow-hidden"
             }, React.createElement("div", {
                 className: "bg-purple-100 px-4 py-3"
