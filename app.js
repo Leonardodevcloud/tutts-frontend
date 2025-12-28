@@ -13988,17 +13988,17 @@ const hideLoadingScreen = () => {
             }, sl(ft?.valor_prof_total || 0)), React.createElement("p", {
                 className: "text-[10px] text-gray-500"
             }, "Valor Profissional")), React.createElement("div", {
-                className: "bg-gradient-to-br from-purple-600 to-purple-800 rounded-lg p-3 shadow"
+                className: "bg-white rounded-lg p-3 shadow border-l-3 border-purple-500"
             }, React.createElement("div", {
                 className: "flex items-center gap-2 mb-1"
             }, React.createElement("span", {
                 className: "text-base"
             }, "📈"), React.createElement("span", {
-                className: "text-[10px] text-purple-200 bg-white/20 px-1.5 py-0.5 rounded"
+                className: "text-[10px] text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded"
             }, "Lucro")), React.createElement("p", {
-                className: "text-lg font-bold text-white"
+                className: "text-lg font-bold text-gray-800"
             }, sl(nl(ft?.valor_total) - nl(ft?.valor_prof_total))), React.createElement("p", {
-                className: "text-[10px] text-purple-200"
+                className: "text-[10px] text-gray-500"
             }, "Faturamento")), React.createElement("div", {
                 className: "bg-white rounded-lg p-3 shadow border-l-3 border-amber-500"
             }, React.createElement("div", {
