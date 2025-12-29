@@ -14354,107 +14354,62 @@ const hideLoadingScreen = () => {
             // === LINHA 3: STATUS DE PRAZO (2 cards compactos) ===
             React.createElement("div", {
                 className: "grid grid-cols-2 gap-2 mb-4"
-            }, React.createElement("div", {
-                className: "bg-white rounded-lg p-3 shadow border-l-4 border-green-500"
-            }, React.createElement("div", {
-                className: "flex items-center justify-between"
-            }, React.createElement("div", {
-                className: "flex items-center gap-2"
-            }, React.createElement("span", {
-                className: "text-xl"
-            }, "✅"), React.createElement("div", null, React.createElement("p", {
-                className: "text-[10px] text-gray-500"
-            }, "No Prazo"), React.createElement("p", {
-                className: "text-xl font-bold text-gray-800"
-            }, nl(ft?.dentro_prazo).toLocaleString("pt-BR")))), React.createElement("div", {
-                className: "flex items-center gap-2"
-            }, React.createElement("div", {
-                className: "w-24 h-2 bg-gray-100 rounded-full overflow-hidden"
-            }, React.createElement("div", {
-                className: "h-full bg-gradient-to-r from-green-400 to-emerald-500 rounded-full",
-                style: { width: (nl(ft?.dentro_prazo) / (nl(ft?.total_entregas) || 1) * 100) + "%" }
-            })), React.createElement("span", {
-                className: "text-lg font-bold text-green-600 min-w-[50px] text-right"
-            }, (nl(ft?.dentro_prazo) / (nl(ft?.total_entregas) || 1) * 100).toFixed(1), "%")))), React.createElement("div", {
-                className: "bg-white rounded-lg p-3 shadow border-l-4 border-red-500"
-            }, React.createElement("div", {
-                className: "flex items-center justify-between"
-            }, React.createElement("div", {
-                className: "flex items-center gap-2"
-            }, React.createElement("span", {
-                className: "text-xl"
-            }, "❌"), React.createElement("div", null, React.createElement("p", {
-                className: "text-[10px] text-gray-500"
-            }, "Fora do Prazo"), React.createElement("p", {
-                className: "text-xl font-bold text-gray-800"
-            }, nl(ft?.fora_prazo).toLocaleString("pt-BR")))), React.createElement("div", {
-                className: "flex items-center gap-2"
-            }, React.createElement("div", {
-                className: "w-24 h-2 bg-gray-100 rounded-full overflow-hidden"
-            }, React.createElement("div", {
-                className: "h-full bg-gradient-to-r from-red-400 to-rose-500 rounded-full",
-                style: { width: (nl(ft?.fora_prazo) / (nl(ft?.total_entregas) || 1) * 100) + "%" }
-            })), React.createElement("span", {
-                className: "text-lg font-bold text-red-600 min-w-[50px] text-right"
-            }, (nl(ft?.fora_prazo) / (nl(ft?.total_entregas) || 1) * 100).toFixed(1), "%"))))),
-            
+            }, 
+            // ===== CARD PRAZO CONSOLIDADO =====
             React.createElement("div", {
-                className: "bg-white rounded-lg p-3 shadow border-l-4 border-blue-500"
+                className: "bg-white rounded-lg p-4 shadow border-l-4 border-green-500"
+            }, React.createElement("h4", {
+                className: "text-sm font-bold text-gray-700 mb-3"
+            }, "📊 Prazo de Entrega"), React.createElement("div", {
+                className: "grid grid-cols-2 gap-3"
             }, React.createElement("div", {
-                className: "flex items-center justify-between"
-            }, React.createElement("div", {
-                className: "flex items-center gap-2"
-            }, React.createElement("span", {
-                className: "text-xl"
-            }, "✅"), React.createElement("div", null, React.createElement("p", {
-                className: "text-[10px] text-blue-500"
-            }, "Prazo Prof"), React.createElement("p", {
-                className: "text-xl font-bold text-gray-800"
-            }, nl(ft?.dentro_prazo_prof).toLocaleString("pt-BR")))), React.createElement("div", {
-                className: "flex items-center gap-2"
-            }, React.createElement("div", {
-                className: "w-24 h-2 bg-gray-100 rounded-full overflow-hidden"
-            }, React.createElement("div", {
-                className: "h-full bg-gradient-to-r from-blue-400 to-cyan-500 rounded-full",
-                style: { width: (nl(ft?.dentro_prazo_prof) / (nl(ft?.total_os) || 1) * 100) + "%" }
-            })), React.createElement("span", {
-                className: "text-lg font-bold text-blue-600 min-w-[50px] text-right"
-            }, (nl(ft?.dentro_prazo_prof) / (nl(ft?.total_os) || 1) * 100).toFixed(1), "%")))),
+                className: "text-center p-2 bg-green-50 rounded-lg"
+            }, React.createElement("p", {
+                className: "text-[10px] text-green-600 font-medium"
+            }, "✅ No Prazo"), React.createElement("p", {
+                className: "text-xl font-bold text-green-700"
+            }, nl(ft?.dentro_prazo).toLocaleString("pt-BR")), React.createElement("p", {
+                className: "text-sm font-semibold text-green-600"
+            }, (nl(ft?.dentro_prazo) / (nl(ft?.total_entregas) || 1) * 100).toFixed(1), "%")), React.createElement("div", {
+                className: "text-center p-2 bg-red-50 rounded-lg"
+            }, React.createElement("p", {
+                className: "text-[10px] text-red-600 font-medium"
+            }, "❌ Fora do Prazo"), React.createElement("p", {
+                className: "text-xl font-bold text-red-700"
+            }, nl(ft?.fora_prazo).toLocaleString("pt-BR")), React.createElement("p", {
+                className: "text-sm font-semibold text-red-600"
+            }, (nl(ft?.fora_prazo) / (nl(ft?.total_entregas) || 1) * 100).toFixed(1), "%")))),
             
+            // ===== CARD PRAZO PROF CONSOLIDADO =====
             React.createElement("div", {
-                className: "bg-white rounded-lg p-3 shadow border-l-4 border-orange-500"
+                className: "bg-white rounded-lg p-4 shadow border-l-4 border-blue-500"
+            }, React.createElement("h4", {
+                className: "text-sm font-bold text-gray-700 mb-3"
+            }, "👨‍💼 Prazo Profissional"), React.createElement("div", {
+                className: "grid grid-cols-3 gap-2"
             }, React.createElement("div", {
-                className: "flex items-center justify-between"
-            }, React.createElement("div", {
-                className: "flex items-center gap-2"
-            }, React.createElement("span", {
-                className: "text-xl"
-            }, "❌"), React.createElement("div", null, React.createElement("p", {
-                className: "text-[10px] text-orange-500"
-            }, "Fora Prazo Prof"), React.createElement("p", {
-                className: "text-xl font-bold text-gray-800"
-            }, nl(ft?.fora_prazo_prof).toLocaleString("pt-BR")))), React.createElement("div", {
-                className: "flex items-center gap-2"
-            }, React.createElement("div", {
-                className: "w-24 h-2 bg-gray-100 rounded-full overflow-hidden"
-            }, React.createElement("div", {
-                className: "h-full bg-gradient-to-r from-orange-400 to-amber-500 rounded-full",
-                style: { width: (nl(ft?.fora_prazo_prof) / (nl(ft?.total_os) || 1) * 100) + "%" }
-            })), React.createElement("span", {
-                className: "text-lg font-bold text-orange-600 min-w-[50px] text-right"
-            }, (nl(ft?.fora_prazo_prof) / (nl(ft?.total_os) || 1) * 100).toFixed(1), "%")))),
-            
-            React.createElement("div", {
-                className: "bg-white rounded-lg p-3 shadow border-l-4 border-indigo-500"
-            }, React.createElement("div", {
-                className: "flex items-center gap-2"
-            }, React.createElement("span", {
-                className: "text-xl"
-            }, "⏱️"), React.createElement("div", null, React.createElement("p", {
-                className: "text-[10px] text-gray-500"
-            }, "T. Médio Entrega Prof"), React.createElement("p", {
-                className: "text-xl font-bold text-indigo-600"
-            }, cl(ft?.tempo_medio_entrega_prof))))),
+                className: "text-center p-2 bg-blue-50 rounded-lg"
+            }, React.createElement("p", {
+                className: "text-[10px] text-blue-600 font-medium"
+            }, "✅ No Prazo"), React.createElement("p", {
+                className: "text-xl font-bold text-blue-700"
+            }, nl(ft?.dentro_prazo_prof).toLocaleString("pt-BR")), React.createElement("p", {
+                className: "text-sm font-semibold text-blue-600"
+            }, (nl(ft?.dentro_prazo_prof) / (nl(ft?.total_os) || 1) * 100).toFixed(1), "%")), React.createElement("div", {
+                className: "text-center p-2 bg-orange-50 rounded-lg"
+            }, React.createElement("p", {
+                className: "text-[10px] text-orange-600 font-medium"
+            }, "❌ Fora do Prazo"), React.createElement("p", {
+                className: "text-xl font-bold text-orange-700"
+            }, nl(ft?.fora_prazo_prof).toLocaleString("pt-BR")), React.createElement("p", {
+                className: "text-sm font-semibold text-orange-600"
+            }, (nl(ft?.fora_prazo_prof) / (nl(ft?.total_os) || 1) * 100).toFixed(1), "%")), React.createElement("div", {
+                className: "text-center p-2 bg-indigo-50 rounded-lg"
+            }, React.createElement("p", {
+                className: "text-[10px] text-indigo-600 font-medium"
+            }, "⏱️ T. Médio"), React.createElement("p", {
+                className: "text-xl font-bold text-indigo-700"
+            }, cl(ft?.tempo_medio_entrega_prof)))))),
             
             React.createElement("div", {
                 className: "bg-white rounded-lg shadow overflow-hidden"
