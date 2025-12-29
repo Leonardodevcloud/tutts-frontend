@@ -14328,7 +14328,7 @@ const hideLoadingScreen = () => {
                 className: "px-3 py-2 text-right text-purple-900"
             }, "Ent/Entregador"), React.createElement("th", {
                 className: "px-3 py-2 text-right text-purple-900"
-            }, "Últ. Entrega"))), React.createElement("tbody", null, (zt || []).map((e, t) => React.createElement(React.Fragment, {
+            }, "Últ. Entrega"))), React.createElement("tbody", null, (zt || []).filter(e => parseInt(e.total_os) > 0 || parseInt(e.total_entregas) > 0).map((e, t) => React.createElement(React.Fragment, {
                 key: t
             }, React.createElement("tr", {
                 className: "border-b hover:bg-purple-50 " + (t % 2 == 0 ? "bg-white" : "bg-gray-50")
@@ -14983,7 +14983,7 @@ const hideLoadingScreen = () => {
                 className: "font-bold text-purple-900"
             }, "Análise por Profissional"), React.createElement("span", {
                 className: "text-sm text-purple-700"
-            }, Vt.length, " profissional(is)")), React.createElement("div", {
+            }, Vt.filter(e => parseInt(e.total_entregas) > 0).length, " profissional(is)")), React.createElement("div", {
                 className: "overflow-x-auto"
             }, React.createElement("table", {
                 className: "w-full text-sm"
@@ -15016,8 +15016,8 @@ const hideLoadingScreen = () => {
             }, "Retorno"), React.createElement("th", {
                 className: "px-3 py-2 text-right text-purple-900"
             }, "Valor"))), React.createElement("tbody", null, 
-                // Paginação: 20 por página
-                Vt.slice((profPaginaAtual - 1) * 20, profPaginaAtual * 20).map((e, t) => {
+                // Paginação: 20 por página - filtrar apenas profissionais com dados
+                Vt.filter(e => parseInt(e.total_entregas) > 0).slice((profPaginaAtual - 1) * 20, profPaginaAtual * 20).map((e, t) => {
                     var indexReal = (profPaginaAtual - 1) * 20 + t;
                     var expandido = Kt["prof-" + indexReal];
                     var osDoProf = profOsExpandido[e.cod_prof] || [];
