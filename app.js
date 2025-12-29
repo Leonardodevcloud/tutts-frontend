@@ -955,6 +955,12 @@ const hideLoadingScreen = () => {
         [regiaoClienteSelecionado, setRegiaoClienteSelecionado] = useState([]), // array de cod_cliente selecionados
         [regiaoCentrosCusto, setRegiaoCentrosCusto] = useState({}), // {cod_cliente: [centros]}
         [regiaoItensAdicionados, setRegiaoItensAdicionados] = useState([]), // [{cod_cliente, nome_cliente, centro_custo}]
+        [regiaoEditando, setRegiaoEditando] = useState(null), // ID da região sendo editada
+        // Estados para dropdowns da aba Config
+        [configSecaoAberta, setConfigSecaoAberta] = useState("regioes"), // "regioes", "mascaras", "regras", "recalculo"
+        [regiaoEditando, setRegiaoEditando] = useState(null), // ID da região sendo editada
+        // Estados para seções expansíveis da aba Config
+        [configSecaoAberta, setConfigSecaoAberta] = useState("regioes"), // qual seção está aberta
         ja = (e, t = "success") => {
             d({
                 message: e,
@@ -15816,16 +15822,47 @@ const hideLoadingScreen = () => {
                 disabled: ba,
                 className: "px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50"
             }, ba ? "⏳ Recalculando..." : "🔄 Recalcular")))), "config" === Et && React.createElement("div", {
-                className: "space-y-6"
-            }, React.createElement("div", {
-                className: "bg-white rounded-xl shadow p-6"
-            }, React.createElement("h2", {
-                className: "text-xl font-bold text-purple-900 mb-2"
-            }, "🗺️ Configuração de Regiões"), React.createElement("p", {
+                className: "space-y-4"
+            }, 
+            // ========== SEÇÃO 1: REGIÕES (Dropdown) ==========
+            React.createElement("div", {className: "bg-white rounded-xl shadow overflow-hidden"},
+                // Header clicável do dropdown
+                React.createElement("button", {
+                    onClick: function() { setConfigSecaoAberta(configSecaoAberta === "regioes" ? "" : "regioes"); },
+                    className: "w-full px-6 py-4 flex items-center justify-between bg-gradient-to-r from-purple-50 to-white hover:from-purple-100 transition-all"
+                },
+                    React.createElement("div", {className: "flex items-center gap-3"},
+                        React.createElement("span", {className: "text-2xl"}, "🗺️"),
+                        React.createElement("div", {className: "text-left"},
+                            React.createElement("h2", {className: "text-lg font-bold text-purple-900"}, "Configuração de Regiões"),
+                            React.createElement("p", {className: "text-sm text-gray-500"}, aa.length + " região(ões) configurada(s)")
+                        )
+                    ),
+                    React.createElement("span", {className: "text-2xl text-purple-600 transition-transform " + (configSecaoAberta === "regioes" ? "rotate-180" : "")}, "▼")
+                ),
+                // Conteúdo expansível da seção Regiões
+                configSecaoAberta === "regioes" && React.createElement("div", {className: "p-6 border-t"},
+            React.createElement("p", {
                 className: "text-sm text-gray-500 mb-4"
             }, "Agrupe clientes e centros de custo em regiões para facilitar a filtragem no dashboard."), React.createElement("div", {
                 className: "border rounded-lg p-4 mb-4 bg-gray-50"
-            }, 
+            },
+            // Título do formulário com modo edição
+            React.createElement("div", {className: "flex items-center justify-between mb-4"},
+                React.createElement("h3", {className: "font-semibold text-purple-800"}, 
+                    regiaoEditando ? "✏️ Editando Região" : "➕ Nova Região"
+                ),
+                regiaoEditando && React.createElement("button", {
+                    onClick: function() {
+                        setRegiaoEditando(null);
+                        setRegiaoNome("");
+                        setRegiaoClienteSelecionado([]);
+                        setRegiaoCentrosCusto({});
+                        setRegiaoItensAdicionados([]);
+                    },
+                    className: "text-sm text-gray-500 hover:text-red-600"
+                }, "✕ Cancelar edição")
+            ), 
             // Nome da região
             React.createElement("div", {className: "mb-4"}, 
                 React.createElement("label", {className: "text-sm font-semibold text-gray-700"}, "Nome da Região"),
@@ -16028,8 +16065,12 @@ const hideLoadingScreen = () => {
                         return ja("Adicione pelo menos um cliente/centro de custo", "error");
                     }
                     try {
-                        var resp = await fetch(API_URL + "/bi/regioes", {
-                            method: "POST",
+                        var url = regiaoEditando 
+                            ? API_URL + "/bi/regioes/" + regiaoEditando 
+                            : API_URL + "/bi/regioes";
+                        var method = regiaoEditando ? "PUT" : "POST";
+                        var resp = await fetch(url, {
+                            method: method,
                             headers: {"Content-Type": "application/json"},
                             body: JSON.stringify({
                                 nome: regiaoNome.trim(),
@@ -16040,11 +16081,12 @@ const hideLoadingScreen = () => {
                         });
                         var data = await resp.json();
                         if (data.success) {
-                            ja("✅ Região salva!", "success");
+                            ja(regiaoEditando ? "✅ Região atualizada!" : "✅ Região criada!", "success");
                             setRegiaoNome("");
-                            setRegiaoClienteSelecionado(null);
+                            setRegiaoClienteSelecionado([]);
                             setRegiaoCentrosCusto({});
                             setRegiaoItensAdicionados([]);
+                            setRegiaoEditando(null);
                             pl(); // Recarregar regiões
                         } else {
                             ja("❌ Erro: " + data.error, "error");
@@ -16054,7 +16096,7 @@ const hideLoadingScreen = () => {
                     }
                 },
                 className: "px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700"
-            }, "➕ Criar Região")), 0 === aa.length ? React.createElement("p", {
+            }, regiaoEditando ? "💾 Atualizar Região" : "➕ Criar Região")), 0 === aa.length ? React.createElement("p", {
                 className: "text-gray-500 text-center py-4 bg-gray-50 rounded-lg"
             }, "Nenhuma região configurada") : React.createElement("div", {
                 className: "space-y-3"
@@ -16079,18 +16121,60 @@ const hideLoadingScreen = () => {
                     className: "font-bold text-blue-900"
                 }, e.nome), React.createElement("p", {
                     className: "text-sm text-blue-600"
-                }, clientesUnicos.length, " cliente(s), ", totalItens, " item(ns)")), React.createElement("button", {
-                    onClick: () => (async e => {
-                        if (confirm("Excluir esta região?")) try {
-                            (await fetch(`${API_URL}/bi/regioes/${e}`, {
-                                method: "DELETE"
-                            })).ok && (ja("✅ Região excluída!", "success"), pl())
-                        } catch (e) {
-                            ja("Erro ao excluir", "error")
-                        }
-                    })(e.id),
-                    className: "text-red-500 hover:text-red-700 p-1"
-                }, "🗑️")), React.createElement("div", {
+                }, clientesUnicos.length, " cliente(s), ", totalItens, " item(ns)")), 
+                // Botões editar e excluir
+                React.createElement("div", {className: "flex gap-2"},
+                    // Botão editar
+                    React.createElement("button", {
+                        onClick: async function() {
+                            setRegiaoEditando(e.id);
+                            setRegiaoNome(e.nome);
+                            var itensParaEditar = itens.map(function(i) {
+                                var cliente = jt.find(function(c) { return c.cod_cliente === i.cod_cliente; });
+                                return {
+                                    cod_cliente: i.cod_cliente,
+                                    nome_cliente: il(i.cod_cliente) || cliente?.nome_cliente || "Cliente " + i.cod_cliente,
+                                    centro_custo: i.centro_custo
+                                };
+                            });
+                            setRegiaoItensAdicionados(itensParaEditar);
+                            var clientesCods = [...new Set(itens.map(function(i) { return String(i.cod_cliente); }))];
+                            setRegiaoClienteSelecionado(clientesCods);
+                            var novosCC = {};
+                            for (var cod of clientesCods) {
+                                try {
+                                    var resp = await fetch(API_URL + "/bi/centros-custo/" + cod);
+                                    var data = await resp.json();
+                                    novosCC[cod] = data || [];
+                                } catch(err) {
+                                    novosCC[cod] = [];
+                                }
+                            }
+                            setRegiaoCentrosCusto(novosCC);
+                            ja("📝 Editando região: " + e.nome, "success");
+                        },
+                        className: "text-blue-500 hover:text-blue-700 p-1",
+                        title: "Editar região"
+                    }, "✏️"),
+                    // Botão excluir
+                    React.createElement("button", {
+                        onClick: async function() {
+                            if (confirm("Excluir a região '" + e.nome + "'?")) {
+                                try {
+                                    var resp = await fetch(API_URL + "/bi/regioes/" + e.id, {method: "DELETE"});
+                                    if (resp.ok) {
+                                        ja("✅ Região excluída!", "success");
+                                        pl();
+                                    }
+                                } catch (err) {
+                                    ja("Erro ao excluir", "error");
+                                }
+                            }
+                        },
+                        className: "text-red-500 hover:text-red-700 p-1",
+                        title: "Excluir região"
+                    }, "🗑️")
+                )), React.createElement("div", {
                     className: "flex flex-wrap gap-1"
                 }, itens.map(function(item, idx) {
                     var cliente = jt.find(function(c) { return c.cod_cliente === item.cod_cliente; });
@@ -16100,11 +16184,25 @@ const hideLoadingScreen = () => {
                         className: "text-xs bg-white border border-blue-300 px-2 py-0.5 rounded"
                     }, item.cod_cliente, " - ", item.centro_custo || nomeCliente || "Todos CC");
                 })));
-            }))), React.createElement("div", {
-                className: "bg-white rounded-xl shadow p-6"
-            }, React.createElement("h2", {
-                className: "text-xl font-bold text-purple-900 mb-2"
-            }, "🏷️ Máscaras de Clientes"), React.createElement("p", {
+            })))),
+            
+            // ========== SEÇÃO 2: MÁSCARAS (Dropdown) ==========
+            React.createElement("div", {className: "bg-white rounded-xl shadow overflow-hidden"},
+                React.createElement("button", {
+                    onClick: function() { setConfigSecaoAberta(configSecaoAberta === "mascaras" ? "" : "mascaras"); },
+                    className: "w-full px-6 py-4 flex items-center justify-between bg-gradient-to-r from-purple-50 to-white hover:from-purple-100 transition-all"
+                },
+                    React.createElement("div", {className: "flex items-center gap-3"},
+                        React.createElement("span", {className: "text-2xl"}, "🏷️"),
+                        React.createElement("div", {className: "text-left"},
+                            React.createElement("h2", {className: "text-lg font-bold text-purple-900"}, "Máscaras de Clientes"),
+                            React.createElement("p", {className: "text-sm text-gray-500"}, ea.length + " máscara(s) configurada(s)")
+                        )
+                    ),
+                    React.createElement("span", {className: "text-2xl text-purple-600 transition-transform " + (configSecaoAberta === "mascaras" ? "rotate-180" : "")}, "▼")
+                ),
+                configSecaoAberta === "mascaras" && React.createElement("div", {className: "p-6 border-t"},
+            React.createElement("p", {
                 className: "text-sm text-gray-500 mb-4"
             }, "Defina apelidos para os códigos de clientes. Esses apelidos aparecerão nos filtros e visualizações."), React.createElement("div", {
                 className: "flex gap-3 mb-4 flex-wrap"
