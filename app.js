@@ -15367,11 +15367,9 @@ const hideLoadingScreen = () => {
                 React.createElement("th", {className: "px-2 py-2 text-center text-purple-900"}, "Tipo"),
                 React.createElement("th", {className: "px-2 py-2 text-left text-purple-900 max-w-xs"}, "Endereço"),
                 React.createElement("th", {className: "px-2 py-2 text-center text-purple-900"}, "Data Solic."),
+                React.createElement("th", {className: "px-2 py-2 text-center text-purple-900"}, "H. Solicitação"),
                 React.createElement("th", {className: "px-2 py-2 text-center text-purple-900"}, "H. Alocação"),
                 React.createElement("th", {className: "px-2 py-2 text-center text-purple-900"}, "H. Chegada"),
-                React.createElement("th", {className: "px-2 py-2 text-center text-purple-900"}, "T. Alocação"),
-                React.createElement("th", {className: "px-2 py-2 text-center text-purple-900"}, "T. Coleta"),
-                React.createElement("th", {className: "px-2 py-2 text-center text-purple-900"}, "T. Entrega"),
                 React.createElement("th", {className: "px-2 py-2 text-center text-purple-900 bg-purple-200"}, "T. Total OS"),
                 React.createElement("th", {className: "px-2 py-2 text-right text-purple-900"}, "KM"),
                 React.createElement("th", {className: "px-2 py-2 text-center text-purple-900"}, "Prazo"),
@@ -15411,11 +15409,9 @@ const hideLoadingScreen = () => {
                     var isExpanded = window.osExpandidas[osNum] || false;
                     var temMaisPontos = pontos.length > 1;
                     
-                    // Os tempos consolidados por OS agora vêm calculados do backend
-                    // nos campos: tempo_alocacao_os, tempo_coleta_os, tempo_entrega_os
-                    var tempoAlocacaoOS = primeiroReg.tempo_alocacao_os;
-                    var tempoColetaOS = primeiroReg.tempo_coleta_os;
-                    var tempoEntregaOS = primeiroReg.tempo_entrega_os;
+                    // O tempo total da OS vem diretamente do banco no campo tempo_execucao_minutos
+                    // Este campo é calculado a partir da coluna "Execução - Espera" do Excel importado
+                    var tempoTotalOS = primeiroReg.tempo_execucao_minutos;
                     
                     var formatTempo = function(mins) {
                         if (mins === null || mins === undefined || isNaN(mins) || mins < 0) return "-";
@@ -15424,30 +15420,6 @@ const hideLoadingScreen = () => {
                         var s = Math.floor((mins % 1) * 60);
                         return String(h).padStart(2, "0") + ":" + String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
                     };
-                    
-                    // Função para calcular o tempo TOTAL consolidado da OS (soma de alocação + coleta + entrega)
-                    var calcTempoTotalOS = function() {
-                        var tempoTotal = 0;
-                        var temAlgumTempo = false;
-                        
-                        if (tempoAlocacaoOS !== null && !isNaN(tempoAlocacaoOS) && tempoAlocacaoOS > 0) {
-                            tempoTotal += tempoAlocacaoOS;
-                            temAlgumTempo = true;
-                        }
-                        if (tempoColetaOS !== null && !isNaN(tempoColetaOS) && tempoColetaOS > 0) {
-                            tempoTotal += tempoColetaOS;
-                            temAlgumTempo = true;
-                        }
-                        if (tempoEntregaOS !== null && !isNaN(tempoEntregaOS) && tempoEntregaOS > 0) {
-                            tempoTotal += tempoEntregaOS;
-                            temAlgumTempo = true;
-                        }
-                        
-                        return temAlgumTempo ? tempoTotal : null;
-                    };
-                    
-                    // Calcular tempo total consolidado desta OS
-                    var tempoTotalOS = calcTempoTotalOS();
                     
                     // Função para formatar data corretamente
                     var formatData = function(dataStr) {
@@ -15488,13 +15460,21 @@ const hideLoadingScreen = () => {
                         var tipoClass = isRetorno ? "bg-orange-100 text-orange-700" : 
                                         (pontoNum === 1 ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700");
                         
-                        // Usar tempos consolidados do backend (calculados por OS)
-                        // Mostrar tempo de alocação e coleta apenas no ponto 1
-                        // Mostrar tempo de entrega apenas nos pontos >= 2
-                        var tAlocacao = (pontoNum === 1) ? row.tempo_alocacao_os : null;
-                        var tColeta = (pontoNum === 1) ? row.tempo_coleta_os : null;
-                        var tEntrega = (pontoNum >= 2) ? row.tempo_entrega_os : null;
-                        var horaAlocado = row.data_hora_alocado ? new Date(row.data_hora_alocado).toLocaleTimeString("pt-BR", {hour: "2-digit", minute: "2-digit", second: "2-digit"}) : "-";
+                        // Função para extrair hora de uma string datetime sem conversão de timezone
+                        var extrairHora = function(dataHoraStr) {
+                            if (!dataHoraStr) return "-";
+                            // Se vier como "2025-12-01T16:39:31" ou "2025-12-01 16:39:31"
+                            var str = String(dataHoraStr);
+                            var match = str.match(/(\d{2}):(\d{2}):(\d{2})/);
+                            if (match) {
+                                return match[1] + ":" + match[2] + ":" + match[3];
+                            }
+                            // Fallback: tentar extrair do objeto Date mas sem conversão
+                            return "-";
+                        };
+                        
+                        var horaAlocado = extrairHora(row.data_hora_alocado);
+                        var horaSolicitado = row.hora_solicitado || extrairHora(row.data_hora);
                         
                         // Formatar data solicitado corretamente
                         var dataSolic = "-";
@@ -15535,17 +15515,13 @@ const hideLoadingScreen = () => {
                             React.createElement("td", {className: "px-2 py-1 truncate max-w-[200px]", title: row.endereco}, row.endereco || "-"),
                             // Data Solicitado
                             React.createElement("td", {className: "px-2 py-1 text-center"}, dataSolic),
+                            // Hora Solicitação
+                            React.createElement("td", {className: "px-2 py-1 text-center"}, horaSolicitado),
                             // Hora Alocação
                             React.createElement("td", {className: "px-2 py-1 text-center"}, horaAlocado),
                             // Hora Chegada
                             React.createElement("td", {className: "px-2 py-1 text-center"}, row.hora_chegada || "-"),
-                            // T. Alocação
-                            React.createElement("td", {className: "px-2 py-1 text-center text-pink-600 font-medium"}, formatTempo(tAlocacao)),
-                            // T. Coleta
-                            React.createElement("td", {className: "px-2 py-1 text-center text-fuchsia-600 font-medium"}, formatTempo(tColeta)),
-                            // T. Entrega
-                            React.createElement("td", {className: "px-2 py-1 text-center text-rose-600 font-medium"}, formatTempo(tEntrega)),
-                            // T. Total OS (consolidado - só mostra na primeira linha da OS)
+                            // T. Total OS (tempo de execução do banco - só mostra na primeira linha da OS)
                             React.createElement("td", {className: "px-2 py-1 text-center font-bold " + (isFirst ? "bg-purple-100 text-purple-800" : "bg-purple-50 text-purple-400")}, 
                                 isFirst ? formatTempo(tempoTotalOS) : ""
                             ),
