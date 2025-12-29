@@ -2761,7 +2761,7 @@ const hideLoadingScreen = () => {
             try {
                 Ra(!0);
                 const t = new URLSearchParams;
-                e.data_inicio && t.append("data_inicio", e.data_inicio), e.data_fim && t.append("data_fim", e.data_fim), e.cod_cliente && e.cod_cliente.length > 0 && e.cod_cliente.forEach(e => t.append("cod_cliente", e)), e.centro_custo && e.centro_custo.length > 0 && e.centro_custo.forEach(e => t.append("centro_custo", e)), e.cod_prof && t.append("cod_prof", e.cod_prof), e.categoria && t.append("categoria", e.categoria), e.cidade && t.append("cidade", e.cidade), e.status_prazo && t.append("status_prazo", e.status_prazo), console.log("📊 loadBiDashboardComFiltros - params:", t.toString());
+                e.data_inicio && t.append("data_inicio", e.data_inicio), e.data_fim && t.append("data_fim", e.data_fim), e.cod_cliente && e.cod_cliente.length > 0 && e.cod_cliente.forEach(e => t.append("cod_cliente", e)), e.centro_custo && e.centro_custo.length > 0 && e.centro_custo.forEach(e => t.append("centro_custo", e)), e.cod_prof && t.append("cod_prof", e.cod_prof), e.categoria && t.append("categoria", e.categoria), e.cidade && t.append("cidade", e.cidade), e.status_prazo && t.append("status_prazo", e.status_prazo), e.status_retorno && t.append("status_retorno", e.status_retorno), console.log("📊 loadBiDashboardComFiltros - params:", t.toString());
                 const a = await fetch(`${API_URL}/bi/dashboard-completo?${t}`),
                     l = await a.json();
                 console.log("📊 loadBiDashboardComFiltros - resposta:", l), console.log("📊 metricas:", l.metricas), console.log("📊 porCliente:", l.porCliente?.length, "registros"), console.log("📊 porProfissional:", l.porProfissional?.length, "registros"), Nt(l.metricas || {}), Bt(l.porCliente || []), Jt(l.porProfissional || []);
@@ -2863,7 +2863,22 @@ const hideLoadingScreen = () => {
                 Ht({
                     porTempo: o,
                     porKm: c
-                }), Xt({})
+                }), Xt({});
+                
+                // Também recarregar a lista de OS com os mesmos filtros
+                const osParams = new URLSearchParams;
+                e.data_inicio && osParams.append("data_inicio", e.data_inicio);
+                e.data_fim && osParams.append("data_fim", e.data_fim);
+                e.cod_cliente && e.cod_cliente.length > 0 && osParams.append("cod_cliente", e.cod_cliente.join(","));
+                e.centro_custo && e.centro_custo.length > 0 && osParams.append("centro_custo", e.centro_custo.join(","));
+                e.cod_prof && osParams.append("cod_prof", e.cod_prof);
+                e.categoria && osParams.append("categoria", e.categoria);
+                e.cidade && osParams.append("cidade", e.cidade);
+                e.status_prazo && osParams.append("status_prazo", e.status_prazo);
+                e.status_retorno && osParams.append("status_retorno", e.status_retorno);
+                const osResponse = await fetch(`${API_URL}/bi/entregas-lista?${osParams}`);
+                Ut(await osResponse.json());
+                console.log("📋 Lista de OS recarregada com filtros");
             } catch (e) {
                 console.error("Erro ao carregar BI:", e)
             }
