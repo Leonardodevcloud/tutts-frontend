@@ -844,6 +844,7 @@ const hideLoadingScreen = () => {
             centro_custo: [],
             categoria: "",
             status_prazo: "",
+            status_retorno: "",
             regiao: ""
         }), [ba, Ra] = useState(!1), [loadingMessage, setLoadingMessage] = useState("Carregando dados..."), [loadingProgress, setLoadingProgress] = useState(0), [Ea, ha] = useState(null), [driveImportando, setDriveImportando] = useState(null), [fa, Na] = useState([{
             km_min: 0,
@@ -2393,7 +2394,7 @@ const hideLoadingScreen = () => {
             }
         }, Xa = () => {
             const e = new URLSearchParams;
-            return ua.data_inicio && e.append("data_inicio", ua.data_inicio), ua.data_fim && e.append("data_fim", ua.data_fim), ua.cod_cliente && ua.cod_cliente.length > 0 && e.append("cod_cliente", Array.isArray(ua.cod_cliente) ? ua.cod_cliente.join(",") : ua.cod_cliente), ua.centro_custo && ua.centro_custo.length > 0 && e.append("centro_custo", Array.isArray(ua.centro_custo) ? ua.centro_custo.join(",") : ua.centro_custo), ua.cod_prof && e.append("cod_prof", ua.cod_prof), ua.categoria && e.append("categoria", ua.categoria), ua.cidade && e.append("cidade", ua.cidade), ua.status_prazo && e.append("status_prazo", ua.status_prazo), e
+            return ua.data_inicio && e.append("data_inicio", ua.data_inicio), ua.data_fim && e.append("data_fim", ua.data_fim), ua.cod_cliente && ua.cod_cliente.length > 0 && e.append("cod_cliente", Array.isArray(ua.cod_cliente) ? ua.cod_cliente.join(",") : ua.cod_cliente), ua.centro_custo && ua.centro_custo.length > 0 && e.append("centro_custo", Array.isArray(ua.centro_custo) ? ua.centro_custo.join(",") : ua.centro_custo), ua.cod_prof && e.append("cod_prof", ua.cod_prof), ua.categoria && e.append("categoria", ua.categoria), ua.cidade && e.append("cidade", ua.cidade), ua.status_prazo && e.append("status_prazo", ua.status_prazo), ua.status_retorno && e.append("status_retorno", ua.status_retorno), e
         }, carregarMapaCalor = async () => {
             try {
                 setMapaCalorLoading(true);
@@ -13850,6 +13851,23 @@ const hideLoadingScreen = () => {
                 className: "border rounded-lg p-3 bg-gray-50"
             }, React.createElement("h3", {
                 className: "font-semibold text-gray-700 mb-2 text-sm"
+            }, "🔄 Retorno"), React.createElement("select", {
+                value: ua.status_retorno || "",
+                onChange: e => ga({
+                    ...ua,
+                    status_retorno: e.target.value
+                }),
+                className: "w-full px-3 py-2 border rounded text-sm"
+            }, React.createElement("option", {
+                value: ""
+            }, "Todos"), React.createElement("option", {
+                value: "com_retorno"
+            }, "🔄 Com Retorno"), React.createElement("option", {
+                value: "sem_retorno"
+            }, "✅ Sem Retorno"))), React.createElement("div", {
+                className: "border rounded-lg p-3 bg-gray-50"
+            }, React.createElement("h3", {
+                className: "font-semibold text-gray-700 mb-2 text-sm"
             }, "🗺️ Região"), React.createElement("select", {
                 value: ua.regiao || "",
                 onChange: e => {
@@ -13992,6 +14010,7 @@ const hideLoadingScreen = () => {
                         centro_custo: [],
                         categoria: "",
                         status_prazo: "",
+                        status_retorno: "",
                         regiao: ""
                     };
                     ga(e), da(jt), Pt(At), xa(ra)
@@ -15153,7 +15172,6 @@ const hideLoadingScreen = () => {
                 React.createElement("th", {className: "px-2 py-2 text-left text-purple-900"}, "OS"),
                 React.createElement("th", {className: "px-2 py-2 text-left text-purple-900"}, "Profissional"),
                 React.createElement("th", {className: "px-2 py-2 text-center text-purple-900"}, "Tipo"),
-                React.createElement("th", {className: "px-2 py-2 text-center text-purple-900"}, "Ponto"),
                 React.createElement("th", {className: "px-2 py-2 text-left text-purple-900 max-w-xs"}, "Endereço"),
                 React.createElement("th", {className: "px-2 py-2 text-center text-purple-900"}, "Data Solic."),
                 React.createElement("th", {className: "px-2 py-2 text-center text-purple-900"}, "H. Alocação"),
@@ -15329,8 +15347,6 @@ const hideLoadingScreen = () => {
                                     className: "px-2 py-0.5 rounded text-xs font-medium " + tipoClass
                                 }, tipo)
                             ),
-                            // Ponto
-                            React.createElement("td", {className: "px-2 py-1 text-center font-medium"}, "Ponto " + pontoNum),
                             // Endereço
                             React.createElement("td", {className: "px-2 py-1 truncate max-w-[200px]", title: row.endereco}, row.endereco || "-"),
                             // Data Solicitado
