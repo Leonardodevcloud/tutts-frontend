@@ -957,10 +957,7 @@ const hideLoadingScreen = () => {
         [regiaoItensAdicionados, setRegiaoItensAdicionados] = useState([]), // [{cod_cliente, nome_cliente, centro_custo}]
         [regiaoEditando, setRegiaoEditando] = useState(null), // ID da região sendo editada
         // Estados para dropdowns da aba Config
-        [configSecaoAberta, setConfigSecaoAberta] = useState("regioes"), // "regioes", "mascaras", "regras", "recalculo"
-        [regiaoEditando, setRegiaoEditando] = useState(null), // ID da região sendo editada
-        // Estados para seções expansíveis da aba Config
-        [configSecaoAberta, setConfigSecaoAberta] = useState("regioes"), // qual seção está aberta
+        [configSecaoAberta, setConfigSecaoAberta] = useState("regioes"), // "regioes", "mascaras", "prazos"
         ja = (e, t = "success") => {
             d({
                 message: e,
