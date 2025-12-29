@@ -2404,6 +2404,7 @@ const hideLoadingScreen = () => {
             // Se tiver região selecionada, expandir para clientes e centros de custo
             let clientesParaEnviar = ua.cod_cliente || [];
             let centrosCustoParaEnviar = ua.centro_custo || [];
+            let clientesSemFiltroCC = []; // Clientes que devem mostrar TODOS os CC
             
             if (ua.regiao) {
                 const regiaoObj = aa.find(r => r.id === parseInt(ua.regiao));
@@ -2414,21 +2415,33 @@ const hideLoadingScreen = () => {
                         }
                         return item;
                     });
-                    // Extrair clientes únicos
-                    const clientesRegiao = [...new Set(itensRegiao.map(i => String(i.cod_cliente)))];
-                    clientesParaEnviar = clientesRegiao;
-                    // Extrair centros de custo específicos (ignorar null = todos)
-                    const ccRegiao = itensRegiao
-                        .filter(i => i.centro_custo !== null)
-                        .map(i => i.centro_custo);
-                    if (ccRegiao.length > 0) {
-                        centrosCustoParaEnviar = ccRegiao;
+                    
+                    // Separar clientes que têm "Todos CC" dos que têm CC específicos
+                    const clientesComTodosCC = itensRegiao
+                        .filter(i => i.centro_custo === null)
+                        .map(i => String(i.cod_cliente));
+                    
+                    const clientesComCCEspecifico = itensRegiao
+                        .filter(i => i.centro_custo !== null);
+                    
+                    // Todos os clientes únicos da região
+                    const todosClientes = [...new Set(itensRegiao.map(i => String(i.cod_cliente)))];
+                    clientesParaEnviar = todosClientes;
+                    
+                    // Se há clientes com CC específico, enviar os centros de custo
+                    // Mas também precisamos enviar os clientes sem filtro de CC
+                    if (clientesComCCEspecifico.length > 0) {
+                        const ccEspecificos = clientesComCCEspecifico.map(i => i.centro_custo);
+                        centrosCustoParaEnviar = ccEspecificos;
+                        clientesSemFiltroCC = clientesComTodosCC;
                     }
+                    // Se todos os clientes têm "Todos CC", não enviar filtro de centro_custo
                 }
             }
             
             clientesParaEnviar && clientesParaEnviar.length > 0 && e.append("cod_cliente", Array.isArray(clientesParaEnviar) ? clientesParaEnviar.join(",") : clientesParaEnviar);
             centrosCustoParaEnviar && centrosCustoParaEnviar.length > 0 && e.append("centro_custo", Array.isArray(centrosCustoParaEnviar) ? centrosCustoParaEnviar.join(",") : centrosCustoParaEnviar);
+            clientesSemFiltroCC && clientesSemFiltroCC.length > 0 && e.append("clientes_sem_filtro_cc", clientesSemFiltroCC.join(","));
             ua.cod_prof && e.append("cod_prof", ua.cod_prof), ua.categoria && e.append("categoria", ua.categoria), ua.cidade && e.append("cidade", ua.cidade), ua.status_prazo && e.append("status_prazo", ua.status_prazo), ua.status_retorno && e.append("status_retorno", ua.status_retorno);
             return e;
         }, carregarMapaCalor = async () => {
@@ -2826,6 +2839,7 @@ const hideLoadingScreen = () => {
                 // Se tiver região selecionada, expandir para clientes e centros de custo
                 let clientesParaEnviar = e.cod_cliente || [];
                 let centrosCustoParaEnviar = e.centro_custo || [];
+                let clientesSemFiltroCC = [];
                 
                 if (e.regiao) {
                     const regiaoObj = aa.find(r => r.id === parseInt(e.regiao));
@@ -2836,20 +2850,28 @@ const hideLoadingScreen = () => {
                             }
                             return item;
                         });
-                        // Extrair clientes únicos
+                        
+                        // Separar clientes que têm "Todos CC" dos que têm CC específicos
+                        const clientesComTodosCC = itensRegiao
+                            .filter(i => i.centro_custo === null)
+                            .map(i => String(i.cod_cliente));
+                        
+                        const clientesComCCEspecifico = itensRegiao
+                            .filter(i => i.centro_custo !== null);
+                        
+                        // Todos os clientes únicos
                         clientesParaEnviar = [...new Set(itensRegiao.map(i => String(i.cod_cliente)))];
-                        // Extrair centros de custo específicos (ignorar null = todos)
-                        const ccRegiao = itensRegiao
-                            .filter(i => i.centro_custo !== null)
-                            .map(i => i.centro_custo);
-                        if (ccRegiao.length > 0) {
-                            centrosCustoParaEnviar = ccRegiao;
+                        
+                        if (clientesComCCEspecifico.length > 0) {
+                            centrosCustoParaEnviar = clientesComCCEspecifico.map(i => i.centro_custo);
+                            clientesSemFiltroCC = clientesComTodosCC;
                         }
                     }
                 }
                 
                 clientesParaEnviar && clientesParaEnviar.length > 0 && clientesParaEnviar.forEach(c => t.append("cod_cliente", c));
                 centrosCustoParaEnviar && centrosCustoParaEnviar.length > 0 && centrosCustoParaEnviar.forEach(c => t.append("centro_custo", c));
+                clientesSemFiltroCC && clientesSemFiltroCC.length > 0 && t.append("clientes_sem_filtro_cc", clientesSemFiltroCC.join(","));
                 e.cod_prof && t.append("cod_prof", e.cod_prof), e.categoria && t.append("categoria", e.categoria), e.cidade && t.append("cidade", e.cidade), e.status_prazo && t.append("status_prazo", e.status_prazo), e.status_retorno && t.append("status_retorno", e.status_retorno), console.log("📊 loadBiDashboardComFiltros - params:", t.toString());
                 const a = await fetch(`${API_URL}/bi/dashboard-completo?${t}`),
                     l = await a.json();
