@@ -15414,29 +15414,29 @@ const hideLoadingScreen = () => {
                     var temMaisPontos = pontos.length > 1;
                     
                     // O tempo total da OS vem diretamente do banco no campo tempo_execucao_minutos
-                    // Este campo é calculado a partir da coluna "Execução - Espera" do Excel importado
                     var tempoTotalOS = primeiroReg.tempo_execucao_minutos;
                     
                     // Pegar o finalizado da OS (do último ponto, que é quando realmente terminou)
                     var finalizadoOS = ultimoReg.finalizado || primeiroReg.finalizado;
                     
-                    // Construir data/hora solicitado combinando data_solicitado + hora_solicitado se data_hora não existir
-                    var dataHoraSolicitado = primeiroReg.data_hora;
-                    if (!dataHoraSolicitado && primeiroReg.data_solicitado && primeiroReg.hora_solicitado) {
-                        // Combinar data_solicitado + hora_solicitado
-                        var dataPart = String(primeiroReg.data_solicitado).split('T')[0];
-                        dataHoraSolicitado = dataPart + 'T' + primeiroReg.hora_solicitado;
+                    // Os tempos já vêm calculados do backend nos campos:
+                    // tempo_alocacao_os, tempo_coleta_os, tempo_entrega_os
+                    
+                    // T. Entrega = tempo_alocacao + tempo_coleta + tempo_entrega (tempo total da OS)
+                    var tempoAlocOS = primeiroReg.tempo_alocacao_os || 0;
+                    var tempoColOS = primeiroReg.tempo_coleta_os || 0;
+                    var tempoEntOS = primeiroReg.tempo_entrega_os || 0;
+                    
+                    // T. Entrega: soma de todos os tempos (alocação + coleta + entrega)
+                    var tempoEntregaOS = null;
+                    if (tempoAlocOS > 0 || tempoColOS > 0 || tempoEntOS > 0) {
+                        tempoEntregaOS = tempoAlocOS + tempoColOS + tempoEntOS;
                     }
                     
-                    // Debug - remover depois
-                    if (idx === 0) {
-                        console.log("🔍 Debug OS " + osNum + ":");
-                        console.log("  data_hora:", primeiroReg.data_hora);
-                        console.log("  data_solicitado:", primeiroReg.data_solicitado);
-                        console.log("  hora_solicitado:", primeiroReg.hora_solicitado);
-                        console.log("  dataHoraSolicitado construído:", dataHoraSolicitado);
-                        console.log("  data_hora_alocado:", primeiroReg.data_hora_alocado);
-                        console.log("  finalizadoOS:", finalizadoOS);
+                    // T. Entrega Prof: coleta + entrega (sem o tempo de alocação, pois começa quando aloca)
+                    var tempoEntregaProfOS = null;
+                    if (tempoColOS > 0 || tempoEntOS > 0) {
+                        tempoEntregaProfOS = tempoColOS + tempoEntOS;
                     }
                     
                     var formatTempo = function(mins) {
@@ -15446,45 +15446,6 @@ const hideLoadingScreen = () => {
                         var s = Math.floor((mins % 1) * 60);
                         return String(h).padStart(2, "0") + ":" + String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
                     };
-                    
-                    // Função para calcular tempo com regras de horário comercial (igual ao backend/DAX)
-                    var calcularTempoComRegras = function(dataHoraInicio, dataHoraFim) {
-                        if (!dataHoraInicio || !dataHoraFim) return null;
-                        
-                        var inicio = new Date(dataHoraInicio);
-                        var fim = new Date(dataHoraFim);
-                        
-                        if (isNaN(inicio.getTime()) || isNaN(fim.getTime())) return null;
-                        if (fim < inicio) return null;
-                        
-                        var horaInicio = inicio.getHours();
-                        var depoisDas17 = horaInicio >= 17;
-                        var diaInicio = inicio.toISOString().split('T')[0];
-                        var diaFim = fim.toISOString().split('T')[0];
-                        var mesmaData = diaInicio === diaFim;
-                        
-                        var inicioContagem;
-                        if (depoisDas17 && !mesmaData) {
-                            // Começa às 8h do dia do fim
-                            inicioContagem = new Date(diaFim + 'T08:00:00');
-                        } else if (!mesmaData) {
-                            // Dias diferentes mas não após 17h - começa às 8h do dia do fim
-                            inicioContagem = new Date(diaFim + 'T08:00:00');
-                        } else {
-                            inicioContagem = inicio;
-                        }
-                        
-                        var difMinutos = (fim - inicioContagem) / (1000 * 60);
-                        if (difMinutos < 0 || isNaN(difMinutos)) return null;
-                        return difMinutos;
-                    };
-                    
-                    // Calcular T. Entrega e T. Entrega Prof usando o finalizado da OS completa
-                    // T. Entrega: Data/Hora Solicitado (ponto 1) → Finalizado (último ponto)
-                    var tempoEntregaOS = calcularTempoComRegras(dataHoraSolicitado, finalizadoOS);
-                    
-                    // T. Entrega Prof: Data/Hora Alocado (ponto 1) → Finalizado (último ponto)
-                    var tempoEntregaProfOS = calcularTempoComRegras(primeiroReg.data_hora_alocado, finalizadoOS);
                     
                     // Hora que a OS foi finalizada
                     var extrairHoraOS = function(dataHoraStr) {
