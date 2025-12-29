@@ -15311,6 +15311,11 @@ const hideLoadingScreen = () => {
                     };
                     
                     var renderRow = function(row, isFirst, rowIdx) {
+                        // Debug: ver dados da linha (remover depois)
+                        if (rowIdx === 0 && isFirst) {
+                            console.log("📋 Debug OS row:", JSON.stringify(row, null, 2));
+                        }
+                        
                         // Ponto vem como número do backend
                         var pontoNum = parseInt(row.ponto) || 1;
                         
