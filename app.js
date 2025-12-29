@@ -15370,6 +15370,9 @@ const hideLoadingScreen = () => {
                 React.createElement("th", {className: "px-2 py-2 text-center text-purple-900"}, "H. Solicitação"),
                 React.createElement("th", {className: "px-2 py-2 text-center text-purple-900"}, "H. Alocação"),
                 React.createElement("th", {className: "px-2 py-2 text-center text-purple-900"}, "H. Chegada"),
+                React.createElement("th", {className: "px-2 py-2 text-center text-purple-900"}, "H. Entregue"),
+                React.createElement("th", {className: "px-2 py-2 text-center text-purple-900 bg-green-200"}, "T. Entrega"),
+                React.createElement("th", {className: "px-2 py-2 text-center text-purple-900 bg-blue-200"}, "T. Entrega Prof"),
                 React.createElement("th", {className: "px-2 py-2 text-center text-purple-900 bg-purple-200"}, "T. Total OS"),
                 React.createElement("th", {className: "px-2 py-2 text-right text-purple-900"}, "KM"),
                 React.createElement("th", {className: "px-2 py-2 text-center text-purple-900"}, "Prazo"),
@@ -15475,6 +15478,46 @@ const hideLoadingScreen = () => {
                         
                         var horaAlocado = extrairHora(row.data_hora_alocado);
                         var horaSolicitado = row.hora_solicitado || extrairHora(row.data_hora);
+                        var horaEntregue = extrairHora(row.finalizado);
+                        
+                        // Função para calcular tempo com regras de horário comercial (igual ao backend/DAX)
+                        // Regra: se início após 17h e fim em outro dia, começa a contar às 8h do dia do fim
+                        var calcularTempoComRegras = function(dataHoraInicio, dataHoraFim) {
+                            if (!dataHoraInicio || !dataHoraFim) return null;
+                            
+                            var inicio = new Date(dataHoraInicio);
+                            var fim = new Date(dataHoraFim);
+                            
+                            if (isNaN(inicio.getTime()) || isNaN(fim.getTime())) return null;
+                            if (fim < inicio) return null;
+                            
+                            var horaInicio = inicio.getHours();
+                            var depoisDas17 = horaInicio >= 17;
+                            var diaInicio = inicio.toISOString().split('T')[0];
+                            var diaFim = fim.toISOString().split('T')[0];
+                            var mesmaData = diaInicio === diaFim;
+                            
+                            var inicioContagem;
+                            if (depoisDas17 && !mesmaData) {
+                                // Começa às 8h do dia do fim
+                                inicioContagem = new Date(diaFim + 'T08:00:00');
+                            } else if (!mesmaData) {
+                                // Dias diferentes mas não após 17h - começa às 8h do dia do fim
+                                inicioContagem = new Date(diaFim + 'T08:00:00');
+                            } else {
+                                inicioContagem = inicio;
+                            }
+                            
+                            var difMinutos = (fim - inicioContagem) / (1000 * 60);
+                            if (difMinutos < 0 || isNaN(difMinutos)) return null;
+                            return difMinutos;
+                        };
+                        
+                        // T. Entrega: Data/Hora Solicitado → Finalizado (com regras de horário comercial)
+                        var tempoEntrega = calcularTempoComRegras(row.data_hora, row.finalizado);
+                        
+                        // T. Entrega Prof: Data/Hora Alocado → Finalizado (com regras de horário comercial)
+                        var tempoEntregaProf = calcularTempoComRegras(row.data_hora_alocado, row.finalizado);
                         
                         // Formatar data solicitado corretamente
                         var dataSolic = "-";
@@ -15521,6 +15564,12 @@ const hideLoadingScreen = () => {
                             React.createElement("td", {className: "px-2 py-1 text-center"}, horaAlocado),
                             // Hora Chegada
                             React.createElement("td", {className: "px-2 py-1 text-center"}, row.hora_chegada || "-"),
+                            // Hora Entregue (finalizado)
+                            React.createElement("td", {className: "px-2 py-1 text-center"}, horaEntregue),
+                            // T. Entrega (Solicitado → Finalizado)
+                            React.createElement("td", {className: "px-2 py-1 text-center font-medium bg-green-50 text-green-700"}, formatTempo(tempoEntrega)),
+                            // T. Entrega Prof (Alocado → Finalizado)
+                            React.createElement("td", {className: "px-2 py-1 text-center font-medium bg-blue-50 text-blue-700"}, formatTempo(tempoEntregaProf)),
                             // T. Total OS (tempo de execução do banco - só mostra na primeira linha da OS)
                             React.createElement("td", {className: "px-2 py-1 text-center font-bold " + (isFirst ? "bg-purple-100 text-purple-800" : "bg-purple-50 text-purple-400")}, 
                                 isFirst ? formatTempo(tempoTotalOS) : ""
