@@ -15420,6 +15420,25 @@ const hideLoadingScreen = () => {
                     // Pegar o finalizado da OS (do último ponto, que é quando realmente terminou)
                     var finalizadoOS = ultimoReg.finalizado || primeiroReg.finalizado;
                     
+                    // Construir data/hora solicitado combinando data_solicitado + hora_solicitado se data_hora não existir
+                    var dataHoraSolicitado = primeiroReg.data_hora;
+                    if (!dataHoraSolicitado && primeiroReg.data_solicitado && primeiroReg.hora_solicitado) {
+                        // Combinar data_solicitado + hora_solicitado
+                        var dataPart = String(primeiroReg.data_solicitado).split('T')[0];
+                        dataHoraSolicitado = dataPart + 'T' + primeiroReg.hora_solicitado;
+                    }
+                    
+                    // Debug - remover depois
+                    if (idx === 0) {
+                        console.log("🔍 Debug OS " + osNum + ":");
+                        console.log("  data_hora:", primeiroReg.data_hora);
+                        console.log("  data_solicitado:", primeiroReg.data_solicitado);
+                        console.log("  hora_solicitado:", primeiroReg.hora_solicitado);
+                        console.log("  dataHoraSolicitado construído:", dataHoraSolicitado);
+                        console.log("  data_hora_alocado:", primeiroReg.data_hora_alocado);
+                        console.log("  finalizadoOS:", finalizadoOS);
+                    }
+                    
                     var formatTempo = function(mins) {
                         if (mins === null || mins === undefined || isNaN(mins) || mins < 0) return "-";
                         var h = Math.floor(mins / 60);
@@ -15462,7 +15481,7 @@ const hideLoadingScreen = () => {
                     
                     // Calcular T. Entrega e T. Entrega Prof usando o finalizado da OS completa
                     // T. Entrega: Data/Hora Solicitado (ponto 1) → Finalizado (último ponto)
-                    var tempoEntregaOS = calcularTempoComRegras(primeiroReg.data_hora, finalizadoOS);
+                    var tempoEntregaOS = calcularTempoComRegras(dataHoraSolicitado, finalizadoOS);
                     
                     // T. Entrega Prof: Data/Hora Alocado (ponto 1) → Finalizado (último ponto)
                     var tempoEntregaProfOS = calcularTempoComRegras(primeiroReg.data_hora_alocado, finalizadoOS);
