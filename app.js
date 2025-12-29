@@ -957,7 +957,7 @@ const hideLoadingScreen = () => {
         [regiaoItensAdicionados, setRegiaoItensAdicionados] = useState([]), // [{cod_cliente, nome_cliente, centro_custo}]
         [regiaoEditando, setRegiaoEditando] = useState(null), // ID da região sendo editada
         // Estados para dropdowns da aba Config
-        [configSecaoAberta, setConfigSecaoAberta] = useState("regioes"), // "regioes", "mascaras", "prazos"
+        [configSecaoAberta, setConfigSecaoAberta] = useState(""), // "" = todas fechadas, "regioes", "mascaras", "prazos"
         ja = (e, t = "success") => {
             d({
                 message: e,
@@ -14554,97 +14554,162 @@ const hideLoadingScreen = () => {
                 className: "px-3 py-2 text-right"
             }, ft?.ultima_entrega ? new Date(ft.ultima_entrega).toLocaleDateString("pt-BR") : "-")))))), React.createElement("div", {
                 className: "space-y-6 mt-6"
-            }, React.createElement("div", {
-                className: "bg-white rounded-lg shadow p-6"
-            }, React.createElement("h3", {
-                className: "font-bold text-purple-900 mb-6 text-lg"
-            }, "📊 Distribuição de Entregas por Faixas de Tempo"), React.createElement("div", {
-                className: "flex items-end gap-4",
-                style: {
-                    height: "250px"
-                }
-            }, (() => {
-                const e = Qt.porTempo || [],
-                    t = Math.max(...e.map(e => e.total || 0), 1),
-                    a = e.reduce((e, t) => e + (t.total || 0), 0) || 1;
-                return e.map((e, l) => {
-                    const r = e.total || 0,
-                        o = r / a * 100,
-                        c = t > 0 ? r / t * 200 : 0;
-                    return React.createElement("div", {
-                        key: l,
-                        className: "flex-1 flex flex-col items-center justify-end"
-                    }, React.createElement("div", {
-                        className: "text-sm text-orange-500 font-semibold mb-1"
-                    }, o.toFixed(1), "%"), React.createElement("div", {
-                        className: "text-lg font-bold text-purple-900 mb-2"
-                    }, r.toLocaleString("pt-BR")), React.createElement("div", {
-                        className: "w-full bg-purple-600 rounded-t transition-all",
-                        style: {
-                            height: `${Math.max(c,r>0?20:5)}px`
-                        }
-                    }), React.createElement("div", {
-                        className: "text-xs text-gray-600 mt-3 text-center font-medium"
-                    }, e.faixa))
-                })
-            })())), React.createElement("div", {
-                className: "bg-white rounded-lg shadow p-6"
-            }, React.createElement("h3", {
-                className: "font-bold text-purple-900 mb-6 text-lg"
-            }, "📊 Entregas por Faixas de Km"), React.createElement("div", {
-                className: "flex gap-6"
-            }, React.createElement("div", {
-                className: "flex-1"
-            }, React.createElement("div", {
-                className: "flex items-end gap-2",
-                style: {
-                    height: "250px"
-                }
-            }, (() => {
-                const e = (Qt.porKm || []).filter(e => !Gt?.includes(e.faixa)),
-                    t = Math.max(...e.map(e => e.total || 0), 1),
-                    a = e.reduce((e, t) => e + (t.total || 0), 0) || 1;
-                return e.map((e, l) => {
-                    const r = e.total || 0,
-                        o = r / a * 100,
-                        c = t > 0 ? r / t * 200 : 0;
-                    return React.createElement("div", {
-                        key: l,
-                        className: "flex-1 min-w-[35px] flex flex-col items-center justify-end"
-                    }, React.createElement("div", {
-                        className: "text-xs text-orange-500 font-semibold mb-1"
-                    }, o.toFixed(1), "%"), React.createElement("div", {
-                        className: "text-sm font-bold text-purple-900 mb-2"
-                    }, r.toLocaleString("pt-BR")), React.createElement("div", {
-                        className: "w-full bg-purple-600 rounded-t transition-all max-w-[30px]",
-                        style: {
-                            height: `${Math.max(c,r>0?15:3)}px`
-                        }
-                    }), React.createElement("div", {
-                        className: "text-[10px] text-gray-600 mt-2 text-center font-medium"
-                    }, e.faixa))
-                })
-            })())), React.createElement("div", {
-                className: "w-40 flex-shrink-0 border-l pl-4"
-            }, React.createElement("div", {
-                className: "text-sm font-bold text-gray-700 mb-3"
-            }, "Faixa KM"), React.createElement("div", {
-                className: "space-y-1 max-h-64 overflow-y-auto"
-            }, (Qt.porKm || []).map((e, t) => React.createElement("label", {
-                key: t,
-                className: "flex items-center gap-2 cursor-pointer hover:bg-purple-50 px-2 py-1 rounded transition-colors"
-            }, React.createElement("input", {
-                type: "checkbox",
-                checked: !Gt?.includes(e.faixa),
-                onChange: t => {
-                    t.target.checked ? Wt(t => (t || []).filter(t => t !== e.faixa)) : Wt(t => [...t || [], e.faixa])
-                },
-                className: "w-4 h-4 accent-purple-600 rounded"
-            }), React.createElement("span", {
-                className: "text-sm text-gray-700"
-            }, e.faixa, " KM"), e.total > 0 && React.createElement("span", {
-                className: "text-orange-500"
-            }, "🔥"))))))))), "dashboard" === Et && React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-6 mt-6 max-w-4xl mx-auto", style: {overflow: "hidden"}}, 
+            }, 
+            // ========== GRÁFICO 1: DISTRIBUIÇÃO POR TEMPO (Design Moderno) ==========
+            React.createElement("div", {
+                className: "bg-white rounded-xl shadow-lg p-6 border border-gray-100"
+            }, 
+                React.createElement("div", {className: "flex items-center justify-between mb-6"},
+                    React.createElement("h3", {className: "font-bold text-gray-800 text-lg flex items-center gap-2"}, 
+                        React.createElement("span", {className: "w-8 h-8 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg flex items-center justify-center text-white text-sm"}, "⏱"),
+                        "Distribuição por Tempo de Entrega"
+                    ),
+                    React.createElement("div", {className: "text-sm text-gray-500"}, 
+                        "Total: ", React.createElement("span", {className: "font-bold text-purple-600"}, 
+                            ((Qt.porTempo || []).reduce((acc, e) => acc + (e.total || 0), 0)).toLocaleString("pt-BR")
+                        ), " entregas"
+                    )
+                ),
+                React.createElement("div", {
+                    className: "flex items-end gap-3 pt-4",
+                    style: {height: "280px"}
+                }, (() => {
+                    const dados = Qt.porTempo || [];
+                    const maxVal = Math.max(...dados.map(e => e.total || 0), 1);
+                    const total = dados.reduce((acc, e) => acc + (e.total || 0), 0) || 1;
+                    const cores = [
+                        "from-emerald-400 to-emerald-600",
+                        "from-blue-400 to-blue-600", 
+                        "from-purple-400 to-purple-600",
+                        "from-amber-400 to-amber-600",
+                        "from-orange-400 to-orange-600",
+                        "from-red-400 to-red-600"
+                    ];
+                    return dados.map((item, idx) => {
+                        const val = item.total || 0;
+                        const pct = (val / total * 100).toFixed(1);
+                        const altura = maxVal > 0 ? (val / maxVal * 200) : 0;
+                        return React.createElement("div", {
+                            key: idx,
+                            className: "flex-1 flex flex-col items-center justify-end group cursor-pointer"
+                        },
+                            React.createElement("div", {
+                                className: "opacity-0 group-hover:opacity-100 transition-all duration-200 bg-gray-900 text-white text-xs px-3 py-2 rounded-lg mb-2 shadow-lg"
+                            }, val.toLocaleString("pt-BR"), " entregas"),
+                            React.createElement("div", {className: "text-xs font-bold text-gray-500 mb-1"}, pct + "%"),
+                            React.createElement("div", {className: "text-lg font-bold text-gray-800 mb-2"}, val.toLocaleString("pt-BR")),
+                            React.createElement("div", {
+                                className: "w-full bg-gradient-to-t " + cores[idx % cores.length] + " rounded-t-lg transition-all duration-500 group-hover:scale-105 shadow-md",
+                                style: {height: Math.max(altura, val > 0 ? 25 : 8) + "px", minWidth: "50px"}
+                            }),
+                            React.createElement("div", {
+                                className: "mt-3 px-2 py-1 bg-gray-100 rounded-full text-xs font-semibold text-gray-700 text-center whitespace-nowrap"
+                            }, item.faixa)
+                        );
+                    });
+                })())
+            ),
+            
+            // ========== GRÁFICO 2: DISTRIBUIÇÃO POR KM (Design Moderno) ==========
+            React.createElement("div", {
+                className: "bg-white rounded-xl shadow-lg p-6 border border-gray-100"
+            },
+                React.createElement("div", {className: "flex items-center justify-between mb-6"},
+                    React.createElement("h3", {className: "font-bold text-gray-800 text-lg flex items-center gap-2"}, 
+                        React.createElement("span", {className: "w-8 h-8 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg flex items-center justify-center text-white text-sm"}, "📍"),
+                        "Distribuição por Distância (Km)"
+                    ),
+                    React.createElement("div", {className: "text-sm text-gray-500"}, 
+                        "Faixas visíveis: ", React.createElement("span", {className: "font-bold text-orange-600"}, 
+                            ((Qt.porKm || []).filter(e => !Gt?.includes(e.faixa)).length)
+                        )
+                    )
+                ),
+                React.createElement("div", {className: "flex gap-6"},
+                    // Área do gráfico
+                    React.createElement("div", {className: "flex-1"},
+                        React.createElement("div", {
+                            className: "flex items-end gap-1 pt-4",
+                            style: {height: "280px"}
+                        }, (() => {
+                            const dados = (Qt.porKm || []).filter(e => !Gt?.includes(e.faixa));
+                            const maxVal = Math.max(...dados.map(e => e.total || 0), 1);
+                            const total = dados.reduce((acc, e) => acc + (e.total || 0), 0) || 1;
+                            return dados.map((item, idx) => {
+                                const val = item.total || 0;
+                                const pct = (val / total * 100).toFixed(1);
+                                const altura = maxVal > 0 ? (val / maxVal * 200) : 0;
+                                // Gradiente baseado na posição (mais verde = perto, mais vermelho = longe)
+                                const hue = Math.max(0, 120 - (idx * 10)); // 120=verde, 0=vermelho
+                                return React.createElement("div", {
+                                    key: idx,
+                                    className: "flex-1 min-w-[28px] flex flex-col items-center justify-end group cursor-pointer"
+                                },
+                                    React.createElement("div", {
+                                        className: "opacity-0 group-hover:opacity-100 transition-all duration-200 bg-gray-900 text-white text-xs px-2 py-1.5 rounded-lg mb-1 shadow-lg whitespace-nowrap z-10"
+                                    }, val.toLocaleString("pt-BR"), " (", pct, "%)"),
+                                    React.createElement("div", {className: "text-[10px] font-bold text-gray-400 mb-0.5"}, pct + "%"),
+                                    React.createElement("div", {className: "text-xs font-bold text-gray-700 mb-1"}, val.toLocaleString("pt-BR")),
+                                    React.createElement("div", {
+                                        className: "w-full rounded-t-md transition-all duration-300 group-hover:scale-110 shadow-sm",
+                                        style: {
+                                            height: Math.max(altura, val > 0 ? 15 : 4) + "px",
+                                            background: `linear-gradient(to top, hsl(${hue}, 70%, 45%), hsl(${hue}, 70%, 60%))`,
+                                            maxWidth: "24px",
+                                            margin: "0 auto"
+                                        }
+                                    }),
+                                    React.createElement("div", {
+                                        className: "mt-2 text-[9px] font-medium text-gray-600 text-center transform -rotate-45 origin-top-left w-8"
+                                    }, item.faixa)
+                                );
+                            });
+                        })())
+                    ),
+                    // Legenda/Filtros
+                    React.createElement("div", {className: "w-44 flex-shrink-0 border-l border-gray-200 pl-4"},
+                        React.createElement("div", {className: "text-sm font-bold text-gray-700 mb-3 flex items-center gap-2"},
+                            "🎛️ Filtrar Faixas"
+                        ),
+                        React.createElement("div", {className: "space-y-1 max-h-56 overflow-y-auto pr-2"},
+                            (Qt.porKm || []).map((item, idx) => {
+                                const isVisible = !Gt?.includes(item.faixa);
+                                return React.createElement("label", {
+                                    key: idx,
+                                    className: "flex items-center gap-2 cursor-pointer px-2 py-1.5 rounded-lg transition-all " + (isVisible ? "bg-purple-50 hover:bg-purple-100" : "bg-gray-50 hover:bg-gray-100 opacity-60")
+                                },
+                                    React.createElement("input", {
+                                        type: "checkbox",
+                                        checked: isVisible,
+                                        onChange: e => {
+                                            e.target.checked 
+                                                ? Wt(prev => (prev || []).filter(f => f !== item.faixa))
+                                                : Wt(prev => [...(prev || []), item.faixa]);
+                                        },
+                                        className: "w-4 h-4 accent-purple-600 rounded"
+                                    }),
+                                    React.createElement("span", {className: "text-xs font-medium " + (isVisible ? "text-gray-800" : "text-gray-500")}, 
+                                        item.faixa, " km"
+                                    ),
+                                    item.total > 0 && React.createElement("span", {
+                                        className: "ml-auto text-[10px] px-1.5 py-0.5 rounded-full " + (isVisible ? "bg-orange-100 text-orange-600" : "bg-gray-200 text-gray-500")
+                                    }, item.total)
+                                );
+                            })
+                        ),
+                        React.createElement("div", {className: "mt-3 pt-3 border-t border-gray-200 flex gap-2"},
+                            React.createElement("button", {
+                                onClick: () => Wt([]),
+                                className: "flex-1 text-xs px-2 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                            }, "Mostrar Todos"),
+                            React.createElement("button", {
+                                onClick: () => Wt((Qt.porKm || []).map(e => e.faixa)),
+                                className: "flex-1 text-xs px-2 py-1.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                            }, "Ocultar")
+                        )
+                    )
+                )
+            )), "dashboard" === Et && React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-6 mt-6 max-w-4xl mx-auto", style: {overflow: "hidden"}}, 
                 React.createElement("div", {className: "flex items-center justify-between mb-4"}, 
                     React.createElement("h3", {className: "text-lg font-bold text-gray-800"}, "🗺️ Acompanhamento Regional"),
                     React.createElement("button", {onClick: function() { setMapaCalorVisivel(!mapaCalorVisivel); if (!mapaCalorVisivel && window.destroyMapaCalor) window.destroyMapaCalor(); }, className: "px-3 py-1 text-sm rounded-lg " + (mapaCalorVisivel ? "bg-purple-600 text-white" : "bg-gray-200 text-gray-600")}, mapaCalorVisivel ? "👁️ Ocultar" : "👁️ Mostrar")
