@@ -15411,40 +15411,95 @@ const hideLoadingScreen = () => {
                     var isExpanded = window.osExpandidas[osNum] || false;
                     var temMaisPontos = pontos.length > 1;
                     
-                    // Função para calcular tempos baseado nas regras
+                    // Função para calcular tempos baseado nas regras (IGUAL AO BACKEND)
                     var calcTempoAlocacao = function(row) {
                         // Só para ponto = 1 (coleta)
                         var pontoNum = parseInt(row.ponto) || 1;
                         if (pontoNum !== 1) return null;
-                        if (!row.data_hora_alocado || !row.data_hora) return null;
-                        var inicio = new Date(row.data_hora);
-                        var fim = new Date(row.data_hora_alocado);
-                        if (isNaN(inicio.getTime()) || isNaN(fim.getTime())) return null;
-                        if (fim < inicio) return null;
-                        // Regra: se solicitado após 17h e alocado no dia seguinte, início = 08:00 do dia alocado
-                        if (inicio.getHours() >= 17 && fim.toDateString() !== inicio.toDateString()) {
-                            inicio = new Date(fim.getFullYear(), fim.getMonth(), fim.getDate(), 8, 0, 0);
+                        if (!row.data_hora || !row.data_hora_alocado) return null;
+                        
+                        var solicitado = new Date(row.data_hora);
+                        var alocado = new Date(row.data_hora_alocado);
+                        
+                        if (isNaN(solicitado.getTime()) || isNaN(alocado.getTime())) return null;
+                        if (alocado < solicitado) return null;
+                        
+                        var horaSolicitado = solicitado.getHours();
+                        var depoisDas17 = horaSolicitado >= 17;
+                        var diaSolicitado = solicitado.toISOString().split('T')[0];
+                        var diaAlocado = alocado.toISOString().split('T')[0];
+                        var mesmaData = diaSolicitado === diaAlocado;
+                        
+                        var inicioContagem;
+                        if (depoisDas17 && !mesmaData) {
+                            // Começa às 8h do dia da alocação
+                            inicioContagem = new Date(alocado);
+                            inicioContagem.setHours(8, 0, 0, 0);
+                        } else {
+                            inicioContagem = solicitado;
                         }
-                        return (fim - inicio) / 60000;
+                        
+                        var difMinutos = (alocado - inicioContagem) / (1000 * 60);
+                        if (difMinutos < 0 || isNaN(difMinutos)) return null;
+                        return difMinutos;
                     };
                     
                     var calcTempoColeta = function(row) {
                         // Só para ponto = 1 (coleta)
                         var pontoNum = parseInt(row.ponto) || 1;
                         if (pontoNum !== 1) return null;
-                        if (!row.data_hora_alocado || !row.data_chegada || !row.hora_chegada) return null;
-                        var inicio = new Date(row.data_hora_alocado);
-                        if (isNaN(inicio.getTime())) return null;
-                        // Montar data/hora chegada
-                        var dataChegada = row.data_chegada.split("T")[0];
-                        var fim = new Date(dataChegada + "T" + row.hora_chegada);
-                        if (isNaN(fim.getTime())) return null;
-                        if (fim < inicio) return null;
-                        // Regra: se alocado após 17h e chegada no dia seguinte, início = 08:00 do dia chegada
-                        if (inicio.getHours() >= 17 && fim.toDateString() !== inicio.toDateString()) {
-                            inicio = new Date(fim.getFullYear(), fim.getMonth(), fim.getDate(), 8, 0, 0);
+                        if (!row.data_hora_alocado) return null;
+                        
+                        var alocado = new Date(row.data_hora_alocado);
+                        if (isNaN(alocado.getTime())) return null;
+                        
+                        var saida = null;
+                        var dataParaComparacao = null;
+                        
+                        // Tentar usar data_chegada + hora_chegada
+                        if (row.data_chegada && row.hora_chegada) {
+                            try {
+                                var dataSaidaStr = typeof row.data_chegada === 'object' && row.data_chegada instanceof Date 
+                                    ? row.data_chegada.toISOString().split('T')[0]
+                                    : String(row.data_chegada).split('T')[0];
+                                
+                                var partes = String(row.hora_chegada || '0:0:0').split(':').map(Number);
+                                var dataSaida = new Date(dataSaidaStr + 'T00:00:00');
+                                dataSaida.setHours(partes[0] || 0, partes[1] || 0, partes[2] || 0, 0);
+                                
+                                if (!isNaN(dataSaida.getTime()) && dataSaida >= alocado) {
+                                    saida = dataSaida;
+                                    dataParaComparacao = dataSaidaStr;
+                                }
+                            } catch (e) {}
                         }
-                        return (fim - inicio) / 60000;
+                        
+                        // Fallback para finalizado
+                        if (!saida && row.finalizado) {
+                            var fin = new Date(row.finalizado);
+                            if (!isNaN(fin.getTime()) && fin >= alocado) {
+                                saida = fin;
+                                dataParaComparacao = fin.toISOString().split('T')[0];
+                            }
+                        }
+                        
+                        if (!saida || !dataParaComparacao) return null;
+                        
+                        var horaAlocado = alocado.getHours();
+                        var depoisDas17 = horaAlocado >= 17;
+                        var diaAlocado = alocado.toISOString().split('T')[0];
+                        
+                        var inicioContagem;
+                        if (depoisDas17 && diaAlocado !== dataParaComparacao) {
+                            // Começa às 8h do dia da saída
+                            inicioContagem = new Date(dataParaComparacao + 'T08:00:00');
+                        } else {
+                            inicioContagem = alocado;
+                        }
+                        
+                        var difMinutos = (saida - inicioContagem) / (1000 * 60);
+                        if (difMinutos < 0 || isNaN(difMinutos)) return null;
+                        return difMinutos;
                     };
                     
                     var calcTempoEntrega = function(row) {
@@ -15452,21 +15507,55 @@ const hideLoadingScreen = () => {
                         var pontoNum = parseInt(row.ponto) || 1;
                         if (pontoNum < 2) return null;
                         if (!row.data_hora) return null;
-                        var inicio = new Date(row.data_hora);
-                        if (isNaN(inicio.getTime())) return null;
-                        var fim = null;
+                        
+                        var solicitado = new Date(row.data_hora);
+                        if (isNaN(solicitado.getTime())) return null;
+                        
+                        var chegada = null;
+                        var dataParaComparacao = null;
+                        
+                        // Tentar usar data_chegada + hora_chegada
                         if (row.data_chegada && row.hora_chegada) {
-                            var dataChegada = row.data_chegada.split("T")[0];
-                            fim = new Date(dataChegada + "T" + row.hora_chegada);
-                        } else if (row.finalizado) {
-                            fim = new Date(row.finalizado);
+                            try {
+                                var dataChegadaStr = typeof row.data_chegada === 'object' && row.data_chegada instanceof Date 
+                                    ? row.data_chegada.toISOString().split('T')[0]
+                                    : String(row.data_chegada).split('T')[0];
+                                
+                                var partes = String(row.hora_chegada || '0:0:0').split(':').map(Number);
+                                var dataChegada = new Date(dataChegadaStr + 'T00:00:00');
+                                dataChegada.setHours(partes[0] || 0, partes[1] || 0, partes[2] || 0, 0);
+                                
+                                if (!isNaN(dataChegada.getTime()) && dataChegada >= solicitado) {
+                                    chegada = dataChegada;
+                                    dataParaComparacao = dataChegadaStr;
+                                }
+                            } catch (e) {}
                         }
-                        if (!fim || isNaN(fim.getTime()) || fim < inicio) return null;
-                        // Regra: se não é mesma data, início = 08:00 do dia da chegada
-                        if (fim.toDateString() !== inicio.toDateString()) {
-                            inicio = new Date(fim.getFullYear(), fim.getMonth(), fim.getDate(), 8, 0, 0);
+                        
+                        // Fallback para finalizado
+                        if (!chegada && row.finalizado) {
+                            var fin = new Date(row.finalizado);
+                            if (!isNaN(fin.getTime()) && fin >= solicitado) {
+                                chegada = fin;
+                                dataParaComparacao = fin.toISOString().split('T')[0];
+                            }
                         }
-                        return (fim - inicio) / 60000;
+                        
+                        if (!chegada || !dataParaComparacao) return null;
+                        
+                        var diaSolicitado = solicitado.toISOString().split('T')[0];
+                        
+                        var inicioContagem;
+                        if (diaSolicitado !== dataParaComparacao) {
+                            // Se não é mesmo dia, começa às 8h do dia de chegada
+                            inicioContagem = new Date(dataParaComparacao + 'T08:00:00');
+                        } else {
+                            inicioContagem = solicitado;
+                        }
+                        
+                        var difMinutos = (chegada - inicioContagem) / (1000 * 60);
+                        if (difMinutos < 0 || isNaN(difMinutos)) return null;
+                        return difMinutos;
                     };
                     
                     var formatTempo = function(mins) {
