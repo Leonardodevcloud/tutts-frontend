@@ -14399,6 +14399,64 @@ const hideLoadingScreen = () => {
             }, (nl(ft?.fora_prazo) / (nl(ft?.total_entregas) || 1) * 100).toFixed(1), "%"))))),
             
             React.createElement("div", {
+                className: "bg-white rounded-lg p-3 shadow border-l-4 border-blue-500"
+            }, React.createElement("div", {
+                className: "flex items-center justify-between"
+            }, React.createElement("div", {
+                className: "flex items-center gap-2"
+            }, React.createElement("span", {
+                className: "text-xl"
+            }, "✅"), React.createElement("div", null, React.createElement("p", {
+                className: "text-[10px] text-blue-500"
+            }, "Prazo Prof"), React.createElement("p", {
+                className: "text-xl font-bold text-gray-800"
+            }, nl(ft?.dentro_prazo_prof).toLocaleString("pt-BR")))), React.createElement("div", {
+                className: "flex items-center gap-2"
+            }, React.createElement("div", {
+                className: "w-24 h-2 bg-gray-100 rounded-full overflow-hidden"
+            }, React.createElement("div", {
+                className: "h-full bg-gradient-to-r from-blue-400 to-cyan-500 rounded-full",
+                style: { width: (nl(ft?.dentro_prazo_prof) / (nl(ft?.total_os) || 1) * 100) + "%" }
+            })), React.createElement("span", {
+                className: "text-lg font-bold text-blue-600 min-w-[50px] text-right"
+            }, (nl(ft?.dentro_prazo_prof) / (nl(ft?.total_os) || 1) * 100).toFixed(1), "%")))),
+            
+            React.createElement("div", {
+                className: "bg-white rounded-lg p-3 shadow border-l-4 border-orange-500"
+            }, React.createElement("div", {
+                className: "flex items-center justify-between"
+            }, React.createElement("div", {
+                className: "flex items-center gap-2"
+            }, React.createElement("span", {
+                className: "text-xl"
+            }, "❌"), React.createElement("div", null, React.createElement("p", {
+                className: "text-[10px] text-orange-500"
+            }, "Fora Prazo Prof"), React.createElement("p", {
+                className: "text-xl font-bold text-gray-800"
+            }, nl(ft?.fora_prazo_prof).toLocaleString("pt-BR")))), React.createElement("div", {
+                className: "flex items-center gap-2"
+            }, React.createElement("div", {
+                className: "w-24 h-2 bg-gray-100 rounded-full overflow-hidden"
+            }, React.createElement("div", {
+                className: "h-full bg-gradient-to-r from-orange-400 to-amber-500 rounded-full",
+                style: { width: (nl(ft?.fora_prazo_prof) / (nl(ft?.total_os) || 1) * 100) + "%" }
+            })), React.createElement("span", {
+                className: "text-lg font-bold text-orange-600 min-w-[50px] text-right"
+            }, (nl(ft?.fora_prazo_prof) / (nl(ft?.total_os) || 1) * 100).toFixed(1), "%")))),
+            
+            React.createElement("div", {
+                className: "bg-white rounded-lg p-3 shadow border-l-4 border-indigo-500"
+            }, React.createElement("div", {
+                className: "flex items-center gap-2"
+            }, React.createElement("span", {
+                className: "text-xl"
+            }, "⏱️"), React.createElement("div", null, React.createElement("p", {
+                className: "text-[10px] text-gray-500"
+            }, "T. Médio Entrega Prof"), React.createElement("p", {
+                className: "text-xl font-bold text-indigo-600"
+            }, cl(ft?.tempo_medio_entrega_prof))))),
+            
+            React.createElement("div", {
                 className: "bg-white rounded-lg shadow overflow-hidden"
             }, React.createElement("div", {
                 className: "bg-purple-100 px-4 py-3"
