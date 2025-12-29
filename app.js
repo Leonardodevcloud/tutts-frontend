@@ -15063,36 +15063,12 @@ const hideLoadingScreen = () => {
                 React.createElement("td", {className: "px-3 py-2"}), 
                 React.createElement("td", {className: "px-3 py-2"}, "Total (", Vt.length, " prof.)"), 
                 React.createElement("td", {className: "px-3 py-2 text-right"}, Vt.reduce((e, t) => e + nl(t.total_entregas), 0).toLocaleString("pt-BR")), 
-                // Média T.Alocação
-                React.createElement("td", {className: "px-3 py-2 text-right text-pink-700"}, (function() {
-                    var soma = 0, count = 0;
-                    Vt.forEach(function(p) { if (p.tempo_alocado) { soma += parseFloat(p.tempo_alocado); count++; } });
-                    if (count === 0) return "-";
-                    var media = soma / count;
-                    var h = Math.floor(media / 60);
-                    var m = Math.floor(media % 60);
-                    return String(h).padStart(2, "0") + ":" + String(m).padStart(2, "0") + ":00";
-                })()), 
-                // Média T.Coleta
-                React.createElement("td", {className: "px-3 py-2 text-right text-fuchsia-700"}, (function() {
-                    var soma = 0, count = 0;
-                    Vt.forEach(function(p) { if (p.tempo_coleta) { soma += parseFloat(p.tempo_coleta); count++; } });
-                    if (count === 0) return "-";
-                    var media = soma / count;
-                    var h = Math.floor(media / 60);
-                    var m = Math.floor(media % 60);
-                    return String(h).padStart(2, "0") + ":" + String(m).padStart(2, "0") + ":00";
-                })()), 
-                // Média T.Entrega
-                React.createElement("td", {className: "px-3 py-2 text-right text-rose-700"}, (function() {
-                    var soma = 0, count = 0;
-                    Vt.forEach(function(p) { if (p.tempo_medio) { soma += parseFloat(p.tempo_medio); count++; } });
-                    if (count === 0) return "-";
-                    var media = soma / count;
-                    var h = Math.floor(media / 60);
-                    var m = Math.floor(media % 60);
-                    return String(h).padStart(2, "0") + ":" + String(m).padStart(2, "0") + ":00";
-                })()), 
+                // Média T.Alocação - usar métricas globais (ft) que são calculadas corretamente pelo SQL
+                React.createElement("td", {className: "px-3 py-2 text-right text-pink-700"}, cl(ft?.tempo_medio_alocacao)), 
+                // Média T.Coleta - usar métricas globais (ft)
+                React.createElement("td", {className: "px-3 py-2 text-right text-fuchsia-700"}, cl(ft?.tempo_medio_coleta)), 
+                // Média T.Entrega - usar métricas globais (ft)
+                React.createElement("td", {className: "px-3 py-2 text-right text-rose-700"}, cl(ft?.tempo_medio)), 
                 React.createElement("td", {className: "px-3 py-2 text-right text-green-700"}, Vt.reduce((e, t) => e + nl(t.dentro_prazo), 0).toLocaleString("pt-BR")), 
                 // % No Prazo Total
                 React.createElement("td", {className: "px-3 py-2 text-right"}, (function() {
