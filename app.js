@@ -15423,16 +15423,44 @@ const hideLoadingScreen = () => {
                     return parseInt(b) - parseInt(a);
                 });
                 
+                // Função para calcular tempo com regras de horário comercial (para filtro)
+                var calcTempoFiltro = function(dataHoraInicio, dataHoraFim) {
+                    if (!dataHoraInicio || !dataHoraFim) return null;
+                    
+                    var inicio = new Date(dataHoraInicio);
+                    var fim = new Date(dataHoraFim);
+                    
+                    if (isNaN(inicio.getTime()) || isNaN(fim.getTime())) return null;
+                    if (fim < inicio) return null;
+                    
+                    var diaInicio = inicio.toISOString().split('T')[0];
+                    var diaFim = fim.toISOString().split('T')[0];
+                    var mesmaData = diaInicio === diaFim;
+                    
+                    var inicioContagem;
+                    if (!mesmaData) {
+                        inicioContagem = new Date(diaFim + 'T11:00:00.000Z'); // 8h Brasília
+                    } else {
+                        inicioContagem = inicio;
+                    }
+                    
+                    var difMinutos = (fim - inicioContagem) / (1000 * 60);
+                    if (difMinutos < 0 || isNaN(difMinutos)) return null;
+                    return difMinutos;
+                };
+                
                 // Filtrar pelo status_prazo_prof se estiver selecionado
                 if (ua.status_prazo_prof) {
                     osArray = osArray.filter(function(osNum) {
                         var pontos = osAgrupadas[osNum];
                         var primeiroReg = pontos[0];
+                        var ultimoReg = pontos[pontos.length - 1];
                         
-                        // Calcular T. Entrega Prof (coleta + entrega)
-                        var tempoColOS = primeiroReg.tempo_coleta_os || 0;
-                        var tempoEntOS = primeiroReg.tempo_entrega_os || 0;
-                        var tempoEntregaProfOS = tempoColOS + tempoEntOS;
+                        // Calcular T. Entrega Prof (Alocado → Finalizado)
+                        var finalizadoOS = ultimoReg.finalizado || primeiroReg.finalizado;
+                        var tempoEntregaProfOS = calcTempoFiltro(primeiroReg.data_hora_alocado, finalizadoOS);
+                        
+                        if (tempoEntregaProfOS === null) return true; // Sem dados, não filtra
                         
                         // Prazo em minutos
                         var prazoMinutos = primeiroReg.prazo_minutos || 60;
@@ -15462,30 +15490,64 @@ const hideLoadingScreen = () => {
                     var isExpanded = window.osExpandidas[osNum] || false;
                     var temMaisPontos = pontos.length > 1;
                     
-                    // O tempo total da OS vem diretamente do banco no campo tempo_execucao_minutos
-                    var tempoTotalOS = primeiroReg.tempo_execucao_minutos;
-                    
                     // Pegar o finalizado da OS (do último ponto, que é quando realmente terminou)
                     var finalizadoOS = ultimoReg.finalizado || primeiroReg.finalizado;
                     
-                    // Os tempos já vêm calculados do backend nos campos:
-                    // tempo_alocacao_os, tempo_coleta_os, tempo_entrega_os
+                    // Função para calcular tempo com regras de horário comercial
+                    // Regra: se início após 17h e fim em outro dia, começa às 8h do dia do fim
+                    var calcularTempoComRegras = function(dataHoraInicio, dataHoraFim) {
+                        if (!dataHoraInicio || !dataHoraFim) return null;
+                        
+                        var inicio = new Date(dataHoraInicio);
+                        var fim = new Date(dataHoraFim);
+                        
+                        if (isNaN(inicio.getTime()) || isNaN(fim.getTime())) return null;
+                        if (fim < inicio) return null;
+                        
+                        // Verificar se são dias diferentes
+                        var diaInicio = inicio.toISOString().split('T')[0];
+                        var diaFim = fim.toISOString().split('T')[0];
+                        var mesmaData = diaInicio === diaFim;
+                        
+                        // Hora do início (em UTC, ajustar para Brasília -3h)
+                        var horaInicioUTC = inicio.getUTCHours();
+                        var horaInicioBrasilia = (horaInicioUTC - 3 + 24) % 24; // Ajuste para Brasília
+                        var depoisDas17 = horaInicioBrasilia >= 17;
+                        
+                        var inicioContagem;
+                        if (!mesmaData) {
+                            // Dias diferentes - começa às 8h do dia do fim (em UTC = 11h)
+                            inicioContagem = new Date(diaFim + 'T11:00:00.000Z');
+                        } else {
+                            inicioContagem = inicio;
+                        }
+                        
+                        var difMinutos = (fim - inicioContagem) / (1000 * 60);
+                        if (difMinutos < 0 || isNaN(difMinutos)) return null;
+                        return difMinutos;
+                    };
                     
-                    // T. Entrega = tempo_alocacao + tempo_coleta + tempo_entrega (tempo total da OS)
-                    var tempoAlocOS = primeiroReg.tempo_alocacao_os || 0;
-                    var tempoColOS = primeiroReg.tempo_coleta_os || 0;
-                    var tempoEntOS = primeiroReg.tempo_entrega_os || 0;
+                    // T. Entrega: Solicitado (data_hora) → Finalizado
+                    var tempoEntregaOS = calcularTempoComRegras(primeiroReg.data_hora, finalizadoOS);
                     
-                    // T. Entrega: soma de todos os tempos (alocação + coleta + entrega)
-                    var tempoEntregaOS = null;
-                    if (tempoAlocOS > 0 || tempoColOS > 0 || tempoEntOS > 0) {
-                        tempoEntregaOS = tempoAlocOS + tempoColOS + tempoEntOS;
+                    // T. Entrega Prof: Alocado (data_hora_alocado) → Finalizado
+                    var tempoEntregaProfOS = calcularTempoComRegras(primeiroReg.data_hora_alocado, finalizadoOS);
+                    
+                    // T. Total OS: usar o campo execucao_comp se existir, senão usar T. Entrega
+                    // O execucao_comp é o "Execução Comp." do Excel que já vem calculado corretamente
+                    var tempoTotalOS = null;
+                    if (primeiroReg.execucao_comp) {
+                        // Converter "HH:MM:SS" para minutos
+                        var partes = String(primeiroReg.execucao_comp).split(':');
+                        if (partes.length >= 2) {
+                            var h = parseInt(partes[0]) || 0;
+                            var m = parseInt(partes[1]) || 0;
+                            var s = parseInt(partes[2]) || 0;
+                            tempoTotalOS = h * 60 + m + s / 60;
+                        }
                     }
-                    
-                    // T. Entrega Prof: coleta + entrega (sem o tempo de alocação, pois começa quando aloca)
-                    var tempoEntregaProfOS = null;
-                    if (tempoColOS > 0 || tempoEntOS > 0) {
-                        tempoEntregaProfOS = tempoColOS + tempoEntOS;
+                    if (tempoTotalOS === null) {
+                        tempoTotalOS = tempoEntregaOS;
                     }
                     
                     // Prazo em minutos (vem do banco)
