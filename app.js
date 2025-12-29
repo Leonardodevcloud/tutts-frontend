@@ -844,6 +844,7 @@ const hideLoadingScreen = () => {
             centro_custo: [],
             categoria: "",
             status_prazo: "",
+            status_prazo_prof: "",
             status_retorno: "",
             regiao: ""
         }), [ba, Ra] = useState(!1), [loadingMessage, setLoadingMessage] = useState("Carregando dados..."), [loadingProgress, setLoadingProgress] = useState(0), [Ea, ha] = useState(null), [driveImportando, setDriveImportando] = useState(null), [fa, Na] = useState([{
@@ -13979,6 +13980,23 @@ const hideLoadingScreen = () => {
             }, "✅ Dentro do Prazo"), React.createElement("option", {
                 value: "fora"
             }, "❌ Fora do Prazo"))), React.createElement("div", {
+                className: "border rounded-lg p-3 bg-blue-50"
+            }, React.createElement("h3", {
+                className: "font-semibold text-blue-700 mb-2 text-sm"
+            }, "⏱️ Prazo Prof"), React.createElement("select", {
+                value: ua.status_prazo_prof || "",
+                onChange: e => ga({
+                    ...ua,
+                    status_prazo_prof: e.target.value
+                }),
+                className: "w-full px-3 py-2 border border-blue-300 rounded text-sm"
+            }, React.createElement("option", {
+                value: ""
+            }, "Todos"), React.createElement("option", {
+                value: "dentro"
+            }, "✅ Dentro do Prazo Prof"), React.createElement("option", {
+                value: "fora"
+            }, "❌ Fora do Prazo Prof"))), React.createElement("div", {
                 className: "border rounded-lg p-3 bg-gray-50"
             }, React.createElement("h3", {
                 className: "font-semibold text-gray-700 mb-2 text-sm"
@@ -14141,6 +14159,7 @@ const hideLoadingScreen = () => {
                         centro_custo: [],
                         categoria: "",
                         status_prazo: "",
+                        status_prazo_prof: "",
                         status_retorno: "",
                         regiao: ""
                     };
@@ -15376,6 +15395,7 @@ const hideLoadingScreen = () => {
                 React.createElement("th", {className: "px-2 py-2 text-center text-purple-900 bg-purple-200"}, "T. Total OS"),
                 React.createElement("th", {className: "px-2 py-2 text-right text-purple-900"}, "KM"),
                 React.createElement("th", {className: "px-2 py-2 text-center text-purple-900"}, "Prazo"),
+                React.createElement("th", {className: "px-2 py-2 text-center text-purple-900 bg-blue-200"}, "Prazo Prof"),
                 React.createElement("th", {className: "px-2 py-2 text-center text-purple-900"}, "Finalizado")
             )), React.createElement("tbody", null, (function() {
                 // Agrupar dados por OS
@@ -15401,7 +15421,36 @@ const hideLoadingScreen = () => {
                 // Converter para array e ordenar por OS desc
                 var osArray = Object.keys(osAgrupadas).sort(function(a, b) {
                     return parseInt(b) - parseInt(a);
-                }).slice(0, 200);
+                });
+                
+                // Filtrar pelo status_prazo_prof se estiver selecionado
+                if (ua.status_prazo_prof) {
+                    osArray = osArray.filter(function(osNum) {
+                        var pontos = osAgrupadas[osNum];
+                        var primeiroReg = pontos[0];
+                        
+                        // Calcular T. Entrega Prof (coleta + entrega)
+                        var tempoColOS = primeiroReg.tempo_coleta_os || 0;
+                        var tempoEntOS = primeiroReg.tempo_entrega_os || 0;
+                        var tempoEntregaProfOS = tempoColOS + tempoEntOS;
+                        
+                        // Prazo em minutos
+                        var prazoMinutos = primeiroReg.prazo_minutos || 60;
+                        
+                        // Verificar se está dentro do prazo prof
+                        var dentroPrazoProf = tempoEntregaProfOS <= prazoMinutos;
+                        
+                        if (ua.status_prazo_prof === "dentro") {
+                            return dentroPrazoProf === true;
+                        } else if (ua.status_prazo_prof === "fora") {
+                            return dentroPrazoProf === false;
+                        }
+                        return true;
+                    });
+                }
+                
+                // Limitar a 200 resultados após filtro
+                osArray = osArray.slice(0, 200);
                 
                 // Estado para controlar expansão (usando window para persistir)
                 if (!window.osExpandidas) window.osExpandidas = {};
@@ -15437,6 +15486,15 @@ const hideLoadingScreen = () => {
                     var tempoEntregaProfOS = null;
                     if (tempoColOS > 0 || tempoEntOS > 0) {
                         tempoEntregaProfOS = tempoColOS + tempoEntOS;
+                    }
+                    
+                    // Prazo em minutos (vem do banco)
+                    var prazoMinutos = primeiroReg.prazo_minutos || 60;
+                    
+                    // Prazo Prof: verifica se T. Entrega Prof está dentro do prazo
+                    var dentroPrazoProf = null;
+                    if (tempoEntregaProfOS !== null && prazoMinutos > 0) {
+                        dentroPrazoProf = tempoEntregaProfOS <= prazoMinutos;
                     }
                     
                     var formatTempo = function(mins) {
@@ -15575,6 +15633,12 @@ const hideLoadingScreen = () => {
                             React.createElement("td", {className: "px-2 py-1 text-center"}, 
                                 row.dentro_prazo === true ? React.createElement("span", {className: "text-green-600 font-bold"}, "✅") :
                                 row.dentro_prazo === false ? React.createElement("span", {className: "text-red-600 font-bold"}, "❌") :
+                                React.createElement("span", {className: "text-gray-400"}, "-")
+                            ),
+                            // Prazo Prof (baseado no T. Entrega Prof)
+                            React.createElement("td", {className: "px-2 py-1 text-center bg-blue-50"}, 
+                                dentroPrazoProf === true ? React.createElement("span", {className: "text-green-600 font-bold"}, "✅") :
+                                dentroPrazoProf === false ? React.createElement("span", {className: "text-red-600 font-bold"}, "❌") :
                                 React.createElement("span", {className: "text-gray-400"}, "-")
                             ),
                             // Finalizado
