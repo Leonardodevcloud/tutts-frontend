@@ -950,6 +950,11 @@ const hideLoadingScreen = () => {
         // Seção Sobre a Tutts (landing page)
         [sobreTuttsAberto, setSobreTuttsAberto] = useState(false),
         [sobreTuttsSecao, setSobreTuttsSecao] = useState(0),
+        // Estados para configuração de regiões melhorada
+        [regiaoNome, setRegiaoNome] = useState(""),
+        [regiaoClienteSelecionado, setRegiaoClienteSelecionado] = useState(null),
+        [regiaoCentrosCusto, setRegiaoCentrosCusto] = useState([]),
+        [regiaoItensAdicionados, setRegiaoItensAdicionados] = useState([]), // [{cod_cliente, nome_cliente, centro_custo}]
         ja = (e, t = "success") => {
             d({
                 message: e,
@@ -15718,87 +15723,236 @@ const hideLoadingScreen = () => {
                 className: "text-xl font-bold text-purple-900 mb-2"
             }, "🗺️ Configuração de Regiões"), React.createElement("p", {
                 className: "text-sm text-gray-500 mb-4"
-            }, "Agrupe clientes em regiões para facilitar a filtragem no dashboard."), React.createElement("div", {
+            }, "Agrupe clientes e centros de custo em regiões para facilitar a filtragem no dashboard."), React.createElement("div", {
                 className: "border rounded-lg p-4 mb-4 bg-gray-50"
-            }, React.createElement("div", {
-                className: "grid grid-cols-1 md:grid-cols-2 gap-4 mb-4"
-            }, React.createElement("div", null, React.createElement("label", {
-                className: "text-sm font-semibold text-gray-700"
-            }, "Nome da Região"), React.createElement("input", {
-                type: "text",
-                id: "bi-regiao-nome",
-                placeholder: "Ex: Grande Recife, Interior, Zona Sul...",
-                className: "w-full px-3 py-2 border rounded-lg mt-1"
-            })), React.createElement("div", null, React.createElement("label", {
-                className: "text-sm font-semibold text-gray-700"
-            }, "Clientes da Região"), React.createElement("select", {
-                id: "bi-regiao-clientes",
-                multiple: !0,
-                size: "5",
-                className: "w-full px-2 py-1 border rounded-lg mt-1 text-sm"
-            }, jt.map(e => React.createElement("option", {
-                key: e.cod_cliente,
-                value: e.cod_cliente
-            }, e.cod_cliente, " - ", il(e.cod_cliente) || e.nome_cliente))), React.createElement("p", {
-                className: "text-xs text-gray-400 mt-1"
-            }, "Ctrl+Click para selecionar múltiplos"))), React.createElement("button", {
-                onClick: () => {
-                    const e = document.getElementById("bi-regiao-nome").value.trim(),
-                        t = document.getElementById("bi-regiao-clientes"),
-                        a = Array.from(t.selectedOptions, e => parseInt(e.value));
-                    return e ? 0 === a.length ? ja("Selecione pelo menos um cliente", "error") : ((async (e, t) => {
-                        try {
-                            const a = await fetch(`${API_URL}/bi/regioes`, {
-                                    method: "POST",
-                                    headers: {
-                                        "Content-Type": "application/json"
+            }, 
+            // Nome da região
+            React.createElement("div", {className: "mb-4"}, 
+                React.createElement("label", {className: "text-sm font-semibold text-gray-700"}, "Nome da Região"),
+                React.createElement("input", {
+                    type: "text",
+                    value: regiaoNome,
+                    onChange: function(e) { setRegiaoNome(e.target.value); },
+                    placeholder: "Ex: Grande Recife, Interior, Zona Sul...",
+                    className: "w-full px-3 py-2 border rounded-lg mt-1"
+                })
+            ),
+            // Seleção de Cliente + Centro de Custo
+            React.createElement("div", {className: "grid grid-cols-1 md:grid-cols-2 gap-4 mb-4"},
+                // Coluna 1: Selecionar Cliente
+                React.createElement("div", null,
+                    React.createElement("label", {className: "text-sm font-semibold text-gray-700"}, "🏢 Selecionar Cliente"),
+                    React.createElement("select", {
+                        value: regiaoClienteSelecionado || "",
+                        onChange: async function(e) {
+                            var codCliente = e.target.value;
+                            setRegiaoClienteSelecionado(codCliente);
+                            setRegiaoCentrosCusto([]);
+                            if (codCliente) {
+                                try {
+                                    var resp = await fetch(API_URL + "/bi/centros-custo/" + codCliente);
+                                    var data = await resp.json();
+                                    setRegiaoCentrosCusto(data || []);
+                                } catch(err) {
+                                    console.error("Erro ao buscar centros:", err);
+                                }
+                            }
+                        },
+                        className: "w-full px-3 py-2 border rounded-lg mt-1"
+                    }, 
+                        React.createElement("option", {value: ""}, "-- Selecione um Cliente --"),
+                        jt.map(function(c) {
+                            return React.createElement("option", {key: c.cod_cliente, value: c.cod_cliente}, 
+                                c.cod_cliente + " - " + (il(c.cod_cliente) || c.nome_cliente)
+                            );
+                        })
+                    )
+                ),
+                // Coluna 2: Centros de Custo do Cliente
+                React.createElement("div", null,
+                    React.createElement("label", {className: "text-sm font-semibold text-gray-700"}, "📁 Centros de Custo"),
+                    regiaoClienteSelecionado ? (
+                        regiaoCentrosCusto.length > 0 ? 
+                        React.createElement("div", {className: "border rounded-lg mt-1 p-2 bg-white max-h-48 overflow-y-auto"},
+                            // Opção "Todos os centros"
+                            React.createElement("label", {className: "flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer border-b"},
+                                React.createElement("input", {
+                                    type: "checkbox",
+                                    checked: false,
+                                    onChange: function() {
+                                        var cliente = jt.find(function(c) { return String(c.cod_cliente) === String(regiaoClienteSelecionado); });
+                                        var novoItem = {
+                                            cod_cliente: parseInt(regiaoClienteSelecionado),
+                                            nome_cliente: il(regiaoClienteSelecionado) || cliente?.nome_cliente || "Cliente " + regiaoClienteSelecionado,
+                                            centro_custo: null // null = todos
+                                        };
+                                        // Verificar se já existe
+                                        var existe = regiaoItensAdicionados.some(function(i) { 
+                                            return i.cod_cliente === novoItem.cod_cliente && i.centro_custo === null; 
+                                        });
+                                        if (!existe) {
+                                            setRegiaoItensAdicionados(function(prev) { return [...prev, novoItem]; });
+                                            ja("✅ Cliente adicionado (todos centros)", "success");
+                                        } else {
+                                            ja("Item já adicionado", "error");
+                                        }
                                     },
-                                    body: JSON.stringify({
-                                        nome: e,
-                                        clientes: t
-                                    })
+                                    className: "w-4 h-4"
                                 }),
-                                l = await a.json();
-                            l.success ? (ja("✅ Região salva!", "success"), pl()) : ja("❌ Erro: " + l.error, "error")
-                        } catch (e) {
-                            ja("Erro ao salvar região", "error")
+                                React.createElement("span", {className: "text-sm font-medium text-purple-700"}, "📌 TODOS os centros de custo")
+                            ),
+                            // Lista de centros de custo
+                            regiaoCentrosCusto.map(function(cc) {
+                                return React.createElement("label", {
+                                    key: cc.centro_custo,
+                                    className: "flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer"
+                                },
+                                    React.createElement("input", {
+                                        type: "checkbox",
+                                        checked: false,
+                                        onChange: function() {
+                                            var cliente = jt.find(function(c) { return String(c.cod_cliente) === String(regiaoClienteSelecionado); });
+                                            var novoItem = {
+                                                cod_cliente: parseInt(regiaoClienteSelecionado),
+                                                nome_cliente: il(regiaoClienteSelecionado) || cliente?.nome_cliente || "Cliente " + regiaoClienteSelecionado,
+                                                centro_custo: cc.centro_custo
+                                            };
+                                            // Verificar se já existe
+                                            var existe = regiaoItensAdicionados.some(function(i) { 
+                                                return i.cod_cliente === novoItem.cod_cliente && i.centro_custo === novoItem.centro_custo; 
+                                            });
+                                            if (!existe) {
+                                                setRegiaoItensAdicionados(function(prev) { return [...prev, novoItem]; });
+                                                ja("✅ Centro de custo adicionado", "success");
+                                            } else {
+                                                ja("Item já adicionado", "error");
+                                            }
+                                        },
+                                        className: "w-4 h-4"
+                                    }),
+                                    React.createElement("span", {className: "text-sm"}, cc.centro_custo),
+                                    React.createElement("span", {className: "text-xs text-gray-400 ml-auto"}, "(" + cc.total_entregas + " entregas)")
+                                );
+                            })
+                        ) :
+                        React.createElement("div", {className: "border rounded-lg mt-1 p-4 bg-white text-center text-gray-500 text-sm"},
+                            "Este cliente não possui centros de custo cadastrados"
+                        )
+                    ) : 
+                    React.createElement("div", {className: "border rounded-lg mt-1 p-4 bg-white text-center text-gray-400 text-sm"},
+                        "Selecione um cliente para ver os centros de custo"
+                    )
+                )
+            ),
+            // Lista de itens adicionados
+            regiaoItensAdicionados.length > 0 && React.createElement("div", {className: "mb-4"},
+                React.createElement("label", {className: "text-sm font-semibold text-gray-700 mb-2 block"}, 
+                    "✅ Itens na Região (" + regiaoItensAdicionados.length + ")"
+                ),
+                React.createElement("div", {className: "flex flex-wrap gap-2"},
+                    regiaoItensAdicionados.map(function(item, idx) {
+                        return React.createElement("span", {
+                            key: idx,
+                            className: "inline-flex items-center gap-1 px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm"
+                        },
+                            React.createElement("span", null, 
+                                item.cod_cliente + " - " + (item.centro_custo || "Todos CC")
+                            ),
+                            React.createElement("button", {
+                                onClick: function() {
+                                    setRegiaoItensAdicionados(function(prev) {
+                                        return prev.filter(function(_, i) { return i !== idx; });
+                                    });
+                                },
+                                className: "ml-1 text-purple-600 hover:text-red-600 font-bold"
+                            }, "×")
+                        );
+                    })
+                )
+            ),
+            // Botão criar região
+            React.createElement("button", {
+                onClick: async function() {
+                    if (!regiaoNome.trim()) {
+                        return ja("Digite o nome da região", "error");
+                    }
+                    if (regiaoItensAdicionados.length === 0) {
+                        return ja("Adicione pelo menos um cliente/centro de custo", "error");
+                    }
+                    try {
+                        var resp = await fetch(API_URL + "/bi/regioes", {
+                            method: "POST",
+                            headers: {"Content-Type": "application/json"},
+                            body: JSON.stringify({
+                                nome: regiaoNome.trim(),
+                                itens: regiaoItensAdicionados.map(function(i) {
+                                    return { cod_cliente: i.cod_cliente, centro_custo: i.centro_custo };
+                                })
+                            })
+                        });
+                        var data = await resp.json();
+                        if (data.success) {
+                            ja("✅ Região salva!", "success");
+                            setRegiaoNome("");
+                            setRegiaoClienteSelecionado(null);
+                            setRegiaoCentrosCusto([]);
+                            setRegiaoItensAdicionados([]);
+                            pl(); // Recarregar regiões
+                        } else {
+                            ja("❌ Erro: " + data.error, "error");
                         }
-                    })(e, a), document.getElementById("bi-regiao-nome").value = "", void(t.selectedIndex = -1)) : ja("Digite o nome da região", "error")
+                    } catch(err) {
+                        ja("Erro ao salvar região", "error");
+                    }
                 },
                 className: "px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700"
             }, "➕ Criar Região")), 0 === aa.length ? React.createElement("p", {
                 className: "text-gray-500 text-center py-4 bg-gray-50 rounded-lg"
             }, "Nenhuma região configurada") : React.createElement("div", {
                 className: "space-y-3"
-            }, aa.map(e => React.createElement("div", {
-                key: e.id,
-                className: "border border-blue-200 rounded-lg p-4 bg-blue-50"
-            }, React.createElement("div", {
-                className: "flex justify-between items-start mb-2"
-            }, React.createElement("div", null, React.createElement("h3", {
-                className: "font-bold text-blue-900"
-            }, e.nome), React.createElement("p", {
-                className: "text-sm text-blue-600"
-            }, e.clientes?.length || 0, " clientes")), React.createElement("button", {
-                onClick: () => (async e => {
-                    if (confirm("Excluir esta região?")) try {
-                        (await fetch(`${API_URL}/bi/regioes/${e}`, {
-                            method: "DELETE"
-                        })).ok && (ja("✅ Região excluída!", "success"), pl())
-                    } catch (e) {
-                        ja("Erro ao excluir", "error")
+            }, aa.map(e => {
+                // Suporta formato antigo (array de números) e novo (array de objetos)
+                var itens = (e.clientes || []).map(function(item) {
+                    if (typeof item === 'number') {
+                        // Formato antigo
+                        return { cod_cliente: item, centro_custo: null };
                     }
-                })(e.id),
-                className: "text-red-500 hover:text-red-700 p-1"
-            }, "🗑️")), React.createElement("div", {
-                className: "flex flex-wrap gap-1"
-            }, (e.clientes || []).map(e => {
-                const t = jt.find(t => t.cod_cliente === e);
-                return React.createElement("span", {
-                    key: e,
-                    className: "text-xs bg-white border border-blue-300 px-2 py-0.5 rounded"
-                }, e, " - ", il(e) || t?.nome_cliente || "")
-            })))))), React.createElement("div", {
+                    return item;
+                });
+                var totalItens = itens.length;
+                var clientesUnicos = [...new Set(itens.map(function(i) { return i.cod_cliente; }))];
+                
+                return React.createElement("div", {
+                    key: e.id,
+                    className: "border border-blue-200 rounded-lg p-4 bg-blue-50"
+                }, React.createElement("div", {
+                    className: "flex justify-between items-start mb-2"
+                }, React.createElement("div", null, React.createElement("h3", {
+                    className: "font-bold text-blue-900"
+                }, e.nome), React.createElement("p", {
+                    className: "text-sm text-blue-600"
+                }, clientesUnicos.length, " cliente(s), ", totalItens, " item(ns)")), React.createElement("button", {
+                    onClick: () => (async e => {
+                        if (confirm("Excluir esta região?")) try {
+                            (await fetch(`${API_URL}/bi/regioes/${e}`, {
+                                method: "DELETE"
+                            })).ok && (ja("✅ Região excluída!", "success"), pl())
+                        } catch (e) {
+                            ja("Erro ao excluir", "error")
+                        }
+                    })(e.id),
+                    className: "text-red-500 hover:text-red-700 p-1"
+                }, "🗑️")), React.createElement("div", {
+                    className: "flex flex-wrap gap-1"
+                }, itens.map(function(item, idx) {
+                    var cliente = jt.find(function(c) { return c.cod_cliente === item.cod_cliente; });
+                    var nomeCliente = il(item.cod_cliente) || cliente?.nome_cliente || "";
+                    return React.createElement("span", {
+                        key: idx,
+                        className: "text-xs bg-white border border-blue-300 px-2 py-0.5 rounded"
+                    }, item.cod_cliente, " - ", item.centro_custo || nomeCliente || "Todos CC");
+                })));
+            }))), React.createElement("div", {
                 className: "bg-white rounded-xl shadow p-6"
             }, React.createElement("h2", {
                 className: "text-xl font-bold text-purple-900 mb-2"
