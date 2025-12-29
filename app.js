@@ -2527,8 +2527,15 @@ const hideLoadingScreen = () => {
             try {
                 setProfOsLoading(codProf);
                 const params = new URLSearchParams();
+                // Passar TODOS os filtros ativos
                 if (ua.data_inicio) params.append("data_inicio", ua.data_inicio);
                 if (ua.data_fim) params.append("data_fim", ua.data_fim);
+                if (ua.cod_cliente && ua.cod_cliente.length > 0) params.append("cod_cliente", ua.cod_cliente.join(","));
+                if (ua.centro_custo && ua.centro_custo.length > 0) params.append("centro_custo", ua.centro_custo.join(","));
+                if (ua.categoria) params.append("categoria", ua.categoria);
+                if (ua.status_prazo) params.append("status_prazo", ua.status_prazo);
+                if (ua.status_retorno) params.append("status_retorno", ua.status_retorno);
+                if (ua.cidade) params.append("cidade", ua.cidade);
                 
                 const response = await fetch(`${API_URL}/bi/os-profissional/${codProf}?${params}`);
                 const data = await response.json();
@@ -2760,6 +2767,8 @@ const hideLoadingScreen = () => {
         }, ol = async e => {
             try {
                 Ra(!0);
+                // Limpar dados expandidos de profissionais para forçar recarregamento com novos filtros
+                setProfOsExpandido({});
                 const t = new URLSearchParams;
                 e.data_inicio && t.append("data_inicio", e.data_inicio), e.data_fim && t.append("data_fim", e.data_fim), e.cod_cliente && e.cod_cliente.length > 0 && e.cod_cliente.forEach(e => t.append("cod_cliente", e)), e.centro_custo && e.centro_custo.length > 0 && e.centro_custo.forEach(e => t.append("centro_custo", e)), e.cod_prof && t.append("cod_prof", e.cod_prof), e.categoria && t.append("categoria", e.categoria), e.cidade && t.append("cidade", e.cidade), e.status_prazo && t.append("status_prazo", e.status_prazo), e.status_retorno && t.append("status_retorno", e.status_retorno), console.log("📊 loadBiDashboardComFiltros - params:", t.toString());
                 const a = await fetch(`${API_URL}/bi/dashboard-completo?${t}`),
