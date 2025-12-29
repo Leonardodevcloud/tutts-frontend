@@ -952,8 +952,8 @@ const hideLoadingScreen = () => {
         [sobreTuttsSecao, setSobreTuttsSecao] = useState(0),
         // Estados para configuração de regiões melhorada
         [regiaoNome, setRegiaoNome] = useState(""),
-        [regiaoClienteSelecionado, setRegiaoClienteSelecionado] = useState(null),
-        [regiaoCentrosCusto, setRegiaoCentrosCusto] = useState([]),
+        [regiaoClienteSelecionado, setRegiaoClienteSelecionado] = useState([]), // array de cod_cliente selecionados
+        [regiaoCentrosCusto, setRegiaoCentrosCusto] = useState({}), // {cod_cliente: [centros]}
         [regiaoItensAdicionados, setRegiaoItensAdicionados] = useState([]), // [{cod_cliente, nome_cliente, centro_custo}]
         ja = (e, t = "success") => {
             d({
@@ -15737,110 +15737,158 @@ const hideLoadingScreen = () => {
                     className: "w-full px-3 py-2 border rounded-lg mt-1"
                 })
             ),
-            // Seleção de Cliente + Centro de Custo
+            // Seleção de Clientes (múltiplos) + Centros de Custo
             React.createElement("div", {className: "grid grid-cols-1 md:grid-cols-2 gap-4 mb-4"},
-                // Coluna 1: Selecionar Cliente
+                // Coluna 1: Lista de Clientes com checkboxes
                 React.createElement("div", null,
-                    React.createElement("label", {className: "text-sm font-semibold text-gray-700"}, "🏢 Selecionar Cliente"),
-                    React.createElement("select", {
-                        value: regiaoClienteSelecionado || "",
-                        onChange: async function(e) {
-                            var codCliente = e.target.value;
-                            setRegiaoClienteSelecionado(codCliente);
-                            setRegiaoCentrosCusto([]);
-                            if (codCliente) {
-                                try {
-                                    var resp = await fetch(API_URL + "/bi/centros-custo/" + codCliente);
-                                    var data = await resp.json();
-                                    setRegiaoCentrosCusto(data || []);
-                                } catch(err) {
-                                    console.error("Erro ao buscar centros:", err);
+                    React.createElement("label", {className: "text-sm font-semibold text-gray-700"}, "🏢 Clientes"),
+                    React.createElement("div", {className: "border rounded-lg mt-1 bg-white max-h-64 overflow-y-auto"},
+                        // Campo de busca
+                        React.createElement("div", {className: "sticky top-0 bg-white p-2 border-b"},
+                            React.createElement("input", {
+                                type: "text",
+                                id: "regiao-busca-cliente",
+                                placeholder: "🔍 Buscar cliente...",
+                                className: "w-full px-2 py-1 text-sm border rounded",
+                                onChange: function(e) {
+                                    var termo = e.target.value.toLowerCase();
+                                    var items = document.querySelectorAll('.regiao-cliente-item');
+                                    items.forEach(function(item) {
+                                        var texto = item.textContent.toLowerCase();
+                                        item.style.display = texto.includes(termo) ? 'flex' : 'none';
+                                    });
                                 }
-                            }
-                        },
-                        className: "w-full px-3 py-2 border rounded-lg mt-1"
-                    }, 
-                        React.createElement("option", {value: ""}, "-- Selecione um Cliente --"),
-                        jt.map(function(c) {
-                            return React.createElement("option", {key: c.cod_cliente, value: c.cod_cliente}, 
-                                c.cod_cliente + " - " + (il(c.cod_cliente) || c.nome_cliente)
-                            );
-                        })
-                    )
-                ),
-                // Coluna 2: Centros de Custo do Cliente
-                React.createElement("div", null,
-                    React.createElement("label", {className: "text-sm font-semibold text-gray-700"}, "📁 Centros de Custo"),
-                    regiaoClienteSelecionado ? (
-                        regiaoCentrosCusto.length > 0 ? 
-                        React.createElement("div", {className: "border rounded-lg mt-1 p-2 bg-white max-h-48 overflow-y-auto"},
-                            // Opção "Todos os centros"
-                            React.createElement("label", {className: "flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer border-b"},
-                                React.createElement("input", {
-                                    type: "checkbox",
-                                    checked: false,
-                                    onChange: function() {
-                                        var cliente = jt.find(function(c) { return String(c.cod_cliente) === String(regiaoClienteSelecionado); });
-                                        var novoItem = {
-                                            cod_cliente: parseInt(regiaoClienteSelecionado),
-                                            nome_cliente: il(regiaoClienteSelecionado) || cliente?.nome_cliente || "Cliente " + regiaoClienteSelecionado,
-                                            centro_custo: null // null = todos
-                                        };
-                                        // Verificar se já existe
-                                        var existe = regiaoItensAdicionados.some(function(i) { 
-                                            return i.cod_cliente === novoItem.cod_cliente && i.centro_custo === null; 
-                                        });
-                                        if (!existe) {
-                                            setRegiaoItensAdicionados(function(prev) { return [...prev, novoItem]; });
-                                            ja("✅ Cliente adicionado (todos centros)", "success");
-                                        } else {
-                                            ja("Item já adicionado", "error");
-                                        }
-                                    },
-                                    className: "w-4 h-4"
-                                }),
-                                React.createElement("span", {className: "text-sm font-medium text-purple-700"}, "📌 TODOS os centros de custo")
-                            ),
-                            // Lista de centros de custo
-                            regiaoCentrosCusto.map(function(cc) {
+                            })
+                        ),
+                        // Lista de clientes
+                        React.createElement("div", {className: "p-1"},
+                            jt.map(function(c) {
+                                var isSelected = regiaoClienteSelecionado && regiaoClienteSelecionado.includes(String(c.cod_cliente));
                                 return React.createElement("label", {
-                                    key: cc.centro_custo,
-                                    className: "flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer"
+                                    key: c.cod_cliente,
+                                    className: "regiao-cliente-item flex items-center gap-2 p-2 hover:bg-purple-50 rounded cursor-pointer " + (isSelected ? "bg-purple-100" : "")
                                 },
                                     React.createElement("input", {
                                         type: "checkbox",
-                                        checked: false,
+                                        checked: isSelected,
+                                        onChange: async function(e) {
+                                            var codStr = String(c.cod_cliente);
+                                            if (e.target.checked) {
+                                                // Adicionar cliente à seleção
+                                                setRegiaoClienteSelecionado(function(prev) {
+                                                    return prev ? [...prev, codStr] : [codStr];
+                                                });
+                                                // Buscar centros de custo
+                                                try {
+                                                    var resp = await fetch(API_URL + "/bi/centros-custo/" + c.cod_cliente);
+                                                    var data = await resp.json();
+                                                    setRegiaoCentrosCusto(function(prev) {
+                                                        var novo = {...prev};
+                                                        novo[codStr] = data || [];
+                                                        return novo;
+                                                    });
+                                                } catch(err) {
+                                                    console.error("Erro ao buscar centros:", err);
+                                                }
+                                            } else {
+                                                // Remover cliente da seleção
+                                                setRegiaoClienteSelecionado(function(prev) {
+                                                    return prev ? prev.filter(function(x) { return x !== codStr; }) : [];
+                                                });
+                                                // Remover centros de custo
+                                                setRegiaoCentrosCusto(function(prev) {
+                                                    var novo = {...prev};
+                                                    delete novo[codStr];
+                                                    return novo;
+                                                });
+                                                // Remover itens adicionados desse cliente
+                                                setRegiaoItensAdicionados(function(prev) {
+                                                    return prev.filter(function(i) { return String(i.cod_cliente) !== codStr; });
+                                                });
+                                            }
+                                        },
+                                        className: "w-4 h-4 accent-purple-600"
+                                    }),
+                                    React.createElement("span", {className: "text-sm flex-1"}, 
+                                        c.cod_cliente + " - " + (il(c.cod_cliente) || c.nome_cliente)
+                                    )
+                                );
+                            })
+                        )
+                    ),
+                    React.createElement("p", {className: "text-xs text-gray-400 mt-1"}, 
+                        (regiaoClienteSelecionado?.length || 0) + " cliente(s) selecionado(s)"
+                    )
+                ),
+                // Coluna 2: Centros de Custo dos Clientes Selecionados
+                React.createElement("div", null,
+                    React.createElement("label", {className: "text-sm font-semibold text-gray-700"}, "📁 Centros de Custo"),
+                    (regiaoClienteSelecionado && regiaoClienteSelecionado.length > 0) ? 
+                    React.createElement("div", {className: "border rounded-lg mt-1 bg-white max-h-64 overflow-y-auto p-2"},
+                        regiaoClienteSelecionado.map(function(codCliente) {
+                            var cliente = jt.find(function(c) { return String(c.cod_cliente) === codCliente; });
+                            var nomeCliente = il(codCliente) || cliente?.nome_cliente || "Cliente " + codCliente;
+                            var centros = regiaoCentrosCusto[codCliente] || [];
+                            
+                            return React.createElement("div", {key: codCliente, className: "mb-3 pb-3 border-b last:border-b-0"},
+                                React.createElement("div", {className: "font-medium text-purple-700 text-sm mb-2"}, 
+                                    "🏢 " + codCliente + " - " + nomeCliente
+                                ),
+                                // Opção "Todos os centros"
+                                React.createElement("label", {className: "flex items-center gap-2 p-1 hover:bg-gray-50 rounded cursor-pointer ml-2"},
+                                    React.createElement("input", {
+                                        type: "checkbox",
                                         onChange: function() {
-                                            var cliente = jt.find(function(c) { return String(c.cod_cliente) === String(regiaoClienteSelecionado); });
                                             var novoItem = {
-                                                cod_cliente: parseInt(regiaoClienteSelecionado),
-                                                nome_cliente: il(regiaoClienteSelecionado) || cliente?.nome_cliente || "Cliente " + regiaoClienteSelecionado,
-                                                centro_custo: cc.centro_custo
+                                                cod_cliente: parseInt(codCliente),
+                                                nome_cliente: nomeCliente,
+                                                centro_custo: null
                                             };
-                                            // Verificar se já existe
                                             var existe = regiaoItensAdicionados.some(function(i) { 
-                                                return i.cod_cliente === novoItem.cod_cliente && i.centro_custo === novoItem.centro_custo; 
+                                                return i.cod_cliente === novoItem.cod_cliente && i.centro_custo === null; 
                                             });
                                             if (!existe) {
                                                 setRegiaoItensAdicionados(function(prev) { return [...prev, novoItem]; });
-                                                ja("✅ Centro de custo adicionado", "success");
-                                            } else {
-                                                ja("Item já adicionado", "error");
+                                                ja("✅ " + codCliente + " - Todos CC adicionado", "success");
                                             }
                                         },
-                                        className: "w-4 h-4"
+                                        className: "w-3 h-3"
                                     }),
-                                    React.createElement("span", {className: "text-sm"}, cc.centro_custo),
-                                    React.createElement("span", {className: "text-xs text-gray-400 ml-auto"}, "(" + cc.total_entregas + " entregas)")
-                                );
-                            })
-                        ) :
-                        React.createElement("div", {className: "border rounded-lg mt-1 p-4 bg-white text-center text-gray-500 text-sm"},
-                            "Este cliente não possui centros de custo cadastrados"
-                        )
-                    ) : 
+                                    React.createElement("span", {className: "text-xs font-medium text-green-700"}, "📌 TODOS os centros")
+                                ),
+                                // Lista de centros
+                                centros.length > 0 ? centros.map(function(cc) {
+                                    return React.createElement("label", {
+                                        key: cc.centro_custo,
+                                        className: "flex items-center gap-2 p-1 hover:bg-gray-50 rounded cursor-pointer ml-2"
+                                    },
+                                        React.createElement("input", {
+                                            type: "checkbox",
+                                            onChange: function() {
+                                                var novoItem = {
+                                                    cod_cliente: parseInt(codCliente),
+                                                    nome_cliente: nomeCliente,
+                                                    centro_custo: cc.centro_custo
+                                                };
+                                                var existe = regiaoItensAdicionados.some(function(i) { 
+                                                    return i.cod_cliente === novoItem.cod_cliente && i.centro_custo === novoItem.centro_custo; 
+                                                });
+                                                if (!existe) {
+                                                    setRegiaoItensAdicionados(function(prev) { return [...prev, novoItem]; });
+                                                    ja("✅ " + cc.centro_custo + " adicionado", "success");
+                                                }
+                                            },
+                                            className: "w-3 h-3"
+                                        }),
+                                        React.createElement("span", {className: "text-xs"}, cc.centro_custo),
+                                        React.createElement("span", {className: "text-xs text-gray-400 ml-auto"}, cc.total_entregas)
+                                    );
+                                }) : React.createElement("p", {className: "text-xs text-gray-400 ml-4"}, "Sem centros de custo")
+                            );
+                        })
+                    ) :
                     React.createElement("div", {className: "border rounded-lg mt-1 p-4 bg-white text-center text-gray-400 text-sm"},
-                        "Selecione um cliente para ver os centros de custo"
+                        "Selecione clientes à esquerda para ver os centros de custo"
                     )
                 )
             ),
@@ -15895,7 +15943,7 @@ const hideLoadingScreen = () => {
                             ja("✅ Região salva!", "success");
                             setRegiaoNome("");
                             setRegiaoClienteSelecionado(null);
-                            setRegiaoCentrosCusto([]);
+                            setRegiaoCentrosCusto({});
                             setRegiaoItensAdicionados([]);
                             pl(); // Recarregar regiões
                         } else {
