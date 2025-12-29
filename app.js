@@ -957,7 +957,7 @@ const hideLoadingScreen = () => {
         [regiaoItensAdicionados, setRegiaoItensAdicionados] = useState([]), // [{cod_cliente, nome_cliente, centro_custo}]
         [regiaoEditando, setRegiaoEditando] = useState(null), // ID da região sendo editada
         // Estados para dropdowns da aba Config
-        [configSecaoAberta, setConfigSecaoAberta] = useState(""), // "" = todas fechadas, "regioes", "mascaras", "prazos"
+        [configSecaoAberta, setConfigSecaoAberta] = useState(""), // "" = todas fechadas
         ja = (e, t = "success") => {
             d({
                 message: e,
@@ -14562,7 +14562,7 @@ const hideLoadingScreen = () => {
                 React.createElement("div", {className: "flex items-center justify-between mb-6"},
                     React.createElement("h3", {className: "font-bold text-gray-800 text-lg flex items-center gap-2"}, 
                         React.createElement("span", {className: "w-8 h-8 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg flex items-center justify-center text-white text-sm"}, "⏱"),
-                        "Distribuição por Tempo de Entrega"
+                        "Distribuicao por Tempo de Entrega"
                     ),
                     React.createElement("div", {className: "text-sm text-gray-500"}, 
                         "Total: ", React.createElement("span", {className: "font-bold text-purple-600"}, 
@@ -14594,7 +14594,7 @@ const hideLoadingScreen = () => {
                             className: "flex-1 flex flex-col items-center justify-end group cursor-pointer"
                         },
                             React.createElement("div", {
-                                className: "opacity-0 group-hover:opacity-100 transition-all duration-200 bg-gray-900 text-white text-xs px-3 py-2 rounded-lg mb-2 shadow-lg"
+                                className: "opacity-0 group-hover:opacity-100 transition-all duration-200 bg-gray-900 text-white text-xs px-3 py-2 rounded-lg mb-2 shadow-lg whitespace-nowrap"
                             }, val.toLocaleString("pt-BR"), " entregas"),
                             React.createElement("div", {className: "text-xs font-bold text-gray-500 mb-1"}, pct + "%"),
                             React.createElement("div", {className: "text-lg font-bold text-gray-800 mb-2"}, val.toLocaleString("pt-BR")),
@@ -14617,16 +14617,15 @@ const hideLoadingScreen = () => {
                 React.createElement("div", {className: "flex items-center justify-between mb-6"},
                     React.createElement("h3", {className: "font-bold text-gray-800 text-lg flex items-center gap-2"}, 
                         React.createElement("span", {className: "w-8 h-8 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg flex items-center justify-center text-white text-sm"}, "📍"),
-                        "Distribuição por Distância (Km)"
+                        "Distribuicao por Distancia (Km)"
                     ),
                     React.createElement("div", {className: "text-sm text-gray-500"}, 
-                        "Faixas visíveis: ", React.createElement("span", {className: "font-bold text-orange-600"}, 
+                        "Faixas visiveis: ", React.createElement("span", {className: "font-bold text-orange-600"}, 
                             ((Qt.porKm || []).filter(e => !Gt?.includes(e.faixa)).length)
                         )
                     )
                 ),
                 React.createElement("div", {className: "flex gap-6"},
-                    // Área do gráfico
                     React.createElement("div", {className: "flex-1"},
                         React.createElement("div", {
                             className: "flex items-end gap-1 pt-4",
@@ -14639,8 +14638,7 @@ const hideLoadingScreen = () => {
                                 const val = item.total || 0;
                                 const pct = (val / total * 100).toFixed(1);
                                 const altura = maxVal > 0 ? (val / maxVal * 200) : 0;
-                                // Gradiente baseado na posição (mais verde = perto, mais vermelho = longe)
-                                const hue = Math.max(0, 120 - (idx * 10)); // 120=verde, 0=vermelho
+                                const hue = Math.max(0, 120 - (idx * 10));
                                 return React.createElement("div", {
                                     key: idx,
                                     className: "flex-1 min-w-[28px] flex flex-col items-center justify-end group cursor-pointer"
@@ -14654,22 +14652,21 @@ const hideLoadingScreen = () => {
                                         className: "w-full rounded-t-md transition-all duration-300 group-hover:scale-110 shadow-sm",
                                         style: {
                                             height: Math.max(altura, val > 0 ? 15 : 4) + "px",
-                                            background: `linear-gradient(to top, hsl(${hue}, 70%, 45%), hsl(${hue}, 70%, 60%))`,
+                                            background: "linear-gradient(to top, hsl(" + hue + ", 70%, 45%), hsl(" + hue + ", 70%, 60%))",
                                             maxWidth: "24px",
                                             margin: "0 auto"
                                         }
                                     }),
                                     React.createElement("div", {
-                                        className: "mt-2 text-[9px] font-medium text-gray-600 text-center transform -rotate-45 origin-top-left w-8"
+                                        className: "mt-2 text-[9px] font-medium text-gray-600 text-center"
                                     }, item.faixa)
                                 );
                             });
                         })())
                     ),
-                    // Legenda/Filtros
                     React.createElement("div", {className: "w-44 flex-shrink-0 border-l border-gray-200 pl-4"},
                         React.createElement("div", {className: "text-sm font-bold text-gray-700 mb-3 flex items-center gap-2"},
-                            "🎛️ Filtrar Faixas"
+                            "Filtrar Faixas"
                         ),
                         React.createElement("div", {className: "space-y-1 max-h-56 overflow-y-auto pr-2"},
                             (Qt.porKm || []).map((item, idx) => {
@@ -14681,10 +14678,10 @@ const hideLoadingScreen = () => {
                                     React.createElement("input", {
                                         type: "checkbox",
                                         checked: isVisible,
-                                        onChange: e => {
+                                        onChange: function(e) {
                                             e.target.checked 
-                                                ? Wt(prev => (prev || []).filter(f => f !== item.faixa))
-                                                : Wt(prev => [...(prev || []), item.faixa]);
+                                                ? Wt(function(prev) { return (prev || []).filter(function(f) { return f !== item.faixa; }); })
+                                                : Wt(function(prev) { return [...(prev || []), item.faixa]; });
                                         },
                                         className: "w-4 h-4 accent-purple-600 rounded"
                                     }),
@@ -14699,17 +14696,17 @@ const hideLoadingScreen = () => {
                         ),
                         React.createElement("div", {className: "mt-3 pt-3 border-t border-gray-200 flex gap-2"},
                             React.createElement("button", {
-                                onClick: () => Wt([]),
+                                onClick: function() { Wt([]); },
                                 className: "flex-1 text-xs px-2 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                            }, "Mostrar Todos"),
+                            }, "Todos"),
                             React.createElement("button", {
-                                onClick: () => Wt((Qt.porKm || []).map(e => e.faixa)),
+                                onClick: function() { Wt((Qt.porKm || []).map(function(e) { return e.faixa; })); },
                                 className: "flex-1 text-xs px-2 py-1.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
-                            }, "Ocultar")
+                            }, "Nenhum")
                         )
                     )
                 )
-            )), "dashboard" === Et && React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-6 mt-6 max-w-4xl mx-auto", style: {overflow: "hidden"}}, 
+            ))), "dashboard" === Et && React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-6 mt-6 max-w-4xl mx-auto", style: {overflow: "hidden"}}, 
                 React.createElement("div", {className: "flex items-center justify-between mb-4"}, 
                     React.createElement("h3", {className: "text-lg font-bold text-gray-800"}, "🗺️ Acompanhamento Regional"),
                     React.createElement("button", {onClick: function() { setMapaCalorVisivel(!mapaCalorVisivel); if (!mapaCalorVisivel && window.destroyMapaCalor) window.destroyMapaCalor(); }, className: "px-3 py-1 text-sm rounded-lg " + (mapaCalorVisivel ? "bg-purple-600 text-white" : "bg-gray-200 text-gray-600")}, mapaCalorVisivel ? "👁️ Ocultar" : "👁️ Mostrar")
@@ -16348,201 +16345,232 @@ const hideLoadingScreen = () => {
                     ),
                     React.createElement("span", {className: "text-2xl text-purple-600 transition-transform " + (configSecaoAberta === "prazos" ? "rotate-180" : "")}, "▼")
                 ),
-                configSecaoAberta === "prazos" && React.createElement("div", {className: "p-6 border-t space-y-6"},
-                    // ===== PRAZO PADRÃO =====
-                    React.createElement("div", {className: "border-b pb-6"},
-                        React.createElement("h3", {className: "font-bold text-purple-800 mb-2"}, "⚙️ Prazo Padrão"),
-                        React.createElement("p", {className: "text-sm text-gray-500 mb-4"}, "Usado para clientes/centros sem configuração específica"),
-                        React.createElement("div", {className: "space-y-3 mb-4"},
-                            fa.map((e, t) => React.createElement("div", {
-                                key: t,
-                                className: "flex items-center gap-2 p-3 bg-purple-50 rounded-lg flex-wrap"
-                            },
-                                React.createElement("span", {className: "text-sm font-medium"}, "De"),
-                                React.createElement("input", {
-                                    type: "number",
-                                    value: e.km_min,
-                                    onChange: e => { const a = [...fa]; a[t].km_min = Number(e.target.value); Na(a); },
-                                    className: "w-20 px-2 py-1 border rounded text-center",
-                                    min: "0"
-                                }),
-                                React.createElement("span", {className: "text-sm font-medium"}, "até"),
-                                React.createElement("input", {
-                                    type: "number",
-                                    value: e.km_max || "",
-                                    onChange: e => { const a = [...fa]; a[t].km_max = e.target.value ? Number(e.target.value) : null; Na(a); },
-                                    placeholder: "∞",
-                                    className: "w-20 px-2 py-1 border rounded text-center",
-                                    min: "0"
-                                }),
-                                React.createElement("span", {className: "text-sm font-medium"}, "km →"),
-                                React.createElement("input", {
-                                    type: "number",
-                                    value: e.prazo_minutos,
-                                    onChange: e => { const a = [...fa]; a[t].prazo_minutos = Number(e.target.value); Na(a); },
-                                    className: "w-20 px-2 py-1 border rounded text-center",
-                                    min: "1"
-                                }),
-                                React.createElement("span", {className: "text-sm font-medium"}, "min"),
-                                fa.length > 1 && React.createElement("button", {
-                                    onClick: () => Na(fa.filter((e, a) => a !== t)),
-                                    className: "text-red-500 hover:text-red-700 ml-2"
-                                }, "🗑️")
-                            ))
-                        ),
-                        React.createElement("div", {className: "flex gap-3"},
-                            React.createElement("button", {
-                                onClick: () => { const e = fa[fa.length - 1]; Na([...fa, {km_min: e.km_max || 0, km_max: null, prazo_minutos: 60}]); },
-                                className: "px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300"
-                            }, "➕ Adicionar Faixa"),
-                            React.createElement("button", {
-                                onClick: async () => {
-                                    try {
-                                        const resp = await fetch(`${API_URL}/bi/prazo-padrao`, {
-                                            method: "POST",
-                                            headers: {"Content-Type": "application/json"},
-                                            body: JSON.stringify({faixas: fa})
-                                        });
-                                        const data = await resp.json();
-                                        data.success ? (ja("✅ Prazo padrão salvo!", "success"), al(), xl()) : ja("❌ Erro: " + data.error, "error");
-                                    } catch (e) { ja("Erro ao salvar", "error"); }
+                configSecaoAberta === "prazos" && React.createElement("div", {className: "p-6 border-t"},
+            React.createElement("h3", {
+                className: "font-bold text-purple-800 mb-2"
+            }, "⚙️ Prazo Padrão"), React.createElement("p", {
+                className: "text-sm text-gray-500 mb-4"
+            }, "Usado para clientes/centros sem configuração específica"), React.createElement("div", {
+                className: "space-y-3 mb-4"
+            }, fa.map((e, t) => React.createElement("div", {
+                key: t,
+                className: "flex items-center gap-2 p-3 bg-purple-50 rounded-lg flex-wrap"
+            }, React.createElement("span", {
+                className: "text-sm font-medium"
+            }, "De"), React.createElement("input", {
+                type: "number",
+                value: e.km_min,
+                onChange: e => {
+                    const a = [...fa];
+                    a[t].km_min = Number(e.target.value), Na(a)
+                },
+                className: "w-20 px-2 py-1 border rounded text-center",
+                min: "0"
+            }), React.createElement("span", {
+                className: "text-sm font-medium"
+            }, "até"), React.createElement("input", {
+                type: "number",
+                value: e.km_max || "",
+                onChange: e => {
+                    const a = [...fa];
+                    a[t].km_max = e.target.value ? Number(e.target.value) : null, Na(a)
+                },
+                placeholder: "∞",
+                className: "w-20 px-2 py-1 border rounded text-center",
+                min: "0"
+            }), React.createElement("span", {
+                className: "text-sm font-medium"
+            }, "km →"), React.createElement("input", {
+                type: "number",
+                value: e.prazo_minutos,
+                onChange: e => {
+                    const a = [...fa];
+                    a[t].prazo_minutos = Number(e.target.value), Na(a)
+                },
+                className: "w-20 px-2 py-1 border rounded text-center",
+                min: "1"
+            }), React.createElement("span", {
+                className: "text-sm font-medium"
+            }, "minutos"), fa.length > 1 && React.createElement("button", {
+                onClick: () => Na(fa.filter((e, a) => a !== t)),
+                className: "text-red-500 hover:text-red-700 ml-2"
+            }, "🗑️")))), React.createElement("div", {
+                className: "flex gap-3"
+            }, React.createElement("button", {
+                onClick: () => {
+                    const e = fa[fa.length - 1];
+                    Na([...fa, {
+                        km_min: e.km_max || 0,
+                        km_max: null,
+                        prazo_minutos: 60
+                    }])
+                },
+                className: "px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300"
+            }, "➕ Adicionar Faixa"), React.createElement("button", {
+                onClick: () => (async e => {
+                    try {
+                        const t = await fetch(`${API_URL}/bi/prazo-padrao`, {
+                                method: "POST",
+                                headers: {
+                                    "Content-Type": "application/json"
                                 },
-                                className: "px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
-                            }, "💾 Salvar Prazo Padrão")
-                        )
-                    ),
-                    
-                    // ===== PRAZO POR CLIENTE/CENTRO =====
-                    React.createElement("div", {className: "border-b pb-6"},
-                        React.createElement("h3", {className: "font-bold text-purple-800 mb-2"}, "➕ Prazo por Cliente ou Centro de Custo"),
-                        React.createElement("p", {className: "text-sm text-gray-500 mb-4"}, "Configure prazos específicos que sobrescrevem o padrão"),
-                        React.createElement("div", {className: "mb-4"},
-                            React.createElement("label", {className: "text-sm text-gray-600 font-medium"}, "Selecionar Cliente ou Centro de Custo"),
-                            React.createElement("select", {
-                                id: "bi-novo-codigo",
-                                className: "w-full px-3 py-2 border rounded-lg mt-1"
-                            },
-                                React.createElement("option", {value: ""}, "-- Selecione --"),
-                                React.createElement("optgroup", {label: "👤 Clientes"},
-                                    jt.map(e => React.createElement("option", {
-                                        key: `cli-${e.cod_cliente}`,
-                                        value: `cliente:${e.cod_cliente}:${il(e.cod_cliente)||e.nome_cliente}`
-                                    }, il(e.cod_cliente) || e.nome_cliente, " (Cód: ", e.cod_cliente, ")"))
-                                ),
-                                React.createElement("optgroup", {label: "🏢 Centros de Custo"},
-                                    At.map(e => React.createElement("option", {
-                                        key: `cc-${e.centro_custo}`,
-                                        value: `centro_custo:${e.centro_custo}:${e.centro_custo}`
-                                    }, e.centro_custo))
-                                )
-                            )
-                        ),
-                        React.createElement("div", {className: "space-y-3 mb-4"},
-                            ya.map((e, t) => React.createElement("div", {
-                                key: t,
-                                className: "flex items-center gap-2 p-3 bg-gray-50 rounded-lg flex-wrap"
-                            },
-                                React.createElement("span", {className: "text-sm font-medium"}, "De"),
-                                React.createElement("input", {
-                                    type: "number",
-                                    value: e.km_min,
-                                    onChange: e => { const a = [...ya]; a[t].km_min = Number(e.target.value); va(a); },
-                                    className: "w-20 px-2 py-1 border rounded text-center",
-                                    min: "0"
+                                body: JSON.stringify({
+                                    faixas: e
+                                })
+                            }),
+                            a = await t.json();
+                        a.success ? (ja("✅ Prazo padrão salvo!", "success"), al(), xl()) : ja("❌ Erro: " + a.error, "error")
+                    } catch (e) {
+                        ja("Erro ao salvar", "error")
+                    }
+                })(fa),
+                className: "px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
+            }, "💾 Salvar Prazo Padrão"))), React.createElement("div", {
+                className: "bg-white rounded-xl shadow p-6"
+            }, React.createElement("h2", {
+                className: "text-xl font-bold text-purple-900 mb-2"
+            }, "➕ Prazo por Cliente ou Centro de Custo"), React.createElement("p", {
+                className: "text-sm text-gray-500 mb-4"
+            }, "Configure prazos específicos que sobrescrevem o padrão"), React.createElement("div", {
+                className: "mb-4"
+            }, React.createElement("label", {
+                className: "text-sm text-gray-600 font-medium"
+            }, "Selecionar Cliente ou Centro de Custo"), React.createElement("select", {
+                id: "bi-novo-codigo",
+                className: "w-full px-3 py-2 border rounded-lg mt-1"
+            }, React.createElement("option", {
+                value: ""
+            }, "-- Selecione --"), React.createElement("optgroup", {
+                label: "👤 Clientes"
+            }, jt.map(e => React.createElement("option", {
+                key: `cli-${e.cod_cliente}`,
+                value: `cliente:${e.cod_cliente}:${il(e.cod_cliente)||e.nome_cliente}`
+            }, il(e.cod_cliente) || e.nome_cliente, " (Cód: ", e.cod_cliente, ")"))), React.createElement("optgroup", {
+                label: "🏢 Centros de Custo"
+            }, At.map(e => React.createElement("option", {
+                key: `cc-${e.centro_custo}`,
+                value: `centro_custo:${e.centro_custo}:${e.centro_custo}`
+            }, e.centro_custo))))), React.createElement("div", {
+                className: "space-y-3 mb-4"
+            }, ya.map((e, t) => React.createElement("div", {
+                key: t,
+                className: "flex items-center gap-2 p-3 bg-gray-50 rounded-lg flex-wrap"
+            }, React.createElement("span", {
+                className: "text-sm font-medium"
+            }, "De"), React.createElement("input", {
+                type: "number",
+                value: e.km_min,
+                onChange: e => {
+                    const a = [...ya];
+                    a[t].km_min = Number(e.target.value), va(a)
+                },
+                className: "w-20 px-2 py-1 border rounded text-center",
+                min: "0"
+            }), React.createElement("span", {
+                className: "text-sm font-medium"
+            }, "até"), React.createElement("input", {
+                type: "number",
+                value: e.km_max || "",
+                onChange: e => {
+                    const a = [...ya];
+                    a[t].km_max = e.target.value ? Number(e.target.value) : null, va(a)
+                },
+                placeholder: "∞",
+                className: "w-20 px-2 py-1 border rounded text-center",
+                min: "0"
+            }), React.createElement("span", {
+                className: "text-sm font-medium"
+            }, "km →"), React.createElement("input", {
+                type: "number",
+                value: e.prazo_minutos,
+                onChange: e => {
+                    const a = [...ya];
+                    a[t].prazo_minutos = Number(e.target.value), va(a)
+                },
+                className: "w-20 px-2 py-1 border rounded text-center",
+                min: "1"
+            }), React.createElement("span", {
+                className: "text-sm font-medium"
+            }, "minutos"), ya.length > 1 && React.createElement("button", {
+                onClick: () => va(ya.filter((e, a) => a !== t)),
+                className: "text-red-500 hover:text-red-700 ml-2"
+            }, "🗑️")))), React.createElement("div", {
+                className: "flex gap-3"
+            }, React.createElement("button", {
+                onClick: () => {
+                    const e = ya[ya.length - 1];
+                    va([...ya, {
+                        km_min: e.km_max || 0,
+                        km_max: null,
+                        prazo_minutos: 60
+                    }])
+                },
+                className: "px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300"
+            }, "➕ Adicionar Faixa"), React.createElement("button", {
+                onClick: () => {
+                    const e = document.getElementById("bi-novo-codigo").value;
+                    if (!e) return ja("Selecione um cliente ou centro", "error");
+                    const [t, a, l] = e.split(":");
+                    (async (e, t, a, l) => {
+                        try {
+                            const r = await fetch(`${API_URL}/bi/prazos`, {
+                                    method: "POST",
+                                    headers: {
+                                        "Content-Type": "application/json"
+                                    },
+                                    body: JSON.stringify({
+                                        tipo: e,
+                                        codigo: t,
+                                        nome: a,
+                                        faixas: l
+                                    })
                                 }),
-                                React.createElement("span", {className: "text-sm font-medium"}, "até"),
-                                React.createElement("input", {
-                                    type: "number",
-                                    value: e.km_max || "",
-                                    onChange: e => { const a = [...ya]; a[t].km_max = e.target.value ? Number(e.target.value) : null; va(a); },
-                                    placeholder: "∞",
-                                    className: "w-20 px-2 py-1 border rounded text-center",
-                                    min: "0"
-                                }),
-                                React.createElement("span", {className: "text-sm font-medium"}, "km →"),
-                                React.createElement("input", {
-                                    type: "number",
-                                    value: e.prazo_minutos,
-                                    onChange: e => { const a = [...ya]; a[t].prazo_minutos = Number(e.target.value); va(a); },
-                                    className: "w-20 px-2 py-1 border rounded text-center",
-                                    min: "1"
-                                }),
-                                React.createElement("span", {className: "text-sm font-medium"}, "min"),
-                                ya.length > 1 && React.createElement("button", {
-                                    onClick: () => va(ya.filter((e, a) => a !== t)),
-                                    className: "text-red-500 hover:text-red-700 ml-2"
-                                }, "🗑️")
-                            ))
-                        ),
-                        React.createElement("div", {className: "flex gap-3"},
-                            React.createElement("button", {
-                                onClick: () => { const e = ya[ya.length - 1]; va([...ya, {km_min: e.km_max || 0, km_max: null, prazo_minutos: 60}]); },
-                                className: "px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300"
-                            }, "➕ Adicionar Faixa"),
-                            React.createElement("button", {
-                                onClick: () => {
-                                    const sel = document.getElementById("bi-novo-codigo").value;
-                                    if (!sel) return ja("Selecione um cliente ou centro", "error");
-                                    const [tipo, codigo, nome] = sel.split(":");
-                                    (async (tipo, codigo, nome, faixas) => {
-                                        try {
-                                            const resp = await fetch(`${API_URL}/bi/prazos`, {
-                                                method: "POST",
-                                                headers: {"Content-Type": "application/json"},
-                                                body: JSON.stringify({tipo, codigo, nome, faixas})
-                                            });
-                                            const data = await resp.json();
-                                            data.success ? (ja("✅ Prazo salvo!", "success"), tl(), xl()) : ja("❌ Erro: " + data.error, "error");
-                                        } catch (e) { ja("Erro ao salvar", "error"); }
-                                    })(tipo, codigo, nome, ya);
-                                    va([{km_min: 0, km_max: 15, prazo_minutos: 45}]);
-                                    document.getElementById("bi-novo-codigo").value = "";
-                                },
-                                className: "px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
-                            }, "💾 Salvar Configuração")
-                        )
-                    ),
-                    
-                    // ===== PRAZOS CONFIGURADOS =====
-                    React.createElement("div", null,
-                        React.createElement("h3", {className: "font-bold text-purple-800 mb-4"}, "📋 Prazos Configurados (", yt.length, ")"),
-                        yt.length === 0 ? React.createElement("p", {className: "text-gray-500 text-center py-4 bg-gray-50 rounded-lg"}, "Nenhum prazo específico configurado") :
-                        React.createElement("div", {className: "space-y-3"},
-                            yt.map(e => React.createElement("div", {
-                                key: e.id,
-                                className: "border border-purple-200 rounded-lg p-4 bg-purple-50"
-                            },
-                                React.createElement("div", {className: "flex justify-between items-start mb-3"},
-                                    React.createElement("div", null,
-                                        React.createElement("span", {
-                                            className: "text-xs px-2 py-0.5 rounded " + (e.tipo === "cliente" ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700")
-                                        }, e.tipo === "cliente" ? "👤 Cliente" : "🏢 Centro de Custo"),
-                                        React.createElement("p", {className: "font-semibold mt-1 text-purple-900"}, e.nome || e.codigo)
-                                    ),
-                                    React.createElement("button", {
-                                        onClick: async () => {
-                                            if (confirm("Remover esta configuração de prazo?")) {
-                                                try {
-                                                    await fetch(`${API_URL}/bi/prazos/${e.id}`, {method: "DELETE"});
-                                                    ja("✅ Removido!", "success");
-                                                    tl();
-                                                } catch (err) { ja("Erro ao remover", "error"); }
-                                            }
-                                        },
-                                        className: "text-red-500 hover:text-red-700 p-1"
-                                    }, "🗑️")
-                                ),
-                                React.createElement("div", {className: "flex flex-wrap gap-2"},
-                                    (e.faixas || []).map((f, i) => React.createElement("span", {
-                                        key: i,
-                                        className: "bg-white border border-purple-300 px-3 py-1 rounded text-sm"
-                                    }, f.km_min, " - ", f.km_max || "∞", " km → ", React.createElement("strong", null, f.prazo_minutos, " min")))
-                                )
-                            ))
-                        )
-                    )
-                )
-            )), !ft && "dashboard" === Et && React.createElement("div", {
+                                o = await r.json();
+                            o.success ? (ja("✅ Prazo salvo!", "success"), tl(), xl()) : ja("❌ Erro: " + o.error, "error")
+                        } catch (e) {
+                            ja("Erro ao salvar", "error")
+                        }
+                    })(t, a, l, ya), va([{
+                        km_min: 0,
+                        km_max: 15,
+                        prazo_minutos: 45
+                    }]), document.getElementById("bi-novo-codigo").value = ""
+                },
+                className: "px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
+            }, "💾 Salvar Configuração"))), React.createElement("div", {
+                className: "bg-white rounded-xl shadow p-6"
+            }, React.createElement("h2", {
+                className: "text-xl font-bold text-purple-900 mb-4"
+            }, "📋 Prazos Configurados (", yt.length, ")"), 0 === yt.length ? React.createElement("p", {
+                className: "text-gray-500 text-center py-8"
+            }, "Nenhum prazo específico configurado") : React.createElement("div", {
+                className: "space-y-3"
+            }, yt.map(e => React.createElement("div", {
+                key: e.id,
+                className: "border border-purple-200 rounded-lg p-4 bg-purple-50"
+            }, React.createElement("div", {
+                className: "flex justify-between items-start mb-3"
+            }, React.createElement("div", null, React.createElement("span", {
+                className: "text-xs px-2 py-0.5 rounded " + ("cliente" === e.tipo ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700")
+            }, "cliente" === e.tipo ? "👤 Cliente" : "🏢 Centro de Custo"), React.createElement("p", {
+                className: "font-semibold mt-1 text-purple-900"
+            }, e.nome || e.codigo)), React.createElement("button", {
+                onClick: () => (async e => {
+                    if (confirm("Remover esta configuração de prazo?")) try {
+                        await fetch(`${API_URL}/bi/prazos/${e}`, {
+                            method: "DELETE"
+                        }), ja("✅ Removido!", "success"), tl()
+                    } catch (e) {
+                        ja("Erro ao remover", "error")
+                    }
+                })(e.id),
+                className: "text-red-500 hover:text-red-700 p-1"
+            }, "🗑️")), React.createElement("div", {
+                className: "flex flex-wrap gap-2"
+            }, e.faixas && e.faixas.map((e, t) => React.createElement("span", {
+                key: t,
+                className: "bg-white border border-purple-300 px-3 py-1 rounded text-sm"
+            }, e.km_min, " - ", e.km_max || "∞", " km → ", React.createElement("strong", null, e.prazo_minutos, " min")))))))))), !ft && "dashboard" === Et && React.createElement("div", {
                 className: "bg-white rounded-xl shadow p-10 text-center"
             }, React.createElement("p", {
                 className: "text-5xl mb-4"
@@ -16550,7 +16578,7 @@ const hideLoadingScreen = () => {
                 className: "text-gray-500"
             }, "Nenhum dado encontrado"), React.createElement("p", {
                 className: "text-sm text-gray-400 mt-2"
-            }, "Faca upload de uma planilha na aba Upload"))))
+            }, 'Faça upload de uma planilha na aba "Upload"')))))
         }
         
         // ========== PÁGINA HOME - BEM-VINDO ==========
