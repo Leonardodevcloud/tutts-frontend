@@ -15372,6 +15372,7 @@ const hideLoadingScreen = () => {
                 React.createElement("th", {className: "px-2 py-2 text-center text-purple-900"}, "T. Alocação"),
                 React.createElement("th", {className: "px-2 py-2 text-center text-purple-900"}, "T. Coleta"),
                 React.createElement("th", {className: "px-2 py-2 text-center text-purple-900"}, "T. Entrega"),
+                React.createElement("th", {className: "px-2 py-2 text-center text-purple-900 bg-purple-200"}, "T. Total OS"),
                 React.createElement("th", {className: "px-2 py-2 text-right text-purple-900"}, "KM"),
                 React.createElement("th", {className: "px-2 py-2 text-center text-purple-900"}, "Prazo"),
                 React.createElement("th", {className: "px-2 py-2 text-center text-purple-900"}, "Finalizado")
@@ -15476,6 +15477,43 @@ const hideLoadingScreen = () => {
                         return String(h).padStart(2, "0") + ":" + String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
                     };
                     
+                    // Função para calcular o tempo TOTAL consolidado da OS (soma de todos os pontos)
+                    var calcTempoTotalOS = function(pontosOS) {
+                        var tempoTotal = 0;
+                        var temAlgumTempo = false;
+                        
+                        pontosOS.forEach(function(row) {
+                            var pontoNum = parseInt(row.ponto) || 1;
+                            
+                            // Para ponto 1: soma tempo alocação + tempo coleta
+                            if (pontoNum === 1) {
+                                var tAloc = calcTempoAlocacao(row);
+                                var tCol = calcTempoColeta(row);
+                                if (tAloc !== null && !isNaN(tAloc) && tAloc > 0) {
+                                    tempoTotal += tAloc;
+                                    temAlgumTempo = true;
+                                }
+                                if (tCol !== null && !isNaN(tCol) && tCol > 0) {
+                                    tempoTotal += tCol;
+                                    temAlgumTempo = true;
+                                }
+                            }
+                            // Para pontos >= 2: soma tempo entrega
+                            else {
+                                var tEnt = calcTempoEntrega(row);
+                                if (tEnt !== null && !isNaN(tEnt) && tEnt > 0) {
+                                    tempoTotal += tEnt;
+                                    temAlgumTempo = true;
+                                }
+                            }
+                        });
+                        
+                        return temAlgumTempo ? tempoTotal : null;
+                    };
+                    
+                    // Calcular tempo total consolidado desta OS
+                    var tempoTotalOS = calcTempoTotalOS(pontos);
+                    
                     // Função para formatar data corretamente
                     var formatData = function(dataStr) {
                         if (!dataStr) return "-";
@@ -15569,6 +15607,10 @@ const hideLoadingScreen = () => {
                             React.createElement("td", {className: "px-2 py-1 text-center text-fuchsia-600 font-medium"}, formatTempo(tColeta)),
                             // T. Entrega
                             React.createElement("td", {className: "px-2 py-1 text-center text-rose-600 font-medium"}, formatTempo(tEntrega)),
+                            // T. Total OS (consolidado - só mostra na primeira linha da OS)
+                            React.createElement("td", {className: "px-2 py-1 text-center font-bold " + (isFirst ? "bg-purple-100 text-purple-800" : "bg-purple-50 text-purple-400")}, 
+                                isFirst ? formatTempo(tempoTotalOS) : ""
+                            ),
                             // KM
                             React.createElement("td", {className: "px-2 py-1 text-right"}, parseFloat(row.distancia || 0).toFixed(2) + " km"),
                             // Prazo
