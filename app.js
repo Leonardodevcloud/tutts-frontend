@@ -15423,29 +15423,43 @@ const hideLoadingScreen = () => {
                     return parseInt(b) - parseInt(a);
                 });
                 
-                // Função para calcular tempo com regras de horário comercial (para filtro)
+                // Função para extrair data e hora (para filtro)
+                var parseDateTime = function(str) {
+                    if (!str) return null;
+                    var s = String(str);
+                    var match = s.match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/);
+                    if (!match) return null;
+                    return {
+                        ano: parseInt(match[1]),
+                        mes: parseInt(match[2]),
+                        dia: parseInt(match[3]),
+                        hora: parseInt(match[4]),
+                        min: parseInt(match[5]),
+                        seg: parseInt(match[6]),
+                        dataStr: match[1] + '-' + match[2] + '-' + match[3]
+                    };
+                };
+                
+                // Função para calcular tempo com regras (para filtro)
                 var calcTempoFiltro = function(dataHoraInicio, dataHoraFim) {
-                    if (!dataHoraInicio || !dataHoraFim) return null;
+                    var inicio = parseDateTime(dataHoraInicio);
+                    var fim = parseDateTime(dataHoraFim);
                     
-                    var inicio = new Date(dataHoraInicio);
-                    var fim = new Date(dataHoraFim);
+                    if (!inicio || !fim) return null;
                     
-                    if (isNaN(inicio.getTime()) || isNaN(fim.getTime())) return null;
-                    if (fim < inicio) return null;
+                    var mesmaData = inicio.dataStr === fim.dataStr;
+                    var inicioMinutos, fimMinutos;
                     
-                    var diaInicio = inicio.toISOString().split('T')[0];
-                    var diaFim = fim.toISOString().split('T')[0];
-                    var mesmaData = diaInicio === diaFim;
+                    fimMinutos = fim.hora * 60 + fim.min + fim.seg / 60;
                     
-                    var inicioContagem;
                     if (!mesmaData) {
-                        inicioContagem = new Date(diaFim + 'T11:00:00.000Z'); // 8h Brasília
+                        inicioMinutos = 8 * 60;
                     } else {
-                        inicioContagem = inicio;
+                        inicioMinutos = inicio.hora * 60 + inicio.min + inicio.seg / 60;
                     }
                     
-                    var difMinutos = (fim - inicioContagem) / (1000 * 60);
-                    if (difMinutos < 0 || isNaN(difMinutos)) return null;
+                    var difMinutos = fimMinutos - inicioMinutos;
+                    if (difMinutos < 0) return null;
                     return difMinutos;
                 };
                 
@@ -15493,37 +15507,52 @@ const hideLoadingScreen = () => {
                     // Pegar o finalizado da OS (do último ponto, que é quando realmente terminou)
                     var finalizadoOS = ultimoReg.finalizado || primeiroReg.finalizado;
                     
+                    // Função para extrair data e hora de uma string datetime
+                    // Os dados vêm como "2025-12-01T18:12:19.000Z" mas são horários de Brasília
+                    var parseDateTime = function(str) {
+                        if (!str) return null;
+                        var s = String(str);
+                        // Extrair partes: YYYY-MM-DD e HH:MM:SS
+                        var match = s.match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/);
+                        if (!match) return null;
+                        return {
+                            ano: parseInt(match[1]),
+                            mes: parseInt(match[2]),
+                            dia: parseInt(match[3]),
+                            hora: parseInt(match[4]),
+                            min: parseInt(match[5]),
+                            seg: parseInt(match[6]),
+                            dataStr: match[1] + '-' + match[2] + '-' + match[3]
+                        };
+                    };
+                    
                     // Função para calcular tempo com regras de horário comercial
-                    // Regra: se início após 17h e fim em outro dia, começa às 8h do dia do fim
+                    // Regra: se dias diferentes, começa às 8h do dia do fim
                     var calcularTempoComRegras = function(dataHoraInicio, dataHoraFim) {
-                        if (!dataHoraInicio || !dataHoraFim) return null;
+                        var inicio = parseDateTime(dataHoraInicio);
+                        var fim = parseDateTime(dataHoraFim);
                         
-                        var inicio = new Date(dataHoraInicio);
-                        var fim = new Date(dataHoraFim);
+                        if (!inicio || !fim) return null;
                         
-                        if (isNaN(inicio.getTime()) || isNaN(fim.getTime())) return null;
-                        if (fim < inicio) return null;
+                        var mesmaData = inicio.dataStr === fim.dataStr;
                         
-                        // Verificar se são dias diferentes
-                        var diaInicio = inicio.toISOString().split('T')[0];
-                        var diaFim = fim.toISOString().split('T')[0];
-                        var mesmaData = diaInicio === diaFim;
+                        var inicioMinutos, fimMinutos;
                         
-                        // Hora do início (em UTC, ajustar para Brasília -3h)
-                        var horaInicioUTC = inicio.getUTCHours();
-                        var horaInicioBrasilia = (horaInicioUTC - 3 + 24) % 24; // Ajuste para Brasília
-                        var depoisDas17 = horaInicioBrasilia >= 17;
+                        // Fim sempre é a hora real do fim
+                        fimMinutos = fim.hora * 60 + fim.min + fim.seg / 60;
                         
-                        var inicioContagem;
                         if (!mesmaData) {
-                            // Dias diferentes - começa às 8h do dia do fim (em UTC = 11h)
-                            inicioContagem = new Date(diaFim + 'T11:00:00.000Z');
+                            // Dias diferentes - começa às 8h do dia do fim
+                            inicioMinutos = 8 * 60; // 8:00 = 480 minutos
                         } else {
-                            inicioContagem = inicio;
+                            inicioMinutos = inicio.hora * 60 + inicio.min + inicio.seg / 60;
                         }
                         
-                        var difMinutos = (fim - inicioContagem) / (1000 * 60);
-                        if (difMinutos < 0 || isNaN(difMinutos)) return null;
+                        var difMinutos = fimMinutos - inicioMinutos;
+                        
+                        // Se negativo (fim antes das 8h), algo está errado - retorna null
+                        if (difMinutos < 0) return null;
+                        
                         return difMinutos;
                     };
                     
