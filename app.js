@@ -16266,10 +16266,26 @@ const hideLoadingScreen = () => {
                     }
                 })(e.id),
                 className: "text-red-500 hover:text-red-700 p-1"
-            }, "🗑️"))))), React.createElement("div", {
-                className: "bg-white rounded-xl shadow p-6"
-            }, React.createElement("h2", {
-                className: "text-xl font-bold text-purple-900 mb-2"
+            }, "🗑️")))))),
+            
+            // ========== SEÇÃO 3: PRAZOS (Dropdown) ==========
+            React.createElement("div", {className: "bg-white rounded-xl shadow overflow-hidden"},
+                React.createElement("button", {
+                    onClick: function() { setConfigSecaoAberta(configSecaoAberta === "prazos" ? "" : "prazos"); },
+                    className: "w-full px-6 py-4 flex items-center justify-between bg-gradient-to-r from-purple-50 to-white hover:from-purple-100 transition-all"
+                },
+                    React.createElement("div", {className: "flex items-center gap-3"},
+                        React.createElement("span", {className: "text-2xl"}, "⏱️"),
+                        React.createElement("div", {className: "text-left"},
+                            React.createElement("h2", {className: "text-lg font-bold text-purple-900"}, "Configuração de Prazos"),
+                            React.createElement("p", {className: "text-sm text-gray-500"}, yt.length + " prazo(s) específico(s)")
+                        )
+                    ),
+                    React.createElement("span", {className: "text-2xl text-purple-600 transition-transform " + (configSecaoAberta === "prazos" ? "rotate-180" : "")}, "▼")
+                ),
+                configSecaoAberta === "prazos" && React.createElement("div", {className: "p-6 border-t"},
+            React.createElement("h3", {
+                className: "font-bold text-purple-800 mb-2"
             }, "⚙️ Prazo Padrão"), React.createElement("p", {
                 className: "text-sm text-gray-500 mb-4"
             }, "Usado para clientes/centros sem configuração específica"), React.createElement("div", {
@@ -16492,7 +16508,7 @@ const hideLoadingScreen = () => {
             }, e.faixas && e.faixas.map((e, t) => React.createElement("span", {
                 key: t,
                 className: "bg-white border border-purple-300 px-3 py-1 rounded text-sm"
-            }, e.km_min, " - ", e.km_max || "∞", " km → ", React.createElement("strong", null, e.prazo_minutos, " min"))))))))), !ft && "dashboard" === Et && React.createElement("div", {
+            }, e.km_min, " - ", e.km_max || "∞", " km → ", React.createElement("strong", null, e.prazo_minutos, " min")))))))))), !ft && "dashboard" === Et && React.createElement("div", {
                 className: "bg-white rounded-xl shadow p-10 text-center"
             }, React.createElement("p", {
                 className: "text-5xl mb-4"
