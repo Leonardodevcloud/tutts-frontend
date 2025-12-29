@@ -2966,7 +2966,8 @@ const hideLoadingScreen = () => {
                 e.status_prazo && osParams.append("status_prazo", e.status_prazo);
                 e.status_retorno && osParams.append("status_retorno", e.status_retorno);
                 const osResponse = await fetch(`${API_URL}/bi/entregas-lista?${osParams}`);
-                Ut(await osResponse.json());
+                const osData = await osResponse.json();
+                Ut(Array.isArray(osData) ? osData : []);
                 console.log("📋 Lista de OS recarregada com filtros");
             } catch (e) {
                 console.error("Erro ao carregar BI:", e)
@@ -13871,8 +13872,9 @@ const hideLoadingScreen = () => {
                         try {
                             Ra(!0);
                             const e = Xa(),
-                                t = await fetch(`${API_URL}/bi/entregas-lista?${e}`);
-                            Ut(await t.json())
+                                t = await fetch(`${API_URL}/bi/entregas-lista?${e}`),
+                                data = await t.json();
+                            Ut(Array.isArray(data) ? data : [])
                         } catch (e) {
                             console.error("Erro ao carregar entregas:", e)
                         }
@@ -15289,7 +15291,8 @@ const hideLoadingScreen = () => {
             )), React.createElement("tbody", null, (function() {
                 // Agrupar dados por OS
                 var osAgrupadas = {};
-                qt.forEach(function(row) {
+                var dados = Array.isArray(qt) ? qt : [];
+                dados.forEach(function(row) {
                     var osNum = row.os;
                     if (!osAgrupadas[osNum]) {
                         osAgrupadas[osNum] = [];
