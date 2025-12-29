@@ -15129,80 +15129,215 @@ const hideLoadingScreen = () => {
                 }, "»"),
                 React.createElement("span", {className: "ml-4 text-sm text-purple-700"}, "Página ", profPaginaAtual, " de ", Math.ceil(Vt.length / 20))
             )), "os" === Et && React.createElement("div", {
-                className: "bg-white rounded-lg shadow overflow-hidden"
+                className: "space-y-4"
+            }, 
+            // Header
+            React.createElement("div", {
+                className: "bg-gradient-to-r from-purple-600 to-purple-800 rounded-xl p-6 text-white"
+            }, React.createElement("h2", {
+                className: "text-2xl font-bold mb-2"
+            }, "📋 Análise por OS"), React.createElement("p", {
+                className: "opacity-80"
+            }, "Detalhamento de todas as ordens de serviço com pontos expandíveis")),
+            // Tabela principal
+            React.createElement("div", {
+                className: "bg-white rounded-xl shadow-lg overflow-hidden"
             }, React.createElement("div", {
-                className: "bg-purple-100 px-4 py-3"
-            }, React.createElement("h3", {
-                className: "font-bold text-purple-900"
-            }, "Análise por OS")), React.createElement("div", {
                 className: "overflow-x-auto"
             }, React.createElement("table", {
-                className: "w-full text-sm"
+                className: "w-full text-xs"
             }, React.createElement("thead", {
-                className: "bg-purple-50"
-            }, React.createElement("tr", null, React.createElement("th", {
-                className: "px-3 py-2 text-left text-purple-900"
-            }, "OS"), React.createElement("th", {
-                className: "px-3 py-2 text-left text-purple-900"
-            }, "Entregador"), React.createElement("th", {
-                className: "px-3 py-2 text-left text-purple-900"
-            }, "Ponto"), React.createElement("th", {
-                className: "px-3 py-2 text-left text-purple-900"
-            }, "Endereço"), React.createElement("th", {
-                className: "px-3 py-2 text-center text-purple-900"
-            }, "Data"), React.createElement("th", {
-                className: "px-3 py-2 text-center text-purple-900"
-            }, "Solicitado"), React.createElement("th", {
-                className: "px-3 py-2 text-center text-purple-900"
-            }, "Chegada"), React.createElement("th", {
-                className: "px-3 py-2 text-center text-purple-900"
-            }, "Saída"), React.createElement("th", {
-                className: "px-3 py-2 text-center text-purple-900"
-            }, "Duração"), React.createElement("th", {
-                className: "px-3 py-2 text-right text-purple-900"
-            }, "Distância"), React.createElement("th", {
-                className: "px-3 py-2 text-center text-purple-900"
-            }, "Status"), React.createElement("th", {
-                className: "px-3 py-2 text-center text-purple-900"
-            }, "Finalização"))), React.createElement("tbody", null, qt.slice(0, 100).map((e, t) => React.createElement("tr", {
-                key: t,
-                className: "border-b hover:bg-purple-50 " + (t % 2 == 0 ? "bg-white" : "bg-gray-50")
-            }, React.createElement("td", {
-                className: "px-3 py-2 font-medium"
-            }, e.os), React.createElement("td", {
-                className: "px-3 py-2"
-            }, e.nome_prof), React.createElement("td", {
-                className: "px-3 py-2"
-            }, React.createElement("span", {
-                className: "px-2 py-0.5 rounded text-xs " + ("Coleta" === e.ponto ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700")
-            }, e.ponto || "Entrega")), React.createElement("td", {
-                className: "px-3 py-2 max-w-xs truncate",
-                title: e.endereco
-            }, e.endereco), React.createElement("td", {
-                className: "px-3 py-2 text-center"
-            }, e.data_solicitado ? new Date(e.data_solicitado).toLocaleDateString("pt-BR") : "-"), React.createElement("td", {
-                className: "px-3 py-2 text-center"
-            }, e.hora_solicitado || "-"), React.createElement("td", {
-                className: "px-3 py-2 text-center"
-            }, e.hora_chegada || "-"), React.createElement("td", {
-                className: "px-3 py-2 text-center"
-            }, e.hora_saida || "-"), React.createElement("td", {
-                className: "px-3 py-2 text-center"
-            }, cl(e.tempo_execucao_minutos)), React.createElement("td", {
-                className: "px-3 py-2 text-right"
-            }, parseFloat(e.distancia || 0).toFixed(2), " km"), React.createElement("td", {
-                className: "px-3 py-2 text-center"
-            }, !0 === e.dentro_prazo && React.createElement("span", {
-                className: "text-green-600"
-            }, "✅"), !1 === e.dentro_prazo && React.createElement("span", {
-                className: "text-red-600"
-            }, "❌"), null === e.dentro_prazo && React.createElement("span", {
-                className: "text-gray-400"
-            }, "-")), React.createElement("td", {
-                className: "px-3 py-2 text-center"
-            }, e.finalizado ? new Date(e.finalizado).toLocaleDateString("pt-BR") : "-")))))), qt.length > 100 && React.createElement("div", {
-                className: "bg-gray-50 px-4 py-3 text-center text-sm text-gray-500"
-            }, "Mostrando 100 de ", qt.length, " registros. Use os filtros para refinar a busca.")), "upload" === Et && React.createElement("div", {
+                className: "bg-purple-100"
+            }, React.createElement("tr", null, 
+                React.createElement("th", {className: "px-2 py-2 text-center text-purple-900 w-8"}, ""),
+                React.createElement("th", {className: "px-2 py-2 text-left text-purple-900"}, "OS"),
+                React.createElement("th", {className: "px-2 py-2 text-left text-purple-900"}, "Profissional"),
+                React.createElement("th", {className: "px-2 py-2 text-center text-purple-900"}, "Tipo"),
+                React.createElement("th", {className: "px-2 py-2 text-center text-purple-900"}, "Ponto"),
+                React.createElement("th", {className: "px-2 py-2 text-left text-purple-900 max-w-xs"}, "Endereço"),
+                React.createElement("th", {className: "px-2 py-2 text-center text-purple-900"}, "Data Solic."),
+                React.createElement("th", {className: "px-2 py-2 text-center text-purple-900"}, "H. Alocação"),
+                React.createElement("th", {className: "px-2 py-2 text-center text-purple-900"}, "H. Chegada"),
+                React.createElement("th", {className: "px-2 py-2 text-center text-purple-900"}, "T. Alocação"),
+                React.createElement("th", {className: "px-2 py-2 text-center text-purple-900"}, "T. Coleta"),
+                React.createElement("th", {className: "px-2 py-2 text-center text-purple-900"}, "T. Entrega"),
+                React.createElement("th", {className: "px-2 py-2 text-right text-purple-900"}, "KM"),
+                React.createElement("th", {className: "px-2 py-2 text-center text-purple-900"}, "Prazo"),
+                React.createElement("th", {className: "px-2 py-2 text-center text-purple-900"}, "Finalizado")
+            )), React.createElement("tbody", null, (function() {
+                // Agrupar dados por OS
+                var osAgrupadas = {};
+                qt.forEach(function(row) {
+                    var osNum = row.os;
+                    if (!osAgrupadas[osNum]) {
+                        osAgrupadas[osNum] = [];
+                    }
+                    osAgrupadas[osNum].push(row);
+                });
+                
+                // Ordenar cada grupo por ponto
+                Object.keys(osAgrupadas).forEach(function(os) {
+                    osAgrupadas[os].sort(function(a, b) {
+                        var pontoA = parseInt(a.ponto_num) || (a.ponto === "Coleta" ? 1 : 2);
+                        var pontoB = parseInt(b.ponto_num) || (b.ponto === "Coleta" ? 1 : 2);
+                        return pontoA - pontoB;
+                    });
+                });
+                
+                // Converter para array e ordenar por OS desc
+                var osArray = Object.keys(osAgrupadas).sort(function(a, b) {
+                    return parseInt(b) - parseInt(a);
+                }).slice(0, 200);
+                
+                // Estado para controlar expansão (usando window para persistir)
+                if (!window.osExpandidas) window.osExpandidas = {};
+                
+                return osArray.map(function(osNum, idx) {
+                    var pontos = osAgrupadas[osNum];
+                    var primeiroReg = pontos[0];
+                    var isExpanded = window.osExpandidas[osNum] || false;
+                    var temMaisPontos = pontos.length > 1;
+                    
+                    // Função para calcular tempos baseado nas regras
+                    var calcTempoAlocacao = function(row) {
+                        if (row.ponto !== "Coleta" && row.ponto_num !== 1 && row.ponto_num !== "1") return null;
+                        if (!row.data_hora_alocado || !row.data_hora) return null;
+                        var inicio = new Date(row.data_hora);
+                        var fim = new Date(row.data_hora_alocado);
+                        if (fim < inicio) return null;
+                        // Regra: se solicitado após 17h e alocado no dia seguinte, início = 08:00 do dia alocado
+                        if (inicio.getHours() >= 17 && fim.toDateString() !== inicio.toDateString()) {
+                            inicio = new Date(fim.toDateString() + " 08:00:00");
+                        }
+                        return (fim - inicio) / 60000;
+                    };
+                    
+                    var calcTempoColeta = function(row) {
+                        if (row.ponto !== "Coleta" && row.ponto_num !== 1 && row.ponto_num !== "1") return null;
+                        if (!row.data_hora_alocado || !row.data_chegada || !row.hora_chegada) return null;
+                        var inicio = new Date(row.data_hora_alocado);
+                        var fimStr = row.data_chegada.split("T")[0] + "T" + row.hora_chegada;
+                        var fim = new Date(fimStr);
+                        if (fim < inicio) return null;
+                        // Regra: se alocado após 17h e chegada no dia seguinte, início = 08:00 do dia chegada
+                        if (inicio.getHours() >= 17 && fim.toDateString() !== inicio.toDateString()) {
+                            inicio = new Date(fim.toDateString() + " 08:00:00");
+                        }
+                        return (fim - inicio) / 60000;
+                    };
+                    
+                    var calcTempoEntrega = function(row) {
+                        var pontoNum = parseInt(row.ponto_num) || (row.ponto === "Coleta" ? 1 : 2);
+                        if (pontoNum < 2) return null;
+                        if (!row.data_hora) return null;
+                        var inicio = new Date(row.data_hora);
+                        var fim = null;
+                        if (row.data_chegada && row.hora_chegada) {
+                            var fimStr = row.data_chegada.split("T")[0] + "T" + row.hora_chegada;
+                            fim = new Date(fimStr);
+                        } else if (row.finalizado) {
+                            fim = new Date(row.finalizado);
+                        }
+                        if (!fim || fim < inicio) return null;
+                        // Regra: se não é mesma data, início = 08:00 do dia da chegada
+                        if (fim.toDateString() !== inicio.toDateString()) {
+                            inicio = new Date(fim.toDateString() + " 08:00:00");
+                        }
+                        return (fim - inicio) / 60000;
+                    };
+                    
+                    var formatTempo = function(mins) {
+                        if (mins === null || mins === undefined || isNaN(mins) || mins < 0) return "-";
+                        var h = Math.floor(mins / 60);
+                        var m = Math.floor(mins % 60);
+                        var s = Math.floor((mins % 1) * 60);
+                        return String(h).padStart(2, "0") + ":" + String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+                    };
+                    
+                    var renderRow = function(row, isFirst, rowIdx) {
+                        var pontoNum = parseInt(row.ponto_num) || (row.ponto === "Coleta" ? 1 : 2);
+                        var tipo = pontoNum === 1 ? "Coleta" : "Entrega";
+                        var tAlocacao = calcTempoAlocacao(row);
+                        var tColeta = calcTempoColeta(row);
+                        var tEntrega = calcTempoEntrega(row);
+                        var horaAlocado = row.data_hora_alocado ? new Date(row.data_hora_alocado).toLocaleTimeString("pt-BR", {hour: "2-digit", minute: "2-digit", second: "2-digit"}) : "-";
+                        
+                        return React.createElement("tr", {
+                            key: osNum + "-" + rowIdx,
+                            className: "border-b hover:bg-purple-50 " + (isFirst ? (idx % 2 === 0 ? "bg-white" : "bg-gray-50") : "bg-blue-50")
+                        },
+                            // Botão expandir (só na primeira linha)
+                            React.createElement("td", {className: "px-2 py-1 text-center"}, 
+                                isFirst && temMaisPontos ? React.createElement("button", {
+                                    onClick: function() {
+                                        window.osExpandidas[osNum] = !window.osExpandidas[osNum];
+                                        // Forçar re-render
+                                        Ut([...qt]);
+                                    },
+                                    className: "w-5 h-5 rounded bg-purple-600 text-white text-xs font-bold hover:bg-purple-700"
+                                }, isExpanded ? "−" : "+") : ""
+                            ),
+                            // OS
+                            React.createElement("td", {className: "px-2 py-1 font-medium text-purple-700"}, row.os),
+                            // Profissional
+                            React.createElement("td", {className: "px-2 py-1 truncate max-w-[120px]", title: row.nome_prof}, row.nome_prof || "-"),
+                            // Tipo
+                            React.createElement("td", {className: "px-2 py-1 text-center"}, 
+                                React.createElement("span", {
+                                    className: "px-2 py-0.5 rounded text-xs font-medium " + (tipo === "Coleta" ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700")
+                                }, tipo)
+                            ),
+                            // Ponto
+                            React.createElement("td", {className: "px-2 py-1 text-center font-medium"}, "Ponto " + pontoNum),
+                            // Endereço
+                            React.createElement("td", {className: "px-2 py-1 truncate max-w-[200px]", title: row.endereco}, row.endereco || "-"),
+                            // Data Solicitado
+                            React.createElement("td", {className: "px-2 py-1 text-center"}, row.data_solicitado ? new Date(row.data_solicitado).toLocaleDateString("pt-BR") : "-"),
+                            // Hora Alocação
+                            React.createElement("td", {className: "px-2 py-1 text-center"}, horaAlocado),
+                            // Hora Chegada
+                            React.createElement("td", {className: "px-2 py-1 text-center"}, row.hora_chegada || "-"),
+                            // T. Alocação
+                            React.createElement("td", {className: "px-2 py-1 text-center text-pink-600 font-medium"}, formatTempo(tAlocacao)),
+                            // T. Coleta
+                            React.createElement("td", {className: "px-2 py-1 text-center text-fuchsia-600 font-medium"}, formatTempo(tColeta)),
+                            // T. Entrega
+                            React.createElement("td", {className: "px-2 py-1 text-center text-rose-600 font-medium"}, formatTempo(tEntrega)),
+                            // KM
+                            React.createElement("td", {className: "px-2 py-1 text-right"}, parseFloat(row.distancia || 0).toFixed(2) + " km"),
+                            // Prazo
+                            React.createElement("td", {className: "px-2 py-1 text-center"}, 
+                                row.dentro_prazo === true ? React.createElement("span", {className: "text-green-600 font-bold"}, "✅") :
+                                row.dentro_prazo === false ? React.createElement("span", {className: "text-red-600 font-bold"}, "❌") :
+                                React.createElement("span", {className: "text-gray-400"}, "-")
+                            ),
+                            // Finalizado
+                            React.createElement("td", {className: "px-2 py-1 text-center text-xs"}, row.finalizado ? new Date(row.finalizado).toLocaleDateString("pt-BR") : "-")
+                        );
+                    };
+                    
+                    // Renderizar linhas
+                    var rows = [];
+                    rows.push(renderRow(primeiroReg, true, 0));
+                    
+                    if (isExpanded && temMaisPontos) {
+                        for (var i = 1; i < pontos.length; i++) {
+                            rows.push(renderRow(pontos[i], false, i));
+                        }
+                    }
+                    
+                    return rows;
+                }).flat();
+            })())))),
+            // Contador
+            qt.length > 200 && React.createElement("div", {
+                className: "bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-3 text-center text-sm text-yellow-700"
+            }, "⚠️ Mostrando 200 de ", (function() {
+                var osUnicas = {};
+                qt.forEach(function(r) { osUnicas[r.os] = true; });
+                return Object.keys(osUnicas).length;
+            })(), " OS únicas. Use os filtros para refinar a busca.")
+            ), "upload" === Et && React.createElement("div", {
                 className: "space-y-6"
             }, React.createElement("div", {
                 className: "bg-white rounded-xl shadow p-6"
