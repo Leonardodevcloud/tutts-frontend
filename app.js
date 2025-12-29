@@ -15178,8 +15178,8 @@ const hideLoadingScreen = () => {
                 // Ordenar cada grupo por ponto
                 Object.keys(osAgrupadas).forEach(function(os) {
                     osAgrupadas[os].sort(function(a, b) {
-                        var pontoA = parseInt(a.ponto_num) || (a.ponto === "Coleta" ? 1 : 2);
-                        var pontoB = parseInt(b.ponto_num) || (b.ponto === "Coleta" ? 1 : 2);
+                        var pontoA = parseInt(a.ponto) || 1;
+                        var pontoB = parseInt(b.ponto) || 1;
                         return pontoA - pontoB;
                     });
                 });
@@ -15200,48 +15200,58 @@ const hideLoadingScreen = () => {
                     
                     // Função para calcular tempos baseado nas regras
                     var calcTempoAlocacao = function(row) {
-                        if (row.ponto !== "Coleta" && row.ponto_num !== 1 && row.ponto_num !== "1") return null;
+                        // Só para ponto = 1 (coleta)
+                        var pontoNum = parseInt(row.ponto) || 1;
+                        if (pontoNum !== 1) return null;
                         if (!row.data_hora_alocado || !row.data_hora) return null;
                         var inicio = new Date(row.data_hora);
                         var fim = new Date(row.data_hora_alocado);
+                        if (isNaN(inicio.getTime()) || isNaN(fim.getTime())) return null;
                         if (fim < inicio) return null;
                         // Regra: se solicitado após 17h e alocado no dia seguinte, início = 08:00 do dia alocado
                         if (inicio.getHours() >= 17 && fim.toDateString() !== inicio.toDateString()) {
-                            inicio = new Date(fim.toDateString() + " 08:00:00");
+                            inicio = new Date(fim.getFullYear(), fim.getMonth(), fim.getDate(), 8, 0, 0);
                         }
                         return (fim - inicio) / 60000;
                     };
                     
                     var calcTempoColeta = function(row) {
-                        if (row.ponto !== "Coleta" && row.ponto_num !== 1 && row.ponto_num !== "1") return null;
+                        // Só para ponto = 1 (coleta)
+                        var pontoNum = parseInt(row.ponto) || 1;
+                        if (pontoNum !== 1) return null;
                         if (!row.data_hora_alocado || !row.data_chegada || !row.hora_chegada) return null;
                         var inicio = new Date(row.data_hora_alocado);
-                        var fimStr = row.data_chegada.split("T")[0] + "T" + row.hora_chegada;
-                        var fim = new Date(fimStr);
+                        if (isNaN(inicio.getTime())) return null;
+                        // Montar data/hora chegada
+                        var dataChegada = row.data_chegada.split("T")[0];
+                        var fim = new Date(dataChegada + "T" + row.hora_chegada);
+                        if (isNaN(fim.getTime())) return null;
                         if (fim < inicio) return null;
                         // Regra: se alocado após 17h e chegada no dia seguinte, início = 08:00 do dia chegada
                         if (inicio.getHours() >= 17 && fim.toDateString() !== inicio.toDateString()) {
-                            inicio = new Date(fim.toDateString() + " 08:00:00");
+                            inicio = new Date(fim.getFullYear(), fim.getMonth(), fim.getDate(), 8, 0, 0);
                         }
                         return (fim - inicio) / 60000;
                     };
                     
                     var calcTempoEntrega = function(row) {
-                        var pontoNum = parseInt(row.ponto_num) || (row.ponto === "Coleta" ? 1 : 2);
+                        // Só para ponto >= 2 (entregas)
+                        var pontoNum = parseInt(row.ponto) || 1;
                         if (pontoNum < 2) return null;
                         if (!row.data_hora) return null;
                         var inicio = new Date(row.data_hora);
+                        if (isNaN(inicio.getTime())) return null;
                         var fim = null;
                         if (row.data_chegada && row.hora_chegada) {
-                            var fimStr = row.data_chegada.split("T")[0] + "T" + row.hora_chegada;
-                            fim = new Date(fimStr);
+                            var dataChegada = row.data_chegada.split("T")[0];
+                            fim = new Date(dataChegada + "T" + row.hora_chegada);
                         } else if (row.finalizado) {
                             fim = new Date(row.finalizado);
                         }
-                        if (!fim || fim < inicio) return null;
+                        if (!fim || isNaN(fim.getTime()) || fim < inicio) return null;
                         // Regra: se não é mesma data, início = 08:00 do dia da chegada
                         if (fim.toDateString() !== inicio.toDateString()) {
-                            inicio = new Date(fim.toDateString() + " 08:00:00");
+                            inicio = new Date(fim.getFullYear(), fim.getMonth(), fim.getDate(), 8, 0, 0);
                         }
                         return (fim - inicio) / 60000;
                     };
@@ -15254,13 +15264,45 @@ const hideLoadingScreen = () => {
                         return String(h).padStart(2, "0") + ":" + String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
                     };
                     
+                    // Função para formatar data corretamente
+                    var formatData = function(dataStr) {
+                        if (!dataStr) return "-";
+                        // Se já é uma data ISO ou string de data
+                        var d = new Date(dataStr);
+                        if (isNaN(d.getTime())) return "-";
+                        // Ajustar para evitar problema de timezone
+                        var dia = String(d.getDate()).padStart(2, "0");
+                        var mes = String(d.getMonth() + 1).padStart(2, "0");
+                        var ano = d.getFullYear();
+                        return dia + "/" + mes + "/" + ano;
+                    };
+                    
                     var renderRow = function(row, isFirst, rowIdx) {
-                        var pontoNum = parseInt(row.ponto_num) || (row.ponto === "Coleta" ? 1 : 2);
-                        var tipo = pontoNum === 1 ? "Coleta" : "Entrega";
+                        // Ponto vem como número do backend
+                        var pontoNum = parseInt(row.ponto) || 1;
+                        
+                        // Verificar se é retorno (ocorrencia contém "retorno")
+                        var isRetorno = row.ocorrencia && row.ocorrencia.toLowerCase().indexOf("retorno") !== -1;
+                        
+                        // Determinar tipo: Coleta (ponto 1), Entrega (ponto >= 2), ou Retorno
+                        var tipo = isRetorno ? "Retorno" : (pontoNum === 1 ? "Coleta" : "Entrega");
+                        var tipoClass = isRetorno ? "bg-orange-100 text-orange-700" : 
+                                        (pontoNum === 1 ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700");
+                        
                         var tAlocacao = calcTempoAlocacao(row);
                         var tColeta = calcTempoColeta(row);
                         var tEntrega = calcTempoEntrega(row);
                         var horaAlocado = row.data_hora_alocado ? new Date(row.data_hora_alocado).toLocaleTimeString("pt-BR", {hour: "2-digit", minute: "2-digit", second: "2-digit"}) : "-";
+                        
+                        // Formatar data solicitado corretamente
+                        var dataSolic = "-";
+                        if (row.data_solicitado) {
+                            // data_solicitado pode vir como "2024-12-01" ou "2024-12-01T00:00:00"
+                            var partes = row.data_solicitado.split("T")[0].split("-");
+                            if (partes.length === 3) {
+                                dataSolic = partes[2] + "/" + partes[1] + "/" + partes[0];
+                            }
+                        }
                         
                         return React.createElement("tr", {
                             key: osNum + "-" + rowIdx,
@@ -15281,10 +15323,10 @@ const hideLoadingScreen = () => {
                             React.createElement("td", {className: "px-2 py-1 font-medium text-purple-700"}, row.os),
                             // Profissional
                             React.createElement("td", {className: "px-2 py-1 truncate max-w-[120px]", title: row.nome_prof}, row.nome_prof || "-"),
-                            // Tipo
+                            // Tipo (Coleta/Entrega/Retorno)
                             React.createElement("td", {className: "px-2 py-1 text-center"}, 
                                 React.createElement("span", {
-                                    className: "px-2 py-0.5 rounded text-xs font-medium " + (tipo === "Coleta" ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700")
+                                    className: "px-2 py-0.5 rounded text-xs font-medium " + tipoClass
                                 }, tipo)
                             ),
                             // Ponto
@@ -15292,7 +15334,7 @@ const hideLoadingScreen = () => {
                             // Endereço
                             React.createElement("td", {className: "px-2 py-1 truncate max-w-[200px]", title: row.endereco}, row.endereco || "-"),
                             // Data Solicitado
-                            React.createElement("td", {className: "px-2 py-1 text-center"}, row.data_solicitado ? new Date(row.data_solicitado).toLocaleDateString("pt-BR") : "-"),
+                            React.createElement("td", {className: "px-2 py-1 text-center"}, dataSolic),
                             // Hora Alocação
                             React.createElement("td", {className: "px-2 py-1 text-center"}, horaAlocado),
                             // Hora Chegada
@@ -15312,7 +15354,7 @@ const hideLoadingScreen = () => {
                                 React.createElement("span", {className: "text-gray-400"}, "-")
                             ),
                             // Finalizado
-                            React.createElement("td", {className: "px-2 py-1 text-center text-xs"}, row.finalizado ? new Date(row.finalizado).toLocaleDateString("pt-BR") : "-")
+                            React.createElement("td", {className: "px-2 py-1 text-center text-xs"}, row.finalizado ? formatData(row.finalizado) : "-")
                         );
                     };
                     
