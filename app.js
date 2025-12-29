@@ -2868,10 +2868,18 @@ const hideLoadingScreen = () => {
             }
             Ra(!1)
         }, cl = e => {
+            // Função para formatar tempo em minutos para HH:MM:SS
+            // Recebe minutos (ex: 45.5) e retorna "00:45:30"
             if (!e && 0 !== e) return "-";
-            const t = Math.floor(e / 60),
-                a = Math.round(e % 60);
-            return t > 0 ? `${String(t).padStart(2,"0")}:${String(a).padStart(2,"0")}:00` : `00:${String(a).padStart(2,"0")}:00`
+            const totalMinutos = parseFloat(e) || 0;
+            if (totalMinutos <= 0) return "00:00:00";
+            
+            const totalSegundos = Math.round(totalMinutos * 60);
+            const h = Math.floor(totalSegundos / 3600);
+            const m = Math.floor((totalSegundos % 3600) / 60);
+            const s = totalSegundos % 60;
+            
+            return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`
         }, sl = e => e || 0 === e ? new Intl.NumberFormat("pt-BR", {
             style: "currency",
             currency: "BRL"
