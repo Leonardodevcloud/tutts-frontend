@@ -16542,7 +16542,7 @@ const hideLoadingScreen = () => {
                         )
                     )
                 )
-            ))), !ft && "dashboard" === Et && React.createElement("div", {
+            )), !ft && "dashboard" === Et && React.createElement("div", {
                 className: "bg-white rounded-xl shadow p-10 text-center"
             }, React.createElement("p", {
                 className: "text-5xl mb-4"
