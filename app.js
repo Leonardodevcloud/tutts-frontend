@@ -2399,7 +2399,38 @@ const hideLoadingScreen = () => {
             }
         }, Xa = () => {
             const e = new URLSearchParams;
-            return ua.data_inicio && e.append("data_inicio", ua.data_inicio), ua.data_fim && e.append("data_fim", ua.data_fim), ua.cod_cliente && ua.cod_cliente.length > 0 && e.append("cod_cliente", Array.isArray(ua.cod_cliente) ? ua.cod_cliente.join(",") : ua.cod_cliente), ua.centro_custo && ua.centro_custo.length > 0 && e.append("centro_custo", Array.isArray(ua.centro_custo) ? ua.centro_custo.join(",") : ua.centro_custo), ua.cod_prof && e.append("cod_prof", ua.cod_prof), ua.categoria && e.append("categoria", ua.categoria), ua.cidade && e.append("cidade", ua.cidade), ua.status_prazo && e.append("status_prazo", ua.status_prazo), ua.status_retorno && e.append("status_retorno", ua.status_retorno), e
+            ua.data_inicio && e.append("data_inicio", ua.data_inicio), ua.data_fim && e.append("data_fim", ua.data_fim);
+            
+            // Se tiver região selecionada, expandir para clientes e centros de custo
+            let clientesParaEnviar = ua.cod_cliente || [];
+            let centrosCustoParaEnviar = ua.centro_custo || [];
+            
+            if (ua.regiao) {
+                const regiaoObj = aa.find(r => r.id === parseInt(ua.regiao));
+                if (regiaoObj && regiaoObj.clientes) {
+                    const itensRegiao = regiaoObj.clientes.map(function(item) {
+                        if (typeof item === 'number') {
+                            return { cod_cliente: item, centro_custo: null };
+                        }
+                        return item;
+                    });
+                    // Extrair clientes únicos
+                    const clientesRegiao = [...new Set(itensRegiao.map(i => String(i.cod_cliente)))];
+                    clientesParaEnviar = clientesRegiao;
+                    // Extrair centros de custo específicos (ignorar null = todos)
+                    const ccRegiao = itensRegiao
+                        .filter(i => i.centro_custo !== null)
+                        .map(i => i.centro_custo);
+                    if (ccRegiao.length > 0) {
+                        centrosCustoParaEnviar = ccRegiao;
+                    }
+                }
+            }
+            
+            clientesParaEnviar && clientesParaEnviar.length > 0 && e.append("cod_cliente", Array.isArray(clientesParaEnviar) ? clientesParaEnviar.join(",") : clientesParaEnviar);
+            centrosCustoParaEnviar && centrosCustoParaEnviar.length > 0 && e.append("centro_custo", Array.isArray(centrosCustoParaEnviar) ? centrosCustoParaEnviar.join(",") : centrosCustoParaEnviar);
+            ua.cod_prof && e.append("cod_prof", ua.cod_prof), ua.categoria && e.append("categoria", ua.categoria), ua.cidade && e.append("cidade", ua.cidade), ua.status_prazo && e.append("status_prazo", ua.status_prazo), ua.status_retorno && e.append("status_retorno", ua.status_retorno);
+            return e;
         }, carregarMapaCalor = async () => {
             try {
                 setMapaCalorLoading(true);
@@ -2747,12 +2778,27 @@ const hideLoadingScreen = () => {
             const t = na;
             if (!t || 0 === t.length) return da(jt), Pt(At), void xa(ra);
             let a = e.cod_cliente || [];
+            let centrosCustoRegiao = [];
             if (e.regiao) {
                 const t = aa.find(t => t.id === parseInt(e.regiao));
-                t && t.clientes && (a = t.clientes.map(e => String(e)))
+                if (t && t.clientes) {
+                    // Suporta formato antigo (array de números) e novo (array de objetos)
+                    const itensRegiao = t.clientes.map(function(item) {
+                        if (typeof item === 'number') {
+                            return { cod_cliente: item, centro_custo: null };
+                        }
+                        return item;
+                    });
+                    // Extrair clientes únicos
+                    a = [...new Set(itensRegiao.map(i => String(i.cod_cliente)))];
+                    // Extrair centros de custo específicos (ignorar null = todos)
+                    centrosCustoRegiao = itensRegiao
+                        .filter(i => i.centro_custo !== null)
+                        .map(i => i.centro_custo);
+                }
             }
             let l = t;
-            if (a.length > 0 && (l = l.filter(e => a.includes(String(e.cod_cliente)))), e.categoria && (l = l.filter(t => t.categoria === e.categoria)), e.centro_custo && e.centro_custo.length > 0 && (l = l.filter(t => e.centro_custo.includes(t.centro_custo))), 0 === a.length) {
+            if (a.length > 0 && (l = l.filter(e => a.includes(String(e.cod_cliente)))), e.categoria && (l = l.filter(t => t.categoria === e.categoria)), e.centro_custo && e.centro_custo.length > 0 && (l = l.filter(t => e.centro_custo.includes(t.centro_custo))), centrosCustoRegiao.length > 0 && (l = l.filter(t => centrosCustoRegiao.includes(t.centro_custo))), 0 === a.length) {
                 const e = [...new Set(l.map(e => e.cod_cliente))];
                 da(jt.filter(t => e.includes(t.cod_cliente)))
             } else {
@@ -2775,7 +2821,36 @@ const hideLoadingScreen = () => {
                 // Limpar dados expandidos de profissionais para forçar recarregamento com novos filtros
                 setProfOsExpandido({});
                 const t = new URLSearchParams;
-                e.data_inicio && t.append("data_inicio", e.data_inicio), e.data_fim && t.append("data_fim", e.data_fim), e.cod_cliente && e.cod_cliente.length > 0 && e.cod_cliente.forEach(e => t.append("cod_cliente", e)), e.centro_custo && e.centro_custo.length > 0 && e.centro_custo.forEach(e => t.append("centro_custo", e)), e.cod_prof && t.append("cod_prof", e.cod_prof), e.categoria && t.append("categoria", e.categoria), e.cidade && t.append("cidade", e.cidade), e.status_prazo && t.append("status_prazo", e.status_prazo), e.status_retorno && t.append("status_retorno", e.status_retorno), console.log("📊 loadBiDashboardComFiltros - params:", t.toString());
+                e.data_inicio && t.append("data_inicio", e.data_inicio), e.data_fim && t.append("data_fim", e.data_fim);
+                
+                // Se tiver região selecionada, expandir para clientes e centros de custo
+                let clientesParaEnviar = e.cod_cliente || [];
+                let centrosCustoParaEnviar = e.centro_custo || [];
+                
+                if (e.regiao) {
+                    const regiaoObj = aa.find(r => r.id === parseInt(e.regiao));
+                    if (regiaoObj && regiaoObj.clientes) {
+                        const itensRegiao = regiaoObj.clientes.map(function(item) {
+                            if (typeof item === 'number') {
+                                return { cod_cliente: item, centro_custo: null };
+                            }
+                            return item;
+                        });
+                        // Extrair clientes únicos
+                        clientesParaEnviar = [...new Set(itensRegiao.map(i => String(i.cod_cliente)))];
+                        // Extrair centros de custo específicos (ignorar null = todos)
+                        const ccRegiao = itensRegiao
+                            .filter(i => i.centro_custo !== null)
+                            .map(i => i.centro_custo);
+                        if (ccRegiao.length > 0) {
+                            centrosCustoParaEnviar = ccRegiao;
+                        }
+                    }
+                }
+                
+                clientesParaEnviar && clientesParaEnviar.length > 0 && clientesParaEnviar.forEach(c => t.append("cod_cliente", c));
+                centrosCustoParaEnviar && centrosCustoParaEnviar.length > 0 && centrosCustoParaEnviar.forEach(c => t.append("centro_custo", c));
+                e.cod_prof && t.append("cod_prof", e.cod_prof), e.categoria && t.append("categoria", e.categoria), e.cidade && t.append("cidade", e.cidade), e.status_prazo && t.append("status_prazo", e.status_prazo), e.status_retorno && t.append("status_retorno", e.status_retorno), console.log("📊 loadBiDashboardComFiltros - params:", t.toString());
                 const a = await fetch(`${API_URL}/bi/dashboard-completo?${t}`),
                     l = await a.json();
                 console.log("📊 loadBiDashboardComFiltros - resposta:", l), console.log("📊 metricas:", l.metricas), console.log("📊 porCliente:", l.porCliente?.length, "registros"), console.log("📊 porProfissional:", l.porProfissional?.length, "registros"), Nt(l.metricas || {}), Bt(l.porCliente || []), Jt(l.porProfissional || []);
