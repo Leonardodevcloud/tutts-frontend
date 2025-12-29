@@ -16550,7 +16550,7 @@ const hideLoadingScreen = () => {
                 className: "text-gray-500"
             }, "Nenhum dado encontrado"), React.createElement("p", {
                 className: "text-sm text-gray-400 mt-2"
-            }, 'Faça upload de uma planilha na aba "Upload"')))))
+            }, 'Faça upload de uma planilha na aba "Upload"'))))
         }
         
         // ========== PÁGINA HOME - BEM-VINDO ==========
