@@ -15409,12 +15409,16 @@ const hideLoadingScreen = () => {
                 return osArray.map(function(osNum, idx) {
                     var pontos = osAgrupadas[osNum];
                     var primeiroReg = pontos[0];
+                    var ultimoReg = pontos[pontos.length - 1]; // Último ponto da OS (onde tem o finalizado real)
                     var isExpanded = window.osExpandidas[osNum] || false;
                     var temMaisPontos = pontos.length > 1;
                     
                     // O tempo total da OS vem diretamente do banco no campo tempo_execucao_minutos
                     // Este campo é calculado a partir da coluna "Execução - Espera" do Excel importado
                     var tempoTotalOS = primeiroReg.tempo_execucao_minutos;
+                    
+                    // Pegar o finalizado da OS (do último ponto, que é quando realmente terminou)
+                    var finalizadoOS = ultimoReg.finalizado || primeiroReg.finalizado;
                     
                     var formatTempo = function(mins) {
                         if (mins === null || mins === undefined || isNaN(mins) || mins < 0) return "-";
@@ -15423,6 +15427,57 @@ const hideLoadingScreen = () => {
                         var s = Math.floor((mins % 1) * 60);
                         return String(h).padStart(2, "0") + ":" + String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
                     };
+                    
+                    // Função para calcular tempo com regras de horário comercial (igual ao backend/DAX)
+                    var calcularTempoComRegras = function(dataHoraInicio, dataHoraFim) {
+                        if (!dataHoraInicio || !dataHoraFim) return null;
+                        
+                        var inicio = new Date(dataHoraInicio);
+                        var fim = new Date(dataHoraFim);
+                        
+                        if (isNaN(inicio.getTime()) || isNaN(fim.getTime())) return null;
+                        if (fim < inicio) return null;
+                        
+                        var horaInicio = inicio.getHours();
+                        var depoisDas17 = horaInicio >= 17;
+                        var diaInicio = inicio.toISOString().split('T')[0];
+                        var diaFim = fim.toISOString().split('T')[0];
+                        var mesmaData = diaInicio === diaFim;
+                        
+                        var inicioContagem;
+                        if (depoisDas17 && !mesmaData) {
+                            // Começa às 8h do dia do fim
+                            inicioContagem = new Date(diaFim + 'T08:00:00');
+                        } else if (!mesmaData) {
+                            // Dias diferentes mas não após 17h - começa às 8h do dia do fim
+                            inicioContagem = new Date(diaFim + 'T08:00:00');
+                        } else {
+                            inicioContagem = inicio;
+                        }
+                        
+                        var difMinutos = (fim - inicioContagem) / (1000 * 60);
+                        if (difMinutos < 0 || isNaN(difMinutos)) return null;
+                        return difMinutos;
+                    };
+                    
+                    // Calcular T. Entrega e T. Entrega Prof usando o finalizado da OS completa
+                    // T. Entrega: Data/Hora Solicitado (ponto 1) → Finalizado (último ponto)
+                    var tempoEntregaOS = calcularTempoComRegras(primeiroReg.data_hora, finalizadoOS);
+                    
+                    // T. Entrega Prof: Data/Hora Alocado (ponto 1) → Finalizado (último ponto)
+                    var tempoEntregaProfOS = calcularTempoComRegras(primeiroReg.data_hora_alocado, finalizadoOS);
+                    
+                    // Hora que a OS foi finalizada
+                    var extrairHoraOS = function(dataHoraStr) {
+                        if (!dataHoraStr) return "-";
+                        var str = String(dataHoraStr);
+                        var match = str.match(/(\d{2}):(\d{2}):(\d{2})/);
+                        if (match) {
+                            return match[1] + ":" + match[2] + ":" + match[3];
+                        }
+                        return "-";
+                    };
+                    var horaEntregueOS = extrairHoraOS(finalizadoOS);
                     
                     // Função para formatar data corretamente
                     var formatData = function(dataStr) {
@@ -15478,46 +15533,6 @@ const hideLoadingScreen = () => {
                         
                         var horaAlocado = extrairHora(row.data_hora_alocado);
                         var horaSolicitado = row.hora_solicitado || extrairHora(row.data_hora);
-                        var horaEntregue = extrairHora(row.finalizado);
-                        
-                        // Função para calcular tempo com regras de horário comercial (igual ao backend/DAX)
-                        // Regra: se início após 17h e fim em outro dia, começa a contar às 8h do dia do fim
-                        var calcularTempoComRegras = function(dataHoraInicio, dataHoraFim) {
-                            if (!dataHoraInicio || !dataHoraFim) return null;
-                            
-                            var inicio = new Date(dataHoraInicio);
-                            var fim = new Date(dataHoraFim);
-                            
-                            if (isNaN(inicio.getTime()) || isNaN(fim.getTime())) return null;
-                            if (fim < inicio) return null;
-                            
-                            var horaInicio = inicio.getHours();
-                            var depoisDas17 = horaInicio >= 17;
-                            var diaInicio = inicio.toISOString().split('T')[0];
-                            var diaFim = fim.toISOString().split('T')[0];
-                            var mesmaData = diaInicio === diaFim;
-                            
-                            var inicioContagem;
-                            if (depoisDas17 && !mesmaData) {
-                                // Começa às 8h do dia do fim
-                                inicioContagem = new Date(diaFim + 'T08:00:00');
-                            } else if (!mesmaData) {
-                                // Dias diferentes mas não após 17h - começa às 8h do dia do fim
-                                inicioContagem = new Date(diaFim + 'T08:00:00');
-                            } else {
-                                inicioContagem = inicio;
-                            }
-                            
-                            var difMinutos = (fim - inicioContagem) / (1000 * 60);
-                            if (difMinutos < 0 || isNaN(difMinutos)) return null;
-                            return difMinutos;
-                        };
-                        
-                        // T. Entrega: Data/Hora Solicitado → Finalizado (com regras de horário comercial)
-                        var tempoEntrega = calcularTempoComRegras(row.data_hora, row.finalizado);
-                        
-                        // T. Entrega Prof: Data/Hora Alocado → Finalizado (com regras de horário comercial)
-                        var tempoEntregaProf = calcularTempoComRegras(row.data_hora_alocado, row.finalizado);
                         
                         // Formatar data solicitado corretamente
                         var dataSolic = "-";
@@ -15564,12 +15579,12 @@ const hideLoadingScreen = () => {
                             React.createElement("td", {className: "px-2 py-1 text-center"}, horaAlocado),
                             // Hora Chegada
                             React.createElement("td", {className: "px-2 py-1 text-center"}, row.hora_chegada || "-"),
-                            // Hora Entregue (finalizado)
-                            React.createElement("td", {className: "px-2 py-1 text-center"}, horaEntregue),
-                            // T. Entrega (Solicitado → Finalizado)
-                            React.createElement("td", {className: "px-2 py-1 text-center font-medium bg-green-50 text-green-700"}, formatTempo(tempoEntrega)),
-                            // T. Entrega Prof (Alocado → Finalizado)
-                            React.createElement("td", {className: "px-2 py-1 text-center font-medium bg-blue-50 text-blue-700"}, formatTempo(tempoEntregaProf)),
+                            // Hora Entregue (finalizado da OS)
+                            React.createElement("td", {className: "px-2 py-1 text-center"}, horaEntregueOS),
+                            // T. Entrega (Solicitado → Finalizado da OS)
+                            React.createElement("td", {className: "px-2 py-1 text-center font-medium bg-green-50 text-green-700"}, formatTempo(tempoEntregaOS)),
+                            // T. Entrega Prof (Alocado → Finalizado da OS)
+                            React.createElement("td", {className: "px-2 py-1 text-center font-medium bg-blue-50 text-blue-700"}, formatTempo(tempoEntregaProfOS)),
                             // T. Total OS (tempo de execução do banco - só mostra na primeira linha da OS)
                             React.createElement("td", {className: "px-2 py-1 text-center font-bold " + (isFirst ? "bg-purple-100 text-purple-800" : "bg-purple-50 text-purple-400")}, 
                                 isFirst ? formatTempo(tempoTotalOS) : ""
