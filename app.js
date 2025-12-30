@@ -13571,7 +13571,7 @@ const hideLoadingScreen = () => {
                                 })()
                             )
                 )
-            ));
+            )
         }
         // ========== MÓDULO CONFIGURAÇÕES ==========
         if ("admin_master" === l.role && "config" === Ee) {
