@@ -13482,95 +13482,54 @@ const hideLoadingScreen = () => {
                                             React.createElement("span", {className: "text-3xl block mb-2"}, "🔍"),
                                             React.createElement("p", {className: "text-gray-500"}, "Nenhum cliente encontrado com \"", localizacaoFiltro, "\"")
                                         )
-                                        : clientesFiltrados.map(cliente => React.createElement("div", {
-                                            key: cliente.cod_cliente + (cliente.centro_custo || ''),
-                                            className: "bg-white rounded-xl shadow-lg overflow-hidden border-l-4 border-teal-500"
-                                        },
-                                            // Cabeçalho do cliente
-                                            React.createElement("div", {className: "bg-gradient-to-r from-teal-50 to-white p-4 border-b"},
-                                                React.createElement("div", {className: "flex items-center justify-between"},
-                                                    React.createElement("div", {className: "flex items-center gap-3"},
-                                                        React.createElement("span", {className: "text-2xl"}, "🏢"),
-                                                        React.createElement("div", null,
-                                                            React.createElement("p", {className: "font-bold text-teal-800 text-lg"}, 
-                                                                cliente.cod_cliente, " - ", cliente.nome_cliente
-                                                            ),
-                                                            cliente.centro_custo && React.createElement("p", {className: "text-sm font-semibold text-purple-600"}, 
-                                                                "📦 ", cliente.centro_custo
-                                                            ),
-                                                            React.createElement("p", {className: "text-sm text-gray-500"}, 
-                                                                cliente.enderecos?.length || 0, " endereço(s) de coleta"
-                                                            )
-                                                        )
-                                                    ),
-                                                    React.createElement("span", {className: "px-3 py-1 bg-teal-100 text-teal-700 rounded-full text-sm font-semibold"},
-                                                        "📍 ", cliente.enderecos?.length || 0
+                                        : React.createElement("div", {className: "bg-white rounded-xl shadow overflow-hidden"},
+                                            React.createElement("table", {className: "w-full"},
+                                                React.createElement("thead", {className: "bg-teal-50"},
+                                                    React.createElement("tr", null,
+                                                        React.createElement("th", {className: "px-4 py-3 text-left text-sm font-semibold text-teal-800"}, "Código"),
+                                                        React.createElement("th", {className: "px-4 py-3 text-left text-sm font-semibold text-teal-800"}, "Cliente"),
+                                                        React.createElement("th", {className: "px-4 py-3 text-left text-sm font-semibold text-teal-800 hidden md:table-cell"}, "Endereço"),
+                                                        React.createElement("th", {className: "px-4 py-3 text-left text-sm font-semibold text-teal-800 hidden lg:table-cell"}, "Cidade"),
+                                                        React.createElement("th", {className: "px-4 py-3 text-center text-sm font-semibold text-teal-800"}, "Ação")
                                                     )
+                                                ),
+                                                React.createElement("tbody", {className: "divide-y"},
+                                                    clientesFiltrados.map(cliente => {
+                                                        const end = cliente.enderecos?.[0] || {};
+                                                        return React.createElement("tr", {
+                                                            key: cliente.cod_cliente + (cliente.centro_custo || ''),
+                                                            className: "hover:bg-gray-50"
+                                                        },
+                                                            React.createElement("td", {className: "px-4 py-3 text-sm font-bold text-teal-700"}, cliente.cod_cliente),
+                                                            React.createElement("td", {className: "px-4 py-3"},
+                                                                React.createElement("p", {className: "text-sm font-semibold text-gray-800"}, cliente.nome_cliente),
+                                                                cliente.centro_custo && React.createElement("p", {className: "text-xs text-purple-600"}, "📦 ", cliente.centro_custo)
+                                                            ),
+                                                            React.createElement("td", {className: "px-4 py-3 text-sm text-gray-600 hidden md:table-cell max-w-xs truncate", title: end.endereco}, end.endereco || "-"),
+                                                            React.createElement("td", {className: "px-4 py-3 text-sm text-gray-600 hidden lg:table-cell"}, end.cidade || "-"),
+                                                            React.createElement("td", {className: "px-4 py-3 text-center"},
+                                                                React.createElement("div", {className: "flex items-center justify-center gap-2"},
+                                                                    React.createElement("a", {
+                                                                        href: gerarLinkWaze(end.endereco + " " + (end.cidade || ""), end.latitude, end.longitude),
+                                                                        target: "_blank",
+                                                                        rel: "noopener noreferrer",
+                                                                        className: "px-4 py-2 bg-cyan-500 text-white rounded-lg text-sm font-semibold hover:bg-cyan-600 flex items-center gap-1 shadow"
+                                                                    }, "🚗 Waze"),
+                                                                    React.createElement("button", {
+                                                                        onClick: () => copiarParaClipboard(
+                                                                            gerarLinkWaze(end.endereco + " " + (end.cidade || ""), end.latitude, end.longitude),
+                                                                            "Waze"
+                                                                        ),
+                                                                        className: "px-3 py-2 bg-cyan-100 text-cyan-700 rounded-lg text-sm font-semibold hover:bg-cyan-200",
+                                                                        title: "Copiar link"
+                                                                    }, "📋")
+                                                                )
+                                                            )
+                                                        );
+                                                    })
                                                 )
-                                            ),
-                                            // Lista de endereços
-                                            React.createElement("div", {className: "divide-y"},
-                                                (cliente.enderecos || []).map((end, idx) => React.createElement("div", {
-                                                    key: idx,
-                                                    className: "p-4 hover:bg-gray-50 transition-colors"
-                                                },
-                                                    React.createElement("div", {className: "flex flex-col md:flex-row md:items-center justify-between gap-4"},
-                                                        // Info do endereço
-                                                        React.createElement("div", {className: "flex-1"},
-                                                            React.createElement("p", {className: "font-semibold text-gray-800"}, "📌 ", end.endereco || "Sem endereço"),
-                                                            React.createElement("p", {className: "text-sm text-gray-600"}, 
-                                                                [end.bairro, end.cidade, end.estado].filter(Boolean).join(" - ") || "Localização não especificada"
-                                                            ),
-                                                            React.createElement("div", {className: "flex items-center gap-4 mt-2"},
-                                                                React.createElement("span", {className: "text-xs text-gray-500"}, 
-                                                                    "📦 ", end.total_entregas || 0, " entregas"
-                                                                ),
-                                                                end.latitude && end.longitude
-                                                                    ? React.createElement("span", {className: "text-xs text-green-600 flex items-center gap-1"},
-                                                                        "✅ Coordenadas: ", end.latitude?.toFixed(4), ", ", end.longitude?.toFixed(4)
-                                                                    )
-                                                                    : React.createElement("span", {className: "text-xs text-orange-500"},
-                                                                        "⚠️ Sem coordenadas"
-                                                                    )
-                                                            )
-                                                        ),
-                                                        // Botões de ação
-                                                        React.createElement("div", {className: "flex flex-wrap gap-2"},
-                                                            // Google Maps
-                                                            React.createElement("a", {
-                                                                href: gerarLinkGoogleMaps(end.endereco + " " + (end.cidade || ""), end.latitude, end.longitude),
-                                                                target: "_blank",
-                                                                rel: "noopener noreferrer",
-                                                                className: "px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 flex items-center gap-2 shadow"
-                                                            }, "🗺️ Maps"),
-                                                            // Copiar link Maps
-                                                            React.createElement("button", {
-                                                                onClick: () => copiarParaClipboard(
-                                                                    gerarLinkGoogleMaps(end.endereco + " " + (end.cidade || ""), end.latitude, end.longitude),
-                                                                    "Maps"
-                                                                ),
-                                                                className: "px-3 py-2 bg-blue-100 text-blue-700 rounded-lg text-sm font-semibold hover:bg-blue-200"
-                                                            }, "📋"),
-                                                            // Waze
-                                                            React.createElement("a", {
-                                                                href: gerarLinkWaze(end.endereco + " " + (end.cidade || ""), end.latitude, end.longitude),
-                                                                target: "_blank",
-                                                                rel: "noopener noreferrer",
-                                                                className: "px-4 py-2 bg-cyan-500 text-white rounded-lg text-sm font-semibold hover:bg-cyan-600 flex items-center gap-2 shadow"
-                                                            }, "🚗 Waze"),
-                                                            // Copiar link Waze
-                                                            React.createElement("button", {
-                                                                onClick: () => copiarParaClipboard(
-                                                                    gerarLinkWaze(end.endereco + " " + (end.cidade || ""), end.latitude, end.longitude),
-                                                                    "Waze"
-                                                                ),
-                                                                className: "px-3 py-2 bg-cyan-100 text-cyan-700 rounded-lg text-sm font-semibold hover:bg-cyan-200"
-                                                            }, "📋")
-                                                        )
-                                                    )
-                                                ))
                                             )
-                                        ));
+                                        );
                                 })()
                             )
                 )
