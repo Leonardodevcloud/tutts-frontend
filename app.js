@@ -74,7 +74,7 @@ const SISTEMA_MODULOS_CONFIG = [
       abas: [{id: "solicitacoes", label: "Solicitações"}, {id: "validacao", label: "Validação"}, {id: "conciliacao", label: "Conciliação"}, {id: "resumo", label: "Resumo"}, {id: "gratuidades", label: "Gratuidades"}, {id: "restritos", label: "Restritos"}, {id: "indicacoes", label: "Indicações"}, {id: "promonovatos", label: "Promo Novatos"}, {id: "loja", label: "Loja"}, {id: "relatorios", label: "Relatórios"}, {id: "horarios", label: "Horários"}, {id: "avisos", label: "Avisos"}, {id: "backup", label: "Backup"}]
     },
     { id: "operacional", label: "Operacional", icon: "⚙️",
-      abas: [{id: "indicacao", label: "Indicação"}, {id: "promonovatos", label: "Promo Novatos"}, {id: "avisos", label: "Avisos"}, {id: "novas-operacoes", label: "Novas Operações"}]
+      abas: [{id: "indicacao", label: "Indicação"}, {id: "promonovatos", label: "Promo Novatos"}, {id: "avisos", label: "Avisos"}, {id: "novas-operacoes", label: "Novas Operações"}, {id: "localizacao-clientes", label: "Localização Clientes"}]
     },
     { id: "disponibilidade", label: "Disponibilidade", icon: "📅",
       abas: [{id: "panorama", label: "Panorama"}, {id: "principal", label: "Principal"}, {id: "faltosos", label: "Faltosos"}, {id: "espelho", label: "Espelho"}, {id: "relatorios", label: "Relatórios"}, {id: "motoboys", label: "Motoboys"}, {id: "restricoes", label: "Restrições"}, {id: "config", label: "Configurações"}]
@@ -945,6 +945,10 @@ const hideLoadingScreen = () => {
         [operacaoExpandida, setOperacaoExpandida] = useState(null),
         [checklistMotos, setChecklistMotos] = useState({}),
         [operacaoSubTab, setOperacaoSubTab] = useState('execucao'),
+        // Estados para Localização de Clientes
+        [localizacaoClientes, setLocalizacaoClientes] = useState([]),
+        [localizacaoFiltro, setLocalizacaoFiltro] = useState(''),
+        [localizacaoLoading, setLocalizacaoLoading] = useState(false),
         // Tutorial do usuário
         [tutorialAtivo, setTutorialAtivo] = useState(false),
         [tutorialPasso, setTutorialPasso] = useState(0),
@@ -1611,6 +1615,66 @@ const hideLoadingScreen = () => {
                 console.error('Erro ao carregar operações:', err); 
                 setOperacoesData([]);
             }
+        };
+        
+        // ==================== FUNÇÕES LOCALIZAÇÃO CLIENTES ====================
+        // Função para gerar link do Google Maps
+        const gerarLinkGoogleMaps = (endereco, latitude, longitude) => {
+            if (latitude && longitude && latitude !== 0 && longitude !== 0) {
+                return `https://www.google.com/maps?q=${latitude},${longitude}`;
+            }
+            if (endereco) {
+                return `https://www.google.com/maps?q=${encodeURIComponent(endereco)}`;
+            }
+            return 'https://www.google.com/maps';
+        };
+        
+        // Função para gerar link do Waze
+        const gerarLinkWaze = (endereco, latitude, longitude) => {
+            if (latitude && longitude && latitude !== 0 && longitude !== 0) {
+                return `https://waze.com/ul?ll=${latitude},${longitude}&navigate=yes`;
+            }
+            if (endereco) {
+                return `https://waze.com/ul?q=${encodeURIComponent(endereco)}&navigate=yes`;
+            }
+            return 'https://waze.com/ul';
+        };
+        
+        // Função para copiar para clipboard
+        const copiarParaClipboard = async (texto, tipo) => {
+            try {
+                await navigator.clipboard.writeText(texto);
+                ja(`✅ Link ${tipo} copiado!`, "success");
+            } catch (err) {
+                // Fallback para browsers antigos
+                const textarea = document.createElement('textarea');
+                textarea.value = texto;
+                textarea.style.position = 'fixed';
+                textarea.style.left = '-9999px';
+                document.body.appendChild(textarea);
+                textarea.select();
+                try {
+                    document.execCommand('copy');
+                    ja(`✅ Link ${tipo} copiado!`, "success");
+                } catch (e) {
+                    ja(`❌ Erro ao copiar`, "error");
+                }
+                document.body.removeChild(textarea);
+            }
+        };
+        
+        // Função para carregar dados de localização dos clientes
+        const carregarLocalizacaoClientes = async () => {
+            setLocalizacaoLoading(true);
+            try {
+                const res = await fetch(`${API_URL}/bi/localizacao-clientes`);
+                const data = await res.json();
+                setLocalizacaoClientes(Array.isArray(data) ? data : []);
+            } catch (err) { 
+                console.error('Erro ao carregar localização clientes:', err); 
+                setLocalizacaoClientes([]);
+            }
+            setLocalizacaoLoading(false);
         };
         
         // Função para calcular contador regressivo
@@ -12549,7 +12613,17 @@ const hideLoadingScreen = () => {
                     })() && React.createElement("button", {
                         onClick: function() { x(e => ({...e, opTab: "novas-operacoes"})); carregarOperacoes(); },
                         className: "px-4 py-2.5 text-sm font-semibold whitespace-nowrap " + (p.opTab === "novas-operacoes" ? "text-teal-700 border-b-2 border-teal-600 bg-teal-50" : "text-gray-600 hover:bg-gray-100")
-                    }, "🏢 Novas Operações")
+                    }, "🏢 Novas Operações"),
+                    // Aba Localização Clientes - verifica permissão
+                    (function() {
+                        if ("admin_master" === l.role) return true;
+                        const abas = l.permissions && l.permissions.abas ? l.permissions.abas : {};
+                        if (Object.keys(abas).length === 0) return true;
+                        return abas["operacional_localizacao-clientes"] !== false;
+                    })() && React.createElement("button", {
+                        onClick: function() { x(e => ({...e, opTab: "localizacao-clientes"})); carregarLocalizacaoClientes(); },
+                        className: "px-4 py-2.5 text-sm font-semibold whitespace-nowrap " + (p.opTab === "localizacao-clientes" ? "text-teal-700 border-b-2 border-teal-600 bg-teal-50" : "text-gray-600 hover:bg-gray-100")
+                    }, "📍 Localização Clientes")
                 )
             ),
             // Conteúdo das abas
@@ -13324,6 +13398,178 @@ const hideLoadingScreen = () => {
                             }, operacaoEdit ? "💾 Salvar Alterações" : "➕ Criar Operação")
                         )
                     )
+                )
+            )),
+            // ==================== CONTEÚDO LOCALIZAÇÃO CLIENTES ====================
+            p.opTab === "localizacao-clientes" && React.createElement("div", {className: "max-w-7xl mx-auto p-6"},
+                React.createElement("div", {className: "space-y-6"},
+                    // Header
+                    React.createElement("div", {className: "flex flex-col md:flex-row justify-between items-start md:items-center gap-4"},
+                        React.createElement("div", null,
+                            React.createElement("h2", {className: "text-2xl font-bold text-gray-800"}, "📍 Localização Clientes"),
+                            React.createElement("p", {className: "text-gray-600"}, "Endereços de coleta (Ponto 1) dos clientes do BI")
+                        ),
+                        React.createElement("button", {
+                            onClick: carregarLocalizacaoClientes,
+                            disabled: localizacaoLoading,
+                            className: "px-6 py-3 bg-teal-600 text-white rounded-xl font-semibold hover:bg-teal-700 flex items-center gap-2 shadow-lg disabled:opacity-50"
+                        }, localizacaoLoading ? "🔄 Carregando..." : "🔄 Atualizar")
+                    ),
+                    
+                    // Barra de busca
+                    React.createElement("div", {className: "bg-white rounded-xl p-4 shadow"},
+                        React.createElement("div", {className: "flex gap-3 items-center"},
+                            React.createElement("span", {className: "text-2xl"}, "🔍"),
+                            React.createElement("input", {
+                                type: "text",
+                                value: localizacaoFiltro,
+                                onChange: e => setLocalizacaoFiltro(e.target.value),
+                                placeholder: "Buscar por código ou nome do cliente...",
+                                className: "flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                            }),
+                            localizacaoFiltro && React.createElement("button", {
+                                onClick: () => setLocalizacaoFiltro(""),
+                                className: "px-4 py-2 text-gray-500 hover:text-gray-700"
+                            }, "✕ Limpar")
+                        )
+                    ),
+                    
+                    // Cards de estatísticas
+                    React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-4 gap-4"},
+                        React.createElement("div", {className: "bg-white rounded-xl p-4 shadow border-l-4 border-teal-500"},
+                            React.createElement("p", {className: "text-sm text-gray-500"}, "Total Clientes"),
+                            React.createElement("p", {className: "text-2xl font-bold text-teal-600"}, localizacaoClientes?.length || 0)
+                        ),
+                        React.createElement("div", {className: "bg-white rounded-xl p-4 shadow border-l-4 border-blue-500"},
+                            React.createElement("p", {className: "text-sm text-gray-500"}, "Total Endereços"),
+                            React.createElement("p", {className: "text-2xl font-bold text-blue-600"}, localizacaoClientes?.reduce((acc, c) => acc + (c.enderecos?.length || 0), 0) || 0)
+                        ),
+                        React.createElement("div", {className: "bg-white rounded-xl p-4 shadow border-l-4 border-green-500"},
+                            React.createElement("p", {className: "text-sm text-gray-500"}, "Com Coordenadas"),
+                            React.createElement("p", {className: "text-2xl font-bold text-green-600"}, localizacaoClientes?.reduce((acc, c) => acc + (c.enderecos?.filter(e => e.latitude && e.longitude)?.length || 0), 0) || 0)
+                        ),
+                        React.createElement("div", {className: "bg-white rounded-xl p-4 shadow border-l-4 border-orange-500"},
+                            React.createElement("p", {className: "text-sm text-gray-500"}, "Sem Coordenadas"),
+                            React.createElement("p", {className: "text-2xl font-bold text-orange-600"}, localizacaoClientes?.reduce((acc, c) => acc + (c.enderecos?.filter(e => !e.latitude || !e.longitude)?.length || 0), 0) || 0)
+                        )
+                    ),
+                    
+                    // Lista de clientes
+                    localizacaoLoading 
+                        ? React.createElement("div", {className: "bg-white rounded-xl p-8 shadow text-center"},
+                            React.createElement("div", {className: "w-12 h-12 border-4 border-teal-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"}),
+                            React.createElement("p", {className: "text-gray-600"}, "Carregando dados dos clientes...")
+                        )
+                        : localizacaoClientes?.length === 0
+                            ? React.createElement("div", {className: "bg-white rounded-xl p-8 shadow text-center"},
+                                React.createElement("span", {className: "text-5xl block mb-4"}, "📭"),
+                                React.createElement("p", {className: "text-gray-500"}, "Nenhum cliente encontrado"),
+                                React.createElement("p", {className: "text-sm text-gray-400 mt-2"}, "Faça upload de dados no módulo BI para ver os clientes aqui")
+                            )
+                            : React.createElement("div", {className: "space-y-4"},
+                                // Filtrar clientes
+                                (function() {
+                                    const filtro = localizacaoFiltro.toLowerCase().trim();
+                                    const clientesFiltrados = filtro 
+                                        ? localizacaoClientes.filter(c => 
+                                            String(c.cod_cliente).toLowerCase().includes(filtro) || 
+                                            (il(c.cod_cliente) || c.nome_cliente || "").toLowerCase().includes(filtro)
+                                        )
+                                        : localizacaoClientes;
+                                    
+                                    return clientesFiltrados.length === 0
+                                        ? React.createElement("div", {className: "bg-white rounded-xl p-8 shadow text-center"},
+                                            React.createElement("span", {className: "text-3xl block mb-2"}, "🔍"),
+                                            React.createElement("p", {className: "text-gray-500"}, "Nenhum cliente encontrado com \"", localizacaoFiltro, "\"")
+                                        )
+                                        : clientesFiltrados.map(cliente => React.createElement("div", {
+                                            key: cliente.cod_cliente,
+                                            className: "bg-white rounded-xl shadow-lg overflow-hidden border-l-4 border-teal-500"
+                                        },
+                                            // Cabeçalho do cliente
+                                            React.createElement("div", {className: "bg-gradient-to-r from-teal-50 to-white p-4 border-b"},
+                                                React.createElement("div", {className: "flex items-center justify-between"},
+                                                    React.createElement("div", {className: "flex items-center gap-3"},
+                                                        React.createElement("span", {className: "text-2xl"}, "🏢"),
+                                                        React.createElement("div", null,
+                                                            React.createElement("p", {className: "font-bold text-teal-800 text-lg"}, 
+                                                                cliente.cod_cliente, " - ", il(cliente.cod_cliente) || cliente.nome_cliente
+                                                            ),
+                                                            React.createElement("p", {className: "text-sm text-gray-500"}, 
+                                                                cliente.enderecos?.length || 0, " endereço(s) de coleta"
+                                                            )
+                                                        )
+                                                    ),
+                                                    React.createElement("span", {className: "px-3 py-1 bg-teal-100 text-teal-700 rounded-full text-sm font-semibold"},
+                                                        "📍 ", cliente.enderecos?.length || 0
+                                                    )
+                                                )
+                                            ),
+                                            // Lista de endereços
+                                            React.createElement("div", {className: "divide-y"},
+                                                (cliente.enderecos || []).map((end, idx) => React.createElement("div", {
+                                                    key: idx,
+                                                    className: "p-4 hover:bg-gray-50 transition-colors"
+                                                },
+                                                    React.createElement("div", {className: "flex flex-col md:flex-row md:items-center justify-between gap-4"},
+                                                        // Info do endereço
+                                                        React.createElement("div", {className: "flex-1"},
+                                                            React.createElement("p", {className: "font-semibold text-gray-800"}, "📌 ", end.endereco || "Sem endereço"),
+                                                            React.createElement("p", {className: "text-sm text-gray-600"}, 
+                                                                [end.bairro, end.cidade, end.estado].filter(Boolean).join(" - ") || "Localização não especificada"
+                                                            ),
+                                                            React.createElement("div", {className: "flex items-center gap-4 mt-2"},
+                                                                React.createElement("span", {className: "text-xs text-gray-500"}, 
+                                                                    "📦 ", end.total_entregas || 0, " entregas"
+                                                                ),
+                                                                end.latitude && end.longitude
+                                                                    ? React.createElement("span", {className: "text-xs text-green-600 flex items-center gap-1"},
+                                                                        "✅ Coordenadas: ", end.latitude?.toFixed(4), ", ", end.longitude?.toFixed(4)
+                                                                    )
+                                                                    : React.createElement("span", {className: "text-xs text-orange-500"},
+                                                                        "⚠️ Sem coordenadas"
+                                                                    )
+                                                            )
+                                                        ),
+                                                        // Botões de ação
+                                                        React.createElement("div", {className: "flex flex-wrap gap-2"},
+                                                            // Google Maps
+                                                            React.createElement("a", {
+                                                                href: gerarLinkGoogleMaps(end.endereco + " " + (end.cidade || ""), end.latitude, end.longitude),
+                                                                target: "_blank",
+                                                                rel: "noopener noreferrer",
+                                                                className: "px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 flex items-center gap-2 shadow"
+                                                            }, "🗺️ Maps"),
+                                                            // Copiar link Maps
+                                                            React.createElement("button", {
+                                                                onClick: () => copiarParaClipboard(
+                                                                    gerarLinkGoogleMaps(end.endereco + " " + (end.cidade || ""), end.latitude, end.longitude),
+                                                                    "Maps"
+                                                                ),
+                                                                className: "px-3 py-2 bg-blue-100 text-blue-700 rounded-lg text-sm font-semibold hover:bg-blue-200"
+                                                            }, "📋"),
+                                                            // Waze
+                                                            React.createElement("a", {
+                                                                href: gerarLinkWaze(end.endereco + " " + (end.cidade || ""), end.latitude, end.longitude),
+                                                                target: "_blank",
+                                                                rel: "noopener noreferrer",
+                                                                className: "px-4 py-2 bg-cyan-500 text-white rounded-lg text-sm font-semibold hover:bg-cyan-600 flex items-center gap-2 shadow"
+                                                            }, "🚗 Waze"),
+                                                            // Copiar link Waze
+                                                            React.createElement("button", {
+                                                                onClick: () => copiarParaClipboard(
+                                                                    gerarLinkWaze(end.endereco + " " + (end.cidade || ""), end.latitude, end.longitude),
+                                                                    "Waze"
+                                                                ),
+                                                                className: "px-3 py-2 bg-cyan-100 text-cyan-700 rounded-lg text-sm font-semibold hover:bg-cyan-200"
+                                                            }, "📋")
+                                                        )
+                                                    )
+                                                ))
+                                            )
+                                        ));
+                                })()
+                            )
                 )
             ));
         }
