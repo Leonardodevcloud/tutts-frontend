@@ -1729,16 +1729,25 @@ const hideLoadingScreen = () => {
             }
             s(true);
             try {
-                const formData = new FormData();
-                formData.append('titulo', relatorioForm.titulo);
-                formData.append('conteudo', relatorioForm.conteudo);
-                formData.append('usuario_id', l.id);
-                formData.append('usuario_nome', l.fullName || l.username);
-                formData.append('usuario_foto', socialProfile?.profile_photo || '');
+                let imagem_base64 = null;
                 
+                // Converter imagem para base64 se existir
                 if (relatorioForm.imagem) {
-                    formData.append('imagem', relatorioForm.imagem);
+                    imagem_base64 = await new Promise((resolve) => {
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(reader.result);
+                        reader.readAsDataURL(relatorioForm.imagem);
+                    });
                 }
+                
+                const payload = {
+                    titulo: relatorioForm.titulo,
+                    conteudo: relatorioForm.conteudo,
+                    usuario_id: l.id,
+                    usuario_nome: l.fullName || l.username,
+                    usuario_foto: socialProfile?.profile_photo || '',
+                    imagem_base64: imagem_base64
+                };
                 
                 const url = relatorioEdit 
                     ? `${API_URL}/relatorios-diarios/${relatorioEdit.id}`
@@ -1746,7 +1755,8 @@ const hideLoadingScreen = () => {
                     
                 const res = await fetch(url, {
                     method: relatorioEdit ? 'PUT' : 'POST',
-                    body: formData
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
                 });
                 
                 if (!res.ok) throw new Error('Erro ao salvar');
