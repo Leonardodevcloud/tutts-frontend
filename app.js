@@ -1707,9 +1707,9 @@ const hideLoadingScreen = () => {
         
         // Carregar relatórios não lidos pelo usuário
         const carregarRelatoriosNaoLidos = async () => {
-            if (!l?.id) return;
+            if (!l?.codProfissional) return;
             try {
-                const res = await fetch(`${API_URL}/relatorios-diarios/nao-lidos/${l.id}`);
+                const res = await fetch(`${API_URL}/relatorios-diarios/nao-lidos/${l.codProfissional}`);
                 const data = await res.json();
                 const naoLidos = Array.isArray(data) ? data : [];
                 setRelatoriosNaoLidos(naoLidos);
@@ -1724,13 +1724,13 @@ const hideLoadingScreen = () => {
         
         // Marcar relatório como lido
         const marcarRelatorioComoLido = async (relatorioId) => {
-            if (!l?.id) return;
+            if (!l?.codProfissional) return;
             try {
                 await fetch(`${API_URL}/relatorios-diarios/${relatorioId}/visualizar`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        usuario_id: l.id,
+                        usuario_id: l.codProfissional,
                         usuario_nome: l.fullName || l.username,
                         usuario_foto: socialProfile?.profile_photo || ''
                     })
@@ -1756,13 +1756,13 @@ const hideLoadingScreen = () => {
         
         // Verificar relatórios não lidos ao carregar e periodicamente
         React.useEffect(() => {
-            if (l?.id) {
+            if (l?.codProfissional) {
                 carregarRelatoriosNaoLidos();
                 // Verificar a cada 30 segundos
                 const interval = setInterval(carregarRelatoriosNaoLidos, 30000);
                 return () => clearInterval(interval);
             }
-        }, [l?.id]);
+        }, [l?.codProfissional]);
         
         const abrirNovoRelatorio = () => {
             setRelatorioEdit(null);
@@ -1811,7 +1811,7 @@ const hideLoadingScreen = () => {
                 const payload = {
                     titulo: relatorioForm.titulo,
                     conteudo: relatorioForm.conteudo,
-                    usuario_id: l.id,
+                    usuario_id: l.codProfissional,
                     usuario_nome: l.fullName || l.username,
                     usuario_foto: socialProfile?.profile_photo || '',
                     imagem_base64: imagem_base64
