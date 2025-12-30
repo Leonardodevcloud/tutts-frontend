@@ -71,10 +71,10 @@ const SISTEMA_MODULOS_CONFIG = [
       abas: [{id: "dashboard", label: "Dashboard"}, {id: "search", label: "Busca"}, {id: "ranking", label: "Ranking"}, {id: "relatorios", label: "Relatórios"}]
     },
     { id: "financeiro", label: "Financeiro", icon: "💰",
-      abas: [{id: "solicitacoes", label: "Solicitações"}, {id: "validacao", label: "Validação"}, {id: "conciliacao", label: "Conciliação"}, {id: "resumo", label: "Resumo"}, {id: "gratuidades", label: "Gratuidades"}, {id: "restritos", label: "Restritos"}, {id: "indicacoes", label: "Indicações"}, {id: "promonovatos", label: "Promo Novatos"}, {id: "loja", label: "Loja"}, {id: "relatorios", label: "Relatórios"}, {id: "horarios", label: "Horários"}, {id: "avisos", label: "Avisos"}, {id: "backup", label: "Backup"}]
+      abas: [{id: "solicitacoes", label: "Solicitações"}, {id: "validacao", label: "Validação"}, {id: "conciliacao", label: "Conciliação"}, {id: "resumo", label: "Resumo"}, {id: "gratuidades", label: "Gratuidades"}, {id: "restritos", label: "Restritos"}, {id: "indicacoes", label: "Indicações"}, {id: "promo-novatos", label: "Promo Novatos"}, {id: "loja", label: "Loja"}, {id: "relatorios", label: "Relatórios"}, {id: "horarios", label: "Horários"}, {id: "avisos", label: "Avisos"}, {id: "backup", label: "Backup"}]
     },
     { id: "operacional", label: "Operacional", icon: "⚙️",
-      abas: [{id: "indicacao", label: "Indicação"}, {id: "promonovatos", label: "Promo Novatos"}, {id: "avisos", label: "Avisos"}, {id: "novas-operacoes", label: "Novas Operações"}, {id: "localizacao-clientes", label: "Localização Clientes"}]
+      abas: [{id: "indicacoes", label: "Indicações"}, {id: "promo-novatos", label: "Promo Novatos"}, {id: "avisos", label: "Avisos"}, {id: "novas-operacoes", label: "Novas Operações"}, {id: "localizacao-clientes", label: "Localização Clientes"}, {id: "relatorio-diario", label: "Relatório Diário"}]
     },
     { id: "disponibilidade", label: "Disponibilidade", icon: "📅",
       abas: [{id: "panorama", label: "Panorama"}, {id: "principal", label: "Principal"}, {id: "faltosos", label: "Faltosos"}, {id: "espelho", label: "Espelho"}, {id: "relatorios", label: "Relatórios"}, {id: "motoboys", label: "Motoboys"}, {id: "restricoes", label: "Restrições"}, {id: "config", label: "Configurações"}]
@@ -87,6 +87,9 @@ const SISTEMA_MODULOS_CONFIG = [
     },
     { id: "social", label: "Social", icon: "💜",
       abas: [{id: "perfil", label: "Meu Perfil"}, {id: "comunidade", label: "Comunidade"}, {id: "mensagens", label: "Mensagens"}]
+    },
+    { id: "config", label: "Configurações", icon: "🔧",
+      abas: [{id: "usuarios", label: "Usuários"}, {id: "permissoes", label: "Permissões ADM"}, {id: "sistema", label: "Sistema"}]
     }
 ];
 
@@ -7529,7 +7532,7 @@ const hideLoadingScreen = () => {
                 onClick: () => he("operacional"),
                 className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("operacional" === Ee ? "bg-white text-teal-800" : "text-white hover:bg-white/10")
             }, "⚙️ Operacional"), 
-            l.role === "admin_master" && React.createElement("button", {
+            hasModuleAccess(l, "config") && React.createElement("button", {
                 onClick: () => he("config"),
                 className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("config" === Ee ? "bg-white text-gray-800" : "text-white hover:bg-white/10")
             }, "🔧 Config")))) : React.createElement("nav", {
@@ -13688,7 +13691,7 @@ const hideLoadingScreen = () => {
                     onClick: function() { he("operacional"); },
                     className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all bg-white text-teal-800"
                 }, "⚙️ Operacional"),
-                l.role === "admin_master" && React.createElement("button", {
+                hasModuleAccess(l, "config") && React.createElement("button", {
                     onClick: function() { he("config"); },
                     className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all text-white hover:bg-white/10"
                 }, "🔧 Config")
@@ -13701,7 +13704,7 @@ const hideLoadingScreen = () => {
                         if ("admin_master" === l.role) return true;
                         const abas = l.permissions && l.permissions.abas ? l.permissions.abas : {};
                         if (Object.keys(abas).length === 0) return true;
-                        return abas["operacional_indicacao"] !== false;
+                        return abas["operacional_indicacoes"] !== false;
                     })() && React.createElement("button", {
                         onClick: function() { x(e => ({...e, opTab: "indicacoes"})); },
                         className: "px-4 py-2.5 text-sm font-semibold whitespace-nowrap " + ((p.opTab || "indicacoes") === "indicacoes" ? "text-teal-700 border-b-2 border-teal-600 bg-teal-50" : "text-gray-600 hover:bg-gray-100")
@@ -13711,7 +13714,7 @@ const hideLoadingScreen = () => {
                         if ("admin_master" === l.role) return true;
                         const abas = l.permissions && l.permissions.abas ? l.permissions.abas : {};
                         if (Object.keys(abas).length === 0) return true;
-                        return abas["operacional_promonovatos"] !== false;
+                        return abas["operacional_promo-novatos"] !== false;
                     })() && React.createElement("button", {
                         onClick: function() { x(e => ({...e, opTab: "promo-novatos"})); },
                         className: "px-4 py-2.5 text-sm font-semibold whitespace-nowrap " + (p.opTab === "promo-novatos" ? "text-teal-700 border-b-2 border-teal-600 bg-teal-50" : "text-gray-600 hover:bg-gray-100")
@@ -15056,7 +15059,8 @@ const hideLoadingScreen = () => {
         );
         }
         // ========== MÓDULO CONFIGURAÇÕES ==========
-        if ("admin_master" === l.role && "config" === Ee) {
+        const canAccessConfig = hasModuleAccess(l, "config");
+        if (canAccessConfig && "config" === Ee) {
             return React.createElement("div", {
                 className: "min-h-screen bg-gray-100"
             }, i && React.createElement(Toast, i), n && React.createElement(LoadingOverlay, null),
@@ -15122,7 +15126,7 @@ const hideLoadingScreen = () => {
                     onClick: function() { he("operacional"); },
                     className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all text-white hover:bg-white/10"
                 }, "⚙️ Operacional"),
-                l.role === "admin_master" && React.createElement("button", {
+                React.createElement("button", {
                     onClick: function() { he("config"); },
                     className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all bg-white text-gray-800"
                 }, "🔧 Config")
@@ -18828,8 +18832,8 @@ const hideLoadingScreen = () => {
                         React.createElement("p", {className: "text-sm text-gray-500"}, "Gestão operacional")
                     ),
                     
-                    // Config (só admin_master)
-                    l.role === "admin_master" && React.createElement("button", {
+                    // Config (admins com permissão)
+                    hasModuleAccess(l, "config") && React.createElement("button", {
                         onClick: () => he("config"),
                         className: "bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 border-2 border-transparent hover:border-gray-400"
                     }, React.createElement("span", {className: "text-4xl block mb-3"}, "⚙️"),
@@ -18963,7 +18967,7 @@ const hideLoadingScreen = () => {
             onClick: () => he("operacional"),
             className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("operacional" === Ee ? "bg-white text-teal-800" : "text-white hover:bg-white/10")
         }, "⚙️ Operacional"), 
-        l.role === "admin_master" && React.createElement("button", {
+        hasModuleAccess(l, "config") && React.createElement("button", {
             onClick: () => he("config"),
             className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("config" === Ee ? "bg-white text-gray-800" : "text-white hover:bg-white/10")
         }, "🔧 Config")))) : or ? React.createElement("nav", {
