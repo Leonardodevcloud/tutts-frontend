@@ -12760,171 +12760,226 @@ const hideLoadingScreen = () => {
             (todoModal?.tipo === "novaTarefa" || todoModal?.tipo === "editarTarefa") && React.createElement("div", {
                 className: "fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
             }, React.createElement("div", {
-                className: "bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[95vh] overflow-hidden flex flex-col"
+                className: "bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[95vh] overflow-hidden flex flex-col"
             }, React.createElement("div", {
                 className: "bg-gradient-to-r from-purple-600 to-indigo-600 p-4 text-white flex justify-between items-center flex-shrink-0"
-            }, React.createElement("h2", {className: "text-xl font-bold"}, todoModal.tipo === "novaTarefa" ? "📝 Nova Tarefa" : "✏️ Editar Tarefa"),
-                React.createElement("button", {
-                    onClick: () => setTodoModal(null),
-                    className: "text-white/80 hover:text-white text-xl"
-                }, "✕")
-            ), 
-            
-            // Info do criador (quem está criando)
-            todoModal.tipo === "novaTarefa" && React.createElement("div", {className: "px-6 py-3 bg-purple-50 border-b flex items-center justify-between"},
-                React.createElement("div", {className: "flex items-center gap-3"},
-                    socialProfile?.profile_photo 
-                        ? React.createElement("img", {src: socialProfile.profile_photo, className: "w-10 h-10 rounded-full object-cover border-2 border-purple-200"})
-                        : React.createElement("div", {className: "w-10 h-10 rounded-full bg-purple-200 flex items-center justify-center text-purple-600 font-bold"}, 
-                            (l.fullName || "?").charAt(0).toUpperCase()
-                        ),
-                    React.createElement("div", null,
-                        React.createElement("p", {className: "font-semibold text-gray-800"}, l.fullName || l.username),
-                        React.createElement("p", {className: "text-sm text-purple-600"}, "Criando nova tarefa")
+            }, React.createElement("div", {className: "flex items-center gap-4"},
+                    React.createElement("h2", {className: "text-xl font-bold"}, todoModal.tipo === "novaTarefa" ? "📝 Nova Tarefa" : "✏️ Editar Tarefa"),
+                    // Info do criador inline no header
+                    todoModal.tipo === "novaTarefa" && React.createElement("div", {className: "flex items-center gap-2 bg-white/20 px-3 py-1 rounded-full"},
+                        socialProfile?.profile_photo 
+                            ? React.createElement("img", {src: socialProfile.profile_photo, className: "w-6 h-6 rounded-full object-cover"})
+                            : React.createElement("div", {className: "w-6 h-6 rounded-full bg-white/30 flex items-center justify-center text-white text-xs font-bold"}, 
+                                (l.fullName || "?").charAt(0).toUpperCase()
+                            ),
+                        React.createElement("span", {className: "text-sm"}, l.fullName || l.username)
                     )
                 ),
-                // Toggle de Recorrência no header
-                React.createElement("div", {className: "flex items-center gap-3 bg-white px-4 py-2 rounded-lg shadow-sm"},
-                    React.createElement("span", {className: "text-sm font-semibold text-gray-700"}, "🔄 Recorrente"),
-                    React.createElement("button", {
-                        type: "button",
-                        onClick: () => setTodoModal({...todoModal, recorrente: !todoModal.recorrente}),
-                        className: `relative w-12 h-6 rounded-full transition-colors ${todoModal.recorrente ? 'bg-purple-600' : 'bg-gray-300'}`
-                    },
-                        React.createElement("div", {
-                            className: `absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${todoModal.recorrente ? 'translate-x-6' : ''}`
-                        })
-                    )
-                )
-            ),
-            
-            // Opções de Recorrência (aparece se toggle ativo)
-            todoModal.recorrente && React.createElement("div", {className: "px-6 py-3 bg-indigo-50 border-b"},
-                React.createElement("div", {className: "flex items-center gap-4 flex-wrap"},
-                    React.createElement("span", {className: "text-sm text-indigo-700 font-medium"}, "⏰ Repetir:"),
-                    React.createElement("div", {className: "flex gap-2"},
-                        ["diaria", "semanal", "mensal", "personalizado"].map(tipo => 
-                            React.createElement("button", {
-                                key: tipo,
-                                type: "button",
-                                onClick: () => setTodoModal({...todoModal, tipoRecorrencia: tipo}),
-                                className: `px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                                    (todoModal.tipoRecorrencia || "diaria") === tipo 
-                                        ? 'bg-indigo-600 text-white shadow-md' 
-                                        : 'bg-white text-gray-700 hover:bg-gray-100'
-                                }`
-                            }, tipo === "diaria" ? "📅 Diário" : 
-                               tipo === "semanal" ? "📆 Semanal" : 
-                               tipo === "mensal" ? "🗓️ Mensal" : "⚙️ Personalizado")
+                React.createElement("div", {className: "flex items-center gap-4"},
+                    // Toggle de Recorrência
+                    React.createElement("div", {className: "flex items-center gap-2 bg-white/20 px-3 py-1.5 rounded-lg"},
+                        React.createElement("span", {className: "text-sm"}, "🔄 Recorrente"),
+                        React.createElement("button", {
+                            type: "button",
+                            onClick: () => setTodoModal({...todoModal, recorrente: !todoModal.recorrente}),
+                            className: `relative w-10 h-5 rounded-full transition-colors ${todoModal.recorrente ? 'bg-green-400' : 'bg-white/30'}`
+                        },
+                            React.createElement("div", {
+                                className: `absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${todoModal.recorrente ? 'translate-x-5' : ''}`
+                            })
                         )
                     ),
-                    (todoModal.tipoRecorrencia === "personalizado") && React.createElement("div", {className: "flex items-center gap-2"},
-                        React.createElement("span", {className: "text-sm text-gray-600"}, "A cada"),
-                        React.createElement("input", {
-                            type: "number",
-                            min: 1,
-                            value: todoModal.intervaloRecorrencia || 1,
-                            onChange: e => setTodoModal({...todoModal, intervaloRecorrencia: parseInt(e.target.value) || 1}),
-                            className: "w-16 px-2 py-1 border rounded-lg text-sm text-center"
-                        }),
-                        React.createElement("span", {className: "text-sm text-gray-600"}, "dias")
-                    )
+                    React.createElement("button", {
+                        onClick: () => setTodoModal(null),
+                        className: "text-white/80 hover:text-white text-xl"
+                    }, "✕")
+                )
+            ), 
+            
+            // Opções de Recorrência (aparece se toggle ativo)
+            todoModal.recorrente && React.createElement("div", {className: "px-6 py-2 bg-indigo-50 border-b flex items-center gap-4 flex-wrap"},
+                React.createElement("span", {className: "text-sm text-indigo-700 font-medium"}, "⏰ Repetir:"),
+                ["diaria", "semanal", "mensal", "personalizado"].map(tipo => 
+                    React.createElement("button", {
+                        key: tipo,
+                        type: "button",
+                        onClick: () => setTodoModal({...todoModal, tipoRecorrencia: tipo}),
+                        className: `px-3 py-1 rounded-lg text-sm font-medium transition-all ${
+                            (todoModal.tipoRecorrencia || "diaria") === tipo 
+                                ? 'bg-indigo-600 text-white' 
+                                : 'bg-white text-gray-600 hover:bg-gray-100'
+                        }`
+                    }, tipo === "diaria" ? "Diário" : tipo === "semanal" ? "Semanal" : tipo === "mensal" ? "Mensal" : "Personalizado")
+                ),
+                (todoModal.tipoRecorrencia === "personalizado") && React.createElement("div", {className: "flex items-center gap-2"},
+                    React.createElement("span", {className: "text-sm text-gray-600"}, "A cada"),
+                    React.createElement("input", {
+                        type: "number",
+                        min: 1,
+                        value: todoModal.intervaloRecorrencia || 1,
+                        onChange: e => setTodoModal({...todoModal, intervaloRecorrencia: parseInt(e.target.value) || 1}),
+                        className: "w-14 px-2 py-1 border rounded text-sm text-center"
+                    }),
+                    React.createElement("span", {className: "text-sm text-gray-600"}, "dias")
                 )
             ),
             
-            React.createElement("div", {className: "p-6 space-y-4 overflow-y-auto flex-1"},
-                // Grid de 2 colunas para os campos principais
-                React.createElement("div", {className: "grid grid-cols-1 md:grid-cols-2 gap-4"},
-                    // Coluna 1
+            // Conteúdo principal - Layout horizontal em 3 colunas
+            React.createElement("div", {className: "p-6 overflow-y-auto flex-1"},
+                React.createElement("div", {className: "grid grid-cols-3 gap-6"},
+                    
+                    // COLUNA 1 - Título e Descrição
                     React.createElement("div", {className: "space-y-4"},
                         React.createElement("div", null,
-                            React.createElement("label", {className: "block text-sm font-semibold mb-1"}, "Título *"),
+                            React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-1"}, "Título *"),
                             React.createElement("input", {
                                 type: "text",
                                 value: todoModal.titulo || todoModal.tarefa?.titulo || "",
                                 onChange: e => setTodoModal({...todoModal, titulo: e.target.value}),
-                                className: "w-full px-3 py-2 border rounded-lg",
+                                className: "w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:ring-0 transition-colors",
                                 placeholder: "O que precisa ser feito?"
                             })
                         ),
                         React.createElement("div", null,
-                            React.createElement("label", {className: "block text-sm font-semibold mb-1"}, "Descrição"),
+                            React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-1"}, "Descrição"),
                             React.createElement("textarea", {
                                 value: todoModal.descricao || todoModal.tarefa?.descricao || "",
                                 onChange: e => setTodoModal({...todoModal, descricao: e.target.value}),
-                                className: "w-full px-3 py-2 border rounded-lg h-24",
-                                placeholder: "Detalhes..."
+                                className: "w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:ring-0 transition-colors h-32 resize-none",
+                                placeholder: "Detalhes da tarefa..."
                             })
                         ),
-                        React.createElement("div", {className: "grid grid-cols-2 gap-3"},
-                            React.createElement("div", null,
-                                React.createElement("label", {className: "block text-sm font-semibold mb-1"}, "Prioridade"),
-                                React.createElement("select", {
-                                    value: todoModal.prioridade || todoModal.tarefa?.prioridade || "media",
-                                    onChange: e => setTodoModal({...todoModal, prioridade: e.target.value}),
-                                    className: "w-full px-3 py-2 border rounded-lg bg-white"
-                                }, React.createElement("option", {value: "baixa"}, "🔵 Baixa"),
-                                    React.createElement("option", {value: "media"}, "🟡 Média"),
-                                    React.createElement("option", {value: "alta"}, "🔴 Alta"))
+                        // Checklist compacto
+                        React.createElement("div", {className: "bg-gray-50 rounded-xl p-3"},
+                            React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-2"}, "☑️ Checklist"),
+                            (todoModal.checklist || []).length > 0 && React.createElement("div", {className: "space-y-1 mb-2"},
+                                (todoModal.checklist || []).map((item, idx) =>
+                                    React.createElement("div", {
+                                        key: idx,
+                                        className: "flex items-center gap-2 bg-white px-2 py-1 rounded text-sm"
+                                    },
+                                        React.createElement("span", {className: "text-gray-400"}, idx + 1 + "."),
+                                        React.createElement("span", {className: "flex-1 text-gray-700"}, item),
+                                        React.createElement("button", {
+                                            onClick: () => {
+                                                const newChecklist = [...(todoModal.checklist || [])];
+                                                newChecklist.splice(idx, 1);
+                                                setTodoModal({...todoModal, checklist: newChecklist});
+                                            },
+                                            className: "text-red-400 hover:text-red-600 text-xs"
+                                        }, "✕")
+                                    )
+                                )
                             ),
-                            React.createElement("div", null,
-                                React.createElement("label", {className: "block text-sm font-semibold mb-1"}, "Data de Vencimento"),
+                            React.createElement("div", {className: "flex gap-2"},
                                 React.createElement("input", {
-                                    type: "date",
-                                    value: todoModal.dataVencimento || (todoModal.tarefa?.data_vencimento ? todoModal.tarefa.data_vencimento.split("T")[0] : ""),
-                                    onChange: e => setTodoModal({...todoModal, dataVencimento: e.target.value}),
-                                    className: "w-full px-3 py-2 border rounded-lg"
-                                })
+                                    type: "text",
+                                    id: "novo-checklist-item",
+                                    placeholder: "Adicionar item...",
+                                    className: "flex-1 px-3 py-2 border rounded-lg text-sm",
+                                    onKeyPress: (e) => {
+                                        if (e.key === 'Enter' && e.target.value.trim()) {
+                                            const newChecklist = [...(todoModal.checklist || []), e.target.value.trim()];
+                                            setTodoModal({...todoModal, checklist: newChecklist});
+                                            e.target.value = '';
+                                        }
+                                    }
+                                }),
+                                React.createElement("button", {
+                                    onClick: () => {
+                                        const input = document.getElementById('novo-checklist-item');
+                                        if (input && input.value.trim()) {
+                                            const newChecklist = [...(todoModal.checklist || []), input.value.trim()];
+                                            setTodoModal({...todoModal, checklist: newChecklist});
+                                            input.value = '';
+                                        }
+                                    },
+                                    className: "px-3 py-2 bg-purple-100 text-purple-700 rounded-lg text-sm font-semibold hover:bg-purple-200"
+                                }, "+")
                             )
-                        ),
-                        todoModal.tipo === "novaTarefa" && React.createElement("div", null,
-                            React.createElement("label", {className: "block text-sm font-semibold mb-1"}, "Grupo"),
-                            React.createElement("select", {
-                                value: todoModal.grupoId || todoGrupoAtivo?.id || "",
-                                onChange: e => setTodoModal({...todoModal, grupoId: e.target.value}),
-                                className: "w-full px-3 py-2 border rounded-lg bg-white"
-                            }, React.createElement("option", {value: ""}, "Selecione um grupo..."),
-                                todoGrupos.map(g => React.createElement("option", {key: g.id, value: g.id}, g.icone + " " + g.nome)))
                         )
                     ),
                     
-                    // Coluna 2 - Responsáveis
+                    // COLUNA 2 - Configurações (Prioridade, Data, Grupo)
                     React.createElement("div", {className: "space-y-4"},
                         React.createElement("div", null,
-                            React.createElement("label", {className: "block text-sm font-semibold mb-2"}, "👥 Atribuir para"),
-                            
-                            // Usuários selecionados
-                            (todoModal.responsaveisSelecionados || []).length > 0 && React.createElement("div", {className: "flex flex-wrap gap-2 mb-3"},
-                                (todoModal.responsaveisSelecionados || []).map(resp => {
-                                    const usuario = todoAdmins.find(a => a.cod === resp || a.nome === resp);
-                                    return React.createElement("div", {
-                                        key: resp,
-                                        className: "flex items-center gap-2 bg-purple-100 text-purple-800 px-3 py-1.5 rounded-full"
-                                    },
-                                        usuario?.foto 
-                                            ? React.createElement("img", {src: usuario.foto, className: "w-6 h-6 rounded-full object-cover"})
-                                            : React.createElement("div", {className: "w-6 h-6 rounded-full bg-purple-300 flex items-center justify-center text-xs font-bold text-purple-700"}, 
-                                                (usuario?.nome || resp).charAt(0).toUpperCase()
-                                            ),
-                                        React.createElement("span", {className: "text-sm font-medium"}, usuario?.nome || resp),
-                                        React.createElement("button", {
-                                            onClick: () => {
-                                                const novos = (todoModal.responsaveisSelecionados || []).filter(r => r !== resp);
-                                                setTodoModal({...todoModal, responsaveisSelecionados: novos});
-                                            },
-                                            className: "text-purple-600 hover:text-purple-800 ml-1"
-                                        }, "✕")
-                                    );
-                                })
-                            ),
-                            
-                            // Lista visual de usuários disponíveis
-                            React.createElement("div", {className: "max-h-48 overflow-y-auto border rounded-lg"},
+                            React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-1"}, "Prioridade"),
+                            React.createElement("div", {className: "grid grid-cols-3 gap-2"},
+                                ["baixa", "media", "alta"].map(p => 
+                                    React.createElement("button", {
+                                        key: p,
+                                        type: "button",
+                                        onClick: () => setTodoModal({...todoModal, prioridade: p}),
+                                        className: `px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                                            (todoModal.prioridade || todoModal.tarefa?.prioridade || "media") === p 
+                                                ? (p === "alta" ? "bg-red-500 text-white" : p === "media" ? "bg-yellow-500 text-white" : "bg-blue-500 text-white")
+                                                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                        }`
+                                    }, p === "baixa" ? "🔵 Baixa" : p === "media" ? "🟡 Média" : "🔴 Alta")
+                                )
+                            )
+                        ),
+                        React.createElement("div", null,
+                            React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-1"}, "📅 Data de Vencimento"),
+                            React.createElement("input", {
+                                type: "date",
+                                value: todoModal.dataVencimento || (todoModal.tarefa?.data_vencimento ? todoModal.tarefa.data_vencimento.split("T")[0] : ""),
+                                onChange: e => setTodoModal({...todoModal, dataVencimento: e.target.value}),
+                                className: "w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500"
+                            })
+                        ),
+                        todoModal.tipo === "novaTarefa" && React.createElement("div", null,
+                            React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-1"}, "📁 Grupo"),
+                            React.createElement("select", {
+                                value: todoModal.grupoId || todoGrupoAtivo?.id || "",
+                                onChange: e => setTodoModal({...todoModal, grupoId: e.target.value}),
+                                className: "w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 bg-white"
+                            }, React.createElement("option", {value: ""}, "Selecione um grupo..."),
+                                // Filtra apenas grupos que o usuário criou ou que são compartilhados
+                                todoGrupos
+                                    .filter(g => g.criado_por === l.codProfissional || g.tipo === 'compartilhado' || l.role === 'admin_master')
+                                    .map(g => React.createElement("option", {key: g.id, value: g.id}, g.icone + " " + g.nome))
+                            )
+                        )
+                    ),
+                    
+                    // COLUNA 3 - Responsáveis
+                    React.createElement("div", {className: "space-y-3"},
+                        React.createElement("label", {className: "block text-sm font-semibold text-gray-700"}, "👥 Atribuir para"),
+                        
+                        // Usuários selecionados
+                        (todoModal.responsaveisSelecionados || []).length > 0 && React.createElement("div", {className: "flex flex-wrap gap-2 p-3 bg-purple-50 rounded-xl"},
+                            (todoModal.responsaveisSelecionados || []).map(resp => {
+                                const usuario = todoAdmins.find(a => a.cod === resp || a.nome === resp);
+                                return React.createElement("div", {
+                                    key: resp,
+                                    className: "flex items-center gap-2 bg-white text-purple-800 px-3 py-1.5 rounded-full shadow-sm"
+                                },
+                                    usuario?.foto 
+                                        ? React.createElement("img", {src: usuario.foto, className: "w-6 h-6 rounded-full object-cover"})
+                                        : React.createElement("div", {className: "w-6 h-6 rounded-full bg-purple-200 flex items-center justify-center text-xs font-bold text-purple-700"}, 
+                                            (usuario?.nome || resp).charAt(0).toUpperCase()
+                                        ),
+                                    React.createElement("span", {className: "text-sm font-medium"}, usuario?.nome || resp),
+                                    React.createElement("button", {
+                                        onClick: () => {
+                                            const novos = (todoModal.responsaveisSelecionados || []).filter(r => r !== resp);
+                                            setTodoModal({...todoModal, responsaveisSelecionados: novos});
+                                        },
+                                        className: "text-purple-400 hover:text-purple-600"
+                                    }, "✕")
+                                );
+                            })
+                        ),
+                        
+                        // Lista de usuários disponíveis
+                        React.createElement("div", {className: "border-2 border-gray-200 rounded-xl overflow-hidden"},
+                            React.createElement("div", {className: "max-h-64 overflow-y-auto"},
                                 todoAdmins
                                     .filter(a => !(todoModal.responsaveisSelecionados || []).includes(a.cod) && !(todoModal.responsaveisSelecionados || []).includes(a.nome))
                                     .map(a => React.createElement("div", {
                                         key: a.cod,
-                                        className: "flex items-center gap-3 p-2 hover:bg-gray-50 cursor-pointer border-b last:border-b-0",
+                                        className: "flex items-center gap-3 p-3 hover:bg-purple-50 cursor-pointer border-b last:border-b-0 transition-colors",
                                         onClick: () => {
                                             const atuais = todoModal.responsaveisSelecionados || [];
                                             if (!atuais.includes(a.cod)) {
@@ -12933,155 +12988,108 @@ const hideLoadingScreen = () => {
                                         }
                                     },
                                         a.foto 
-                                            ? React.createElement("img", {src: a.foto, className: "w-8 h-8 rounded-full object-cover"})
-                                            : React.createElement("div", {className: "w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-sm font-bold text-gray-600"}, 
+                                            ? React.createElement("img", {src: a.foto, className: "w-10 h-10 rounded-full object-cover"})
+                                            : React.createElement("div", {className: "w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-600"}, 
                                                 (a.nome || "?").charAt(0).toUpperCase()
                                             ),
                                         React.createElement("div", {className: "flex-1"},
-                                            React.createElement("p", {className: "text-sm font-medium"}, a.nome),
+                                            React.createElement("p", {className: "font-medium text-gray-800"}, a.nome),
                                             React.createElement("p", {className: "text-xs text-gray-500"}, a.role === "admin_master" ? "👑 Master" : "👑 Admin")
                                         ),
-                                        React.createElement("span", {className: "text-purple-500 text-lg"}, "+")
+                                        React.createElement("div", {className: "w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-600"}, "+")
                                     ))
-                            )
+                            ),
+                            todoAdmins.filter(a => !(todoModal.responsaveisSelecionados || []).includes(a.cod)).length === 0 &&
+                                React.createElement("div", {className: "p-4 text-center text-gray-500 text-sm"}, "Todos os usuários já foram selecionados")
                         )
                     )
-                ),
-                
-                // CHECKLIST - na criação e edição
-                React.createElement("div", {className: "border-t pt-4"},
-                    React.createElement("label", {className: "block text-sm font-semibold mb-2"}, "☑️ Checklist (opcional)"),
-                    React.createElement("div", {className: "space-y-2 mb-3"},
-                        (todoModal.checklist || []).map((item, idx) =>
-                            React.createElement("div", {
-                                key: idx,
-                                className: "flex items-center gap-2 bg-gray-50 p-2 rounded-lg"
-                            },
-                                React.createElement("span", {className: "w-5 h-5 rounded border-2 border-gray-300 flex items-center justify-center text-xs"}, idx + 1),
-                                React.createElement("span", {className: "flex-1 text-sm text-gray-700"}, item),
-                                React.createElement("button", {
-                                    onClick: () => {
-                                        const newChecklist = [...(todoModal.checklist || [])];
-                                        newChecklist.splice(idx, 1);
-                                        setTodoModal({...todoModal, checklist: newChecklist});
-                                    },
-                                    className: "text-red-400 hover:text-red-600"
-                                }, "×")
-                            )
-                        )
-                    ),
-                    React.createElement("div", {className: "flex gap-2"},
-                        React.createElement("input", {
-                            type: "text",
-                            id: "novo-checklist-item",
-                            placeholder: "Adicionar item ao checklist...",
-                            className: "flex-1 px-3 py-2 border rounded-lg text-sm",
-                            onKeyPress: (e) => {
-                                if (e.key === 'Enter' && e.target.value.trim()) {
-                                    const newChecklist = [...(todoModal.checklist || []), e.target.value.trim()];
-                                    setTodoModal({...todoModal, checklist: newChecklist});
-                                    e.target.value = '';
-                                }
-                            }
-                        }),
-                        React.createElement("button", {
-                            onClick: () => {
-                                const input = document.getElementById('novo-checklist-item');
-                                if (input && input.value.trim()) {
-                                    const newChecklist = [...(todoModal.checklist || []), input.value.trim()];
-                                    setTodoModal({...todoModal, checklist: newChecklist});
-                                    input.value = '';
-                                }
-                            },
-                            className: "px-3 py-2 bg-purple-100 text-purple-700 rounded-lg text-sm font-semibold hover:bg-purple-200"
-                        }, "+ Add")
-                    )
-                ),
-                
-                React.createElement("div", {className: "flex gap-3 pt-4 border-t"},
-                    React.createElement("button", {
-                        onClick: () => setTodoModal(null),
-                        className: "flex-1 px-4 py-3 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300"
-                    }, "Cancelar"),
-                    React.createElement("button", {
-                        onClick: async () => {
-                            const titulo = todoModal.titulo || todoModal.tarefa?.titulo;
-                            if (!titulo?.trim()) {
-                                ja("Informe o título", "error");
-                                return;
-                            }
-                            const grupoId = todoModal.grupoId || todoGrupoAtivo?.id || todoModal.tarefa?.grupo_id;
-                            if (!grupoId) {
-                                ja("Selecione um grupo", "error");
-                                return;
-                            }
-                            
-                            // Preparar array de responsáveis (cod dos usuários)
-                            const responsaveisFinais = todoModal.responsaveisSelecionados || [];
-                            
-                            if (todoModal.tipo === "novaTarefa") {
-                                const res = await fetch(`${API_URL}/todo/tarefas`, {
-                                    method: "POST",
-                                    headers: {"Content-Type": "application/json"},
-                                    body: JSON.stringify({
-                                        grupo_id: grupoId,
-                                        titulo: titulo,
-                                        descricao: todoModal.descricao || "",
-                                        prioridade: todoModal.prioridade || "media",
-                                        data_prazo: todoModal.dataVencimento || null,
-                                        responsaveis: responsaveisFinais,
-                                        criado_por: l.codProfissional,
-                                        criado_por_nome: l.fullName,
-                                        criado_por_foto: socialProfile?.profile_photo || null,
-                                        recorrente: todoModal.recorrente || false,
-                                        tipo_recorrencia: todoModal.recorrente ? (todoModal.tipoRecorrencia || "diaria") : null,
-                                        intervalo_recorrencia: todoModal.recorrente ? (todoModal.intervaloRecorrencia || 1) : 1
-                                    })
-                                });
-                                const novaTarefa = await res.json();
-                                
-                                // Criar subtarefas do checklist
-                                if (todoModal.checklist && todoModal.checklist.length > 0) {
-                                    for (let i = 0; i < todoModal.checklist.length; i++) {
-                                        await fetch(`${API_URL}/todo/tarefas/${novaTarefa.id}/subtarefas`, {
-                                            method: "POST",
-                                            headers: {"Content-Type": "application/json"},
-                                            body: JSON.stringify({ titulo: todoModal.checklist[i], ordem: i })
-                                        });
-                                    }
-                                }
-                                
-                                ja("✅ Tarefa criada!", "success");
-                            } else {
-                                await fetch(`${API_URL}/todo/tarefas/${todoModal.tarefa.id}`, {
-                                    method: "PUT",
-                                    headers: {"Content-Type": "application/json"},
-                                    body: JSON.stringify({
-                                        titulo: titulo,
-                                        descricao: todoModal.descricao ?? todoModal.tarefa.descricao,
-                                        prioridade: todoModal.prioridade || todoModal.tarefa.prioridade,
-                                        data_prazo: todoModal.dataVencimento || todoModal.tarefa.data_prazo,
-                                        responsaveis: responsaveisFinais.length > 0 ? responsaveisFinais : (todoModal.tarefa.responsaveis || []),
-                                        user_cod: l.codProfissional,
-                                        user_name: l.fullName,
-                                        recorrente: todoModal.recorrente || false,
-                                        tipo_recorrencia: todoModal.recorrente ? (todoModal.tipoRecorrencia || "diaria") : null,
-                                        intervalo_recorrencia: todoModal.recorrente ? (todoModal.intervaloRecorrencia || 1) : 1
-                                    })
-                                });
-                                ja("✅ Tarefa atualizada!", "success");
-                            }
-                            
-                            if (todoViewMode === "meudia") await loadTodoMeuDia();
-                            else if (todoGrupoAtivo) {
-                                const tarefas = await loadTodoTarefas(todoGrupoAtivo.id);
-                                setTodoTarefas(tarefas);
-                            }
-                            setTodoModal(null);
-                        },
-                        className: "flex-1 px-4 py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
-                    }, todoModal.tipo === "novaTarefa" ? "📝 Criar Tarefa" : "💾 Salvar")
                 )
+            ),
+            
+            // Footer com botões
+            React.createElement("div", {className: "px-6 py-4 bg-gray-50 border-t flex justify-end gap-3"},
+                React.createElement("button", {
+                    onClick: () => setTodoModal(null),
+                    className: "px-6 py-3 bg-gray-200 text-gray-700 rounded-xl font-semibold hover:bg-gray-300 transition-colors"
+                }, "Cancelar"),
+                React.createElement("button", {
+                    onClick: async () => {
+                        const titulo = todoModal.titulo || todoModal.tarefa?.titulo;
+                        if (!titulo?.trim()) {
+                            ja("Informe o título", "error");
+                            return;
+                        }
+                        const grupoId = todoModal.grupoId || todoGrupoAtivo?.id || todoModal.tarefa?.grupo_id;
+                        if (!grupoId) {
+                            ja("Selecione um grupo", "error");
+                            return;
+                        }
+                        
+                        // Preparar array de responsáveis (cod dos usuários)
+                        const responsaveisFinais = todoModal.responsaveisSelecionados || [];
+                        
+                        if (todoModal.tipo === "novaTarefa") {
+                            const res = await fetch(`${API_URL}/todo/tarefas`, {
+                                method: "POST",
+                                headers: {"Content-Type": "application/json"},
+                                body: JSON.stringify({
+                                    grupo_id: grupoId,
+                                    titulo: titulo,
+                                    descricao: todoModal.descricao || "",
+                                    prioridade: todoModal.prioridade || "media",
+                                    data_prazo: todoModal.dataVencimento || null,
+                                    responsaveis: responsaveisFinais,
+                                    criado_por: l.codProfissional,
+                                    criado_por_nome: l.fullName,
+                                    criado_por_foto: socialProfile?.profile_photo || null,
+                                    recorrente: todoModal.recorrente || false,
+                                    tipo_recorrencia: todoModal.recorrente ? (todoModal.tipoRecorrencia || "diaria") : null,
+                                    intervalo_recorrencia: todoModal.recorrente ? (todoModal.intervaloRecorrencia || 1) : 1
+                                })
+                            });
+                            const novaTarefa = await res.json();
+                            
+                            // Criar subtarefas do checklist
+                            if (todoModal.checklist && todoModal.checklist.length > 0) {
+                                for (let i = 0; i < todoModal.checklist.length; i++) {
+                                    await fetch(`${API_URL}/todo/tarefas/${novaTarefa.id}/subtarefas`, {
+                                        method: "POST",
+                                        headers: {"Content-Type": "application/json"},
+                                        body: JSON.stringify({ titulo: todoModal.checklist[i], ordem: i })
+                                    });
+                                }
+                            }
+                            
+                            ja("✅ Tarefa criada!", "success");
+                        } else {
+                            await fetch(`${API_URL}/todo/tarefas/${todoModal.tarefa.id}`, {
+                                method: "PUT",
+                                headers: {"Content-Type": "application/json"},
+                                body: JSON.stringify({
+                                    titulo: titulo,
+                                    descricao: todoModal.descricao ?? todoModal.tarefa.descricao,
+                                    prioridade: todoModal.prioridade || todoModal.tarefa.prioridade,
+                                    data_prazo: todoModal.dataVencimento || todoModal.tarefa.data_prazo,
+                                    responsaveis: responsaveisFinais.length > 0 ? responsaveisFinais : (todoModal.tarefa.responsaveis || []),
+                                    user_cod: l.codProfissional,
+                                    user_name: l.fullName,
+                                    recorrente: todoModal.recorrente || false,
+                                    tipo_recorrencia: todoModal.recorrente ? (todoModal.tipoRecorrencia || "diaria") : null,
+                                    intervalo_recorrencia: todoModal.recorrente ? (todoModal.intervaloRecorrencia || 1) : 1
+                                })
+                            });
+                            ja("✅ Tarefa atualizada!", "success");
+                        }
+                        
+                        if (todoViewMode === "meudia") await loadTodoMeuDia();
+                        else if (todoGrupoAtivo) {
+                            const tarefas = await loadTodoTarefas(todoGrupoAtivo.id);
+                            setTodoTarefas(tarefas);
+                        }
+                        setTodoModal(null);
+                    },
+                    className: "px-8 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl font-semibold hover:from-purple-700 hover:to-indigo-700 transition-all shadow-lg"
+                }, todoModal.tipo === "novaTarefa" ? "📝 Criar Tarefa" : "💾 Salvar Alterações")
             )))
             )
         }
