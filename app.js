@@ -12562,11 +12562,26 @@ const hideLoadingScreen = () => {
                                     }, t.prioridade === "alta" ? "🔴 Alta" : t.prioridade === "media" ? "🟡 Média" : "🔵 Baixa"),
                                     isAtrasada && React.createElement("span", {className: "text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700"}, "🔥 Atrasada"),
                                     isHoje && !isAtrasada && React.createElement("span", {className: "text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-700"}, "📅 Hoje"),
+                                    // Indicador de Recorrente
+                                    t.recorrente && React.createElement("span", {
+                                        className: "text-xs px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700",
+                                        title: t.tipo_recorrencia === 'diaria' ? 'Repete diariamente' : 
+                                               t.tipo_recorrencia === 'semanal' ? 'Repete semanalmente' : 
+                                               t.tipo_recorrencia === 'mensal' ? 'Repete mensalmente' : 'Tarefa recorrente'
+                                    }, "🔄 Recorrente"),
                                     // Indicador de Subtarefas
                                     t.qtd_subtarefas > 0 && React.createElement("span", {
                                         className: "text-xs px-2 py-0.5 rounded-full " + 
                                             (t.qtd_subtarefas_concluidas === t.qtd_subtarefas ? "bg-green-100 text-green-700" : "bg-purple-100 text-purple-700")
-                                    }, "☑️ ", t.qtd_subtarefas_concluidas || 0, "/", t.qtd_subtarefas)
+                                    }, "☑️ ", t.qtd_subtarefas_concluidas || 0, "/", t.qtd_subtarefas),
+                                    // Badge de Recorrente
+                                    t.recorrente && React.createElement("span", {
+                                        className: "text-xs px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700",
+                                        title: t.tipo_recorrencia === "diaria" || t.tipo_recorrencia === "diario" ? "Repete diariamente" :
+                                               t.tipo_recorrencia === "semanal" ? "Repete semanalmente" :
+                                               t.tipo_recorrencia === "mensal" ? "Repete mensalmente" : 
+                                               `Repete a cada ${t.intervalo_recorrencia || 1} dias`
+                                    }, "🔄 Recorrente")
                                 ),
                                 
                                 // Data
@@ -12906,6 +12921,64 @@ const hideLoadingScreen = () => {
                         todoGrupos.map(g => React.createElement("option", {key: g.id, value: g.id}, g.icone + " " + g.nome)))
                 ),
                 
+                // RECORRÊNCIA
+                React.createElement("div", {className: "border-t pt-4"},
+                    React.createElement("div", {className: "flex items-center justify-between mb-3"},
+                        React.createElement("label", {className: "text-sm font-semibold"}, "🔄 Tarefa Recorrente"),
+                        React.createElement("button", {
+                            type: "button",
+                            onClick: () => setTodoModal({...todoModal, recorrente: !todoModal.recorrente}),
+                            className: `relative w-12 h-6 rounded-full transition-colors ${todoModal.recorrente ? 'bg-purple-600' : 'bg-gray-300'}`
+                        },
+                            React.createElement("div", {
+                                className: `absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${todoModal.recorrente ? 'translate-x-6' : ''}`
+                            })
+                        )
+                    ),
+                    
+                    todoModal.recorrente && React.createElement("div", {className: "bg-purple-50 rounded-lg p-4 space-y-3"},
+                        React.createElement("p", {className: "text-sm text-purple-700"}, 
+                            "⏰ A tarefa será reaberta automaticamente após ser concluída"
+                        ),
+                        
+                        React.createElement("div", {className: "grid grid-cols-2 gap-3"},
+                            React.createElement("div", null,
+                                React.createElement("label", {className: "block text-xs font-semibold text-gray-600 mb-1"}, "Repetir"),
+                                React.createElement("select", {
+                                    value: todoModal.tipoRecorrencia || "diaria",
+                                    onChange: e => setTodoModal({...todoModal, tipoRecorrencia: e.target.value}),
+                                    className: "w-full px-3 py-2 border rounded-lg bg-white text-sm"
+                                },
+                                    React.createElement("option", {value: "diaria"}, "📅 Diariamente"),
+                                    React.createElement("option", {value: "semanal"}, "📆 Semanalmente"),
+                                    React.createElement("option", {value: "mensal"}, "🗓️ Mensalmente"),
+                                    React.createElement("option", {value: "personalizado"}, "⚙️ Personalizado")
+                                )
+                            ),
+                            
+                            (todoModal.tipoRecorrencia === "personalizado" || todoModal.tipoRecorrencia === "diaria") && React.createElement("div", null,
+                                React.createElement("label", {className: "block text-xs font-semibold text-gray-600 mb-1"}, 
+                                    todoModal.tipoRecorrencia === "personalizado" ? "A cada X dias" : "Intervalo"
+                                ),
+                                React.createElement("input", {
+                                    type: "number",
+                                    min: 1,
+                                    value: todoModal.intervaloRecorrencia || 1,
+                                    onChange: e => setTodoModal({...todoModal, intervaloRecorrencia: parseInt(e.target.value) || 1}),
+                                    className: "w-full px-3 py-2 border rounded-lg text-sm"
+                                })
+                            )
+                        ),
+                        
+                        React.createElement("div", {className: "text-xs text-gray-500 bg-white p-2 rounded"},
+                            todoModal.tipoRecorrencia === "diaria" && `Após concluir, reaparecerá em ${todoModal.intervaloRecorrencia || 1} dia(s)`,
+                            todoModal.tipoRecorrencia === "semanal" && "Após concluir, reaparecerá em 1 semana",
+                            todoModal.tipoRecorrencia === "mensal" && "Após concluir, reaparecerá em 1 mês",
+                            todoModal.tipoRecorrencia === "personalizado" && `Após concluir, reaparecerá em ${todoModal.intervaloRecorrencia || 1} dia(s)`
+                        )
+                    )
+                ),
+                
                 // CHECKLIST - na criação e edição
                 React.createElement("div", {className: "border-t pt-4"},
                     React.createElement("label", {className: "block text-sm font-semibold mb-2"}, "☑️ Checklist (opcional)"),
@@ -12990,7 +13063,10 @@ const hideLoadingScreen = () => {
                                         responsaveis: responsaveisFinais,
                                         criado_por: l.codProfissional,
                                         criado_por_nome: l.fullName,
-                                        criado_por_foto: socialProfile?.profile_photo || null
+                                        criado_por_foto: socialProfile?.profile_photo || null,
+                                        recorrente: todoModal.recorrente || false,
+                                        tipo_recorrencia: todoModal.recorrente ? (todoModal.tipoRecorrencia || "diaria") : null,
+                                        intervalo_recorrencia: todoModal.recorrente ? (todoModal.intervaloRecorrencia || 1) : 1
                                     })
                                 });
                                 const novaTarefa = await res.json();
