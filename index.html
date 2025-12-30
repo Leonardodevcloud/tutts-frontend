@@ -507,6 +507,140 @@
     window.atualizarMapaCalor = function(pontos) {
       window.initMapaCalor(pontos);
     };
+    
+    // ============================================
+    // MAPA DE CLIENTES (Localização)
+    // ============================================
+    var mapaClientesLeaflet = null;
+    var markersClientesLayer = null;
+    
+    window.initMapaClientes = function(clientes, tentativa) {
+      tentativa = tentativa || 0;
+      
+      console.log('🗺️ [INDEX] initMapaClientes chamado com', clientes ? clientes.length : 0, 'clientes');
+      
+      // Validar se clientes é um array
+      if (!clientes || !Array.isArray(clientes)) {
+        console.log('❌ clientes não é um array válido');
+        return;
+      }
+      
+      if (typeof L === 'undefined') {
+        console.log('❌ Leaflet não carregado!');
+        if (tentativa < 10) {
+          setTimeout(function() { window.initMapaClientes(clientes, tentativa + 1); }, 300);
+        }
+        return;
+      }
+      
+      var container = document.getElementById('mapa-clientes-leaflet');
+      if (!container || container.offsetWidth === 0) {
+        console.log('⏳ Container não pronto, tentativa', tentativa + 1);
+        if (tentativa < 20) {
+          setTimeout(function() { window.initMapaClientes(clientes, tentativa + 1); }, 150);
+        }
+        return;
+      }
+      
+      console.log('📐 Container:', container.offsetWidth, 'x', container.offsetHeight);
+      
+      // Destruir mapa anterior se existir
+      if (mapaClientesLeaflet) {
+        try { mapaClientesLeaflet.remove(); } catch(e) {}
+        mapaClientesLeaflet = null;
+        markersClientesLayer = null;
+      }
+      container._leaflet_id = null;
+      container.innerHTML = '';
+      
+      try {
+        mapaClientesLeaflet = L.map('mapa-clientes-leaflet').setView([-16.6869, -49.2648], 10);
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap',
+          maxZoom: 18
+        }).addTo(mapaClientesLeaflet);
+        
+        markersClientesLayer = L.layerGroup().addTo(mapaClientesLeaflet);
+        var bounds = [];
+        var adicionados = 0;
+        
+        // Adicionar marcadores para cada cliente
+        for (var i = 0; i < clientes.length; i++) {
+          var cliente = clientes[i];
+          var end = cliente.enderecos && cliente.enderecos[0] ? cliente.enderecos[0] : null;
+          if (!end || !end.latitude || !end.longitude) continue;
+          
+          var lat = parseFloat(end.latitude);
+          var lng = parseFloat(end.longitude);
+          if (isNaN(lat) || isNaN(lng) || lat === 0 || lng === 0) continue;
+          
+          bounds.push([lat, lng]);
+          adicionados++;
+          
+          // Emoji baseado no cliente
+          var isCliente767 = String(cliente.cod_cliente) === '767';
+          var emoji = isCliente767 ? '⭐' : '🏢';
+          var tamanho = isCliente767 ? 32 : 26;
+          
+          // Criar ícone com emoji
+          var emojiIcon = L.divIcon({
+            html: '<div style="font-size: ' + tamanho + 'px; text-shadow: 2px 2px 3px rgba(0,0,0,0.3); cursor: pointer;">' + emoji + '</div>',
+            className: 'emoji-marker',
+            iconSize: [tamanho, tamanho],
+            iconAnchor: [tamanho/2, tamanho/2],
+            popupAnchor: [0, -tamanho/2]
+          });
+          
+          // Criar marcador
+          var marker = L.marker([lat, lng], { icon: emojiIcon });
+          
+          // Criar link do Waze
+          var wazeLink = 'https://waze.com/ul?ll=' + lat + ',' + lng + '&navigate=yes';
+          
+          // Popup com informações
+          var cidadeInfo = [end.bairro, end.cidade, end.estado].filter(function(x) { return x; }).join(' - ');
+          var popupHtml = '<div style="min-width: 220px; font-family: system-ui, sans-serif;">' +
+            '<p style="font-weight: bold; color: #0d9488; margin: 0 0 6px 0; font-size: 14px;">' +
+            cliente.cod_cliente + ' - ' + (cliente.nome_cliente || '') +
+            '</p>' +
+            (cliente.centro_custo ? '<p style="color: #7c3aed; font-size: 12px; margin: 0 0 6px 0; font-weight: 600;">📦 ' + cliente.centro_custo + '</p>' : '') +
+            '<p style="color: #555; font-size: 12px; margin: 0 0 6px 0;">📌 ' + (end.endereco || 'Sem endereço') + '</p>' +
+            (cidadeInfo ? '<p style="color: #888; font-size: 11px; margin: 0 0 10px 0;">' + cidadeInfo + '</p>' : '') +
+            '<a href="' + wazeLink + '" target="_blank" rel="noopener" style="display: inline-block; padding: 8px 16px; background: #06b6d4; color: white; text-decoration: none; border-radius: 8px; font-size: 13px; font-weight: 600;">🚗 Abrir no Waze</a>' +
+            '</div>';
+          
+          marker.bindPopup(popupHtml);
+          marker.addTo(markersClientesLayer);
+        }
+        
+        console.log('✅ Adicionados', adicionados, 'marcadores ao mapa');
+        
+        // Ajustar zoom para mostrar todos os pontos
+        if (bounds.length > 0) {
+          mapaClientesLeaflet.fitBounds(bounds, { padding: [50, 50] });
+        }
+        
+        // Forçar redimensionamento
+        setTimeout(function() {
+          if (mapaClientesLeaflet) {
+            mapaClientesLeaflet.invalidateSize();
+            console.log('✅ Mapa de clientes finalizado!');
+          }
+        }, 100);
+        
+      } catch(e) {
+        console.error('❌ Erro ao criar mapa de clientes:', e);
+      }
+    };
+    
+    window.destroyMapaClientes = function() {
+      if (mapaClientesLeaflet) {
+        try { mapaClientesLeaflet.remove(); } catch(e) {}
+        mapaClientesLeaflet = null;
+        markersClientesLayer = null;
+      }
+    };
   </script>
 </body>
 </html>
