@@ -956,6 +956,8 @@ const hideLoadingScreen = () => {
         [showRelatorioModal, setShowRelatorioModal] = useState(false),
         [relatorioEdit, setRelatorioEdit] = useState(null),
         [relatorioImagemAmpliada, setRelatorioImagemAmpliada] = useState(null),
+        [relatorioNaoLido, setRelatorioNaoLido] = useState(null), // Relatório para exibir no modal de ciência
+        [relatoriosNaoLidos, setRelatoriosNaoLidos] = useState([]), // Lista de relatórios não lidos
         [relatorioForm, setRelatorioForm] = useState({
             titulo: '',
             conteudo: '',
@@ -1702,6 +1704,65 @@ const hideLoadingScreen = () => {
             }
             setRelatoriosLoading(false);
         };
+        
+        // Carregar relatórios não lidos pelo usuário
+        const carregarRelatoriosNaoLidos = async () => {
+            if (!l?.id) return;
+            try {
+                const res = await fetch(`${API_URL}/relatorios-diarios/nao-lidos/${l.id}`);
+                const data = await res.json();
+                const naoLidos = Array.isArray(data) ? data : [];
+                setRelatoriosNaoLidos(naoLidos);
+                // Se houver relatórios não lidos, mostrar o primeiro
+                if (naoLidos.length > 0) {
+                    setRelatorioNaoLido(naoLidos[0]);
+                }
+            } catch (err) { 
+                console.error('Erro ao carregar relatórios não lidos:', err); 
+            }
+        };
+        
+        // Marcar relatório como lido
+        const marcarRelatorioComoLido = async (relatorioId) => {
+            if (!l?.id) return;
+            try {
+                await fetch(`${API_URL}/relatorios-diarios/${relatorioId}/visualizar`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        usuario_id: l.id,
+                        usuario_nome: l.fullName || l.username,
+                        usuario_foto: socialProfile?.profile_photo || ''
+                    })
+                });
+                
+                // Remover da lista de não lidos
+                const novosNaoLidos = relatoriosNaoLidos.filter(r => r.id !== relatorioId);
+                setRelatoriosNaoLidos(novosNaoLidos);
+                
+                // Mostrar próximo relatório não lido ou fechar modal
+                if (novosNaoLidos.length > 0) {
+                    setRelatorioNaoLido(novosNaoLidos[0]);
+                } else {
+                    setRelatorioNaoLido(null);
+                }
+                
+                // Atualizar lista de relatórios para mostrar nova visualização
+                carregarRelatoriosDiarios();
+            } catch (err) { 
+                console.error('Erro ao marcar como lido:', err); 
+            }
+        };
+        
+        // Verificar relatórios não lidos ao carregar e periodicamente
+        React.useEffect(() => {
+            if (l?.id) {
+                carregarRelatoriosNaoLidos();
+                // Verificar a cada 30 segundos
+                const interval = setInterval(carregarRelatoriosNaoLidos, 30000);
+                return () => clearInterval(interval);
+            }
+        }, [l?.id]);
         
         const abrirNovoRelatorio = () => {
             setRelatorioEdit(null);
@@ -6699,7 +6760,86 @@ const hideLoadingScreen = () => {
             const e = "admin_master" === l.role;
             return React.createElement("div", {
                 className: "min-h-screen bg-gray-50"
-            }, i && React.createElement(Toast, i), n && React.createElement(LoadingOverlay, null), V && React.createElement(PixQRCodeModal, {
+            }, i && React.createElement(Toast, i), n && React.createElement(LoadingOverlay, null), 
+            // Modal de Relatório Não Lido (ciência)
+            relatorioNaoLido && React.createElement("div", {
+                className: "fixed inset-0 bg-black/70 flex items-center justify-center z-[100] p-4"
+            },
+                React.createElement("div", {className: "bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col animate-fade-in"},
+                    // Header
+                    React.createElement("div", {className: "bg-gradient-to-r from-teal-600 to-teal-700 text-white p-4 flex items-center gap-3"},
+                        React.createElement("span", {className: "text-3xl"}, "📢"),
+                        React.createElement("div", null,
+                            React.createElement("h3", {className: "text-lg font-bold"}, "Novo Relatório Diário"),
+                            React.createElement("p", {className: "text-teal-100 text-sm"}, 
+                                relatoriosNaoLidos.length > 1 
+                                    ? `${relatoriosNaoLidos.length} relatórios pendentes de leitura`
+                                    : "1 relatório pendente de leitura"
+                            )
+                        )
+                    ),
+                    // Info do autor
+                    React.createElement("div", {className: "p-4 bg-gray-50 border-b flex items-center gap-3"},
+                        relatorioNaoLido.usuario_foto 
+                            ? React.createElement("img", {
+                                src: relatorioNaoLido.usuario_foto,
+                                className: "w-12 h-12 rounded-full object-cover border-2 border-teal-200"
+                            })
+                            : React.createElement("div", {
+                                className: "w-12 h-12 rounded-full bg-teal-100 flex items-center justify-center text-teal-600 font-bold text-lg"
+                            }, (relatorioNaoLido.usuario_nome || "?").charAt(0).toUpperCase()),
+                        React.createElement("div", null,
+                            React.createElement("p", {className: "font-bold text-gray-800"}, relatorioNaoLido.titulo),
+                            React.createElement("p", {className: "text-sm text-gray-500"}, 
+                                relatorioNaoLido.usuario_nome, " • ", 
+                                new Date(relatorioNaoLido.created_at).toLocaleDateString('pt-BR', {
+                                    day: '2-digit', month: '2-digit', year: 'numeric',
+                                    hour: '2-digit', minute: '2-digit'
+                                })
+                            )
+                        )
+                    ),
+                    // Conteúdo
+                    React.createElement("div", {className: "p-4 overflow-y-auto flex-1"},
+                        React.createElement("div", {
+                            className: "text-gray-700 whitespace-pre-wrap",
+                            dangerouslySetInnerHTML: { __html: (relatorioNaoLido.conteudo || '').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/_(.*?)_/g, '<em>$1</em>') }
+                        }),
+                        relatorioNaoLido.imagem_url && React.createElement("div", {className: "mt-4"},
+                            React.createElement("img", {
+                                src: relatorioNaoLido.imagem_url,
+                                className: "max-w-full rounded-lg shadow cursor-pointer hover:opacity-90",
+                                onClick: () => setRelatorioImagemAmpliada(relatorioNaoLido.imagem_url)
+                            })
+                        )
+                    ),
+                    // Footer com botão de ciência
+                    React.createElement("div", {className: "p-4 bg-gray-50 border-t"},
+                        React.createElement("button", {
+                            onClick: () => marcarRelatorioComoLido(relatorioNaoLido.id),
+                            className: "w-full px-6 py-4 bg-teal-600 text-white rounded-xl font-bold text-lg hover:bg-teal-700 flex items-center justify-center gap-2 shadow-lg"
+                        }, "✅ Estou Ciente")
+                    )
+                )
+            ),
+            // Modal de imagem ampliada (relatório)
+            relatorioImagemAmpliada && React.createElement("div", {
+                className: "fixed inset-0 bg-black/90 flex items-center justify-center z-[110] p-4",
+                onClick: () => setRelatorioImagemAmpliada(null)
+            },
+                React.createElement("div", {className: "relative max-w-4xl max-h-[90vh]"},
+                    React.createElement("button", {
+                        onClick: () => setRelatorioImagemAmpliada(null),
+                        className: "absolute -top-10 right-0 text-white text-3xl hover:text-gray-300"
+                    }, "✕"),
+                    React.createElement("img", {
+                        src: relatorioImagemAmpliada,
+                        className: "max-w-full max-h-[85vh] rounded-lg shadow-2xl",
+                        onClick: (e) => e.stopPropagation()
+                    })
+                )
+            ),
+            V && React.createElement(PixQRCodeModal, {
                 withdrawal: V,
                 onClose: () => J(null),
                 showToast: ja
@@ -13821,6 +13961,35 @@ const hideLoadingScreen = () => {
                                                 className: "max-w-full md:max-w-md rounded-lg shadow cursor-pointer hover:opacity-90 transition-opacity",
                                                 onClick: () => setRelatorioImagemAmpliada(rel.imagem_url)
                                             })
+                                        )
+                                    ),
+                                    // Seção de Visualizações
+                                    React.createElement("div", {className: "px-4 pb-4 border-t pt-3 bg-gray-50"},
+                                        React.createElement("div", {className: "flex items-center gap-2 flex-wrap"},
+                                            React.createElement("span", {className: "text-sm text-gray-500 font-medium"}, "👁️ Visualizações:"),
+                                            rel.visualizacoes && rel.visualizacoes.length > 0
+                                                ? React.createElement("div", {className: "flex items-center gap-1 flex-wrap"},
+                                                    rel.visualizacoes.slice(0, 10).map((vis, idx) => 
+                                                        React.createElement("div", {
+                                                            key: idx,
+                                                            className: "relative group",
+                                                            title: vis.usuario_nome + " - " + new Date(vis.visualizado_em).toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'})
+                                                        },
+                                                            vis.usuario_foto 
+                                                                ? React.createElement("img", {
+                                                                    src: vis.usuario_foto,
+                                                                    className: "w-8 h-8 rounded-full object-cover border-2 border-white shadow-sm hover:scale-110 transition-transform cursor-pointer"
+                                                                })
+                                                                : React.createElement("div", {
+                                                                    className: "w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center text-teal-600 font-bold text-xs border-2 border-white shadow-sm"
+                                                                }, (vis.usuario_nome || "?").charAt(0).toUpperCase())
+                                                        )
+                                                    ),
+                                                    rel.visualizacoes.length > 10 && React.createElement("span", {
+                                                        className: "text-xs text-gray-500 ml-1"
+                                                    }, "+", rel.visualizacoes.length - 10)
+                                                )
+                                                : React.createElement("span", {className: "text-sm text-gray-400 italic"}, "Nenhuma visualização ainda")
                                         )
                                     )
                                 ))
