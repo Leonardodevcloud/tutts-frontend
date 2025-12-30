@@ -13483,7 +13483,7 @@ const hideLoadingScreen = () => {
                                             React.createElement("p", {className: "text-gray-500"}, "Nenhum cliente encontrado com \"", localizacaoFiltro, "\"")
                                         )
                                         : clientesFiltrados.map(cliente => React.createElement("div", {
-                                            key: cliente.cod_cliente,
+                                            key: cliente.cod_cliente + (cliente.centro_custo || ''),
                                             className: "bg-white rounded-xl shadow-lg overflow-hidden border-l-4 border-teal-500"
                                         },
                                             // Cabeçalho do cliente
@@ -13493,7 +13493,10 @@ const hideLoadingScreen = () => {
                                                         React.createElement("span", {className: "text-2xl"}, "🏢"),
                                                         React.createElement("div", null,
                                                             React.createElement("p", {className: "font-bold text-teal-800 text-lg"}, 
-                                                                cliente.cod_cliente, " - ", il(cliente.cod_cliente) || cliente.nome_cliente
+                                                                cliente.cod_cliente, " - ", cliente.nome_cliente
+                                                            ),
+                                                            cliente.centro_custo && React.createElement("p", {className: "text-sm font-semibold text-purple-600"}, 
+                                                                "📦 ", cliente.centro_custo
                                                             ),
                                                             React.createElement("p", {className: "text-sm text-gray-500"}, 
                                                                 cliente.enderecos?.length || 0, " endereço(s) de coleta"
