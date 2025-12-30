@@ -12764,7 +12764,7 @@ const hideLoadingScreen = () => {
             (todoModal?.tipo === "novaTarefa" || todoModal?.tipo === "editarTarefa") && React.createElement("div", {
                 className: "fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
             }, React.createElement("div", {
-                className: "bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
+                className: "bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[95vh] overflow-hidden flex flex-col"
             }, React.createElement("div", {
                 className: "bg-gradient-to-r from-purple-600 to-indigo-600 p-4 text-white flex justify-between items-center flex-shrink-0"
             }, React.createElement("h2", {className: "text-xl font-bold"}, todoModal.tipo === "novaTarefa" ? "📝 Nova Tarefa" : "✏️ Editar Tarefa"),
@@ -12775,206 +12775,179 @@ const hideLoadingScreen = () => {
             ), 
             
             // Info do criador (quem está criando)
-            todoModal.tipo === "novaTarefa" && React.createElement("div", {className: "px-6 py-3 bg-purple-50 border-b flex items-center gap-3"},
-                socialProfile?.profile_photo 
-                    ? React.createElement("img", {src: socialProfile.profile_photo, className: "w-10 h-10 rounded-full object-cover border-2 border-purple-200"})
-                    : React.createElement("div", {className: "w-10 h-10 rounded-full bg-purple-200 flex items-center justify-center text-purple-600 font-bold"}, 
-                        (l.fullName || "?").charAt(0).toUpperCase()
+            todoModal.tipo === "novaTarefa" && React.createElement("div", {className: "px-6 py-3 bg-purple-50 border-b flex items-center justify-between"},
+                React.createElement("div", {className: "flex items-center gap-3"},
+                    socialProfile?.profile_photo 
+                        ? React.createElement("img", {src: socialProfile.profile_photo, className: "w-10 h-10 rounded-full object-cover border-2 border-purple-200"})
+                        : React.createElement("div", {className: "w-10 h-10 rounded-full bg-purple-200 flex items-center justify-center text-purple-600 font-bold"}, 
+                            (l.fullName || "?").charAt(0).toUpperCase()
+                        ),
+                    React.createElement("div", null,
+                        React.createElement("p", {className: "font-semibold text-gray-800"}, l.fullName || l.username),
+                        React.createElement("p", {className: "text-sm text-purple-600"}, "Criando nova tarefa")
+                    )
+                ),
+                // Toggle de Recorrência no header
+                React.createElement("div", {className: "flex items-center gap-3 bg-white px-4 py-2 rounded-lg shadow-sm"},
+                    React.createElement("span", {className: "text-sm font-semibold text-gray-700"}, "🔄 Recorrente"),
+                    React.createElement("button", {
+                        type: "button",
+                        onClick: () => setTodoModal({...todoModal, recorrente: !todoModal.recorrente}),
+                        className: `relative w-12 h-6 rounded-full transition-colors ${todoModal.recorrente ? 'bg-purple-600' : 'bg-gray-300'}`
+                    },
+                        React.createElement("div", {
+                            className: `absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${todoModal.recorrente ? 'translate-x-6' : ''}`
+                        })
+                    )
+                )
+            ),
+            
+            // Opções de Recorrência (aparece se toggle ativo)
+            todoModal.recorrente && React.createElement("div", {className: "px-6 py-3 bg-indigo-50 border-b"},
+                React.createElement("div", {className: "flex items-center gap-4 flex-wrap"},
+                    React.createElement("span", {className: "text-sm text-indigo-700 font-medium"}, "⏰ Repetir:"),
+                    React.createElement("div", {className: "flex gap-2"},
+                        ["diaria", "semanal", "mensal", "personalizado"].map(tipo => 
+                            React.createElement("button", {
+                                key: tipo,
+                                type: "button",
+                                onClick: () => setTodoModal({...todoModal, tipoRecorrencia: tipo}),
+                                className: `px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                                    (todoModal.tipoRecorrencia || "diaria") === tipo 
+                                        ? 'bg-indigo-600 text-white shadow-md' 
+                                        : 'bg-white text-gray-700 hover:bg-gray-100'
+                                }`
+                            }, tipo === "diaria" ? "📅 Diário" : 
+                               tipo === "semanal" ? "📆 Semanal" : 
+                               tipo === "mensal" ? "🗓️ Mensal" : "⚙️ Personalizado")
+                        )
                     ),
-                React.createElement("div", null,
-                    React.createElement("p", {className: "font-semibold text-gray-800"}, l.fullName || l.username),
-                    React.createElement("p", {className: "text-sm text-purple-600"}, "Criando nova tarefa")
+                    (todoModal.tipoRecorrencia === "personalizado") && React.createElement("div", {className: "flex items-center gap-2"},
+                        React.createElement("span", {className: "text-sm text-gray-600"}, "A cada"),
+                        React.createElement("input", {
+                            type: "number",
+                            min: 1,
+                            value: todoModal.intervaloRecorrencia || 1,
+                            onChange: e => setTodoModal({...todoModal, intervaloRecorrencia: parseInt(e.target.value) || 1}),
+                            className: "w-16 px-2 py-1 border rounded-lg text-sm text-center"
+                        }),
+                        React.createElement("span", {className: "text-sm text-gray-600"}, "dias")
+                    )
                 )
             ),
             
             React.createElement("div", {className: "p-6 space-y-4 overflow-y-auto flex-1"},
-                React.createElement("div", null,
-                    React.createElement("label", {className: "block text-sm font-semibold mb-1"}, "Título *"),
-                    React.createElement("input", {
-                        type: "text",
-                        value: todoModal.titulo || todoModal.tarefa?.titulo || "",
-                        onChange: e => setTodoModal({...todoModal, titulo: e.target.value}),
-                        className: "w-full px-3 py-2 border rounded-lg",
-                        placeholder: "O que precisa ser feito?"
-                    })
-                ),
-                React.createElement("div", null,
-                    React.createElement("label", {className: "block text-sm font-semibold mb-1"}, "Descrição"),
-                    React.createElement("textarea", {
-                        value: todoModal.descricao || todoModal.tarefa?.descricao || "",
-                        onChange: e => setTodoModal({...todoModal, descricao: e.target.value}),
-                        className: "w-full px-3 py-2 border rounded-lg h-20",
-                        placeholder: "Detalhes..."
-                    })
-                ),
-                React.createElement("div", {className: "grid grid-cols-2 gap-4"},
-                    React.createElement("div", null,
-                        React.createElement("label", {className: "block text-sm font-semibold mb-1"}, "Prioridade"),
-                        React.createElement("select", {
-                            value: todoModal.prioridade || todoModal.tarefa?.prioridade || "media",
-                            onChange: e => setTodoModal({...todoModal, prioridade: e.target.value}),
-                            className: "w-full px-3 py-2 border rounded-lg bg-white"
-                        }, React.createElement("option", {value: "baixa"}, "🔵 Baixa"),
-                            React.createElement("option", {value: "media"}, "🟡 Média"),
-                            React.createElement("option", {value: "alta"}, "🔴 Alta"))
-                    ),
-                    React.createElement("div", null,
-                        React.createElement("label", {className: "block text-sm font-semibold mb-1"}, "Data de Vencimento"),
-                        React.createElement("input", {
-                            type: "date",
-                            value: todoModal.dataVencimento || (todoModal.tarefa?.data_vencimento ? todoModal.tarefa.data_vencimento.split("T")[0] : ""),
-                            onChange: e => setTodoModal({...todoModal, dataVencimento: e.target.value}),
-                            className: "w-full px-3 py-2 border rounded-lg"
-                        })
-                    )
-                ),
-                
-                // Seleção de múltiplos responsáveis com foto
-                React.createElement("div", null,
-                    React.createElement("label", {className: "block text-sm font-semibold mb-2"}, "👥 Atribuir para"),
-                    
-                    // Usuários selecionados
-                    (todoModal.responsaveisSelecionados || []).length > 0 && React.createElement("div", {className: "flex flex-wrap gap-2 mb-3"},
-                        (todoModal.responsaveisSelecionados || []).map(resp => {
-                            const usuario = todoAdmins.find(a => a.cod === resp || a.nome === resp);
-                            return React.createElement("div", {
-                                key: resp,
-                                className: "flex items-center gap-2 bg-purple-100 text-purple-800 px-3 py-1.5 rounded-full"
-                            },
-                                usuario?.foto 
-                                    ? React.createElement("img", {src: usuario.foto, className: "w-6 h-6 rounded-full object-cover"})
-                                    : React.createElement("div", {className: "w-6 h-6 rounded-full bg-purple-300 flex items-center justify-center text-xs font-bold text-purple-700"}, 
-                                        (usuario?.nome || resp).charAt(0).toUpperCase()
-                                    ),
-                                React.createElement("span", {className: "text-sm font-medium"}, usuario?.nome || resp),
-                                React.createElement("button", {
-                                    onClick: () => {
-                                        const novos = (todoModal.responsaveisSelecionados || []).filter(r => r !== resp);
-                                        setTodoModal({...todoModal, responsaveisSelecionados: novos});
-                                    },
-                                    className: "text-purple-600 hover:text-purple-800 ml-1"
-                                }, "✕")
-                            );
-                        })
-                    ),
-                    
-                    // Dropdown para adicionar usuários
-                    React.createElement("div", {className: "relative"},
-                        React.createElement("select", {
-                            value: "",
-                            onChange: e => {
-                                if (e.target.value) {
-                                    const atuais = todoModal.responsaveisSelecionados || [];
-                                    if (!atuais.includes(e.target.value)) {
-                                        setTodoModal({...todoModal, responsaveisSelecionados: [...atuais, e.target.value]});
-                                    }
-                                    e.target.value = "";
-                                }
-                            },
-                            className: "w-full px-3 py-2 border rounded-lg bg-white"
-                        }, 
-                            React.createElement("option", {value: ""}, "➕ Adicionar responsável..."),
-                            todoAdmins
-                                .filter(a => !(todoModal.responsaveisSelecionados || []).includes(a.cod) && !(todoModal.responsaveisSelecionados || []).includes(a.nome))
-                                .map(a => React.createElement("option", {
-                                    key: a.cod, 
-                                    value: a.cod
-                                }, a.nome))
-                        )
-                    ),
-                    
-                    // Lista visual de usuários disponíveis
-                    React.createElement("div", {className: "mt-3 max-h-40 overflow-y-auto border rounded-lg"},
-                        todoAdmins
-                            .filter(a => !(todoModal.responsaveisSelecionados || []).includes(a.cod) && !(todoModal.responsaveisSelecionados || []).includes(a.nome))
-                            .map(a => React.createElement("div", {
-                                key: a.cod,
-                                className: "flex items-center gap-3 p-2 hover:bg-gray-50 cursor-pointer border-b last:border-b-0",
-                                onClick: () => {
-                                    const atuais = todoModal.responsaveisSelecionados || [];
-                                    if (!atuais.includes(a.cod)) {
-                                        setTodoModal({...todoModal, responsaveisSelecionados: [...atuais, a.cod]});
-                                    }
-                                }
-                            },
-                                a.foto 
-                                    ? React.createElement("img", {src: a.foto, className: "w-8 h-8 rounded-full object-cover"})
-                                    : React.createElement("div", {className: "w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-sm font-bold text-gray-600"}, 
-                                        (a.nome || "?").charAt(0).toUpperCase()
-                                    ),
-                                React.createElement("div", {className: "flex-1"},
-                                    React.createElement("p", {className: "text-sm font-medium"}, a.nome),
-                                    React.createElement("p", {className: "text-xs text-gray-500"}, a.role === "admin_master" ? "👑 Master" : a.role === "admin" ? "👑 Admin" : "👤 Usuário")
-                                ),
-                                React.createElement("span", {className: "text-purple-500"}, "+")
-                            ))
-                    )
-                ),
-                
-                todoModal.tipo === "novaTarefa" && React.createElement("div", null,
-                    React.createElement("label", {className: "block text-sm font-semibold mb-1"}, "Grupo"),
-                    React.createElement("select", {
-                        value: todoModal.grupoId || todoGrupoAtivo?.id || "",
-                        onChange: e => setTodoModal({...todoModal, grupoId: e.target.value}),
-                        className: "w-full px-3 py-2 border rounded-lg bg-white"
-                    }, React.createElement("option", {value: ""}, "Selecione um grupo..."),
-                        todoGrupos.map(g => React.createElement("option", {key: g.id, value: g.id}, g.icone + " " + g.nome)))
-                ),
-                
-                // RECORRÊNCIA
-                React.createElement("div", {className: "border-t pt-4"},
-                    React.createElement("div", {className: "flex items-center justify-between mb-3"},
-                        React.createElement("label", {className: "text-sm font-semibold"}, "🔄 Tarefa Recorrente"),
-                        React.createElement("button", {
-                            type: "button",
-                            onClick: () => setTodoModal({...todoModal, recorrente: !todoModal.recorrente}),
-                            className: `relative w-12 h-6 rounded-full transition-colors ${todoModal.recorrente ? 'bg-purple-600' : 'bg-gray-300'}`
-                        },
-                            React.createElement("div", {
-                                className: `absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${todoModal.recorrente ? 'translate-x-6' : ''}`
+                // Grid de 2 colunas para os campos principais
+                React.createElement("div", {className: "grid grid-cols-1 md:grid-cols-2 gap-4"},
+                    // Coluna 1
+                    React.createElement("div", {className: "space-y-4"},
+                        React.createElement("div", null,
+                            React.createElement("label", {className: "block text-sm font-semibold mb-1"}, "Título *"),
+                            React.createElement("input", {
+                                type: "text",
+                                value: todoModal.titulo || todoModal.tarefa?.titulo || "",
+                                onChange: e => setTodoModal({...todoModal, titulo: e.target.value}),
+                                className: "w-full px-3 py-2 border rounded-lg",
+                                placeholder: "O que precisa ser feito?"
                             })
-                        )
-                    ),
-                    
-                    todoModal.recorrente && React.createElement("div", {className: "bg-purple-50 rounded-lg p-4 space-y-3"},
-                        React.createElement("p", {className: "text-sm text-purple-700"}, 
-                            "⏰ A tarefa será reaberta automaticamente após ser concluída"
                         ),
-                        
+                        React.createElement("div", null,
+                            React.createElement("label", {className: "block text-sm font-semibold mb-1"}, "Descrição"),
+                            React.createElement("textarea", {
+                                value: todoModal.descricao || todoModal.tarefa?.descricao || "",
+                                onChange: e => setTodoModal({...todoModal, descricao: e.target.value}),
+                                className: "w-full px-3 py-2 border rounded-lg h-24",
+                                placeholder: "Detalhes..."
+                            })
+                        ),
                         React.createElement("div", {className: "grid grid-cols-2 gap-3"},
                             React.createElement("div", null,
-                                React.createElement("label", {className: "block text-xs font-semibold text-gray-600 mb-1"}, "Repetir"),
+                                React.createElement("label", {className: "block text-sm font-semibold mb-1"}, "Prioridade"),
                                 React.createElement("select", {
-                                    value: todoModal.tipoRecorrencia || "diaria",
-                                    onChange: e => setTodoModal({...todoModal, tipoRecorrencia: e.target.value}),
-                                    className: "w-full px-3 py-2 border rounded-lg bg-white text-sm"
-                                },
-                                    React.createElement("option", {value: "diaria"}, "📅 Diariamente"),
-                                    React.createElement("option", {value: "semanal"}, "📆 Semanalmente"),
-                                    React.createElement("option", {value: "mensal"}, "🗓️ Mensalmente"),
-                                    React.createElement("option", {value: "personalizado"}, "⚙️ Personalizado")
-                                )
+                                    value: todoModal.prioridade || todoModal.tarefa?.prioridade || "media",
+                                    onChange: e => setTodoModal({...todoModal, prioridade: e.target.value}),
+                                    className: "w-full px-3 py-2 border rounded-lg bg-white"
+                                }, React.createElement("option", {value: "baixa"}, "🔵 Baixa"),
+                                    React.createElement("option", {value: "media"}, "🟡 Média"),
+                                    React.createElement("option", {value: "alta"}, "🔴 Alta"))
                             ),
-                            
-                            (todoModal.tipoRecorrencia === "personalizado" || todoModal.tipoRecorrencia === "diaria") && React.createElement("div", null,
-                                React.createElement("label", {className: "block text-xs font-semibold text-gray-600 mb-1"}, 
-                                    todoModal.tipoRecorrencia === "personalizado" ? "A cada X dias" : "Intervalo"
-                                ),
+                            React.createElement("div", null,
+                                React.createElement("label", {className: "block text-sm font-semibold mb-1"}, "Data de Vencimento"),
                                 React.createElement("input", {
-                                    type: "number",
-                                    min: 1,
-                                    value: todoModal.intervaloRecorrencia || 1,
-                                    onChange: e => setTodoModal({...todoModal, intervaloRecorrencia: parseInt(e.target.value) || 1}),
-                                    className: "w-full px-3 py-2 border rounded-lg text-sm"
+                                    type: "date",
+                                    value: todoModal.dataVencimento || (todoModal.tarefa?.data_vencimento ? todoModal.tarefa.data_vencimento.split("T")[0] : ""),
+                                    onChange: e => setTodoModal({...todoModal, dataVencimento: e.target.value}),
+                                    className: "w-full px-3 py-2 border rounded-lg"
                                 })
                             )
                         ),
-                        
-                        React.createElement("div", {className: "text-xs text-gray-500 bg-white p-2 rounded"},
-                            todoModal.tipoRecorrencia === "diaria" && `Após concluir, reaparecerá em ${todoModal.intervaloRecorrencia || 1} dia(s)`,
-                            todoModal.tipoRecorrencia === "semanal" && "Após concluir, reaparecerá em 1 semana",
-                            todoModal.tipoRecorrencia === "mensal" && "Após concluir, reaparecerá em 1 mês",
-                            todoModal.tipoRecorrencia === "personalizado" && `Após concluir, reaparecerá em ${todoModal.intervaloRecorrencia || 1} dia(s)`
+                        todoModal.tipo === "novaTarefa" && React.createElement("div", null,
+                            React.createElement("label", {className: "block text-sm font-semibold mb-1"}, "Grupo"),
+                            React.createElement("select", {
+                                value: todoModal.grupoId || todoGrupoAtivo?.id || "",
+                                onChange: e => setTodoModal({...todoModal, grupoId: e.target.value}),
+                                className: "w-full px-3 py-2 border rounded-lg bg-white"
+                            }, React.createElement("option", {value: ""}, "Selecione um grupo..."),
+                                todoGrupos.map(g => React.createElement("option", {key: g.id, value: g.id}, g.icone + " " + g.nome)))
+                        )
+                    ),
+                    
+                    // Coluna 2 - Responsáveis
+                    React.createElement("div", {className: "space-y-4"},
+                        React.createElement("div", null,
+                            React.createElement("label", {className: "block text-sm font-semibold mb-2"}, "👥 Atribuir para"),
+                            
+                            // Usuários selecionados
+                            (todoModal.responsaveisSelecionados || []).length > 0 && React.createElement("div", {className: "flex flex-wrap gap-2 mb-3"},
+                                (todoModal.responsaveisSelecionados || []).map(resp => {
+                                    const usuario = todoAdmins.find(a => a.cod === resp || a.nome === resp);
+                                    return React.createElement("div", {
+                                        key: resp,
+                                        className: "flex items-center gap-2 bg-purple-100 text-purple-800 px-3 py-1.5 rounded-full"
+                                    },
+                                        usuario?.foto 
+                                            ? React.createElement("img", {src: usuario.foto, className: "w-6 h-6 rounded-full object-cover"})
+                                            : React.createElement("div", {className: "w-6 h-6 rounded-full bg-purple-300 flex items-center justify-center text-xs font-bold text-purple-700"}, 
+                                                (usuario?.nome || resp).charAt(0).toUpperCase()
+                                            ),
+                                        React.createElement("span", {className: "text-sm font-medium"}, usuario?.nome || resp),
+                                        React.createElement("button", {
+                                            onClick: () => {
+                                                const novos = (todoModal.responsaveisSelecionados || []).filter(r => r !== resp);
+                                                setTodoModal({...todoModal, responsaveisSelecionados: novos});
+                                            },
+                                            className: "text-purple-600 hover:text-purple-800 ml-1"
+                                        }, "✕")
+                                    );
+                                })
+                            ),
+                            
+                            // Lista visual de usuários disponíveis
+                            React.createElement("div", {className: "max-h-48 overflow-y-auto border rounded-lg"},
+                                todoAdmins
+                                    .filter(a => !(todoModal.responsaveisSelecionados || []).includes(a.cod) && !(todoModal.responsaveisSelecionados || []).includes(a.nome))
+                                    .map(a => React.createElement("div", {
+                                        key: a.cod,
+                                        className: "flex items-center gap-3 p-2 hover:bg-gray-50 cursor-pointer border-b last:border-b-0",
+                                        onClick: () => {
+                                            const atuais = todoModal.responsaveisSelecionados || [];
+                                            if (!atuais.includes(a.cod)) {
+                                                setTodoModal({...todoModal, responsaveisSelecionados: [...atuais, a.cod]});
+                                            }
+                                        }
+                                    },
+                                        a.foto 
+                                            ? React.createElement("img", {src: a.foto, className: "w-8 h-8 rounded-full object-cover"})
+                                            : React.createElement("div", {className: "w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-sm font-bold text-gray-600"}, 
+                                                (a.nome || "?").charAt(0).toUpperCase()
+                                            ),
+                                        React.createElement("div", {className: "flex-1"},
+                                            React.createElement("p", {className: "text-sm font-medium"}, a.nome),
+                                            React.createElement("p", {className: "text-xs text-gray-500"}, a.role === "admin_master" ? "👑 Master" : "👑 Admin")
+                                        ),
+                                        React.createElement("span", {className: "text-purple-500 text-lg"}, "+")
+                                    ))
+                            )
                         )
                     )
                 ),
@@ -13029,10 +13002,10 @@ const hideLoadingScreen = () => {
                     )
                 ),
                 
-                React.createElement("div", {className: "flex gap-3 pt-4"},
+                React.createElement("div", {className: "flex gap-3 pt-4 border-t"},
                     React.createElement("button", {
                         onClick: () => setTodoModal(null),
-                        className: "flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold"
+                        className: "flex-1 px-4 py-3 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300"
                     }, "Cancelar"),
                     React.createElement("button", {
                         onClick: async () => {
@@ -13094,7 +13067,10 @@ const hideLoadingScreen = () => {
                                         data_prazo: todoModal.dataVencimento || todoModal.tarefa.data_prazo,
                                         responsaveis: responsaveisFinais.length > 0 ? responsaveisFinais : (todoModal.tarefa.responsaveis || []),
                                         user_cod: l.codProfissional,
-                                        user_name: l.fullName
+                                        user_name: l.fullName,
+                                        recorrente: todoModal.recorrente || false,
+                                        tipo_recorrencia: todoModal.recorrente ? (todoModal.tipoRecorrencia || "diaria") : null,
+                                        intervalo_recorrencia: todoModal.recorrente ? (todoModal.intervaloRecorrencia || 1) : 1
                                     })
                                 });
                                 ja("✅ Tarefa atualizada!", "success");
@@ -13107,8 +13083,8 @@ const hideLoadingScreen = () => {
                             }
                             setTodoModal(null);
                         },
-                        className: "flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
-                    }, todoModal.tipo === "novaTarefa" ? "Criar Tarefa" : "Salvar")
+                        className: "flex-1 px-4 py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
+                    }, todoModal.tipo === "novaTarefa" ? "📝 Criar Tarefa" : "💾 Salvar")
                 )
             )))
             )
