@@ -950,6 +950,16 @@ const hideLoadingScreen = () => {
         [localizacaoFiltro, setLocalizacaoFiltro] = useState(''),
         [localizacaoLoading, setLocalizacaoLoading] = useState(false),
         [localizacaoSubTab, setLocalizacaoSubTab] = useState('lista'), // 'lista' ou 'mapa'
+        // Estados para Relatório Diário
+        [relatoriosDiarios, setRelatoriosDiarios] = useState([]),
+        [relatoriosLoading, setRelatoriosLoading] = useState(false),
+        [showRelatorioModal, setShowRelatorioModal] = useState(false),
+        [relatorioEdit, setRelatorioEdit] = useState(null),
+        [relatorioForm, setRelatorioForm] = useState({
+            titulo: '',
+            conteudo: '',
+            imagem: null
+        }),
         // Tutorial do usuário
         [tutorialAtivo, setTutorialAtivo] = useState(false),
         [tutorialPasso, setTutorialPasso] = useState(0),
@@ -1676,6 +1686,123 @@ const hideLoadingScreen = () => {
                 setLocalizacaoClientes([]);
             }
             setLocalizacaoLoading(false);
+        };
+        
+        // Funções para Relatório Diário
+        const carregarRelatoriosDiarios = async () => {
+            setRelatoriosLoading(true);
+            try {
+                const res = await fetch(`${API_URL}/relatorios-diarios`);
+                const data = await res.json();
+                setRelatoriosDiarios(Array.isArray(data) ? data : []);
+            } catch (err) { 
+                console.error('Erro ao carregar relatórios:', err); 
+                setRelatoriosDiarios([]);
+            }
+            setRelatoriosLoading(false);
+        };
+        
+        const abrirNovoRelatorio = () => {
+            setRelatorioEdit(null);
+            setRelatorioForm({
+                titulo: '',
+                conteudo: '',
+                imagem: null
+            });
+            setShowRelatorioModal(true);
+        };
+        
+        const abrirEditarRelatorio = (relatorio) => {
+            setRelatorioEdit(relatorio);
+            setRelatorioForm({
+                titulo: relatorio.titulo || '',
+                conteudo: relatorio.conteudo || '',
+                imagem: null
+            });
+            setShowRelatorioModal(true);
+        };
+        
+        const salvarRelatorio = async () => {
+            if (!relatorioForm.titulo.trim()) {
+                r({ message: 'Preencha o título do relatório', type: 'error' });
+                return;
+            }
+            s(true);
+            try {
+                const formData = new FormData();
+                formData.append('titulo', relatorioForm.titulo);
+                formData.append('conteudo', relatorioForm.conteudo);
+                formData.append('usuario_id', l.id);
+                formData.append('usuario_nome', l.fullName || l.username);
+                formData.append('usuario_foto', socialProfile?.profile_photo || '');
+                
+                if (relatorioForm.imagem) {
+                    formData.append('imagem', relatorioForm.imagem);
+                }
+                
+                const url = relatorioEdit 
+                    ? `${API_URL}/relatorios-diarios/${relatorioEdit.id}`
+                    : `${API_URL}/relatorios-diarios`;
+                    
+                const res = await fetch(url, {
+                    method: relatorioEdit ? 'PUT' : 'POST',
+                    body: formData
+                });
+                
+                if (!res.ok) throw new Error('Erro ao salvar');
+                
+                r({ message: relatorioEdit ? 'Relatório atualizado!' : 'Relatório criado!', type: 'success' });
+                setShowRelatorioModal(false);
+                carregarRelatoriosDiarios();
+            } catch (err) {
+                r({ message: 'Erro ao salvar relatório', type: 'error' });
+            }
+            s(false);
+        };
+        
+        const excluirRelatorio = async (id) => {
+            if (!confirm('Tem certeza que deseja excluir este relatório?')) return;
+            s(true);
+            try {
+                const res = await fetch(`${API_URL}/relatorios-diarios/${id}`, { method: 'DELETE' });
+                if (!res.ok) throw new Error('Erro ao excluir');
+                r({ message: 'Relatório excluído!', type: 'success' });
+                carregarRelatoriosDiarios();
+            } catch (err) {
+                r({ message: 'Erro ao excluir relatório', type: 'error' });
+            }
+            s(false);
+        };
+        
+        const inserirEmoji = (emoji) => {
+            setRelatorioForm(prev => ({
+                ...prev,
+                conteudo: prev.conteudo + emoji
+            }));
+        };
+        
+        const aplicarFormatacao = (tipo) => {
+            const textarea = document.getElementById('relatorio-conteudo');
+            if (!textarea) return;
+            
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const texto = relatorioForm.conteudo;
+            const selecionado = texto.substring(start, end);
+            
+            let novoTexto = '';
+            switch(tipo) {
+                case 'bold':
+                    novoTexto = texto.substring(0, start) + '**' + selecionado + '**' + texto.substring(end);
+                    break;
+                case 'italic':
+                    novoTexto = texto.substring(0, start) + '_' + selecionado + '_' + texto.substring(end);
+                    break;
+                default:
+                    return;
+            }
+            
+            setRelatorioForm(prev => ({ ...prev, conteudo: novoTexto }));
         };
         
         // Função para calcular contador regressivo
@@ -12624,7 +12751,17 @@ const hideLoadingScreen = () => {
                     })() && React.createElement("button", {
                         onClick: function() { x(e => ({...e, opTab: "localizacao-clientes"})); carregarLocalizacaoClientes(); },
                         className: "px-4 py-2.5 text-sm font-semibold whitespace-nowrap " + (p.opTab === "localizacao-clientes" ? "text-teal-700 border-b-2 border-teal-600 bg-teal-50" : "text-gray-600 hover:bg-gray-100")
-                    }, "📍 Localização Clientes")
+                    }, "📍 Localização Clientes"),
+                    // Aba Relatório Diário - verifica permissão
+                    (function() {
+                        if ("admin_master" === l.role) return true;
+                        const abas = l.permissions && l.permissions.abas ? l.permissions.abas : {};
+                        if (Object.keys(abas).length === 0) return true;
+                        return abas["operacional_relatorio-diario"] !== false;
+                    })() && React.createElement("button", {
+                        onClick: function() { x(e => ({...e, opTab: "relatorio-diario"})); carregarRelatoriosDiarios(); },
+                        className: "px-4 py-2.5 text-sm font-semibold whitespace-nowrap " + (p.opTab === "relatorio-diario" ? "text-teal-700 border-b-2 border-teal-600 bg-teal-50" : "text-gray-600 hover:bg-gray-100")
+                    }, "📝 Relatório Diário")
                 )
             ),
             // Conteúdo das abas
@@ -13577,7 +13714,234 @@ const hideLoadingScreen = () => {
                         )
                     )
                 )
-            ));
+            ),
+            // ==================== CONTEÚDO RELATÓRIO DIÁRIO ====================
+            p.opTab === "relatorio-diario" && React.createElement("div", {className: "max-w-7xl mx-auto p-6"},
+                React.createElement("div", {className: "space-y-6"},
+                    // Header
+                    React.createElement("div", {className: "flex flex-col md:flex-row justify-between items-start md:items-center gap-4"},
+                        React.createElement("div", null,
+                            React.createElement("h2", {className: "text-2xl font-bold text-gray-800"}, "📝 Relatório Diário"),
+                            React.createElement("p", {className: "text-gray-600"}, "Registre suas atividades e observações do dia")
+                        ),
+                        React.createElement("button", {
+                            onClick: abrirNovoRelatorio,
+                            className: "px-6 py-3 bg-teal-600 text-white rounded-xl font-semibold hover:bg-teal-700 flex items-center gap-2 shadow-lg"
+                        }, "➕ Criar Relatório")
+                    ),
+                    
+                    // Lista de relatórios
+                    relatoriosLoading 
+                        ? React.createElement("div", {className: "bg-white rounded-xl p-8 shadow text-center"},
+                            React.createElement("div", {className: "w-12 h-12 border-4 border-teal-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"}),
+                            React.createElement("p", {className: "text-gray-600"}, "Carregando relatórios...")
+                        )
+                        : relatoriosDiarios?.length === 0
+                            ? React.createElement("div", {className: "bg-white rounded-xl p-12 shadow text-center"},
+                                React.createElement("span", {className: "text-6xl block mb-4"}, "📋"),
+                                React.createElement("p", {className: "text-gray-500 text-lg"}, "Nenhum relatório encontrado"),
+                                React.createElement("p", {className: "text-sm text-gray-400 mt-2"}, "Clique em \"+ Criar Relatório\" para começar"),
+                                React.createElement("button", {
+                                    onClick: abrirNovoRelatorio,
+                                    className: "mt-6 px-6 py-3 bg-teal-600 text-white rounded-xl font-semibold hover:bg-teal-700"
+                                }, "➕ Criar Primeiro Relatório")
+                            )
+                            : React.createElement("div", {className: "space-y-4"},
+                                relatoriosDiarios.map(rel => React.createElement("div", {
+                                    key: rel.id,
+                                    className: "bg-white rounded-xl shadow-lg overflow-hidden border-l-4 border-teal-500"
+                                },
+                                    // Header do relatório
+                                    React.createElement("div", {className: "bg-gradient-to-r from-teal-50 to-white p-4 border-b"},
+                                        React.createElement("div", {className: "flex items-center justify-between"},
+                                            React.createElement("div", {className: "flex items-center gap-3"},
+                                                rel.usuario_foto 
+                                                    ? React.createElement("img", {
+                                                        src: rel.usuario_foto,
+                                                        className: "w-12 h-12 rounded-full object-cover border-2 border-teal-200"
+                                                    })
+                                                    : React.createElement("div", {
+                                                        className: "w-12 h-12 rounded-full bg-teal-100 flex items-center justify-center text-teal-600 font-bold text-lg"
+                                                    }, (rel.usuario_nome || "?").charAt(0).toUpperCase()),
+                                                React.createElement("div", null,
+                                                    React.createElement("p", {className: "font-bold text-teal-800"}, rel.titulo),
+                                                    React.createElement("p", {className: "text-sm text-gray-500"}, 
+                                                        rel.usuario_nome, " • ", 
+                                                        new Date(rel.created_at).toLocaleDateString('pt-BR', {
+                                                            day: '2-digit', month: '2-digit', year: 'numeric',
+                                                            hour: '2-digit', minute: '2-digit'
+                                                        })
+                                                    )
+                                                )
+                                            ),
+                                            React.createElement("div", {className: "flex gap-2"},
+                                                React.createElement("button", {
+                                                    onClick: () => abrirEditarRelatorio(rel),
+                                                    className: "p-2 text-blue-600 hover:bg-blue-50 rounded-lg",
+                                                    title: "Editar"
+                                                }, "✏️"),
+                                                React.createElement("button", {
+                                                    onClick: () => excluirRelatorio(rel.id),
+                                                    className: "p-2 text-red-600 hover:bg-red-50 rounded-lg",
+                                                    title: "Excluir"
+                                                }, "🗑️")
+                                            )
+                                        )
+                                    ),
+                                    // Conteúdo do relatório
+                                    React.createElement("div", {className: "p-4"},
+                                        React.createElement("div", {
+                                            className: "text-gray-700 whitespace-pre-wrap",
+                                            dangerouslySetInnerHTML: { __html: (rel.conteudo || '').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/_(.*?)_/g, '<em>$1</em>') }
+                                        }),
+                                        rel.imagem_url && React.createElement("div", {className: "mt-4"},
+                                            React.createElement("img", {
+                                                src: rel.imagem_url,
+                                                className: "max-w-full md:max-w-md rounded-lg shadow cursor-pointer hover:opacity-90",
+                                                onClick: () => window.open(rel.imagem_url, '_blank')
+                                            })
+                                        )
+                                    )
+                                ))
+                            )
+                )
+            ),
+            // Modal de criar/editar relatório
+            showRelatorioModal && React.createElement("div", {
+                className: "fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4",
+                onClick: (e) => { if (e.target === e.currentTarget) setShowRelatorioModal(false); }
+            },
+                React.createElement("div", {className: "bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"},
+                    // Header do modal
+                    React.createElement("div", {className: "bg-gradient-to-r from-teal-600 to-teal-700 text-white p-4 flex items-center justify-between"},
+                        React.createElement("h3", {className: "text-lg font-bold"}, relatorioEdit ? "✏️ Editar Relatório" : "📝 Novo Relatório"),
+                        React.createElement("button", {
+                            onClick: () => setShowRelatorioModal(false),
+                            className: "text-white/80 hover:text-white text-2xl"
+                        }, "✕")
+                    ),
+                    
+                    // Info do usuário e data
+                    React.createElement("div", {className: "p-4 bg-gray-50 border-b flex items-center gap-3"},
+                        socialProfile?.profile_photo 
+                            ? React.createElement("img", {
+                                src: socialProfile.profile_photo,
+                                className: "w-10 h-10 rounded-full object-cover border-2 border-teal-200"
+                            })
+                            : React.createElement("div", {
+                                className: "w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center text-teal-600 font-bold"
+                            }, (l.fullName || "?").charAt(0).toUpperCase()),
+                        React.createElement("div", null,
+                            React.createElement("p", {className: "font-semibold text-gray-800"}, l.fullName || l.username),
+                            React.createElement("p", {className: "text-sm text-gray-500"}, 
+                                new Date().toLocaleDateString('pt-BR', {
+                                    weekday: 'long', day: '2-digit', month: 'long', year: 'numeric',
+                                    hour: '2-digit', minute: '2-digit'
+                                })
+                            )
+                        )
+                    ),
+                    
+                    // Formulário
+                    React.createElement("div", {className: "p-4 space-y-4 overflow-y-auto flex-1"},
+                        // Título
+                        React.createElement("div", null,
+                            React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-1"}, "Título *"),
+                            React.createElement("input", {
+                                type: "text",
+                                value: relatorioForm.titulo,
+                                onChange: e => setRelatorioForm(prev => ({...prev, titulo: e.target.value})),
+                                placeholder: "Ex: Relatório de entregas - Zona Norte",
+                                className: "w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                            })
+                        ),
+                        
+                        // Barra de formatação
+                        React.createElement("div", {className: "flex flex-wrap items-center gap-2 p-2 bg-gray-100 rounded-lg"},
+                            React.createElement("span", {className: "text-sm text-gray-500 mr-2"}, "Emojis:"),
+                            ['✅', '❌', '👤', '💜', '⚠️', '🚨', '✍🏼', '🔥', '🛵', '💰', '📍', '🖊️'].map(emoji => 
+                                React.createElement("button", {
+                                    key: emoji,
+                                    type: "button",
+                                    onClick: () => inserirEmoji(emoji),
+                                    className: "p-1.5 hover:bg-white rounded text-lg transition-colors",
+                                    title: "Inserir " + emoji
+                                }, emoji)
+                            ),
+                            React.createElement("div", {className: "h-6 w-px bg-gray-300 mx-2"}),
+                            React.createElement("button", {
+                                type: "button",
+                                onClick: () => aplicarFormatacao('bold'),
+                                className: "p-1.5 hover:bg-white rounded font-bold text-gray-700",
+                                title: "Negrito (selecione o texto primeiro)"
+                            }, "B"),
+                            React.createElement("button", {
+                                type: "button",
+                                onClick: () => aplicarFormatacao('italic'),
+                                className: "p-1.5 hover:bg-white rounded italic text-gray-700",
+                                title: "Itálico (selecione o texto primeiro)"
+                            }, "I")
+                        ),
+                        
+                        // Campo de conteúdo
+                        React.createElement("div", null,
+                            React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-1"}, "Conteúdo"),
+                            React.createElement("textarea", {
+                                id: "relatorio-conteudo",
+                                value: relatorioForm.conteudo,
+                                onChange: e => setRelatorioForm(prev => ({...prev, conteudo: e.target.value})),
+                                placeholder: "Descreva suas atividades, observações, ocorrências...\n\nDica: Use **texto** para negrito e _texto_ para itálico",
+                                rows: 8,
+                                className: "w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
+                            })
+                        ),
+                        
+                        // Upload de imagem
+                        React.createElement("div", null,
+                            React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-1"}, "Imagem/Arquivo (opcional)"),
+                            React.createElement("div", {className: "border-2 border-dashed border-gray-300 rounded-xl p-4 text-center hover:border-teal-500 transition-colors"},
+                                React.createElement("input", {
+                                    type: "file",
+                                    accept: "image/*",
+                                    onChange: e => setRelatorioForm(prev => ({...prev, imagem: e.target.files?.[0] || null})),
+                                    className: "hidden",
+                                    id: "relatorio-imagem"
+                                }),
+                                React.createElement("label", {
+                                    htmlFor: "relatorio-imagem",
+                                    className: "cursor-pointer"
+                                },
+                                    relatorioForm.imagem 
+                                        ? React.createElement("div", {className: "text-teal-600"},
+                                            React.createElement("span", {className: "text-2xl"}, "📎"),
+                                            React.createElement("p", {className: "font-semibold"}, relatorioForm.imagem.name),
+                                            React.createElement("p", {className: "text-sm text-gray-500"}, "Clique para trocar")
+                                        )
+                                        : React.createElement("div", {className: "text-gray-500"},
+                                            React.createElement("span", {className: "text-3xl"}, "📷"),
+                                            React.createElement("p", null, "Clique para selecionar uma imagem"),
+                                            React.createElement("p", {className: "text-sm"}, "PNG, JPG até 5MB")
+                                        )
+                                )
+                            )
+                        )
+                    ),
+                    
+                    // Footer do modal
+                    React.createElement("div", {className: "p-4 bg-gray-50 border-t flex gap-3"},
+                        React.createElement("button", {
+                            onClick: () => setShowRelatorioModal(false),
+                            className: "flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-100"
+                        }, "Cancelar"),
+                        React.createElement("button", {
+                            onClick: salvarRelatorio,
+                            disabled: !relatorioForm.titulo.trim(),
+                            className: "flex-1 px-6 py-3 bg-teal-600 text-white rounded-xl font-semibold hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        }, relatorioEdit ? "💾 Salvar Alterações" : "📝 Criar Relatório")
+                    )
+                )
+            )
+        );
         }
         // ========== MÓDULO CONFIGURAÇÕES ==========
         if ("admin_master" === l.role && "config" === Ee) {
