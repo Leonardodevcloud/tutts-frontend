@@ -14395,7 +14395,7 @@ const hideLoadingScreen = () => {
                 className: "text-xl font-bold text-blue-700"
             }, nl(ft?.dentro_prazo_prof).toLocaleString("pt-BR")), React.createElement("p", {
                 className: "text-sm font-semibold text-blue-600"
-            }, (nl(ft?.dentro_prazo_prof) / (nl(ft?.total_os) || 1) * 100).toFixed(1), "%")), React.createElement("div", {
+            }, (nl(ft?.dentro_prazo_prof) / ((nl(ft?.dentro_prazo_prof) + nl(ft?.fora_prazo_prof)) || 1) * 100).toFixed(1), "%")), React.createElement("div", {
                 className: "text-center p-2 bg-orange-50 rounded-lg"
             }, React.createElement("p", {
                 className: "text-[10px] text-orange-600 font-medium"
@@ -14403,7 +14403,7 @@ const hideLoadingScreen = () => {
                 className: "text-xl font-bold text-orange-700"
             }, nl(ft?.fora_prazo_prof).toLocaleString("pt-BR")), React.createElement("p", {
                 className: "text-sm font-semibold text-orange-600"
-            }, (nl(ft?.fora_prazo_prof) / (nl(ft?.total_os) || 1) * 100).toFixed(1), "%")), React.createElement("div", {
+            }, (nl(ft?.fora_prazo_prof) / ((nl(ft?.dentro_prazo_prof) + nl(ft?.fora_prazo_prof)) || 1) * 100).toFixed(1), "%")), React.createElement("div", {
                 className: "text-center p-2 bg-indigo-50 rounded-lg"
             }, React.createElement("p", {
                 className: "text-[10px] text-indigo-600 font-medium"
