@@ -78,16 +78,31 @@
       transform: scale(1.3) !important;
     }
     
-    /* Garantir que o popup do Leaflet apareça */
+    /* Garantir que o popup do Leaflet apareça NA FRENTE */
+    .leaflet-popup-pane {
+      z-index: 10000 !important;
+    }
     .leaflet-popup {
-      z-index: 1000 !important;
+      z-index: 10001 !important;
     }
     .leaflet-popup-content-wrapper {
       border-radius: 12px !important;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.2) !important;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.25) !important;
+      z-index: 10002 !important;
     }
     .leaflet-popup-content {
       margin: 12px !important;
+    }
+    .leaflet-popup-tip-container {
+      z-index: 10001 !important;
+    }
+    .leaflet-popup-tip {
+      box-shadow: 0 3px 10px rgba(0,0,0,0.2) !important;
+    }
+    
+    /* Mapa de clientes container */
+    #mapa-clientes-leaflet .leaflet-popup-pane {
+      z-index: 10000 !important;
     }
     
     /* Loading Screen */
