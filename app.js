@@ -1707,15 +1707,23 @@ const hideLoadingScreen = () => {
         
         // Carregar relatórios não lidos pelo usuário
         const carregarRelatoriosNaoLidos = async () => {
-            if (!l?.codProfissional) return;
+            console.log('📢 Verificando relatórios não lidos para:', l?.codProfissional);
+            if (!l?.codProfissional) {
+                console.log('❌ Sem codProfissional');
+                return;
+            }
             try {
                 const res = await fetch(`${API_URL}/relatorios-diarios/nao-lidos/${l.codProfissional}`);
                 const data = await res.json();
+                console.log('📢 Resposta do servidor:', data);
                 const naoLidos = Array.isArray(data) ? data : [];
                 setRelatoriosNaoLidos(naoLidos);
                 // Se houver relatórios não lidos, mostrar o primeiro
                 if (naoLidos.length > 0) {
+                    console.log('📢 Mostrando modal para:', naoLidos[0]);
                     setRelatorioNaoLido(naoLidos[0]);
+                } else {
+                    console.log('📢 Nenhum relatório não lido');
                 }
             } catch (err) { 
                 console.error('Erro ao carregar relatórios não lidos:', err); 
