@@ -949,6 +949,7 @@ const hideLoadingScreen = () => {
         [localizacaoClientes, setLocalizacaoClientes] = useState([]),
         [localizacaoFiltro, setLocalizacaoFiltro] = useState(''),
         [localizacaoLoading, setLocalizacaoLoading] = useState(false),
+        [localizacaoSubTab, setLocalizacaoSubTab] = useState('lista'), // 'lista' ou 'mapa'
         // Tutorial do usuário
         [tutorialAtivo, setTutorialAtivo] = useState(false),
         [tutorialPasso, setTutorialPasso] = useState(0),
@@ -1675,6 +1676,112 @@ const hideLoadingScreen = () => {
                 setLocalizacaoClientes([]);
             }
             setLocalizacaoLoading(false);
+        };
+        
+        // Função para inicializar mapa de clientes com emojis
+        const initMapaClientes = (clientes, tentativa = 0) => {
+            if (typeof L === 'undefined') {
+                if (tentativa < 10) {
+                    setTimeout(() => initMapaClientes(clientes, tentativa + 1), 300);
+                }
+                return;
+            }
+            
+            const container = document.getElementById('mapa-clientes-leaflet');
+            if (!container || container.offsetWidth === 0) {
+                if (tentativa < 20) {
+                    setTimeout(() => initMapaClientes(clientes, tentativa + 1), 150);
+                }
+                return;
+            }
+            
+            // Limpar mapa anterior se existir
+            if (window.mapaClientesLeaflet) {
+                try { window.mapaClientesLeaflet.remove(); } catch(e) {}
+                window.mapaClientesLeaflet = null;
+            }
+            container._leaflet_id = null;
+            container.innerHTML = '';
+            
+            try {
+                // Criar mapa centrado em Goiânia
+                window.mapaClientesLeaflet = L.map('mapa-clientes-leaflet').setView([-16.6869, -49.2648], 10);
+                
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap',
+                    maxZoom: 18
+                }).addTo(window.mapaClientesLeaflet);
+                
+                const markersLayer = L.layerGroup().addTo(window.mapaClientesLeaflet);
+                const bounds = [];
+                
+                // Adicionar marcadores para cada cliente
+                clientes.forEach(cliente => {
+                    const end = cliente.enderecos?.[0];
+                    if (!end || !end.latitude || !end.longitude) return;
+                    
+                    const lat = parseFloat(end.latitude);
+                    const lng = parseFloat(end.longitude);
+                    if (isNaN(lat) || isNaN(lng) || lat === 0 || lng === 0) return;
+                    
+                    bounds.push([lat, lng]);
+                    
+                    // Emoji baseado no cliente
+                    const emoji = String(cliente.cod_cliente) === '767' ? '⭐' : '🏢';
+                    const tamanho = String(cliente.cod_cliente) === '767' ? 28 : 24;
+                    
+                    // Criar ícone com emoji
+                    const emojiIcon = L.divIcon({
+                        html: `<div style="font-size: ${tamanho}px; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">${emoji}</div>`,
+                        className: 'emoji-marker',
+                        iconSize: [tamanho, tamanho],
+                        iconAnchor: [tamanho/2, tamanho/2],
+                        popupAnchor: [0, -tamanho/2]
+                    });
+                    
+                    // Criar marcador
+                    const marker = L.marker([lat, lng], { icon: emojiIcon });
+                    
+                    // Popup com informações
+                    const popupContent = `
+                        <div style="min-width: 200px; font-family: system-ui, sans-serif;">
+                            <p style="font-weight: bold; color: #0d9488; margin: 0 0 4px 0; font-size: 14px;">
+                                ${cliente.cod_cliente} - ${cliente.nome_cliente}
+                            </p>
+                            ${cliente.centro_custo ? `<p style="color: #7c3aed; font-size: 12px; margin: 0 0 4px 0;">📦 ${cliente.centro_custo}</p>` : ''}
+                            <p style="color: #666; font-size: 12px; margin: 0 0 8px 0;">
+                                📌 ${end.endereco || 'Sem endereço'}
+                            </p>
+                            <p style="color: #888; font-size: 11px; margin: 0 0 8px 0;">
+                                ${[end.bairro, end.cidade, end.estado].filter(Boolean).join(' - ')}
+                            </p>
+                            <a href="${gerarLinkWaze(end.endereco + ' ' + (end.cidade || ''), end.latitude, end.longitude)}" 
+                               target="_blank" 
+                               style="display: inline-block; padding: 6px 12px; background: #06b6d4; color: white; text-decoration: none; border-radius: 6px; font-size: 12px; font-weight: 600;">
+                                🚗 Abrir no Waze
+                            </a>
+                        </div>
+                    `;
+                    
+                    marker.bindPopup(popupContent);
+                    marker.addTo(markersLayer);
+                });
+                
+                // Ajustar zoom para mostrar todos os pontos
+                if (bounds.length > 0) {
+                    window.mapaClientesLeaflet.fitBounds(bounds, { padding: [50, 50] });
+                }
+                
+                // Forçar redimensionamento
+                setTimeout(() => {
+                    if (window.mapaClientesLeaflet) {
+                        window.mapaClientesLeaflet.invalidateSize();
+                    }
+                }, 100);
+                
+            } catch(e) {
+                console.error('Erro ao criar mapa de clientes:', e);
+            }
         };
         
         // Função para calcular contador regressivo
@@ -13416,46 +13523,65 @@ const hideLoadingScreen = () => {
                         }, localizacaoLoading ? "🔄 Carregando..." : "🔄 Atualizar")
                     ),
                     
-                    // Barra de busca
-                    React.createElement("div", {className: "bg-white rounded-xl p-4 shadow"},
-                        React.createElement("div", {className: "flex gap-3 items-center"},
-                            React.createElement("span", {className: "text-2xl"}, "🔍"),
-                            React.createElement("input", {
-                                type: "text",
-                                value: localizacaoFiltro,
-                                onChange: e => setLocalizacaoFiltro(e.target.value),
-                                placeholder: "Buscar por código ou nome do cliente...",
-                                className: "flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                            }),
-                            localizacaoFiltro && React.createElement("button", {
-                                onClick: () => setLocalizacaoFiltro(""),
-                                className: "px-4 py-2 text-gray-500 hover:text-gray-700"
-                            }, "✕ Limpar")
+                    // Sub-abas Lista e Mapa
+                    React.createElement("div", {className: "bg-white rounded-xl shadow overflow-hidden"},
+                        React.createElement("div", {className: "flex border-b"},
+                            React.createElement("button", {
+                                onClick: () => setLocalizacaoSubTab('lista'),
+                                className: "flex-1 px-6 py-3 text-sm font-semibold transition-all " + (localizacaoSubTab === 'lista' ? "bg-teal-50 text-teal-700 border-b-2 border-teal-600" : "text-gray-600 hover:bg-gray-50")
+                            }, "📋 Lista"),
+                            React.createElement("button", {
+                                onClick: () => { 
+                                    setLocalizacaoSubTab('mapa'); 
+                                    setTimeout(() => initMapaClientes(localizacaoClientes), 100);
+                                },
+                                className: "flex-1 px-6 py-3 text-sm font-semibold transition-all " + (localizacaoSubTab === 'mapa' ? "bg-teal-50 text-teal-700 border-b-2 border-teal-600" : "text-gray-600 hover:bg-gray-50")
+                            }, "🗺️ Mapa")
                         )
                     ),
                     
-                    // Lista de clientes
-                    localizacaoLoading 
-                        ? React.createElement("div", {className: "bg-white rounded-xl p-8 shadow text-center"},
-                            React.createElement("div", {className: "w-12 h-12 border-4 border-teal-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"}),
-                            React.createElement("p", {className: "text-gray-600"}, "Carregando dados dos clientes...")
-                        )
-                        : localizacaoClientes?.length === 0
-                            ? React.createElement("div", {className: "bg-white rounded-xl p-8 shadow text-center"},
-                                React.createElement("span", {className: "text-5xl block mb-4"}, "📭"),
-                                React.createElement("p", {className: "text-gray-500"}, "Nenhum cliente encontrado"),
-                                React.createElement("p", {className: "text-sm text-gray-400 mt-2"}, "Faça upload de dados no módulo BI para ver os clientes aqui")
+                    // Conteúdo da sub-aba Lista
+                    localizacaoSubTab === 'lista' && React.createElement(React.Fragment, null,
+                        // Barra de busca
+                        React.createElement("div", {className: "bg-white rounded-xl p-4 shadow"},
+                            React.createElement("div", {className: "flex gap-3 items-center"},
+                                React.createElement("span", {className: "text-2xl"}, "🔍"),
+                                React.createElement("input", {
+                                    type: "text",
+                                    value: localizacaoFiltro,
+                                    onChange: e => setLocalizacaoFiltro(e.target.value),
+                                    placeholder: "Buscar por código ou nome do cliente...",
+                                    className: "flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                                }),
+                                localizacaoFiltro && React.createElement("button", {
+                                    onClick: () => setLocalizacaoFiltro(""),
+                                    className: "px-4 py-2 text-gray-500 hover:text-gray-700"
+                                }, "✕ Limpar")
                             )
-                            : React.createElement("div", {className: "space-y-4"},
-                                // Filtrar clientes
-                                (function() {
-                                    const filtro = localizacaoFiltro.toLowerCase().trim();
-                                    const clientesFiltrados = filtro 
-                                        ? localizacaoClientes.filter(c => 
-                                            String(c.cod_cliente).toLowerCase().includes(filtro) || 
-                                            (c.nome_cliente || "").toLowerCase().includes(filtro)
-                                        )
-                                        : localizacaoClientes;
+                        ),
+                        
+                        // Lista de clientes
+                        localizacaoLoading 
+                            ? React.createElement("div", {className: "bg-white rounded-xl p-8 shadow text-center"},
+                                React.createElement("div", {className: "w-12 h-12 border-4 border-teal-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"}),
+                                React.createElement("p", {className: "text-gray-600"}, "Carregando dados dos clientes...")
+                            )
+                            : localizacaoClientes?.length === 0
+                                ? React.createElement("div", {className: "bg-white rounded-xl p-8 shadow text-center"},
+                                    React.createElement("span", {className: "text-5xl block mb-4"}, "📭"),
+                                    React.createElement("p", {className: "text-gray-500"}, "Nenhum cliente encontrado"),
+                                    React.createElement("p", {className: "text-sm text-gray-400 mt-2"}, "Faça upload de dados no módulo BI para ver os clientes aqui")
+                                )
+                                : React.createElement("div", {className: "space-y-4"},
+                                    // Filtrar clientes
+                                    (function() {
+                                        const filtro = localizacaoFiltro.toLowerCase().trim();
+                                        const clientesFiltrados = filtro 
+                                            ? localizacaoClientes.filter(c => 
+                                                String(c.cod_cliente).toLowerCase().includes(filtro) || 
+                                                (c.nome_cliente || "").toLowerCase().includes(filtro)
+                                            )
+                                            : localizacaoClientes;
                                     
                                     return clientesFiltrados.length === 0
                                         ? React.createElement("div", {className: "bg-white rounded-xl p-8 shadow text-center"},
@@ -13536,6 +13662,26 @@ const hideLoadingScreen = () => {
                                         ));
                                 })()
                             )
+                    ),
+                    
+                    // Conteúdo da sub-aba Mapa
+                    localizacaoSubTab === 'mapa' && React.createElement("div", {className: "bg-white rounded-xl shadow overflow-hidden"},
+                        // Legenda
+                        React.createElement("div", {className: "p-4 border-b bg-gray-50 flex items-center gap-6"},
+                            React.createElement("span", {className: "text-sm text-gray-600 font-semibold"}, "Legenda:"),
+                            React.createElement("span", {className: "flex items-center gap-1 text-sm"}, "🏢 Clientes"),
+                            React.createElement("span", {className: "flex items-center gap-1 text-sm"}, "⭐ Cliente 767")
+                        ),
+                        // Container do mapa
+                        React.createElement("div", {
+                            id: "mapa-clientes-leaflet",
+                            style: { height: "500px", width: "100%" }
+                        }),
+                        // Info
+                        React.createElement("div", {className: "p-4 border-t bg-gray-50 text-center text-sm text-gray-500"},
+                            "Clique em um marcador para ver detalhes e abrir no Waze"
+                        )
+                    )
                 )
             ));
         }
