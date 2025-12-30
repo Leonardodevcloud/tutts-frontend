@@ -2824,6 +2824,9 @@ const hideLoadingScreen = () => {
                     codProfissional: e.cod_profissional,
                     fullName: e.full_name,
                     role: e.role,
+                    setor_id: e.setor_id,
+                    setor_nome: e.setor_nome,
+                    setor_cor: e.setor_cor,
                     createdAt: new Date(e.created_at).toLocaleString("pt-BR")
                 })))
             } catch (e) {
