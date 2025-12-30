@@ -1704,7 +1704,14 @@ const hideLoadingScreen = () => {
         const carregarRelatoriosDiarios = async () => {
             setRelatoriosLoading(true);
             try {
-                const res = await fetch(`${API_URL}/relatorios-diarios`);
+                // Passar setor_id e usuario_id para filtrar relatórios que o usuário pode ver
+                // Admins (sem setor) veem todos, usuários comuns só veem os do seu setor ou para todos
+                const params = new URLSearchParams();
+                if (l?.setor_id) params.append('setor_id', l.setor_id);
+                if (l?.codProfissional) params.append('usuario_id', l.codProfissional);
+                
+                const queryString = params.toString() ? `?${params.toString()}` : '';
+                const res = await fetch(`${API_URL}/relatorios-diarios${queryString}`);
                 const data = await res.json();
                 setRelatoriosDiarios(Array.isArray(data) ? data : []);
             } catch (err) { 
