@@ -2546,14 +2546,15 @@ const hideLoadingScreen = () => {
                 const hoje = new Date();
                 hoje.setHours(0, 0, 0, 0);
                 
-                // Filtrar tarefas atribuídas ao usuário (ou criadas por ele) que são do dia ou vencidas
+                // Filtrar APENAS tarefas ATRIBUÍDAS ao usuário (não as que ele criou)
+                // que são do dia ou vencidas
                 const meuDia = todas.filter(t => {
                     const responsaveis = Array.isArray(t.responsaveis) ? t.responsaveis : (typeof t.responsaveis === 'string' ? JSON.parse(t.responsaveis || '[]') : []);
-                    const isMinhaAtribuicao = responsaveis.includes(l.codProfissional) || 
-                                              responsaveis.includes(l.fullName) ||
-                                              t.criado_por === l.codProfissional ||
-                                              t.criado_por_nome === l.fullName;
-                    if (!isMinhaAtribuicao) return false;
+                    
+                    // Verifica se o usuário está na lista de responsáveis (por cod ou nome)
+                    const isAtribuidoParaMim = responsaveis.includes(l.codProfissional) || responsaveis.includes(l.fullName);
+                    
+                    if (!isAtribuidoParaMim) return false; // Só mostra se está atribuída a mim
                     if (t.status === "concluida") return false; // Não mostrar concluídas no meu dia
                     
                     if (t.data_prazo) {
@@ -2751,6 +2752,7 @@ const hideLoadingScreen = () => {
         };
         
         // Função para verificar tarefas pendentes e mostrar notificação
+        // Só notifica se o usuário tem tarefas ATRIBUÍDAS a ele (não as que ele criou)
         const checkTodoPendentes = async () => {
             try {
                 const res = await fetch(`${API_URL}/todo/tarefas?user_cod=${l.codProfissional}&role=${l.role}`);
@@ -2760,19 +2762,19 @@ const hideLoadingScreen = () => {
                 
                 const pendentes = todas.filter(t => {
                     const responsaveis = Array.isArray(t.responsaveis) ? t.responsaveis : (typeof t.responsaveis === 'string' ? JSON.parse(t.responsaveis || '[]') : []);
-                    const isMinhaAtribuicao = responsaveis.includes(l.codProfissional) || 
-                                              responsaveis.includes(l.fullName) ||
-                                              t.criado_por === l.codProfissional ||
-                                              t.criado_por_nome === l.fullName;
-                    if (!isMinhaAtribuicao) return false;
+                    
+                    // Verifica se o usuário está na lista de responsáveis (por cod ou nome)
+                    const isAtribuidoParaMim = responsaveis.includes(l.codProfissional) || responsaveis.includes(l.fullName);
+                    
+                    if (!isAtribuidoParaMim) return false; // Só notifica se está atribuída a mim
                     if (t.status === "concluida") return false;
                     
                     if (t.data_prazo) {
                         const dataVenc = new Date(t.data_prazo);
                         dataVenc.setHours(0, 0, 0, 0);
-                        return dataVenc <= hoje;
+                        return dataVenc <= hoje; // Hoje ou vencida
                     }
-                    return true;
+                    return true; // Sem data = considera pendente
                 });
                 
                 if (pendentes.length > 0) {
