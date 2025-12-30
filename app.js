@@ -2732,6 +2732,24 @@ const hideLoadingScreen = () => {
             await loadTodoSubtarefas(tarefa.id);
         };
         
+        // Função para abrir modal de editar tarefa com responsáveis pré-carregados
+        const abrirEditarTarefa = (tarefa) => {
+            let responsaveisSelecionados = [];
+            try {
+                let resp = tarefa.responsaveis;
+                if (typeof resp === 'string') resp = JSON.parse(resp);
+                if (Array.isArray(resp)) {
+                    responsaveisSelecionados = resp.map(r => typeof r === 'string' ? r : (r.cod || r.user_cod || r.nome));
+                }
+            } catch (e) {}
+            
+            setTodoModal({
+                tipo: "editarTarefa", 
+                tarefa: tarefa,
+                responsaveisSelecionados: responsaveisSelecionados
+            });
+        };
+        
         // Função para verificar tarefas pendentes e mostrar notificação
         const checkTodoPendentes = async () => {
             try {
@@ -12199,7 +12217,7 @@ const hideLoadingScreen = () => {
                 React.createElement("div", {className: "border-t p-4 flex justify-between items-center bg-gray-50"},
                     React.createElement("button", {
                         onClick: () => {
-                            setTodoModal({tipo: "editarTarefa", tarefa: todoTarefaDetalhe});
+                            abrirEditarTarefa(todoTarefaDetalhe);
                             setTodoTarefaDetalhe(null);
                         },
                         className: "px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300"
@@ -12511,7 +12529,7 @@ const hideLoadingScreen = () => {
                                     React.createElement("h3", {className: "font-bold text-gray-800 flex-1 " + (t.status === "concluida" ? "line-through text-gray-500" : "")}, t.titulo),
                                     React.createElement("div", {className: "flex gap-1"},
                                         React.createElement("button", {
-                                            onClick: (e) => { e.stopPropagation(); setTodoModal({tipo: "editarTarefa", tarefa: t}); },
+                                            onClick: (e) => { e.stopPropagation(); abrirEditarTarefa(t); },
                                             className: "p-1 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded"
                                         }, "✏️"),
                                         React.createElement("button", {
@@ -12551,23 +12569,46 @@ const hideLoadingScreen = () => {
                                     }, "☑️ ", t.qtd_subtarefas_concluidas || 0, "/", t.qtd_subtarefas)
                                 ),
                                 
-                                // Data e Atribuído
-                                React.createElement("div", {className: "text-xs text-gray-500 space-y-1"},
-                                    t.data_prazo && React.createElement("p", null, "📅 ", new Date(t.data_prazo).toLocaleDateString("pt-BR")),
-                                    t.responsaveis && React.createElement("p", null, "👤 ", (() => {
-                                        try {
-                                            let resp = t.responsaveis;
-                                            if (typeof resp === 'string') resp = JSON.parse(resp);
-                                            if (!Array.isArray(resp) || resp.length === 0) return null;
-                                            const nomes = resp.map(r => {
-                                                if (typeof r === 'string') return r;
-                                                if (typeof r === 'object' && r !== null) return r.user_name || r.nome || r.name || r.full_name || null;
-                                                return null;
-                                            }).filter(Boolean);
-                                            return nomes.length > 0 ? nomes.join(", ") : null;
-                                        } catch (e) { return null; }
-                                    })())
+                                // Data
+                                React.createElement("div", {className: "text-xs text-gray-500"},
+                                    t.data_prazo && React.createElement("p", {className: "mb-1"}, "📅 ", new Date(t.data_prazo).toLocaleDateString("pt-BR"))
                                 ),
+                                
+                                // Atribuído a - com fotos dos responsáveis
+                                (() => {
+                                    try {
+                                        let resp = t.responsaveis;
+                                        if (typeof resp === 'string') resp = JSON.parse(resp);
+                                        if (!Array.isArray(resp) || resp.length === 0) return null;
+                                        
+                                        return React.createElement("div", {className: "flex items-center gap-2 mt-2 pt-2 border-t border-gray-100"},
+                                            React.createElement("span", {className: "text-xs text-gray-500"}, "Atribuído a:"),
+                                            React.createElement("div", {className: "flex -space-x-2"},
+                                                resp.slice(0, 5).map((r, idx) => {
+                                                    const respCod = typeof r === 'string' ? r : (r.cod || r.user_cod);
+                                                    const usuario = todoAdmins.find(a => a.cod === respCod || a.nome === respCod);
+                                                    const nome = usuario?.nome || (typeof r === 'string' ? r : (r.nome || r.name || '?'));
+                                                    
+                                                    return usuario?.foto 
+                                                        ? React.createElement("img", {
+                                                            key: idx,
+                                                            src: usuario.foto,
+                                                            className: "w-7 h-7 rounded-full object-cover border-2 border-white",
+                                                            title: nome
+                                                        })
+                                                        : React.createElement("div", {
+                                                            key: idx,
+                                                            className: "w-7 h-7 rounded-full bg-purple-200 flex items-center justify-center text-xs font-bold text-purple-700 border-2 border-white",
+                                                            title: nome
+                                                        }, nome.charAt(0).toUpperCase());
+                                                }),
+                                                resp.length > 5 && React.createElement("div", {
+                                                    className: "w-7 h-7 rounded-full bg-gray-300 flex items-center justify-center text-xs font-bold text-gray-600 border-2 border-white"
+                                                }, "+", resp.length - 5)
+                                            )
+                                        );
+                                    } catch (e) { return null; }
+                                })(),
                                 
                                 // Botão de status
                                 React.createElement("div", {className: "mt-3 pt-3 border-t"},
@@ -12706,9 +12747,9 @@ const hideLoadingScreen = () => {
             
             // Modal de Nova/Editar Tarefa
             (todoModal?.tipo === "novaTarefa" || todoModal?.tipo === "editarTarefa") && React.createElement("div", {
-                className: "fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+                className: "fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
             }, React.createElement("div", {
-                className: "bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col"
+                className: "bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
             }, React.createElement("div", {
                 className: "bg-gradient-to-r from-purple-600 to-indigo-600 p-4 text-white flex justify-between items-center flex-shrink-0"
             }, React.createElement("h2", {className: "text-xl font-bold"}, todoModal.tipo === "novaTarefa" ? "📝 Nova Tarefa" : "✏️ Editar Tarefa"),
@@ -12716,7 +12757,22 @@ const hideLoadingScreen = () => {
                     onClick: () => setTodoModal(null),
                     className: "text-white/80 hover:text-white text-xl"
                 }, "✕")
-            ), React.createElement("div", {className: "p-6 space-y-4 overflow-y-auto flex-1"},
+            ), 
+            
+            // Info do criador (quem está criando)
+            todoModal.tipo === "novaTarefa" && React.createElement("div", {className: "px-6 py-3 bg-purple-50 border-b flex items-center gap-3"},
+                socialProfile?.profile_photo 
+                    ? React.createElement("img", {src: socialProfile.profile_photo, className: "w-10 h-10 rounded-full object-cover border-2 border-purple-200"})
+                    : React.createElement("div", {className: "w-10 h-10 rounded-full bg-purple-200 flex items-center justify-center text-purple-600 font-bold"}, 
+                        (l.fullName || "?").charAt(0).toUpperCase()
+                    ),
+                React.createElement("div", null,
+                    React.createElement("p", {className: "font-semibold text-gray-800"}, l.fullName || l.username),
+                    React.createElement("p", {className: "text-sm text-purple-600"}, "Criando nova tarefa")
+                )
+            ),
+            
+            React.createElement("div", {className: "p-6 space-y-4 overflow-y-auto flex-1"},
                 React.createElement("div", null,
                     React.createElement("label", {className: "block text-sm font-semibold mb-1"}, "Título *"),
                     React.createElement("input", {
@@ -12757,15 +12813,89 @@ const hideLoadingScreen = () => {
                         })
                     )
                 ),
+                
+                // Seleção de múltiplos responsáveis com foto
                 React.createElement("div", null,
-                    React.createElement("label", {className: "block text-sm font-semibold mb-1"}, "Atribuir para"),
-                    React.createElement("select", {
-                        value: todoModal.atribuidoPara || (todoModal.tarefa?.responsaveis && todoModal.tarefa.responsaveis[0]) || "",
-                        onChange: e => setTodoModal({...todoModal, atribuidoPara: e.target.value}),
-                        className: "w-full px-3 py-2 border rounded-lg bg-white"
-                    }, React.createElement("option", {value: ""}, "Selecione..."),
-                        todoAdmins.map(a => React.createElement("option", {key: a.cod || a.cod_profissional, value: a.nome || a.full_name}, a.nome || a.full_name)))
+                    React.createElement("label", {className: "block text-sm font-semibold mb-2"}, "👥 Atribuir para"),
+                    
+                    // Usuários selecionados
+                    (todoModal.responsaveisSelecionados || []).length > 0 && React.createElement("div", {className: "flex flex-wrap gap-2 mb-3"},
+                        (todoModal.responsaveisSelecionados || []).map(resp => {
+                            const usuario = todoAdmins.find(a => a.cod === resp || a.nome === resp);
+                            return React.createElement("div", {
+                                key: resp,
+                                className: "flex items-center gap-2 bg-purple-100 text-purple-800 px-3 py-1.5 rounded-full"
+                            },
+                                usuario?.foto 
+                                    ? React.createElement("img", {src: usuario.foto, className: "w-6 h-6 rounded-full object-cover"})
+                                    : React.createElement("div", {className: "w-6 h-6 rounded-full bg-purple-300 flex items-center justify-center text-xs font-bold text-purple-700"}, 
+                                        (usuario?.nome || resp).charAt(0).toUpperCase()
+                                    ),
+                                React.createElement("span", {className: "text-sm font-medium"}, usuario?.nome || resp),
+                                React.createElement("button", {
+                                    onClick: () => {
+                                        const novos = (todoModal.responsaveisSelecionados || []).filter(r => r !== resp);
+                                        setTodoModal({...todoModal, responsaveisSelecionados: novos});
+                                    },
+                                    className: "text-purple-600 hover:text-purple-800 ml-1"
+                                }, "✕")
+                            );
+                        })
+                    ),
+                    
+                    // Dropdown para adicionar usuários
+                    React.createElement("div", {className: "relative"},
+                        React.createElement("select", {
+                            value: "",
+                            onChange: e => {
+                                if (e.target.value) {
+                                    const atuais = todoModal.responsaveisSelecionados || [];
+                                    if (!atuais.includes(e.target.value)) {
+                                        setTodoModal({...todoModal, responsaveisSelecionados: [...atuais, e.target.value]});
+                                    }
+                                    e.target.value = "";
+                                }
+                            },
+                            className: "w-full px-3 py-2 border rounded-lg bg-white"
+                        }, 
+                            React.createElement("option", {value: ""}, "➕ Adicionar responsável..."),
+                            todoAdmins
+                                .filter(a => !(todoModal.responsaveisSelecionados || []).includes(a.cod) && !(todoModal.responsaveisSelecionados || []).includes(a.nome))
+                                .map(a => React.createElement("option", {
+                                    key: a.cod, 
+                                    value: a.cod
+                                }, a.nome))
+                        )
+                    ),
+                    
+                    // Lista visual de usuários disponíveis
+                    React.createElement("div", {className: "mt-3 max-h-40 overflow-y-auto border rounded-lg"},
+                        todoAdmins
+                            .filter(a => !(todoModal.responsaveisSelecionados || []).includes(a.cod) && !(todoModal.responsaveisSelecionados || []).includes(a.nome))
+                            .map(a => React.createElement("div", {
+                                key: a.cod,
+                                className: "flex items-center gap-3 p-2 hover:bg-gray-50 cursor-pointer border-b last:border-b-0",
+                                onClick: () => {
+                                    const atuais = todoModal.responsaveisSelecionados || [];
+                                    if (!atuais.includes(a.cod)) {
+                                        setTodoModal({...todoModal, responsaveisSelecionados: [...atuais, a.cod]});
+                                    }
+                                }
+                            },
+                                a.foto 
+                                    ? React.createElement("img", {src: a.foto, className: "w-8 h-8 rounded-full object-cover"})
+                                    : React.createElement("div", {className: "w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-sm font-bold text-gray-600"}, 
+                                        (a.nome || "?").charAt(0).toUpperCase()
+                                    ),
+                                React.createElement("div", {className: "flex-1"},
+                                    React.createElement("p", {className: "text-sm font-medium"}, a.nome),
+                                    React.createElement("p", {className: "text-xs text-gray-500"}, a.role === "admin_master" ? "👑 Master" : a.role === "admin" ? "👑 Admin" : "👤 Usuário")
+                                ),
+                                React.createElement("span", {className: "text-purple-500"}, "+")
+                            ))
+                    )
                 ),
+                
                 todoModal.tipo === "novaTarefa" && React.createElement("div", null,
                     React.createElement("label", {className: "block text-sm font-semibold mb-1"}, "Grupo"),
                     React.createElement("select", {
@@ -12844,6 +12974,9 @@ const hideLoadingScreen = () => {
                                 return;
                             }
                             
+                            // Preparar array de responsáveis (cod dos usuários)
+                            const responsaveisFinais = todoModal.responsaveisSelecionados || [];
+                            
                             if (todoModal.tipo === "novaTarefa") {
                                 const res = await fetch(`${API_URL}/todo/tarefas`, {
                                     method: "POST",
@@ -12854,9 +12987,10 @@ const hideLoadingScreen = () => {
                                         descricao: todoModal.descricao || "",
                                         prioridade: todoModal.prioridade || "media",
                                         data_prazo: todoModal.dataVencimento || null,
-                                        responsaveis: todoModal.atribuidoPara ? [todoModal.atribuidoPara] : [],
+                                        responsaveis: responsaveisFinais,
                                         criado_por: l.codProfissional,
-                                        criado_por_nome: l.fullName
+                                        criado_por_nome: l.fullName,
+                                        criado_por_foto: socialProfile?.profile_photo || null
                                     })
                                 });
                                 const novaTarefa = await res.json();
@@ -12882,7 +13016,7 @@ const hideLoadingScreen = () => {
                                         descricao: todoModal.descricao ?? todoModal.tarefa.descricao,
                                         prioridade: todoModal.prioridade || todoModal.tarefa.prioridade,
                                         data_prazo: todoModal.dataVencimento || todoModal.tarefa.data_prazo,
-                                        responsaveis: todoModal.atribuidoPara ? [todoModal.atribuidoPara] : (todoModal.tarefa.responsaveis || []),
+                                        responsaveis: responsaveisFinais.length > 0 ? responsaveisFinais : (todoModal.tarefa.responsaveis || []),
                                         user_cod: l.codProfissional,
                                         user_name: l.fullName
                                     })
