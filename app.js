@@ -12562,26 +12562,20 @@ const hideLoadingScreen = () => {
                                     }, t.prioridade === "alta" ? "🔴 Alta" : t.prioridade === "media" ? "🟡 Média" : "🔵 Baixa"),
                                     isAtrasada && React.createElement("span", {className: "text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700"}, "🔥 Atrasada"),
                                     isHoje && !isAtrasada && React.createElement("span", {className: "text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-700"}, "📅 Hoje"),
-                                    // Indicador de Recorrente
+                                    // Badge de Recorrente com tipo
                                     t.recorrente && React.createElement("span", {
-                                        className: "text-xs px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700",
-                                        title: t.tipo_recorrencia === 'diaria' ? 'Repete diariamente' : 
-                                               t.tipo_recorrencia === 'semanal' ? 'Repete semanalmente' : 
-                                               t.tipo_recorrencia === 'mensal' ? 'Repete mensalmente' : 'Tarefa recorrente'
-                                    }, "🔄 Recorrente"),
+                                        className: "text-xs px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700"
+                                    }, "🔄 ", 
+                                        (t.tipo_recorrencia === "diaria" || t.tipo_recorrencia === "diario") ? "Diário" :
+                                        t.tipo_recorrencia === "semanal" ? "Semanal" :
+                                        t.tipo_recorrencia === "mensal" ? "Mensal" : 
+                                        t.tipo_recorrencia === "personalizado" ? `A cada ${t.intervalo_recorrencia || 1} dias` : "Recorrente"
+                                    ),
                                     // Indicador de Subtarefas
                                     t.qtd_subtarefas > 0 && React.createElement("span", {
                                         className: "text-xs px-2 py-0.5 rounded-full " + 
                                             (t.qtd_subtarefas_concluidas === t.qtd_subtarefas ? "bg-green-100 text-green-700" : "bg-purple-100 text-purple-700")
-                                    }, "☑️ ", t.qtd_subtarefas_concluidas || 0, "/", t.qtd_subtarefas),
-                                    // Badge de Recorrente
-                                    t.recorrente && React.createElement("span", {
-                                        className: "text-xs px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700",
-                                        title: t.tipo_recorrencia === "diaria" || t.tipo_recorrencia === "diario" ? "Repete diariamente" :
-                                               t.tipo_recorrencia === "semanal" ? "Repete semanalmente" :
-                                               t.tipo_recorrencia === "mensal" ? "Repete mensalmente" : 
-                                               `Repete a cada ${t.intervalo_recorrencia || 1} dias`
-                                    }, "🔄 Recorrente")
+                                    }, "☑️ ", t.qtd_subtarefas_concluidas || 0, "/", t.qtd_subtarefas)
                                 ),
                                 
                                 // Data
