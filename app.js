@@ -2044,12 +2044,15 @@ const hideLoadingScreen = () => {
         
         const abrirNovoRelatorio = () => {
             setRelatorioEdit(null);
+            // Por padrão, abre com "Setores específicos" selecionado e "Monitoramento" marcado
+            const setorMonitoramento = setores.find(s => s.nome.toLowerCase() === 'monitoramento');
+            const setoresDefault = setorMonitoramento ? [setorMonitoramento.id] : [];
             setRelatorioForm({
                 titulo: '',
                 conteudo: '',
                 imagem: null,
-                para_todos: true,
-                setores_destino: []
+                para_todos: false, // Setores específicos por padrão
+                setores_destino: setoresDefault // Monitoramento selecionado por padrão
             });
             setShowRelatorioModal(true);
         };
@@ -14429,7 +14432,12 @@ const hideLoadingScreen = () => {
                                 // Toggle Por Setores
                                 React.createElement("div", {
                                     className: `flex items-center gap-2 px-4 py-2 rounded-lg cursor-pointer transition-all ${!relatorioForm.para_todos ? 'bg-teal-600 text-white shadow-md' : 'bg-white text-gray-700 border hover:border-gray-400'}`,
-                                    onClick: () => setRelatorioForm(prev => ({...prev, para_todos: false}))
+                                    onClick: () => {
+                                        // Ao clicar em "Setores específicos", já seleciona o setor "Monitoramento" por padrão
+                                        const setorMonitoramento = setores.find(s => s.nome.toLowerCase() === 'monitoramento');
+                                        const setoresDefault = setorMonitoramento ? [setorMonitoramento.id] : [];
+                                        setRelatorioForm(prev => ({...prev, para_todos: false, setores_destino: setoresDefault}));
+                                    }
                                 },
                                     React.createElement("span", null, "🏢"),
                                     React.createElement("span", {className: "font-semibold"}, "Setores específicos")
