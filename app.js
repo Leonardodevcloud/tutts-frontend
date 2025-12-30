@@ -1731,7 +1731,7 @@ const hideLoadingScreen = () => {
             }
             
             if (!relatorioForm.titulo.trim()) {
-                r({ message: 'Preencha o título do relatório', type: 'error' });
+                ja('Preencha o título do relatório', 'error');
                 return false;
             }
             s(true);
@@ -1768,14 +1768,14 @@ const hideLoadingScreen = () => {
                 
                 if (!response.ok) throw new Error('Erro ao salvar');
                 
-                r({ message: relatorioEdit ? 'Relatório atualizado!' : 'Relatório criado!', type: 'success' });
+                ja(relatorioEdit ? '✅ Relatório atualizado!' : '✅ Relatório criado!', 'success');
                 setShowRelatorioModal(false);
                 setRelatorioEdit(null);
                 setRelatorioForm({ titulo: '', conteudo: '', imagem: null });
                 await carregarRelatoriosDiarios();
             } catch (err) {
                 console.error('Erro ao salvar relatório:', err);
-                r({ message: 'Erro ao salvar relatório', type: 'error' });
+                ja('❌ Erro ao salvar relatório', 'error');
             }
             s(false);
             return false;
@@ -1787,10 +1787,10 @@ const hideLoadingScreen = () => {
             try {
                 const res = await fetch(`${API_URL}/relatorios-diarios/${id}`, { method: 'DELETE' });
                 if (!res.ok) throw new Error('Erro ao excluir');
-                r({ message: 'Relatório excluído!', type: 'success' });
+                ja('✅ Relatório excluído!', 'success');
                 carregarRelatoriosDiarios();
             } catch (err) {
-                r({ message: 'Erro ao excluir relatório', type: 'error' });
+                ja('❌ Erro ao excluir relatório', 'error');
             }
             s(false);
         };
