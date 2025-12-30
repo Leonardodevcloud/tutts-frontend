@@ -7533,7 +7533,7 @@ const hideLoadingScreen = () => {
                 className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("operacional" === Ee ? "bg-white text-teal-800" : "text-white hover:bg-white/10")
             }, "⚙️ Operacional"), 
             hasModuleAccess(l, "config") && React.createElement("button", {
-                onClick: () => he("config"),
+                onClick: () => { he("config"); x(e => ({...e, configTab: getFirstAllowedTab(l, "config", "usuarios")})); },
                 className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("config" === Ee ? "bg-white text-gray-800" : "text-white hover:bg-white/10")
             }, "🔧 Config")))) : React.createElement("nav", {
                 className: "bg-green-800 shadow-lg"
@@ -13692,7 +13692,7 @@ const hideLoadingScreen = () => {
                     className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all bg-white text-teal-800"
                 }, "⚙️ Operacional"),
                 hasModuleAccess(l, "config") && React.createElement("button", {
-                    onClick: function() { he("config"); },
+                    onClick: function() { he("config"); x(e => ({...e, configTab: getFirstAllowedTab(l, "config", "usuarios")})); },
                     className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all text-white hover:bg-white/10"
                 }, "🔧 Config")
             ))),
@@ -15134,15 +15134,33 @@ const hideLoadingScreen = () => {
             // TABS DO CONFIG
             React.createElement("div", {className: "bg-white border-b sticky top-0 z-10"},
                 React.createElement("div", {className: "max-w-7xl mx-auto px-4 flex gap-1 overflow-x-auto"},
-                    React.createElement("button", {
+                    // Aba Usuários - verifica permissão
+                    (function() {
+                        if ("admin_master" === l.role) return true;
+                        const abas = l.permissions && l.permissions.abas ? l.permissions.abas : {};
+                        if (Object.keys(abas).length === 0) return true;
+                        return abas["config_usuarios"] !== false;
+                    })() && React.createElement("button", {
                         onClick: function() { x({...p, configTab: "usuarios"}); },
                         className: "px-4 py-2.5 text-sm font-semibold whitespace-nowrap " + ((!p.configTab || p.configTab === "usuarios") ? "text-gray-700 border-b-2 border-gray-600 bg-gray-50" : "text-gray-500 hover:bg-gray-100")
                     }, "👥 Gerenciar Usuários"),
-                    React.createElement("button", {
+                    // Aba Permissões - verifica permissão
+                    (function() {
+                        if ("admin_master" === l.role) return true;
+                        const abas = l.permissions && l.permissions.abas ? l.permissions.abas : {};
+                        if (Object.keys(abas).length === 0) return true;
+                        return abas["config_permissoes"] !== false;
+                    })() && React.createElement("button", {
                         onClick: function() { x({...p, configTab: "permissoes", permsLoaded: false}); },
                         className: "px-4 py-2.5 text-sm font-semibold whitespace-nowrap " + (p.configTab === "permissoes" ? "text-gray-700 border-b-2 border-gray-600 bg-gray-50" : "text-gray-500 hover:bg-gray-100")
                     }, "🔐 Permissões ADM"),
-                    React.createElement("button", {
+                    // Aba Sistema - verifica permissão
+                    (function() {
+                        if ("admin_master" === l.role) return true;
+                        const abas = l.permissions && l.permissions.abas ? l.permissions.abas : {};
+                        if (Object.keys(abas).length === 0) return true;
+                        return abas["config_sistema"] !== false;
+                    })() && React.createElement("button", {
                         onClick: function() { x({...p, configTab: "sistema"}); },
                         className: "px-4 py-2.5 text-sm font-semibold whitespace-nowrap " + (p.configTab === "sistema" ? "text-gray-700 border-b-2 border-gray-600 bg-gray-50" : "text-gray-500 hover:bg-gray-100")
                     }, "⚡ Sistema")
@@ -15150,8 +15168,13 @@ const hideLoadingScreen = () => {
             ),
             // CONTEÚDO DO CONFIG
             React.createElement("div", {className: "max-w-7xl mx-auto p-6"},
-                // TAB USUÁRIOS
-                (!p.configTab || p.configTab === "usuarios") && React.createElement("div", null,
+                // TAB USUÁRIOS - verifica permissão
+                (!p.configTab || p.configTab === "usuarios") && (function() {
+                    if ("admin_master" === l.role) return true;
+                    const abas = l.permissions && l.permissions.abas ? l.permissions.abas : {};
+                    if (Object.keys(abas).length === 0) return true;
+                    return abas["config_usuarios"] !== false;
+                })() && React.createElement("div", null,
                     // Criar usuário
                     React.createElement("div", {className: "bg-white rounded-xl shadow-sm border p-6 mb-6"},
                         React.createElement("h2", {className: "text-lg font-bold mb-4 flex items-center gap-2"},
@@ -15514,8 +15537,13 @@ const hideLoadingScreen = () => {
                         )
                     )
                 ),
-                // TAB PERMISSÕES
-                p.configTab === "permissoes" && React.createElement("div", null,
+                // TAB PERMISSÕES - verifica permissão
+                p.configTab === "permissoes" && (function() {
+                    if ("admin_master" === l.role) return true;
+                    const abas = l.permissions && l.permissions.abas ? l.permissions.abas : {};
+                    if (Object.keys(abas).length === 0) return true;
+                    return abas["config_permissoes"] !== false;
+                })() && React.createElement("div", null,
                     // Carregar permissões automaticamente ao abrir a aba
                     !p.permsLoaded && (function() {
                         (async function() {
@@ -15735,8 +15763,13 @@ const hideLoadingScreen = () => {
                             })
                         )
                 ),
-                // TAB SISTEMA
-                p.configTab === "sistema" && React.createElement("div", null,
+                // TAB SISTEMA - verifica permissão
+                p.configTab === "sistema" && (function() {
+                    if ("admin_master" === l.role) return true;
+                    const abas = l.permissions && l.permissions.abas ? l.permissions.abas : {};
+                    if (Object.keys(abas).length === 0) return true;
+                    return abas["config_sistema"] !== false;
+                })() && React.createElement("div", null,
                     React.createElement("div", {className: "bg-white rounded-xl shadow-sm border p-6 mb-6"},
                         React.createElement("h2", {className: "text-lg font-bold mb-4"}, "⚡ Informações do Sistema"),
                         React.createElement("div", {className: "grid md:grid-cols-2 gap-4"},
@@ -18834,7 +18867,7 @@ const hideLoadingScreen = () => {
                     
                     // Config (admins com permissão)
                     hasModuleAccess(l, "config") && React.createElement("button", {
-                        onClick: () => he("config"),
+                        onClick: () => { he("config"); x(e => ({...e, configTab: getFirstAllowedTab(l, "config", "usuarios")})); },
                         className: "bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 border-2 border-transparent hover:border-gray-400"
                     }, React.createElement("span", {className: "text-4xl block mb-3"}, "⚙️"),
                         React.createElement("p", {className: "font-bold text-gray-800"}, "Config"),
@@ -18968,7 +19001,7 @@ const hideLoadingScreen = () => {
             className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("operacional" === Ee ? "bg-white text-teal-800" : "text-white hover:bg-white/10")
         }, "⚙️ Operacional"), 
         hasModuleAccess(l, "config") && React.createElement("button", {
-            onClick: () => he("config"),
+            onClick: () => { he("config"); x(e => ({...e, configTab: getFirstAllowedTab(l, "config", "usuarios")})); },
             className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("config" === Ee ? "bg-white text-gray-800" : "text-white hover:bg-white/10")
         }, "🔧 Config")))) : or ? React.createElement("nav", {
             className: "bg-purple-900 shadow-lg"
