@@ -13979,7 +13979,7 @@ const hideLoadingScreen = () => {
                 value: "dentro"
             }, "✅ Dentro do Prazo"), React.createElement("option", {
                 value: "fora"
-            }, "❌ Fora do Prazo"))), React.createElement("div", {
+            }, "❌ Fora do Prazo"))), Et === "os" && React.createElement("div", {
                 className: "border rounded-lg p-3 bg-blue-50"
             }, React.createElement("h3", {
                 className: "font-semibold text-blue-700 mb-2 text-sm"
@@ -14596,11 +14596,6 @@ const hideLoadingScreen = () => {
                     React.createElement("h3", {className: "font-bold text-gray-800 text-lg flex items-center gap-2"}, 
                         React.createElement("span", {className: "w-8 h-8 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg flex items-center justify-center text-white text-sm"}, "⏱"),
                         "Distribuicao por Tempo de Entrega"
-                    ),
-                    React.createElement("div", {className: "text-sm text-gray-500"}, 
-                        "Total: ", React.createElement("span", {className: "font-bold text-purple-600"}, 
-                            ((Qt.porTempo || []).reduce((acc, e) => acc + (e.total || 0), 0)).toLocaleString("pt-BR")
-                        ), " entregas"
                     )
                 ),
                 React.createElement("div", {
@@ -14612,7 +14607,7 @@ const hideLoadingScreen = () => {
                     const total = dados.reduce((acc, e) => acc + (e.total || 0), 0) || 1;
                     const cores = [
                         "from-emerald-400 to-emerald-600",
-                        "from-blue-400 to-blue-600", 
+                        "from-blue-400 to-blue-600",
                         "from-purple-400 to-purple-600",
                         "from-amber-400 to-amber-600",
                         "from-orange-400 to-orange-600",
