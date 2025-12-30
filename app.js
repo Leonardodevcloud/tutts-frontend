@@ -971,6 +971,7 @@ const hideLoadingScreen = () => {
         [showSetorModal, setShowSetorModal] = useState(false),
         [setorEdit, setSetorEdit] = useState(null),
         [setorForm, setSetorForm] = useState({ nome: '', descricao: '', cor: '#6366f1' }),
+        [setorExpandido, setSetorExpandido] = useState(null), // ID do setor expandido para ver usuários
         // Tutorial do usuário
         [tutorialAtivo, setTutorialAtivo] = useState(false),
         [tutorialPasso, setTutorialPasso] = useState(0),
@@ -14802,44 +14803,101 @@ const hideLoadingScreen = () => {
                             ? React.createElement("p", {className: "text-gray-500 text-center py-4"}, 
                                 "Nenhum setor cadastrado. Crie setores para organizar os usuários."
                             )
-                            : React.createElement("div", {className: "grid gap-3"},
-                                setores.map(setor => 
-                                    React.createElement("div", {
+                            : React.createElement("div", {className: "space-y-3"},
+                                setores.map(setor => {
+                                    // Filtrar usuários deste setor
+                                    const usuariosDoSetor = A.filter(u => u.setor_id === setor.id);
+                                    const isExpandido = setorExpandido === setor.id;
+                                    
+                                    return React.createElement("div", {
                                         key: setor.id,
-                                        className: "border rounded-lg p-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                                        className: "border rounded-lg overflow-hidden transition-all " + (isExpandido ? "ring-2 ring-indigo-500" : "")
                                     },
-                                        React.createElement("div", {className: "flex items-center gap-3"},
-                                            React.createElement("div", {
-                                                className: "w-4 h-10 rounded",
-                                                style: { backgroundColor: setor.cor || '#6366f1' }
-                                            }),
-                                            React.createElement("div", null,
-                                                React.createElement("p", {className: "font-semibold flex items-center gap-2"},
-                                                    setor.nome,
-                                                    !setor.ativo && React.createElement("span", {className: "text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded"}, "Inativo")
-                                                ),
-                                                React.createElement("p", {className: "text-sm text-gray-500"},
-                                                    setor.total_usuarios || 0, " usuário(s)",
-                                                    setor.descricao ? " • " + setor.descricao : ""
+                                        // Header do setor (clicável para expandir)
+                                        React.createElement("div", {
+                                            className: "p-4 flex items-center justify-between hover:bg-gray-50 cursor-pointer",
+                                            onClick: () => setSetorExpandido(isExpandido ? null : setor.id)
+                                        },
+                                            React.createElement("div", {className: "flex items-center gap-3"},
+                                                React.createElement("div", {
+                                                    className: "w-4 h-10 rounded",
+                                                    style: { backgroundColor: setor.cor || '#6366f1' }
+                                                }),
+                                                React.createElement("div", null,
+                                                    React.createElement("p", {className: "font-semibold flex items-center gap-2"},
+                                                        setor.nome,
+                                                        !setor.ativo && React.createElement("span", {className: "text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded"}, "Inativo")
+                                                    ),
+                                                    React.createElement("p", {className: "text-sm text-gray-500"},
+                                                        usuariosDoSetor.length, " usuário(s)",
+                                                        setor.descricao ? " • " + setor.descricao : ""
+                                                    )
                                                 )
+                                            ),
+                                            React.createElement("div", {className: "flex items-center gap-2"},
+                                                React.createElement("button", {
+                                                    onClick: (e) => {
+                                                        e.stopPropagation();
+                                                        setSetorEdit(setor);
+                                                        setSetorForm({ nome: setor.nome, descricao: setor.descricao || '', cor: setor.cor || '#6366f1' });
+                                                        setShowSetorModal(true);
+                                                    },
+                                                    className: "px-3 py-1.5 bg-blue-100 text-blue-700 rounded font-semibold hover:bg-blue-200 text-sm"
+                                                }, "✏️"),
+                                                React.createElement("button", {
+                                                    onClick: (e) => { e.stopPropagation(); excluirSetor(setor); },
+                                                    className: "px-3 py-1.5 bg-red-100 text-red-700 rounded font-semibold hover:bg-red-200 text-sm"
+                                                }, "🗑️"),
+                                                React.createElement("span", {
+                                                    className: "text-gray-400 text-xl ml-2 transition-transform " + (isExpandido ? "rotate-180" : "")
+                                                }, "▼")
                                             )
                                         ),
-                                        React.createElement("div", {className: "flex gap-2"},
-                                            React.createElement("button", {
-                                                onClick: () => {
-                                                    setSetorEdit(setor);
-                                                    setSetorForm({ nome: setor.nome, descricao: setor.descricao || '', cor: setor.cor || '#6366f1' });
-                                                    setShowSetorModal(true);
-                                                },
-                                                className: "px-3 py-1.5 bg-blue-100 text-blue-700 rounded font-semibold hover:bg-blue-200 text-sm"
-                                            }, "✏️"),
-                                            React.createElement("button", {
-                                                onClick: () => excluirSetor(setor),
-                                                className: "px-3 py-1.5 bg-red-100 text-red-700 rounded font-semibold hover:bg-red-200 text-sm"
-                                            }, "🗑️")
+                                        
+                                        // Lista de usuários (expandível)
+                                        isExpandido && React.createElement("div", {className: "border-t bg-gray-50 p-4"},
+                                            React.createElement("p", {className: "text-sm font-semibold text-gray-600 mb-3"}, 
+                                                "👥 Usuários neste setor:"
+                                            ),
+                                            usuariosDoSetor.length === 0
+                                                ? React.createElement("p", {className: "text-sm text-gray-400 italic"}, 
+                                                    "Nenhum usuário vinculado a este setor"
+                                                )
+                                                : React.createElement("div", {className: "space-y-2"},
+                                                    usuariosDoSetor.map(user => 
+                                                        React.createElement("div", {
+                                                            key: user.codProfissional,
+                                                            className: "flex items-center justify-between bg-white p-3 rounded-lg border"
+                                                        },
+                                                            React.createElement("div", {className: "flex items-center gap-3"},
+                                                                React.createElement("div", {
+                                                                    className: "w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm " +
+                                                                        (user.role === "admin_master" ? "bg-purple-600" :
+                                                                         user.role === "admin" ? "bg-blue-600" :
+                                                                         user.role === "admin_financeiro" ? "bg-green-600" : "bg-gray-500")
+                                                                }, user.fullName ? user.fullName.charAt(0).toUpperCase() : "?"),
+                                                                React.createElement("div", null,
+                                                                    React.createElement("p", {className: "font-medium text-sm"}, user.fullName),
+                                                                    React.createElement("p", {className: "text-xs text-gray-500"}, 
+                                                                        "COD: ", user.codProfissional
+                                                                    )
+                                                                )
+                                                            ),
+                                                            React.createElement("button", {
+                                                                onClick: async () => {
+                                                                    if (confirm(`Remover "${user.fullName}" do setor "${setor.nome}"?`)) {
+                                                                        await atualizarSetorUsuario(user.codProfissional, null);
+                                                                    }
+                                                                },
+                                                                className: "px-3 py-1.5 bg-red-100 text-red-600 rounded text-sm font-medium hover:bg-red-200",
+                                                                title: "Remover do setor"
+                                                            }, "✕ Remover")
+                                                        )
+                                                    )
+                                                )
                                         )
-                                    )
-                                )
+                                    );
+                                })
                             )
                     ),
                     
