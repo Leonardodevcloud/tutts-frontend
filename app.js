@@ -13399,7 +13399,7 @@ const hideLoadingScreen = () => {
                         )
                     )
                 )
-            )),
+            ),
             // ==================== CONTEÚDO LOCALIZAÇÃO CLIENTES ====================
             p.opTab === "localizacao-clientes" && React.createElement("div", {className: "max-w-7xl mx-auto p-6"},
                 React.createElement("div", {className: "space-y-6"},
@@ -13571,7 +13571,7 @@ const hideLoadingScreen = () => {
                                 })()
                             )
                 )
-            )
+            ));
         }
         // ========== MÓDULO CONFIGURAÇÕES ==========
         if ("admin_master" === l.role && "config" === Ee) {
