@@ -895,6 +895,13 @@ const hideLoadingScreen = () => {
         [socialTab, setSocialTab] = useState("perfil"),
         [socialLoading, setSocialLoading] = useState(false),
         [socialModalUser, setSocialModalUser] = useState(null),
+        // Estados do Editor de Foto de Perfil
+        [photoEditorOpen, setPhotoEditorOpen] = useState(false),
+        [photoEditorSrc, setPhotoEditorSrc] = useState(null),
+        [photoEditorZoom, setPhotoEditorZoom] = useState(1),
+        [photoEditorPosition, setPhotoEditorPosition] = useState({x: 0, y: 0}),
+        [photoEditorDragging, setPhotoEditorDragging] = useState(false),
+        [photoEditorDragStart, setPhotoEditorDragStart] = useState({x: 0, y: 0}),
         // Estados do módulo Avisos (usuário)
         [avisoAtual, setAvisoAtual] = useState(null),
         [avisoCarregado, setAvisoCarregado] = useState(false),
@@ -1323,6 +1330,94 @@ const hideLoadingScreen = () => {
             }
         };
         // ==================== FIM FUNÇÕES MÓDULO SOCIAL ====================
+        
+        // ==================== FUNÇÕES DO EDITOR DE FOTO DE PERFIL ====================
+        const handlePhotoEditorOpen = (file) => {
+            if (!file) return;
+            // Aumentado de 500KB para 10MB
+            if (file.size > 10 * 1024 * 1024) {
+                ja("Imagem muito grande! Máximo 10MB", "error");
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = ev => {
+                setPhotoEditorSrc(ev.target.result);
+                setPhotoEditorZoom(1);
+                setPhotoEditorPosition({x: 0, y: 0});
+                setPhotoEditorOpen(true);
+            };
+            reader.readAsDataURL(file);
+        };
+        
+        const handlePhotoEditorSave = () => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const img = new Image();
+            img.onload = () => {
+                // Canvas de 400x400 para qualidade final
+                const outputSize = 400;
+                canvas.width = outputSize;
+                canvas.height = outputSize;
+                
+                // Tamanho da área de visualização (256px = w-64 h-64)
+                const viewSize = 256;
+                
+                // Calcular escala
+                const scale = Math.min(img.width, img.height) / viewSize * photoEditorZoom;
+                const srcSize = outputSize * scale / photoEditorZoom;
+                
+                // Calcular posição do centro considerando o arraste
+                const centerX = img.width / 2 - (photoEditorPosition.x * scale / photoEditorZoom);
+                const centerY = img.height / 2 - (photoEditorPosition.y * scale / photoEditorZoom);
+                
+                // Calcular área de recorte
+                const srcX = Math.max(0, Math.min(img.width - srcSize, centerX - srcSize / 2));
+                const srcY = Math.max(0, Math.min(img.height - srcSize, centerY - srcSize / 2));
+                
+                // Desenhar imagem recortada
+                ctx.drawImage(img, srcX, srcY, srcSize, srcSize, 0, 0, outputSize, outputSize);
+                
+                // Converter para base64 com compressão
+                const quality = 0.85;
+                const base64 = canvas.toDataURL('image/jpeg', quality);
+                
+                // Atualizar preview
+                x({...p, socialPhotoPreview: base64});
+                setPhotoEditorOpen(false);
+                ja("✅ Foto ajustada! Clique em Salvar Perfil", "success");
+            };
+            img.src = photoEditorSrc;
+        };
+        
+        const handlePhotoEditorMouseDown = (e) => {
+            e.preventDefault();
+            setPhotoEditorDragging(true);
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            setPhotoEditorDragStart({
+                x: clientX - photoEditorPosition.x,
+                y: clientY - photoEditorPosition.y
+            });
+        };
+        
+        const handlePhotoEditorMouseMove = (e) => {
+            if (!photoEditorDragging) return;
+            e.preventDefault();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            
+            // Limitar movimento baseado no zoom
+            const maxMove = 128 * (photoEditorZoom - 1);
+            const newX = Math.max(-maxMove, Math.min(maxMove, clientX - photoEditorDragStart.x));
+            const newY = Math.max(-maxMove, Math.min(maxMove, clientY - photoEditorDragStart.y));
+            
+            setPhotoEditorPosition({x: newX, y: newY});
+        };
+        
+        const handlePhotoEditorMouseUp = () => {
+            setPhotoEditorDragging(false);
+        };
+        // ==================== FIM FUNÇÕES EDITOR DE FOTO ====================
         
         // Carregar perfil social e atualizar status online quando logar
         useEffect(() => {
@@ -4718,6 +4813,94 @@ const hideLoadingScreen = () => {
                     style: { maxHeight: '85vh' },
                     onClick: (e) => e.stopPropagation()
                 })
+            )
+        ),
+        // Modal do Editor de Foto de Perfil
+        photoEditorOpen && React.createElement("div", {
+            className: "fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center p-4",
+            style: { zIndex: 10001 },
+            onClick: () => setPhotoEditorOpen(false)
+        },
+            React.createElement("div", {
+                className: "bg-white rounded-3xl shadow-2xl w-full max-w-md p-6",
+                onClick: (e) => e.stopPropagation()
+            },
+                React.createElement("h3", {className: "text-xl font-bold text-gray-800 mb-4 text-center"}, "✂️ Ajustar Foto de Perfil"),
+                React.createElement("p", {className: "text-sm text-gray-500 mb-4 text-center"}, "Arraste para posicionar e use o zoom para ajustar"),
+                
+                // Área de preview circular
+                React.createElement("div", {
+                    className: "relative mx-auto mb-4",
+                    style: {
+                        width: '256px',
+                        height: '256px',
+                        overflow: 'hidden',
+                        borderRadius: '50%',
+                        border: '4px solid #7c3aed',
+                        cursor: photoEditorDragging ? 'grabbing' : 'grab',
+                        touchAction: 'none'
+                    },
+                    onMouseDown: handlePhotoEditorMouseDown,
+                    onMouseMove: handlePhotoEditorMouseMove,
+                    onMouseUp: handlePhotoEditorMouseUp,
+                    onMouseLeave: handlePhotoEditorMouseUp,
+                    onTouchStart: handlePhotoEditorMouseDown,
+                    onTouchMove: handlePhotoEditorMouseMove,
+                    onTouchEnd: handlePhotoEditorMouseUp
+                },
+                    React.createElement("img", {
+                        src: photoEditorSrc,
+                        style: {
+                            position: 'absolute',
+                            left: '50%',
+                            top: '50%',
+                            transform: `translate(calc(-50% + ${photoEditorPosition.x}px), calc(-50% + ${photoEditorPosition.y}px)) scale(${photoEditorZoom})`,
+                            minWidth: '100%',
+                            minHeight: '100%',
+                            objectFit: 'cover',
+                            pointerEvents: 'none',
+                            userSelect: 'none'
+                        },
+                        draggable: false
+                    })
+                ),
+                
+                // Controle de Zoom
+                React.createElement("div", {className: "mb-6"},
+                    React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-2 text-center"}, 
+                        "🔍 Zoom: ", Math.round(photoEditorZoom * 100), "%"
+                    ),
+                    React.createElement("input", {
+                        type: "range",
+                        min: "1",
+                        max: "3",
+                        step: "0.1",
+                        value: photoEditorZoom,
+                        onChange: e => {
+                            const newZoom = parseFloat(e.target.value);
+                            setPhotoEditorZoom(newZoom);
+                            // Ajustar posição ao diminuir zoom para não sair dos limites
+                            const maxMove = 128 * (newZoom - 1);
+                            setPhotoEditorPosition({
+                                x: Math.max(-maxMove, Math.min(maxMove, photoEditorPosition.x)),
+                                y: Math.max(-maxMove, Math.min(maxMove, photoEditorPosition.y))
+                            });
+                        },
+                        className: "w-full h-2 bg-purple-200 rounded-lg appearance-none cursor-pointer accent-purple-600"
+                    })
+                ),
+                
+                // Botões
+                React.createElement("div", {className: "flex gap-3"},
+                    React.createElement("button", {
+                        onClick: () => setPhotoEditorOpen(false),
+                        className: "flex-1 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50"
+                    }, "Cancelar"),
+                    React.createElement("button", {
+                        onClick: handlePhotoEditorSave,
+                        className: "flex-1 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold hover:opacity-90"
+                    }, "✅ Aplicar")
+                )
             )
         ),
         u && React.createElement(ImageModal, {
@@ -13245,19 +13428,12 @@ const hideLoadingScreen = () => {
                                 className: "hidden",
                                 onChange: e => {
                                     const file = e.target.files[0];
-                                    if (file) {
-                                        if (file.size > 500000) {
-                                            ja("Imagem muito grande! Máximo 500KB", "error");
-                                            return;
-                                        }
-                                        const reader = new FileReader();
-                                        reader.onload = ev => x({...p, socialPhotoPreview: ev.target.result});
-                                        reader.readAsDataURL(file);
-                                    }
+                                    if (file) handlePhotoEditorOpen(file);
+                                    e.target.value = '';
                                 }
                             }))
                         ),
-                        React.createElement("p", {className: "text-sm text-gray-500 mt-2"}, "Clique na 📷 para alterar")
+                        React.createElement("p", {className: "text-sm text-gray-500 mt-2"}, "📷 Clique para alterar (máx. 10MB)")
                     ),
                     React.createElement("div", {className: "mb-4"},
                         React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-1"}, "Nome de Exibição"),
