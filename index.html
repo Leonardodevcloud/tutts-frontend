@@ -31,14 +31,16 @@
   
   <style>
     /* Mapa Leaflet - FORÇAR VISIBILIDADE */
-    #mapa-calor-leaflet {
+    #mapa-calor-leaflet,
+    #mapa-clientes-leaflet {
       z-index: 100 !important;
       position: relative !important;
       visibility: visible !important;
       opacity: 1 !important;
       display: block !important;
     }
-    #mapa-calor-leaflet * {
+    #mapa-calor-leaflet *,
+    #mapa-clientes-leaflet * {
       visibility: visible !important;
     }
     .leaflet-container {
@@ -59,6 +61,20 @@
     }
     .leaflet-control-container {
       z-index: 800 !important;
+    }
+    
+    /* Emoji Marker para mapa de clientes */
+    .emoji-marker {
+      background: transparent !important;
+      border: none !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      cursor: pointer !important;
+    }
+    .emoji-marker:hover {
+      transform: scale(1.2);
+      transition: transform 0.2s ease;
     }
     
     /* Loading Screen */
