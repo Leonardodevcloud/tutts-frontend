@@ -14434,78 +14434,79 @@ const hideLoadingScreen = () => {
             }, React.createElement("thead", {
                 className: "bg-purple-50"
             }, React.createElement("tr", null, React.createElement("th", {
-                className: "px-3 py-2 text-left text-purple-900"
+                className: "px-2 py-2 text-left text-purple-900 w-8"
             }), React.createElement("th", {
-                className: "px-3 py-2 text-left text-purple-900"
+                className: "px-2 py-2 text-left text-purple-900 max-w-[150px]"
             }, "Cliente"), React.createElement("th", {
-                className: "px-3 py-2 text-right text-purple-900"
+                className: "px-2 py-2 text-right text-purple-900"
             }, "OS"), React.createElement("th", {
-                className: "px-3 py-2 text-right text-purple-900"
+                className: "px-2 py-2 text-right text-purple-900"
             }, "Entregas"), React.createElement("th", {
-                className: "px-3 py-2 text-right text-purple-900"
+                className: "px-2 py-2 text-right text-purple-900"
             }, "Retornos"), React.createElement("th", {
-                className: "px-3 py-2 text-center text-green-700 bg-green-50"
+                className: "px-3 py-2 text-center text-green-700 bg-green-50 min-w-[100px]"
             }, "No Prazo"), React.createElement("th", {
-                className: "px-3 py-2 text-center text-red-700 bg-red-50"
+                className: "px-3 py-2 text-center text-red-700 bg-red-50 min-w-[100px]"
             }, "Fora Prazo"), React.createElement("th", {
-                className: "px-3 py-2 text-center text-blue-700 bg-blue-50"
+                className: "px-3 py-2 text-center text-blue-700 bg-blue-50 min-w-[100px]"
             }, "Prazo Prof"), React.createElement("th", {
-                className: "px-3 py-2 text-center text-orange-700 bg-orange-50"
+                className: "px-3 py-2 text-center text-orange-700 bg-orange-50 min-w-[100px]"
             }, "Fora Prof"), React.createElement("th", {
-                className: "px-3 py-2 text-right text-purple-900"
+                className: "px-2 py-2 text-right text-purple-900"
             }, "Média"), React.createElement("th", {
-                className: "px-3 py-2 text-right text-purple-900"
+                className: "px-2 py-2 text-right text-purple-900"
             }, "Val. Cliente"), React.createElement("th", {
-                className: "px-3 py-2 text-right text-purple-900"
+                className: "px-2 py-2 text-right text-purple-900"
             }, "Val. Prof."), React.createElement("th", {
-                className: "px-3 py-2 text-right text-purple-900"
+                className: "px-2 py-2 text-right text-purple-900"
             }, "Faturamento"), React.createElement("th", {
-                className: "px-3 py-2 text-right text-purple-900"
+                className: "px-2 py-2 text-right text-purple-900"
             }, "Tckt. Médio"), React.createElement("th", {
-                className: "px-3 py-2 text-right text-purple-900"
+                className: "px-2 py-2 text-right text-purple-900"
             }, "Entregadores"), React.createElement("th", {
-                className: "px-3 py-2 text-right text-purple-900"
-            }, "Ent/Entregador"), React.createElement("th", {
-                className: "px-3 py-2 text-right text-purple-900"
+                className: "px-2 py-2 text-right text-purple-900"
+            }, "Ent/Entreg"), React.createElement("th", {
+                className: "px-2 py-2 text-right text-purple-900"
             }, "Últ. Entrega"))), React.createElement("tbody", null, (zt || []).filter(e => parseInt(e.total_os) > 0 || parseInt(e.total_entregas) > 0).map((e, t) => React.createElement(React.Fragment, {
                 key: t
             }, React.createElement("tr", {
                 className: "border-b hover:bg-purple-50 " + (t % 2 == 0 ? "bg-white" : "bg-gray-50")
             }, React.createElement("td", {
-                className: "px-3 py-2"
+                className: "px-2 py-2"
             }, React.createElement("button", {
                 onClick: () => ml(`dash-cli-${t}`),
                 className: "text-purple-600 hover:text-purple-800 font-bold"
             }, Kt[`dash-cli-${t}`] ? "➖" : "➕")), React.createElement("td", {
-                className: "px-3 py-2 font-medium"
+                className: "px-2 py-2 font-medium max-w-[150px] truncate",
+                title: e.cod_cliente + " - " + (e.nome_display || e.nome_cliente)
             }, e.cod_cliente, " - ", e.nome_display || e.nome_cliente), React.createElement("td", {
-                className: "px-3 py-2 text-right"
+                className: "px-2 py-2 text-right"
             }, nl(e.total_os).toLocaleString("pt-BR")), React.createElement("td", {
-                className: "px-3 py-2 text-right"
+                className: "px-2 py-2 text-right"
             }, nl(e.total_entregas).toLocaleString("pt-BR")), React.createElement("td", {
-                className: "px-3 py-2 text-right text-orange-600"
+                className: "px-2 py-2 text-right text-orange-600"
             }, nl(e.total_retornos).toLocaleString("pt-BR")), React.createElement("td", {
                 className: "px-3 py-2 text-center text-green-700 bg-green-50"
-            }, React.createElement("span", { className: "font-bold" }, nl(e.dentro_prazo).toLocaleString("pt-BR")), React.createElement("span", { className: "text-xs ml-1" }, "(", (nl(e.dentro_prazo) / (nl(e.total_entregas) || 1) * 100).toFixed(1), "%)")), React.createElement("td", {
+            }, React.createElement("div", { className: "font-bold" }, nl(e.dentro_prazo).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm font-semibold" }, (nl(e.dentro_prazo) / (nl(e.total_entregas) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
                 className: "px-3 py-2 text-center text-red-700 bg-red-50"
-            }, React.createElement("span", { className: "font-bold" }, nl(e.fora_prazo).toLocaleString("pt-BR")), React.createElement("span", { className: "text-xs ml-1" }, "(", (nl(e.fora_prazo) / (nl(e.total_entregas) || 1) * 100).toFixed(1), "%)")), React.createElement("td", {
+            }, React.createElement("div", { className: "font-bold" }, nl(e.fora_prazo).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm font-semibold" }, (nl(e.fora_prazo) / (nl(e.total_entregas) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
                 className: "px-3 py-2 text-center text-blue-700 bg-blue-50"
-            }, React.createElement("span", { className: "font-bold" }, nl(e.dentro_prazo_prof || 0).toLocaleString("pt-BR")), React.createElement("span", { className: "text-xs ml-1" }, "(", (nl(e.dentro_prazo_prof || 0) / (nl(e.total_entregas) || 1) * 100).toFixed(1), "%)")), React.createElement("td", {
+            }, React.createElement("div", { className: "font-bold" }, nl(e.dentro_prazo_prof || 0).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm font-semibold" }, (nl(e.dentro_prazo_prof || 0) / (nl(e.total_entregas) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
                 className: "px-3 py-2 text-center text-orange-700 bg-orange-50"
-            }, React.createElement("span", { className: "font-bold" }, nl(e.fora_prazo_prof || 0).toLocaleString("pt-BR")), React.createElement("span", { className: "text-xs ml-1" }, "(", (nl(e.fora_prazo_prof || 0) / (nl(e.total_entregas) || 1) * 100).toFixed(1), "%)")), React.createElement("td", {
-                className: "px-3 py-2 text-right"
+            }, React.createElement("div", { className: "font-bold" }, nl(e.fora_prazo_prof || 0).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm font-semibold" }, (nl(e.fora_prazo_prof || 0) / (nl(e.total_entregas) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
+                className: "px-2 py-2 text-right"
             }, cl(e.tempo_medio)), React.createElement("td", {
-                className: "px-3 py-2 text-right"
+                className: "px-2 py-2 text-right"
             }, sl(e.valor_total)), React.createElement("td", {
-                className: "px-3 py-2 text-right"
+                className: "px-2 py-2 text-right"
             }, sl(e.valor_prof)), React.createElement("td", {
-                className: "px-3 py-2 text-right font-medium"
+                className: "px-2 py-2 text-right font-medium"
             }, sl(nl(e.valor_total) - nl(e.valor_prof))), React.createElement("td", {
-                className: "px-3 py-2 text-right"
+                className: "px-2 py-2 text-right"
             }, sl(e.ticket_medio)), React.createElement("td", {
-                className: "px-3 py-2 text-right"
+                className: "px-2 py-2 text-right"
             }, nl(e.total_profissionais).toLocaleString("pt-BR")), React.createElement("td", {
-                className: "px-3 py-2 text-right"
+                className: "px-2 py-2 text-right"
             }, nl(e.entregas_por_prof).toLocaleString("pt-BR", {
                 minimumFractionDigits: 2
             })), React.createElement("td", {
@@ -14516,74 +14517,74 @@ const hideLoadingScreen = () => {
                 key: `${t}-cc-${l}`,
                 className: "bg-purple-50 border-l-4 border-purple-400"
             }, React.createElement("td", {
-                className: "px-3 py-2 text-purple-400 text-center"
+                className: "px-2 py-2 text-purple-400 text-center"
             }, "└"), React.createElement("td", {
-                className: "px-3 py-2 text-purple-700 pl-6"
-            }, "📁 ", e.cod_cliente, " - ", a.centro_custo), React.createElement("td", {
-                className: "px-3 py-2 text-right text-purple-600"
+                className: "px-2 py-2 text-purple-700 pl-4 max-w-[150px] truncate text-sm"
+            }, "📁 ", a.centro_custo), React.createElement("td", {
+                className: "px-2 py-2 text-right text-purple-600"
             }, nl(a.total_os).toLocaleString("pt-BR")), React.createElement("td", {
-                className: "px-3 py-2 text-right text-purple-600"
+                className: "px-2 py-2 text-right text-purple-600"
             }, nl(a.total_entregas).toLocaleString("pt-BR")), React.createElement("td", {
-                className: "px-3 py-2 text-right text-orange-500"
+                className: "px-2 py-2 text-right text-orange-500"
             }, nl(a.total_retornos || 0).toLocaleString("pt-BR")), React.createElement("td", {
                 className: "px-3 py-2 text-center text-green-600 bg-green-50"
-            }, React.createElement("span", { className: "font-medium" }, nl(a.dentro_prazo).toLocaleString("pt-BR")), React.createElement("span", { className: "text-xs ml-1" }, "(", (nl(a.dentro_prazo) / (nl(a.total_entregas) || 1) * 100).toFixed(1), "%)")), React.createElement("td", {
+            }, React.createElement("div", { className: "font-medium" }, nl(a.dentro_prazo).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(a.dentro_prazo) / (nl(a.total_entregas) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
                 className: "px-3 py-2 text-center text-red-600 bg-red-50"
-            }, React.createElement("span", { className: "font-medium" }, nl(a.fora_prazo).toLocaleString("pt-BR")), React.createElement("span", { className: "text-xs ml-1" }, "(", (nl(a.fora_prazo) / (nl(a.total_entregas) || 1) * 100).toFixed(1), "%)")), React.createElement("td", {
+            }, React.createElement("div", { className: "font-medium" }, nl(a.fora_prazo).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(a.fora_prazo) / (nl(a.total_entregas) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
                 className: "px-3 py-2 text-center text-blue-600 bg-blue-50"
-            }, React.createElement("span", { className: "font-medium" }, nl(a.dentro_prazo_prof || 0).toLocaleString("pt-BR")), React.createElement("span", { className: "text-xs ml-1" }, "(", (nl(a.dentro_prazo_prof || 0) / (nl(a.total_entregas) || 1) * 100).toFixed(1), "%)")), React.createElement("td", {
+            }, React.createElement("div", { className: "font-medium" }, nl(a.dentro_prazo_prof || 0).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(a.dentro_prazo_prof || 0) / (nl(a.total_entregas) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
                 className: "px-3 py-2 text-center text-orange-600 bg-orange-50"
-            }, React.createElement("span", { className: "font-medium" }, nl(a.fora_prazo_prof || 0).toLocaleString("pt-BR")), React.createElement("span", { className: "text-xs ml-1" }, "(", (nl(a.fora_prazo_prof || 0) / (nl(a.total_entregas) || 1) * 100).toFixed(1), "%)")), React.createElement("td", {
-                className: "px-3 py-2 text-right text-purple-600"
+            }, React.createElement("div", { className: "font-medium" }, nl(a.fora_prazo_prof || 0).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(a.fora_prazo_prof || 0) / (nl(a.total_entregas) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
+                className: "px-2 py-2 text-right text-purple-600"
             }, cl(a.tempo_medio)), React.createElement("td", {
-                className: "px-3 py-2 text-right text-purple-600"
+                className: "px-2 py-2 text-right text-purple-600"
             }, sl(a.valor_total)), React.createElement("td", {
-                className: "px-3 py-2 text-right text-purple-600"
+                className: "px-2 py-2 text-right text-purple-600"
             }, sl(a.valor_prof)), React.createElement("td", {
-                className: "px-3 py-2 text-right text-purple-600"
+                className: "px-2 py-2 text-right text-purple-600"
             }, sl(nl(a.valor_total) - nl(a.valor_prof))), React.createElement("td", {
-                className: "px-3 py-2 text-right text-purple-600"
+                className: "px-2 py-2 text-right text-purple-600"
             }, a.total_entregas > 0 ? sl(nl(a.valor_total) / a.total_entregas) : "-"), React.createElement("td", {
                 colSpan: "3",
-                className: "px-3 py-2 text-center text-gray-400"
+                className: "px-2 py-2 text-center text-gray-400"
             }, "-")))))), React.createElement("tfoot", {
                 className: "bg-purple-200 font-bold"
             }, React.createElement("tr", null, React.createElement("td", {
-                className: "px-3 py-2"
+                className: "px-2 py-2"
             }), React.createElement("td", {
-                className: "px-3 py-2"
+                className: "px-2 py-2"
             }, "Total"), React.createElement("td", {
-                className: "px-3 py-2 text-right"
+                className: "px-2 py-2 text-right"
             }, nl(ft?.total_os).toLocaleString("pt-BR")), React.createElement("td", {
-                className: "px-3 py-2 text-right"
+                className: "px-2 py-2 text-right"
             }, nl(ft?.total_entregas).toLocaleString("pt-BR")), React.createElement("td", {
-                className: "px-3 py-2 text-right text-orange-700"
+                className: "px-2 py-2 text-right text-orange-700"
             }, nl(ft?.total_retornos).toLocaleString("pt-BR")), React.createElement("td", {
                 className: "px-3 py-2 text-center text-green-700 bg-green-100"
-            }, React.createElement("span", null, nl(ft?.dentro_prazo).toLocaleString("pt-BR")), React.createElement("span", { className: "text-xs ml-1" }, "(", (nl(ft?.dentro_prazo) / (nl(ft?.total_entregas) || 1) * 100).toFixed(1), "%)")), React.createElement("td", {
+            }, React.createElement("div", null, nl(ft?.dentro_prazo).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(ft?.dentro_prazo) / (nl(ft?.total_entregas) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
                 className: "px-3 py-2 text-center text-red-700 bg-red-100"
-            }, React.createElement("span", null, nl(ft?.fora_prazo).toLocaleString("pt-BR")), React.createElement("span", { className: "text-xs ml-1" }, "(", (nl(ft?.fora_prazo) / (nl(ft?.total_entregas) || 1) * 100).toFixed(1), "%)")), React.createElement("td", {
+            }, React.createElement("div", null, nl(ft?.fora_prazo).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(ft?.fora_prazo) / (nl(ft?.total_entregas) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
                 className: "px-3 py-2 text-center text-blue-700 bg-blue-100"
-            }, React.createElement("span", null, nl(ft?.dentro_prazo_prof).toLocaleString("pt-BR")), React.createElement("span", { className: "text-xs ml-1" }, "(", (nl(ft?.dentro_prazo_prof) / (nl(ft?.total_entregas) || 1) * 100).toFixed(1), "%)")), React.createElement("td", {
+            }, React.createElement("div", null, nl(ft?.dentro_prazo_prof).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(ft?.dentro_prazo_prof) / (nl(ft?.total_entregas) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
                 className: "px-3 py-2 text-center text-orange-700 bg-orange-100"
-            }, React.createElement("span", null, nl(ft?.fora_prazo_prof).toLocaleString("pt-BR")), React.createElement("span", { className: "text-xs ml-1" }, "(", (nl(ft?.fora_prazo_prof) / (nl(ft?.total_entregas) || 1) * 100).toFixed(1), "%)")), React.createElement("td", {
-                className: "px-3 py-2 text-right"
+            }, React.createElement("div", null, nl(ft?.fora_prazo_prof).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(ft?.fora_prazo_prof) / (nl(ft?.total_entregas) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
+                className: "px-2 py-2 text-right"
             }, cl(ft?.tempo_medio)), React.createElement("td", {
-                className: "px-3 py-2 text-right"
+                className: "px-2 py-2 text-right"
             }, sl(ft?.valor_total)), React.createElement("td", {
-                className: "px-3 py-2 text-right"
+                className: "px-2 py-2 text-right"
             }, sl(ft?.valor_prof_total)), React.createElement("td", {
-                className: "px-3 py-2 text-right"
+                className: "px-2 py-2 text-right"
             }, sl(nl(ft?.valor_total) - nl(ft?.valor_prof_total))), React.createElement("td", {
-                className: "px-3 py-2 text-right"
+                className: "px-2 py-2 text-right"
             }, sl(ft?.ticket_medio)), React.createElement("td", {
-                className: "px-3 py-2 text-right"
+                className: "px-2 py-2 text-right"
             }, nl(ft?.total_profissionais).toLocaleString("pt-BR")), React.createElement("td", {
-                className: "px-3 py-2 text-right"
+                className: "px-2 py-2 text-right"
             }, nl(ft?.media_entregas_por_prof).toLocaleString("pt-BR", {
                 minimumFractionDigits: 2
             })), React.createElement("td", {
-                className: "px-3 py-2 text-right"
+                className: "px-2 py-2 text-right"
             }, ft?.ultima_entrega ? new Date(ft.ultima_entrega).toLocaleDateString("pt-BR") : "-")))))), React.createElement("div", {
                 className: "space-y-6 mt-6"
             }, 
