@@ -955,6 +955,7 @@ const hideLoadingScreen = () => {
         [relatoriosLoading, setRelatoriosLoading] = useState(false),
         [showRelatorioModal, setShowRelatorioModal] = useState(false),
         [relatorioEdit, setRelatorioEdit] = useState(null),
+        [relatorioImagemAmpliada, setRelatorioImagemAmpliada] = useState(null),
         [relatorioForm, setRelatorioForm] = useState({
             titulo: '',
             conteudo: '',
@@ -13807,8 +13808,8 @@ const hideLoadingScreen = () => {
                                         rel.imagem_url && React.createElement("div", {className: "mt-4"},
                                             React.createElement("img", {
                                                 src: rel.imagem_url,
-                                                className: "max-w-full md:max-w-md rounded-lg shadow cursor-pointer hover:opacity-90",
-                                                onClick: () => window.open(rel.imagem_url, '_blank')
+                                                className: "max-w-full md:max-w-md rounded-lg shadow cursor-pointer hover:opacity-90 transition-opacity",
+                                                onClick: () => setRelatorioImagemAmpliada(rel.imagem_url)
                                             })
                                         )
                                     )
@@ -13940,15 +13941,34 @@ const hideLoadingScreen = () => {
                     // Footer do modal
                     React.createElement("div", {className: "p-4 bg-gray-50 border-t flex gap-3"},
                         React.createElement("button", {
+                            type: "button",
                             onClick: () => setShowRelatorioModal(false),
                             className: "flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-100"
                         }, "Cancelar"),
                         React.createElement("button", {
-                            onClick: salvarRelatorio,
+                            type: "button",
+                            onClick: (e) => { e.preventDefault(); e.stopPropagation(); salvarRelatorio(); },
                             disabled: !relatorioForm.titulo.trim(),
                             className: "flex-1 px-6 py-3 bg-teal-600 text-white rounded-xl font-semibold hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
                         }, relatorioEdit ? "💾 Salvar Alterações" : "📝 Criar Relatório")
                     )
+                )
+            ),
+            // Modal de imagem ampliada
+            relatorioImagemAmpliada && React.createElement("div", {
+                className: "fixed inset-0 bg-black/90 flex items-center justify-center z-[60] p-4",
+                onClick: () => setRelatorioImagemAmpliada(null)
+            },
+                React.createElement("div", {className: "relative max-w-4xl max-h-[90vh]"},
+                    React.createElement("button", {
+                        onClick: () => setRelatorioImagemAmpliada(null),
+                        className: "absolute -top-10 right-0 text-white text-3xl hover:text-gray-300"
+                    }, "✕"),
+                    React.createElement("img", {
+                        src: relatorioImagemAmpliada,
+                        className: "max-w-full max-h-[85vh] rounded-lg shadow-2xl",
+                        onClick: (e) => e.stopPropagation()
+                    })
                 )
             )
         );
