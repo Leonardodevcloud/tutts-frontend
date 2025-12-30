@@ -1679,21 +1679,33 @@ const hideLoadingScreen = () => {
         };
         
         // Função para inicializar mapa de clientes com emojis
-        const initMapaClientes = (clientes, tentativa = 0) => {
+        const initMapaClientes = (clientes, tentativa) => {
+            tentativa = tentativa || 0;
+            
+            // Validar se clientes é um array
+            if (!clientes || !Array.isArray(clientes)) {
+                console.log('initMapaClientes: clientes não é um array válido');
+                return;
+            }
+            
             if (typeof L === 'undefined') {
+                console.log('Leaflet não carregado, tentativa', tentativa);
                 if (tentativa < 10) {
-                    setTimeout(() => initMapaClientes(clientes, tentativa + 1), 300);
+                    setTimeout(function() { initMapaClientes(clientes, tentativa + 1); }, 300);
                 }
                 return;
             }
             
-            const container = document.getElementById('mapa-clientes-leaflet');
+            var container = document.getElementById('mapa-clientes-leaflet');
             if (!container || container.offsetWidth === 0) {
+                console.log('Container não pronto, tentativa', tentativa);
                 if (tentativa < 20) {
-                    setTimeout(() => initMapaClientes(clientes, tentativa + 1), 150);
+                    setTimeout(function() { initMapaClientes(clientes, tentativa + 1); }, 150);
                 }
                 return;
             }
+            
+            console.log('Iniciando mapa de clientes com', clientes.length, 'clientes');
             
             // Limpar mapa anterior se existir
             if (window.mapaClientesLeaflet) {
@@ -1705,34 +1717,36 @@ const hideLoadingScreen = () => {
             
             try {
                 // Criar mapa centrado em Goiânia
-                window.mapaClientesLeaflet = L.map('mapa-clientes-leaflet').setView([-16.6869, -49.2648], 10);
+                window.mapaClientesLeaflet = L.map(container).setView([-16.6869, -49.2648], 10);
                 
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                     attribution: '© OpenStreetMap',
                     maxZoom: 18
                 }).addTo(window.mapaClientesLeaflet);
                 
-                const markersLayer = L.layerGroup().addTo(window.mapaClientesLeaflet);
-                const bounds = [];
+                var markersLayer = L.layerGroup().addTo(window.mapaClientesLeaflet);
+                var bounds = [];
                 
-                // Adicionar marcadores para cada cliente
-                clientes.forEach(cliente => {
-                    const end = cliente.enderecos?.[0];
-                    if (!end || !end.latitude || !end.longitude) return;
+                // Adicionar marcadores para cada cliente usando for loop
+                for (var i = 0; i < clientes.length; i++) {
+                    var cliente = clientes[i];
+                    var end = cliente.enderecos && cliente.enderecos[0] ? cliente.enderecos[0] : null;
+                    if (!end || !end.latitude || !end.longitude) continue;
                     
-                    const lat = parseFloat(end.latitude);
-                    const lng = parseFloat(end.longitude);
-                    if (isNaN(lat) || isNaN(lng) || lat === 0 || lng === 0) return;
+                    var lat = parseFloat(end.latitude);
+                    var lng = parseFloat(end.longitude);
+                    if (isNaN(lat) || isNaN(lng) || lat === 0 || lng === 0) continue;
                     
                     bounds.push([lat, lng]);
                     
                     // Emoji baseado no cliente
-                    const emoji = String(cliente.cod_cliente) === '767' ? '⭐' : '🏢';
-                    const tamanho = String(cliente.cod_cliente) === '767' ? 28 : 24;
+                    var isCliente767 = String(cliente.cod_cliente) === '767';
+                    var emoji = isCliente767 ? '⭐' : '🏢';
+                    var tamanho = isCliente767 ? 28 : 24;
                     
                     // Criar ícone com emoji
-                    const emojiIcon = L.divIcon({
-                        html: `<div style="font-size: ${tamanho}px; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">${emoji}</div>`,
+                    var emojiIcon = L.divIcon({
+                        html: '<div style="font-size: ' + tamanho + 'px; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">' + emoji + '</div>',
                         className: 'emoji-marker',
                         iconSize: [tamanho, tamanho],
                         iconAnchor: [tamanho/2, tamanho/2],
@@ -1740,32 +1754,29 @@ const hideLoadingScreen = () => {
                     });
                     
                     // Criar marcador
-                    const marker = L.marker([lat, lng], { icon: emojiIcon });
+                    var marker = L.marker([lat, lng], { icon: emojiIcon });
+                    
+                    // Criar link do Waze
+                    var wazeLink = 'https://waze.com/ul?ll=' + lat + ',' + lng + '&navigate=yes';
                     
                     // Popup com informações
-                    const popupContent = `
-                        <div style="min-width: 200px; font-family: system-ui, sans-serif;">
-                            <p style="font-weight: bold; color: #0d9488; margin: 0 0 4px 0; font-size: 14px;">
-                                ${cliente.cod_cliente} - ${cliente.nome_cliente}
-                            </p>
-                            ${cliente.centro_custo ? `<p style="color: #7c3aed; font-size: 12px; margin: 0 0 4px 0;">📦 ${cliente.centro_custo}</p>` : ''}
-                            <p style="color: #666; font-size: 12px; margin: 0 0 8px 0;">
-                                📌 ${end.endereco || 'Sem endereço'}
-                            </p>
-                            <p style="color: #888; font-size: 11px; margin: 0 0 8px 0;">
-                                ${[end.bairro, end.cidade, end.estado].filter(Boolean).join(' - ')}
-                            </p>
-                            <a href="${gerarLinkWaze(end.endereco + ' ' + (end.cidade || ''), end.latitude, end.longitude)}" 
-                               target="_blank" 
-                               style="display: inline-block; padding: 6px 12px; background: #06b6d4; color: white; text-decoration: none; border-radius: 6px; font-size: 12px; font-weight: 600;">
-                                🚗 Abrir no Waze
-                            </a>
-                        </div>
-                    `;
+                    var popupHtml = '<div style="min-width: 200px; font-family: system-ui, sans-serif;">' +
+                        '<p style="font-weight: bold; color: #0d9488; margin: 0 0 4px 0; font-size: 14px;">' +
+                        cliente.cod_cliente + ' - ' + (cliente.nome_cliente || '') +
+                        '</p>' +
+                        (cliente.centro_custo ? '<p style="color: #7c3aed; font-size: 12px; margin: 0 0 4px 0;">📦 ' + cliente.centro_custo + '</p>' : '') +
+                        '<p style="color: #666; font-size: 12px; margin: 0 0 8px 0;">📌 ' + (end.endereco || 'Sem endereço') + '</p>' +
+                        '<p style="color: #888; font-size: 11px; margin: 0 0 8px 0;">' +
+                        [end.bairro, end.cidade, end.estado].filter(Boolean).join(' - ') +
+                        '</p>' +
+                        '<a href="' + wazeLink + '" target="_blank" style="display: inline-block; padding: 6px 12px; background: #06b6d4; color: white; text-decoration: none; border-radius: 6px; font-size: 12px; font-weight: 600;">🚗 Abrir no Waze</a>' +
+                        '</div>';
                     
-                    marker.bindPopup(popupContent);
+                    marker.bindPopup(popupHtml);
                     marker.addTo(markersLayer);
-                });
+                }
+                
+                console.log('Adicionados', bounds.length, 'marcadores ao mapa');
                 
                 // Ajustar zoom para mostrar todos os pontos
                 if (bounds.length > 0) {
@@ -1773,7 +1784,7 @@ const hideLoadingScreen = () => {
                 }
                 
                 // Forçar redimensionamento
-                setTimeout(() => {
+                setTimeout(function() {
                     if (window.mapaClientesLeaflet) {
                         window.mapaClientesLeaflet.invalidateSize();
                     }
