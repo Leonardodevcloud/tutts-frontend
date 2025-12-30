@@ -1772,6 +1772,166 @@ const hideLoadingScreen = () => {
             }
         }, [l?.codProfissional]);
         
+        // Renderizar modal de relatório globalmente via Portal
+        React.useEffect(() => {
+            if (!relatorioNaoLido) return;
+            
+            // Criar container do portal se não existir
+            let portalRoot = document.getElementById('relatorio-modal-portal');
+            if (!portalRoot) {
+                portalRoot = document.createElement('div');
+                portalRoot.id = 'relatorio-modal-portal';
+                document.body.appendChild(portalRoot);
+            }
+            
+            // Renderizar modal no portal
+            const modalContent = React.createElement("div", {
+                style: {
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.7)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 99999,
+                    padding: '16px'
+                }
+            },
+                React.createElement("div", {
+                    style: {
+                        backgroundColor: 'white',
+                        borderRadius: '16px',
+                        boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
+                        width: '100%',
+                        maxWidth: '640px',
+                        maxHeight: '90vh',
+                        overflow: 'hidden',
+                        display: 'flex',
+                        flexDirection: 'column'
+                    }
+                },
+                    // Header
+                    React.createElement("div", {
+                        style: {
+                            background: 'linear-gradient(to right, #0d9488, #0f766e)',
+                            color: 'white',
+                            padding: '16px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '12px'
+                        }
+                    },
+                        React.createElement("span", {style: {fontSize: '30px'}}, "📢"),
+                        React.createElement("div", null,
+                            React.createElement("h3", {style: {fontSize: '18px', fontWeight: 'bold', margin: 0}}, "Novo Relatório Diário"),
+                            React.createElement("p", {style: {fontSize: '14px', color: '#99f6e4', margin: 0}}, 
+                                relatoriosNaoLidos.length > 1 
+                                    ? relatoriosNaoLidos.length + " relatórios pendentes"
+                                    : "1 relatório pendente"
+                            )
+                        )
+                    ),
+                    // Info do autor
+                    React.createElement("div", {
+                        style: {
+                            padding: '16px',
+                            backgroundColor: '#f9fafb',
+                            borderBottom: '1px solid #e5e7eb',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '12px'
+                        }
+                    },
+                        relatorioNaoLido.usuario_foto 
+                            ? React.createElement("img", {
+                                src: relatorioNaoLido.usuario_foto,
+                                style: {width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #99f6e4'}
+                            })
+                            : React.createElement("div", {
+                                style: {
+                                    width: '48px',
+                                    height: '48px',
+                                    borderRadius: '50%',
+                                    backgroundColor: '#ccfbf1',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    color: '#0d9488',
+                                    fontWeight: 'bold',
+                                    fontSize: '18px'
+                                }
+                            }, (relatorioNaoLido.usuario_nome || "?").charAt(0).toUpperCase()),
+                        React.createElement("div", null,
+                            React.createElement("p", {style: {fontWeight: 'bold', color: '#1f2937', margin: 0}}, relatorioNaoLido.titulo),
+                            React.createElement("p", {style: {fontSize: '14px', color: '#6b7280', margin: 0}}, 
+                                relatorioNaoLido.usuario_nome + " • " + 
+                                new Date(relatorioNaoLido.created_at).toLocaleDateString('pt-BR', {
+                                    day: '2-digit', month: '2-digit', year: 'numeric',
+                                    hour: '2-digit', minute: '2-digit'
+                                })
+                            )
+                        )
+                    ),
+                    // Conteúdo
+                    React.createElement("div", {
+                        style: {
+                            padding: '16px',
+                            overflowY: 'auto',
+                            flex: 1,
+                            maxHeight: '50vh'
+                        }
+                    },
+                        React.createElement("div", {
+                            style: {color: '#374151', whiteSpace: 'pre-wrap'}
+                        }, relatorioNaoLido.conteudo || ''),
+                        relatorioNaoLido.imagem_url && React.createElement("div", {style: {marginTop: '16px'}},
+                            React.createElement("img", {
+                                src: relatorioNaoLido.imagem_url,
+                                style: {maxWidth: '100%', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'}
+                            })
+                        )
+                    ),
+                    // Footer
+                    React.createElement("div", {
+                        style: {
+                            padding: '16px',
+                            backgroundColor: '#f9fafb',
+                            borderTop: '1px solid #e5e7eb'
+                        }
+                    },
+                        React.createElement("button", {
+                            onClick: () => marcarRelatorioComoLido(relatorioNaoLido.id),
+                            style: {
+                                width: '100%',
+                                padding: '16px 24px',
+                                backgroundColor: '#0d9488',
+                                color: 'white',
+                                borderRadius: '12px',
+                                fontWeight: 'bold',
+                                fontSize: '18px',
+                                border: 'none',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '8px',
+                                boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)'
+                            }
+                        }, "✅ Estou Ciente")
+                    )
+                )
+            );
+            
+            ReactDOM.render(modalContent, portalRoot);
+            
+            return () => {
+                ReactDOM.unmountComponentAtNode(portalRoot);
+            };
+        }, [relatorioNaoLido, relatoriosNaoLidos]);
+        
         const abrirNovoRelatorio = () => {
             setRelatorioEdit(null);
             setRelatorioForm({
