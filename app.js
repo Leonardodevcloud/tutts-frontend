@@ -961,8 +961,16 @@ const hideLoadingScreen = () => {
         [relatorioForm, setRelatorioForm] = useState({
             titulo: '',
             conteudo: '',
-            imagem: null
+            imagem: null,
+            para_todos: true,
+            setores_destino: []
         }),
+        // Sistema de Setores
+        [setores, setSetores] = useState([]),
+        [setoresLoading, setSetoresLoading] = useState(false),
+        [showSetorModal, setShowSetorModal] = useState(false),
+        [setorEdit, setSetorEdit] = useState(null),
+        [setorForm, setSetorForm] = useState({ nome: '', descricao: '', cor: '#6366f1' }),
         // Tutorial do usuário
         [tutorialAtivo, setTutorialAtivo] = useState(false),
         [tutorialPasso, setTutorialPasso] = useState(0),
@@ -1705,15 +1713,109 @@ const hideLoadingScreen = () => {
             setRelatoriosLoading(false);
         };
         
+        // ===== FUNÇÕES DE SETORES =====
+        const carregarSetores = async () => {
+            try {
+                const res = await fetch(`${API_URL}/setores`);
+                const data = await res.json();
+                setSetores(Array.isArray(data) ? data : []);
+            } catch (err) {
+                console.error('Erro ao carregar setores:', err);
+                setSetores([]);
+            }
+        };
+        
+        const salvarSetor = async () => {
+            if (!setorForm.nome.trim()) {
+                ja('Nome do setor é obrigatório', 'error');
+                return;
+            }
+            
+            setSetoresLoading(true);
+            try {
+                const url = setorEdit 
+                    ? `${API_URL}/setores/${setorEdit.id}`
+                    : `${API_URL}/setores`;
+                const method = setorEdit ? 'PUT' : 'POST';
+                
+                const res = await fetch(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(setorForm)
+                });
+                
+                const data = await res.json();
+                
+                if (!res.ok) {
+                    throw new Error(data.error || 'Erro ao salvar');
+                }
+                
+                ja(setorEdit ? 'Setor atualizado!' : 'Setor criado!', 'success');
+                setShowSetorModal(false);
+                setSetorEdit(null);
+                setSetorForm({ nome: '', descricao: '', cor: '#6366f1' });
+                carregarSetores();
+            } catch (err) {
+                ja(err.message || 'Erro ao salvar setor', 'error');
+            }
+            setSetoresLoading(false);
+        };
+        
+        const excluirSetor = async (setor) => {
+            if (!confirm(`Excluir o setor "${setor.nome}"?`)) return;
+            
+            try {
+                const res = await fetch(`${API_URL}/setores/${setor.id}`, { method: 'DELETE' });
+                const data = await res.json();
+                
+                if (!res.ok) {
+                    throw new Error(data.error || 'Erro ao excluir');
+                }
+                
+                ja('Setor excluído!', 'success');
+                carregarSetores();
+            } catch (err) {
+                ja(err.message || 'Erro ao excluir setor', 'error');
+            }
+        };
+        
+        const atualizarSetorUsuario = async (codProfissional, setorId) => {
+            try {
+                const res = await fetch(`${API_URL}/users/${codProfissional}/setor`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ setor_id: setorId || null })
+                });
+                
+                if (!res.ok) {
+                    throw new Error('Erro ao atualizar');
+                }
+                
+                ja('Setor do usuário atualizado!', 'success');
+                Ia(); // Recarregar usuários
+            } catch (err) {
+                ja('Erro ao atualizar setor', 'error');
+            }
+        };
+        
+        // Carregar setores quando logar
+        React.useEffect(() => {
+            if (l?.codProfissional) {
+                carregarSetores();
+            }
+        }, [l?.codProfissional]);
+        
         // Carregar relatórios não lidos pelo usuário
         const carregarRelatoriosNaoLidos = async () => {
-            console.log('📢 Verificando relatórios não lidos para:', l?.codProfissional);
+            console.log('📢 Verificando relatórios não lidos para:', l?.codProfissional, 'setor:', l?.setor_id);
             if (!l?.codProfissional) {
                 console.log('❌ Sem codProfissional');
                 return;
             }
             try {
-                const res = await fetch(`${API_URL}/relatorios-diarios/nao-lidos/${l.codProfissional}`);
+                // Passar setor_id como query param para filtrar por setor
+                const setorParam = l?.setor_id ? `?setor_id=${l.setor_id}` : '';
+                const res = await fetch(`${API_URL}/relatorios-diarios/nao-lidos/${l.codProfissional}${setorParam}`);
                 const data = await res.json();
                 console.log('📢 Resposta do servidor:', data);
                 const naoLidos = Array.isArray(data) ? data : [];
@@ -1937,7 +2039,9 @@ const hideLoadingScreen = () => {
             setRelatorioForm({
                 titulo: '',
                 conteudo: '',
-                imagem: null
+                imagem: null,
+                para_todos: true,
+                setores_destino: []
             });
             setShowRelatorioModal(true);
         };
@@ -1947,7 +2051,9 @@ const hideLoadingScreen = () => {
             setRelatorioForm({
                 titulo: relatorio.titulo || '',
                 conteudo: relatorio.conteudo || '',
-                imagem: null
+                imagem: null,
+                para_todos: relatorio.para_todos !== false,
+                setores_destino: relatorio.setores_destino || []
             });
             setShowRelatorioModal(true);
         };
@@ -1963,6 +2069,13 @@ const hideLoadingScreen = () => {
                 ja('Preencha o título do relatório', 'error');
                 return false;
             }
+            
+            // Validar setores se não for para todos
+            if (!relatorioForm.para_todos && (!relatorioForm.setores_destino || relatorioForm.setores_destino.length === 0)) {
+                ja('Selecione pelo menos um setor de destino', 'error');
+                return false;
+            }
+            
             s(true);
             try {
                 let imagem_base64 = null;
@@ -1982,7 +2095,9 @@ const hideLoadingScreen = () => {
                     usuario_id: l.codProfissional,
                     usuario_nome: l.fullName || l.username,
                     usuario_foto: socialProfile?.profile_photo || '',
-                    imagem_base64: imagem_base64
+                    imagem_base64: imagem_base64,
+                    para_todos: relatorioForm.para_todos,
+                    setores_destino: relatorioForm.para_todos ? [] : relatorioForm.setores_destino
                 };
                 
                 const urlApi = relatorioEdit 
@@ -2000,7 +2115,7 @@ const hideLoadingScreen = () => {
                 ja(relatorioEdit ? '✅ Relatório atualizado!' : '✅ Relatório criado!', 'success');
                 setShowRelatorioModal(false);
                 setRelatorioEdit(null);
-                setRelatorioForm({ titulo: '', conteudo: '', imagem: null });
+                setRelatorioForm({ titulo: '', conteudo: '', imagem: null, para_todos: true, setores_destino: [] });
                 await carregarRelatoriosDiarios();
             } catch (err) {
                 console.error('Erro ao salvar relatório:', err);
@@ -14366,6 +14481,84 @@ const hideLoadingScreen = () => {
                                         )
                                 )
                             )
+                        ),
+                        
+                        // Seleção de Destinatários (Setores)
+                        React.createElement("div", {className: "bg-purple-50 rounded-xl p-4 space-y-3"},
+                            React.createElement("label", {className: "block text-sm font-semibold text-gray-700"}, "📢 Quem deve ver este relatório?"),
+                            
+                            // Toggle Para Todos
+                            React.createElement("div", {
+                                className: "flex items-center gap-3 p-3 bg-white rounded-lg cursor-pointer hover:bg-gray-50",
+                                onClick: () => setRelatorioForm(prev => ({...prev, para_todos: true, setores_destino: []}))
+                            },
+                                React.createElement("div", {
+                                    className: `w-5 h-5 rounded-full border-2 flex items-center justify-center ${relatorioForm.para_todos ? 'border-teal-600 bg-teal-600' : 'border-gray-300'}`
+                                }, relatorioForm.para_todos && React.createElement("div", {className: "w-2 h-2 bg-white rounded-full"})),
+                                React.createElement("div", null,
+                                    React.createElement("p", {className: "font-semibold text-gray-800"}, "🌐 Todos os usuários"),
+                                    React.createElement("p", {className: "text-sm text-gray-500"}, "O relatório aparecerá para todos")
+                                )
+                            ),
+                            
+                            // Toggle Por Setores
+                            React.createElement("div", {
+                                className: "flex items-center gap-3 p-3 bg-white rounded-lg cursor-pointer hover:bg-gray-50",
+                                onClick: () => setRelatorioForm(prev => ({...prev, para_todos: false}))
+                            },
+                                React.createElement("div", {
+                                    className: `w-5 h-5 rounded-full border-2 flex items-center justify-center ${!relatorioForm.para_todos ? 'border-teal-600 bg-teal-600' : 'border-gray-300'}`
+                                }, !relatorioForm.para_todos && React.createElement("div", {className: "w-2 h-2 bg-white rounded-full"})),
+                                React.createElement("div", null,
+                                    React.createElement("p", {className: "font-semibold text-gray-800"}, "🏢 Setores específicos"),
+                                    React.createElement("p", {className: "text-sm text-gray-500"}, "Selecione quais setores devem ver")
+                                )
+                            ),
+                            
+                            // Lista de Setores (só aparece se não for para todos)
+                            !relatorioForm.para_todos && React.createElement("div", {className: "mt-3 space-y-2"},
+                                setores.length === 0 
+                                    ? React.createElement("p", {className: "text-sm text-gray-500 text-center py-2"}, 
+                                        "Nenhum setor cadastrado. Configure os setores primeiro."
+                                    )
+                                    : setores.filter(s => s.ativo).map(setor => 
+                                        React.createElement("div", {
+                                            key: setor.id,
+                                            className: `flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors ${
+                                                relatorioForm.setores_destino?.includes(setor.id) 
+                                                    ? 'bg-teal-100 border-2 border-teal-500' 
+                                                    : 'bg-white border-2 border-gray-200 hover:border-gray-300'
+                                            }`,
+                                            onClick: () => {
+                                                setRelatorioForm(prev => {
+                                                    const atual = prev.setores_destino || [];
+                                                    const novo = atual.includes(setor.id)
+                                                        ? atual.filter(id => id !== setor.id)
+                                                        : [...atual, setor.id];
+                                                    return {...prev, setores_destino: novo};
+                                                });
+                                            }
+                                        },
+                                            React.createElement("div", {
+                                                className: `w-4 h-4 rounded border-2 flex items-center justify-center ${
+                                                    relatorioForm.setores_destino?.includes(setor.id) 
+                                                        ? 'border-teal-600 bg-teal-600' 
+                                                        : 'border-gray-300'
+                                                }`
+                                            }, relatorioForm.setores_destino?.includes(setor.id) && 
+                                                React.createElement("span", {className: "text-white text-xs"}, "✓")
+                                            ),
+                                            React.createElement("div", {
+                                                className: "w-3 h-3 rounded-full",
+                                                style: { backgroundColor: setor.cor || '#6366f1' }
+                                            }),
+                                            React.createElement("span", {className: "font-medium text-gray-800"}, setor.nome),
+                                            setor.total_usuarios && React.createElement("span", {className: "text-xs text-gray-500 ml-auto"}, 
+                                                setor.total_usuarios + " usuário(s)"
+                                            )
+                                        )
+                                    )
+                            )
                         )
                     ),
                     
@@ -14583,6 +14776,127 @@ const hideLoadingScreen = () => {
                             className: "w-full px-6 py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition-colors"
                         }, "➕ Criar Usuário")
                     ),
+                    
+                    // ===== SEÇÃO DE SETORES =====
+                    React.createElement("div", {className: "bg-white rounded-xl shadow-sm border p-6"},
+                        React.createElement("div", {className: "flex items-center justify-between mb-4"},
+                            React.createElement("h2", {className: "text-lg font-bold flex items-center gap-2"},
+                                React.createElement("span", null, "🏢"),
+                                "Setores (",
+                                setores.length,
+                                ")"
+                            ),
+                            React.createElement("button", {
+                                onClick: () => {
+                                    setSetorEdit(null);
+                                    setSetorForm({ nome: '', descricao: '', cor: '#6366f1' });
+                                    setShowSetorModal(true);
+                                },
+                                className: "px-4 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors text-sm"
+                            }, "➕ Novo Setor")
+                        ),
+                        setores.length === 0 
+                            ? React.createElement("p", {className: "text-gray-500 text-center py-4"}, 
+                                "Nenhum setor cadastrado. Crie setores para organizar os usuários."
+                            )
+                            : React.createElement("div", {className: "grid gap-3"},
+                                setores.map(setor => 
+                                    React.createElement("div", {
+                                        key: setor.id,
+                                        className: "border rounded-lg p-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                                    },
+                                        React.createElement("div", {className: "flex items-center gap-3"},
+                                            React.createElement("div", {
+                                                className: "w-4 h-10 rounded",
+                                                style: { backgroundColor: setor.cor || '#6366f1' }
+                                            }),
+                                            React.createElement("div", null,
+                                                React.createElement("p", {className: "font-semibold flex items-center gap-2"},
+                                                    setor.nome,
+                                                    !setor.ativo && React.createElement("span", {className: "text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded"}, "Inativo")
+                                                ),
+                                                React.createElement("p", {className: "text-sm text-gray-500"},
+                                                    setor.total_usuarios || 0, " usuário(s)",
+                                                    setor.descricao ? " • " + setor.descricao : ""
+                                                )
+                                            )
+                                        ),
+                                        React.createElement("div", {className: "flex gap-2"},
+                                            React.createElement("button", {
+                                                onClick: () => {
+                                                    setSetorEdit(setor);
+                                                    setSetorForm({ nome: setor.nome, descricao: setor.descricao || '', cor: setor.cor || '#6366f1' });
+                                                    setShowSetorModal(true);
+                                                },
+                                                className: "px-3 py-1.5 bg-blue-100 text-blue-700 rounded font-semibold hover:bg-blue-200 text-sm"
+                                            }, "✏️"),
+                                            React.createElement("button", {
+                                                onClick: () => excluirSetor(setor),
+                                                className: "px-3 py-1.5 bg-red-100 text-red-700 rounded font-semibold hover:bg-red-200 text-sm"
+                                            }, "🗑️")
+                                        )
+                                    )
+                                )
+                            )
+                    ),
+                    
+                    // Modal de Criar/Editar Setor
+                    showSetorModal && React.createElement("div", {
+                        className: "fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4",
+                        onClick: (e) => { if (e.target === e.currentTarget) setShowSetorModal(false); }
+                    },
+                        React.createElement("div", {className: "bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden"},
+                            React.createElement("div", {className: "bg-indigo-600 text-white p-4"},
+                                React.createElement("h3", {className: "text-lg font-bold"}, setorEdit ? "✏️ Editar Setor" : "🏢 Novo Setor")
+                            ),
+                            React.createElement("div", {className: "p-4 space-y-4"},
+                                React.createElement("div", null,
+                                    React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-1"}, "Nome *"),
+                                    React.createElement("input", {
+                                        type: "text",
+                                        value: setorForm.nome,
+                                        onChange: e => setSetorForm(prev => ({...prev, nome: e.target.value})),
+                                        placeholder: "Ex: Operacional, Financeiro, Logística...",
+                                        className: "w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
+                                    })
+                                ),
+                                React.createElement("div", null,
+                                    React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-1"}, "Descrição"),
+                                    React.createElement("input", {
+                                        type: "text",
+                                        value: setorForm.descricao,
+                                        onChange: e => setSetorForm(prev => ({...prev, descricao: e.target.value})),
+                                        placeholder: "Descrição opcional do setor",
+                                        className: "w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
+                                    })
+                                ),
+                                React.createElement("div", null,
+                                    React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-1"}, "Cor"),
+                                    React.createElement("div", {className: "flex items-center gap-2"},
+                                        React.createElement("input", {
+                                            type: "color",
+                                            value: setorForm.cor,
+                                            onChange: e => setSetorForm(prev => ({...prev, cor: e.target.value})),
+                                            className: "w-12 h-10 rounded cursor-pointer"
+                                        }),
+                                        React.createElement("span", {className: "text-sm text-gray-500"}, setorForm.cor)
+                                    )
+                                )
+                            ),
+                            React.createElement("div", {className: "p-4 bg-gray-50 flex gap-3"},
+                                React.createElement("button", {
+                                    onClick: () => setShowSetorModal(false),
+                                    className: "flex-1 px-4 py-2 border rounded-lg font-semibold hover:bg-gray-100"
+                                }, "Cancelar"),
+                                React.createElement("button", {
+                                    onClick: salvarSetor,
+                                    disabled: !setorForm.nome.trim(),
+                                    className: "flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 disabled:opacity-50"
+                                }, setorEdit ? "💾 Salvar" : "➕ Criar")
+                            )
+                        )
+                    ),
+                    
                     // Lista de usuários
                     React.createElement("div", {className: "bg-white rounded-xl shadow-sm border p-6"},
                         React.createElement("h2", {className: "text-lg font-bold mb-4 flex items-center gap-2"},
@@ -14595,60 +14909,86 @@ const hideLoadingScreen = () => {
                             A.map(function(user) {
                                 return React.createElement("div", {
                                     key: user.codProfissional,
-                                    className: "border rounded-lg p-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                                    className: "border rounded-lg p-4 hover:bg-gray-50 transition-colors"
                                 },
-                                    React.createElement("div", {className: "flex items-center gap-3"},
-                                        React.createElement("div", {
-                                            className: "w-10 h-10 rounded-full flex items-center justify-center text-white font-bold " +
-                                                (user.role === "admin_master" ? "bg-purple-600" :
-                                                 user.role === "admin" ? "bg-blue-600" :
-                                                 user.role === "admin_financeiro" ? "bg-green-600" : "bg-gray-500")
-                                        }, user.fullName ? user.fullName.charAt(0).toUpperCase() : "?"),
-                                        React.createElement("div", null,
-                                            React.createElement("p", {className: "font-semibold"}, user.fullName),
-                                            React.createElement("p", {className: "text-sm text-gray-500"},
-                                                "COD: ", user.codProfissional, " • ",
-                                                user.role === "admin_master" ? "👑 Master" :
-                                                user.role === "admin" ? "👑 Admin" :
-                                                user.role === "admin_financeiro" ? "💰 Financeiro" : "👤 Usuário"
+                                    React.createElement("div", {className: "flex items-center justify-between"},
+                                        React.createElement("div", {className: "flex items-center gap-3"},
+                                            React.createElement("div", {
+                                                className: "w-10 h-10 rounded-full flex items-center justify-center text-white font-bold " +
+                                                    (user.role === "admin_master" ? "bg-purple-600" :
+                                                     user.role === "admin" ? "bg-blue-600" :
+                                                     user.role === "admin_financeiro" ? "bg-green-600" : "bg-gray-500")
+                                            }, user.fullName ? user.fullName.charAt(0).toUpperCase() : "?"),
+                                            React.createElement("div", null,
+                                                React.createElement("p", {className: "font-semibold"}, user.fullName),
+                                                React.createElement("p", {className: "text-sm text-gray-500"},
+                                                    "COD: ", user.codProfissional, " • ",
+                                                    user.role === "admin_master" ? "👑 Master" :
+                                                    user.role === "admin" ? "👑 Admin" :
+                                                    user.role === "admin_financeiro" ? "💰 Financeiro" : "👤 Usuário"
+                                                )
                                             )
+                                        ),
+                                        React.createElement("div", {className: "flex gap-2"},
+                                            React.createElement("button", {
+                                                onClick: async function() {
+                                                    const newPass = prompt("Nova senha para " + user.fullName + ":");
+                                                    if (newPass && newPass.length >= 4) {
+                                                        try {
+                                                            await fetch(API_URL + "/users/reset-password", {
+                                                                method: "POST",
+                                                                headers: {"Content-Type": "application/json"},
+                                                                body: JSON.stringify({codProfissional: user.codProfissional, newPassword: newPass})
+                                                            });
+                                                            ja("✅ Senha alterada!", "success");
+                                                        } catch (err) {
+                                                            ja("❌ Erro ao alterar senha", "error");
+                                                        }
+                                                    } else if (newPass) {
+                                                        ja("Senha muito curta (mín. 4)", "error");
+                                                    }
+                                                },
+                                                className: "px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors"
+                                            }, "🔑 Senha"),
+                                            user.role !== "admin_master" && React.createElement("button", {
+                                                onClick: async function() {
+                                                    if (confirm("⚠️ Excluir " + user.fullName + "?\\n\\nEsta ação não pode ser desfeita!")) {
+                                                        try {
+                                                            await fetch(API_URL + "/users/" + user.codProfissional, {method: "DELETE"});
+                                                            ja("🗑️ Usuário excluído!", "success");
+                                                            Ia();
+                                                        } catch (err) {
+                                                            ja("❌ Erro ao excluir", "error");
+                                                        }
+                                                    }
+                                                },
+                                                className: "px-3 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 transition-colors"
+                                            }, "🗑️")
                                         )
                                     ),
-                                    React.createElement("div", {className: "flex gap-2"},
-                                        React.createElement("button", {
-                                            onClick: async function() {
-                                                const newPass = prompt("Nova senha para " + user.fullName + ":");
-                                                if (newPass && newPass.length >= 4) {
-                                                    try {
-                                                        await fetch(API_URL + "/users/reset-password", {
-                                                            method: "POST",
-                                                            headers: {"Content-Type": "application/json"},
-                                                            body: JSON.stringify({codProfissional: user.codProfissional, newPassword: newPass})
-                                                        });
-                                                        ja("✅ Senha alterada!", "success");
-                                                    } catch (err) {
-                                                        ja("❌ Erro ao alterar senha", "error");
-                                                    }
-                                                } else if (newPass) {
-                                                    ja("Senha muito curta (mín. 4)", "error");
-                                                }
+                                    // Linha do Setor
+                                    React.createElement("div", {className: "mt-3 pt-3 border-t flex items-center gap-2"},
+                                        React.createElement("span", {className: "text-sm text-gray-600"}, "🏢 Setor:"),
+                                        React.createElement("select", {
+                                            value: user.setor_id || '',
+                                            onChange: async (e) => {
+                                                const novoSetorId = e.target.value ? parseInt(e.target.value) : null;
+                                                await atualizarSetorUsuario(user.codProfissional || user.cod_profissional, novoSetorId);
                                             },
-                                            className: "px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors"
-                                        }, "🔑 Senha"),
-                                        user.role !== "admin_master" && React.createElement("button", {
-                                            onClick: async function() {
-                                                if (confirm("⚠️ Excluir " + user.fullName + "?\\n\\nEsta ação não pode ser desfeita!")) {
-                                                    try {
-                                                        await fetch(API_URL + "/users/" + user.codProfissional, {method: "DELETE"});
-                                                        ja("🗑️ Usuário excluído!", "success");
-                                                        Ia();
-                                                    } catch (err) {
-                                                        ja("❌ Erro ao excluir", "error");
-                                                    }
-                                                }
-                                            },
-                                            className: "px-3 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 transition-colors"
-                                        }, "🗑️")
+                                            className: "px-3 py-1.5 border rounded-lg text-sm bg-white focus:ring-2 focus:ring-indigo-500"
+                                        },
+                                            React.createElement("option", {value: ""}, "-- Sem setor --"),
+                                            setores.filter(s => s.ativo).map(setor =>
+                                                React.createElement("option", {
+                                                    key: setor.id,
+                                                    value: setor.id
+                                                }, setor.nome)
+                                            )
+                                        ),
+                                        user.setor_nome && React.createElement("span", {
+                                            className: "ml-2 px-2 py-0.5 rounded text-xs font-medium text-white",
+                                            style: { backgroundColor: user.setor_cor || '#6366f1' }
+                                        }, user.setor_nome)
                                     )
                                 );
                             })
