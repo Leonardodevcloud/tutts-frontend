@@ -1723,10 +1723,16 @@ const hideLoadingScreen = () => {
             setShowRelatorioModal(true);
         };
         
-        const salvarRelatorio = async () => {
+        const salvarRelatorio = async (event) => {
+            // Prevenir qualquer comportamento padrão
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            
             if (!relatorioForm.titulo.trim()) {
                 r({ message: 'Preencha o título do relatório', type: 'error' });
-                return;
+                return false;
             }
             s(true);
             try {
@@ -1750,25 +1756,29 @@ const hideLoadingScreen = () => {
                     imagem_base64: imagem_base64
                 };
                 
-                const url = relatorioEdit 
+                const urlApi = relatorioEdit 
                     ? `${API_URL}/relatorios-diarios/${relatorioEdit.id}`
                     : `${API_URL}/relatorios-diarios`;
                     
-                const res = await fetch(url, {
+                const response = await fetch(urlApi, {
                     method: relatorioEdit ? 'PUT' : 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
                 
-                if (!res.ok) throw new Error('Erro ao salvar');
+                if (!response.ok) throw new Error('Erro ao salvar');
                 
                 r({ message: relatorioEdit ? 'Relatório atualizado!' : 'Relatório criado!', type: 'success' });
                 setShowRelatorioModal(false);
-                carregarRelatoriosDiarios();
+                setRelatorioEdit(null);
+                setRelatorioForm({ titulo: '', conteudo: '', imagem: null });
+                await carregarRelatoriosDiarios();
             } catch (err) {
+                console.error('Erro ao salvar relatório:', err);
                 r({ message: 'Erro ao salvar relatório', type: 'error' });
             }
             s(false);
+            return false;
         };
         
         const excluirRelatorio = async (id) => {
@@ -13854,7 +13864,10 @@ const hideLoadingScreen = () => {
                     ),
                     
                     // Formulário
-                    React.createElement("div", {className: "p-4 space-y-4 overflow-y-auto flex-1"},
+                    React.createElement("div", {
+                        className: "p-4 space-y-4 overflow-y-auto flex-1",
+                        onKeyDown: (e) => { if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') e.preventDefault(); }
+                    },
                         // Título
                         React.createElement("div", null,
                             React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-1"}, "Título *"),
@@ -13942,12 +13955,12 @@ const hideLoadingScreen = () => {
                     React.createElement("div", {className: "p-4 bg-gray-50 border-t flex gap-3"},
                         React.createElement("button", {
                             type: "button",
-                            onClick: () => setShowRelatorioModal(false),
+                            onClick: (e) => { e.preventDefault(); e.stopPropagation(); setShowRelatorioModal(false); },
                             className: "flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-100"
                         }, "Cancelar"),
                         React.createElement("button", {
                             type: "button",
-                            onClick: (e) => { e.preventDefault(); e.stopPropagation(); salvarRelatorio(); },
+                            onClick: (e) => { e.preventDefault(); e.stopPropagation(); salvarRelatorio(e); return false; },
                             disabled: !relatorioForm.titulo.trim(),
                             className: "flex-1 px-6 py-3 bg-teal-600 text-white rounded-xl font-semibold hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
                         }, relatorioEdit ? "💾 Salvar Alterações" : "📝 Criar Relatório")
