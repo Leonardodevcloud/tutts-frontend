@@ -891,6 +891,7 @@ const hideLoadingScreen = () => {
         [acompFiltros, setAcompFiltros] = useState({os: false, entregas: false, noPrazo: false, foraPrazo: false, retornos: false, valorTotal: false, valorProf: false, faturamentoTotal: false, ticketMedio: false, tempoMedioEntrega: false, tempoMedioAlocacao: false, tempoMedioColeta: false, totalEntregadores: false, mediaEntProfissional: false, evolucaoSemanal: false}),
         [acompFiltrosOrdem, setAcompFiltrosOrdem] = useState([]),
         [acompClientes, setAcompClientes] = useState(null),
+        [comparativoSemanal, setComparativoSemanal] = useState(null),
         // Estados do Cliente 767
         [cliente767Dados, setCliente767Dados] = useState(null),
         [cliente767Loading, setCliente767Loading] = useState(false),
@@ -3200,6 +3201,14 @@ const hideLoadingScreen = () => {
                     console.log("📊 Dados clientes:", clientesData);
                     setAcompClientes(clientesData);
                 } catch(e) { console.log("Erro ao carregar clientes:", e); }
+                
+                // Carregar comparativo semanal
+                try {
+                    const semanalRes = await fetch(API_URL + "/bi/comparativo-semanal?" + params);
+                    const semanalData = await semanalRes.json();
+                    console.log("📅 Comparativo semanal:", semanalData);
+                    setComparativoSemanal(semanalData);
+                } catch(e) { console.log("Erro ao carregar comparativo semanal:", e); }
             } catch (e) {
                 console.error("Erro acompanhamento:", e);
             } finally {
