@@ -898,6 +898,13 @@ const hideLoadingScreen = () => {
         [cliente767Loading, setCliente767Loading] = useState(false),
         [cliente767ModalFiltro, setCliente767ModalFiltro] = useState(false),
         [cliente767Filtros, setCliente767Filtros] = useState({ data_inicio: '', data_fim: '', centros_custo: [] }),
+        // Estados do Relatório IA (Gemini)
+        [relatorioIATipo, setRelatorioIATipo] = useState('performance'),
+        [relatorioIALoading, setRelatorioIALoading] = useState(false),
+        [relatorioIAResultado, setRelatorioIAResultado] = useState(null),
+        [relatorioIAErro, setRelatorioIAErro] = useState(null),
+        [relatorioIAHistorico, setRelatorioIAHistorico] = useState([]),
+        [relatorioIAPromptCustom, setRelatorioIAPromptCustom] = useState(''),
         // Estados de paginação e OS dos profissionais
         [profPaginaAtual, setProfPaginaAtual] = useState(1),
         [profOsExpandido, setProfOsExpandido] = useState({}), // {cod_prof: [lista de OS]}
@@ -3260,6 +3267,57 @@ const hideLoadingScreen = () => {
                 console.error("Erro cliente 767:", e);
             } finally {
                 setCliente767Loading(false);
+            }
+        };
+        
+        // Função para gerar relatório com IA (Gemini)
+        const gerarRelatorioIA = async (tipo = 'performance') => {
+            try {
+                setRelatorioIALoading(true);
+                setRelatorioIAErro(null);
+                setRelatorioIAResultado(null);
+                
+                console.log("🤖 Gerando relatório IA tipo:", tipo);
+                
+                // Preparar parâmetros com filtros atuais
+                const params = new URLSearchParams();
+                params.append("tipo", tipo);
+                if (ua.data_inicio) params.append("data_inicio", ua.data_inicio);
+                if (ua.data_fim) params.append("data_fim", ua.data_fim);
+                if (ua.cod_cliente && ua.cod_cliente.length > 0) {
+                    ua.cod_cliente.forEach(c => params.append("cod_cliente", c));
+                }
+                if (ua.centro_custo && ua.centro_custo.length > 0) {
+                    ua.centro_custo.forEach(c => params.append("centro_custo", c));
+                }
+                if (relatorioIAPromptCustom) {
+                    params.append("prompt_custom", relatorioIAPromptCustom);
+                }
+                
+                const response = await fetch(`${API_URL}/bi/relatorio-ia?${params}`);
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                
+                setRelatorioIAResultado(data);
+                
+                // Adicionar ao histórico
+                setRelatorioIAHistorico(prev => [{
+                    id: Date.now(),
+                    tipo,
+                    data: new Date().toLocaleString("pt-BR"),
+                    filtros: { data_inicio: ua.data_inicio, data_fim: ua.data_fim },
+                    resumo: data.relatorio?.substring(0, 200) + "..."
+                }, ...prev].slice(0, 10)); // Manter últimos 10
+                
+                console.log("✅ Relatório IA gerado com sucesso");
+            } catch (e) {
+                console.error("❌ Erro ao gerar relatório IA:", e);
+                setRelatorioIAErro(e.message || "Erro ao gerar relatório");
+            } finally {
+                setRelatorioIALoading(false);
             }
         };
         
@@ -15970,6 +16028,11 @@ const hideLoadingScreen = () => {
                 className: "px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-all " + ("cliente767" === Et ? "border-orange-600 text-orange-600 bg-orange-50" : "border-transparent text-gray-600 hover:text-gray-800")
             }, "🏢 Cliente 767"), React.createElement("button", {
                 onClick: () => {
+                    ht("relatorio-ia")
+                },
+                className: "px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-all " + ("relatorio-ia" === Et ? "border-emerald-600 text-emerald-600 bg-emerald-50" : "border-transparent text-gray-600 hover:text-gray-800")
+            }, "🤖 Relatório IA"), React.createElement("button", {
+                onClick: () => {
                     ht("config"), tl(), al(), carregarPrazosProf()
                 },
                 className: "px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-all " + ("config" === Et ? "border-purple-600 text-purple-600 bg-purple-50" : "border-transparent text-gray-600 hover:text-gray-800")
@@ -18548,7 +18611,210 @@ const hideLoadingScreen = () => {
                 onClick: xl,
                 disabled: ba,
                 className: "px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50"
-            }, ba ? "⏳ Recalculando..." : "🔄 Recalcular")))), "config" === Et && React.createElement("div", {
+            }, ba ? "⏳ Recalculando..." : "🔄 Recalcular")))), 
+            
+            // ========== ABA RELATÓRIO IA ==========
+            "relatorio-ia" === Et && React.createElement("div", {className: "space-y-6"},
+                // Header
+                React.createElement("div", {className: "bg-gradient-to-r from-emerald-600 to-teal-600 rounded-xl p-6 text-white"},
+                    React.createElement("div", {className: "flex items-center gap-4"},
+                        React.createElement("div", {className: "text-5xl"}, "🤖"),
+                        React.createElement("div", null,
+                            React.createElement("h2", {className: "text-2xl font-bold"}, "Relatório Inteligente com IA"),
+                            React.createElement("p", {className: "text-emerald-100 mt-1"}, "Análises automáticas dos seus dados usando Inteligência Artificial")
+                        )
+                    )
+                ),
+                
+                // Filtros ativos
+                React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-4"},
+                    React.createElement("div", {className: "flex items-center gap-2 text-sm text-gray-600"},
+                        React.createElement("span", {className: "font-semibold"}, "📅 Período:"),
+                        React.createElement("span", {className: "bg-emerald-100 text-emerald-800 px-2 py-1 rounded"}, 
+                            ua.data_inicio ? new Date(ua.data_inicio + "T12:00:00").toLocaleDateString("pt-BR") : "Início"
+                        ),
+                        React.createElement("span", null, "até"),
+                        React.createElement("span", {className: "bg-emerald-100 text-emerald-800 px-2 py-1 rounded"}, 
+                            ua.data_fim ? new Date(ua.data_fim + "T12:00:00").toLocaleDateString("pt-BR") : "Fim"
+                        ),
+                        ua.cod_cliente && ua.cod_cliente.length > 0 && React.createElement("span", {className: "ml-4 bg-purple-100 text-purple-800 px-2 py-1 rounded"},
+                            "🏢 " + ua.cod_cliente.length + " cliente(s)"
+                        )
+                    ),
+                    React.createElement("p", {className: "text-xs text-gray-400 mt-2"}, "Use os filtros do dashboard para ajustar o período e clientes analisados")
+                ),
+                
+                // Tipos de relatório
+                React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-6"},
+                    React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-4"}, "📊 Escolha o Tipo de Análise"),
+                    React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-3 gap-4"},
+                        // Performance
+                        React.createElement("button", {
+                            onClick: () => setRelatorioIATipo("performance"),
+                            className: "p-4 rounded-xl border-2 text-left transition-all " + (relatorioIATipo === "performance" ? "border-emerald-500 bg-emerald-50" : "border-gray-200 hover:border-emerald-300")
+                        },
+                            React.createElement("div", {className: "text-3xl mb-2"}, "📈"),
+                            React.createElement("div", {className: "font-semibold text-gray-800"}, "Performance"),
+                            React.createElement("div", {className: "text-xs text-gray-500"}, "Análise geral de desempenho")
+                        ),
+                        // Tendências
+                        React.createElement("button", {
+                            onClick: () => setRelatorioIATipo("tendencias"),
+                            className: "p-4 rounded-xl border-2 text-left transition-all " + (relatorioIATipo === "tendencias" ? "border-emerald-500 bg-emerald-50" : "border-gray-200 hover:border-emerald-300")
+                        },
+                            React.createElement("div", {className: "text-3xl mb-2"}, "📉"),
+                            React.createElement("div", {className: "font-semibold text-gray-800"}, "Tendências"),
+                            React.createElement("div", {className: "text-xs text-gray-500"}, "Padrões e comportamentos")
+                        ),
+                        // Alertas
+                        React.createElement("button", {
+                            onClick: () => setRelatorioIATipo("alertas"),
+                            className: "p-4 rounded-xl border-2 text-left transition-all " + (relatorioIATipo === "alertas" ? "border-emerald-500 bg-emerald-50" : "border-gray-200 hover:border-emerald-300")
+                        },
+                            React.createElement("div", {className: "text-3xl mb-2"}, "⚠️"),
+                            React.createElement("div", {className: "font-semibold text-gray-800"}, "Alertas"),
+                            React.createElement("div", {className: "text-xs text-gray-500"}, "Anomalias e problemas")
+                        ),
+                        // Financeiro
+                        React.createElement("button", {
+                            onClick: () => setRelatorioIATipo("financeiro"),
+                            className: "p-4 rounded-xl border-2 text-left transition-all " + (relatorioIATipo === "financeiro" ? "border-emerald-500 bg-emerald-50" : "border-gray-200 hover:border-emerald-300")
+                        },
+                            React.createElement("div", {className: "text-3xl mb-2"}, "💰"),
+                            React.createElement("div", {className: "font-semibold text-gray-800"}, "Financeiro"),
+                            React.createElement("div", {className: "text-xs text-gray-500"}, "Valores e custos")
+                        ),
+                        // Comparativo
+                        React.createElement("button", {
+                            onClick: () => setRelatorioIATipo("comparativo"),
+                            className: "p-4 rounded-xl border-2 text-left transition-all " + (relatorioIATipo === "comparativo" ? "border-emerald-500 bg-emerald-50" : "border-gray-200 hover:border-emerald-300")
+                        },
+                            React.createElement("div", {className: "text-3xl mb-2"}, "🏆"),
+                            React.createElement("div", {className: "font-semibold text-gray-800"}, "Comparativo"),
+                            React.createElement("div", {className: "text-xs text-gray-500"}, "Rankings e comparações")
+                        ),
+                        // Personalizado
+                        React.createElement("button", {
+                            onClick: () => setRelatorioIATipo("personalizado"),
+                            className: "p-4 rounded-xl border-2 text-left transition-all " + (relatorioIATipo === "personalizado" ? "border-emerald-500 bg-emerald-50" : "border-gray-200 hover:border-emerald-300")
+                        },
+                            React.createElement("div", {className: "text-3xl mb-2"}, "✨"),
+                            React.createElement("div", {className: "font-semibold text-gray-800"}, "Personalizado"),
+                            React.createElement("div", {className: "text-xs text-gray-500"}, "Sua própria pergunta")
+                        )
+                    ),
+                    
+                    // Campo de prompt personalizado
+                    relatorioIATipo === "personalizado" && React.createElement("div", {className: "mt-4"},
+                        React.createElement("label", {className: "block text-sm font-medium text-gray-700 mb-2"}, "💬 O que você quer saber?"),
+                        React.createElement("textarea", {
+                            value: relatorioIAPromptCustom,
+                            onChange: (e) => setRelatorioIAPromptCustom(e.target.value),
+                            placeholder: "Ex: Quais profissionais estão com desempenho abaixo da média? Existe algum padrão nos atrasos de segunda-feira?",
+                            className: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500",
+                            rows: 3
+                        })
+                    ),
+                    
+                    // Botão gerar
+                    React.createElement("button", {
+                        onClick: () => gerarRelatorioIA(relatorioIATipo),
+                        disabled: relatorioIALoading || (relatorioIATipo === "personalizado" && !relatorioIAPromptCustom.trim()),
+                        className: "mt-6 w-full py-4 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-bold text-lg hover:from-emerald-700 hover:to-teal-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 transition-all"
+                    },
+                        relatorioIALoading ? React.createElement("span", {className: "flex items-center gap-2"},
+                            React.createElement("span", {className: "animate-spin"}, "⏳"),
+                            "Analisando dados..."
+                        ) : React.createElement("span", {className: "flex items-center gap-2"},
+                            React.createElement("span", null, "🚀"),
+                            "Gerar Relatório com IA"
+                        )
+                    )
+                ),
+                
+                // Erro
+                relatorioIAErro && React.createElement("div", {className: "bg-red-50 border border-red-200 rounded-xl p-4 text-red-800"},
+                    React.createElement("div", {className: "flex items-center gap-2"},
+                        React.createElement("span", {className: "text-xl"}, "❌"),
+                        React.createElement("span", {className: "font-semibold"}, "Erro ao gerar relatório"),
+                    ),
+                    React.createElement("p", {className: "mt-2 text-sm"}, relatorioIAErro)
+                ),
+                
+                // Resultado
+                relatorioIAResultado && React.createElement("div", {className: "bg-white rounded-xl shadow-lg overflow-hidden"},
+                    React.createElement("div", {className: "bg-gradient-to-r from-emerald-600 to-teal-600 px-6 py-4 text-white"},
+                        React.createElement("div", {className: "flex items-center justify-between"},
+                            React.createElement("div", {className: "flex items-center gap-3"},
+                                React.createElement("span", {className: "text-2xl"}, "📋"),
+                                React.createElement("div", null,
+                                    React.createElement("h3", {className: "font-bold"}, "Relatório Gerado"),
+                                    React.createElement("p", {className: "text-sm text-emerald-100"}, 
+                                        relatorioIAResultado.tipo_analise + " • " + new Date().toLocaleString("pt-BR")
+                                    )
+                                )
+                            ),
+                            React.createElement("button", {
+                                onClick: () => {
+                                    navigator.clipboard.writeText(relatorioIAResultado.relatorio);
+                                    alert("Relatório copiado!");
+                                },
+                                className: "px-3 py-1 bg-white/20 rounded-lg text-sm hover:bg-white/30"
+                            }, "📋 Copiar")
+                        )
+                    ),
+                    React.createElement("div", {className: "p-6"},
+                        // Métricas resumidas
+                        relatorioIAResultado.metricas && React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-4 gap-4 mb-6"},
+                            React.createElement("div", {className: "bg-blue-50 rounded-lg p-3 text-center"},
+                                React.createElement("div", {className: "text-2xl font-bold text-blue-600"}, relatorioIAResultado.metricas.total_entregas?.toLocaleString() || "0"),
+                                React.createElement("div", {className: "text-xs text-blue-800"}, "Entregas")
+                            ),
+                            React.createElement("div", {className: "bg-green-50 rounded-lg p-3 text-center"},
+                                React.createElement("div", {className: "text-2xl font-bold text-green-600"}, (relatorioIAResultado.metricas.taxa_prazo || 0).toFixed(1) + "%"),
+                                React.createElement("div", {className: "text-xs text-green-800"}, "No Prazo")
+                            ),
+                            React.createElement("div", {className: "bg-purple-50 rounded-lg p-3 text-center"},
+                                React.createElement("div", {className: "text-2xl font-bold text-purple-600"}, "R$ " + (relatorioIAResultado.metricas.valor_total || 0).toLocaleString("pt-BR", {minimumFractionDigits: 0})),
+                                React.createElement("div", {className: "text-xs text-purple-800"}, "Valor Total")
+                            ),
+                            React.createElement("div", {className: "bg-orange-50 rounded-lg p-3 text-center"},
+                                React.createElement("div", {className: "text-2xl font-bold text-orange-600"}, relatorioIAResultado.metricas.total_profissionais || "0"),
+                                React.createElement("div", {className: "text-xs text-orange-800"}, "Profissionais")
+                            )
+                        ),
+                        // Relatório em texto
+                        React.createElement("div", {className: "prose prose-sm max-w-none"},
+                            React.createElement("div", {
+                                className: "whitespace-pre-wrap text-gray-700 leading-relaxed",
+                                dangerouslySetInnerHTML: { __html: (relatorioIAResultado.relatorio || "").replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br/>') }
+                            })
+                        )
+                    )
+                ),
+                
+                // Histórico
+                relatorioIAHistorico.length > 0 && React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-6"},
+                    React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-4 flex items-center gap-2"},
+                        React.createElement("span", null, "📜"),
+                        "Histórico de Relatórios"
+                    ),
+                    React.createElement("div", {className: "space-y-2"},
+                        relatorioIAHistorico.map(function(item) {
+                            return React.createElement("div", {key: item.id, className: "flex items-center justify-between p-3 bg-gray-50 rounded-lg"},
+                                React.createElement("div", null,
+                                    React.createElement("span", {className: "font-medium text-gray-800"}, item.tipo),
+                                    React.createElement("span", {className: "text-gray-400 mx-2"}, "•"),
+                                    React.createElement("span", {className: "text-sm text-gray-500"}, item.data)
+                                ),
+                                React.createElement("span", {className: "text-xs text-gray-400 max-w-xs truncate"}, item.resumo)
+                            );
+                        })
+                    )
+                )
+            ),
+            
+            "config" === Et && React.createElement("div", {
                 className: "space-y-4"
             }, 
             // ========== SEÇÃO 1: REGIÕES (Dropdown) ==========
