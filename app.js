@@ -3524,13 +3524,28 @@ const hideLoadingScreen = () => {
                             if (!d) return "";
                             return new Date(d).toISOString().split("T")[0]
                         };
+                    
+                    // OTIMIZAÇÃO: Período padrão = dia 1 do mês atual até hoje
+                    const hoje = new Date();
+                    const primeiroDiaMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+                    
+                    // Verificar se temos dados no mês atual
+                    const dataMinDisponivel = new Date(l[l.length - 1].data);
+                    const dataMaxDisponivel = new Date(l[0].data);
+                    
+                    // Se o primeiro dia do mês é anterior aos dados disponíveis, usar data mínima disponível
+                    const dataInicio = primeiroDiaMes < dataMinDisponivel ? dataMinDisponivel : primeiroDiaMes;
+                    // Se hoje é posterior aos dados disponíveis, usar data máxima disponível
+                    const dataFim = hoje > dataMaxDisponivel ? dataMaxDisponivel : hoje;
+                    
                     novosFiltros = {
                         ...ua,
-                        data_inicio: formatDate(l[l.length - 1].data),
-                        data_fim: formatDate(l[0].data),
+                        data_inicio: formatDate(dataInicio),
+                        data_fim: formatDate(dataFim),
                         cod_cliente: [],
                         centro_custo: []
                     };
+                    console.log("📊 Período padrão: dia 1 do mês até hoje");
                     console.log("📊 Datas formatadas:", novosFiltros.data_inicio, "até", novosFiltros.data_fim);
                     ga(novosFiltros);
                 } else {
