@@ -871,6 +871,7 @@ const hideLoadingScreen = () => {
             prazo_minutos: 60
         }]),
         [prazosProfissionais, setPrazosProfissionais] = useState([]),
+        [prazoProfConfigOS, setPrazoProfConfigOS] = useState([]), // Configurações de prazo prof para aba OS
         [wa, _a] = useState(!1), [todoGrupos, setTodoGrupos] = useState([]), [todoTarefas, setTodoTarefas] = useState([]), [todoGrupoAtivo, setTodoGrupoAtivo] = useState(null), [todoMetricas, setTodoMetricas] = useState(null), [todoTab, setTodoTab] = useState("tarefas"), [todoFiltroStatus, setTodoFiltroStatus] = useState("todas"), [todoModal, setTodoModal] = useState(null), [todoLoading, setTodoLoading] = useState(false), [todoAdmins, setTodoAdmins] = useState([]),
         // Novos estados para TODO melhorado
         [todoMeuDia, setTodoMeuDia] = useState([]),
@@ -15901,7 +15902,14 @@ const hideLoadingScreen = () => {
                             const e = Xa(),
                                 t = await fetch(`${API_URL}/bi/entregas-lista?${e}`),
                                 data = await t.json();
-                            Ut(Array.isArray(data) ? data : [])
+                            // Nova estrutura: { entregas: [], prazoProfConfig: [] }
+                            if (data.entregas) {
+                                Ut(data.entregas);
+                                setPrazoProfConfigOS(data.prazoProfConfig || []);
+                            } else {
+                                // Compatibilidade: se ainda retornar array direto
+                                Ut(Array.isArray(data) ? data : []);
+                            }
                         } catch (e) {
                             console.error("Erro ao carregar entregas:", e)
                         }
@@ -17612,11 +17620,23 @@ const hideLoadingScreen = () => {
                     // Prazo em minutos (vem do banco) - para prazo normal
                     var prazoMinutos = primeiroReg.prazo_minutos || 60;
                     
-                    // Prazo Prof: calcular baseado na DISTÂNCIA da linha
-                    // Usar as faixas de prazo profissional configuradas
+                    // Prazo Prof: calcular baseado na DISTÂNCIA usando configurações do banco
                     var calcularPrazoProfPorKm = function(distancia) {
                         var dist = parseFloat(distancia) || 0;
-                        // Faixas padrão de prazo profissional (baseado na configuração)
+                        
+                        // Usar configurações do banco se disponíveis
+                        if (prazoProfConfigOS && prazoProfConfigOS.length > 0) {
+                            for (var i = 0; i < prazoProfConfigOS.length; i++) {
+                                var faixa = prazoProfConfigOS[i];
+                                var kmMin = parseFloat(faixa.km_min) || 0;
+                                var kmMax = faixa.km_max ? parseFloat(faixa.km_max) : Infinity;
+                                if (dist >= kmMin && dist < kmMax) {
+                                    return parseInt(faixa.prazo_minutos);
+                                }
+                            }
+                        }
+                        
+                        // Fallback: faixas padrão hardcoded
                         if (dist <= 10) return 60;
                         if (dist <= 15) return 75;
                         if (dist <= 20) return 90;
