@@ -17210,7 +17210,7 @@ const hideLoadingScreen = () => {
       )
     )
   );
-})(), !acompLoading && comparativoSemanalClientes && comparativoSemanalClientes.clientes && comparativoSemanalClientes.clientes.length > 0 && // Comparativo Semanal por Cliente - Design Clean
+})(), !acompLoading && comparativoSemanalClientes && comparativoSemanalClientes.clientes && comparativoSemanalClientes.clientes.length > 0 && // Comparativo Semanal por Cliente - Design Clean com Semanas
 (function() {
   var clientes = comparativoSemanalClientes.clientes;
   if (!clientes || clientes.length === 0) return null;
@@ -17225,107 +17225,112 @@ const hideLoadingScreen = () => {
   
   // Definir colunas baseadas nos subfiltros
   var colunas = [];
+  colunas.push({id: "periodo", label: "Semana", field: "periodo"});
   
-  if (acompFiltros.os) colunas.push({id: "os", label: "OS", field: "total_os", color: "blue"});
-  if (acompFiltros.entregas) colunas.push({id: "entregas", label: "Entregas", field: "total_entregas", color: "sky"});
-  if (acompFiltros.noPrazo) colunas.push({id: "prazo", label: "Taxa Prazo", field: "taxa_prazo", color: "green", isPercent: true});
-  if (acompFiltros.foraPrazo) colunas.push({id: "fora", label: "Fora Prazo", field: "fora_prazo", color: "red", invertVar: true});
-  if (acompFiltros.retornos) colunas.push({id: "retornos", label: "Retornos", field: "retornos", color: "orange", invertVar: true});
-  if (acompFiltros.valorTotal) colunas.push({id: "valorTotal", label: "Valor Total", field: "valor_total", color: "purple", isMoney: true});
-  if (acompFiltros.valorProf) colunas.push({id: "valorProf", label: "Valor Prof", field: "valor_prof", color: "amber", isMoney: true});
-  if (acompFiltros.ticketMedio) colunas.push({id: "ticket", label: "Ticket", field: "ticket_medio", color: "cyan", isMoney: true});
-  if (acompFiltros.tempoMedioEntrega) colunas.push({id: "tEntrega", label: "T.Entrega", field: "tempo_medio_entrega", color: "rose", isTime: true, invertVar: true});
-  if (acompFiltros.tempoMedioAlocacao) colunas.push({id: "tAlocacao", label: "T.Alocação", field: "tempo_medio_alocacao", color: "pink", isTime: true, invertVar: true});
-  if (acompFiltros.tempoMedioColeta) colunas.push({id: "tColeta", label: "T.Coleta", field: "tempo_medio_coleta", color: "fuchsia", isTime: true, invertVar: true});
-  if (acompFiltros.totalEntregadores) colunas.push({id: "entregadores", label: "Entregadores", field: "total_entregadores", color: "teal"});
-  if (acompFiltros.mediaEntProfissional) colunas.push({id: "mediaEnt", label: "Méd/Prof", field: "media_ent_profissional", color: "emerald", isFloat: true});
+  if (acompFiltros.os) colunas.push({id: "os", label: "OS", field: "total_os"});
+  if (acompFiltros.entregas) colunas.push({id: "entregas", label: "Entregas", field: "total_entregas", showVar: true});
+  if (acompFiltros.noPrazo) colunas.push({id: "prazo", label: "Prazo", field: "taxa_prazo", isPercent: true, showVar: true});
+  if (acompFiltros.foraPrazo) colunas.push({id: "fora", label: "Fora", field: "fora_prazo", showVar: true, invertVar: true});
+  if (acompFiltros.retornos) colunas.push({id: "retornos", label: "Ret.", field: "retornos", showVar: true, invertVar: true});
+  if (acompFiltros.valorTotal) colunas.push({id: "valorTotal", label: "Valor", field: "valor_total", isMoney: true, showVar: true});
+  if (acompFiltros.valorProf) colunas.push({id: "valorProf", label: "V.Prof", field: "valor_prof", isMoney: true, showVar: true});
+  if (acompFiltros.ticketMedio) colunas.push({id: "ticket", label: "Ticket", field: "ticket_medio", isMoney: true});
+  if (acompFiltros.tempoMedioEntrega) colunas.push({id: "tEntrega", label: "T.Ent", field: "tempo_medio_entrega", isTime: true, showVar: true, invertVar: true});
+  if (acompFiltros.tempoMedioAlocacao) colunas.push({id: "tAlocacao", label: "T.Aloc", field: "tempo_medio_alocacao", isTime: true, showVar: true, invertVar: true});
+  if (acompFiltros.tempoMedioColeta) colunas.push({id: "tColeta", label: "T.Col", field: "tempo_medio_coleta", isTime: true, showVar: true, invertVar: true});
+  if (acompFiltros.totalEntregadores) colunas.push({id: "entregadores", label: "Prof.", field: "total_entregadores"});
+  if (acompFiltros.mediaEntProfissional) colunas.push({id: "mediaEnt", label: "Méd/P", field: "media_ent_profissional", isFloat: true});
   
-  var temFiltros = colunas.length > 0;
+  var temFiltros = colunas.length > 1;
   
   // Função para renderizar valor
   var renderVal = function(col, val) {
     if (col.isTime) return fmtTempo(val);
     if (col.isMoney) return "R$ " + parseFloat(val || 0).toLocaleString("pt-BR", {minimumFractionDigits: 0});
-    if (col.isPercent) return (val || 0).toFixed(1) + "%";
+    if (col.isPercent) return (parseFloat(val) || 0).toFixed(1) + "%";
     if (col.isFloat) return parseFloat(val || 0).toFixed(1);
     return val || 0;
   };
   
   // Calcular variação
-  var calcVar = function(col, atual, anterior) {
-    if (!anterior) return null;
+  var getVar = function(col, atual, anterior) {
+    if (!col.showVar || !anterior) return null;
     var valAtual = parseFloat(atual[col.field]) || 0;
     var valAnterior = parseFloat(anterior[col.field]) || 0;
     if (valAnterior === 0) return null;
     var pct = ((valAtual - valAnterior) / valAnterior * 100).toFixed(1);
     var isPositive = parseFloat(pct) >= 0;
     var isGood = col.invertVar ? !isPositive : isPositive;
-    return {pct: pct, isPositive: isPositive, isGood: isGood};
+    return {pct: Math.abs(parseFloat(pct)), isPositive: isPositive, isGood: isGood};
   };
   
   return React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-6 mt-4"},
     React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-4"}, 
-      "🏢 Comparativo Semanal por Cliente (", clientes.length, " cliente", clientes.length > 1 ? "s" : "", ")"
+      "🏢 Comparativo por Cliente"
     ),
     
     // Mensagem se nenhum filtro
     !temFiltros && React.createElement("div", {className: "text-center text-gray-400 py-8"},
-      React.createElement("span", {className: "text-3xl block mb-2"}, "📊"),
-      React.createElement("p", null, "Selecione métricas acima para ver a comparação")
+      React.createElement("p", {className: "text-sm"}, "Selecione métricas acima para ver os dados")
     ),
     
-    // Lista de clientes
-    temFiltros && React.createElement("div", {className: "space-y-3"},
+    // Lista de clientes com tabelas
+    temFiltros && React.createElement("div", {className: "space-y-4"},
       clientes.map(function(cli, cliIdx) {
-        var semanaAtual = cli.semanas[0];
-        var semanaAnterior = cli.semanas[1];
-        
-        return React.createElement("div", {
-          key: cliIdx, 
-          className: "border rounded-lg overflow-hidden hover:shadow-md transition-shadow " + 
-            (cliIdx === 0 ? "border-blue-200 bg-blue-50/30" : "border-gray-100")
-        },
-          // Header compacto
-          React.createElement("div", {className: "px-4 py-3 flex items-center justify-between"},
-            React.createElement("div", {className: "flex items-center gap-3"},
-              React.createElement("span", {className: "font-semibold text-gray-800"}, cli.nome_fantasia),
-              React.createElement("span", {className: "text-xs text-gray-400"}, cli.semanas.length, " sem")
+        return React.createElement("div", {key: cliIdx, className: "border border-gray-100 rounded-lg overflow-hidden"},
+          // Header do cliente
+          React.createElement("div", {className: "bg-gray-50 px-4 py-2 flex justify-between items-center border-b border-gray-100"},
+            React.createElement("span", {className: "font-semibold text-gray-700 text-sm"}, cli.nome_fantasia),
+            React.createElement("div", {className: "flex gap-3 text-xs text-gray-500"},
+              React.createElement("span", null, cli.semanas.length, " sem"),
+              React.createElement("span", null, "📦 ", cli.resumo.total_entregas),
+              React.createElement("span", {className: cli.resumo.media_taxa_prazo >= 80 ? "text-green-600" : cli.resumo.media_taxa_prazo >= 60 ? "text-yellow-600" : "text-red-600"}, 
+                "✓ ", cli.resumo.media_taxa_prazo, "%"
+              )
+            )
+          ),
+          // Tabela compacta
+          React.createElement("table", {className: "w-full text-xs"},
+            React.createElement("thead", null,
+              React.createElement("tr", {className: "bg-gray-50/50"},
+                colunas.map(function(col) {
+                  return React.createElement("th", {
+                    key: col.id, 
+                    className: "px-2 py-1.5 text-gray-500 font-medium " + (col.id === "periodo" ? "text-left" : "text-center")
+                  }, col.label);
+                })
+              )
             ),
-            // Métricas inline
-            React.createElement("div", {className: "flex items-center gap-4"},
-              colunas.slice(0, 5).map(function(col) {
-                var val = semanaAtual ? semanaAtual[col.field] : 0;
-                var varInfo = calcVar(col, semanaAtual, semanaAnterior);
+            React.createElement("tbody", null,
+              cli.semanas.map(function(sem, semIdx) {
+                var semAnterior = cli.semanas[semIdx + 1];
+                var isFirst = semIdx === 0;
                 
-                return React.createElement("div", {key: col.id, className: "text-center"},
-                  React.createElement("div", {className: "text-xs text-gray-400 mb-0.5"}, col.label),
-                  React.createElement("div", {className: "flex items-center gap-1"},
-                    React.createElement("span", {className: "font-bold text-sm text-gray-700"}, renderVal(col, val)),
-                    varInfo && React.createElement("span", {
-                      className: "text-xs font-medium " + (varInfo.isGood ? "text-green-500" : "text-red-500")
-                    }, varInfo.isPositive ? "↑" : "↓")
-                  )
+                return React.createElement("tr", {
+                  key: semIdx, 
+                  className: isFirst ? "bg-blue-50/50" : (semIdx % 2 === 0 ? "bg-white" : "bg-gray-50/30")
+                },
+                  colunas.map(function(col) {
+                    if (col.id === "periodo") {
+                      return React.createElement("td", {key: col.id, className: "px-2 py-1.5 text-gray-600"},
+                        isFirst && React.createElement("span", {className: "text-blue-500 mr-1"}, "●"),
+                        sem.periodo
+                      );
+                    }
+                    
+                    var val = sem[col.field];
+                    var varInfo = getVar(col, sem, semAnterior);
+                    
+                    return React.createElement("td", {key: col.id, className: "px-2 py-1.5 text-center"},
+                      React.createElement("span", {className: "font-medium text-gray-700"}, renderVal(col, val)),
+                      varInfo && React.createElement("span", {
+                        className: "ml-1 text-[10px] " + (varInfo.isGood ? "text-green-500" : "text-red-500")
+                      }, varInfo.isPositive ? "↑" : "↓", varInfo.pct, "%")
+                    );
+                  })
                 );
               })
             )
-          ),
-          
-          // Expandir com mais detalhes se houver mais de 5 colunas
-          colunas.length > 5 && React.createElement("div", {className: "px-4 pb-3 pt-0 flex flex-wrap gap-4 border-t border-gray-100"},
-            colunas.slice(5).map(function(col) {
-              var val = semanaAtual ? semanaAtual[col.field] : 0;
-              var varInfo = calcVar(col, semanaAtual, semanaAnterior);
-              
-              return React.createElement("div", {key: col.id, className: "text-center py-2"},
-                React.createElement("div", {className: "text-xs text-gray-400 mb-0.5"}, col.label),
-                React.createElement("div", {className: "flex items-center gap-1"},
-                  React.createElement("span", {className: "font-bold text-sm text-gray-700"}, renderVal(col, val)),
-                  varInfo && React.createElement("span", {
-                    className: "text-xs font-medium " + (varInfo.isGood ? "text-green-500" : "text-red-500")
-                  }, varInfo.isPositive ? "↑" : "↓")
-                )
-              );
-            })
           )
         );
       })
