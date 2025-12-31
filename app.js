@@ -858,7 +858,20 @@ const hideLoadingScreen = () => {
             km_min: 0,
             km_max: 15,
             prazo_minutos: 45
-        }]), [wa, _a] = useState(!1), [todoGrupos, setTodoGrupos] = useState([]), [todoTarefas, setTodoTarefas] = useState([]), [todoGrupoAtivo, setTodoGrupoAtivo] = useState(null), [todoMetricas, setTodoMetricas] = useState(null), [todoTab, setTodoTab] = useState("tarefas"), [todoFiltroStatus, setTodoFiltroStatus] = useState("todas"), [todoModal, setTodoModal] = useState(null), [todoLoading, setTodoLoading] = useState(false), [todoAdmins, setTodoAdmins] = useState([]),
+        }]), 
+        // Estados para Prazo Profissional
+        [prazoProfPadrao, setPrazoProfPadrao] = useState([{
+            km_min: 0,
+            km_max: 15,
+            prazo_minutos: 60
+        }]),
+        [prazoProfNovo, setPrazoProfNovo] = useState([{
+            km_min: 0,
+            km_max: 15,
+            prazo_minutos: 60
+        }]),
+        [prazosProfissionais, setPrazosProfissionais] = useState([]),
+        [wa, _a] = useState(!1), [todoGrupos, setTodoGrupos] = useState([]), [todoTarefas, setTodoTarefas] = useState([]), [todoGrupoAtivo, setTodoGrupoAtivo] = useState(null), [todoMetricas, setTodoMetricas] = useState(null), [todoTab, setTodoTab] = useState("tarefas"), [todoFiltroStatus, setTodoFiltroStatus] = useState("todas"), [todoModal, setTodoModal] = useState(null), [todoLoading, setTodoLoading] = useState(false), [todoAdmins, setTodoAdmins] = useState([]),
         // Novos estados para TODO melhorado
         [todoMeuDia, setTodoMeuDia] = useState([]),
         [todoViewMode, setTodoViewMode] = useState("meudia"), // "meudia" ou "grupo"
@@ -3436,6 +3449,25 @@ const hideLoadingScreen = () => {
                 t && t.length > 0 && (_t(t), Na(t))
             } catch (e) {
                 console.error("Erro ao carregar prazo padrão:", e)
+            }
+        }, 
+        // Função para carregar prazos profissionais
+        carregarPrazosProf = async () => {
+            try {
+                // Carregar prazo padrão profissional
+                const respPadrao = await fetch(`${API_URL}/bi/prazo-prof-padrao`);
+                const dataPadrao = await respPadrao.json();
+                if (dataPadrao && dataPadrao.length > 0) {
+                    setPrazoProfPadrao(dataPadrao);
+                }
+                // Carregar lista de prazos profissionais específicos
+                const respLista = await fetch(`${API_URL}/bi/prazos-prof`);
+                const dataLista = await respLista.json();
+                if (dataLista.success) {
+                    setPrazosProfissionais(dataLista.prazos || []);
+                }
+            } catch (e) {
+                console.error("Erro ao carregar prazos profissionais:", e)
             }
         }, ll = async () => {
             try {
@@ -7516,7 +7548,7 @@ const hideLoadingScreen = () => {
             }, "📅 Disponibilidade"), 
             hasModuleAccess(l, "bi") && React.createElement("button", {
                 onClick: () => {
-                    he("bi"), ll(), tl(), al(), pl()
+                    he("bi"), ll(), tl(), al(), pl(), carregarPrazosProf()
                 },
                 className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("bi" === Ee ? "bg-white text-orange-800" : "text-white hover:bg-white/10")
             }, "📊 BI"), 
@@ -7569,7 +7601,7 @@ const hideLoadingScreen = () => {
                     className: "px-3 py-1.5 rounded-lg text-xs font-semibold text-white hover:bg-white/10"
                 }, "⚙️ Operacional"),
                 hasModuleAccess(l, "bi") && React.createElement("button", {
-                    onClick: () => { he("bi"); ll(); tl(); al(); pl(); },
+                    onClick: () => { he("bi"); ll(); tl(); al(); pl(); carregarPrazosProf(); },
                     className: "px-3 py-1.5 rounded-lg text-xs font-semibold text-white hover:bg-white/10"
                 }, "📊 BI"),
                 hasModuleAccess(l, "todo") && React.createElement("button", {
@@ -13676,7 +13708,7 @@ const hideLoadingScreen = () => {
                     className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all text-white hover:bg-white/10"
                 }, "📅 Disponibilidade"),
                 hasModuleAccess(l, "bi") && React.createElement("button", {
-                    onClick: function() { he("bi"); ll(); tl(); al(); pl(); },
+                    onClick: function() { he("bi"); ll(); tl(); al(); pl(); carregarPrazosProf(); },
                     className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all text-white hover:bg-white/10"
                 }, "📊 BI"),
                 hasModuleAccess(l, "todo") && React.createElement("button", {
@@ -15111,7 +15143,7 @@ const hideLoadingScreen = () => {
                     className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all text-white hover:bg-white/10"
                 }, "📅 Disponibilidade"),
                 hasModuleAccess(l, "bi") && React.createElement("button", {
-                    onClick: function() { he("bi"); ll(); tl(); al(); pl(); },
+                    onClick: function() { he("bi"); ll(); tl(); al(); pl(); carregarPrazosProf(); },
                     className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all text-white hover:bg-white/10"
                 }, "📊 BI"),
                 hasModuleAccess(l, "todo") && React.createElement("button", {
@@ -15889,7 +15921,7 @@ const hideLoadingScreen = () => {
                 className: "px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-all " + ("cliente767" === Et ? "border-orange-600 text-orange-600 bg-orange-50" : "border-transparent text-gray-600 hover:text-gray-800")
             }, "🏢 Cliente 767"), React.createElement("button", {
                 onClick: () => {
-                    ht("config"), tl(), al()
+                    ht("config"), tl(), al(), carregarPrazosProf()
                 },
                 className: "px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-all " + ("config" === Et ? "border-purple-600 text-purple-600 bg-purple-50" : "border-transparent text-gray-600 hover:text-gray-800")
             }, "⚙️ Config"))), wa && React.createElement("div", {
@@ -18703,7 +18735,285 @@ const hideLoadingScreen = () => {
             }, e.faixas && e.faixas.map((e, t) => React.createElement("span", {
                 key: t,
                 className: "bg-white border border-purple-300 px-3 py-1 rounded text-sm"
-            }, e.km_min, " - ", e.km_max || "∞", " km → ", React.createElement("strong", null, e.prazo_minutos, " min")))))))))), !ft && "dashboard" === Et && React.createElement("div", {
+            }, e.km_min, " - ", e.km_max || "∞", " km → ", React.createElement("strong", null, e.prazo_minutos, " min")))))))))),
+            
+            // ========== SEÇÃO 4: PRAZOS PROFISSIONAIS (Dropdown) ==========
+            React.createElement("div", {className: "bg-white rounded-xl shadow overflow-hidden"},
+                React.createElement("button", {
+                    onClick: function() { setConfigSecaoAberta(configSecaoAberta === "prazos_prof" ? "" : "prazos_prof"); },
+                    className: "w-full px-6 py-4 flex items-center justify-between bg-gradient-to-r from-orange-50 to-white hover:from-orange-100 transition-all"
+                },
+                    React.createElement("div", {className: "flex items-center gap-3"},
+                        React.createElement("span", {className: "text-2xl"}, "👨‍🔧"),
+                        React.createElement("div", {className: "text-left"},
+                            React.createElement("h2", {className: "text-lg font-bold text-orange-900"}, "Prazo Profissional"),
+                            React.createElement("p", {className: "text-sm text-gray-500"}, prazosProfissionais.length + " prazo(s) específico(s)")
+                        )
+                    ),
+                    React.createElement("span", {className: "text-2xl text-orange-600 transition-transform " + (configSecaoAberta === "prazos_prof" ? "rotate-180" : "")}, "▼")
+                ),
+                configSecaoAberta === "prazos_prof" && React.createElement("div", {className: "p-6 border-t"},
+                    // Prazo Padrão Profissional
+                    React.createElement("h3", {
+                        className: "font-bold text-orange-800 mb-2"
+                    }, "⚙️ Prazo Padrão Profissional"),
+                    React.createElement("p", {
+                        className: "text-sm text-gray-500 mb-4"
+                    }, "Prazo que o profissional tem para concluir a entrega após coletar"),
+                    React.createElement("div", {
+                        className: "space-y-3 mb-4"
+                    }, prazoProfPadrao.map((e, t) => React.createElement("div", {
+                        key: t,
+                        className: "flex items-center gap-2 p-3 bg-orange-50 rounded-lg flex-wrap"
+                    },
+                        React.createElement("span", {className: "text-sm font-medium"}, "De"),
+                        React.createElement("input", {
+                            type: "number",
+                            value: e.km_min,
+                            onChange: e => {
+                                const a = [...prazoProfPadrao];
+                                a[t].km_min = Number(e.target.value);
+                                setPrazoProfPadrao(a);
+                            },
+                            className: "w-20 px-2 py-1 border rounded text-center",
+                            min: "0"
+                        }),
+                        React.createElement("span", {className: "text-sm font-medium"}, "até"),
+                        React.createElement("input", {
+                            type: "number",
+                            value: e.km_max || "",
+                            onChange: e => {
+                                const a = [...prazoProfPadrao];
+                                a[t].km_max = e.target.value ? Number(e.target.value) : null;
+                                setPrazoProfPadrao(a);
+                            },
+                            placeholder: "∞",
+                            className: "w-20 px-2 py-1 border rounded text-center",
+                            min: "0"
+                        }),
+                        React.createElement("span", {className: "text-sm font-medium"}, "km →"),
+                        React.createElement("input", {
+                            type: "number",
+                            value: e.prazo_minutos,
+                            onChange: e => {
+                                const a = [...prazoProfPadrao];
+                                a[t].prazo_minutos = Number(e.target.value);
+                                setPrazoProfPadrao(a);
+                            },
+                            className: "w-20 px-2 py-1 border rounded text-center",
+                            min: "1"
+                        }),
+                        React.createElement("span", {className: "text-sm font-medium"}, "minutos"),
+                        prazoProfPadrao.length > 1 && React.createElement("button", {
+                            onClick: () => setPrazoProfPadrao(prazoProfPadrao.filter((e, a) => a !== t)),
+                            className: "text-red-500 hover:text-red-700 ml-2"
+                        }, "🗑️")
+                    ))),
+                    React.createElement("div", {className: "flex gap-3 mb-6"},
+                        React.createElement("button", {
+                            onClick: () => {
+                                const e = prazoProfPadrao[prazoProfPadrao.length - 1];
+                                setPrazoProfPadrao([...prazoProfPadrao, {
+                                    km_min: e.km_max || 0,
+                                    km_max: null,
+                                    prazo_minutos: 60
+                                }]);
+                            },
+                            className: "px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300"
+                        }, "➕ Adicionar Faixa"),
+                        React.createElement("button", {
+                            onClick: async () => {
+                                try {
+                                    const resp = await fetch(`${API_URL}/bi/prazo-prof-padrao`, {
+                                        method: "POST",
+                                        headers: {"Content-Type": "application/json"},
+                                        body: JSON.stringify({faixas: prazoProfPadrao})
+                                    });
+                                    const data = await resp.json();
+                                    if (data.success) {
+                                        ja("✅ Prazo profissional padrão salvo!", "success");
+                                    } else {
+                                        ja("❌ Erro: " + data.error, "error");
+                                    }
+                                } catch (err) {
+                                    ja("Erro ao salvar", "error");
+                                }
+                            },
+                            className: "px-4 py-2 bg-orange-600 text-white rounded-lg font-semibold hover:bg-orange-700"
+                        }, "💾 Salvar Prazo Padrão")
+                    ),
+                    
+                    // Prazo por Cliente/Centro
+                    React.createElement("div", {className: "bg-white rounded-xl shadow p-6 border border-orange-200"},
+                        React.createElement("h2", {className: "text-xl font-bold text-orange-900 mb-2"}, "➕ Prazo Prof. por Cliente ou Centro de Custo"),
+                        React.createElement("p", {className: "text-sm text-gray-500 mb-4"}, "Configure prazos profissionais específicos que sobrescrevem o padrão"),
+                        React.createElement("div", {className: "mb-4"},
+                            React.createElement("label", {className: "text-sm text-gray-600 font-medium"}, "Selecionar Cliente ou Centro de Custo"),
+                            React.createElement("select", {
+                                id: "bi-prazo-prof-codigo",
+                                className: "w-full px-3 py-2 border rounded-lg mt-1"
+                            },
+                                React.createElement("option", {value: ""}, "-- Selecione --"),
+                                React.createElement("optgroup", {label: "👤 Clientes"},
+                                    jt.map(e => React.createElement("option", {
+                                        key: `cli-prof-${e.cod_cliente}`,
+                                        value: `cliente:${e.cod_cliente}:${il(e.cod_cliente)||e.nome_cliente}`
+                                    }, il(e.cod_cliente) || e.nome_cliente, " (Cód: ", e.cod_cliente, ")"))
+                                ),
+                                React.createElement("optgroup", {label: "🏢 Centros de Custo"},
+                                    At.map(e => React.createElement("option", {
+                                        key: `cc-prof-${e.centro_custo}`,
+                                        value: `centro_custo:${e.centro_custo}:${e.centro_custo}`
+                                    }, e.centro_custo))
+                                )
+                            )
+                        ),
+                        React.createElement("div", {className: "space-y-3 mb-4"},
+                            prazoProfNovo.map((e, t) => React.createElement("div", {
+                                key: t,
+                                className: "flex items-center gap-2 p-3 bg-gray-50 rounded-lg flex-wrap"
+                            },
+                                React.createElement("span", {className: "text-sm font-medium"}, "De"),
+                                React.createElement("input", {
+                                    type: "number",
+                                    value: e.km_min,
+                                    onChange: e => {
+                                        const a = [...prazoProfNovo];
+                                        a[t].km_min = Number(e.target.value);
+                                        setPrazoProfNovo(a);
+                                    },
+                                    className: "w-20 px-2 py-1 border rounded text-center",
+                                    min: "0"
+                                }),
+                                React.createElement("span", {className: "text-sm font-medium"}, "até"),
+                                React.createElement("input", {
+                                    type: "number",
+                                    value: e.km_max || "",
+                                    onChange: e => {
+                                        const a = [...prazoProfNovo];
+                                        a[t].km_max = e.target.value ? Number(e.target.value) : null;
+                                        setPrazoProfNovo(a);
+                                    },
+                                    placeholder: "∞",
+                                    className: "w-20 px-2 py-1 border rounded text-center",
+                                    min: "0"
+                                }),
+                                React.createElement("span", {className: "text-sm font-medium"}, "km →"),
+                                React.createElement("input", {
+                                    type: "number",
+                                    value: e.prazo_minutos,
+                                    onChange: e => {
+                                        const a = [...prazoProfNovo];
+                                        a[t].prazo_minutos = Number(e.target.value);
+                                        setPrazoProfNovo(a);
+                                    },
+                                    className: "w-20 px-2 py-1 border rounded text-center",
+                                    min: "1"
+                                }),
+                                React.createElement("span", {className: "text-sm font-medium"}, "minutos"),
+                                prazoProfNovo.length > 1 && React.createElement("button", {
+                                    onClick: () => setPrazoProfNovo(prazoProfNovo.filter((e, a) => a !== t)),
+                                    className: "text-red-500 hover:text-red-700 ml-2"
+                                }, "🗑️")
+                            ))
+                        ),
+                        React.createElement("div", {className: "flex gap-3"},
+                            React.createElement("button", {
+                                onClick: () => {
+                                    const e = prazoProfNovo[prazoProfNovo.length - 1];
+                                    setPrazoProfNovo([...prazoProfNovo, {
+                                        km_min: e.km_max || 0,
+                                        km_max: null,
+                                        prazo_minutos: 60
+                                    }]);
+                                },
+                                className: "px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300"
+                            }, "➕ Adicionar Faixa"),
+                            React.createElement("button", {
+                                onClick: async () => {
+                                    const sel = document.getElementById("bi-prazo-prof-codigo").value;
+                                    if (!sel) return ja("Selecione um cliente ou centro", "error");
+                                    const [tipo, codigo, nome] = sel.split(":");
+                                    try {
+                                        const resp = await fetch(`${API_URL}/bi/prazos-prof`, {
+                                            method: "POST",
+                                            headers: {"Content-Type": "application/json"},
+                                            body: JSON.stringify({
+                                                tipo: tipo,
+                                                codigo: codigo,
+                                                nome: nome,
+                                                faixas: prazoProfNovo
+                                            })
+                                        });
+                                        const data = await resp.json();
+                                        if (data.success) {
+                                            ja("✅ Prazo profissional salvo!", "success");
+                                            // Recarregar lista de prazos profissionais
+                                            const reloadResp = await fetch(`${API_URL}/bi/prazos-prof`);
+                                            const reloadData = await reloadResp.json();
+                                            if (reloadData.success) setPrazosProfissionais(reloadData.prazos || []);
+                                        } else {
+                                            ja("❌ Erro: " + data.error, "error");
+                                        }
+                                    } catch (err) {
+                                        ja("Erro ao salvar", "error");
+                                    }
+                                    setPrazoProfNovo([{km_min: 0, km_max: 15, prazo_minutos: 60}]);
+                                    document.getElementById("bi-prazo-prof-codigo").value = "";
+                                },
+                                className: "px-4 py-2 bg-orange-600 text-white rounded-lg font-semibold hover:bg-orange-700"
+                            }, "💾 Salvar Configuração")
+                        )
+                    ),
+                    
+                    // Lista de Prazos Profissionais Configurados
+                    React.createElement("div", {className: "bg-white rounded-xl shadow p-6 mt-4 border border-orange-200"},
+                        React.createElement("h2", {className: "text-xl font-bold text-orange-900 mb-4"}, "📋 Prazos Prof. Configurados (", prazosProfissionais.length, ")"),
+                        prazosProfissionais.length === 0 
+                            ? React.createElement("p", {className: "text-gray-500 text-center py-8"}, "Nenhum prazo profissional específico configurado")
+                            : React.createElement("div", {className: "space-y-3"},
+                                prazosProfissionais.map(e => React.createElement("div", {
+                                    key: e.id,
+                                    className: "border border-orange-200 rounded-lg p-4 bg-orange-50"
+                                },
+                                    React.createElement("div", {className: "flex justify-between items-start mb-3"},
+                                        React.createElement("div", null,
+                                            React.createElement("span", {
+                                                className: "text-xs px-2 py-0.5 rounded " + (e.tipo === "cliente" ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700")
+                                            }, e.tipo === "cliente" ? "👤 Cliente" : "🏢 Centro de Custo"),
+                                            React.createElement("p", {className: "font-semibold mt-1 text-orange-900"}, e.nome || e.codigo)
+                                        ),
+                                        React.createElement("button", {
+                                            onClick: async () => {
+                                                if (confirm("Remover esta configuração de prazo profissional?")) {
+                                                    try {
+                                                        await fetch(`${API_URL}/bi/prazos-prof/${e.id}`, {method: "DELETE"});
+                                                        ja("✅ Removido!", "success");
+                                                        // Recarregar lista
+                                                        const resp = await fetch(`${API_URL}/bi/prazos-prof`);
+                                                        const data = await resp.json();
+                                                        if (data.success) setPrazosProfissionais(data.prazos || []);
+                                                    } catch (err) {
+                                                        ja("Erro ao remover", "error");
+                                                    }
+                                                }
+                                            },
+                                            className: "text-red-500 hover:text-red-700 p-1"
+                                        }, "🗑️")
+                                    ),
+                                    React.createElement("div", {className: "flex flex-wrap gap-2"},
+                                        e.faixas && e.faixas.map((f, idx) => React.createElement("span", {
+                                            key: idx,
+                                            className: "bg-white border border-orange-300 px-3 py-1 rounded text-sm"
+                                        }, f.km_min, " - ", f.km_max || "∞", " km → ", React.createElement("strong", null, f.prazo_minutos, " min")))
+                                    )
+                                ))
+                            )
+                    )
+                )
+            ),
+            
+            !ft && "dashboard" === Et && React.createElement("div", {
                 className: "bg-white rounded-xl shadow p-10 text-center"
             }, React.createElement("p", {
                 className: "text-5xl mb-4"
@@ -18984,7 +19294,7 @@ const hideLoadingScreen = () => {
         }, "📅 Disponibilidade"), 
         hasModuleAccess(l, "bi") && React.createElement("button", {
             onClick: () => {
-                he("bi"), ll(), tl(), al(), pl()
+                he("bi"), ll(), tl(), al(), pl(), carregarPrazosProf()
             },
             className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("bi" === Ee ? "bg-white text-orange-800" : "text-white hover:bg-white/10")
         }, "📊 BI"), 
@@ -19069,7 +19379,7 @@ const hideLoadingScreen = () => {
         }, "📅 Disponibilidade"),
         // BI - verificar permissão
         hasModuleAccess(l, "bi") && React.createElement("button", {
-            onClick: () => { he("bi"); ll(); tl(); al(); pl(); },
+            onClick: () => { he("bi"); ll(); tl(); al(); pl(); carregarPrazosProf(); },
             className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("bi" === Ee ? "bg-white text-orange-800" : "text-white hover:bg-white/10")
         }, "📊 BI"),
         // TO-DO - verificar permissão
