@@ -17210,7 +17210,7 @@ const hideLoadingScreen = () => {
       )
     )
   );
-})(), !acompLoading && comparativoSemanalClientes && comparativoSemanalClientes.clientes && comparativoSemanalClientes.clientes.length > 0 && // Comparativo Semanal por Cliente - Design Compacto e Legível
+})(), !acompLoading && comparativoSemanalClientes && comparativoSemanalClientes.clientes && comparativoSemanalClientes.clientes.length > 0 && // Comparativo Semanal por Cliente - Design Compacto
 (function() {
   var clientes = comparativoSemanalClientes.clientes;
   if (!clientes || clientes.length === 0) return null;
@@ -17228,25 +17228,25 @@ const hideLoadingScreen = () => {
   colunas.push({id: "periodo", label: "Semana"});
   
   if (acompFiltros.os) colunas.push({id: "os", label: "OS", field: "total_os", color: "#2563eb"});
-  if (acompFiltros.entregas) colunas.push({id: "entregas", label: "Entregas", field: "total_entregas", color: "#0ea5e9", showVar: true});
-  if (acompFiltros.noPrazo) colunas.push({id: "prazo", label: "Taxa Prazo", field: "taxa_prazo", color: "#16a34a", isPercent: true, showVar: true});
-  if (acompFiltros.foraPrazo) colunas.push({id: "fora", label: "Fora Prazo", field: "fora_prazo", color: "#dc2626", showVar: true, invertVar: true});
-  if (acompFiltros.retornos) colunas.push({id: "retornos", label: "Retornos", field: "retornos", color: "#ea580c", showVar: true, invertVar: true});
-  if (acompFiltros.valorTotal) colunas.push({id: "valorTotal", label: "Valor Total", field: "valor_total", color: "#7c3aed", isMoney: true, showVar: true});
-  if (acompFiltros.valorProf) colunas.push({id: "valorProf", label: "Valor Prof", field: "valor_prof", color: "#d97706", isMoney: true, showVar: true});
-  if (acompFiltros.ticketMedio) colunas.push({id: "ticket", label: "Ticket Médio", field: "ticket_medio", color: "#0891b2", isMoney: true});
-  if (acompFiltros.tempoMedioEntrega) colunas.push({id: "tEntrega", label: "T. Entrega", field: "tempo_medio_entrega", color: "#e11d48", isTime: true, showVar: true, invertVar: true});
-  if (acompFiltros.tempoMedioAlocacao) colunas.push({id: "tAlocacao", label: "T. Alocação", field: "tempo_medio_alocacao", color: "#db2777", isTime: true, showVar: true, invertVar: true});
-  if (acompFiltros.tempoMedioColeta) colunas.push({id: "tColeta", label: "T. Coleta", field: "tempo_medio_coleta", color: "#c026d3", isTime: true, showVar: true, invertVar: true});
-  if (acompFiltros.totalEntregadores) colunas.push({id: "entregadores", label: "Entregadores", field: "total_entregadores", color: "#0d9488"});
-  if (acompFiltros.mediaEntProfissional) colunas.push({id: "mediaEnt", label: "Méd/Prof", field: "media_ent_profissional", color: "#059669", isFloat: true});
+  if (acompFiltros.entregas) colunas.push({id: "entregas", label: "Ent.", field: "total_entregas", color: "#0ea5e9", showVar: true});
+  if (acompFiltros.noPrazo) colunas.push({id: "prazo", label: "Prazo", field: "taxa_prazo", color: "#16a34a", isPercent: true, showVar: true});
+  if (acompFiltros.foraPrazo) colunas.push({id: "fora", label: "Fora", field: "fora_prazo", color: "#dc2626", showVar: true, invertVar: true});
+  if (acompFiltros.retornos) colunas.push({id: "retornos", label: "Ret.", field: "retornos", color: "#ea580c", showVar: true, invertVar: true});
+  if (acompFiltros.valorTotal) colunas.push({id: "valorTotal", label: "Valor", field: "valor_total", color: "#7c3aed", isMoney: true, showVar: true});
+  if (acompFiltros.valorProf) colunas.push({id: "valorProf", label: "V.Prof", field: "valor_prof", color: "#d97706", isMoney: true, showVar: true});
+  if (acompFiltros.ticketMedio) colunas.push({id: "ticket", label: "Ticket", field: "ticket_medio", color: "#0891b2", isMoney: true});
+  if (acompFiltros.tempoMedioEntrega) colunas.push({id: "tEntrega", label: "T.Ent", field: "tempo_medio_entrega", color: "#e11d48", isTime: true, showVar: true, invertVar: true});
+  if (acompFiltros.tempoMedioAlocacao) colunas.push({id: "tAlocacao", label: "T.Aloc", field: "tempo_medio_alocacao", color: "#db2777", isTime: true, showVar: true, invertVar: true});
+  if (acompFiltros.tempoMedioColeta) colunas.push({id: "tColeta", label: "T.Col", field: "tempo_medio_coleta", color: "#c026d3", isTime: true, showVar: true, invertVar: true});
+  if (acompFiltros.totalEntregadores) colunas.push({id: "entregadores", label: "Prof.", field: "total_entregadores", color: "#0d9488"});
+  if (acompFiltros.mediaEntProfissional) colunas.push({id: "mediaEnt", label: "M/P", field: "media_ent_profissional", color: "#059669", isFloat: true});
   
   var temFiltros = colunas.length > 1;
   
   // Função para renderizar valor
   var renderVal = function(col, val) {
     if (col.isTime) return fmtTempo(val);
-    if (col.isMoney) return "R$ " + parseFloat(val || 0).toLocaleString("pt-BR", {minimumFractionDigits: 0});
+    if (col.isMoney) return "R$" + parseFloat(val || 0).toLocaleString("pt-BR", {minimumFractionDigits: 0});
     if (col.isPercent) return (parseFloat(val) || 0).toFixed(1) + "%";
     if (col.isFloat) return parseFloat(val || 0).toFixed(1);
     return val || 0;
@@ -17264,41 +17264,36 @@ const hideLoadingScreen = () => {
     return {pct: Math.abs(parseFloat(pct)), isPositive: isPositive, isGood: isGood};
   };
   
-  return React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-6 mt-4"},
-    React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-4"}, 
+  return React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-4 mt-4"},
+    React.createElement("h3", {className: "text-base font-bold text-gray-800 mb-3"}, 
       "🏢 Comparativo por Cliente"
     ),
     
-    // Mensagem se nenhum filtro
-    !temFiltros && React.createElement("div", {className: "text-center text-gray-400 py-8"},
-      React.createElement("p", null, "Selecione métricas acima para ver os dados")
+    !temFiltros && React.createElement("div", {className: "text-center text-gray-400 py-6 text-sm"},
+      "Selecione métricas acima para ver os dados"
     ),
     
-    // Lista de clientes com tabelas
-    temFiltros && React.createElement("div", {className: "space-y-4"},
+    temFiltros && React.createElement("div", {className: "space-y-3"},
       clientes.map(function(cli, cliIdx) {
         return React.createElement("div", {key: cliIdx, className: "border border-gray-200 rounded-lg overflow-hidden"},
-          // Header do cliente
-          React.createElement("div", {className: "bg-slate-700 px-4 py-2 flex justify-between items-center"},
-            React.createElement("span", {className: "font-bold text-white"}, cli.nome_fantasia),
-            React.createElement("div", {className: "flex gap-4 text-sm text-white/80"},
-              React.createElement("span", null, cli.semanas.length, " semanas"),
-              React.createElement("span", null, "📦 ", cli.resumo.total_entregas),
+          React.createElement("div", {className: "bg-slate-700 px-3 py-1.5 flex justify-between items-center"},
+            React.createElement("span", {className: "font-bold text-white text-sm"}, cli.nome_fantasia),
+            React.createElement("div", {className: "flex gap-3 text-xs text-white/80"},
+              React.createElement("span", null, cli.semanas.length, "sem"),
+              React.createElement("span", null, "📦", cli.resumo.total_entregas),
               React.createElement("span", {className: cli.resumo.media_taxa_prazo >= 80 ? "text-green-300" : cli.resumo.media_taxa_prazo >= 60 ? "text-yellow-300" : "text-red-300"}, 
-                "✓ ", cli.resumo.media_taxa_prazo, "%"
+                "✓", cli.resumo.media_taxa_prazo, "%"
               )
             )
           ),
-          // Tabela compacta - SEM width 100%
-          React.createElement("div", {className: "p-3 overflow-x-auto"},
-            React.createElement("table", {className: "text-sm", style: {borderCollapse: "collapse"}},
+          React.createElement("div", {className: "p-2"},
+            React.createElement("table", {className: "text-xs", style: {borderCollapse: "collapse"}},
               React.createElement("thead", null,
                 React.createElement("tr", null,
                   colunas.map(function(col) {
                     return React.createElement("th", {
                       key: col.id, 
-                      className: "px-3 py-2 text-left font-bold text-gray-600 bg-gray-100 border-b-2 border-gray-200",
-                      style: {whiteSpace: "nowrap"}
+                      className: "px-2 py-1 text-left font-bold text-gray-500 bg-gray-50 border-b border-gray-200"
                     }, col.label);
                   })
                 )
@@ -17310,16 +17305,12 @@ const hideLoadingScreen = () => {
                   
                   return React.createElement("tr", {
                     key: semIdx, 
-                    className: isFirst ? "bg-blue-50" : (semIdx % 2 === 0 ? "bg-white" : "bg-gray-50")
+                    className: isFirst ? "bg-blue-50" : (semIdx % 2 === 0 ? "bg-white" : "bg-gray-50/50")
                   },
                     colunas.map(function(col) {
                       if (col.id === "periodo") {
-                        return React.createElement("td", {
-                          key: col.id, 
-                          className: "px-3 py-2 font-semibold text-gray-700 border-b border-gray-100",
-                          style: {whiteSpace: "nowrap"}
-                        },
-                          isFirst && React.createElement("span", {className: "inline-block w-2 h-2 rounded-full bg-blue-500 mr-2"}),
+                        return React.createElement("td", {key: col.id, className: "px-2 py-1 font-semibold text-gray-700 border-b border-gray-100"},
+                          isFirst && React.createElement("span", {className: "inline-block w-1.5 h-1.5 rounded-full bg-blue-500 mr-1"}),
                           sem.periodo
                         );
                       }
@@ -17327,19 +17318,11 @@ const hideLoadingScreen = () => {
                       var val = sem[col.field];
                       var varInfo = getVar(col, sem, semAnterior);
                       
-                      return React.createElement("td", {
-                        key: col.id, 
-                        className: "px-3 py-2 border-b border-gray-100",
-                        style: {whiteSpace: "nowrap"}
-                      },
-                        React.createElement("span", {
-                          className: "font-bold text-base",
-                          style: {color: col.color || "#374151"}
-                        }, renderVal(col, val)),
+                      return React.createElement("td", {key: col.id, className: "px-2 py-1 border-b border-gray-100"},
+                        React.createElement("span", {className: "font-bold", style: {color: col.color || "#374151"}}, renderVal(col, val)),
                         varInfo && React.createElement("span", {
-                          className: "ml-2 text-xs font-bold px-1.5 py-0.5 rounded " + 
-                            (varInfo.isGood ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700")
-                        }, varInfo.isPositive ? "↑" : "↓", varInfo.pct.toFixed(1), "%")
+                          className: "ml-1 text-[10px] font-bold " + (varInfo.isGood ? "text-green-600" : "text-red-600")
+                        }, varInfo.isPositive ? "↑" : "↓", varInfo.pct.toFixed(0), "%")
                       );
                     })
                   );
