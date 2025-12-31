@@ -17210,7 +17210,7 @@ const hideLoadingScreen = () => {
       )
     )
   );
-})(), !acompLoading && comparativoSemanalClientes && comparativoSemanalClientes.clientes && comparativoSemanalClientes.clientes.length > 0 && // Comparativo Semanal por Cliente - Largura Total
+})(), !acompLoading && comparativoSemanalClientes && comparativoSemanalClientes.clientes && comparativoSemanalClientes.clientes.length > 0 && // Comparativo Semanal por Cliente - Colunas à esquerda
 (function() {
   var clientes = comparativoSemanalClientes.clientes;
   if (!clientes || clientes.length === 0) return null;
@@ -17276,38 +17276,43 @@ const hideLoadingScreen = () => {
               React.createElement("span", {className: cli.resumo.media_taxa_prazo >= 80 ? "text-green-300" : cli.resumo.media_taxa_prazo >= 60 ? "text-yellow-300" : "text-red-300"}, "✓ ", cli.resumo.media_taxa_prazo, "%")
             )
           ),
-          React.createElement("table", {className: "w-full text-sm"},
-            React.createElement("thead", null,
-              React.createElement("tr", {className: "bg-gray-50"},
-                colunas.map(function(col) {
-                  return React.createElement("th", {key: col.id, className: "px-3 py-2 text-left font-semibold text-gray-600 border-b border-gray-200"}, col.label);
+          React.createElement("div", {className: "overflow-x-auto"},
+            React.createElement("table", {className: "text-sm"},
+              React.createElement("thead", null,
+                React.createElement("tr", {className: "bg-gray-50"},
+                  colunas.map(function(col, colIdx) {
+                    return React.createElement("th", {
+                      key: col.id, 
+                      className: "px-4 py-2 text-left font-semibold text-gray-600 border-b border-gray-200 whitespace-nowrap"
+                    }, col.label);
+                  })
+                )
+              ),
+              React.createElement("tbody", null,
+                cli.semanas.map(function(sem, semIdx) {
+                  var semAnterior = cli.semanas[semIdx + 1];
+                  var isFirst = semIdx === 0;
+                  
+                  return React.createElement("tr", {key: semIdx, className: isFirst ? "bg-blue-50" : (semIdx % 2 === 0 ? "bg-white" : "bg-gray-50/50")},
+                    colunas.map(function(col) {
+                      if (col.id === "periodo") {
+                        return React.createElement("td", {key: col.id, className: "px-4 py-2 font-semibold text-gray-700 whitespace-nowrap"},
+                          isFirst && React.createElement("span", {className: "inline-block w-2 h-2 rounded-full bg-blue-500 mr-2"}),
+                          sem.periodo
+                        );
+                      }
+                      
+                      var val = sem[col.field];
+                      var varInfo = getVar(col, sem, semAnterior);
+                      
+                      return React.createElement("td", {key: col.id, className: "px-4 py-2 whitespace-nowrap"},
+                        React.createElement("span", {className: "font-bold", style: {color: col.color}}, renderVal(col, val)),
+                        varInfo && React.createElement("span", {className: "ml-2 text-xs font-semibold " + (varInfo.isGood ? "text-green-600" : "text-red-600")}, varInfo.isPositive ? "↑" : "↓", varInfo.pct.toFixed(1), "%")
+                      );
+                    })
+                  );
                 })
               )
-            ),
-            React.createElement("tbody", null,
-              cli.semanas.map(function(sem, semIdx) {
-                var semAnterior = cli.semanas[semIdx + 1];
-                var isFirst = semIdx === 0;
-                
-                return React.createElement("tr", {key: semIdx, className: isFirst ? "bg-blue-50" : (semIdx % 2 === 0 ? "bg-white" : "bg-gray-50/50")},
-                  colunas.map(function(col) {
-                    if (col.id === "periodo") {
-                      return React.createElement("td", {key: col.id, className: "px-3 py-2 font-semibold text-gray-700"},
-                        isFirst && React.createElement("span", {className: "inline-block w-2 h-2 rounded-full bg-blue-500 mr-2"}),
-                        sem.periodo
-                      );
-                    }
-                    
-                    var val = sem[col.field];
-                    var varInfo = getVar(col, sem, semAnterior);
-                    
-                    return React.createElement("td", {key: col.id, className: "px-3 py-2"},
-                      React.createElement("span", {className: "font-bold", style: {color: col.color}}, renderVal(col, val)),
-                      varInfo && React.createElement("span", {className: "ml-2 text-xs font-semibold " + (varInfo.isGood ? "text-green-600" : "text-red-600")}, varInfo.isPositive ? "↑" : "↓", varInfo.pct.toFixed(1), "%")
-                    );
-                  })
-                );
-              })
             )
           )
         );
