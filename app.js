@@ -15903,11 +15903,14 @@ const hideLoadingScreen = () => {
                                 t = await fetch(`${API_URL}/bi/entregas-lista?${e}`),
                                 data = await t.json();
                             // Nova estrutura: { entregas: [], prazoProfConfig: [] }
+                            console.log("📊 Resposta entregas-lista:", data);
                             if (data.entregas) {
+                                console.log("📊 prazoProfConfig recebido:", data.prazoProfConfig);
                                 Ut(data.entregas);
                                 setPrazoProfConfigOS(data.prazoProfConfig || []);
                             } else {
                                 // Compatibilidade: se ainda retornar array direto
+                                console.log("📊 Formato antigo (array direto)");
                                 Ut(Array.isArray(data) ? data : []);
                             }
                         } catch (e) {
@@ -17668,6 +17671,16 @@ const hideLoadingScreen = () => {
                     
                     // Prazo Prof em minutos baseado na distância (usando função global)
                     var prazoProfMinutos = calcPrazoProfPorDistancia(primeiroReg.distancia);
+                    
+                    // DEBUG: Log para primeira OS
+                    if (idx === 0) {
+                        console.log("📊 DEBUG OS " + osNum + ":", {
+                            distancia: primeiroReg.distancia,
+                            prazoProfMinutos: prazoProfMinutos,
+                            tempoEntregaProfOS: tempoEntregaProfOS,
+                            configLength: prazoProfConfigOS ? prazoProfConfigOS.length : 0
+                        });
+                    }
                     
                     // Prazo Prof: verifica se T. Entrega Prof está dentro do prazo prof
                     var dentroPrazoProf = null;
