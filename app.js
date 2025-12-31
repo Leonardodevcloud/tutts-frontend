@@ -17200,14 +17200,14 @@ const hideLoadingScreen = () => {
             }, "T.Coleta"), React.createElement("th", {
                 className: "px-3 py-2 text-right text-purple-900"
             }, "T.Entrega"), React.createElement("th", {
-                className: "px-3 py-2 text-right text-purple-900"
-            }, "No Prazo"), React.createElement("th", {
-                className: "px-3 py-2 text-right text-purple-900"
-            }, "%"), React.createElement("th", {
-                className: "px-3 py-2 text-right text-purple-900"
-            }, "Fora"), React.createElement("th", {
-                className: "px-3 py-2 text-right text-purple-900"
-            }, "%"), React.createElement("th", {
+                className: "px-3 py-2 text-center text-purple-900 bg-green-50"
+            }, "✅ No Prazo"), React.createElement("th", {
+                className: "px-3 py-2 text-center text-purple-900 bg-red-50"
+            }, "❌ Fora Prazo"), React.createElement("th", {
+                className: "px-3 py-2 text-center text-purple-900 bg-emerald-50"
+            }, "✅ No Prazo Prof"), React.createElement("th", {
+                className: "px-3 py-2 text-center text-purple-900 bg-orange-50"
+            }, "❌ Fora Prazo Prof"), React.createElement("th", {
                 className: "px-3 py-2 text-right text-purple-900"
             }, "Distância"), React.createElement("th", {
                 className: "px-3 py-2 text-right text-purple-900"
@@ -17220,6 +17220,10 @@ const hideLoadingScreen = () => {
                     var expandido = Kt["prof-" + indexReal];
                     var osDoProf = profOsExpandido[e.cod_prof] || [];
                     var carregandoOS = profOsLoading === e.cod_prof;
+                    var pctDentro = (nl(e.dentro_prazo) / (nl(e.total_entregas) || 1) * 100);
+                    var pctFora = (nl(e.fora_prazo) / (nl(e.total_entregas) || 1) * 100);
+                    var pctDentroProf = (nl(e.dentro_prazo_prof) / (nl(e.total_entregas) || 1) * 100);
+                    var pctForaProf = (nl(e.fora_prazo_prof) / (nl(e.total_entregas) || 1) * 100);
                     return React.createElement(React.Fragment, {key: indexReal},
                         React.createElement("tr", {
                             className: "border-b hover:bg-purple-50 " + (t % 2 == 0 ? "bg-white" : "bg-gray-50")
@@ -17235,12 +17239,22 @@ const hideLoadingScreen = () => {
                             React.createElement("td", {className: "px-3 py-2 text-right text-pink-600"}, cl(e.tempo_alocado)), 
                             React.createElement("td", {className: "px-3 py-2 text-right text-fuchsia-600"}, cl(e.tempo_coleta)), 
                             React.createElement("td", {className: "px-3 py-2 text-right text-rose-600"}, cl(e.tempo_medio)), 
-                            React.createElement("td", {className: "px-3 py-2 text-right text-green-600 font-medium"}, nl(e.dentro_prazo).toLocaleString("pt-BR")), 
-                            React.createElement("td", {className: "px-3 py-2 text-right"}, 
-                                React.createElement("span", {className: "px-2 py-0.5 rounded text-xs font-bold " + ((nl(e.dentro_prazo) / (nl(e.total_entregas) || 1) * 100) >= 80 ? "bg-green-100 text-green-700" : (nl(e.dentro_prazo) / (nl(e.total_entregas) || 1) * 100) >= 60 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700")}, (nl(e.dentro_prazo) / (nl(e.total_entregas) || 1) * 100).toFixed(1), "%")
+                            React.createElement("td", {className: "px-3 py-2 text-center bg-green-50"}, 
+                                React.createElement("div", {className: "text-green-700 font-bold"}, nl(e.dentro_prazo).toLocaleString("pt-BR")),
+                                React.createElement("span", {className: "px-2 py-0.5 rounded text-xs font-bold " + (pctDentro >= 80 ? "bg-green-100 text-green-700" : pctDentro >= 60 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700")}, pctDentro.toFixed(1), "%")
                             ), 
-                            React.createElement("td", {className: "px-3 py-2 text-right text-red-600 font-medium"}, nl(e.fora_prazo).toLocaleString("pt-BR")), 
-                            React.createElement("td", {className: "px-3 py-2 text-right text-red-500"}, (nl(e.fora_prazo) / (nl(e.total_entregas) || 1) * 100).toFixed(1), "%"), 
+                            React.createElement("td", {className: "px-3 py-2 text-center bg-red-50"}, 
+                                React.createElement("div", {className: "text-red-700 font-bold"}, nl(e.fora_prazo).toLocaleString("pt-BR")),
+                                React.createElement("span", {className: "text-xs text-red-500"}, pctFora.toFixed(1), "%")
+                            ), 
+                            React.createElement("td", {className: "px-3 py-2 text-center bg-emerald-50"}, 
+                                React.createElement("div", {className: "text-emerald-700 font-bold"}, nl(e.dentro_prazo_prof || 0).toLocaleString("pt-BR")),
+                                React.createElement("span", {className: "px-2 py-0.5 rounded text-xs font-bold " + (pctDentroProf >= 80 ? "bg-emerald-100 text-emerald-700" : pctDentroProf >= 60 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700")}, pctDentroProf.toFixed(1), "%")
+                            ), 
+                            React.createElement("td", {className: "px-3 py-2 text-center bg-orange-50"}, 
+                                React.createElement("div", {className: "text-orange-700 font-bold"}, nl(e.fora_prazo_prof || 0).toLocaleString("pt-BR")),
+                                React.createElement("span", {className: "text-xs text-orange-500"}, pctForaProf.toFixed(1), "%")
+                            ), 
                             React.createElement("td", {className: "px-3 py-2 text-right text-gray-600"}, parseFloat(e.distancia_total || 0).toLocaleString("pt-BR", {maximumFractionDigits: 1}), " km"), 
                             React.createElement("td", {className: "px-3 py-2 text-right text-orange-600"}, e.retornos || 0), 
                             React.createElement("td", {className: "px-3 py-2 text-right text-purple-600 font-medium"}, sl(e.valor_prof))
