@@ -17060,12 +17060,6 @@ const hideLoadingScreen = () => {
   var semanas = comparativoSemanal.semanas;
   if (!semanas || semanas.length === 0) return null;
   
-  // Função para calcular variação entre semanas
-  var calcVar = function(atual, anterior) {
-    if (!anterior || anterior === 0) return null;
-    return ((atual - anterior) / anterior * 100).toFixed(1);
-  };
-  
   // Função para formatar tempo
   var fmtTempo = function(mins) {
     var m = parseFloat(mins) || 0;
@@ -17074,17 +17068,17 @@ const hideLoadingScreen = () => {
     return String(h).padStart(2, "0") + ":" + String(mn).padStart(2, "0");
   };
   
-  // Definir colunas baseadas nos subfiltros
+  // Definir colunas baseadas nos subfiltros - usando os campos corretos do backend
   var colunas = [];
   colunas.push({id: "periodo", label: "Semana", align: "left"});
   
   if (acompFiltros.os) colunas.push({id: "os", label: "OS", field: "total_os", color: "blue", align: "center"});
   if (acompFiltros.entregas) colunas.push({id: "entregas", label: "Entregas", field: "total_entregas", color: "sky", align: "center", showVar: true});
-  if (acompFiltros.noPrazo) colunas.push({id: "prazo", label: "Taxa Prazo", field: "taxa_prazo", color: "green", align: "center", isPercent: true, showVar: true, varField: "var_prazo"});
+  if (acompFiltros.noPrazo) colunas.push({id: "prazo", label: "Taxa Prazo", field: "taxa_prazo", color: "green", align: "center", isPercent: true, showVar: true});
   if (acompFiltros.foraPrazo) colunas.push({id: "fora", label: "Fora Prazo", field: "fora_prazo", color: "red", align: "center", showVar: true, invertVar: true});
   if (acompFiltros.retornos) colunas.push({id: "retornos", label: "Retornos", field: "retornos", color: "orange", align: "center", showVar: true, invertVar: true});
   if (acompFiltros.valorTotal) colunas.push({id: "valorTotal", label: "Valor Total", field: "valor_total", color: "purple", align: "right", isMoney: true, showVar: true});
-  if (acompFiltros.valorProf) colunas.push({id: "valorProf", label: "Valor Prof", field: "valor_motoboy", color: "amber", align: "right", isMoney: true, showVar: true});
+  if (acompFiltros.valorProf) colunas.push({id: "valorProf", label: "Valor Prof", field: "valor_prof", color: "amber", align: "right", isMoney: true, showVar: true});
   if (acompFiltros.ticketMedio) colunas.push({id: "ticket", label: "Ticket", field: "ticket_medio", color: "cyan", align: "center", isMoney: true, showVar: true});
   if (acompFiltros.tempoMedioEntrega) colunas.push({id: "tEntrega", label: "T.Entrega", field: "tempo_medio_entrega", color: "rose", align: "center", isTime: true, showVar: true, invertVar: true});
   if (acompFiltros.tempoMedioAlocacao) colunas.push({id: "tAlocacao", label: "T.Alocação", field: "tempo_medio_alocacao", color: "pink", align: "center", isTime: true, showVar: true, invertVar: true});
