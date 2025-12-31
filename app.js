@@ -17601,16 +17601,16 @@ const hideLoadingScreen = () => {
                     // T. Entrega: Solicitado (data_hora) → Finalizado
                     var tempoEntregaOS = calcularTempoComRegras(primeiroReg.data_hora, finalizadoOS);
                     
-                    // T. Entrega Prof: usar campo calculado pelo backend
-                    var tempoEntregaProfOS = primeiroReg.tempo_entrega_prof;
+                    // T. Entrega Prof: usar campo do banco (calculado durante upload/recálculo)
+                    var tempoEntregaProfOS = primeiroReg.tempo_entrega_prof_minutos;
                     
                     // Prazo em minutos (vem do banco) - para prazo normal
                     var prazoMinutos = primeiroReg.prazo_minutos || 60;
                     
-                    // Prazo Prof em minutos - vem calculado do backend
+                    // Prazo Prof em minutos - vem do banco
                     var prazoProfMinutos = primeiroReg.prazo_prof_minutos || 60;
                     
-                    // Prazo Prof: usar campo calculado pelo backend
+                    // Prazo Prof: usar campo do banco
                     var dentroPrazoProf = primeiroReg.dentro_prazo_prof;
                     
                     var formatTempo = function(mins) {
