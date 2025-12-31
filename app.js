@@ -19009,6 +19009,37 @@ const hideLoadingScreen = () => {
                                     )
                                 ))
                             )
+                    ),
+                    
+                    // Botão para recalcular prazos profissionais
+                    React.createElement("div", {className: "bg-gradient-to-r from-orange-100 to-yellow-100 rounded-xl p-6 mt-4 border-2 border-orange-300"},
+                        React.createElement("h3", {className: "font-bold text-orange-800 mb-2 flex items-center gap-2"}, "🔄 Recalcular Prazos Profissionais"),
+                        React.createElement("p", {className: "text-sm text-gray-600 mb-4"}, "Atualiza o status de prazo profissional para todas as entregas existentes com base nas configurações atuais."),
+                        React.createElement("button", {
+                            onClick: async () => {
+                                if (!confirm("Isso irá recalcular o prazo profissional de TODAS as entregas.\n\nDeseja continuar?")) return;
+                                s(true);
+                                setLoadingMessage("Recalculando prazos profissionais...");
+                                try {
+                                    const resp = await fetch(`${API_URL}/bi/entregas/recalcular-prazo-prof`, {
+                                        method: "POST",
+                                        headers: {"Content-Type": "application/json"}
+                                    });
+                                    const data = await resp.json();
+                                    if (data.success) {
+                                        ja(`✅ Recalculado! ${data.atualizados} entregas (✅ ${data.dentroPrazo} no prazo | ❌ ${data.foraPrazo} fora | ⚠️ ${data.semDados} sem dados)`, "success");
+                                        // Recarregar dados do dashboard
+                                        xl();
+                                    } else {
+                                        ja("❌ Erro: " + data.error, "error");
+                                    }
+                                } catch (err) {
+                                    ja("❌ Erro ao recalcular: " + err.message, "error");
+                                }
+                                s(false);
+                            },
+                            className: "px-6 py-3 bg-orange-600 text-white rounded-lg font-bold hover:bg-orange-700 shadow-lg hover:shadow-xl transition-all flex items-center gap-2"
+                        }, "🔄 Recalcular Agora")
                     )
                 )
             ),
