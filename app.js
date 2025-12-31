@@ -16787,15 +16787,15 @@ const hideLoadingScreen = () => {
                     React.createElement("span", {className: "px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium"}, "📋 " + acompClientes.clientes.length + " cliente(s)")
                 ),
                 React.createElement("div", {className: "overflow-x-auto"},
-                    React.createElement("table", {className: "w-full text-xs"},
+                    React.createElement("table", {className: "text-xs"},
                         React.createElement("thead", null,
                             React.createElement("tr", {className: "bg-purple-100"},
                                 React.createElement("th", {className: "px-2 py-2 text-center font-bold text-purple-800 w-8"}, ""),
-                                React.createElement("th", {className: "px-3 py-2 text-left font-bold text-purple-800 sticky left-0 bg-purple-100"}, "Clientes"),
+                                React.createElement("th", {className: "px-3 py-2 text-left font-bold text-purple-800 whitespace-nowrap"}, "Clientes"),
                                 acompFiltrosOrdem.map(function(filtro) {
                                     var labels = {os: "OS", entregas: "Entregas", noPrazo: "No Prazo", foraPrazo: "Fora Prazo", retornos: "Retornos", valorTotal: "Valor Total", valorProf: "Valor Prof.", ticketMedio: "Ticket Médio", tempoMedioEntrega: "T. Entrega", tempoMedioAlocacao: "T. Alocação", tempoMedioColeta: "T. Coleta", totalEntregadores: "Profissionais", mediaEntProfissional: "Méd Ent/Prof", faturamentoTotal: "Fat. Total"};
                                     var align = (filtro === "valorTotal" || filtro === "valorProf" || filtro === "faturamentoTotal" || filtro === "ticketMedio") ? "text-right" : "text-center";
-                                    return React.createElement("th", {key: filtro, className: "px-2 py-2 font-bold text-purple-800 " + align}, labels[filtro] || filtro);
+                                    return React.createElement("th", {key: filtro, className: "px-3 py-2 font-bold text-purple-800 whitespace-nowrap " + align}, labels[filtro] || filtro);
                                 })
                             )
                         ),
@@ -16811,24 +16811,24 @@ const hideLoadingScreen = () => {
                                                 className: "text-purple-600 hover:text-purple-800 font-bold text-sm"
                                             }, expandido ? "➖" : "➕")
                                         ),
-                                        React.createElement("td", {className: "px-3 py-2 font-medium text-gray-800 whitespace-nowrap sticky left-0 " + (i % 2 === 0 ? "bg-white" : "bg-gray-50")}, 
+                                        React.createElement("td", {className: "px-3 py-2 font-medium text-gray-800 whitespace-nowrap " + (i % 2 === 0 ? "bg-white" : "bg-gray-50")}, 
                                             c.cod_cliente, " - ", il(c.cod_cliente) || c.cliente
                                         ),
                                         acompFiltrosOrdem.map(function(filtro) {
-                                            if (filtro === "os") return React.createElement("td", {key: filtro, className: "px-2 py-2 text-center font-bold text-blue-600"}, c.os);
-                                            if (filtro === "entregas") return React.createElement("td", {key: filtro, className: "px-2 py-2 text-center text-sky-600"}, c.entregas);
-                                            if (filtro === "noPrazo") return React.createElement("td", {key: filtro, className: "px-2 py-2 text-center"}, React.createElement("span", {className: "px-2 py-0.5 rounded text-xs font-bold " + (c.noPrazo >= 80 ? "bg-green-100 text-green-700" : c.noPrazo >= 60 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700")}, c.noPrazo.toFixed(2) + "%"));
-                                            if (filtro === "foraPrazo") return React.createElement("td", {key: filtro, className: "px-2 py-2 text-center"}, React.createElement("span", {className: "px-2 py-0.5 rounded text-xs font-bold " + (c.foraPrazo <= 20 ? "bg-green-100 text-green-700" : c.foraPrazo <= 40 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700")}, c.foraPrazo.toFixed(2) + "%"));
-                                            if (filtro === "retornos") return React.createElement("td", {key: filtro, className: "px-2 py-2 text-center text-orange-600 font-medium"}, c.retornos);
-                                            if (filtro === "valorTotal") return React.createElement("td", {key: filtro, className: "px-2 py-2 text-right text-purple-600 font-medium"}, "R$" + c.valorTotal.toLocaleString("pt-BR", {minimumFractionDigits: 2}));
-                                            if (filtro === "valorProf") return React.createElement("td", {key: filtro, className: "px-2 py-2 text-right text-amber-600 font-medium"}, "R$" + c.valorProf.toLocaleString("pt-BR", {minimumFractionDigits: 2}));
-                                            if (filtro === "faturamentoTotal") return React.createElement("td", {key: filtro, className: "px-2 py-2 text-right text-emerald-600 font-medium"}, "R$" + c.faturamentoTotal.toLocaleString("pt-BR", {minimumFractionDigits: 2}));
-                                            if (filtro === "ticketMedio") return React.createElement("td", {key: filtro, className: "px-2 py-2 text-right text-cyan-600 font-medium"}, "R$" + c.ticketMedio.toLocaleString("pt-BR", {minimumFractionDigits: 2}));
-                                            if (filtro === "tempoMedioEntrega") return React.createElement("td", {key: filtro, className: "px-2 py-2 text-center text-rose-600"}, c.tempoMedioEntrega || "00:00:00");
-                                            if (filtro === "tempoMedioAlocacao") return React.createElement("td", {key: filtro, className: "px-2 py-2 text-center text-pink-600"}, c.tempoMedioAlocacao || "00:00:00");
-                                            if (filtro === "tempoMedioColeta") return React.createElement("td", {key: filtro, className: "px-2 py-2 text-center text-fuchsia-600"}, c.tempoMedioColeta || "00:00:00");
-                                            if (filtro === "totalEntregadores") return React.createElement("td", {key: filtro, className: "px-2 py-2 text-center text-teal-600"}, c.totalProfissionais);
-                                            if (filtro === "mediaEntProfissional") return React.createElement("td", {key: filtro, className: "px-2 py-2 text-center text-emerald-600"}, c.mediaEntProfissional || (c.entregas / Math.max(c.totalProfissionais, 1)).toFixed(1));
+                                            if (filtro === "os") return React.createElement("td", {key: filtro, className: "px-3 py-2 text-center font-bold text-blue-600 whitespace-nowrap"}, c.os);
+                                            if (filtro === "entregas") return React.createElement("td", {key: filtro, className: "px-3 py-2 text-center text-sky-600 whitespace-nowrap"}, c.entregas);
+                                            if (filtro === "noPrazo") return React.createElement("td", {key: filtro, className: "px-3 py-2 text-center whitespace-nowrap"}, React.createElement("span", {className: "px-2 py-0.5 rounded text-xs font-bold " + (c.noPrazo >= 80 ? "bg-green-100 text-green-700" : c.noPrazo >= 60 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700")}, c.noPrazo.toFixed(2) + "%"));
+                                            if (filtro === "foraPrazo") return React.createElement("td", {key: filtro, className: "px-3 py-2 text-center whitespace-nowrap"}, React.createElement("span", {className: "px-2 py-0.5 rounded text-xs font-bold " + (c.foraPrazo <= 20 ? "bg-green-100 text-green-700" : c.foraPrazo <= 40 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700")}, c.foraPrazo.toFixed(2) + "%"));
+                                            if (filtro === "retornos") return React.createElement("td", {key: filtro, className: "px-3 py-2 text-center text-orange-600 font-medium whitespace-nowrap"}, c.retornos);
+                                            if (filtro === "valorTotal") return React.createElement("td", {key: filtro, className: "px-3 py-2 text-right text-purple-600 font-medium whitespace-nowrap"}, "R$" + c.valorTotal.toLocaleString("pt-BR", {minimumFractionDigits: 2}));
+                                            if (filtro === "valorProf") return React.createElement("td", {key: filtro, className: "px-3 py-2 text-right text-amber-600 font-medium whitespace-nowrap"}, "R$" + c.valorProf.toLocaleString("pt-BR", {minimumFractionDigits: 2}));
+                                            if (filtro === "faturamentoTotal") return React.createElement("td", {key: filtro, className: "px-3 py-2 text-right text-emerald-600 font-medium whitespace-nowrap"}, "R$" + c.faturamentoTotal.toLocaleString("pt-BR", {minimumFractionDigits: 2}));
+                                            if (filtro === "ticketMedio") return React.createElement("td", {key: filtro, className: "px-3 py-2 text-right text-cyan-600 font-medium whitespace-nowrap"}, "R$" + c.ticketMedio.toLocaleString("pt-BR", {minimumFractionDigits: 2}));
+                                            if (filtro === "tempoMedioEntrega") return React.createElement("td", {key: filtro, className: "px-3 py-2 text-center text-rose-600 whitespace-nowrap"}, c.tempoMedioEntrega || "00:00:00");
+                                            if (filtro === "tempoMedioAlocacao") return React.createElement("td", {key: filtro, className: "px-3 py-2 text-center text-pink-600 whitespace-nowrap"}, c.tempoMedioAlocacao || "00:00:00");
+                                            if (filtro === "tempoMedioColeta") return React.createElement("td", {key: filtro, className: "px-3 py-2 text-center text-fuchsia-600 whitespace-nowrap"}, c.tempoMedioColeta || "00:00:00");
+                                            if (filtro === "totalEntregadores") return React.createElement("td", {key: filtro, className: "px-3 py-2 text-center text-teal-600 whitespace-nowrap"}, c.totalProfissionais);
+                                            if (filtro === "mediaEntProfissional") return React.createElement("td", {key: filtro, className: "px-3 py-2 text-center text-emerald-600 whitespace-nowrap"}, c.mediaEntProfissional || (c.entregas / Math.max(c.totalProfissionais, 1)).toFixed(1));
                                             return null;
                                         })
                                     ),
