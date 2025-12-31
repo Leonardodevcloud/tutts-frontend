@@ -3223,8 +3223,15 @@ const hideLoadingScreen = () => {
                     const semanalClientesRes = await fetch(API_URL + "/bi/comparativo-semanal-clientes?" + params);
                     const semanalClientesData = await semanalClientesRes.json();
                     console.log("📅 Comparativo semanal por cliente:", semanalClientesData);
-                    setComparativoSemanalClientes(semanalClientesData);
-                } catch(e) { console.log("Erro ao carregar comparativo semanal por cliente:", e); }
+                    if (semanalClientesData && semanalClientesData.clientes) {
+                        setComparativoSemanalClientes(semanalClientesData);
+                    } else {
+                        setComparativoSemanalClientes({clientes: []});
+                    }
+                } catch(e) { 
+                    console.log("Erro ao carregar comparativo semanal por cliente:", e);
+                    setComparativoSemanalClientes({clientes: []});
+                }
             } catch (e) {
                 console.error("Erro acompanhamento:", e);
             } finally {
