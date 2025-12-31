@@ -17316,7 +17316,7 @@ const hideLoadingScreen = () => {
                 className: "bg-purple-200 font-bold"
             }, React.createElement("tr", null, 
                 React.createElement("td", {className: "px-3 py-2"}), 
-                React.createElement("td", {className: "px-3 py-2"}, "Total (", Vt.length, " prof.)"), 
+                React.createElement("td", {className: "px-3 py-2"}, "Total (", Vt.filter(e => parseInt(e.total_entregas) > 0).length, " prof.)"), 
                 React.createElement("td", {className: "px-3 py-2 text-right"}, Vt.reduce((e, t) => e + nl(t.total_entregas), 0).toLocaleString("pt-BR")), 
                 // Média T.Alocação - usar métricas globais (ft) que são calculadas corretamente pelo SQL
                 React.createElement("td", {className: "px-3 py-2 text-right text-pink-700"}, cl(ft?.tempo_medio_alocacao)), 
@@ -17324,25 +17324,49 @@ const hideLoadingScreen = () => {
                 React.createElement("td", {className: "px-3 py-2 text-right text-fuchsia-700"}, cl(ft?.tempo_medio_coleta)), 
                 // Média T.Entrega - usar métricas globais (ft)
                 React.createElement("td", {className: "px-3 py-2 text-right text-rose-700"}, cl(ft?.tempo_medio)), 
-                React.createElement("td", {className: "px-3 py-2 text-right text-green-700"}, Vt.reduce((e, t) => e + nl(t.dentro_prazo), 0).toLocaleString("pt-BR")), 
-                // % No Prazo Total
-                React.createElement("td", {className: "px-3 py-2 text-right"}, (function() {
+                // No Prazo - qtd + %
+                React.createElement("td", {className: "px-3 py-2 text-center bg-green-100"}, (function() {
                     var totalDentro = Vt.reduce((e, t) => e + nl(t.dentro_prazo), 0);
                     var totalFora = Vt.reduce((e, t) => e + nl(t.fora_prazo), 0);
                     var total = totalDentro + totalFora;
-                    if (total === 0) return "-";
-                    var pct = (totalDentro / total * 100).toFixed(1);
-                    return React.createElement("span", {className: "px-2 py-0.5 rounded text-xs font-bold " + (pct >= 80 ? "bg-green-100 text-green-700" : pct >= 60 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700")}, pct + "%");
+                    var pct = total > 0 ? (totalDentro / total * 100).toFixed(1) : "0.0";
+                    return React.createElement("div", null,
+                        React.createElement("div", {className: "text-green-800"}, totalDentro.toLocaleString("pt-BR")),
+                        React.createElement("span", {className: "px-2 py-0.5 rounded text-xs font-bold " + (pct >= 80 ? "bg-green-200 text-green-800" : pct >= 60 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700")}, pct + "%")
+                    );
                 })()), 
-                React.createElement("td", {className: "px-3 py-2 text-right text-red-700"}, Vt.reduce((e, t) => e + nl(t.fora_prazo), 0).toLocaleString("pt-BR")), 
-                // % Fora Prazo Total
-                React.createElement("td", {className: "px-3 py-2 text-right"}, (function() {
+                // Fora Prazo - qtd + %
+                React.createElement("td", {className: "px-3 py-2 text-center bg-red-100"}, (function() {
                     var totalDentro = Vt.reduce((e, t) => e + nl(t.dentro_prazo), 0);
                     var totalFora = Vt.reduce((e, t) => e + nl(t.fora_prazo), 0);
                     var total = totalDentro + totalFora;
-                    if (total === 0) return "-";
-                    var pct = (totalFora / total * 100).toFixed(1);
-                    return pct + "%";
+                    var pct = total > 0 ? (totalFora / total * 100).toFixed(1) : "0.0";
+                    return React.createElement("div", null,
+                        React.createElement("div", {className: "text-red-800"}, totalFora.toLocaleString("pt-BR")),
+                        React.createElement("span", {className: "text-xs text-red-600"}, pct + "%")
+                    );
+                })()), 
+                // No Prazo Prof - qtd + %
+                React.createElement("td", {className: "px-3 py-2 text-center bg-emerald-100"}, (function() {
+                    var totalDentroProf = Vt.reduce((e, t) => e + nl(t.dentro_prazo_prof || 0), 0);
+                    var totalForaProf = Vt.reduce((e, t) => e + nl(t.fora_prazo_prof || 0), 0);
+                    var total = totalDentroProf + totalForaProf;
+                    var pct = total > 0 ? (totalDentroProf / total * 100).toFixed(1) : "0.0";
+                    return React.createElement("div", null,
+                        React.createElement("div", {className: "text-emerald-800"}, totalDentroProf.toLocaleString("pt-BR")),
+                        React.createElement("span", {className: "px-2 py-0.5 rounded text-xs font-bold " + (pct >= 80 ? "bg-emerald-200 text-emerald-800" : pct >= 60 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700")}, pct + "%")
+                    );
+                })()), 
+                // Fora Prazo Prof - qtd + %
+                React.createElement("td", {className: "px-3 py-2 text-center bg-orange-100"}, (function() {
+                    var totalDentroProf = Vt.reduce((e, t) => e + nl(t.dentro_prazo_prof || 0), 0);
+                    var totalForaProf = Vt.reduce((e, t) => e + nl(t.fora_prazo_prof || 0), 0);
+                    var total = totalDentroProf + totalForaProf;
+                    var pct = total > 0 ? (totalForaProf / total * 100).toFixed(1) : "0.0";
+                    return React.createElement("div", null,
+                        React.createElement("div", {className: "text-orange-800"}, totalForaProf.toLocaleString("pt-BR")),
+                        React.createElement("span", {className: "text-xs text-orange-600"}, pct + "%")
+                    );
                 })()), 
                 React.createElement("td", {className: "px-3 py-2 text-right"}, Vt.reduce((e, t) => e + parseFloat(t.distancia_total || 0), 0).toLocaleString("pt-BR", {maximumFractionDigits: 1}), " km"), 
                 React.createElement("td", {className: "px-3 py-2 text-right"}, Vt.reduce((e, t) => e + nl(t.retornos || 0), 0)), 
