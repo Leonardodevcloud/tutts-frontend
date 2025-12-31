@@ -15902,17 +15902,8 @@ const hideLoadingScreen = () => {
                             const e = Xa(),
                                 t = await fetch(`${API_URL}/bi/entregas-lista?${e}`),
                                 data = await t.json();
-                            // Nova estrutura: { entregas: [], prazoProfConfig: [] }
-                            console.log("📊 Resposta entregas-lista:", data);
-                            if (data.entregas) {
-                                console.log("📊 prazoProfConfig recebido:", data.prazoProfConfig);
-                                Ut(data.entregas);
-                                setPrazoProfConfigOS(data.prazoProfConfig || []);
-                            } else {
-                                // Compatibilidade: se ainda retornar array direto
-                                console.log("📊 Formato antigo (array direto)");
-                                Ut(Array.isArray(data) ? data : []);
-                            }
+                            // Backend agora retorna array direto com campos calculados
+                            Ut(Array.isArray(data) ? data : []);
                         } catch (e) {
                             console.error("Erro ao carregar entregas:", e)
                         }
@@ -17456,52 +17447,6 @@ const hideLoadingScreen = () => {
                 React.createElement("th", {className: "px-2 py-2 text-center text-purple-900 bg-orange-200"}, "Prazo Prof"),
                 React.createElement("th", {className: "px-2 py-2 text-center text-purple-900"}, "Finalizado")
             )), React.createElement("tbody", null, (function() {
-                // Função global para calcular prazo prof baseado na distância
-                // Usa as configurações carregadas do banco (prazoProfConfigOS)
-                var calcPrazoProfPorDistancia = function(distancia) {
-                    var dist = parseFloat(distancia) || 0;
-                    
-                    // Usar configurações do banco se disponíveis
-                    if (prazoProfConfigOS && prazoProfConfigOS.length > 0) {
-                        for (var i = 0; i < prazoProfConfigOS.length; i++) {
-                            var faixa = prazoProfConfigOS[i];
-                            var kmMin = parseFloat(faixa.km_min) || 0;
-                            var kmMax = faixa.km_max ? parseFloat(faixa.km_max) : 999999;
-                            if (dist >= kmMin && dist < kmMax) {
-                                return parseInt(faixa.prazo_minutos);
-                            }
-                        }
-                        // Se não encontrou faixa, pegar o último valor
-                        var ultimaFaixa = prazoProfConfigOS[prazoProfConfigOS.length - 1];
-                        return parseInt(ultimaFaixa.prazo_minutos) || 300;
-                    }
-                    
-                    // Fallback: faixas padrão hardcoded
-                    if (dist <= 10) return 60;
-                    if (dist <= 15) return 75;
-                    if (dist <= 20) return 90;
-                    if (dist <= 25) return 105;
-                    if (dist <= 30) return 135;
-                    if (dist <= 35) return 150;
-                    if (dist <= 40) return 165;
-                    if (dist <= 45) return 180;
-                    if (dist <= 50) return 195;
-                    if (dist <= 55) return 210;
-                    if (dist <= 60) return 225;
-                    if (dist <= 65) return 240;
-                    if (dist <= 70) return 255;
-                    if (dist <= 75) return 270;
-                    if (dist <= 80) return 285;
-                    return 300;
-                };
-                
-                // Debug: log das configurações carregadas
-                if (prazoProfConfigOS && prazoProfConfigOS.length > 0) {
-                    console.log("📊 Prazo Prof Config carregado:", prazoProfConfigOS.map(function(f) {
-                        return f.km_min + "-" + (f.km_max || "∞") + "km=" + f.prazo_minutos + "min";
-                    }).join(", "));
-                }
-                
                 // Agrupar dados por OS
                 var osAgrupadas = {};
                 var dados = Array.isArray(qt) ? qt : [];
@@ -17568,23 +17513,16 @@ const hideLoadingScreen = () => {
                 };
                 
                 // Filtrar pelo status_prazo_prof se estiver selecionado
+                // Agora usa o campo dentro_prazo_prof calculado pelo backend
                 if (ua.status_prazo_prof) {
                     osArray = osArray.filter(function(osNum) {
                         var pontos = osAgrupadas[osNum];
                         var primeiroReg = pontos[0];
-                        var ultimoReg = pontos[pontos.length - 1];
                         
-                        // Calcular T. Entrega Prof (Alocado → Finalizado)
-                        var finalizadoOS = ultimoReg.finalizado || primeiroReg.finalizado;
-                        var tempoEntregaProfOS = calcTempoFiltro(primeiroReg.data_hora_alocado, finalizadoOS);
+                        // Usar campo calculado pelo backend
+                        var dentroPrazoProf = primeiroReg.dentro_prazo_prof;
                         
-                        if (tempoEntregaProfOS === null) return true; // Sem dados, não filtra
-                        
-                        // Prazo Prof em minutos baseado na distância (usando função global)
-                        var prazoProfMinutos = calcPrazoProfPorDistancia(primeiroReg.distancia);
-                        
-                        // Verificar se está dentro do prazo prof
-                        var dentroPrazoProf = tempoEntregaProfOS <= prazoProfMinutos;
+                        if (dentroPrazoProf === null || dentroPrazoProf === undefined) return true;
                         
                         if (ua.status_prazo_prof === "dentro") {
                             return dentroPrazoProf === true;
@@ -17663,30 +17601,17 @@ const hideLoadingScreen = () => {
                     // T. Entrega: Solicitado (data_hora) → Finalizado
                     var tempoEntregaOS = calcularTempoComRegras(primeiroReg.data_hora, finalizadoOS);
                     
-                    // T. Entrega Prof: Alocado (data_hora_alocado) → Finalizado
-                    var tempoEntregaProfOS = calcularTempoComRegras(primeiroReg.data_hora_alocado, finalizadoOS);
+                    // T. Entrega Prof: usar campo calculado pelo backend
+                    var tempoEntregaProfOS = primeiroReg.tempo_entrega_prof;
                     
                     // Prazo em minutos (vem do banco) - para prazo normal
                     var prazoMinutos = primeiroReg.prazo_minutos || 60;
                     
-                    // Prazo Prof em minutos baseado na distância (usando função global)
-                    var prazoProfMinutos = calcPrazoProfPorDistancia(primeiroReg.distancia);
+                    // Prazo Prof em minutos - vem calculado do backend
+                    var prazoProfMinutos = primeiroReg.prazo_prof_minutos || 60;
                     
-                    // DEBUG: Log para primeira OS
-                    if (idx === 0) {
-                        console.log("📊 DEBUG OS " + osNum + ":", {
-                            distancia: primeiroReg.distancia,
-                            prazoProfMinutos: prazoProfMinutos,
-                            tempoEntregaProfOS: tempoEntregaProfOS,
-                            configLength: prazoProfConfigOS ? prazoProfConfigOS.length : 0
-                        });
-                    }
-                    
-                    // Prazo Prof: verifica se T. Entrega Prof está dentro do prazo prof
-                    var dentroPrazoProf = null;
-                    if (tempoEntregaProfOS !== null && prazoProfMinutos > 0) {
-                        dentroPrazoProf = tempoEntregaProfOS <= prazoProfMinutos;
-                    }
+                    // Prazo Prof: usar campo calculado pelo backend
+                    var dentroPrazoProf = primeiroReg.dentro_prazo_prof;
                     
                     var formatTempo = function(mins) {
                         if (mins === null || mins === undefined || isNaN(mins) || mins < 0) return "-";
