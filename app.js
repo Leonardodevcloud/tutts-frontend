@@ -3175,8 +3175,8 @@ const hideLoadingScreen = () => {
             setAcompFiltros(prev => {
                 const novoEstado = !prev[filtro];
                 if (novoEstado) {
-                    // Adiciona ao INÍCIO para aparecer logo após a coluna Clientes
-                    setAcompFiltrosOrdem(ordemAtual => [filtro, ...ordemAtual]);
+                    // Adiciona ao FINAL para aparecer na ordem de seleção
+                    setAcompFiltrosOrdem(ordemAtual => [...ordemAtual, filtro]);
                 } else {
                     setAcompFiltrosOrdem(ordemAtual => ordemAtual.filter(f => f !== filtro));
                 }
@@ -17210,7 +17210,7 @@ const hideLoadingScreen = () => {
       )
     )
   );
-})(), !acompLoading && comparativoSemanalClientes && comparativoSemanalClientes.clientes && comparativoSemanalClientes.clientes.length > 0 && // Comparativo Semanal por Cliente - Colunas à esquerda
+})(), !acompLoading && comparativoSemanalClientes && comparativoSemanalClientes.clientes && comparativoSemanalClientes.clientes.length > 0 && // Comparativo Semanal por Cliente - Ordem dinâmica de colunas
 (function() {
   var clientes = comparativoSemanalClientes.clientes;
   if (!clientes || clientes.length === 0) return null;
@@ -17222,22 +17222,33 @@ const hideLoadingScreen = () => {
     return String(h).padStart(2, "0") + ":" + String(mn).padStart(2, "0");
   };
   
+  // Mapa de configuração das colunas
+  var colunasConfig = {
+    os: {id: "os", label: "OS", field: "total_os", color: "#2563eb"},
+    entregas: {id: "entregas", label: "Entregas", field: "total_entregas", color: "#0ea5e9", showVar: true},
+    noPrazo: {id: "prazo", label: "Taxa Prazo", field: "taxa_prazo", color: "#16a34a", isPercent: true, showVar: true},
+    foraPrazo: {id: "fora", label: "Fora Prazo", field: "fora_prazo", color: "#dc2626", showVar: true, invertVar: true},
+    retornos: {id: "retornos", label: "Retornos", field: "retornos", color: "#ea580c", showVar: true, invertVar: true},
+    valorTotal: {id: "valorTotal", label: "Valor Total", field: "valor_total", color: "#7c3aed", isMoney: true, showVar: true},
+    valorProf: {id: "valorProf", label: "Valor Prof", field: "valor_prof", color: "#d97706", isMoney: true, showVar: true},
+    ticketMedio: {id: "ticket", label: "Ticket Médio", field: "ticket_medio", color: "#0891b2", isMoney: true},
+    tempoMedioEntrega: {id: "tEntrega", label: "T. Entrega", field: "tempo_medio_entrega", color: "#e11d48", isTime: true, showVar: true, invertVar: true},
+    tempoMedioAlocacao: {id: "tAlocacao", label: "T. Alocação", field: "tempo_medio_alocacao", color: "#db2777", isTime: true, showVar: true, invertVar: true},
+    tempoMedioColeta: {id: "tColeta", label: "T. Coleta", field: "tempo_medio_coleta", color: "#c026d3", isTime: true, showVar: true, invertVar: true},
+    totalEntregadores: {id: "entregadores", label: "Entregadores", field: "total_entregadores", color: "#0d9488"},
+    mediaEntProfissional: {id: "mediaEnt", label: "Méd/Prof", field: "media_ent_profissional", color: "#059669", isFloat: true}
+  };
+  
+  // Montar colunas na ordem de seleção
   var colunas = [];
   colunas.push({id: "periodo", label: "Semana"});
   
-  if (acompFiltros.os) colunas.push({id: "os", label: "OS", field: "total_os", color: "#2563eb"});
-  if (acompFiltros.entregas) colunas.push({id: "entregas", label: "Entregas", field: "total_entregas", color: "#0ea5e9", showVar: true});
-  if (acompFiltros.noPrazo) colunas.push({id: "prazo", label: "Taxa Prazo", field: "taxa_prazo", color: "#16a34a", isPercent: true, showVar: true});
-  if (acompFiltros.foraPrazo) colunas.push({id: "fora", label: "Fora Prazo", field: "fora_prazo", color: "#dc2626", showVar: true, invertVar: true});
-  if (acompFiltros.retornos) colunas.push({id: "retornos", label: "Retornos", field: "retornos", color: "#ea580c", showVar: true, invertVar: true});
-  if (acompFiltros.valorTotal) colunas.push({id: "valorTotal", label: "Valor Total", field: "valor_total", color: "#7c3aed", isMoney: true, showVar: true});
-  if (acompFiltros.valorProf) colunas.push({id: "valorProf", label: "Valor Prof", field: "valor_prof", color: "#d97706", isMoney: true, showVar: true});
-  if (acompFiltros.ticketMedio) colunas.push({id: "ticket", label: "Ticket Médio", field: "ticket_medio", color: "#0891b2", isMoney: true});
-  if (acompFiltros.tempoMedioEntrega) colunas.push({id: "tEntrega", label: "T. Entrega", field: "tempo_medio_entrega", color: "#e11d48", isTime: true, showVar: true, invertVar: true});
-  if (acompFiltros.tempoMedioAlocacao) colunas.push({id: "tAlocacao", label: "T. Alocação", field: "tempo_medio_alocacao", color: "#db2777", isTime: true, showVar: true, invertVar: true});
-  if (acompFiltros.tempoMedioColeta) colunas.push({id: "tColeta", label: "T. Coleta", field: "tempo_medio_coleta", color: "#c026d3", isTime: true, showVar: true, invertVar: true});
-  if (acompFiltros.totalEntregadores) colunas.push({id: "entregadores", label: "Entregadores", field: "total_entregadores", color: "#0d9488"});
-  if (acompFiltros.mediaEntProfissional) colunas.push({id: "mediaEnt", label: "Méd/Prof", field: "media_ent_profissional", color: "#059669", isFloat: true});
+  // Usar acompFiltrosOrdem para manter a ordem de seleção
+  acompFiltrosOrdem.forEach(function(filtro) {
+    if (acompFiltros[filtro] && colunasConfig[filtro]) {
+      colunas.push(colunasConfig[filtro]);
+    }
+  });
   
   var temFiltros = colunas.length > 1;
   
