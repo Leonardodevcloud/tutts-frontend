@@ -17439,11 +17439,10 @@ const hideLoadingScreen = () => {
                 React.createElement("th", {className: "px-2 py-2 text-center text-purple-900"}, "H. Chegada"),
                 React.createElement("th", {className: "px-2 py-2 text-center text-purple-900"}, "H. Entregue"),
                 React.createElement("th", {className: "px-2 py-2 text-center text-purple-900 bg-green-200"}, "T. Entrega"),
-                React.createElement("th", {className: "px-2 py-2 text-center text-purple-900 bg-blue-200"}, "T. Entrega Prof"),
-                React.createElement("th", {className: "px-2 py-2 text-center text-purple-900 bg-purple-200"}, "T. Total OS"),
+                React.createElement("th", {className: "px-2 py-2 text-center text-purple-900 bg-orange-200"}, "T. Entrega Prof"),
                 React.createElement("th", {className: "px-2 py-2 text-right text-purple-900"}, "KM"),
                 React.createElement("th", {className: "px-2 py-2 text-center text-purple-900"}, "Prazo"),
-                React.createElement("th", {className: "px-2 py-2 text-center text-purple-900 bg-blue-200"}, "Prazo Prof"),
+                React.createElement("th", {className: "px-2 py-2 text-center text-purple-900 bg-orange-200"}, "Prazo Prof"),
                 React.createElement("th", {className: "px-2 py-2 text-center text-purple-900"}, "Finalizado")
             )), React.createElement("tbody", null, (function() {
                 // Agrupar dados por OS
@@ -17610,30 +17609,39 @@ const hideLoadingScreen = () => {
                     // T. Entrega Prof: Alocado (data_hora_alocado) → Finalizado
                     var tempoEntregaProfOS = calcularTempoComRegras(primeiroReg.data_hora_alocado, finalizadoOS);
                     
-                    // T. Total OS: usar o campo execucao_comp se existir, senão usar T. Entrega
-                    // O execucao_comp é o "Execução Comp." do Excel que já vem calculado corretamente
-                    var tempoTotalOS = null;
-                    if (primeiroReg.execucao_comp) {
-                        // Converter "HH:MM:SS" para minutos
-                        var partes = String(primeiroReg.execucao_comp).split(':');
-                        if (partes.length >= 2) {
-                            var h = parseInt(partes[0]) || 0;
-                            var m = parseInt(partes[1]) || 0;
-                            var s = parseInt(partes[2]) || 0;
-                            tempoTotalOS = h * 60 + m + s / 60;
-                        }
-                    }
-                    if (tempoTotalOS === null) {
-                        tempoTotalOS = tempoEntregaOS;
-                    }
-                    
-                    // Prazo em minutos (vem do banco)
+                    // Prazo em minutos (vem do banco) - para prazo normal
                     var prazoMinutos = primeiroReg.prazo_minutos || 60;
                     
-                    // Prazo Prof: verifica se T. Entrega Prof está dentro do prazo
+                    // Prazo Prof: calcular baseado na DISTÂNCIA da linha
+                    // Usar as faixas de prazo profissional configuradas
+                    var calcularPrazoProfPorKm = function(distancia) {
+                        var dist = parseFloat(distancia) || 0;
+                        // Faixas padrão de prazo profissional (baseado na configuração)
+                        if (dist <= 10) return 60;
+                        if (dist <= 15) return 75;
+                        if (dist <= 20) return 90;
+                        if (dist <= 25) return 105;
+                        if (dist <= 30) return 135;
+                        if (dist <= 35) return 150;
+                        if (dist <= 40) return 165;
+                        if (dist <= 45) return 180;
+                        if (dist <= 50) return 195;
+                        if (dist <= 55) return 210;
+                        if (dist <= 60) return 225;
+                        if (dist <= 65) return 240;
+                        if (dist <= 70) return 255;
+                        if (dist <= 75) return 270;
+                        if (dist <= 80) return 285;
+                        return 300;
+                    };
+                    
+                    // Prazo Prof em minutos baseado na distância
+                    var prazoProfMinutos = calcularPrazoProfPorKm(primeiroReg.distancia);
+                    
+                    // Prazo Prof: verifica se T. Entrega Prof está dentro do prazo prof
                     var dentroPrazoProf = null;
-                    if (tempoEntregaProfOS !== null && prazoMinutos > 0) {
-                        dentroPrazoProf = tempoEntregaProfOS <= prazoMinutos;
+                    if (tempoEntregaProfOS !== null && prazoProfMinutos > 0) {
+                        dentroPrazoProf = tempoEntregaProfOS <= prazoProfMinutos;
                     }
                     
                     var formatTempo = function(mins) {
@@ -17761,11 +17769,7 @@ const hideLoadingScreen = () => {
                             // T. Entrega (Solicitado → Finalizado da OS)
                             React.createElement("td", {className: "px-2 py-1 text-center font-medium bg-green-50 text-green-700"}, formatTempo(tempoEntregaOS)),
                             // T. Entrega Prof (Alocado → Finalizado da OS)
-                            React.createElement("td", {className: "px-2 py-1 text-center font-medium bg-blue-50 text-blue-700"}, formatTempo(tempoEntregaProfOS)),
-                            // T. Total OS (tempo de execução do banco - só mostra na primeira linha da OS)
-                            React.createElement("td", {className: "px-2 py-1 text-center font-bold " + (isFirst ? "bg-purple-100 text-purple-800" : "bg-purple-50 text-purple-400")}, 
-                                isFirst ? formatTempo(tempoTotalOS) : ""
-                            ),
+                            React.createElement("td", {className: "px-2 py-1 text-center font-medium bg-orange-50 " + (tempoEntregaProfOS !== null && tempoEntregaProfOS <= prazoProfMinutos ? "text-green-700" : "text-red-600")}, formatTempo(tempoEntregaProfOS)),
                             // KM
                             React.createElement("td", {className: "px-2 py-1 text-right"}, parseFloat(row.distancia || 0).toFixed(2) + " km"),
                             // Prazo
@@ -17774,8 +17778,8 @@ const hideLoadingScreen = () => {
                                 row.dentro_prazo === false ? React.createElement("span", {className: "text-red-600 font-bold"}, "❌") :
                                 React.createElement("span", {className: "text-gray-400"}, "-")
                             ),
-                            // Prazo Prof (baseado no T. Entrega Prof)
-                            React.createElement("td", {className: "px-2 py-1 text-center bg-blue-50"}, 
+                            // Prazo Prof (baseado no T. Entrega Prof vs prazo por km)
+                            React.createElement("td", {className: "px-2 py-1 text-center bg-orange-50"}, 
                                 dentroPrazoProf === true ? React.createElement("span", {className: "text-green-600 font-bold"}, "✅") :
                                 dentroPrazoProf === false ? React.createElement("span", {className: "text-red-600 font-bold"}, "❌") :
                                 React.createElement("span", {className: "text-gray-400"}, "-")
