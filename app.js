@@ -17055,7 +17055,155 @@ const hideLoadingScreen = () => {
   });
   
   return React.createElement("svg", {viewBox: "0 0 1000 " + alturaTotal, className: "w-full", style: {height: alturaTotal + "px", minHeight: "150px"}}, elementos);
-})())), !acompLoading && acompDados && acompDados.porData && acompDados.porData.length > 0 && React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-6"}, React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-4"}, "📋 Dados Detalhados"), React.createElement("div", {className: "overflow-x-auto"}, React.createElement("table", {className: "w-full text-xs"}, React.createElement("thead", null, React.createElement("tr", {className: "bg-purple-50"}, React.createElement("th", {className: "px-2 py-2 text-left"}, "Data"), React.createElement("th", {className: "px-2 py-2 text-center"}, "OS"), React.createElement("th", {className: "px-2 py-2 text-center"}, "Entregas"), React.createElement("th", {className: "px-2 py-2 text-center"}, "No Prazo"), React.createElement("th", {className: "px-2 py-2 text-center"}, "Fora"), React.createElement("th", {className: "px-2 py-2 text-center"}, "Retornos"), React.createElement("th", {className: "px-2 py-2 text-center"}, "Taxa"), React.createElement("th", {className: "px-2 py-2 text-right"}, "Valor Total"), React.createElement("th", {className: "px-2 py-2 text-right"}, "Valor Prof."), React.createElement("th", {className: "px-2 py-2 text-center"}, "Ticket"), React.createElement("th", {className: "px-2 py-2 text-center"}, "T.Entrega"), React.createElement("th", {className: "px-2 py-2 text-center"}, "Entreg."))), React.createElement("tbody", null, acompDados.porData.map(function(d,i){ var mins = parseFloat(d.tempo_medio_entrega)||0; var h = Math.floor(mins/60); var m = Math.floor(mins%60); return React.createElement("tr", {key: i, className: i%2===0?"bg-white":"bg-gray-50"}, React.createElement("td", {className: "px-2 py-1 font-medium"}, d.data_formatada), React.createElement("td", {className: "px-2 py-1 text-center font-bold text-blue-600"}, d.total_os), React.createElement("td", {className: "px-2 py-1 text-center text-sky-600"}, d.total_entregas), React.createElement("td", {className: "px-2 py-1 text-center text-green-600"}, d.dentro_prazo), React.createElement("td", {className: "px-2 py-1 text-center text-red-600"}, d.fora_prazo), React.createElement("td", {className: "px-2 py-1 text-center text-orange-600"}, d.retornos||0), React.createElement("td", {className: "px-2 py-1 text-center"}, React.createElement("span", {className: "px-1 py-0 rounded text-xs font-bold "+(parseFloat(d.taxa_prazo)>=80?"bg-green-100 text-green-700":parseFloat(d.taxa_prazo)>=60?"bg-yellow-100 text-yellow-700":"bg-red-100 text-red-700")}, d.taxa_prazo+"%")), React.createElement("td", {className: "px-2 py-1 text-right text-purple-600"}, "R$", parseFloat(d.valor_total||0).toLocaleString("pt-BR",{minimumFractionDigits:0})), React.createElement("td", {className: "px-2 py-1 text-right text-amber-600"}, "R$", parseFloat(d.valor_motoboy||0).toLocaleString("pt-BR",{minimumFractionDigits:0})), React.createElement("td", {className: "px-2 py-1 text-center text-cyan-600"}, "R$", d.ticket_medio), React.createElement("td", {className: "px-2 py-1 text-center text-rose-600"}, String(h).padStart(2,"0")+":"+String(m).padStart(2,"0")), React.createElement("td", {className: "px-2 py-1 text-center text-teal-600"}, d.total_entregadores)); })))))), !acompLoading && comparativoSemanal && comparativoSemanal.semanas && comparativoSemanal.semanas.length > 0 && React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-6 mt-4"}, React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-4"}, "📅 Comparativo Semanal (", comparativoSemanal.semanas.length, " semanas)"), React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-4 gap-4 mb-6"}, comparativoSemanal.semanas.length >= 2 && React.createElement("div", {className: "bg-blue-50 rounded-xl p-4 border border-blue-200"}, React.createElement("div", {className: "text-xs text-blue-600 font-medium mb-1"}, "📦 Entregas"), React.createElement("div", {className: "text-2xl font-bold text-blue-700"}, comparativoSemanal.semanas[0].total_entregas), comparativoSemanal.semanas[0].var_entregas && React.createElement("div", {className: "text-sm font-bold " + (parseFloat(comparativoSemanal.semanas[0].var_entregas) >= 0 ? "text-green-600" : "text-red-600")}, (parseFloat(comparativoSemanal.semanas[0].var_entregas) >= 0 ? "↑ " : "↓ ") + Math.abs(parseFloat(comparativoSemanal.semanas[0].var_entregas)) + "%")), comparativoSemanal.semanas.length >= 2 && React.createElement("div", {className: "bg-green-50 rounded-xl p-4 border border-green-200"}, React.createElement("div", {className: "text-xs text-green-600 font-medium mb-1"}, "✅ Taxa Prazo"), React.createElement("div", {className: "text-2xl font-bold text-green-700"}, comparativoSemanal.semanas[0].taxa_prazo + "%"), comparativoSemanal.semanas[0].var_prazo && React.createElement("div", {className: "text-sm font-bold " + (parseFloat(comparativoSemanal.semanas[0].var_prazo) >= 0 ? "text-green-600" : "text-red-600")}, (parseFloat(comparativoSemanal.semanas[0].var_prazo) >= 0 ? "↑ " : "↓ ") + Math.abs(parseFloat(comparativoSemanal.semanas[0].var_prazo)) + "pp")), comparativoSemanal.semanas.length >= 2 && React.createElement("div", {className: "bg-purple-50 rounded-xl p-4 border border-purple-200"}, React.createElement("div", {className: "text-xs text-purple-600 font-medium mb-1"}, "💰 Valor"), React.createElement("div", {className: "text-2xl font-bold text-purple-700"}, "R$" + (comparativoSemanal.semanas[0].valor_total/1000).toFixed(1) + "k"), comparativoSemanal.semanas[0].var_valor && React.createElement("div", {className: "text-sm font-bold " + (parseFloat(comparativoSemanal.semanas[0].var_valor) >= 0 ? "text-green-600" : "text-red-600")}, (parseFloat(comparativoSemanal.semanas[0].var_valor) >= 0 ? "↑ " : "↓ ") + Math.abs(parseFloat(comparativoSemanal.semanas[0].var_valor)) + "%")), comparativoSemanal.semanas.length >= 2 && React.createElement("div", {className: "bg-orange-50 rounded-xl p-4 border border-orange-200"}, React.createElement("div", {className: "text-xs text-orange-600 font-medium mb-1"}, "🔄 Retornos"), React.createElement("div", {className: "text-2xl font-bold text-orange-700"}, comparativoSemanal.semanas[0].retornos), comparativoSemanal.semanas[0].var_retornos && React.createElement("div", {className: "text-sm font-bold " + (parseFloat(comparativoSemanal.semanas[0].var_retornos) <= 0 ? "text-green-600" : "text-red-600")}, (parseFloat(comparativoSemanal.semanas[0].var_retornos) >= 0 ? "↑ " : "↓ ") + Math.abs(parseFloat(comparativoSemanal.semanas[0].var_retornos)) + "%"))), React.createElement("div", {className: "overflow-x-auto"}, React.createElement("table", {className: "w-full text-xs"}, React.createElement("thead", null, React.createElement("tr", {className: "bg-indigo-100"}, React.createElement("th", {className: "px-3 py-2 text-left"}, "Semana"), React.createElement("th", {className: "px-3 py-2 text-center"}, "OS"), React.createElement("th", {className: "px-3 py-2 text-center"}, "Ent."), React.createElement("th", {className: "px-3 py-2 text-center"}, "Var."), React.createElement("th", {className: "px-3 py-2 text-center"}, "Prazo"), React.createElement("th", {className: "px-3 py-2 text-center"}, "Prof"), React.createElement("th", {className: "px-3 py-2 text-center"}, "Ret."), React.createElement("th", {className: "px-3 py-2 text-right"}, "Valor"))), React.createElement("tbody", null, comparativoSemanal.semanas.map(function(s, i) { return React.createElement("tr", {key: i, className: i === 0 ? "bg-blue-50 border-l-4 border-blue-500" : (i % 2 === 0 ? "bg-white" : "bg-gray-50")}, React.createElement("td", {className: "px-3 py-2 font-medium"}, i === 0 ? "📍 " + s.periodo : s.periodo), React.createElement("td", {className: "px-3 py-2 text-center font-bold text-blue-600"}, s.total_os), React.createElement("td", {className: "px-3 py-2 text-center text-sky-600"}, s.total_entregas), React.createElement("td", {className: "px-3 py-2 text-center"}, s.var_entregas ? React.createElement("span", {className: "px-2 py-1 rounded-full text-xs font-bold " + (parseFloat(s.var_entregas) >= 0 ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700")}, (parseFloat(s.var_entregas) >= 0 ? "↑" : "↓") + Math.abs(parseFloat(s.var_entregas)) + "%") : "-"), React.createElement("td", {className: "px-3 py-2 text-center"}, React.createElement("span", {className: "px-2 py-1 rounded text-xs font-bold " + (s.taxa_prazo >= 80 ? "bg-green-100 text-green-700" : s.taxa_prazo >= 60 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700")}, s.taxa_prazo + "%")), React.createElement("td", {className: "px-3 py-2 text-center"}, React.createElement("span", {className: "px-2 py-1 rounded text-xs font-bold " + (s.taxa_prazo_prof >= 80 ? "bg-green-100 text-green-700" : s.taxa_prazo_prof >= 60 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700")}, s.taxa_prazo_prof + "%")), React.createElement("td", {className: "px-3 py-2 text-center text-orange-600"}, s.retornos), React.createElement("td", {className: "px-3 py-2 text-right text-purple-600"}, "R$ " + s.valor_total.toLocaleString("pt-BR"))); }))))), !acompLoading && comparativoSemanalClientes && comparativoSemanalClientes.clientes && comparativoSemanalClientes.clientes.length > 1 && React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-6 mt-4"}, React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-4"}, "🏢 Comparativo Semanal por Cliente (", comparativoSemanalClientes.clientes.length, " clientes)"), comparativoSemanalClientes.clientes.map(function(cli, cliIdx) { return React.createElement("div", {key: cliIdx, className: "mb-6 border rounded-xl overflow-hidden " + (cliIdx === 0 ? "border-blue-300" : "border-gray-200")}, React.createElement("div", {className: "bg-gradient-to-r " + (cliIdx === 0 ? "from-blue-500 to-blue-600" : "from-gray-500 to-gray-600") + " px-4 py-3 flex justify-between items-center"}, React.createElement("div", null, React.createElement("span", {className: "text-white font-bold"}, cli.nome_fantasia), React.createElement("span", {className: "text-white/70 text-xs ml-2"}, "(", cli.resumo.total_semanas, " semanas)")), React.createElement("div", {className: "flex gap-4 text-xs text-white/90"}, React.createElement("span", null, "📦 ", cli.resumo.total_entregas, " entregas"), React.createElement("span", null, "📊 ", cli.resumo.media_entregas_semana, "/sem"), React.createElement("span", null, "✅ ", cli.resumo.media_taxa_prazo, "%"))), React.createElement("div", {className: "overflow-x-auto"}, React.createElement("table", {className: "w-full text-xs"}, React.createElement("thead", null, React.createElement("tr", {className: "bg-gray-50"}, React.createElement("th", {className: "px-3 py-2 text-left"}, "Semana"), React.createElement("th", {className: "px-3 py-2 text-center"}, "OS"), React.createElement("th", {className: "px-3 py-2 text-center"}, "Ent."), React.createElement("th", {className: "px-3 py-2 text-center"}, "Var."), React.createElement("th", {className: "px-3 py-2 text-center"}, "Prazo"), React.createElement("th", {className: "px-3 py-2 text-center"}, "Prof"), React.createElement("th", {className: "px-3 py-2 text-center"}, "Ret."), React.createElement("th", {className: "px-3 py-2 text-right"}, "Valor"))), React.createElement("tbody", null, cli.semanas.map(function(s, i) { return React.createElement("tr", {key: i, className: i === 0 ? "bg-blue-50 border-l-4 border-blue-500" : (i % 2 === 0 ? "bg-white" : "bg-gray-50")}, React.createElement("td", {className: "px-3 py-2 font-medium"}, i === 0 ? "📍 " + s.periodo : s.periodo), React.createElement("td", {className: "px-3 py-2 text-center font-bold text-blue-600"}, s.total_os), React.createElement("td", {className: "px-3 py-2 text-center text-sky-600"}, s.total_entregas), React.createElement("td", {className: "px-3 py-2 text-center"}, s.var_entregas ? React.createElement("span", {className: "px-2 py-1 rounded-full text-xs font-bold " + (parseFloat(s.var_entregas) >= 0 ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700")}, (parseFloat(s.var_entregas) >= 0 ? "↑" : "↓") + Math.abs(parseFloat(s.var_entregas)) + "%") : "-"), React.createElement("td", {className: "px-3 py-2 text-center"}, React.createElement("span", {className: "px-2 py-1 rounded text-xs font-bold " + (s.taxa_prazo >= 80 ? "bg-green-100 text-green-700" : s.taxa_prazo >= 60 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700")}, s.taxa_prazo + "%")), React.createElement("td", {className: "px-3 py-2 text-center"}, React.createElement("span", {className: "px-2 py-1 rounded text-xs font-bold " + (s.taxa_prazo_prof >= 80 ? "bg-green-100 text-green-700" : s.taxa_prazo_prof >= 60 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700")}, s.taxa_prazo_prof + "%")), React.createElement("td", {className: "px-3 py-2 text-center text-orange-600"}, s.retornos), React.createElement("td", {className: "px-3 py-2 text-right text-purple-600"}, "R$ " + s.valor_total.toLocaleString("pt-BR"))); }))))); })), 
+})())), !acompLoading && acompDados && acompDados.porData && acompDados.porData.length > 0 && React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-6"}, React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-4"}, "📋 Dados Detalhados"), React.createElement("div", {className: "overflow-x-auto"}, React.createElement("table", {className: "w-full text-xs"}, React.createElement("thead", null, React.createElement("tr", {className: "bg-purple-50"}, React.createElement("th", {className: "px-2 py-2 text-left"}, "Data"), React.createElement("th", {className: "px-2 py-2 text-center"}, "OS"), React.createElement("th", {className: "px-2 py-2 text-center"}, "Entregas"), React.createElement("th", {className: "px-2 py-2 text-center"}, "No Prazo"), React.createElement("th", {className: "px-2 py-2 text-center"}, "Fora"), React.createElement("th", {className: "px-2 py-2 text-center"}, "Retornos"), React.createElement("th", {className: "px-2 py-2 text-center"}, "Taxa"), React.createElement("th", {className: "px-2 py-2 text-right"}, "Valor Total"), React.createElement("th", {className: "px-2 py-2 text-right"}, "Valor Prof."), React.createElement("th", {className: "px-2 py-2 text-center"}, "Ticket"), React.createElement("th", {className: "px-2 py-2 text-center"}, "T.Entrega"), React.createElement("th", {className: "px-2 py-2 text-center"}, "Entreg."))), React.createElement("tbody", null, acompDados.porData.map(function(d,i){ var mins = parseFloat(d.tempo_medio_entrega)||0; var h = Math.floor(mins/60); var m = Math.floor(mins%60); return React.createElement("tr", {key: i, className: i%2===0?"bg-white":"bg-gray-50"}, React.createElement("td", {className: "px-2 py-1 font-medium"}, d.data_formatada), React.createElement("td", {className: "px-2 py-1 text-center font-bold text-blue-600"}, d.total_os), React.createElement("td", {className: "px-2 py-1 text-center text-sky-600"}, d.total_entregas), React.createElement("td", {className: "px-2 py-1 text-center text-green-600"}, d.dentro_prazo), React.createElement("td", {className: "px-2 py-1 text-center text-red-600"}, d.fora_prazo), React.createElement("td", {className: "px-2 py-1 text-center text-orange-600"}, d.retornos||0), React.createElement("td", {className: "px-2 py-1 text-center"}, React.createElement("span", {className: "px-1 py-0 rounded text-xs font-bold "+(parseFloat(d.taxa_prazo)>=80?"bg-green-100 text-green-700":parseFloat(d.taxa_prazo)>=60?"bg-yellow-100 text-yellow-700":"bg-red-100 text-red-700")}, d.taxa_prazo+"%")), React.createElement("td", {className: "px-2 py-1 text-right text-purple-600"}, "R$", parseFloat(d.valor_total||0).toLocaleString("pt-BR",{minimumFractionDigits:0})), React.createElement("td", {className: "px-2 py-1 text-right text-amber-600"}, "R$", parseFloat(d.valor_motoboy||0).toLocaleString("pt-BR",{minimumFractionDigits:0})), React.createElement("td", {className: "px-2 py-1 text-center text-cyan-600"}, "R$", d.ticket_medio), React.createElement("td", {className: "px-2 py-1 text-center text-rose-600"}, String(h).padStart(2,"0")+":"+String(m).padStart(2,"0")), React.createElement("td", {className: "px-2 py-1 text-center text-teal-600"}, d.total_entregadores)); })))))), !acompLoading && comparativoSemanal && comparativoSemanal.semanas && comparativoSemanal.semanas.length > 0 && // Comparativo Semanal DINÂMICO - baseado nos subfiltros selecionados
+(function() {
+  var semanas = comparativoSemanal.semanas;
+  if (!semanas || semanas.length === 0) return null;
+  
+  // Função para calcular variação entre semanas
+  var calcVar = function(atual, anterior) {
+    if (!anterior || anterior === 0) return null;
+    return ((atual - anterior) / anterior * 100).toFixed(1);
+  };
+  
+  // Função para formatar tempo
+  var fmtTempo = function(mins) {
+    var m = parseFloat(mins) || 0;
+    var h = Math.floor(m / 60);
+    var mn = Math.floor(m % 60);
+    return String(h).padStart(2, "0") + ":" + String(mn).padStart(2, "0");
+  };
+  
+  // Definir colunas baseadas nos subfiltros
+  var colunas = [];
+  colunas.push({id: "periodo", label: "Semana", align: "left"});
+  
+  if (acompFiltros.os) colunas.push({id: "os", label: "OS", field: "total_os", color: "blue", align: "center"});
+  if (acompFiltros.entregas) colunas.push({id: "entregas", label: "Entregas", field: "total_entregas", color: "sky", align: "center", showVar: true});
+  if (acompFiltros.noPrazo) colunas.push({id: "prazo", label: "Taxa Prazo", field: "taxa_prazo", color: "green", align: "center", isPercent: true, showVar: true, varField: "var_prazo"});
+  if (acompFiltros.foraPrazo) colunas.push({id: "fora", label: "Fora Prazo", field: "fora_prazo", color: "red", align: "center", showVar: true, invertVar: true});
+  if (acompFiltros.retornos) colunas.push({id: "retornos", label: "Retornos", field: "retornos", color: "orange", align: "center", showVar: true, invertVar: true});
+  if (acompFiltros.valorTotal) colunas.push({id: "valorTotal", label: "Valor Total", field: "valor_total", color: "purple", align: "right", isMoney: true, showVar: true});
+  if (acompFiltros.valorProf) colunas.push({id: "valorProf", label: "Valor Prof", field: "valor_motoboy", color: "amber", align: "right", isMoney: true, showVar: true});
+  if (acompFiltros.ticketMedio) colunas.push({id: "ticket", label: "Ticket", field: "ticket_medio", color: "cyan", align: "center", isMoney: true, showVar: true});
+  if (acompFiltros.tempoMedioEntrega) colunas.push({id: "tEntrega", label: "T.Entrega", field: "tempo_medio_entrega", color: "rose", align: "center", isTime: true, showVar: true, invertVar: true});
+  if (acompFiltros.tempoMedioAlocacao) colunas.push({id: "tAlocacao", label: "T.Alocação", field: "tempo_medio_alocacao", color: "pink", align: "center", isTime: true, showVar: true, invertVar: true});
+  if (acompFiltros.tempoMedioColeta) colunas.push({id: "tColeta", label: "T.Coleta", field: "tempo_medio_coleta", color: "fuchsia", align: "center", isTime: true, showVar: true, invertVar: true});
+  if (acompFiltros.totalEntregadores) colunas.push({id: "entregadores", label: "Entregadores", field: "total_entregadores", color: "teal", align: "center", showVar: true});
+  if (acompFiltros.mediaEntProfissional) colunas.push({id: "mediaEnt", label: "Média/Prof", field: "media_ent_profissional", color: "emerald", align: "center", isFloat: true, showVar: true});
+  
+  // Se nenhum filtro selecionado, mostrar colunas padrão
+  if (colunas.length === 1) {
+    colunas.push({id: "entregas", label: "Entregas", field: "total_entregas", color: "sky", align: "center", showVar: true});
+    colunas.push({id: "prazo", label: "Taxa Prazo", field: "taxa_prazo", color: "green", align: "center", isPercent: true, showVar: true});
+    colunas.push({id: "valorTotal", label: "Valor", field: "valor_total", color: "purple", align: "right", isMoney: true, showVar: true});
+  }
+  
+  // Função para renderizar valor
+  var renderVal = function(col, val) {
+    if (col.isTime) return fmtTempo(val);
+    if (col.isMoney) return "R$ " + parseFloat(val || 0).toLocaleString("pt-BR", {minimumFractionDigits: 0});
+    if (col.isPercent) return (val || 0) + "%";
+    if (col.isFloat) return parseFloat(val || 0).toFixed(1);
+    return val || 0;
+  };
+  
+  // Função para renderizar variação
+  var renderVar = function(col, semanaAtual, semanaAnterior, idx) {
+    if (!col.showVar || idx === semanas.length - 1 || !semanaAnterior) return null;
+    
+    var valAtual = parseFloat(semanaAtual[col.field]) || 0;
+    var valAnterior = parseFloat(semanaAnterior[col.field]) || 0;
+    
+    if (valAnterior === 0) return null;
+    
+    var varPct = ((valAtual - valAnterior) / valAnterior * 100).toFixed(1);
+    var isPositive = parseFloat(varPct) >= 0;
+    var isGood = col.invertVar ? !isPositive : isPositive;
+    
+    return React.createElement("div", {className: "text-xs font-bold " + (isGood ? "text-green-600" : "text-red-600")},
+      (isPositive ? "↑" : "↓") + " " + Math.abs(parseFloat(varPct)) + "%"
+    );
+  };
+  
+  // Cores por tipo
+  var getColorClass = function(color, type) {
+    var colors = {
+      blue: {bg: "bg-blue-100", text: "text-blue-700", border: "border-blue-200"},
+      sky: {bg: "bg-sky-100", text: "text-sky-700", border: "border-sky-200"},
+      green: {bg: "bg-green-100", text: "text-green-700", border: "border-green-200"},
+      red: {bg: "bg-red-100", text: "text-red-700", border: "border-red-200"},
+      orange: {bg: "bg-orange-100", text: "text-orange-700", border: "border-orange-200"},
+      purple: {bg: "bg-purple-100", text: "text-purple-700", border: "border-purple-200"},
+      amber: {bg: "bg-amber-100", text: "text-amber-700", border: "border-amber-200"},
+      cyan: {bg: "bg-cyan-100", text: "text-cyan-700", border: "border-cyan-200"},
+      rose: {bg: "bg-rose-100", text: "text-rose-700", border: "border-rose-200"},
+      pink: {bg: "bg-pink-100", text: "text-pink-700", border: "border-pink-200"},
+      fuchsia: {bg: "bg-fuchsia-100", text: "text-fuchsia-700", border: "border-fuchsia-200"},
+      teal: {bg: "bg-teal-100", text: "text-teal-700", border: "border-teal-200"},
+      emerald: {bg: "bg-emerald-100", text: "text-emerald-700", border: "border-emerald-200"}
+    };
+    return colors[color] ? colors[color][type] : "";
+  };
+  
+  return React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-6 mt-4"},
+    React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-4"}, "📅 Comparativo Semanal (", semanas.length, " semanas)"),
+    
+    // Cards de resumo da semana atual vs anterior
+    semanas.length >= 2 && React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-6"},
+      colunas.filter(function(c) { return c.showVar; }).slice(0, 6).map(function(col) {
+        var valAtual = parseFloat(semanas[0][col.field]) || 0;
+        var valAnterior = parseFloat(semanas[1][col.field]) || 0;
+        var varPct = valAnterior ? ((valAtual - valAnterior) / valAnterior * 100).toFixed(1) : null;
+        var isPositive = varPct && parseFloat(varPct) >= 0;
+        var isGood = col.invertVar ? !isPositive : isPositive;
+        
+        return React.createElement("div", {key: col.id, className: "rounded-xl p-3 border " + getColorClass(col.color, "bg") + " " + getColorClass(col.color, "border")},
+          React.createElement("div", {className: "text-xs font-medium mb-1 " + getColorClass(col.color, "text")}, col.label),
+          React.createElement("div", {className: "text-xl font-bold " + getColorClass(col.color, "text")}, renderVal(col, valAtual)),
+          varPct && React.createElement("div", {className: "text-sm font-bold " + (isGood ? "text-green-600" : "text-red-600")},
+            (isPositive ? "↑ " : "↓ ") + Math.abs(parseFloat(varPct)) + "%"
+          )
+        );
+      })
+    ),
+    
+    // Tabela
+    React.createElement("div", {className: "overflow-x-auto"},
+      React.createElement("table", {className: "w-full text-xs"},
+        React.createElement("thead", null,
+          React.createElement("tr", {className: "bg-indigo-100"},
+            colunas.map(function(col) {
+              return React.createElement("th", {key: col.id, className: "px-3 py-2 text-" + col.align + " font-bold"}, col.label);
+            })
+          )
+        ),
+        React.createElement("tbody", null,
+          semanas.map(function(s, i) {
+            var semanaAnterior = semanas[i + 1];
+            return React.createElement("tr", {key: i, className: i === 0 ? "bg-blue-50 border-l-4 border-blue-500" : (i % 2 === 0 ? "bg-white" : "bg-gray-50")},
+              colunas.map(function(col) {
+                if (col.id === "periodo") {
+                  return React.createElement("td", {key: col.id, className: "px-3 py-2 font-medium"}, i === 0 ? "📍 " + s.periodo : s.periodo);
+                }
+                
+                var val = s[col.field];
+                var varEl = renderVar(col, s, semanaAnterior, i);
+                
+                return React.createElement("td", {key: col.id, className: "px-3 py-2 text-" + col.align},
+                  React.createElement("div", {className: "flex flex-col items-" + (col.align === "right" ? "end" : col.align === "center" ? "center" : "start")},
+                    React.createElement("span", {className: "font-bold " + getColorClass(col.color, "text")}, renderVal(col, val)),
+                    varEl
+                  )
+                );
+              })
+            );
+          })
+        )
+      )
+    )
+  );
+})(), !acompLoading && comparativoSemanalClientes && comparativoSemanalClientes.clientes && comparativoSemanalClientes.clientes.length > 1 && React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-6 mt-4"}, React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-4"}, "🏢 Comparativo Semanal por Cliente (", comparativoSemanalClientes.clientes.length, " clientes)"), comparativoSemanalClientes.clientes.map(function(cli, cliIdx) { return React.createElement("div", {key: cliIdx, className: "mb-6 border rounded-xl overflow-hidden " + (cliIdx === 0 ? "border-blue-300" : "border-gray-200")}, React.createElement("div", {className: "bg-gradient-to-r " + (cliIdx === 0 ? "from-blue-500 to-blue-600" : "from-gray-500 to-gray-600") + " px-4 py-3 flex justify-between items-center"}, React.createElement("div", null, React.createElement("span", {className: "text-white font-bold"}, cli.nome_fantasia), React.createElement("span", {className: "text-white/70 text-xs ml-2"}, "(", cli.resumo.total_semanas, " semanas)")), React.createElement("div", {className: "flex gap-4 text-xs text-white/90"}, React.createElement("span", null, "📦 ", cli.resumo.total_entregas, " entregas"), React.createElement("span", null, "📊 ", cli.resumo.media_entregas_semana, "/sem"), React.createElement("span", null, "✅ ", cli.resumo.media_taxa_prazo, "%"))), React.createElement("div", {className: "overflow-x-auto"}, React.createElement("table", {className: "w-full text-xs"}, React.createElement("thead", null, React.createElement("tr", {className: "bg-gray-50"}, React.createElement("th", {className: "px-3 py-2 text-left"}, "Semana"), React.createElement("th", {className: "px-3 py-2 text-center"}, "OS"), React.createElement("th", {className: "px-3 py-2 text-center"}, "Ent."), React.createElement("th", {className: "px-3 py-2 text-center"}, "Var."), React.createElement("th", {className: "px-3 py-2 text-center"}, "Prazo"), React.createElement("th", {className: "px-3 py-2 text-center"}, "Prof"), React.createElement("th", {className: "px-3 py-2 text-center"}, "Ret."), React.createElement("th", {className: "px-3 py-2 text-right"}, "Valor"))), React.createElement("tbody", null, cli.semanas.map(function(s, i) { return React.createElement("tr", {key: i, className: i === 0 ? "bg-blue-50 border-l-4 border-blue-500" : (i % 2 === 0 ? "bg-white" : "bg-gray-50")}, React.createElement("td", {className: "px-3 py-2 font-medium"}, i === 0 ? "📍 " + s.periodo : s.periodo), React.createElement("td", {className: "px-3 py-2 text-center font-bold text-blue-600"}, s.total_os), React.createElement("td", {className: "px-3 py-2 text-center text-sky-600"}, s.total_entregas), React.createElement("td", {className: "px-3 py-2 text-center"}, s.var_entregas ? React.createElement("span", {className: "px-2 py-1 rounded-full text-xs font-bold " + (parseFloat(s.var_entregas) >= 0 ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700")}, (parseFloat(s.var_entregas) >= 0 ? "↑" : "↓") + Math.abs(parseFloat(s.var_entregas)) + "%") : "-"), React.createElement("td", {className: "px-3 py-2 text-center"}, React.createElement("span", {className: "px-2 py-1 rounded text-xs font-bold " + (s.taxa_prazo >= 80 ? "bg-green-100 text-green-700" : s.taxa_prazo >= 60 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700")}, s.taxa_prazo + "%")), React.createElement("td", {className: "px-3 py-2 text-center"}, React.createElement("span", {className: "px-2 py-1 rounded text-xs font-bold " + (s.taxa_prazo_prof >= 80 ? "bg-green-100 text-green-700" : s.taxa_prazo_prof >= 60 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700")}, s.taxa_prazo_prof + "%")), React.createElement("td", {className: "px-3 py-2 text-center text-orange-600"}, s.retornos), React.createElement("td", {className: "px-3 py-2 text-right text-purple-600"}, "R$ " + s.valor_total.toLocaleString("pt-BR"))); }))))); })), 
             
             // === SEÇÃO CLIENTE 767 ===
             "cliente767" === Et && React.createElement("div", {className: "space-y-4"}, 
