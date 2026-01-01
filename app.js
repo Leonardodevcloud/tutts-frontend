@@ -905,6 +905,13 @@ const hideLoadingScreen = () => {
         [relatorioIAErro, setRelatorioIAErro] = useState(null),
         [relatorioIAHistorico, setRelatorioIAHistorico] = useState([]),
         [relatorioIAPromptCustom, setRelatorioIAPromptCustom] = useState(''),
+        [relatorioIAFiltros, setRelatorioIAFiltros] = useState({
+            data_inicio: '',
+            data_fim: '',
+            cod_cliente: '',
+            centro_custo: ''
+        }),
+        [relatorioIACentrosCusto, setRelatorioIACentrosCusto] = useState([]),
         // Estados de paginação e OS dos profissionais
         [profPaginaAtual, setProfPaginaAtual] = useState(1),
         [profOsExpandido, setProfOsExpandido] = useState({}), // {cod_prof: [lista de OS]}
@@ -3279,20 +3286,16 @@ const hideLoadingScreen = () => {
                 
                 console.log("🤖 Gerando relatório IA tipo:", tipo);
                 
-                // Preparar parâmetros com filtros atuais
+                // Preparar parâmetros com filtros do Relatório IA
                 const params = new URLSearchParams();
                 params.append("tipo", tipo);
-                if (ua.data_inicio) params.append("data_inicio", ua.data_inicio);
-                if (ua.data_fim) params.append("data_fim", ua.data_fim);
-                if (ua.cod_cliente && ua.cod_cliente.length > 0) {
-                    ua.cod_cliente.forEach(c => params.append("cod_cliente", c));
-                }
-                if (ua.centro_custo && ua.centro_custo.length > 0) {
-                    ua.centro_custo.forEach(c => params.append("centro_custo", c));
-                }
-                if (relatorioIAPromptCustom) {
-                    params.append("prompt_custom", relatorioIAPromptCustom);
-                }
+                
+                // Usar filtros próprios do Relatório IA
+                if (relatorioIAFiltros.data_inicio) params.append("data_inicio", relatorioIAFiltros.data_inicio);
+                if (relatorioIAFiltros.data_fim) params.append("data_fim", relatorioIAFiltros.data_fim);
+                if (relatorioIAFiltros.cod_cliente) params.append("cod_cliente", relatorioIAFiltros.cod_cliente);
+                if (relatorioIAFiltros.centro_custo) params.append("centro_custo", relatorioIAFiltros.centro_custo);
+                if (relatorioIAPromptCustom) params.append("prompt_custom", relatorioIAPromptCustom);
                 
                 const response = await fetch(`${API_URL}/bi/relatorio-ia?${params}`);
                 const data = await response.json();
@@ -3308,7 +3311,7 @@ const hideLoadingScreen = () => {
                     id: Date.now(),
                     tipo,
                     data: new Date().toLocaleString("pt-BR"),
-                    filtros: { data_inicio: ua.data_inicio, data_fim: ua.data_fim },
+                    filtros: { ...relatorioIAFiltros },
                     resumo: data.relatorio?.substring(0, 200) + "..."
                 }, ...prev].slice(0, 10)); // Manter últimos 10
                 
@@ -18626,22 +18629,101 @@ const hideLoadingScreen = () => {
                     )
                 ),
                 
-                // Filtros ativos
-                React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-4"},
-                    React.createElement("div", {className: "flex items-center gap-2 text-sm text-gray-600"},
-                        React.createElement("span", {className: "font-semibold"}, "📅 Período:"),
-                        React.createElement("span", {className: "bg-emerald-100 text-emerald-800 px-2 py-1 rounded"}, 
-                            ua.data_inicio ? new Date(ua.data_inicio + "T12:00:00").toLocaleDateString("pt-BR") : "Início"
+                // Filtros editáveis
+                React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-6"},
+                    React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-4 flex items-center gap-2"},
+                        React.createElement("span", null, "🔍"),
+                        "Filtros da Análise"
+                    ),
+                    React.createElement("div", {className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"},
+                        // Data Início
+                        React.createElement("div", null,
+                            React.createElement("label", {className: "block text-sm font-medium text-gray-700 mb-1"}, "📅 Data Início"),
+                            React.createElement("input", {
+                                type: "date",
+                                value: relatorioIAFiltros.data_inicio,
+                                onChange: (e) => setRelatorioIAFiltros(prev => ({...prev, data_inicio: e.target.value})),
+                                className: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                            })
                         ),
-                        React.createElement("span", null, "até"),
-                        React.createElement("span", {className: "bg-emerald-100 text-emerald-800 px-2 py-1 rounded"}, 
-                            ua.data_fim ? new Date(ua.data_fim + "T12:00:00").toLocaleDateString("pt-BR") : "Fim"
+                        // Data Fim
+                        React.createElement("div", null,
+                            React.createElement("label", {className: "block text-sm font-medium text-gray-700 mb-1"}, "📅 Data Fim"),
+                            React.createElement("input", {
+                                type: "date",
+                                value: relatorioIAFiltros.data_fim,
+                                onChange: (e) => setRelatorioIAFiltros(prev => ({...prev, data_fim: e.target.value})),
+                                className: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                            })
                         ),
-                        ua.cod_cliente && ua.cod_cliente.length > 0 && React.createElement("span", {className: "ml-4 bg-purple-100 text-purple-800 px-2 py-1 rounded"},
-                            "🏢 " + ua.cod_cliente.length + " cliente(s)"
+                        // Cliente
+                        React.createElement("div", null,
+                            React.createElement("label", {className: "block text-sm font-medium text-gray-700 mb-1"}, "🏢 Cliente"),
+                            React.createElement("select", {
+                                value: relatorioIAFiltros.cod_cliente,
+                                onChange: (e) => {
+                                    const codCliente = e.target.value;
+                                    setRelatorioIAFiltros(prev => ({...prev, cod_cliente: codCliente, centro_custo: ''}));
+                                    // Carregar centros de custo do cliente
+                                    if (codCliente && Tt[codCliente]) {
+                                        setRelatorioIACentrosCusto(Tt[codCliente] || []);
+                                    } else {
+                                        setRelatorioIACentrosCusto([]);
+                                    }
+                                },
+                                className: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                            },
+                                React.createElement("option", {value: ""}, "Todos os clientes"),
+                                jt && jt.map(function(c) {
+                                    return React.createElement("option", {key: c.cod_cliente, value: c.cod_cliente}, 
+                                        c.cod_cliente + " - " + (il(c.cod_cliente) || c.nome_fantasia || c.cliente)
+                                    );
+                                })
+                            )
+                        ),
+                        // Centro de Custo
+                        React.createElement("div", null,
+                            React.createElement("label", {className: "block text-sm font-medium text-gray-700 mb-1"}, "📁 Centro de Custo"),
+                            React.createElement("select", {
+                                value: relatorioIAFiltros.centro_custo,
+                                onChange: (e) => setRelatorioIAFiltros(prev => ({...prev, centro_custo: e.target.value})),
+                                disabled: !relatorioIAFiltros.cod_cliente,
+                                className: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                            },
+                                React.createElement("option", {value: ""}, relatorioIAFiltros.cod_cliente ? "Todos os centros" : "Selecione um cliente primeiro"),
+                                relatorioIACentrosCusto && relatorioIACentrosCusto.map(function(cc) {
+                                    return React.createElement("option", {key: cc, value: cc}, cc);
+                                })
+                            )
                         )
                     ),
-                    React.createElement("p", {className: "text-xs text-gray-400 mt-2"}, "Use os filtros do dashboard para ajustar o período e clientes analisados")
+                    // Resumo dos filtros aplicados
+                    React.createElement("div", {className: "mt-4 flex flex-wrap items-center gap-2 text-sm"},
+                        React.createElement("span", {className: "text-gray-500"}, "Análise:"),
+                        relatorioIAFiltros.data_inicio && React.createElement("span", {className: "bg-emerald-100 text-emerald-800 px-2 py-1 rounded"},
+                            "De " + new Date(relatorioIAFiltros.data_inicio + "T12:00:00").toLocaleDateString("pt-BR")
+                        ),
+                        relatorioIAFiltros.data_fim && React.createElement("span", {className: "bg-emerald-100 text-emerald-800 px-2 py-1 rounded"},
+                            "Até " + new Date(relatorioIAFiltros.data_fim + "T12:00:00").toLocaleDateString("pt-BR")
+                        ),
+                        relatorioIAFiltros.cod_cliente && React.createElement("span", {className: "bg-purple-100 text-purple-800 px-2 py-1 rounded"},
+                            "🏢 " + (il(relatorioIAFiltros.cod_cliente) || "Cliente " + relatorioIAFiltros.cod_cliente)
+                        ),
+                        relatorioIAFiltros.centro_custo && React.createElement("span", {className: "bg-blue-100 text-blue-800 px-2 py-1 rounded"},
+                            "📁 " + relatorioIAFiltros.centro_custo
+                        ),
+                        !relatorioIAFiltros.data_inicio && !relatorioIAFiltros.data_fim && !relatorioIAFiltros.cod_cliente && React.createElement("span", {className: "text-gray-400 italic"},
+                            "Nenhum filtro aplicado - analisará todos os dados"
+                        ),
+                        // Botão limpar filtros
+                        (relatorioIAFiltros.data_inicio || relatorioIAFiltros.data_fim || relatorioIAFiltros.cod_cliente) && React.createElement("button", {
+                            onClick: () => {
+                                setRelatorioIAFiltros({ data_inicio: '', data_fim: '', cod_cliente: '', centro_custo: '' });
+                                setRelatorioIACentrosCusto([]);
+                            },
+                            className: "ml-2 text-red-500 hover:text-red-700 text-xs underline"
+                        }, "Limpar filtros")
+                    )
                 ),
                 
                 // Tipos de relatório
