@@ -18689,7 +18689,11 @@ const hideLoadingScreen = () => {
                 // Header
                 React.createElement("div", {className: "bg-gradient-to-r from-violet-600 to-purple-600 rounded-xl p-6 text-white"},
                     React.createElement("div", {className: "flex items-center gap-4"},
-                        React.createElement("div", {className: "text-5xl"}, "🤖"),
+                        React.createElement("img", {
+                            src: "https://raw.githubusercontent.com/Leonardodevcloud/tutts-frontend/main/gemini-app-icon-hd.png",
+                            alt: "IA",
+                            className: "w-16 h-16 rounded-xl shadow-lg"
+                        }),
                         React.createElement("div", null,
                             React.createElement("h2", {className: "text-2xl font-bold"}, "Relatório Inteligente com IA"),
                             React.createElement("p", {className: "text-violet-100 mt-1"}, "Análises automáticas dos seus dados usando Inteligência Artificial")
