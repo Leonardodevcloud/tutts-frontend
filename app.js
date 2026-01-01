@@ -16101,8 +16101,8 @@ const hideLoadingScreen = () => {
                 onClick: () => {
                     ht("relatorio-ia")
                 },
-                className: "px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-all " + ("relatorio-ia" === Et ? "border-violet-600 text-violet-600 bg-violet-50" : "border-transparent text-gray-600 hover:text-gray-800")
-            }, "🤖 Relatório IA"), React.createElement("button", {
+                className: "px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-all flex items-center gap-2 " + ("relatorio-ia" === Et ? "border-violet-600 text-violet-600 bg-violet-50" : "border-transparent text-gray-600 hover:text-gray-800")
+            }, React.createElement("img", {src: "https://raw.githubusercontent.com/Leonardodevcloud/tutts-frontend/main/gemini-app-icon-hd.png", alt: "", className: "w-5 h-5 rounded"}), "Relatório IA"), React.createElement("button", {
                 onClick: () => {
                     ht("config"), tl(), al(), carregarPrazosProf()
                 },
