@@ -3373,7 +3373,7 @@ const hideLoadingScreen = () => {
                 if (relatorioIAResultado.filtros?.cliente) {
                     nomeArquivo += '-' + relatorioIAResultado.filtros.cliente.codigo;
                 }
-                nomeArquivo += '-' + new Date().toISOString().split('T')[0] + '.docx';
+                nomeArquivo += '-' + new Date().toISOString().split('T')[0] + '.doc';
                 
                 // Baixar arquivo
                 const blob = await response.blob();
