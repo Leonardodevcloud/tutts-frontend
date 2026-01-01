@@ -3338,137 +3338,6 @@ const hideLoadingScreen = () => {
         
         // Função para toggle de tipo de relatório
         const toggleRelatorioIATipo = (tipo) => {
-        
-        // Função para gerar PDF do relatório IA
-        const gerarPDFRelatorioIA = () => {
-            if (!relatorioIAResultado) return;
-            
-            const metricas = relatorioIAResultado.metricas || {};
-            const periodo = relatorioIAResultado.periodo || {};
-            
-            // Criar conteúdo HTML para o PDF
-            const htmlContent = `
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Relatório IA - Sistema Tutts</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            font-family: 'Segoe UI', Arial, sans-serif; 
-            padding: 40px; 
-            color: #333;
-            line-height: 1.6;
-        }
-        .header { 
-            background: linear-gradient(135deg, #059669 0%, #0d9488 100%); 
-            color: white; 
-            padding: 30px; 
-            border-radius: 12px; 
-            margin-bottom: 30px;
-            text-align: center;
-        }
-        .header h1 { font-size: 28px; margin-bottom: 10px; }
-        .header p { opacity: 0.9; font-size: 14px; }
-        .metricas { 
-            display: grid; 
-            grid-template-columns: repeat(4, 1fr); 
-            gap: 15px; 
-            margin-bottom: 30px; 
-        }
-        .metrica { 
-            background: #f8fafc; 
-            padding: 20px; 
-            border-radius: 10px; 
-            text-align: center;
-            border: 1px solid #e2e8f0;
-        }
-        .metrica-valor { font-size: 24px; font-weight: bold; color: #059669; }
-        .metrica-label { font-size: 12px; color: #64748b; margin-top: 5px; }
-        .conteudo { 
-            background: white; 
-            padding: 30px; 
-            border-radius: 12px; 
-            border: 1px solid #e2e8f0;
-        }
-        .conteudo h2 { 
-            color: #059669; 
-            font-size: 18px; 
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #059669;
-        }
-        .relatorio-texto { 
-            white-space: pre-wrap; 
-            font-size: 14px; 
-            line-height: 1.8;
-        }
-        .relatorio-texto strong { color: #059669; }
-        .footer { 
-            margin-top: 30px; 
-            text-align: center; 
-            color: #94a3b8; 
-            font-size: 12px;
-            padding-top: 20px;
-            border-top: 1px solid #e2e8f0;
-        }
-        @media print {
-            body { padding: 20px; }
-            .header { break-after: avoid; }
-        }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1>📊 Relatório de Inteligência Artificial</h1>
-        <p><strong>Análise:</strong> ${relatorioIAResultado.tipo_analise || 'Geral'}</p>
-        <p><strong>Período:</strong> ${periodo.inicio || ''} a ${periodo.fim || ''}</p>
-        <p><strong>Gerado em:</strong> ${new Date().toLocaleString('pt-BR')}</p>
-    </div>
-    
-    <div class="metricas">
-        <div class="metrica">
-            <div class="metrica-valor">${(metricas.total_entregas || 0).toLocaleString('pt-BR')}</div>
-            <div class="metrica-label">Total de Entregas</div>
-        </div>
-        <div class="metrica">
-            <div class="metrica-valor">${(metricas.taxa_prazo || 0).toFixed(1)}%</div>
-            <div class="metrica-label">Taxa de Prazo</div>
-        </div>
-        <div class="metrica">
-            <div class="metrica-valor">${(metricas.tempo_medio_entrega || 0).toFixed(0)} min</div>
-            <div class="metrica-label">Tempo Médio</div>
-        </div>
-        <div class="metrica">
-            <div class="metrica-valor">${metricas.media_profissionais_por_dia || 0}</div>
-            <div class="metrica-label">Motos/Dia</div>
-        </div>
-    </div>
-    
-    <div class="conteudo">
-        <h2>📋 Análise Detalhada</h2>
-        <div class="relatorio-texto">${(relatorioIAResultado.relatorio || '').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</div>
-    </div>
-    
-    <div class="footer">
-        <p>Sistema Tutts - Business Intelligence • Relatório gerado automaticamente por IA</p>
-    </div>
-</body>
-</html>`;
-            
-            // Abrir janela de impressão
-            const printWindow = window.open('', '_blank');
-            printWindow.document.write(htmlContent);
-            printWindow.document.close();
-            
-            // Aguardar carregar e imprimir
-            printWindow.onload = function() {
-                setTimeout(() => {
-                    printWindow.print();
-                }, 250);
-            };
-        };
             setRelatorioIATipos(prev => {
                 if (prev.includes(tipo)) {
                     return prev.filter(t => t !== tipo);
@@ -3476,6 +3345,146 @@ const hideLoadingScreen = () => {
                     return [...prev, tipo];
                 }
             });
+        };
+        
+        // Função para gerar PDF do relatório IA
+        const gerarPDFRelatorioIA = async () => {
+            if (!relatorioIAResultado) return;
+            
+            try {
+                // Carregar jsPDF se não estiver carregado
+                if (!window.jspdf) {
+                    await new Promise((resolve, reject) => {
+                        const script = document.createElement('script');
+                        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+                        script.onload = resolve;
+                        script.onerror = reject;
+                        document.head.appendChild(script);
+                    });
+                }
+                
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                
+                const metricas = relatorioIAResultado.metricas || {};
+                const periodo = relatorioIAResultado.periodo || {};
+                
+                // Cores
+                const verde = [5, 150, 105];
+                const cinzaEscuro = [51, 51, 51];
+                const cinzaClaro = [100, 116, 139];
+                
+                // Header
+                doc.setFillColor(...verde);
+                doc.rect(0, 0, 210, 45, 'F');
+                
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(22);
+                doc.setFont('helvetica', 'bold');
+                doc.text('Relatório de Inteligência Artificial', 105, 18, { align: 'center' });
+                
+                doc.setFontSize(11);
+                doc.setFont('helvetica', 'normal');
+                doc.text('Análise: ' + (relatorioIAResultado.tipo_analise || 'Geral'), 105, 28, { align: 'center' });
+                doc.text('Período: ' + (periodo.inicio || '') + ' a ' + (periodo.fim || ''), 105, 35, { align: 'center' });
+                doc.text('Gerado em: ' + new Date().toLocaleString('pt-BR'), 105, 42, { align: 'center' });
+                
+                // Métricas
+                let y = 55;
+                doc.setFillColor(248, 250, 252);
+                
+                const metricasData = [
+                    { label: 'Entregas', valor: (metricas.total_entregas || 0).toLocaleString('pt-BR') },
+                    { label: 'Taxa Prazo', valor: (metricas.taxa_prazo || 0).toFixed(1) + '%' },
+                    { label: 'Tempo Médio', valor: (metricas.tempo_medio_entrega || 0).toFixed(0) + ' min' },
+                    { label: 'Motos/Dia', valor: String(metricas.media_profissionais_por_dia || 0) }
+                ];
+                
+                const boxWidth = 45;
+                const startX = 12;
+                
+                metricasData.forEach((m, i) => {
+                    const x = startX + (i * (boxWidth + 5));
+                    doc.setFillColor(248, 250, 252);
+                    doc.roundedRect(x, y, boxWidth, 25, 3, 3, 'F');
+                    
+                    doc.setTextColor(...verde);
+                    doc.setFontSize(16);
+                    doc.setFont('helvetica', 'bold');
+                    doc.text(m.valor, x + boxWidth/2, y + 12, { align: 'center' });
+                    
+                    doc.setTextColor(...cinzaClaro);
+                    doc.setFontSize(9);
+                    doc.setFont('helvetica', 'normal');
+                    doc.text(m.label, x + boxWidth/2, y + 20, { align: 'center' });
+                });
+                
+                // Título do conteúdo
+                y = 90;
+                doc.setTextColor(...verde);
+                doc.setFontSize(14);
+                doc.setFont('helvetica', 'bold');
+                doc.text('Análise Detalhada', 14, y);
+                
+                doc.setDrawColor(...verde);
+                doc.setLineWidth(0.5);
+                doc.line(14, y + 3, 196, y + 3);
+                
+                // Conteúdo do relatório
+                y = 100;
+                doc.setTextColor(...cinzaEscuro);
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'normal');
+                
+                // Limpar markdown e processar texto
+                let texto = (relatorioIAResultado.relatorio || '')
+                    .replace(/\*\*(.*?)\*\*/g, '$1')
+                    .replace(/#{1,6}\s/g, '')
+                    .replace(/\|/g, ' ')
+                    .replace(/-{3,}/g, '');
+                
+                // Quebrar em linhas
+                const maxWidth = 180;
+                const linhas = doc.splitTextToSize(texto, maxWidth);
+                
+                // Adicionar linhas com paginação automática
+                linhas.forEach((linha) => {
+                    if (y > 280) {
+                        doc.addPage();
+                        y = 20;
+                    }
+                    
+                    // Detectar se é título/seção (começa com emoji ou número)
+                    if (/^[📊📈📉⚠️🔴🟡🟢✅❌👥🏆🥇🥈🥉💰📋1️⃣2️⃣3️⃣4️⃣]/.test(linha.trim())) {
+                        doc.setFont('helvetica', 'bold');
+                        doc.setTextColor(...verde);
+                        y += 3;
+                    } else {
+                        doc.setFont('helvetica', 'normal');
+                        doc.setTextColor(...cinzaEscuro);
+                    }
+                    
+                    doc.text(linha, 14, y);
+                    y += 6;
+                });
+                
+                // Rodapé
+                const pageCount = doc.internal.getNumberOfPages();
+                for (let i = 1; i <= pageCount; i++) {
+                    doc.setPage(i);
+                    doc.setFontSize(8);
+                    doc.setTextColor(...cinzaClaro);
+                    doc.text('Sistema Tutts - Business Intelligence • Página ' + i + ' de ' + pageCount, 105, 290, { align: 'center' });
+                }
+                
+                // Baixar PDF
+                const nomeArquivo = 'relatorio-ia-' + new Date().toISOString().split('T')[0] + '.pdf';
+                doc.save(nomeArquivo);
+                
+            } catch (err) {
+                console.error('Erro ao gerar PDF:', err);
+                alert('Erro ao gerar PDF: ' + err.message);
+            }
         };
         
         // useEffect para recarregar acompanhamento quando filtros mudam
