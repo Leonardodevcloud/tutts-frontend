@@ -19693,8 +19693,8 @@ const hideLoadingScreen = () => {
                 className: "bg-white border border-purple-300 px-3 py-1 rounded text-sm"
             }, e.km_min, " - ", e.km_max || "∞", " km → ", React.createElement("strong", null, e.prazo_minutos, " min")))))))))),
             
-            // ========== SEÇÃO 4: PRAZOS PROFISSIONAIS (Dropdown) ==========
-            React.createElement("div", {className: "bg-white rounded-xl shadow overflow-hidden"},
+            // ========== SEÇÃO 4: PRAZOS PROFISSIONAIS (Dropdown) - APENAS NA ABA CONFIG ==========
+            "config" === Et && React.createElement("div", {className: "bg-white rounded-xl shadow overflow-hidden"},
                 React.createElement("button", {
                     onClick: function() { setConfigSecaoAberta(configSecaoAberta === "prazos_prof" ? "" : "prazos_prof"); },
                     className: "w-full px-6 py-4 flex items-center justify-between bg-gradient-to-r from-orange-50 to-white hover:from-orange-100 transition-all"
