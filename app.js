@@ -11534,7 +11534,7 @@ const hideLoadingScreen = () => {
                 }, React.createElement("p", {
                     className: "text-sm text-gray-600"
                 }, "💰 Lucro (Taxas 4,5%)"), React.createElement("p", {
-                    className: "text-2xl font-bold text-emerald-600"
+                    className: "text-2xl font-bold text-violet-600"
                 }, er(k))), React.createElement("div", {
                     className: "bg-white rounded-xl shadow p-4"
                 }, React.createElement("p", {
@@ -16101,7 +16101,7 @@ const hideLoadingScreen = () => {
                 onClick: () => {
                     ht("relatorio-ia")
                 },
-                className: "px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-all " + ("relatorio-ia" === Et ? "border-emerald-600 text-emerald-600 bg-emerald-50" : "border-transparent text-gray-600 hover:text-gray-800")
+                className: "px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-all " + ("relatorio-ia" === Et ? "border-violet-600 text-violet-600 bg-violet-50" : "border-transparent text-gray-600 hover:text-gray-800")
             }, "🤖 Relatório IA"), React.createElement("button", {
                 onClick: () => {
                     ht("config"), tl(), al(), carregarPrazosProf()
@@ -16401,13 +16401,13 @@ const hideLoadingScreen = () => {
             React.createElement("div", {
                 className: "grid grid-cols-5 gap-2 mb-3"
             }, React.createElement("div", {
-                className: "bg-white rounded-lg p-3 shadow border-l-3 border-emerald-500"
+                className: "bg-white rounded-lg p-3 shadow border-l-3 border-violet-500"
             }, React.createElement("div", {
                 className: "flex items-center gap-2 mb-1"
             }, React.createElement("span", {
                 className: "text-base"
             }, "💵"), React.createElement("span", {
-                className: "text-[10px] text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded"
+                className: "text-[10px] text-violet-600 bg-violet-50 px-1.5 py-0.5 rounded"
             }, "Cliente")), React.createElement("p", {
                 className: "text-lg font-bold text-gray-800"
             }, sl(ft?.valor_total || 0)), React.createElement("p", {
@@ -16927,7 +16927,7 @@ const hideLoadingScreen = () => {
                     React.createElement("div", {id: "mapa-calor-leaflet", style: {height: "600px", width: "100%", borderRadius: "12px", backgroundColor: "#e5e7eb"}}),
                     mapaCalorLoading && React.createElement("div", {style: {position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(255,255,255,0.8)", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "12px", zIndex: 1000}}, React.createElement("div", {className: "text-center"}, React.createElement("div", {className: "animate-spin text-4xl"}, "⏳"), React.createElement("span", {className: "text-gray-600"}, "Carregando mapa...")))
                 )
-            ), "acompanhamento" === Et && React.createElement("div", {className: "space-y-6"}, React.createElement("div", {className: "bg-gradient-to-r from-purple-600 to-purple-800 rounded-xl p-6 text-white"}, React.createElement("h2", {className: "text-2xl font-bold mb-2"}, "📈 Acompanhamento Periódico"), React.createElement("p", {className: "opacity-80"}, "Análise temporal com múltiplas métricas")), React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-6"}, React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-4"}, "📊 Selecione as Métricas"), React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2"}, React.createElement("label", {className: "flex items-center gap-2 p-2 border rounded-lg cursor-pointer text-xs " + (acompFiltros.os ? "border-blue-500 bg-blue-50" : "border-gray-200")}, React.createElement("input", {type: "checkbox", checked: acompFiltros.os, onChange: function() { toggleAcompFiltro("os"); }, className: "w-3 h-3"}), "OS"), React.createElement("label", {className: "flex items-center gap-2 p-2 border rounded-lg cursor-pointer text-xs " + (acompFiltros.entregas ? "border-sky-500 bg-sky-50" : "border-gray-200")}, React.createElement("input", {type: "checkbox", checked: acompFiltros.entregas, onChange: function() { toggleAcompFiltro("entregas"); }, className: "w-3 h-3"}), "Entregas"), React.createElement("label", {className: "flex items-center gap-2 p-2 border rounded-lg cursor-pointer text-xs " + (acompFiltros.noPrazo ? "border-green-500 bg-green-50" : "border-gray-200")}, React.createElement("input", {type: "checkbox", checked: acompFiltros.noPrazo, onChange: function() { toggleAcompFiltro("noPrazo"); }, className: "w-3 h-3"}), "No Prazo"), React.createElement("label", {className: "flex items-center gap-2 p-2 border rounded-lg cursor-pointer text-xs " + (acompFiltros.foraPrazo ? "border-red-500 bg-red-50" : "border-gray-200")}, React.createElement("input", {type: "checkbox", checked: acompFiltros.foraPrazo, onChange: function() { toggleAcompFiltro("foraPrazo"); }, className: "w-3 h-3"}), "Fora Prazo"), React.createElement("label", {className: "flex items-center gap-2 p-2 border rounded-lg cursor-pointer text-xs " + (acompFiltros.retornos ? "border-orange-500 bg-orange-50" : "border-gray-200")}, React.createElement("input", {type: "checkbox", checked: acompFiltros.retornos, onChange: function() { toggleAcompFiltro("retornos"); }, className: "w-3 h-3"}), "Retornos"), React.createElement("label", {className: "flex items-center gap-2 p-2 border rounded-lg cursor-pointer text-xs " + (acompFiltros.valorTotal ? "border-purple-500 bg-purple-50" : "border-gray-200")}, React.createElement("input", {type: "checkbox", checked: acompFiltros.valorTotal, onChange: function() { toggleAcompFiltro("valorTotal"); }, className: "w-3 h-3"}), "Valor Total"), React.createElement("label", {className: "flex items-center gap-2 p-2 border rounded-lg cursor-pointer text-xs " + (acompFiltros.valorProf ? "border-amber-500 bg-amber-50" : "border-gray-200")}, React.createElement("input", {type: "checkbox", checked: acompFiltros.valorProf, onChange: function() { toggleAcompFiltro("valorProf"); }, className: "w-3 h-3"}), "Valor Prof."), React.createElement("label", {className: "flex items-center gap-2 p-2 border rounded-lg cursor-pointer text-xs " + (acompFiltros.faturamentoTotal ? "border-emerald-500 bg-emerald-50" : "border-gray-200")}, React.createElement("input", {type: "checkbox", checked: acompFiltros.faturamentoTotal, onChange: function() { toggleAcompFiltro("faturamentoTotal"); }, className: "w-3 h-3"}), "Fat. Total"), React.createElement("label", {className: "flex items-center gap-2 p-2 border rounded-lg cursor-pointer text-xs " + (acompFiltros.ticketMedio ? "border-cyan-500 bg-cyan-50" : "border-gray-200")}, React.createElement("input", {type: "checkbox", checked: acompFiltros.ticketMedio, onChange: function() { toggleAcompFiltro("ticketMedio"); }, className: "w-3 h-3"}), "Ticket Médio"), React.createElement("label", {className: "flex items-center gap-2 p-2 border rounded-lg cursor-pointer text-xs " + (acompFiltros.tempoMedioEntrega ? "border-rose-500 bg-rose-50" : "border-gray-200")}, React.createElement("input", {type: "checkbox", checked: acompFiltros.tempoMedioEntrega, onChange: function() { toggleAcompFiltro("tempoMedioEntrega"); }, className: "w-3 h-3"}), "Temp. Médio Entrega"), React.createElement("label", {className: "flex items-center gap-2 p-2 border rounded-lg cursor-pointer text-xs " + (acompFiltros.tempoMedioAlocacao ? "border-pink-500 bg-pink-50" : "border-gray-200")}, React.createElement("input", {type: "checkbox", checked: acompFiltros.tempoMedioAlocacao, onChange: function() { toggleAcompFiltro("tempoMedioAlocacao"); }, className: "w-3 h-3"}), "Temp. Médio Alocação"), React.createElement("label", {className: "flex items-center gap-2 p-2 border rounded-lg cursor-pointer text-xs " + (acompFiltros.tempoMedioColeta ? "border-fuchsia-500 bg-fuchsia-50" : "border-gray-200")}, React.createElement("input", {type: "checkbox", checked: acompFiltros.tempoMedioColeta, onChange: function() { toggleAcompFiltro("tempoMedioColeta"); }, className: "w-3 h-3"}), "Temp. Médio Coleta"), React.createElement("label", {className: "flex items-center gap-2 p-2 border rounded-lg cursor-pointer text-xs " + (acompFiltros.totalEntregadores ? "border-teal-500 bg-teal-50" : "border-gray-200")}, React.createElement("input", {type: "checkbox", checked: acompFiltros.totalEntregadores, onChange: function() { toggleAcompFiltro("totalEntregadores"); }, className: "w-3 h-3"}), "Total Entregadores"), React.createElement("label", {className: "flex items-center gap-2 p-2 border rounded-lg cursor-pointer text-xs " + (acompFiltros.mediaEntProfissional ? "border-emerald-500 bg-emerald-50" : "border-gray-200")}, React.createElement("input", {type: "checkbox", checked: acompFiltros.mediaEntProfissional, onChange: function() { toggleAcompFiltro("mediaEntProfissional"); }, className: "w-3 h-3"}), "Média Ent. Profissional"), React.createElement("label", {className: "flex items-center gap-2 p-2 border rounded-lg cursor-pointer text-xs " + (acompFiltros.evolucaoSemanal ? "border-violet-500 bg-violet-50" : "border-gray-200")}, React.createElement("input", {type: "checkbox", checked: acompFiltros.evolucaoSemanal, onChange: function() { toggleAcompFiltro("evolucaoSemanal"); }, className: "w-3 h-3"}), "Evolução Semanal"))),
+            ), "acompanhamento" === Et && React.createElement("div", {className: "space-y-6"}, React.createElement("div", {className: "bg-gradient-to-r from-purple-600 to-purple-800 rounded-xl p-6 text-white"}, React.createElement("h2", {className: "text-2xl font-bold mb-2"}, "📈 Acompanhamento Periódico"), React.createElement("p", {className: "opacity-80"}, "Análise temporal com múltiplas métricas")), React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-6"}, React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-4"}, "📊 Selecione as Métricas"), React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2"}, React.createElement("label", {className: "flex items-center gap-2 p-2 border rounded-lg cursor-pointer text-xs " + (acompFiltros.os ? "border-blue-500 bg-blue-50" : "border-gray-200")}, React.createElement("input", {type: "checkbox", checked: acompFiltros.os, onChange: function() { toggleAcompFiltro("os"); }, className: "w-3 h-3"}), "OS"), React.createElement("label", {className: "flex items-center gap-2 p-2 border rounded-lg cursor-pointer text-xs " + (acompFiltros.entregas ? "border-sky-500 bg-sky-50" : "border-gray-200")}, React.createElement("input", {type: "checkbox", checked: acompFiltros.entregas, onChange: function() { toggleAcompFiltro("entregas"); }, className: "w-3 h-3"}), "Entregas"), React.createElement("label", {className: "flex items-center gap-2 p-2 border rounded-lg cursor-pointer text-xs " + (acompFiltros.noPrazo ? "border-green-500 bg-green-50" : "border-gray-200")}, React.createElement("input", {type: "checkbox", checked: acompFiltros.noPrazo, onChange: function() { toggleAcompFiltro("noPrazo"); }, className: "w-3 h-3"}), "No Prazo"), React.createElement("label", {className: "flex items-center gap-2 p-2 border rounded-lg cursor-pointer text-xs " + (acompFiltros.foraPrazo ? "border-red-500 bg-red-50" : "border-gray-200")}, React.createElement("input", {type: "checkbox", checked: acompFiltros.foraPrazo, onChange: function() { toggleAcompFiltro("foraPrazo"); }, className: "w-3 h-3"}), "Fora Prazo"), React.createElement("label", {className: "flex items-center gap-2 p-2 border rounded-lg cursor-pointer text-xs " + (acompFiltros.retornos ? "border-orange-500 bg-orange-50" : "border-gray-200")}, React.createElement("input", {type: "checkbox", checked: acompFiltros.retornos, onChange: function() { toggleAcompFiltro("retornos"); }, className: "w-3 h-3"}), "Retornos"), React.createElement("label", {className: "flex items-center gap-2 p-2 border rounded-lg cursor-pointer text-xs " + (acompFiltros.valorTotal ? "border-purple-500 bg-purple-50" : "border-gray-200")}, React.createElement("input", {type: "checkbox", checked: acompFiltros.valorTotal, onChange: function() { toggleAcompFiltro("valorTotal"); }, className: "w-3 h-3"}), "Valor Total"), React.createElement("label", {className: "flex items-center gap-2 p-2 border rounded-lg cursor-pointer text-xs " + (acompFiltros.valorProf ? "border-amber-500 bg-amber-50" : "border-gray-200")}, React.createElement("input", {type: "checkbox", checked: acompFiltros.valorProf, onChange: function() { toggleAcompFiltro("valorProf"); }, className: "w-3 h-3"}), "Valor Prof."), React.createElement("label", {className: "flex items-center gap-2 p-2 border rounded-lg cursor-pointer text-xs " + (acompFiltros.faturamentoTotal ? "border-violet-500 bg-violet-50" : "border-gray-200")}, React.createElement("input", {type: "checkbox", checked: acompFiltros.faturamentoTotal, onChange: function() { toggleAcompFiltro("faturamentoTotal"); }, className: "w-3 h-3"}), "Fat. Total"), React.createElement("label", {className: "flex items-center gap-2 p-2 border rounded-lg cursor-pointer text-xs " + (acompFiltros.ticketMedio ? "border-cyan-500 bg-cyan-50" : "border-gray-200")}, React.createElement("input", {type: "checkbox", checked: acompFiltros.ticketMedio, onChange: function() { toggleAcompFiltro("ticketMedio"); }, className: "w-3 h-3"}), "Ticket Médio"), React.createElement("label", {className: "flex items-center gap-2 p-2 border rounded-lg cursor-pointer text-xs " + (acompFiltros.tempoMedioEntrega ? "border-rose-500 bg-rose-50" : "border-gray-200")}, React.createElement("input", {type: "checkbox", checked: acompFiltros.tempoMedioEntrega, onChange: function() { toggleAcompFiltro("tempoMedioEntrega"); }, className: "w-3 h-3"}), "Temp. Médio Entrega"), React.createElement("label", {className: "flex items-center gap-2 p-2 border rounded-lg cursor-pointer text-xs " + (acompFiltros.tempoMedioAlocacao ? "border-pink-500 bg-pink-50" : "border-gray-200")}, React.createElement("input", {type: "checkbox", checked: acompFiltros.tempoMedioAlocacao, onChange: function() { toggleAcompFiltro("tempoMedioAlocacao"); }, className: "w-3 h-3"}), "Temp. Médio Alocação"), React.createElement("label", {className: "flex items-center gap-2 p-2 border rounded-lg cursor-pointer text-xs " + (acompFiltros.tempoMedioColeta ? "border-fuchsia-500 bg-fuchsia-50" : "border-gray-200")}, React.createElement("input", {type: "checkbox", checked: acompFiltros.tempoMedioColeta, onChange: function() { toggleAcompFiltro("tempoMedioColeta"); }, className: "w-3 h-3"}), "Temp. Médio Coleta"), React.createElement("label", {className: "flex items-center gap-2 p-2 border rounded-lg cursor-pointer text-xs " + (acompFiltros.totalEntregadores ? "border-teal-500 bg-teal-50" : "border-gray-200")}, React.createElement("input", {type: "checkbox", checked: acompFiltros.totalEntregadores, onChange: function() { toggleAcompFiltro("totalEntregadores"); }, className: "w-3 h-3"}), "Total Entregadores"), React.createElement("label", {className: "flex items-center gap-2 p-2 border rounded-lg cursor-pointer text-xs " + (acompFiltros.mediaEntProfissional ? "border-violet-500 bg-violet-50" : "border-gray-200")}, React.createElement("input", {type: "checkbox", checked: acompFiltros.mediaEntProfissional, onChange: function() { toggleAcompFiltro("mediaEntProfissional"); }, className: "w-3 h-3"}), "Média Ent. Profissional"), React.createElement("label", {className: "flex items-center gap-2 p-2 border rounded-lg cursor-pointer text-xs " + (acompFiltros.evolucaoSemanal ? "border-violet-500 bg-violet-50" : "border-gray-200")}, React.createElement("input", {type: "checkbox", checked: acompFiltros.evolucaoSemanal, onChange: function() { toggleAcompFiltro("evolucaoSemanal"); }, className: "w-3 h-3"}), "Evolução Semanal"))),
             
             // TABELA DE RESUMO POR CLIENTE - DINÂMICA BASEADA NOS SUBFILTROS
             !acompLoading && acompClientes && acompClientes.clientes && acompClientes.clientes.length > 0 && acompFiltrosOrdem.length > 0 && React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-6"}, 
@@ -16971,13 +16971,13 @@ const hideLoadingScreen = () => {
                                             if (filtro === "retornos") return React.createElement("td", {key: filtro, className: "px-3 py-2 text-center text-orange-600 font-medium whitespace-nowrap"}, c.retornos);
                                             if (filtro === "valorTotal") return React.createElement("td", {key: filtro, className: "px-3 py-2 text-right text-purple-600 font-medium whitespace-nowrap"}, "R$" + c.valorTotal.toLocaleString("pt-BR", {minimumFractionDigits: 2}));
                                             if (filtro === "valorProf") return React.createElement("td", {key: filtro, className: "px-3 py-2 text-right text-amber-600 font-medium whitespace-nowrap"}, "R$" + c.valorProf.toLocaleString("pt-BR", {minimumFractionDigits: 2}));
-                                            if (filtro === "faturamentoTotal") return React.createElement("td", {key: filtro, className: "px-3 py-2 text-right text-emerald-600 font-medium whitespace-nowrap"}, "R$" + c.faturamentoTotal.toLocaleString("pt-BR", {minimumFractionDigits: 2}));
+                                            if (filtro === "faturamentoTotal") return React.createElement("td", {key: filtro, className: "px-3 py-2 text-right text-violet-600 font-medium whitespace-nowrap"}, "R$" + c.faturamentoTotal.toLocaleString("pt-BR", {minimumFractionDigits: 2}));
                                             if (filtro === "ticketMedio") return React.createElement("td", {key: filtro, className: "px-3 py-2 text-right text-cyan-600 font-medium whitespace-nowrap"}, "R$" + c.ticketMedio.toLocaleString("pt-BR", {minimumFractionDigits: 2}));
                                             if (filtro === "tempoMedioEntrega") return React.createElement("td", {key: filtro, className: "px-3 py-2 text-center text-rose-600 whitespace-nowrap"}, c.tempoMedioEntrega || "00:00:00");
                                             if (filtro === "tempoMedioAlocacao") return React.createElement("td", {key: filtro, className: "px-3 py-2 text-center text-pink-600 whitespace-nowrap"}, c.tempoMedioAlocacao || "00:00:00");
                                             if (filtro === "tempoMedioColeta") return React.createElement("td", {key: filtro, className: "px-3 py-2 text-center text-fuchsia-600 whitespace-nowrap"}, c.tempoMedioColeta || "00:00:00");
                                             if (filtro === "totalEntregadores") return React.createElement("td", {key: filtro, className: "px-3 py-2 text-center text-teal-600 whitespace-nowrap"}, c.totalProfissionais);
-                                            if (filtro === "mediaEntProfissional") return React.createElement("td", {key: filtro, className: "px-3 py-2 text-center text-emerald-600 whitespace-nowrap"}, c.mediaEntProfissional || (c.entregas / Math.max(c.totalProfissionais, 1)).toFixed(1));
+                                            if (filtro === "mediaEntProfissional") return React.createElement("td", {key: filtro, className: "px-3 py-2 text-center text-violet-600 whitespace-nowrap"}, c.mediaEntProfissional || (c.entregas / Math.max(c.totalProfissionais, 1)).toFixed(1));
                                             return null;
                                         })
                                     ),
@@ -17297,7 +17297,7 @@ const hideLoadingScreen = () => {
       pink: {bg: "bg-pink-100", text: "text-pink-700", border: "border-pink-200"},
       fuchsia: {bg: "bg-fuchsia-100", text: "text-fuchsia-700", border: "border-fuchsia-200"},
       teal: {bg: "bg-teal-100", text: "text-teal-700", border: "border-teal-200"},
-      emerald: {bg: "bg-emerald-100", text: "text-emerald-700", border: "border-emerald-200"}
+      emerald: {bg: "bg-emerald-100", text: "text-emerald-700", border: "border-violet-200"}
     };
     return colors[color] ? colors[color][type] : "";
   };
@@ -17670,9 +17670,9 @@ const hideLoadingScreen = () => {
                             React.createElement("p", {className: "text-xs text-gray-500"}, "Valor Profissional"),
                             React.createElement("p", {className: "text-xl font-bold text-amber-600"}, "R$ ", parseFloat(cliente767Dados.metricas.valor_prof_total||0).toLocaleString("pt-BR", {minimumFractionDigits: 2}))
                         ),
-                        React.createElement("div", {className: "bg-white rounded-lg p-4 shadow border-l-4 border-emerald-500"},
+                        React.createElement("div", {className: "bg-white rounded-lg p-4 shadow border-l-4 border-violet-500"},
                             React.createElement("p", {className: "text-xs text-gray-500"}, "Faturamento"),
-                            React.createElement("p", {className: "text-xl font-bold text-emerald-600"}, "R$ ", (parseFloat(cliente767Dados.metricas.valor_total||0) - parseFloat(cliente767Dados.metricas.valor_prof_total||0)).toLocaleString("pt-BR", {minimumFractionDigits: 2}))
+                            React.createElement("p", {className: "text-xl font-bold text-violet-600"}, "R$ ", (parseFloat(cliente767Dados.metricas.valor_total||0) - parseFloat(cliente767Dados.metricas.valor_prof_total||0)).toLocaleString("pt-BR", {minimumFractionDigits: 2}))
                         ),
                         React.createElement("div", {className: "bg-white rounded-lg p-4 shadow border-l-4 border-teal-500"},
                             React.createElement("p", {className: "text-xs text-gray-500"}, "Entregadores"),
@@ -17832,7 +17832,7 @@ const hideLoadingScreen = () => {
             }, "✅ No Prazo"), React.createElement("th", {
                 className: "px-3 py-2 text-center text-purple-900 bg-red-50"
             }, "❌ Fora Prazo"), React.createElement("th", {
-                className: "px-3 py-2 text-center text-purple-900 bg-emerald-50"
+                className: "px-3 py-2 text-center text-purple-900 bg-violet-50"
             }, "✅ No Prazo Prof"), React.createElement("th", {
                 className: "px-3 py-2 text-center text-purple-900 bg-orange-50"
             }, "❌ Fora Prazo Prof"), React.createElement("th", {
@@ -17875,9 +17875,9 @@ const hideLoadingScreen = () => {
                                 React.createElement("div", {className: "text-red-700 font-bold"}, nl(e.fora_prazo).toLocaleString("pt-BR")),
                                 React.createElement("span", {className: "text-xs text-red-500"}, pctFora.toFixed(1), "%")
                             ), 
-                            React.createElement("td", {className: "px-3 py-2 text-center bg-emerald-50"}, 
+                            React.createElement("td", {className: "px-3 py-2 text-center bg-violet-50"}, 
                                 React.createElement("div", {className: "text-emerald-700 font-bold"}, nl(e.dentro_prazo_prof || 0).toLocaleString("pt-BR")),
-                                React.createElement("span", {className: "px-2 py-0.5 rounded text-xs font-bold " + (pctDentroProf >= 80 ? "bg-emerald-100 text-emerald-700" : pctDentroProf >= 60 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700")}, pctDentroProf.toFixed(1), "%")
+                                React.createElement("span", {className: "px-2 py-0.5 rounded text-xs font-bold " + (pctDentroProf >= 80 ? "bg-violet-100 text-violet-700" : pctDentroProf >= 60 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700")}, pctDentroProf.toFixed(1), "%")
                             ), 
                             React.createElement("td", {className: "px-3 py-2 text-center bg-orange-50"}, 
                                 React.createElement("div", {className: "text-orange-700 font-bold"}, nl(e.fora_prazo_prof || 0).toLocaleString("pt-BR")),
@@ -17981,8 +17981,8 @@ const hideLoadingScreen = () => {
                     var total = totalDentroProf + totalForaProf;
                     var pct = total > 0 ? (totalDentroProf / total * 100).toFixed(1) : "0.0";
                     return React.createElement("div", null,
-                        React.createElement("div", {className: "text-emerald-800"}, totalDentroProf.toLocaleString("pt-BR")),
-                        React.createElement("span", {className: "px-2 py-0.5 rounded text-xs font-bold " + (pct >= 80 ? "bg-emerald-200 text-emerald-800" : pct >= 60 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700")}, pct + "%")
+                        React.createElement("div", {className: "text-violet-800"}, totalDentroProf.toLocaleString("pt-BR")),
+                        React.createElement("span", {className: "px-2 py-0.5 rounded text-xs font-bold " + (pct >= 80 ? "bg-violet-200 text-violet-800" : pct >= 60 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700")}, pct + "%")
                     );
                 })()), 
                 // Fora Prazo Prof - qtd + %
@@ -18687,12 +18687,12 @@ const hideLoadingScreen = () => {
             // ========== ABA RELATÓRIO IA ==========
             "relatorio-ia" === Et && React.createElement("div", {className: "space-y-6"},
                 // Header
-                React.createElement("div", {className: "bg-gradient-to-r from-emerald-600 to-teal-600 rounded-xl p-6 text-white"},
+                React.createElement("div", {className: "bg-gradient-to-r from-violet-600 to-purple-600 rounded-xl p-6 text-white"},
                     React.createElement("div", {className: "flex items-center gap-4"},
                         React.createElement("div", {className: "text-5xl"}, "🤖"),
                         React.createElement("div", null,
                             React.createElement("h2", {className: "text-2xl font-bold"}, "Relatório Inteligente com IA"),
-                            React.createElement("p", {className: "text-emerald-100 mt-1"}, "Análises automáticas dos seus dados usando Inteligência Artificial")
+                            React.createElement("p", {className: "text-violet-100 mt-1"}, "Análises automáticas dos seus dados usando Inteligência Artificial")
                         )
                     )
                 ),
@@ -18711,7 +18711,7 @@ const hideLoadingScreen = () => {
                                 type: "date",
                                 value: relatorioIAFiltros.data_inicio,
                                 onChange: (e) => setRelatorioIAFiltros(prev => ({...prev, data_inicio: e.target.value})),
-                                className: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                className: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
                             })
                         ),
                         // Data Fim
@@ -18721,7 +18721,7 @@ const hideLoadingScreen = () => {
                                 type: "date",
                                 value: relatorioIAFiltros.data_fim,
                                 onChange: (e) => setRelatorioIAFiltros(prev => ({...prev, data_fim: e.target.value})),
-                                className: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                className: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
                             })
                         ),
                         // Cliente
@@ -18739,7 +18739,7 @@ const hideLoadingScreen = () => {
                                         setRelatorioIACentrosCusto([]);
                                     }
                                 },
-                                className: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                className: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
                             },
                                 React.createElement("option", {value: ""}, "Todos os clientes"),
                                 jt && jt.map(function(c) {
@@ -18756,7 +18756,7 @@ const hideLoadingScreen = () => {
                                 value: relatorioIAFiltros.centro_custo,
                                 onChange: (e) => setRelatorioIAFiltros(prev => ({...prev, centro_custo: e.target.value})),
                                 disabled: !relatorioIAFiltros.cod_cliente,
-                                className: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                className: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                             },
                                 React.createElement("option", {value: ""}, relatorioIAFiltros.cod_cliente ? "Todos os centros" : "Selecione um cliente primeiro"),
                                 relatorioIACentrosCusto && relatorioIACentrosCusto.map(function(cc) {
@@ -18768,10 +18768,10 @@ const hideLoadingScreen = () => {
                     // Resumo dos filtros aplicados
                     React.createElement("div", {className: "mt-4 flex flex-wrap items-center gap-2 text-sm"},
                         React.createElement("span", {className: "text-gray-500"}, "Análise:"),
-                        relatorioIAFiltros.data_inicio && React.createElement("span", {className: "bg-emerald-100 text-emerald-800 px-2 py-1 rounded"},
+                        relatorioIAFiltros.data_inicio && React.createElement("span", {className: "bg-violet-100 text-violet-800 px-2 py-1 rounded"},
                             "De " + new Date(relatorioIAFiltros.data_inicio + "T12:00:00").toLocaleDateString("pt-BR")
                         ),
-                        relatorioIAFiltros.data_fim && React.createElement("span", {className: "bg-emerald-100 text-emerald-800 px-2 py-1 rounded"},
+                        relatorioIAFiltros.data_fim && React.createElement("span", {className: "bg-violet-100 text-violet-800 px-2 py-1 rounded"},
                             "Até " + new Date(relatorioIAFiltros.data_fim + "T12:00:00").toLocaleDateString("pt-BR")
                         ),
                         relatorioIAFiltros.cod_cliente && React.createElement("span", {className: "bg-purple-100 text-purple-800 px-2 py-1 rounded"},
@@ -18807,9 +18807,9 @@ const hideLoadingScreen = () => {
                         // Performance
                         React.createElement("button", {
                             onClick: () => toggleRelatorioIATipo("performance"),
-                            className: "p-4 rounded-xl border-2 text-left transition-all relative " + (relatorioIATipos.includes("performance") ? "border-emerald-500 bg-emerald-50 ring-2 ring-emerald-200" : "border-gray-200 hover:border-emerald-300")
+                            className: "p-4 rounded-xl border-2 text-left transition-all relative " + (relatorioIATipos.includes("performance") ? "border-violet-500 bg-violet-50 ring-2 ring-violet-200" : "border-gray-200 hover:border-violet-300")
                         },
-                            relatorioIATipos.includes("performance") && React.createElement("div", {className: "absolute top-2 right-2 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center text-white text-sm"}, "✓"),
+                            relatorioIATipos.includes("performance") && React.createElement("div", {className: "absolute top-2 right-2 w-6 h-6 bg-violet-500 rounded-full flex items-center justify-center text-white text-sm"}, "✓"),
                             React.createElement("div", {className: "text-3xl mb-2"}, "📈"),
                             React.createElement("div", {className: "font-semibold text-gray-800"}, "Performance"),
                             React.createElement("div", {className: "text-xs text-gray-500"}, "Análise geral de desempenho")
@@ -18817,9 +18817,9 @@ const hideLoadingScreen = () => {
                         // Tendências
                         React.createElement("button", {
                             onClick: () => toggleRelatorioIATipo("tendencias"),
-                            className: "p-4 rounded-xl border-2 text-left transition-all relative " + (relatorioIATipos.includes("tendencias") ? "border-emerald-500 bg-emerald-50 ring-2 ring-emerald-200" : "border-gray-200 hover:border-emerald-300")
+                            className: "p-4 rounded-xl border-2 text-left transition-all relative " + (relatorioIATipos.includes("tendencias") ? "border-violet-500 bg-violet-50 ring-2 ring-violet-200" : "border-gray-200 hover:border-violet-300")
                         },
-                            relatorioIATipos.includes("tendencias") && React.createElement("div", {className: "absolute top-2 right-2 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center text-white text-sm"}, "✓"),
+                            relatorioIATipos.includes("tendencias") && React.createElement("div", {className: "absolute top-2 right-2 w-6 h-6 bg-violet-500 rounded-full flex items-center justify-center text-white text-sm"}, "✓"),
                             React.createElement("div", {className: "text-3xl mb-2"}, "📉"),
                             React.createElement("div", {className: "font-semibold text-gray-800"}, "Tendências"),
                             React.createElement("div", {className: "text-xs text-gray-500"}, "Padrões e comportamentos")
@@ -18827,9 +18827,9 @@ const hideLoadingScreen = () => {
                         // Alertas
                         React.createElement("button", {
                             onClick: () => toggleRelatorioIATipo("alertas"),
-                            className: "p-4 rounded-xl border-2 text-left transition-all relative " + (relatorioIATipos.includes("alertas") ? "border-emerald-500 bg-emerald-50 ring-2 ring-emerald-200" : "border-gray-200 hover:border-emerald-300")
+                            className: "p-4 rounded-xl border-2 text-left transition-all relative " + (relatorioIATipos.includes("alertas") ? "border-violet-500 bg-violet-50 ring-2 ring-violet-200" : "border-gray-200 hover:border-violet-300")
                         },
-                            relatorioIATipos.includes("alertas") && React.createElement("div", {className: "absolute top-2 right-2 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center text-white text-sm"}, "✓"),
+                            relatorioIATipos.includes("alertas") && React.createElement("div", {className: "absolute top-2 right-2 w-6 h-6 bg-violet-500 rounded-full flex items-center justify-center text-white text-sm"}, "✓"),
                             React.createElement("div", {className: "text-3xl mb-2"}, "⚠️"),
                             React.createElement("div", {className: "font-semibold text-gray-800"}, "Alertas"),
                             React.createElement("div", {className: "text-xs text-gray-500"}, "Anomalias e problemas")
@@ -18837,9 +18837,9 @@ const hideLoadingScreen = () => {
                         // Gestão de Profissionais
                         React.createElement("button", {
                             onClick: () => toggleRelatorioIATipo("gestao_profissionais"),
-                            className: "p-4 rounded-xl border-2 text-left transition-all relative " + (relatorioIATipos.includes("gestao_profissionais") ? "border-emerald-500 bg-emerald-50 ring-2 ring-emerald-200" : "border-gray-200 hover:border-emerald-300")
+                            className: "p-4 rounded-xl border-2 text-left transition-all relative " + (relatorioIATipos.includes("gestao_profissionais") ? "border-violet-500 bg-violet-50 ring-2 ring-violet-200" : "border-gray-200 hover:border-violet-300")
                         },
-                            relatorioIATipos.includes("gestao_profissionais") && React.createElement("div", {className: "absolute top-2 right-2 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center text-white text-sm"}, "✓"),
+                            relatorioIATipos.includes("gestao_profissionais") && React.createElement("div", {className: "absolute top-2 right-2 w-6 h-6 bg-violet-500 rounded-full flex items-center justify-center text-white text-sm"}, "✓"),
                             React.createElement("div", {className: "text-3xl mb-2"}, "👥"),
                             React.createElement("div", {className: "font-semibold text-gray-800"}, "Gestão de Profissionais"),
                             React.createElement("div", {className: "text-xs text-gray-500"}, "Produtividade e rotatividade")
@@ -18847,9 +18847,9 @@ const hideLoadingScreen = () => {
                         // Personalizado
                         React.createElement("button", {
                             onClick: () => toggleRelatorioIATipo("personalizado"),
-                            className: "p-4 rounded-xl border-2 text-left transition-all relative " + (relatorioIATipos.includes("personalizado") ? "border-emerald-500 bg-emerald-50 ring-2 ring-emerald-200" : "border-gray-200 hover:border-emerald-300")
+                            className: "p-4 rounded-xl border-2 text-left transition-all relative " + (relatorioIATipos.includes("personalizado") ? "border-violet-500 bg-violet-50 ring-2 ring-violet-200" : "border-gray-200 hover:border-violet-300")
                         },
-                            relatorioIATipos.includes("personalizado") && React.createElement("div", {className: "absolute top-2 right-2 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center text-white text-sm"}, "✓"),
+                            relatorioIATipos.includes("personalizado") && React.createElement("div", {className: "absolute top-2 right-2 w-6 h-6 bg-violet-500 rounded-full flex items-center justify-center text-white text-sm"}, "✓"),
                             React.createElement("div", {className: "text-3xl mb-2"}, "✨"),
                             React.createElement("div", {className: "font-semibold text-gray-800"}, "Personalizado"),
                             React.createElement("div", {className: "text-xs text-gray-500"}, "Sua própria pergunta")
@@ -18860,7 +18860,7 @@ const hideLoadingScreen = () => {
                     React.createElement("div", {className: "mt-4 flex gap-2"},
                         React.createElement("button", {
                             onClick: () => setRelatorioIATipos(["performance", "tendencias", "alertas", "gestao_profissionais"]),
-                            className: "px-3 py-1 text-xs bg-emerald-100 text-emerald-700 rounded-full hover:bg-emerald-200"
+                            className: "px-3 py-1 text-xs bg-violet-100 text-violet-700 rounded-full hover:bg-violet-200"
                         }, "Selecionar todos"),
                         React.createElement("button", {
                             onClick: () => setRelatorioIATipos([]),
@@ -18881,12 +18881,12 @@ const hideLoadingScreen = () => {
                     ),
                     
                     // Resumo da seleção
-                    relatorioIATipos.length > 0 && React.createElement("div", {className: "mt-4 p-3 bg-emerald-50 rounded-lg border border-emerald-200"},
-                        React.createElement("div", {className: "flex items-center gap-2 text-sm text-emerald-800"},
+                    relatorioIATipos.length > 0 && React.createElement("div", {className: "mt-4 p-3 bg-violet-50 rounded-lg border border-violet-200"},
+                        React.createElement("div", {className: "flex items-center gap-2 text-sm text-violet-800"},
                             React.createElement("span", {className: "font-semibold"}, "Análises selecionadas:"),
                             relatorioIATipos.map(function(t) {
                                 var labels = {performance: "📈 Performance", tendencias: "📉 Tendências", alertas: "⚠️ Alertas", gestao_profissionais: "👥 Gestão de Profissionais", personalizado: "✨ Personalizado"};
-                                return React.createElement("span", {key: t, className: "px-2 py-0.5 bg-emerald-200 rounded text-xs"}, labels[t] || t);
+                                return React.createElement("span", {key: t, className: "px-2 py-0.5 bg-violet-200 rounded text-xs"}, labels[t] || t);
                             })
                         )
                     ),
@@ -18895,7 +18895,7 @@ const hideLoadingScreen = () => {
                     React.createElement("button", {
                         onClick: () => gerarRelatorioIA(),
                         disabled: relatorioIALoading || relatorioIATipos.length === 0 || (relatorioIATipos.includes("personalizado") && relatorioIATipos.length === 1 && !relatorioIAPromptCustom.trim()),
-                        className: "mt-6 w-full py-4 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-bold text-lg hover:from-emerald-700 hover:to-teal-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 transition-all"
+                        className: "mt-6 w-full py-4 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-xl font-bold text-lg hover:from-violet-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 transition-all"
                     },
                         relatorioIALoading ? React.createElement("span", {className: "flex items-center gap-2"},
                             React.createElement("span", {className: "animate-spin"}, "⏳"),
@@ -18919,13 +18919,13 @@ const hideLoadingScreen = () => {
                 
                 // Resultado
                 relatorioIAResultado && React.createElement("div", {className: "bg-white rounded-xl shadow-lg overflow-hidden"},
-                    React.createElement("div", {className: "bg-gradient-to-r from-emerald-600 to-teal-600 px-6 py-4 text-white"},
+                    React.createElement("div", {className: "bg-gradient-to-r from-violet-600 to-purple-600 px-6 py-4 text-white"},
                         React.createElement("div", {className: "flex items-center justify-between"},
                             React.createElement("div", {className: "flex items-center gap-3"},
                                 React.createElement("span", {className: "text-2xl"}, "📋"),
                                 React.createElement("div", null,
                                     React.createElement("h3", {className: "font-bold"}, "Relatório Gerado"),
-                                    React.createElement("p", {className: "text-sm text-emerald-100"}, 
+                                    React.createElement("p", {className: "text-sm text-violet-100"}, 
                                         relatorioIAResultado.tipo_analise + " • " + new Date().toLocaleString("pt-BR")
                                     )
                                 )
