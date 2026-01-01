@@ -18789,25 +18789,15 @@ const hideLoadingScreen = () => {
                             React.createElement("div", {className: "font-semibold text-gray-800"}, "Alertas"),
                             React.createElement("div", {className: "text-xs text-gray-500"}, "Anomalias e problemas")
                         ),
-                        // Financeiro
+                        // Gestão de Profissionais
                         React.createElement("button", {
-                            onClick: () => toggleRelatorioIATipo("financeiro"),
-                            className: "p-4 rounded-xl border-2 text-left transition-all relative " + (relatorioIATipos.includes("financeiro") ? "border-emerald-500 bg-emerald-50 ring-2 ring-emerald-200" : "border-gray-200 hover:border-emerald-300")
+                            onClick: () => toggleRelatorioIATipo("gestao_profissionais"),
+                            className: "p-4 rounded-xl border-2 text-left transition-all relative " + (relatorioIATipos.includes("gestao_profissionais") ? "border-emerald-500 bg-emerald-50 ring-2 ring-emerald-200" : "border-gray-200 hover:border-emerald-300")
                         },
-                            relatorioIATipos.includes("financeiro") && React.createElement("div", {className: "absolute top-2 right-2 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center text-white text-sm"}, "✓"),
-                            React.createElement("div", {className: "text-3xl mb-2"}, "💰"),
-                            React.createElement("div", {className: "font-semibold text-gray-800"}, "Financeiro"),
-                            React.createElement("div", {className: "text-xs text-gray-500"}, "Valores e custos")
-                        ),
-                        // Comparativo
-                        React.createElement("button", {
-                            onClick: () => toggleRelatorioIATipo("comparativo"),
-                            className: "p-4 rounded-xl border-2 text-left transition-all relative " + (relatorioIATipos.includes("comparativo") ? "border-emerald-500 bg-emerald-50 ring-2 ring-emerald-200" : "border-gray-200 hover:border-emerald-300")
-                        },
-                            relatorioIATipos.includes("comparativo") && React.createElement("div", {className: "absolute top-2 right-2 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center text-white text-sm"}, "✓"),
-                            React.createElement("div", {className: "text-3xl mb-2"}, "🏆"),
-                            React.createElement("div", {className: "font-semibold text-gray-800"}, "Comparativo"),
-                            React.createElement("div", {className: "text-xs text-gray-500"}, "Rankings e comparações")
+                            relatorioIATipos.includes("gestao_profissionais") && React.createElement("div", {className: "absolute top-2 right-2 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center text-white text-sm"}, "✓"),
+                            React.createElement("div", {className: "text-3xl mb-2"}, "👥"),
+                            React.createElement("div", {className: "font-semibold text-gray-800"}, "Gestão de Profissionais"),
+                            React.createElement("div", {className: "text-xs text-gray-500"}, "Produtividade e rotatividade")
                         ),
                         // Personalizado
                         React.createElement("button", {
@@ -18824,7 +18814,7 @@ const hideLoadingScreen = () => {
                     // Seleção rápida
                     React.createElement("div", {className: "mt-4 flex gap-2"},
                         React.createElement("button", {
-                            onClick: () => setRelatorioIATipos(["performance", "tendencias", "alertas", "financeiro", "comparativo"]),
+                            onClick: () => setRelatorioIATipos(["performance", "tendencias", "alertas", "gestao_profissionais"]),
                             className: "px-3 py-1 text-xs bg-emerald-100 text-emerald-700 rounded-full hover:bg-emerald-200"
                         }, "Selecionar todos"),
                         React.createElement("button", {
@@ -18850,7 +18840,7 @@ const hideLoadingScreen = () => {
                         React.createElement("div", {className: "flex items-center gap-2 text-sm text-emerald-800"},
                             React.createElement("span", {className: "font-semibold"}, "Análises selecionadas:"),
                             relatorioIATipos.map(function(t) {
-                                var labels = {performance: "📈 Performance", tendencias: "📉 Tendências", alertas: "⚠️ Alertas", financeiro: "💰 Financeiro", comparativo: "🏆 Comparativo", personalizado: "✨ Personalizado"};
+                                var labels = {performance: "📈 Performance", tendencias: "📉 Tendências", alertas: "⚠️ Alertas", gestao_profissionais: "👥 Gestão de Profissionais", personalizado: "✨ Personalizado"};
                                 return React.createElement("span", {key: t, className: "px-2 py-0.5 bg-emerald-200 rounded text-xs"}, labels[t] || t);
                             })
                         )
