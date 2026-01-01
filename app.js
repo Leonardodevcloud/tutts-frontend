@@ -3371,113 +3371,203 @@ const hideLoadingScreen = () => {
                 
                 // Cores
                 const verde = [5, 150, 105];
+                const verdeClaro = [209, 250, 229];
                 const cinzaEscuro = [51, 51, 51];
                 const cinzaClaro = [100, 116, 139];
+                const vermelho = [220, 38, 38];
+                const amarelo = [202, 138, 4];
+                const azul = [37, 99, 235];
                 
-                // Header
+                // ========== HEADER ==========
                 doc.setFillColor(...verde);
-                doc.rect(0, 0, 210, 45, 'F');
+                doc.rect(0, 0, 210, 40, 'F');
                 
                 doc.setTextColor(255, 255, 255);
-                doc.setFontSize(22);
+                doc.setFontSize(20);
                 doc.setFont('helvetica', 'bold');
-                doc.text('Relatório de Inteligência Artificial', 105, 18, { align: 'center' });
+                doc.text('RELATORIO DE INTELIGENCIA ARTIFICIAL', 105, 15, { align: 'center' });
                 
-                doc.setFontSize(11);
+                doc.setFontSize(10);
                 doc.setFont('helvetica', 'normal');
-                doc.text('Análise: ' + (relatorioIAResultado.tipo_analise || 'Geral'), 105, 28, { align: 'center' });
-                doc.text('Período: ' + (periodo.inicio || '') + ' a ' + (periodo.fim || ''), 105, 35, { align: 'center' });
-                doc.text('Gerado em: ' + new Date().toLocaleString('pt-BR'), 105, 42, { align: 'center' });
+                doc.text('Analise: ' + (relatorioIAResultado.tipo_analise || 'Geral'), 105, 24, { align: 'center' });
+                doc.text('Periodo: ' + (periodo.inicio || '') + ' a ' + (periodo.fim || '') + '  |  Gerado em: ' + new Date().toLocaleString('pt-BR'), 105, 32, { align: 'center' });
                 
-                // Métricas
-                let y = 55;
-                doc.setFillColor(248, 250, 252);
-                
+                // ========== MÉTRICAS ==========
+                let y = 50;
                 const metricasData = [
-                    { label: 'Entregas', valor: (metricas.total_entregas || 0).toLocaleString('pt-BR') },
-                    { label: 'Taxa Prazo', valor: (metricas.taxa_prazo || 0).toFixed(1) + '%' },
-                    { label: 'Tempo Médio', valor: (metricas.tempo_medio_entrega || 0).toFixed(0) + ' min' },
-                    { label: 'Motos/Dia', valor: String(metricas.media_profissionais_por_dia || 0) }
+                    { label: 'ENTREGAS', valor: (metricas.total_entregas || 0).toLocaleString('pt-BR'), cor: azul },
+                    { label: 'TAXA PRAZO', valor: (metricas.taxa_prazo || 0).toFixed(1) + '%', cor: (metricas.taxa_prazo || 0) >= 85 ? verde : vermelho },
+                    { label: 'TEMPO MEDIO', valor: (metricas.tempo_medio_entrega || 0).toFixed(0) + ' min', cor: cinzaEscuro },
+                    { label: 'MOTOS/DIA', valor: String(metricas.media_profissionais_por_dia || 0), cor: verde }
                 ];
                 
                 const boxWidth = 45;
                 const startX = 12;
                 
                 metricasData.forEach((m, i) => {
-                    const x = startX + (i * (boxWidth + 5));
+                    const x = startX + (i * (boxWidth + 4));
+                    
+                    // Box com borda
                     doc.setFillColor(248, 250, 252);
-                    doc.roundedRect(x, y, boxWidth, 25, 3, 3, 'F');
+                    doc.setDrawColor(...m.cor);
+                    doc.setLineWidth(0.8);
+                    doc.roundedRect(x, y, boxWidth, 22, 2, 2, 'FD');
                     
-                    doc.setTextColor(...verde);
-                    doc.setFontSize(16);
+                    // Valor
+                    doc.setTextColor(...m.cor);
+                    doc.setFontSize(14);
                     doc.setFont('helvetica', 'bold');
-                    doc.text(m.valor, x + boxWidth/2, y + 12, { align: 'center' });
+                    doc.text(m.valor, x + boxWidth/2, y + 10, { align: 'center' });
                     
+                    // Label
                     doc.setTextColor(...cinzaClaro);
-                    doc.setFontSize(9);
+                    doc.setFontSize(7);
                     doc.setFont('helvetica', 'normal');
-                    doc.text(m.label, x + boxWidth/2, y + 20, { align: 'center' });
+                    doc.text(m.label, x + boxWidth/2, y + 17, { align: 'center' });
                 });
                 
-                // Título do conteúdo
-                y = 90;
-                doc.setTextColor(...verde);
-                doc.setFontSize(14);
-                doc.setFont('helvetica', 'bold');
-                doc.text('Análise Detalhada', 14, y);
+                // ========== CONTEÚDO ==========
+                y = 82;
                 
-                doc.setDrawColor(...verde);
-                doc.setLineWidth(0.5);
-                doc.line(14, y + 3, 196, y + 3);
-                
-                // Conteúdo do relatório
-                y = 100;
-                doc.setTextColor(...cinzaEscuro);
-                doc.setFontSize(10);
-                doc.setFont('helvetica', 'normal');
-                
-                // Limpar markdown e processar texto
+                // Processar texto - converter emojis para texto/símbolos
                 let texto = (relatorioIAResultado.relatorio || '')
+                    // Remover markdown
                     .replace(/\*\*(.*?)\*\*/g, '$1')
-                    .replace(/#{1,6}\s/g, '')
-                    .replace(/\|/g, ' ')
+                    .replace(/#{1,6}\s*/g, '')
+                    // Converter emojis para símbolos/texto
+                    .replace(/📊/g, '[GRAFICO] ')
+                    .replace(/📈/g, '[+] ')
+                    .replace(/📉/g, '[-] ')
+                    .replace(/⚠️/g, '[!] ')
+                    .replace(/🔴/g, '[CRITICO] ')
+                    .replace(/🟡/g, '[ATENCAO] ')
+                    .replace(/🟢/g, '[OK] ')
+                    .replace(/✅/g, '[V] ')
+                    .replace(/❌/g, '[X] ')
+                    .replace(/👥/g, '[EQUIPE] ')
+                    .replace(/🏆/g, '[TOP] ')
+                    .replace(/🥇/g, '1. ')
+                    .replace(/🥈/g, '2. ')
+                    .replace(/🥉/g, '3. ')
+                    .replace(/💰/g, '[R$] ')
+                    .replace(/📋/g, '')
+                    .replace(/🔥/g, '[PICO] ')
+                    .replace(/⏰/g, '[HORA] ')
+                    .replace(/📅/g, '[DATA] ')
+                    .replace(/1️⃣/g, '1. ')
+                    .replace(/2️⃣/g, '2. ')
+                    .replace(/3️⃣/g, '3. ')
+                    .replace(/4️⃣/g, '4. ')
+                    .replace(/[^\x00-\x7F]+/g, '') // Remove outros emojis
+                    // Limpar tabelas markdown
+                    .replace(/\|/g, '  ')
                     .replace(/-{3,}/g, '');
                 
-                // Quebrar em linhas
-                const maxWidth = 180;
-                const linhas = doc.splitTextToSize(texto, maxWidth);
+                // Dividir em seções
+                const secoes = texto.split(/\n(?=[A-Z\[\*])/);
                 
-                // Adicionar linhas com paginação automática
-                linhas.forEach((linha) => {
-                    if (y > 280) {
-                        doc.addPage();
-                        y = 20;
-                    }
+                secoes.forEach(secao => {
+                    const linhas = secao.split('\n').filter(l => l.trim());
                     
-                    // Detectar se é título/seção (começa com emoji ou número)
-                    if (/^[📊📈📉⚠️🔴🟡🟢✅❌👥🏆🥇🥈🥉💰📋1️⃣2️⃣3️⃣4️⃣]/.test(linha.trim())) {
-                        doc.setFont('helvetica', 'bold');
-                        doc.setTextColor(...verde);
-                        y += 3;
-                    } else {
-                        doc.setFont('helvetica', 'normal');
-                        doc.setTextColor(...cinzaEscuro);
-                    }
-                    
-                    doc.text(linha, 14, y);
-                    y += 6;
+                    linhas.forEach((linha, idx) => {
+                        // Paginação
+                        if (y > 275) {
+                            doc.addPage();
+                            y = 20;
+                        }
+                        
+                        linha = linha.trim();
+                        if (!linha) return;
+                        
+                        // Detectar tipo de linha
+                        const isTitulo = /^(\[GRAFICO\]|\[TOP\]|\[EQUIPE\]|\[PICO\]|\[HORA\]|\[!\]|PERFORMANCE|TENDENCIA|ALERTA|GESTAO|EQUILIBRIO|RANKING|SAZONALIDADE|DIMENSIONAMENTO|ANALISE|COMPORTAMENTO|INSIGHTS)/i.test(linha);
+                        const isAlerta = /^\[CRITICO\]/.test(linha);
+                        const isAtencao = /^\[ATENCAO\]/.test(linha);
+                        const isOk = /^\[OK\]|\[V\]/.test(linha);
+                        const isItem = /^[\d]+\.|^-|^\*/.test(linha);
+                        
+                        if (isTitulo) {
+                            // Título de seção
+                            y += 4;
+                            doc.setFillColor(...verdeClaro);
+                            doc.roundedRect(14, y - 4, 182, 8, 1, 1, 'F');
+                            
+                            doc.setTextColor(...verde);
+                            doc.setFontSize(10);
+                            doc.setFont('helvetica', 'bold');
+                            doc.text(linha.substring(0, 80), 16, y + 1);
+                            y += 10;
+                        } else if (isAlerta) {
+                            // Alerta crítico
+                            doc.setFillColor(254, 226, 226);
+                            doc.roundedRect(14, y - 3, 182, 7, 1, 1, 'F');
+                            doc.setTextColor(...vermelho);
+                            doc.setFontSize(9);
+                            doc.setFont('helvetica', 'bold');
+                            const textoAlerta = doc.splitTextToSize(linha, 178);
+                            doc.text(textoAlerta[0], 16, y + 1);
+                            y += 9;
+                        } else if (isAtencao) {
+                            // Atenção
+                            doc.setFillColor(254, 249, 195);
+                            doc.roundedRect(14, y - 3, 182, 7, 1, 1, 'F');
+                            doc.setTextColor(...amarelo);
+                            doc.setFontSize(9);
+                            doc.setFont('helvetica', 'bold');
+                            const textoAtencao = doc.splitTextToSize(linha, 178);
+                            doc.text(textoAtencao[0], 16, y + 1);
+                            y += 9;
+                        } else if (isOk) {
+                            // OK
+                            doc.setTextColor(...verde);
+                            doc.setFontSize(9);
+                            doc.setFont('helvetica', 'normal');
+                            doc.text(linha.substring(0, 90), 16, y);
+                            y += 6;
+                        } else if (isItem) {
+                            // Item de lista
+                            doc.setTextColor(...cinzaEscuro);
+                            doc.setFontSize(9);
+                            doc.setFont('helvetica', 'normal');
+                            const textoItem = doc.splitTextToSize(linha, 175);
+                            textoItem.forEach(tl => {
+                                if (y > 275) { doc.addPage(); y = 20; }
+                                doc.text(tl, 18, y);
+                                y += 5;
+                            });
+                        } else {
+                            // Texto normal
+                            doc.setTextColor(...cinzaEscuro);
+                            doc.setFontSize(9);
+                            doc.setFont('helvetica', 'normal');
+                            const textoNormal = doc.splitTextToSize(linha, 180);
+                            textoNormal.forEach(tl => {
+                                if (y > 275) { doc.addPage(); y = 20; }
+                                doc.text(tl, 14, y);
+                                y += 5;
+                            });
+                        }
+                    });
                 });
                 
-                // Rodapé
+                // ========== RODAPÉ ==========
                 const pageCount = doc.internal.getNumberOfPages();
                 for (let i = 1; i <= pageCount; i++) {
                     doc.setPage(i);
+                    
+                    // Linha
+                    doc.setDrawColor(...cinzaClaro);
+                    doc.setLineWidth(0.3);
+                    doc.line(14, 285, 196, 285);
+                    
+                    // Texto
                     doc.setFontSize(8);
                     doc.setTextColor(...cinzaClaro);
-                    doc.text('Sistema Tutts - Business Intelligence • Página ' + i + ' de ' + pageCount, 105, 290, { align: 'center' });
+                    doc.text('Sistema Tutts - Business Intelligence', 14, 291);
+                    doc.text('Pagina ' + i + ' de ' + pageCount, 196, 291, { align: 'right' });
                 }
                 
-                // Baixar PDF
+                // ========== BAIXAR ==========
                 const nomeArquivo = 'relatorio-ia-' + new Date().toISOString().split('T')[0] + '.pdf';
                 doc.save(nomeArquivo);
                 
