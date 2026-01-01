@@ -18906,14 +18906,171 @@ const hideLoadingScreen = () => {
                                 React.createElement("div", {className: "text-xs text-green-800"}, "No Prazo")
                             ),
                             React.createElement("div", {className: "bg-purple-50 rounded-lg p-3 text-center"},
-                                React.createElement("div", {className: "text-2xl font-bold text-purple-600"}, "R$ " + (relatorioIAResultado.metricas.valor_total || 0).toLocaleString("pt-BR", {minimumFractionDigits: 0})),
-                                React.createElement("div", {className: "text-xs text-purple-800"}, "Valor Total")
+                                React.createElement("div", {className: "text-2xl font-bold text-purple-600"}, (relatorioIAResultado.metricas.tempo_medio_entrega || 0).toFixed(0) + " min"),
+                                React.createElement("div", {className: "text-xs text-purple-800"}, "Tempo Médio")
                             ),
                             React.createElement("div", {className: "bg-orange-50 rounded-lg p-3 text-center"},
-                                React.createElement("div", {className: "text-2xl font-bold text-orange-600"}, relatorioIAResultado.metricas.total_profissionais || "0"),
-                                React.createElement("div", {className: "text-xs text-orange-800"}, "Profissionais")
+                                React.createElement("div", {className: "text-2xl font-bold text-orange-600"}, relatorioIAResultado.metricas.media_profissionais_por_dia || "0"),
+                                React.createElement("div", {className: "text-xs text-orange-800"}, "Motos/Dia")
                             )
                         ),
+                        
+                        // ========== GRÁFICOS VISUAIS ==========
+                        relatorioIAResultado.graficos && React.createElement("div", {className: "mb-6 space-y-6"},
+                            
+                            // Gráfico 1: Taxa de Prazo por Dia da Semana (Barras Horizontais)
+                            relatorioIAResultado.graficos.distribuicao_dia_semana && relatorioIAResultado.graficos.distribuicao_dia_semana.length > 0 && React.createElement("div", {className: "bg-gray-50 rounded-xl p-4"},
+                                React.createElement("h4", {className: "font-bold text-gray-800 mb-3 flex items-center gap-2"},
+                                    React.createElement("span", null, "📊"),
+                                    "Taxa de Prazo por Dia da Semana"
+                                ),
+                                React.createElement("div", {className: "space-y-2"},
+                                    relatorioIAResultado.graficos.distribuicao_dia_semana.map(function(d, i) {
+                                        var taxa = d.taxa_prazo || 0;
+                                        var cor = taxa >= 85 ? "bg-green-500" : taxa >= 70 ? "bg-yellow-500" : "bg-red-500";
+                                        return React.createElement("div", {key: i, className: "flex items-center gap-2"},
+                                            React.createElement("div", {className: "w-16 text-sm text-gray-600 font-medium"}, d.dia?.substring(0, 3) || ""),
+                                            React.createElement("div", {className: "flex-1 bg-gray-200 rounded-full h-6 overflow-hidden"},
+                                                React.createElement("div", {
+                                                    className: cor + " h-full rounded-full flex items-center justify-end pr-2 transition-all duration-500",
+                                                    style: {width: Math.max(taxa, 5) + "%"}
+                                                },
+                                                    React.createElement("span", {className: "text-xs text-white font-bold"}, taxa.toFixed(0) + "%")
+                                                )
+                                            ),
+                                            React.createElement("div", {className: "w-16 text-xs text-gray-500 text-right"}, (d.entregas || 0) + " ent")
+                                        );
+                                    })
+                                )
+                            ),
+                            
+                            // Gráfico 2: Distribuição por Horário (Barras Verticais)
+                            relatorioIAResultado.graficos.distribuicao_hora && relatorioIAResultado.graficos.distribuicao_hora.length > 0 && React.createElement("div", {className: "bg-gray-50 rounded-xl p-4"},
+                                React.createElement("h4", {className: "font-bold text-gray-800 mb-3 flex items-center gap-2"},
+                                    React.createElement("span", null, "⏰"),
+                                    "Volume de Entregas por Horário"
+                                ),
+                                React.createElement("div", {className: "flex items-end gap-1 h-32"},
+                                    (function() {
+                                        var dados = relatorioIAResultado.graficos.distribuicao_hora.filter(function(h) { return h.entregas > 0; });
+                                        var maxEntregas = Math.max.apply(null, dados.map(function(h) { return h.entregas; })) || 1;
+                                        var picoHora = relatorioIAResultado.graficos.janela_pico ? relatorioIAResultado.graficos.janela_pico.inicio : -1;
+                                        var picoFim = relatorioIAResultado.graficos.janela_pico ? relatorioIAResultado.graficos.janela_pico.fim : -1;
+                                        return dados.map(function(h, i) {
+                                            var altura = (h.entregas / maxEntregas) * 100;
+                                            var isPico = h.hora >= picoHora && h.hora <= picoFim;
+                                            return React.createElement("div", {key: i, className: "flex-1 flex flex-col items-center"},
+                                                React.createElement("div", {
+                                                    className: (isPico ? "bg-orange-500" : "bg-emerald-500") + " w-full rounded-t transition-all duration-300 hover:opacity-80 cursor-pointer",
+                                                    style: {height: Math.max(altura, 5) + "%"},
+                                                    title: h.hora + "h: " + h.entregas + " entregas (" + (h.taxa_prazo || 0).toFixed(0) + "% no prazo)"
+                                                }),
+                                                React.createElement("div", {className: "text-xs text-gray-500 mt-1"}, h.hora + "h")
+                                            );
+                                        });
+                                    })()
+                                ),
+                                relatorioIAResultado.graficos.janela_pico && React.createElement("div", {className: "mt-2 flex items-center gap-4 text-xs"},
+                                    React.createElement("div", {className: "flex items-center gap-1"},
+                                        React.createElement("div", {className: "w-3 h-3 bg-orange-500 rounded"}),
+                                        React.createElement("span", {className: "text-gray-600"}, "Horário de Pico (" + relatorioIAResultado.graficos.janela_pico.inicio + "h-" + (relatorioIAResultado.graficos.janela_pico.fim + 1) + "h)")
+                                    ),
+                                    React.createElement("div", {className: "flex items-center gap-1"},
+                                        React.createElement("div", {className: "w-3 h-3 bg-emerald-500 rounded"}),
+                                        React.createElement("span", {className: "text-gray-600"}, "Horário Normal")
+                                    )
+                                )
+                            ),
+                            
+                            // Gráfico 3: Top 5 Profissionais (Barras)
+                            relatorioIAResultado.graficos.top_profissionais && relatorioIAResultado.graficos.top_profissionais.length > 0 && React.createElement("div", {className: "bg-gray-50 rounded-xl p-4"},
+                                React.createElement("h4", {className: "font-bold text-gray-800 mb-3 flex items-center gap-2"},
+                                    React.createElement("span", null, "🏆"),
+                                    "Top 5 Profissionais (por volume)"
+                                ),
+                                React.createElement("div", {className: "space-y-2"},
+                                    (function() {
+                                        var maxEnt = Math.max.apply(null, relatorioIAResultado.graficos.top_profissionais.map(function(p) { return p.entregas; })) || 1;
+                                        return relatorioIAResultado.graficos.top_profissionais.map(function(p, i) {
+                                            var largura = (p.entregas / maxEnt) * 100;
+                                            var medalha = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : (i + 1) + ".";
+                                            var corTaxa = (p.taxa_prazo || 0) >= 85 ? "text-green-600" : (p.taxa_prazo || 0) >= 70 ? "text-yellow-600" : "text-red-600";
+                                            return React.createElement("div", {key: i, className: "flex items-center gap-2"},
+                                                React.createElement("div", {className: "w-6 text-center"}, medalha),
+                                                React.createElement("div", {className: "w-32 text-sm text-gray-700 truncate", title: p.profissional}, p.profissional?.split(" ")[0] || ""),
+                                                React.createElement("div", {className: "flex-1 bg-gray-200 rounded-full h-5 overflow-hidden"},
+                                                    React.createElement("div", {
+                                                        className: "bg-blue-500 h-full rounded-full flex items-center justify-end pr-2",
+                                                        style: {width: largura + "%"}
+                                                    },
+                                                        React.createElement("span", {className: "text-xs text-white font-bold"}, p.entregas)
+                                                    )
+                                                ),
+                                                React.createElement("div", {className: "w-14 text-xs font-medium " + corTaxa}, (p.taxa_prazo || 0).toFixed(0) + "% ✓")
+                                            );
+                                        });
+                                    })()
+                                )
+                            ),
+                            
+                            // Gráfico 4: Evolução Diária (Mini Linha)
+                            relatorioIAResultado.graficos.evolucao_diaria && relatorioIAResultado.graficos.evolucao_diaria.length > 1 && React.createElement("div", {className: "bg-gray-50 rounded-xl p-4"},
+                                React.createElement("h4", {className: "font-bold text-gray-800 mb-3 flex items-center gap-2"},
+                                    React.createElement("span", null, "📈"),
+                                    "Evolução da Taxa de Prazo (últimos " + relatorioIAResultado.graficos.evolucao_diaria.length + " dias)"
+                                ),
+                                React.createElement("div", {className: "relative h-24"},
+                                    // SVG para linha
+                                    React.createElement("svg", {className: "w-full h-full", viewBox: "0 0 100 100", preserveAspectRatio: "none"},
+                                        // Linha de benchmark 85%
+                                        React.createElement("line", {x1: "0", y1: "15", x2: "100", y2: "15", stroke: "#22c55e", strokeWidth: "0.5", strokeDasharray: "2,2"}),
+                                        // Área preenchida
+                                        React.createElement("path", {
+                                            d: (function() {
+                                                var dados = relatorioIAResultado.graficos.evolucao_diaria;
+                                                var pontos = dados.map(function(d, i) {
+                                                    var x = (i / (dados.length - 1)) * 100;
+                                                    var y = 100 - (d.taxa_prazo || 0);
+                                                    return x + "," + y;
+                                                }).join(" L");
+                                                return "M0,100 L" + pontos + " L100,100 Z";
+                                            })(),
+                                            fill: "rgba(16, 185, 129, 0.2)"
+                                        }),
+                                        // Linha principal
+                                        React.createElement("polyline", {
+                                            points: (function() {
+                                                var dados = relatorioIAResultado.graficos.evolucao_diaria;
+                                                return dados.map(function(d, i) {
+                                                    var x = (i / (dados.length - 1)) * 100;
+                                                    var y = 100 - (d.taxa_prazo || 0);
+                                                    return x + "," + y;
+                                                }).join(" ");
+                                            })(),
+                                            fill: "none",
+                                            stroke: "#10b981",
+                                            strokeWidth: "2"
+                                        }),
+                                        // Pontos
+                                        relatorioIAResultado.graficos.evolucao_diaria.map(function(d, i) {
+                                            var dados = relatorioIAResultado.graficos.evolucao_diaria;
+                                            var x = (i / (dados.length - 1)) * 100;
+                                            var y = 100 - (d.taxa_prazo || 0);
+                                            return React.createElement("circle", {key: i, cx: x, cy: y, r: "1.5", fill: "#10b981"});
+                                        })
+                                    ),
+                                    // Labels
+                                    React.createElement("div", {className: "absolute top-0 right-0 text-xs text-green-600"}, "Meta 85%"),
+                                    React.createElement("div", {className: "absolute bottom-0 left-0 text-xs text-gray-400"}, 
+                                        relatorioIAResultado.graficos.evolucao_diaria[0]?.data?.substring(5) || ""
+                                    ),
+                                    React.createElement("div", {className: "absolute bottom-0 right-0 text-xs text-gray-400"}, 
+                                        relatorioIAResultado.graficos.evolucao_diaria[relatorioIAResultado.graficos.evolucao_diaria.length - 1]?.data?.substring(5) || ""
+                                    )
+                                )
+                            )
+                        ),
+                        
                         // Relatório em texto
                         React.createElement("div", {className: "prose prose-sm max-w-none"},
                             React.createElement("div", {
