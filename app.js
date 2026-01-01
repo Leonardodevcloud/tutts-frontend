@@ -3347,233 +3347,48 @@ const hideLoadingScreen = () => {
             });
         };
         
-        // Função para gerar PDF do relatório IA
+        // Função para gerar Word do relatório IA
         const gerarPDFRelatorioIA = async () => {
             if (!relatorioIAResultado) return;
             
             try {
-                // Carregar jsPDF se não estiver carregado
-                if (!window.jspdf) {
-                    await new Promise((resolve, reject) => {
-                        const script = document.createElement('script');
-                        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
-                        script.onload = resolve;
-                        script.onerror = reject;
-                        document.head.appendChild(script);
-                    });
-                }
-                
-                const { jsPDF } = window.jspdf;
-                const doc = new jsPDF();
-                
-                const metricas = relatorioIAResultado.metricas || {};
-                const periodo = relatorioIAResultado.periodo || {};
-                
-                // Cores
-                const verde = [5, 150, 105];
-                const verdeClaro = [209, 250, 229];
-                const cinzaEscuro = [51, 51, 51];
-                const cinzaClaro = [100, 116, 139];
-                const vermelho = [220, 38, 38];
-                const amarelo = [202, 138, 4];
-                const azul = [37, 99, 235];
-                
-                // ========== HEADER ==========
-                doc.setFillColor(...verde);
-                doc.rect(0, 0, 210, 40, 'F');
-                
-                doc.setTextColor(255, 255, 255);
-                doc.setFontSize(20);
-                doc.setFont('helvetica', 'bold');
-                doc.text('RELATORIO DE INTELIGENCIA ARTIFICIAL', 105, 15, { align: 'center' });
-                
-                doc.setFontSize(10);
-                doc.setFont('helvetica', 'normal');
-                doc.text('Analise: ' + (relatorioIAResultado.tipo_analise || 'Geral'), 105, 24, { align: 'center' });
-                doc.text('Periodo: ' + (periodo.inicio || '') + ' a ' + (periodo.fim || '') + '  |  Gerado em: ' + new Date().toLocaleString('pt-BR'), 105, 32, { align: 'center' });
-                
-                // ========== MÉTRICAS ==========
-                let y = 50;
-                const metricasData = [
-                    { label: 'ENTREGAS', valor: (metricas.total_entregas || 0).toLocaleString('pt-BR'), cor: azul },
-                    { label: 'TAXA PRAZO', valor: (metricas.taxa_prazo || 0).toFixed(1) + '%', cor: (metricas.taxa_prazo || 0) >= 85 ? verde : vermelho },
-                    { label: 'TEMPO MEDIO', valor: (metricas.tempo_medio_entrega || 0).toFixed(0) + ' min', cor: cinzaEscuro },
-                    { label: 'MOTOS/DIA', valor: String(metricas.media_profissionais_por_dia || 0), cor: verde }
-                ];
-                
-                const boxWidth = 45;
-                const startX = 12;
-                
-                metricasData.forEach((m, i) => {
-                    const x = startX + (i * (boxWidth + 4));
-                    
-                    // Box com borda
-                    doc.setFillColor(248, 250, 252);
-                    doc.setDrawColor(...m.cor);
-                    doc.setLineWidth(0.8);
-                    doc.roundedRect(x, y, boxWidth, 22, 2, 2, 'FD');
-                    
-                    // Valor
-                    doc.setTextColor(...m.cor);
-                    doc.setFontSize(14);
-                    doc.setFont('helvetica', 'bold');
-                    doc.text(m.valor, x + boxWidth/2, y + 10, { align: 'center' });
-                    
-                    // Label
-                    doc.setTextColor(...cinzaClaro);
-                    doc.setFontSize(7);
-                    doc.setFont('helvetica', 'normal');
-                    doc.text(m.label, x + boxWidth/2, y + 17, { align: 'center' });
+                const response = await fetch(`${API_URL}/bi/relatorio-ia/word`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        tipo_analise: relatorioIAResultado.tipo_analise,
+                        periodo: relatorioIAResultado.periodo,
+                        metricas: relatorioIAResultado.metricas,
+                        relatorio: relatorioIAResultado.relatorio,
+                        filtros: relatorioIAResultado.filtros
+                    })
                 });
                 
-                // ========== CONTEÚDO ==========
-                y = 82;
-                
-                // Processar texto - converter emojis para texto/símbolos
-                let texto = (relatorioIAResultado.relatorio || '')
-                    // Remover markdown
-                    .replace(/\*\*(.*?)\*\*/g, '$1')
-                    .replace(/#{1,6}\s*/g, '')
-                    // Converter emojis para símbolos/texto
-                    .replace(/📊/g, '[GRAFICO] ')
-                    .replace(/📈/g, '[+] ')
-                    .replace(/📉/g, '[-] ')
-                    .replace(/⚠️/g, '[!] ')
-                    .replace(/🔴/g, '[CRITICO] ')
-                    .replace(/🟡/g, '[ATENCAO] ')
-                    .replace(/🟢/g, '[OK] ')
-                    .replace(/✅/g, '[V] ')
-                    .replace(/❌/g, '[X] ')
-                    .replace(/👥/g, '[EQUIPE] ')
-                    .replace(/🏆/g, '[TOP] ')
-                    .replace(/🥇/g, '1. ')
-                    .replace(/🥈/g, '2. ')
-                    .replace(/🥉/g, '3. ')
-                    .replace(/💰/g, '[R$] ')
-                    .replace(/📋/g, '')
-                    .replace(/🔥/g, '[PICO] ')
-                    .replace(/⏰/g, '[HORA] ')
-                    .replace(/📅/g, '[DATA] ')
-                    .replace(/1️⃣/g, '1. ')
-                    .replace(/2️⃣/g, '2. ')
-                    .replace(/3️⃣/g, '3. ')
-                    .replace(/4️⃣/g, '4. ')
-                    .replace(/[^\x00-\x7F]+/g, '') // Remove outros emojis
-                    // Limpar tabelas markdown
-                    .replace(/\|/g, '  ')
-                    .replace(/-{3,}/g, '');
-                
-                // Dividir em seções
-                const secoes = texto.split(/\n(?=[A-Z\[\*])/);
-                
-                secoes.forEach(secao => {
-                    const linhas = secao.split('\n').filter(l => l.trim());
-                    
-                    linhas.forEach((linha, idx) => {
-                        // Paginação
-                        if (y > 275) {
-                            doc.addPage();
-                            y = 20;
-                        }
-                        
-                        linha = linha.trim();
-                        if (!linha) return;
-                        
-                        // Detectar tipo de linha
-                        const isTitulo = /^(\[GRAFICO\]|\[TOP\]|\[EQUIPE\]|\[PICO\]|\[HORA\]|\[!\]|PERFORMANCE|TENDENCIA|ALERTA|GESTAO|EQUILIBRIO|RANKING|SAZONALIDADE|DIMENSIONAMENTO|ANALISE|COMPORTAMENTO|INSIGHTS)/i.test(linha);
-                        const isAlerta = /^\[CRITICO\]/.test(linha);
-                        const isAtencao = /^\[ATENCAO\]/.test(linha);
-                        const isOk = /^\[OK\]|\[V\]/.test(linha);
-                        const isItem = /^[\d]+\.|^-|^\*/.test(linha);
-                        
-                        if (isTitulo) {
-                            // Título de seção
-                            y += 4;
-                            doc.setFillColor(...verdeClaro);
-                            doc.roundedRect(14, y - 4, 182, 8, 1, 1, 'F');
-                            
-                            doc.setTextColor(...verde);
-                            doc.setFontSize(10);
-                            doc.setFont('helvetica', 'bold');
-                            doc.text(linha.substring(0, 80), 16, y + 1);
-                            y += 10;
-                        } else if (isAlerta) {
-                            // Alerta crítico
-                            doc.setFillColor(254, 226, 226);
-                            doc.roundedRect(14, y - 3, 182, 7, 1, 1, 'F');
-                            doc.setTextColor(...vermelho);
-                            doc.setFontSize(9);
-                            doc.setFont('helvetica', 'bold');
-                            const textoAlerta = doc.splitTextToSize(linha, 178);
-                            doc.text(textoAlerta[0], 16, y + 1);
-                            y += 9;
-                        } else if (isAtencao) {
-                            // Atenção
-                            doc.setFillColor(254, 249, 195);
-                            doc.roundedRect(14, y - 3, 182, 7, 1, 1, 'F');
-                            doc.setTextColor(...amarelo);
-                            doc.setFontSize(9);
-                            doc.setFont('helvetica', 'bold');
-                            const textoAtencao = doc.splitTextToSize(linha, 178);
-                            doc.text(textoAtencao[0], 16, y + 1);
-                            y += 9;
-                        } else if (isOk) {
-                            // OK
-                            doc.setTextColor(...verde);
-                            doc.setFontSize(9);
-                            doc.setFont('helvetica', 'normal');
-                            doc.text(linha.substring(0, 90), 16, y);
-                            y += 6;
-                        } else if (isItem) {
-                            // Item de lista
-                            doc.setTextColor(...cinzaEscuro);
-                            doc.setFontSize(9);
-                            doc.setFont('helvetica', 'normal');
-                            const textoItem = doc.splitTextToSize(linha, 175);
-                            textoItem.forEach(tl => {
-                                if (y > 275) { doc.addPage(); y = 20; }
-                                doc.text(tl, 18, y);
-                                y += 5;
-                            });
-                        } else {
-                            // Texto normal
-                            doc.setTextColor(...cinzaEscuro);
-                            doc.setFontSize(9);
-                            doc.setFont('helvetica', 'normal');
-                            const textoNormal = doc.splitTextToSize(linha, 180);
-                            textoNormal.forEach(tl => {
-                                if (y > 275) { doc.addPage(); y = 20; }
-                                doc.text(tl, 14, y);
-                                y += 5;
-                            });
-                        }
-                    });
-                });
-                
-                // ========== RODAPÉ ==========
-                const pageCount = doc.internal.getNumberOfPages();
-                for (let i = 1; i <= pageCount; i++) {
-                    doc.setPage(i);
-                    
-                    // Linha
-                    doc.setDrawColor(...cinzaClaro);
-                    doc.setLineWidth(0.3);
-                    doc.line(14, 285, 196, 285);
-                    
-                    // Texto
-                    doc.setFontSize(8);
-                    doc.setTextColor(...cinzaClaro);
-                    doc.text('Sistema Tutts - Business Intelligence', 14, 291);
-                    doc.text('Pagina ' + i + ' de ' + pageCount, 196, 291, { align: 'right' });
+                if (!response.ok) {
+                    throw new Error('Erro ao gerar documento');
                 }
                 
-                // ========== BAIXAR ==========
-                const nomeArquivo = 'relatorio-ia-' + new Date().toISOString().split('T')[0] + '.pdf';
-                doc.save(nomeArquivo);
+                // Montar nome do arquivo
+                let nomeArquivo = 'relatorio-operacional';
+                if (relatorioIAResultado.filtros?.cliente) {
+                    nomeArquivo += '-' + relatorioIAResultado.filtros.cliente.codigo;
+                }
+                nomeArquivo += '-' + new Date().toISOString().split('T')[0] + '.docx';
+                
+                // Baixar arquivo
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = nomeArquivo;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
                 
             } catch (err) {
-                console.error('Erro ao gerar PDF:', err);
-                alert('Erro ao gerar PDF: ' + err.message);
+                console.error('Erro ao gerar Word:', err);
+                alert('Erro ao gerar documento: ' + err.message);
             }
         };
         
@@ -14552,7 +14367,7 @@ const hideLoadingScreen = () => {
                                             React.createElement("button", {
                                                 onClick: () => gerarRelatorioOperacao(op),
                                                 className: "px-4 py-2 bg-teal-100 text-teal-700 rounded-lg font-semibold hover:bg-teal-200 text-sm"
-                                            }, "📄 PDF"),
+                                            }, "📄 Word"),
                                             React.createElement("button", {
                                                 onClick: () => {
                                                     setOperacaoEdit(op);
@@ -19126,7 +18941,7 @@ const hideLoadingScreen = () => {
                                 React.createElement("button", {
                                     onClick: () => gerarPDFRelatorioIA(),
                                     className: "px-3 py-1 bg-white/20 rounded-lg text-sm hover:bg-white/30"
-                                }, "📄 PDF")
+                                }, "📄 Word")
                             )
                         )
                     ),
