@@ -1584,7 +1584,7 @@ const hideLoadingScreen = () => {
             if (!l || (!canAccessFinEff || ("admin_master" === l.role && "financeiro" !== Ee))) return;
             const e = async () => {
                 N(!0);
-                const e = p.finTab || "solicitacoes";
+                const e = p.finTab || "home-fin";
                 try {
                     const [t, a, l] = await Promise.all([fetch(`${API_URL}/withdrawals`), fetch(`${API_URL}/loja/pedidos`), fetch(`${API_URL}/gratuities`)]), r = await t.json(), o = await a.json(), c = await l.json(), s = r.filter(e => "pending" === e.status && !ka.current.solicitacoes.has(e.id)), n = o.filter(e => "pendente" === e.status && !ka.current.loja.has(e.id)), m = c.filter(e => "pending" === e.status && !ka.current.gratuidades.has(e.id));
                     v({
@@ -7814,7 +7814,7 @@ const hideLoadingScreen = () => {
                 className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("solicitacoes" === Ee && "disponibilidade" !== p.adminTab ? "bg-white text-purple-900" : "text-white hover:bg-white/10")
             }, "📋 Solicitações"), 
             hasModuleAccess(l, "financeiro") && React.createElement("button", {
-                onClick: () => { he("financeiro"); x(e => ({...e, finTab: getFirstAllowedTab(l, "financeiro", "solicitacoes")})); },
+                onClick: () => { he("financeiro"); x(e => ({...e, finTab: getFirstAllowedTab(l, "financeiro", "home-fin")})); },
                 className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("financeiro" === Ee ? "bg-white text-green-800" : "text-white hover:bg-white/10")
             }, "💰 Financeiro"), 
             hasModuleAccess(l, "disponibilidade") && React.createElement("button", {
@@ -7868,7 +7868,7 @@ const hideLoadingScreen = () => {
                     className: "px-3 py-1.5 rounded-lg text-xs font-semibold text-white hover:bg-white/10"
                 }, "📋 Solicitações"),
                 React.createElement("button", {
-                    onClick: () => { he("financeiro"); x(e => ({...e, finTab: getFirstAllowedTab(l, "financeiro", "solicitacoes")})); },
+                    onClick: () => { he("financeiro"); x(e => ({...e, finTab: getFirstAllowedTab(l, "financeiro", "home-fin")})); },
                     className: "px-3 py-1.5 rounded-lg text-xs font-semibold bg-white text-green-800"
                 }, "💰 Financeiro"),
                 hasModuleAccess(l, "operacional") && React.createElement("button", {
@@ -7950,11 +7950,20 @@ const hideLoadingScreen = () => {
                     }
                 })(p.deleteConfirm.id),
                 className: "flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700"
-            }, "🗑️ Excluir")))), React.createElement("div", {
+            }, "🗑️ Excluir")))), 
+            
+            // Barra de abas - oculta na Home
+            p.finTab !== "home-fin" && React.createElement("div", {
                 className: "bg-white border-b sticky top-0 z-10"
             }, React.createElement("div", {
                 className: "max-w-7xl mx-auto px-2 flex gap-0.5 overflow-x-auto"
-            }, ["solicitacoes", "validacao", "conciliacao", "resumo", "gratuidades", "restritos", "indicacoes", "promo-novatos", "loja", "relatorios", "horarios", "avisos", "backup"].filter(function(tabId) {
+            }, 
+            // Botão Home
+            React.createElement("button", {
+                onClick: () => { x({...p, finTab: "home-fin"}); },
+                className: "relative px-2 py-1.5 text-xs font-semibold whitespace-nowrap rounded-t-lg " + ("home-fin" === p.finTab ? "text-green-700 border-b-2 border-green-600 bg-green-50" : "text-gray-600 hover:bg-gray-100")
+            }, "🏠 Home"),
+            ["solicitacoes", "validacao", "conciliacao", "resumo", "gratuidades", "restritos", "indicacoes", "promo-novatos", "loja", "relatorios", "horarios", "avisos", "backup"].filter(function(tabId) {
                 // Admin master tem acesso a tudo
                 if ("admin_master" === l.role) return true;
                 // Verificar permissão da aba
@@ -7972,8 +7981,8 @@ const hideLoadingScreen = () => {
                         finTab: e
                     }), Pa(e)
                 },
-                className: "relative px-2 py-1.5 text-xs font-semibold whitespace-nowrap rounded-t-lg " + ((p.finTab || "solicitacoes") === e ? "text-green-700 border-b-2 border-green-600 bg-green-50" : "text-gray-600 hover:bg-gray-100")
-            }, "solicitacoes" === e && React.createElement(React.Fragment, null, "📋 Solicitações", y.solicitacoes > 0 && "solicitacoes" !== (p.finTab || "solicitacoes") && React.createElement("span", {
+                className: "relative px-2 py-1.5 text-xs font-semibold whitespace-nowrap rounded-t-lg " + ((p.finTab || "home-fin") === e ? "text-green-700 border-b-2 border-green-600 bg-green-50" : "text-gray-600 hover:bg-gray-100")
+            }, "solicitacoes" === e && React.createElement(React.Fragment, null, "📋 Solicitações", y.solicitacoes > 0 && "solicitacoes" !== p.finTab && React.createElement("span", {
                 className: "absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-pulse"
             }, y.solicitacoes > 9 ? "9+" : y.solicitacoes)), "validacao" === e && React.createElement(React.Fragment, null, "📊 Validação", y.validacao > 0 && "validacao" !== p.finTab && React.createElement("span", {
                 className: "absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-pulse"
@@ -7981,9 +7990,260 @@ const hideLoadingScreen = () => {
                 className: "absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-pulse"
             }, y.gratuidades > 9 ? "9+" : y.gratuidades)), "restritos" === e && "🚫 Restritos", "indicacoes" === e && "👥 Indicações", "promo-novatos" === e && "🚀 Promo Novatos", "loja" === e && React.createElement(React.Fragment, null, "🛒 Loja", y.loja > 0 && "loja" !== p.finTab && React.createElement("span", {
                 className: "absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-pulse"
-            }, y.loja > 9 ? "9+" : y.loja)), "relatorios" === e && "📈 Relatórios", "horarios" === e && "🕐 Horários", "avisos" === e && "📢 Avisos", "backup" === e && "💾 Backup")))), React.createElement("div", {
+            }, y.loja > 9 ? "9+" : y.loja)), "relatorios" === e && "📈 Relatórios", "horarios" === e && "🕐 Horários", "avisos" === e && "📢 Avisos", "backup" === e && "💾 Backup")))),
+            
+            // =============================================
+            // HOME FINANCEIRO - Página Inicial do Módulo
+            // =============================================
+            ("home-fin" === p.finTab || !p.finTab) && React.createElement("div", {className: "min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50"},
+                // Hero Section com Logo
+                React.createElement("div", {className: "flex flex-col items-center justify-center py-12"},
+                    React.createElement("img", {
+                        src: "https://github.com/Leonardodevcloud/tutts-frontend/blob/main/tutts%20FI.png?raw=true",
+                        alt: "Tutts Financeiro",
+                        className: "w-64 h-64 object-contain mb-6 drop-shadow-2xl"
+                    }),
+                    React.createElement("h1", {className: "text-3xl font-bold text-gray-800 mb-2"}, "Módulo Financeiro"),
+                    React.createElement("p", {className: "text-gray-500 text-center max-w-xl"}, 
+                        "Gestão completa de saques, gratuidades, validações e controle financeiro dos profissionais."
+                    )
+                ),
+                
+                // Cards de Navegação
+                React.createElement("div", {className: "max-w-6xl mx-auto px-6 pb-12"},
+                    React.createElement("div", {className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"},
+                        
+                        // Card Solicitações
+                        React.createElement("div", {
+                            onClick: () => { x({...p, finTab: "solicitacoes"}); },
+                            className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-green-300"
+                        },
+                            React.createElement("div", {className: "h-2 bg-gradient-to-r from-green-500 to-emerald-600"}),
+                            React.createElement("div", {className: "p-6"},
+                                React.createElement("div", {className: "w-14 h-14 bg-green-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform relative"},
+                                    React.createElement("span", {className: "text-3xl"}, "📋"),
+                                    y.solicitacoes > 0 && React.createElement("span", {className: "absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"}, y.solicitacoes > 9 ? "9+" : y.solicitacoes)
+                                ),
+                                React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Solicitações"),
+                                React.createElement("p", {className: "text-sm text-gray-500"}, "Saques emergenciais pendentes de aprovação e histórico completo.")
+                            )
+                        ),
+                        
+                        // Card Validação
+                        React.createElement("div", {
+                            onClick: () => { x({...p, finTab: "validacao"}); },
+                            className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-blue-300"
+                        },
+                            React.createElement("div", {className: "h-2 bg-gradient-to-r from-blue-500 to-cyan-600"}),
+                            React.createElement("div", {className: "p-6"},
+                                React.createElement("div", {className: "w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform relative"},
+                                    React.createElement("span", {className: "text-3xl"}, "📊"),
+                                    y.validacao > 0 && React.createElement("span", {className: "absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"}, y.validacao > 9 ? "9+" : y.validacao)
+                                ),
+                                React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Validação"),
+                                React.createElement("p", {className: "text-sm text-gray-500"}, "Aprovação de ajustes de OS e retornos enviados pelos entregadores.")
+                            )
+                        ),
+                        
+                        // Card Conciliação
+                        React.createElement("div", {
+                            onClick: () => { x({...p, finTab: "conciliacao"}); },
+                            className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-teal-300"
+                        },
+                            React.createElement("div", {className: "h-2 bg-gradient-to-r from-teal-500 to-cyan-600"}),
+                            React.createElement("div", {className: "p-6"},
+                                React.createElement("div", {className: "w-14 h-14 bg-teal-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
+                                    React.createElement("span", {className: "text-3xl"}, "✅")
+                                ),
+                                React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Conciliação"),
+                                React.createElement("p", {className: "text-sm text-gray-500"}, "Marcar saques como efetivamente pagos e controle de pagamentos.")
+                            )
+                        ),
+                        
+                        // Card Resumo
+                        React.createElement("div", {
+                            onClick: () => { x({...p, finTab: "resumo"}); },
+                            className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-purple-300"
+                        },
+                            React.createElement("div", {className: "h-2 bg-gradient-to-r from-purple-500 to-violet-600"}),
+                            React.createElement("div", {className: "p-6"},
+                                React.createElement("div", {className: "w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
+                                    React.createElement("span", {className: "text-3xl"}, "🔍")
+                                ),
+                                React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Resumo"),
+                                React.createElement("p", {className: "text-sm text-gray-500"}, "Busca detalhada por profissional com histórico completo de saques.")
+                            )
+                        ),
+                        
+                        // Card Gratuidades
+                        React.createElement("div", {
+                            onClick: () => { x({...p, finTab: "gratuidades"}); },
+                            className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-pink-300"
+                        },
+                            React.createElement("div", {className: "h-2 bg-gradient-to-r from-pink-500 to-rose-600"}),
+                            React.createElement("div", {className: "p-6"},
+                                React.createElement("div", {className: "w-14 h-14 bg-pink-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform relative"},
+                                    React.createElement("span", {className: "text-3xl"}, "🎁"),
+                                    y.gratuidades > 0 && React.createElement("span", {className: "absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"}, y.gratuidades > 9 ? "9+" : y.gratuidades)
+                                ),
+                                React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Gratuidades"),
+                                React.createElement("p", {className: "text-sm text-gray-500"}, "Gerenciar saques gratuitos como premiações e bonificações.")
+                            )
+                        ),
+                        
+                        // Card Restritos
+                        React.createElement("div", {
+                            onClick: () => { x({...p, finTab: "restritos"}); },
+                            className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-red-300"
+                        },
+                            React.createElement("div", {className: "h-2 bg-gradient-to-r from-red-500 to-rose-600"}),
+                            React.createElement("div", {className: "p-6"},
+                                React.createElement("div", {className: "w-14 h-14 bg-red-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
+                                    React.createElement("span", {className: "text-3xl"}, "🚫")
+                                ),
+                                React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Restritos"),
+                                React.createElement("p", {className: "text-sm text-gray-500"}, "Profissionais bloqueados de realizar saques emergenciais.")
+                            )
+                        ),
+                        
+                        // Card Indicações
+                        React.createElement("div", {
+                            onClick: () => { x({...p, finTab: "indicacoes"}); },
+                            className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-amber-300"
+                        },
+                            React.createElement("div", {className: "h-2 bg-gradient-to-r from-amber-500 to-orange-600"}),
+                            React.createElement("div", {className: "p-6"},
+                                React.createElement("div", {className: "w-14 h-14 bg-amber-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
+                                    React.createElement("span", {className: "text-3xl"}, "👥")
+                                ),
+                                React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Indicações"),
+                                React.createElement("p", {className: "text-sm text-gray-500"}, "Programa de indicação de novos profissionais e bonificações.")
+                            )
+                        ),
+                        
+                        // Card Promo Novatos
+                        React.createElement("div", {
+                            onClick: () => { x({...p, finTab: "promo-novatos"}); },
+                            className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-indigo-300"
+                        },
+                            React.createElement("div", {className: "h-2 bg-gradient-to-r from-indigo-500 to-blue-600"}),
+                            React.createElement("div", {className: "p-6"},
+                                React.createElement("div", {className: "w-14 h-14 bg-indigo-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
+                                    React.createElement("span", {className: "text-3xl"}, "🚀")
+                                ),
+                                React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Promo Novatos"),
+                                React.createElement("p", {className: "text-sm text-gray-500"}, "Promoções e campanhas especiais para novos entregadores.")
+                            )
+                        ),
+                        
+                        // Card Loja
+                        React.createElement("div", {
+                            onClick: () => { x({...p, finTab: "loja"}); },
+                            className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-violet-300"
+                        },
+                            React.createElement("div", {className: "h-2 bg-gradient-to-r from-violet-500 to-purple-600"}),
+                            React.createElement("div", {className: "p-6"},
+                                React.createElement("div", {className: "w-14 h-14 bg-violet-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform relative"},
+                                    React.createElement("span", {className: "text-3xl"}, "🛒"),
+                                    y.loja > 0 && React.createElement("span", {className: "absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"}, y.loja > 9 ? "9+" : y.loja)
+                                ),
+                                React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Loja"),
+                                React.createElement("p", {className: "text-sm text-gray-500"}, "Lojinha Tutts com produtos, pedidos e gestão de estoque.")
+                            )
+                        ),
+                        
+                        // Card Relatórios
+                        React.createElement("div", {
+                            onClick: () => { x({...p, finTab: "relatorios"}); },
+                            className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-cyan-300"
+                        },
+                            React.createElement("div", {className: "h-2 bg-gradient-to-r from-cyan-500 to-teal-600"}),
+                            React.createElement("div", {className: "p-6"},
+                                React.createElement("div", {className: "w-14 h-14 bg-cyan-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
+                                    React.createElement("span", {className: "text-3xl"}, "📈")
+                                ),
+                                React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Relatórios"),
+                                React.createElement("p", {className: "text-sm text-gray-500"}, "Relatórios gerenciais e exportação de dados financeiros.")
+                            )
+                        ),
+                        
+                        // Card Horários
+                        React.createElement("div", {
+                            onClick: () => { x({...p, finTab: "horarios"}); },
+                            className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-sky-300"
+                        },
+                            React.createElement("div", {className: "h-2 bg-gradient-to-r from-sky-500 to-blue-600"}),
+                            React.createElement("div", {className: "p-6"},
+                                React.createElement("div", {className: "w-14 h-14 bg-sky-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
+                                    React.createElement("span", {className: "text-3xl"}, "🕐")
+                                ),
+                                React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Horários"),
+                                React.createElement("p", {className: "text-sm text-gray-500"}, "Configurar horários de funcionamento para saques.")
+                            )
+                        ),
+                        
+                        // Card Avisos
+                        React.createElement("div", {
+                            onClick: () => { x({...p, finTab: "avisos"}); },
+                            className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-yellow-300"
+                        },
+                            React.createElement("div", {className: "h-2 bg-gradient-to-r from-yellow-500 to-amber-600"}),
+                            React.createElement("div", {className: "p-6"},
+                                React.createElement("div", {className: "w-14 h-14 bg-yellow-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
+                                    React.createElement("span", {className: "text-3xl"}, "📢")
+                                ),
+                                React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Avisos"),
+                                React.createElement("p", {className: "text-sm text-gray-500"}, "Comunicados e avisos para os profissionais no app.")
+                            )
+                        ),
+                        
+                        // Card Backup
+                        React.createElement("div", {
+                            onClick: () => { x({...p, finTab: "backup"}); },
+                            className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-gray-300"
+                        },
+                            React.createElement("div", {className: "h-2 bg-gradient-to-r from-gray-500 to-slate-600"}),
+                            React.createElement("div", {className: "p-6"},
+                                React.createElement("div", {className: "w-14 h-14 bg-gray-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
+                                    React.createElement("span", {className: "text-3xl"}, "💾")
+                                ),
+                                React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Backup"),
+                                React.createElement("p", {className: "text-sm text-gray-500"}, "Exportar e fazer backup dos dados do sistema.")
+                            )
+                        )
+                    ),
+                    
+                    // Resumo Rápido com contadores
+                    React.createElement("div", {className: "mt-10"},
+                        React.createElement("h2", {className: "text-xl font-bold text-gray-800 mb-4 flex items-center gap-2"},
+                            React.createElement("span", null, "⚡"),
+                            "Pendências"
+                        ),
+                        React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-4 gap-4"},
+                            React.createElement("div", {className: "bg-white rounded-xl p-4 shadow text-center border-l-4 border-green-500"},
+                                React.createElement("p", {className: "text-3xl font-bold text-green-600"}, y.solicitacoes || 0),
+                                React.createElement("p", {className: "text-xs text-gray-500"}, "Saques Pendentes")
+                            ),
+                            React.createElement("div", {className: "bg-white rounded-xl p-4 shadow text-center border-l-4 border-blue-500"},
+                                React.createElement("p", {className: "text-3xl font-bold text-blue-600"}, y.validacao || 0),
+                                React.createElement("p", {className: "text-xs text-gray-500"}, "Ajustes p/ Validar")
+                            ),
+                            React.createElement("div", {className: "bg-white rounded-xl p-4 shadow text-center border-l-4 border-pink-500"},
+                                React.createElement("p", {className: "text-3xl font-bold text-pink-600"}, y.gratuidades || 0),
+                                React.createElement("p", {className: "text-xs text-gray-500"}, "Gratuidades Pendentes")
+                            ),
+                            React.createElement("div", {className: "bg-white rounded-xl p-4 shadow text-center border-l-4 border-violet-500"},
+                                React.createElement("p", {className: "text-3xl font-bold text-violet-600"}, y.loja || 0),
+                                React.createElement("p", {className: "text-xs text-gray-500"}, "Pedidos Loja")
+                            )
+                        )
+                    )
+                )
+            ),
+            
+            React.createElement("div", {
                 className: "max-w-7xl mx-auto p-6"
-            }, (!p.finTab || "solicitacoes" === p.finTab) && React.createElement(React.Fragment, null, (() => {
+            }, ("solicitacoes" === p.finTab) && React.createElement(React.Fragment, null, (() => {
                 const e = e => {
                         const t = new Date(e),
                             a = t.getDay(),
@@ -13975,7 +14235,7 @@ const hideLoadingScreen = () => {
                     className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all text-white hover:bg-white/10"
                 }, "📋 Solicitações"),
                 hasModuleAccess(l, "financeiro") && React.createElement("button", {
-                    onClick: function() { he("financeiro"); x(e => ({...e, finTab: getFirstAllowedTab(l, "financeiro", "solicitacoes")})); },
+                    onClick: function() { he("financeiro"); x(e => ({...e, finTab: getFirstAllowedTab(l, "financeiro", "home-fin")})); },
                     className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all text-white hover:bg-white/10"
                 }, "💰 Financeiro"),
                 hasModuleAccess(l, "disponibilidade") && React.createElement("button", {
@@ -15410,7 +15670,7 @@ const hideLoadingScreen = () => {
                     className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all text-white hover:bg-white/10"
                 }, "📋 Solicitações"),
                 hasModuleAccess(l, "financeiro") && React.createElement("button", {
-                    onClick: function() { he("financeiro"); x(e => ({...e, finTab: getFirstAllowedTab(l, "financeiro", "solicitacoes")})); },
+                    onClick: function() { he("financeiro"); x(e => ({...e, finTab: getFirstAllowedTab(l, "financeiro", "home-fin")})); },
                     className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all text-white hover:bg-white/10"
                 }, "💰 Financeiro"),
                 hasModuleAccess(l, "disponibilidade") && React.createElement("button", {
@@ -20593,7 +20853,7 @@ const hideLoadingScreen = () => {
                     // Financeiro
                     hasModuleAccess(l, "financeiro") &&
                     React.createElement("button", {
-                        onClick: () => { he("financeiro"); x(e => ({...e, finTab: getFirstAllowedTab(l, "financeiro", "solicitacoes")})); },
+                        onClick: () => { he("financeiro"); x(e => ({...e, finTab: getFirstAllowedTab(l, "financeiro", "home-fin")})); },
                         className: "bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 border-2 border-transparent hover:border-green-300"
                     }, React.createElement("span", {className: "text-4xl block mb-3"}, "💰"),
                         React.createElement("p", {className: "font-bold text-gray-800"}, "Financeiro"),
@@ -20763,7 +21023,7 @@ const hideLoadingScreen = () => {
             className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("solicitacoes" === Ee && "disponibilidade" !== p.adminTab ? "bg-white text-purple-900" : "text-white hover:bg-white/10")
         }, "📋 Solicitações"), 
         hasModuleAccess(l, "financeiro") && React.createElement("button", {
-            onClick: () => { he("financeiro"); x(e => ({...e, finTab: getFirstAllowedTab(l, "financeiro", "solicitacoes")})); },
+            onClick: () => { he("financeiro"); x(e => ({...e, finTab: getFirstAllowedTab(l, "financeiro", "home-fin")})); },
             className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("financeiro" === Ee ? "bg-white text-green-800" : "text-white hover:bg-white/10")
         }, "💰 Financeiro"), 
         hasModuleAccess(l, "disponibilidade") && React.createElement("button", {
