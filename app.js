@@ -16171,7 +16171,81 @@ const hideLoadingScreen = () => {
                     ht("config"), tl(), al(), carregarPrazosProf()
                 },
                 className: "px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-all " + ("config" === Et ? "border-purple-600 text-purple-600 bg-purple-50" : "border-transparent text-gray-600 hover:text-gray-800")
-            }, "⚙️ Config"))), wa && React.createElement("div", {
+            }, "⚙️ Config"))), 
+            
+            // ===== BARRA DE FILTROS ATIVOS =====
+            (Et === "dashboard" || Et === "acompanhamento" || Et === "profissionais" || Et === "os") && (
+                (ua.cod_cliente && ua.cod_cliente.length > 0) || 
+                (ua.centro_custo && ua.centro_custo.length > 0) || 
+                ua.categoria || 
+                ua.regiao ||
+                ua.status_prazo ||
+                ua.status_retorno
+            ) && React.createElement("div", {
+                className: "bg-gradient-to-r from-purple-50 to-violet-50 border-b border-purple-200 px-4 py-2"
+            },
+                React.createElement("div", {className: "max-w-full mx-auto flex items-center gap-2 flex-wrap"},
+                    React.createElement("span", {className: "text-xs font-semibold text-purple-700"}, "🔍 Filtros:"),
+                    
+                    // Período
+                    ua.data_inicio && React.createElement("span", {className: "inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs"},
+                        "📅 " + new Date(ua.data_inicio + "T12:00:00").toLocaleDateString("pt-BR") + " a " + new Date(ua.data_fim + "T12:00:00").toLocaleDateString("pt-BR")
+                    ),
+                    
+                    // Região
+                    ua.regiao && React.createElement("span", {className: "inline-flex items-center gap-1 px-2 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs"},
+                        "🗺️ " + (aa.find(r => r.id === parseInt(ua.regiao))?.nome || "Região " + ua.regiao)
+                    ),
+                    
+                    // Clientes
+                    ua.cod_cliente && ua.cod_cliente.length > 0 && React.createElement("span", {className: "inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs"},
+                        "🏢 " + (ua.cod_cliente.length === 1 
+                            ? (il(ua.cod_cliente[0]) || "Cliente " + ua.cod_cliente[0])
+                            : ua.cod_cliente.length + " clientes")
+                    ),
+                    
+                    // Centros de Custo
+                    ua.centro_custo && ua.centro_custo.length > 0 && React.createElement("span", {className: "inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs"},
+                        "📁 " + (ua.centro_custo.length === 1 ? ua.centro_custo[0] : ua.centro_custo.length + " centros")
+                    ),
+                    
+                    // Categoria
+                    ua.categoria && React.createElement("span", {className: "inline-flex items-center gap-1 px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs"},
+                        "🏷️ " + ua.categoria
+                    ),
+                    
+                    // Status Prazo
+                    ua.status_prazo && React.createElement("span", {className: "inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs " + (ua.status_prazo === "dentro" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700")},
+                        ua.status_prazo === "dentro" ? "✅ No Prazo" : "❌ Fora Prazo"
+                    ),
+                    
+                    // Status Retorno
+                    ua.status_retorno && React.createElement("span", {className: "inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs " + (ua.status_retorno === "sem_retorno" ? "bg-green-100 text-green-700" : "bg-orange-100 text-orange-700")},
+                        ua.status_retorno === "sem_retorno" ? "✅ Sem Retorno" : "🔄 Com Retorno"
+                    ),
+                    
+                    // Botão limpar
+                    React.createElement("button", {
+                        onClick: () => {
+                            const novoFiltro = {
+                                ...ua,
+                                cod_cliente: [],
+                                centro_custo: [],
+                                categoria: "",
+                                status_prazo: "",
+                                status_prazo_prof: "",
+                                status_retorno: "",
+                                regiao: ""
+                            };
+                            ga(novoFiltro);
+                            rl(novoFiltro);
+                        },
+                        className: "ml-auto px-2 py-1 text-xs text-red-600 hover:bg-red-100 rounded-full transition-colors"
+                    }, "✕ Limpar")
+                )
+            ),
+            
+            wa && React.createElement("div", {
                 className: "fixed inset-0 bg-black/50 z-50 flex items-start justify-center pt-10 overflow-hidden"
             }, React.createElement("div", {
                 className: "bg-white rounded-xl shadow-2xl w-full max-w-5xl max-h-[85vh] overflow-y-auto"
