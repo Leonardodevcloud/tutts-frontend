@@ -17876,15 +17876,15 @@ const hideLoadingScreen = () => {
                         ),
                         React.createElement("div", {className: "bg-gradient-to-br from-sky-500 to-blue-600 rounded-lg p-4 shadow text-white"},
                             React.createElement("p", {className: "text-xs opacity-80"}, "Tempo Médio Entrega"),
-                            React.createElement("p", {className: "text-2xl font-bold"}, (function(){ var m = parseFloat(cliente767Dados.metricas.tempo_medio)||0; return String(Math.floor(m/60)).padStart(2,"0")+":"+String(Math.floor(m%60)).padStart(2,"0"); })())
+                            React.createElement("p", {className: "text-2xl font-bold"}, cliente767Dados.metricas.tempo_medio || "00:00")
                         ),
                         React.createElement("div", {className: "bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg p-4 shadow text-white"},
                             React.createElement("p", {className: "text-xs opacity-80"}, "Tempo Médio Coleta"),
-                            React.createElement("p", {className: "text-2xl font-bold"}, (function(){ var m = parseFloat(cliente767Dados.metricas.tempo_medio_coleta)||0; return String(Math.floor(m/60)).padStart(2,"0")+":"+String(Math.floor(m%60)).padStart(2,"0"); })())
+                            React.createElement("p", {className: "text-2xl font-bold"}, cliente767Dados.metricas.tempo_medio_coleta || "00:00")
                         ),
                         React.createElement("div", {className: "bg-gradient-to-br from-pink-500 to-rose-600 rounded-lg p-4 shadow text-white"},
                             React.createElement("p", {className: "text-xs opacity-80"}, "Tempo Médio Alocação"),
-                            React.createElement("p", {className: "text-2xl font-bold"}, (function(){ var m = parseFloat(cliente767Dados.metricas.tempo_medio_alocacao)||0; return String(Math.floor(m/60)).padStart(2,"0")+":"+String(Math.floor(m%60)).padStart(2,"0"); })())
+                            React.createElement("p", {className: "text-2xl font-bold"}, cliente767Dados.metricas.tempo_medio_alocacao || "00:00")
                         )
                     ),
                     
