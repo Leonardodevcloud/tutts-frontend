@@ -913,6 +913,9 @@ const hideLoadingScreen = () => {
             centro_custo: ''
         }),
         [relatorioIACentrosCusto, setRelatorioIACentrosCusto] = useState([]),
+        // Estados de busca de cliente
+        [buscaClienteModal, setBuscaClienteModal] = useState(''),
+        [buscaClienteRelatorioIA, setBuscaClienteRelatorioIA] = useState(''),
         // Estados de paginação e OS dos profissionais
         [profPaginaAtual, setProfPaginaAtual] = useState(1),
         [profOsExpandido, setProfOsExpandido] = useState({}), // {cod_prof: [lista de OS]}
@@ -16334,7 +16337,16 @@ const hideLoadingScreen = () => {
                 className: "text-xs bg-purple-200 text-purple-800 px-2 py-1 rounded-full font-semibold hover:bg-purple-300 cursor-pointer"
             }, (ua.cod_cliente || []).length, " selecionado(s) ✕") : React.createElement("span", {
                 className: "text-xs text-purple-600"
-            }, "Todas")), React.createElement("select", {
+            }, "Todas")), 
+            // Campo de busca
+            React.createElement("input", {
+                type: "text",
+                placeholder: "🔍 Buscar por código ou nome...",
+                value: buscaClienteModal,
+                onChange: e => setBuscaClienteModal(e.target.value),
+                className: "w-full px-3 py-2 border-2 border-purple-200 rounded-lg text-sm mb-2 focus:border-purple-500 focus:ring-2 focus:ring-purple-200"
+            }),
+            React.createElement("select", {
                 multiple: !0,
                 size: "10",
                 value: ua.cod_cliente || [],
@@ -16349,7 +16361,13 @@ const hideLoadingScreen = () => {
                     ga(a), rl(a)
                 },
                 className: "w-full px-3 py-2 border-2 border-purple-200 rounded-lg text-sm bg-white focus:border-purple-500 focus:ring-2 focus:ring-purple-200"
-            }, ia.map(e => React.createElement("option", {
+            }, ia.filter(function(e) {
+                if (!buscaClienteModal) return true;
+                var termo = buscaClienteModal.toLowerCase();
+                var codigo = String(e.cod_cliente).toLowerCase();
+                var nome = (il(e.cod_cliente) || e.nome_cliente || "").toLowerCase();
+                return codigo.includes(termo) || nome.includes(termo);
+            }).map(e => React.createElement("option", {
                 key: e.cod_cliente,
                 value: String(e.cod_cliente),
                 className: "py-1"
@@ -18789,14 +18807,22 @@ const hideLoadingScreen = () => {
                                 className: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
                             })
                         ),
-                        // Cliente
+                        // Cliente com busca
                         React.createElement("div", null,
                             React.createElement("label", {className: "block text-sm font-medium text-gray-700 mb-1"}, "🏢 Cliente"),
+                            React.createElement("input", {
+                                type: "text",
+                                placeholder: "🔍 Buscar cliente...",
+                                value: buscaClienteRelatorioIA,
+                                onChange: (e) => setBuscaClienteRelatorioIA(e.target.value),
+                                className: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 mb-1 text-sm"
+                            }),
                             React.createElement("select", {
                                 value: relatorioIAFiltros.cod_cliente,
                                 onChange: (e) => {
                                     const codCliente = e.target.value;
                                     setRelatorioIAFiltros(prev => ({...prev, cod_cliente: codCliente, centro_custo: ''}));
+                                    setBuscaClienteRelatorioIA('');
                                     // Carregar centros de custo do cliente
                                     if (codCliente && Tt[codCliente]) {
                                         setRelatorioIACentrosCusto(Tt[codCliente] || []);
@@ -18807,7 +18833,14 @@ const hideLoadingScreen = () => {
                                 className: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
                             },
                                 React.createElement("option", {value: ""}, "Todos os clientes"),
-                                jt && jt.map(function(c) {
+                                jt && jt.filter(function(c) {
+                                    if (!buscaClienteRelatorioIA) return true;
+                                    var termo = buscaClienteRelatorioIA.toLowerCase();
+                                    var codigo = String(c.cod_cliente).toLowerCase();
+                                    var mascara = il(c.cod_cliente);
+                                    var nome = (mascara || c.nome_cliente || "").toLowerCase();
+                                    return codigo.includes(termo) || nome.includes(termo);
+                                }).map(function(c) {
                                     // Prioridade: 1) Máscara configurada, 2) nome_cliente do banco, 3) fallback
                                     var mascara = il(c.cod_cliente);
                                     var nomeExibir = mascara || (c.nome_cliente && c.nome_cliente.trim()) || "Cliente " + c.cod_cliente;
