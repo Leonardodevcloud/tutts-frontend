@@ -16057,40 +16057,37 @@ const hideLoadingScreen = () => {
                 className: "bg-white border-b sticky top-0 z-10 shadow-sm"
             }, React.createElement("div", {
                 className: "max-w-full mx-auto px-4 flex gap-1 overflow-x-auto"
-            }, React.createElement("button", {
-                onClick: () => {
-                    ht("dashboard"), el()
-                },
+            }, 
+            React.createElement("button", {
+                onClick: () => { ht("dashboard"); el(); },
                 className: "px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-all " + ("dashboard" === Et ? "border-purple-600 text-purple-600 bg-purple-50" : "border-transparent text-gray-600 hover:text-gray-800")
-            }, "📊 Dashboard"), React.createElement("button", {
-                onClick: function() { ht("acompanhamento"); carregarAcompanhamento(); },
+            }, "📊 Dashboard"), 
+            React.createElement("button", {
+                onClick: () => { ht("acompanhamento"); carregarAcompanhamento(); },
                 className: "px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-all " + ("acompanhamento" === Et ? "border-purple-600 text-purple-600 bg-purple-50" : "border-transparent text-gray-600 hover:text-gray-800")
-            }, "📈 Acompanhamento"), React.createElement("button", {
-                onClick: () => {
-                    ht("profissionais"), el()
-                },
+            }, "📈 Acompanhamento"), 
+            React.createElement("button", {
+                onClick: () => { ht("profissionais"); el(); },
                 className: "px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-all " + ("profissionais" === Et ? "border-purple-600 text-purple-600 bg-purple-50" : "border-transparent text-gray-600 hover:text-gray-800")
-            }, "👤 Por Profissional"), React.createElement("button", {
-                onClick: () => {
-                    ht("os"), (async () => {
+            }, "👤 Por Profissional"), 
+            React.createElement("button", {
+                onClick: () => { ht("os"); (async () => {
                         try {
                             Ra(!0);
                             const e = Xa(),
                                 t = await fetch(`${API_URL}/bi/entregas-lista?${e}`),
                                 data = await t.json();
-                            // Backend agora retorna array direto com campos calculados
                             Ut(Array.isArray(data) ? data : []);
                         } catch (e) {
                             console.error("Erro ao carregar entregas:", e)
                         }
                         Ra(!1)
-                    })()
+                    })(); 
                 },
                 className: "px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-all " + ("os" === Et ? "border-purple-600 text-purple-600 bg-purple-50" : "border-transparent text-gray-600 hover:text-gray-800")
-            }, "📋 Análise por OS"), React.createElement("button", {
-                onClick: () => {
-                    ht("upload")
-                },
+            }, "📋 Análise por OS"), 
+            React.createElement("button", {
+                onClick: () => { ht("upload"); },
                 className: "px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-all " + ("upload" === Et ? "border-purple-600 text-purple-600 bg-purple-50" : "border-transparent text-gray-600 hover:text-gray-800")
             }, "📤 Upload"), React.createElement("button", {
                 onClick: () => {
