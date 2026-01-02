@@ -20839,87 +20839,134 @@ const hideLoadingScreen = () => {
                 ),
                 
                 // Botões de Acesso Rápido
-                React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-3 gap-4"},
+                React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-3 gap-6"},
                     // Solicitações
                     hasModuleAccess(l, "solicitacoes") &&
-                    React.createElement("button", {
+                    React.createElement("div", {
                         onClick: () => { he("solicitacoes"); x(e => ({...e, adminTab: "dashboard"})); },
-                        className: "bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 border-2 border-transparent hover:border-purple-300"
-                    }, React.createElement("span", {className: "text-4xl block mb-3"}, "📋"),
-                        React.createElement("p", {className: "font-bold text-gray-800"}, "Solicitações"),
-                        React.createElement("p", {className: "text-sm text-gray-500"}, "Gerencie pedidos")
+                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-purple-300"
+                    },
+                        React.createElement("div", {className: "h-2 bg-gradient-to-r from-purple-500 to-violet-600"}),
+                        React.createElement("div", {className: "p-6"},
+                            React.createElement("div", {className: "w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
+                                React.createElement("span", {className: "text-3xl"}, "📋")
+                            ),
+                            React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Solicitações"),
+                            React.createElement("p", {className: "text-sm text-gray-500"}, "Gerencie pedidos e ajustes")
+                        )
                     ),
                     
                     // Financeiro
                     hasModuleAccess(l, "financeiro") &&
-                    React.createElement("button", {
+                    React.createElement("div", {
                         onClick: () => { he("financeiro"); x(e => ({...e, finTab: getFirstAllowedTab(l, "financeiro", "home-fin")})); },
-                        className: "bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 border-2 border-transparent hover:border-green-300"
-                    }, React.createElement("span", {className: "text-4xl block mb-3"}, "💰"),
-                        React.createElement("p", {className: "font-bold text-gray-800"}, "Financeiro"),
-                        React.createElement("p", {className: "text-sm text-gray-500"}, "Saques e valores")
+                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-green-300"
+                    },
+                        React.createElement("div", {className: "h-2 bg-gradient-to-r from-green-500 to-emerald-600"}),
+                        React.createElement("div", {className: "p-6"},
+                            React.createElement("div", {className: "w-14 h-14 bg-green-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
+                                React.createElement("span", {className: "text-3xl"}, "💰")
+                            ),
+                            React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Financeiro"),
+                            React.createElement("p", {className: "text-sm text-gray-500"}, "Saques e valores")
+                        )
                     ),
                     
                     // Disponibilidade
-                    hasModuleAccess(l, "disponibilidade") && React.createElement("button", {
+                    hasModuleAccess(l, "disponibilidade") && 
+                    React.createElement("div", {
                         onClick: () => { he("solicitacoes"); x(e => ({...e, adminTab: "disponibilidade"})); },
-                        className: "bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 border-2 border-transparent hover:border-blue-300"
-                    }, React.createElement("span", {className: "text-4xl block mb-3"}, "📅"),
-                        React.createElement("p", {className: "font-bold text-gray-800"}, "Disponibilidade"),
-                        React.createElement("p", {className: "text-sm text-gray-500"}, "Escalas e horários")
+                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-blue-300"
+                    },
+                        React.createElement("div", {className: "h-2 bg-gradient-to-r from-blue-500 to-cyan-600"}),
+                        React.createElement("div", {className: "p-6"},
+                            React.createElement("div", {className: "w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
+                                React.createElement("span", {className: "text-3xl"}, "📅")
+                            ),
+                            React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Disponibilidade"),
+                            React.createElement("p", {className: "text-sm text-gray-500"}, "Escalas e horários")
+                        )
                     ),
                     
                     // TO-DO
                     hasModuleAccess(l, "todo") &&
-                    React.createElement("button", {
+                    React.createElement("div", {
                         onClick: () => he("todo"),
-                        className: "bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 border-2 border-transparent hover:border-indigo-300"
-                    }, React.createElement("span", {className: "text-4xl block mb-3"}, "📝"),
-                        React.createElement("p", {className: "font-bold text-gray-800"}, "TO-DO"),
-                        React.createElement("p", {className: "text-sm text-gray-500"}, "Suas tarefas"),
-                        todoMeuDia.length > 0 && React.createElement("span", {
-                            className: "inline-block mt-2 px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded-full"
-                        }, todoMeuDia.length, " pendente(s)")
+                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-indigo-300"
+                    },
+                        React.createElement("div", {className: "h-2 bg-gradient-to-r from-indigo-500 to-purple-600"}),
+                        React.createElement("div", {className: "p-6"},
+                            React.createElement("div", {className: "w-14 h-14 bg-indigo-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform relative"},
+                                React.createElement("span", {className: "text-3xl"}, "📝"),
+                                todoMeuDia.length > 0 && React.createElement("span", {className: "absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"}, todoMeuDia.length > 9 ? "9+" : todoMeuDia.length)
+                            ),
+                            React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "TO-DO"),
+                            React.createElement("p", {className: "text-sm text-gray-500"}, "Suas tarefas")
+                        )
                     ),
                     
                     // BI
-                    hasModuleAccess(l, "bi") && React.createElement("button", {
+                    hasModuleAccess(l, "bi") && 
+                    React.createElement("div", {
                         onClick: () => he("bi"),
-                        className: "bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 border-2 border-transparent hover:border-orange-300"
-                    }, React.createElement("span", {className: "text-4xl block mb-3"}, "📊"),
-                        React.createElement("p", {className: "font-bold text-gray-800"}, "BI"),
-                        React.createElement("p", {className: "text-sm text-gray-500"}, "Análises e dados")
+                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-orange-300"
+                    },
+                        React.createElement("div", {className: "h-2 bg-gradient-to-r from-orange-500 to-amber-600"}),
+                        React.createElement("div", {className: "p-6"},
+                            React.createElement("div", {className: "w-14 h-14 bg-orange-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
+                                React.createElement("span", {className: "text-3xl"}, "📊")
+                            ),
+                            React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "BI"),
+                            React.createElement("p", {className: "text-sm text-gray-500"}, "Análises e dados")
+                        )
                     ),
                     
                     // Social
-                    React.createElement("button", {
+                    React.createElement("div", {
                         onClick: () => he("social"),
-                        className: "bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 border-2 border-transparent hover:border-pink-300"
-                    }, React.createElement("span", {className: "text-4xl block mb-3"}, "💜"),
-                        React.createElement("p", {className: "font-bold text-gray-800"}, "Social"),
-                        React.createElement("p", {className: "text-sm text-gray-500"}, "Comunidade"),
-                        socialUnread > 0 && React.createElement("span", {
-                            className: "inline-block mt-2 px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full"
-                        }, socialUnread, " mensagem(ns)")
+                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-pink-300"
+                    },
+                        React.createElement("div", {className: "h-2 bg-gradient-to-r from-pink-500 to-rose-600"}),
+                        React.createElement("div", {className: "p-6"},
+                            React.createElement("div", {className: "w-14 h-14 bg-pink-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform relative"},
+                                React.createElement("span", {className: "text-3xl"}, "💜"),
+                                socialUnread > 0 && React.createElement("span", {className: "absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"}, socialUnread > 9 ? "9+" : socialUnread)
+                            ),
+                            React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Social"),
+                            React.createElement("p", {className: "text-sm text-gray-500"}, "Comunidade")
+                        )
                     ),
                     
                     // Operacional
                     hasModuleAccess(l, "operacional") &&
-                    React.createElement("button", {
+                    React.createElement("div", {
                         onClick: () => he("operacional"),
-                        className: "bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 border-2 border-transparent hover:border-teal-300"
-                    }, React.createElement("span", {className: "text-4xl block mb-3"}, "🔧"),
-                        React.createElement("p", {className: "font-bold text-gray-800"}, "Operacional"),
-                        React.createElement("p", {className: "text-sm text-gray-500"}, "Gestão operacional")
+                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-teal-300"
+                    },
+                        React.createElement("div", {className: "h-2 bg-gradient-to-r from-teal-500 to-cyan-600"}),
+                        React.createElement("div", {className: "p-6"},
+                            React.createElement("div", {className: "w-14 h-14 bg-teal-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
+                                React.createElement("span", {className: "text-3xl"}, "🔧")
+                            ),
+                            React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Operacional"),
+                            React.createElement("p", {className: "text-sm text-gray-500"}, "Gestão operacional")
+                        )
                     ),
                     
                     // Config (admins com permissão)
-                    hasModuleAccess(l, "config") && React.createElement("button", {
+                    hasModuleAccess(l, "config") && 
+                    React.createElement("div", {
                         onClick: () => { he("config"); x(e => ({...e, configTab: getFirstAllowedTab(l, "config", "usuarios")})); },
-                        className: "bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 border-2 border-transparent hover:border-gray-400"
-                    }, React.createElement("span", {className: "text-4xl block mb-3"}, "⚙️"),
-                        React.createElement("p", {className: "font-bold text-gray-800"}, "Config"),
-                        React.createElement("p", {className: "text-sm text-gray-500"}, "Configurações")
+                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-gray-400"
+                    },
+                        React.createElement("div", {className: "h-2 bg-gradient-to-r from-gray-500 to-slate-600"}),
+                        React.createElement("div", {className: "p-6"},
+                            React.createElement("div", {className: "w-14 h-14 bg-gray-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
+                                React.createElement("span", {className: "text-3xl"}, "⚙️")
+                            ),
+                            React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Config"),
+                            React.createElement("p", {className: "text-sm text-gray-500"}, "Configurações")
+                        )
                     )
                 )
             ),
