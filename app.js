@@ -16361,17 +16361,28 @@ const hideLoadingScreen = () => {
                     ga(a), rl(a)
                 },
                 className: "w-full px-3 py-2 border-2 border-purple-200 rounded-lg text-sm bg-white focus:border-purple-500 focus:ring-2 focus:ring-purple-200"
-            }, ia.filter(function(e) {
-                if (!buscaClienteModal) return true;
-                var termo = buscaClienteModal.toLowerCase();
-                var codigo = String(e.cod_cliente).toLowerCase();
-                var nome = (il(e.cod_cliente) || e.nome_cliente || "").toLowerCase();
-                return codigo.includes(termo) || nome.includes(termo);
-            }).map(e => React.createElement("option", {
+            }, (function() {
+                // Filtrar e remover duplicatas por cod_cliente
+                var clientesUnicos = [];
+                var codigosVistos = {};
+                ia.filter(function(e) {
+                    if (!buscaClienteModal) return true;
+                    var termo = buscaClienteModal.toLowerCase();
+                    var codigo = String(e.cod_cliente).toLowerCase();
+                    var nome = (il(e.cod_cliente) || e.nome_cliente || "").toLowerCase();
+                    return codigo.includes(termo) || nome.includes(termo);
+                }).forEach(function(e) {
+                    if (!codigosVistos[e.cod_cliente]) {
+                        codigosVistos[e.cod_cliente] = true;
+                        clientesUnicos.push(e);
+                    }
+                });
+                return clientesUnicos;
+            })().map(e => React.createElement("option", {
                 key: e.cod_cliente,
                 value: String(e.cod_cliente),
                 className: "py-1"
-            }, e.cod_cliente, " - ", il(e.cod_cliente) || e.nome_cliente))), React.createElement("p", {
+            }, e.cod_cliente, " - ", il(e.cod_cliente) || e.nome_cliente || "Cliente"))), React.createElement("p", {
                 className: "text-xs text-purple-600 mt-2"
             }, "💡 Ctrl+Click para multi-seleção | Sem seleção = Todas")), React.createElement("div", {
                 className: "border rounded-lg p-4 bg-green-50"
@@ -16403,13 +16414,24 @@ const hideLoadingScreen = () => {
                     ga(a), rl(a)
                 },
                 className: "w-full px-3 py-2 border-2 border-green-200 rounded-lg text-sm bg-white focus:border-green-500 focus:ring-2 focus:ring-green-200"
-            }, kt.map(e => {
+            }, (function() {
+                // Remover duplicatas de centro de custo
+                var centrosUnicos = [];
+                var centrosVistos = {};
+                kt.forEach(function(e) {
+                    if (e.centro_custo && !centrosVistos[e.centro_custo]) {
+                        centrosVistos[e.centro_custo] = true;
+                        centrosUnicos.push(e);
+                    }
+                });
+                return centrosUnicos;
+            })().map(e => {
                 const t = Object.keys(Tt).find(t => (Tt[t] || []).includes(e.centro_custo));
                 return React.createElement("option", {
                     key: e.centro_custo,
                     value: e.centro_custo,
                     className: "py-1"
-                }, t || "?", " - ", e.centro_custo)
+                }, t ? t + " - " : "", e.centro_custo)
             })), React.createElement("p", {
                 className: "text-xs text-green-600 mt-2"
             }, "💡 Ctrl+Click para multi-seleção | Sem seleção = Todos")))), React.createElement("div", {
