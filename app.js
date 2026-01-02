@@ -818,7 +818,7 @@ const hideLoadingScreen = () => {
         }), [qe, Ue] = useState({
             avisos: [],
             loading: !0
-        }), [ze, Be] = useState(null), [Ve, Je] = useState(0), [Qe, He] = useState([]), [Ge, We] = useState(!1), [Ze, Ye] = useState([]), [Ke, Xe] = useState([]), [et, tt] = useState([]), [at, lt] = useState([]), [rt, ot] = useState(!0), [ct, st] = useState(0), [nt, mt] = useState("produtos"), [it, dt] = useState([]), [pt, xt] = useState("lista"), [ut, gt] = useState([]), [bt, Rt] = useState([]), [Et, ht] = useState("dashboard"), [ft, Nt] = useState(null), [yt, vt] = useState([]), [wt, _t] = useState([{
+        }), [ze, Be] = useState(null), [Ve, Je] = useState(0), [Qe, He] = useState([]), [Ge, We] = useState(!1), [Ze, Ye] = useState([]), [Ke, Xe] = useState([]), [et, tt] = useState([]), [at, lt] = useState([]), [rt, ot] = useState(!0), [ct, st] = useState(0), [nt, mt] = useState("produtos"), [it, dt] = useState([]), [pt, xt] = useState("lista"), [ut, gt] = useState([]), [bt, Rt] = useState([]), [Et, ht] = useState("home-bi"), [ft, Nt] = useState(null), [yt, vt] = useState([]), [wt, _t] = useState([{
             km_min: 0,
             km_max: 15,
             prazo_minutos: 45
@@ -16157,6 +16157,10 @@ const hideLoadingScreen = () => {
                 className: "max-w-full mx-auto px-4 flex gap-1 overflow-x-auto"
             }, 
             React.createElement("button", {
+                onClick: () => { ht("home-bi"); },
+                className: "px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-all " + ("home-bi" === Et ? "border-purple-600 text-purple-600 bg-purple-50" : "border-transparent text-gray-600 hover:text-gray-800")
+            }, "🏠 Home"), 
+            React.createElement("button", {
                 onClick: () => { ht("dashboard"); el(); },
                 className: "px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-all " + ("dashboard" === Et ? "border-purple-600 text-purple-600 bg-purple-50" : "border-transparent text-gray-600 hover:text-gray-800")
             }, "📊 Dashboard"), 
@@ -16623,7 +16627,187 @@ const hideLoadingScreen = () => {
             React.createElement("p", {
                 className: "text-center text-gray-400 text-sm animate-pulse"
             }, ["Processando milhares de registros...", "Analisando métricas de desempenho...", "Calculando indicadores...", "Organizando dados por região...", "Gerando visualizações..."][Math.floor(Date.now() / 2000) % 5])
-            )) : React.createElement(React.Fragment, null, "dashboard" === Et && React.createElement(React.Fragment, null, 
+            )) : React.createElement(React.Fragment, null, 
+            
+            // =============================================
+            // HOME BI - Página Inicial do Módulo
+            // =============================================
+            "home-bi" === Et && React.createElement("div", {className: "min-h-screen bg-gradient-to-br from-purple-50 via-white to-violet-50"},
+                // Hero Section com Logo
+                React.createElement("div", {className: "flex flex-col items-center justify-center py-12"},
+                    React.createElement("img", {
+                        src: "https://github.com/Leonardodevcloud/tutts-frontend/blob/main/Tutts%20BI(1).png?raw=true",
+                        alt: "Tutts BI",
+                        className: "w-64 h-64 object-contain mb-6 drop-shadow-2xl"
+                    }),
+                    React.createElement("h1", {className: "text-3xl font-bold text-gray-800 mb-2"}, "Business Intelligence"),
+                    React.createElement("p", {className: "text-gray-500 text-center max-w-xl"}, 
+                        "Análise completa de dados operacionais, métricas de desempenho e relatórios inteligentes para tomada de decisão estratégica."
+                    )
+                ),
+                
+                // Cards de Navegação
+                React.createElement("div", {className: "max-w-6xl mx-auto px-6 pb-12"},
+                    React.createElement("div", {className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"},
+                        
+                        // Card Dashboard
+                        React.createElement("div", {
+                            onClick: () => { ht("dashboard"); el(); },
+                            className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-purple-300"
+                        },
+                            React.createElement("div", {className: "h-2 bg-gradient-to-r from-purple-500 to-violet-600"}),
+                            React.createElement("div", {className: "p-6"},
+                                React.createElement("div", {className: "w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
+                                    React.createElement("span", {className: "text-3xl"}, "📊")
+                                ),
+                                React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Dashboard"),
+                                React.createElement("p", {className: "text-sm text-gray-500"}, "Visão geral com métricas, gráficos e indicadores de desempenho em tempo real.")
+                            )
+                        ),
+                        
+                        // Card Acompanhamento
+                        React.createElement("div", {
+                            onClick: () => { ht("acompanhamento"); carregarAcompanhamento(); },
+                            className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-blue-300"
+                        },
+                            React.createElement("div", {className: "h-2 bg-gradient-to-r from-blue-500 to-cyan-600"}),
+                            React.createElement("div", {className: "p-6"},
+                                React.createElement("div", {className: "w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
+                                    React.createElement("span", {className: "text-3xl"}, "📈")
+                                ),
+                                React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Acompanhamento"),
+                                React.createElement("p", {className: "text-sm text-gray-500"}, "Análise temporal com múltiplas métricas e evolução de indicadores.")
+                            )
+                        ),
+                        
+                        // Card Por Profissional
+                        React.createElement("div", {
+                            onClick: () => { ht("profissionais"); el(); },
+                            className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-green-300"
+                        },
+                            React.createElement("div", {className: "h-2 bg-gradient-to-r from-green-500 to-emerald-600"}),
+                            React.createElement("div", {className: "p-6"},
+                                React.createElement("div", {className: "w-14 h-14 bg-green-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
+                                    React.createElement("span", {className: "text-3xl"}, "👤")
+                                ),
+                                React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Por Profissional"),
+                                React.createElement("p", {className: "text-sm text-gray-500"}, "Ranking e análise detalhada do desempenho individual de cada entregador.")
+                            )
+                        ),
+                        
+                        // Card Análise por OS
+                        React.createElement("div", {
+                            onClick: () => { ht("os"); },
+                            className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-amber-300"
+                        },
+                            React.createElement("div", {className: "h-2 bg-gradient-to-r from-amber-500 to-orange-600"}),
+                            React.createElement("div", {className: "p-6"},
+                                React.createElement("div", {className: "w-14 h-14 bg-amber-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
+                                    React.createElement("span", {className: "text-3xl"}, "📋")
+                                ),
+                                React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Análise por OS"),
+                                React.createElement("p", {className: "text-sm text-gray-500"}, "Detalhamento completo de cada ordem de serviço e seus pontos de entrega.")
+                            )
+                        ),
+                        
+                        // Card Upload
+                        React.createElement("div", {
+                            onClick: () => { ht("upload"); },
+                            className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-teal-300"
+                        },
+                            React.createElement("div", {className: "h-2 bg-gradient-to-r from-teal-500 to-cyan-600"}),
+                            React.createElement("div", {className: "p-6"},
+                                React.createElement("div", {className: "w-14 h-14 bg-teal-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
+                                    React.createElement("span", {className: "text-3xl"}, "📤")
+                                ),
+                                React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Upload"),
+                                React.createElement("p", {className: "text-sm text-gray-500"}, "Importação de planilhas e gerenciamento de dados operacionais.")
+                            )
+                        ),
+                        
+                        // Card Cliente 767
+                        React.createElement("div", {
+                            onClick: () => { ht("cliente767"); carregarCliente767(); },
+                            className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-orange-300"
+                        },
+                            React.createElement("div", {className: "h-2 bg-gradient-to-r from-orange-500 to-red-500"}),
+                            React.createElement("div", {className: "p-6"},
+                                React.createElement("div", {className: "w-14 h-14 bg-orange-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
+                                    React.createElement("span", {className: "text-3xl"}, "🏢")
+                                ),
+                                React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Cliente 767"),
+                                React.createElement("p", {className: "text-sm text-gray-500"}, "Dashboard exclusivo com prazo especial de 120 minutos e meta mensal.")
+                            )
+                        ),
+                        
+                        // Card Relatório IA
+                        React.createElement("div", {
+                            onClick: () => { ht("relatorio-ia"); },
+                            className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-violet-300"
+                        },
+                            React.createElement("div", {className: "h-2 bg-gradient-to-r from-violet-500 to-purple-600"}),
+                            React.createElement("div", {className: "p-6"},
+                                React.createElement("div", {className: "w-14 h-14 bg-violet-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
+                                    React.createElement("img", {src: "https://raw.githubusercontent.com/Leonardodevcloud/tutts-frontend/main/gemini-app-icon-hd.png", className: "w-8 h-8 rounded"})
+                                ),
+                                React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Relatório IA"),
+                                React.createElement("p", {className: "text-sm text-gray-500"}, "Análises automáticas com Inteligência Artificial e geração de documentos.")
+                            )
+                        ),
+                        
+                        // Card Configurações
+                        React.createElement("div", {
+                            onClick: () => { ht("config"); tl(); al(); carregarPrazosProf(); },
+                            className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-gray-300"
+                        },
+                            React.createElement("div", {className: "h-2 bg-gradient-to-r from-gray-500 to-slate-600"}),
+                            React.createElement("div", {className: "p-6"},
+                                React.createElement("div", {className: "w-14 h-14 bg-gray-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
+                                    React.createElement("span", {className: "text-3xl"}, "⚙️")
+                                ),
+                                React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Configurações"),
+                                React.createElement("p", {className: "text-sm text-gray-500"}, "Regiões, máscaras, prazos personalizados e regras de contagem.")
+                            )
+                        )
+                    ),
+                    
+                    // Estatísticas Rápidas
+                    ft && React.createElement("div", {className: "mt-10"},
+                        React.createElement("h2", {className: "text-xl font-bold text-gray-800 mb-4 flex items-center gap-2"},
+                            React.createElement("span", null, "⚡"),
+                            "Resumo Rápido"
+                        ),
+                        React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4"},
+                            React.createElement("div", {className: "bg-white rounded-xl p-4 shadow text-center"},
+                                React.createElement("p", {className: "text-2xl font-bold text-purple-600"}, ft.total_os?.toLocaleString() || 0),
+                                React.createElement("p", {className: "text-xs text-gray-500"}, "Total OS")
+                            ),
+                            React.createElement("div", {className: "bg-white rounded-xl p-4 shadow text-center"},
+                                React.createElement("p", {className: "text-2xl font-bold text-blue-600"}, ft.total_entregas?.toLocaleString() || 0),
+                                React.createElement("p", {className: "text-xs text-gray-500"}, "Entregas")
+                            ),
+                            React.createElement("div", {className: "bg-white rounded-xl p-4 shadow text-center"},
+                                React.createElement("p", {className: "text-2xl font-bold text-green-600"}, ft.taxa_prazo || 0, "%"),
+                                React.createElement("p", {className: "text-xs text-gray-500"}, "No Prazo")
+                            ),
+                            React.createElement("div", {className: "bg-white rounded-xl p-4 shadow text-center"},
+                                React.createElement("p", {className: "text-2xl font-bold text-amber-600"}, ft.total_profissionais || 0),
+                                React.createElement("p", {className: "text-xs text-gray-500"}, "Entregadores")
+                            ),
+                            React.createElement("div", {className: "bg-white rounded-xl p-4 shadow text-center"},
+                                React.createElement("p", {className: "text-2xl font-bold text-violet-600"}, sl(ft.valor_total || 0)),
+                                React.createElement("p", {className: "text-xs text-gray-500"}, "Valor Total")
+                            ),
+                            React.createElement("div", {className: "bg-white rounded-xl p-4 shadow text-center"},
+                                React.createElement("p", {className: "text-2xl font-bold text-teal-600"}, sl(ft.faturamento_total || 0)),
+                                React.createElement("p", {className: "text-xs text-gray-500"}, "Faturamento")
+                            )
+                        )
+                    )
+                )
+            ),
+            
+            "dashboard" === Et && React.createElement(React.Fragment, null, 
             
             // === LINHA 1: FINANCEIRO (5 cards compactos) ===
             React.createElement("div", {
