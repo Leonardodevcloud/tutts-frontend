@@ -16151,7 +16151,10 @@ const hideLoadingScreen = () => {
                 className: "bg-white border-b px-4 py-2 text-xs text-gray-500"
             }, React.createElement("span", null, "Últ. Leitura: ", (new Date).toLocaleString("pt-BR")), React.createElement("span", {
                 className: "ml-4"
-            }, "Dados atualizados: ", ua.data_fim ? new Date(ua.data_fim).toLocaleDateString("pt-BR") : "-")), React.createElement("div", {
+            }, "Dados atualizados: ", ua.data_fim ? new Date(ua.data_fim).toLocaleDateString("pt-BR") : "-")), 
+            
+            // Barra de abas - oculta na Home
+            Et !== "home-bi" && React.createElement("div", {
                 className: "bg-white border-b sticky top-0 z-10 shadow-sm"
             }, React.createElement("div", {
                 className: "max-w-full mx-auto px-4 flex gap-1 overflow-x-auto"
@@ -16710,21 +16713,6 @@ const hideLoadingScreen = () => {
                             )
                         ),
                         
-                        // Card Upload
-                        React.createElement("div", {
-                            onClick: () => { ht("upload"); },
-                            className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-teal-300"
-                        },
-                            React.createElement("div", {className: "h-2 bg-gradient-to-r from-teal-500 to-cyan-600"}),
-                            React.createElement("div", {className: "p-6"},
-                                React.createElement("div", {className: "w-14 h-14 bg-teal-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
-                                    React.createElement("span", {className: "text-3xl"}, "📤")
-                                ),
-                                React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Upload"),
-                                React.createElement("p", {className: "text-sm text-gray-500"}, "Importação de planilhas e gerenciamento de dados operacionais.")
-                            )
-                        ),
-                        
                         // Card Cliente 767
                         React.createElement("div", {
                             onClick: () => { ht("cliente767"); carregarCliente767(); },
@@ -16755,6 +16743,21 @@ const hideLoadingScreen = () => {
                             )
                         ),
                         
+                        // Card Upload
+                        React.createElement("div", {
+                            onClick: () => { ht("upload"); },
+                            className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-teal-300"
+                        },
+                            React.createElement("div", {className: "h-2 bg-gradient-to-r from-teal-500 to-cyan-600"}),
+                            React.createElement("div", {className: "p-6"},
+                                React.createElement("div", {className: "w-14 h-14 bg-teal-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
+                                    React.createElement("span", {className: "text-3xl"}, "📤")
+                                ),
+                                React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Upload"),
+                                React.createElement("p", {className: "text-sm text-gray-500"}, "Importação de planilhas e gerenciamento de dados operacionais.")
+                            )
+                        ),
+                        
                         // Card Configurações
                         React.createElement("div", {
                             onClick: () => { ht("config"); tl(); al(); carregarPrazosProf(); },
@@ -16773,9 +16776,17 @@ const hideLoadingScreen = () => {
                     
                     // Estatísticas Rápidas
                     ft && React.createElement("div", {className: "mt-10"},
-                        React.createElement("h2", {className: "text-xl font-bold text-gray-800 mb-4 flex items-center gap-2"},
-                            React.createElement("span", null, "⚡"),
-                            "Resumo Rápido"
+                        React.createElement("div", {className: "flex items-center justify-between mb-4"},
+                            React.createElement("h2", {className: "text-xl font-bold text-gray-800 flex items-center gap-2"},
+                                React.createElement("span", null, "⚡"),
+                                "Resumo Rápido"
+                            ),
+                            React.createElement("div", {className: "bg-purple-100 text-purple-700 px-4 py-2 rounded-full text-sm font-semibold"},
+                                "📅 ",
+                                ua.data_inicio ? new Date(ua.data_inicio + "T12:00:00").toLocaleDateString("pt-BR") : "-",
+                                " a ",
+                                ua.data_fim ? new Date(ua.data_fim + "T12:00:00").toLocaleDateString("pt-BR") : "-"
+                            )
                         ),
                         React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4"},
                             React.createElement("div", {className: "bg-white rounded-xl p-4 shadow text-center"},
