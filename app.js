@@ -4703,7 +4703,7 @@ const hideLoadingScreen = () => {
                 }
                 s(!1)
             } else ja("Preencha todos os campos", "error")
-        }, Wl = ["Ajuste de Retorno", "Ajuste de Pedágio (Campinas e Recife)"], Zl = (e, t = 800, a = .6) => new Promise((l, r) => {
+        }, Wl = ["Ajuste de Retorno", "Ajuste de Pedágio (Campinas e Recife)"], Zl = (e, t = 1920, a = .85) => new Promise((l, r) => {
             const o = new FileReader;
             o.onload = e => {
                 const o = new Image;
@@ -4711,7 +4711,17 @@ const hideLoadingScreen = () => {
                     const e = document.createElement("canvas");
                     let r = o.width,
                         c = o.height;
-                    r > t && (c = c * t / r, r = t), e.width = r, e.height = c, e.getContext("2d").drawImage(o, 0, 0, r, c), l(e.toDataURL("image/jpeg", a))
+                    // Redimensionar mantendo proporção se maior que o limite
+                    if (r > t || c > t) {
+                        if (r > c) {
+                            c = c * t / r;
+                            r = t;
+                        } else {
+                            r = r * t / c;
+                            c = t;
+                        }
+                    }
+                    e.width = r, e.height = c, e.getContext("2d").drawImage(o, 0, 0, r, c), l(e.toDataURL("image/jpeg", a))
                 }, o.onerror = r, o.src = e.target.result
             }, o.onerror = r, o.readAsDataURL(e)
         }), Yl = async () => {
@@ -5925,13 +5935,21 @@ const hideLoadingScreen = () => {
                     s(!0);
                     try {
                         const e = [];
-                        for (const a of t) a.size <= 1e7 && e.push(await Zl(a));
-                        x({
-                            ...p,
-                            imagens: [...p.imagens || [], ...e].slice(0, 2)
-                        }), ja("✅ Imagem adicionada!", "success")
+                        for (const a of t) {
+                            if (a.size > 25 * 1024 * 1024) {
+                                ja("Imagem muito grande! Máximo 25MB por foto", "error");
+                                continue;
+                            }
+                            e.push(await Zl(a));
+                        }
+                        if (e.length > 0) {
+                            x({
+                                ...p,
+                                imagens: [...p.imagens || [], ...e].slice(0, 2)
+                            }), ja("✅ Imagem adicionada!", "success")
+                        }
                     } catch {
-                        ja("Erro", "error")
+                        ja("Erro ao processar imagem", "error")
                     }
                     s(!1), e.target.value = ""
                 }
@@ -10372,7 +10390,7 @@ const hideLoadingScreen = () => {
                 onChange: async e => {
                     const t = e.target.files?.[0];
                     if (t)
-                        if (t.size > 2097152) ja("Imagem muito grande (máx 2MB)", "error");
+                        if (t.size > 15728640) ja("Imagem muito grande (máx 15MB)", "error");
                         else {
                             x({
                                 ...p,
@@ -10914,7 +10932,7 @@ const hideLoadingScreen = () => {
                 onChange: async e => {
                     const t = e.target.files?.[0];
                     if (t)
-                        if (t.size > 2097152) ja("Imagem muito grande (máx 2MB)", "error");
+                        if (t.size > 15728640) ja("Imagem muito grande (máx 15MB)", "error");
                         else {
                             x({
                                 ...p,
