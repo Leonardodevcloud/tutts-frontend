@@ -16197,16 +16197,38 @@ const hideLoadingScreen = () => {
                         "🗺️ " + (aa.find(r => r.id === parseInt(ua.regiao))?.nome || "Região " + ua.regiao)
                     ),
                     
-                    // Clientes
-                    ua.cod_cliente && ua.cod_cliente.length > 0 && React.createElement("span", {className: "inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs"},
+                    // Clientes - com tooltip quando há múltiplos
+                    ua.cod_cliente && ua.cod_cliente.length > 0 && React.createElement("span", {
+                        className: "inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs cursor-pointer relative group",
+                        title: ua.cod_cliente.length > 1 ? ua.cod_cliente.map(c => c + " - " + (il(c) || "Cliente")).join("\n") : ""
+                    },
                         "🏢 " + (ua.cod_cliente.length === 1 
                             ? (il(ua.cod_cliente[0]) || "Cliente " + ua.cod_cliente[0])
-                            : ua.cod_cliente.length + " clientes")
+                            : ua.cod_cliente.length + " clientes"),
+                        // Tooltip customizado
+                        ua.cod_cliente.length > 1 && React.createElement("div", {
+                            className: "absolute left-0 top-full mt-1 bg-gray-900 text-white text-xs rounded-lg p-2 shadow-xl z-50 hidden group-hover:block whitespace-nowrap min-w-max"
+                        },
+                            React.createElement("div", {className: "font-semibold mb-1 text-purple-300"}, "🏢 Clientes selecionados:"),
+                            ua.cod_cliente.map((c, i) => React.createElement("div", {key: c, className: "py-0.5"},
+                                c + " - " + (il(c) || "Cliente")
+                            ))
+                        )
                     ),
                     
-                    // Centros de Custo
-                    ua.centro_custo && ua.centro_custo.length > 0 && React.createElement("span", {className: "inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs"},
-                        "📁 " + (ua.centro_custo.length === 1 ? ua.centro_custo[0] : ua.centro_custo.length + " centros")
+                    // Centros de Custo - com tooltip quando há múltiplos
+                    ua.centro_custo && ua.centro_custo.length > 0 && React.createElement("span", {
+                        className: "inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs cursor-pointer relative group",
+                        title: ua.centro_custo.length > 1 ? ua.centro_custo.join("\n") : ""
+                    },
+                        "📁 " + (ua.centro_custo.length === 1 ? ua.centro_custo[0] : ua.centro_custo.length + " centros"),
+                        // Tooltip customizado
+                        ua.centro_custo.length > 1 && React.createElement("div", {
+                            className: "absolute left-0 top-full mt-1 bg-gray-900 text-white text-xs rounded-lg p-2 shadow-xl z-50 hidden group-hover:block whitespace-nowrap min-w-max"
+                        },
+                            React.createElement("div", {className: "font-semibold mb-1 text-green-300"}, "📁 Centros de custo:"),
+                            ua.centro_custo.map((cc, i) => React.createElement("div", {key: cc, className: "py-0.5"}, cc))
+                        )
                     ),
                     
                     // Categoria
