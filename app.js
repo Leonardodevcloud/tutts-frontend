@@ -6237,14 +6237,27 @@ const hideLoadingScreen = () => {
                 className: "text-gray-500 text-xs ml-1"
             }, "(mín: R$ 10,00)")), React.createElement("input", {
                 type: "text",
-                inputMode: "numeric",
-                pattern: "[0-9]*",
+                inputMode: "decimal",
                 value: p.withdrawAmount || "",
                 onChange: e => {
-                    const val = e.target.value.replace(/[^0-9]/g, '');
+                    // Permite apenas números e vírgula/ponto para decimais
+                    let val = e.target.value;
+                    // Remove caracteres inválidos (permite números, vírgula e ponto)
+                    val = val.replace(/[^0-9.,]/g, '');
+                    // Substitui vírgula por ponto para cálculos
+                    val = val.replace(',', '.');
+                    // Garante apenas um ponto decimal
+                    const parts = val.split('.');
+                    if (parts.length > 2) {
+                        val = parts[0] + '.' + parts.slice(1).join('');
+                    }
+                    // Limita a 2 casas decimais
+                    if (parts.length === 2 && parts[1].length > 2) {
+                        val = parts[0] + '.' + parts[1].substring(0, 2);
+                    }
                     x({...p, withdrawAmount: val});
                 },
-                placeholder: "Mínimo R$ 10,00",
+                placeholder: "Ex: 50,00",
                 className: "w-full px-4 py-3 border rounded-lg text-lg " + (r || d || (p.withdrawAmount && parseFloat(p.withdrawAmount) < 10) ? "border-red-500 bg-red-50" : ""),
                 disabled: 0 === m
             }), p.withdrawAmount && parseFloat(p.withdrawAmount) > 0 && parseFloat(p.withdrawAmount) < 10 && React.createElement("p", {
