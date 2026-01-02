@@ -18809,7 +18809,7 @@ const hideLoadingScreen = () => {
                                 React.createElement("option", {value: ""}, "Todos os clientes"),
                                 jt && jt.map(function(c) {
                                     return React.createElement("option", {key: c.cod_cliente, value: c.cod_cliente}, 
-                                        c.cod_cliente + " - " + (il(c.cod_cliente) || c.nome_fantasia || c.cliente)
+                                        c.cod_cliente + " - " + (c.nome_cliente || il(c.cod_cliente) || "Cliente")
                                     );
                                 })
                             )
@@ -18840,7 +18840,10 @@ const hideLoadingScreen = () => {
                             "Até " + new Date(relatorioIAFiltros.data_fim + "T12:00:00").toLocaleDateString("pt-BR")
                         ),
                         relatorioIAFiltros.cod_cliente && React.createElement("span", {className: "bg-purple-100 text-purple-800 px-2 py-1 rounded"},
-                            "🏢 " + (il(relatorioIAFiltros.cod_cliente) || "Cliente " + relatorioIAFiltros.cod_cliente)
+                            "🏢 " + (function() {
+                                var cliente = jt.find(c => String(c.cod_cliente) === String(relatorioIAFiltros.cod_cliente));
+                                return cliente ? (cliente.nome_cliente || il(relatorioIAFiltros.cod_cliente) || "Cliente " + relatorioIAFiltros.cod_cliente) : "Cliente " + relatorioIAFiltros.cod_cliente;
+                            })()
                         ),
                         relatorioIAFiltros.centro_custo && React.createElement("span", {className: "bg-blue-100 text-blue-800 px-2 py-1 rounded"},
                             "📁 " + relatorioIAFiltros.centro_custo
