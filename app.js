@@ -904,6 +904,7 @@ const hideLoadingScreen = () => {
         [relatorioIAResultado, setRelatorioIAResultado] = useState(null),
         [relatorioIAErro, setRelatorioIAErro] = useState(null),
         [relatorioIAHistorico, setRelatorioIAHistorico] = useState([]),
+        [relatorioIAHistoricoDB, setRelatorioIAHistoricoDB] = useState([]),
         [relatorioIAPromptCustom, setRelatorioIAPromptCustom] = useState(''),
         [relatorioIAFiltros, setRelatorioIAFiltros] = useState({
             data_inicio: '',
@@ -3308,6 +3309,10 @@ const hideLoadingScreen = () => {
                     params.append("prompt_custom", relatorioIAPromptCustom);
                 }
                 
+                // Enviar dados do usuário para histórico
+                params.append("usuario_id", l.id || l.email || "");
+                params.append("usuario_nome", l.fullName || l.email || "Usuário");
+                
                 const response = await fetch(`${API_URL}/bi/relatorio-ia?${params}`);
                 const data = await response.json();
                 
@@ -3317,15 +3322,8 @@ const hideLoadingScreen = () => {
                 
                 setRelatorioIAResultado(data);
                 
-                // Adicionar ao histórico
-                const tiposLabel = tiposSelecionados.join(", ");
-                setRelatorioIAHistorico(prev => [{
-                    id: Date.now(),
-                    tipo: tiposLabel,
-                    data: new Date().toLocaleString("pt-BR"),
-                    filtros: { ...relatorioIAFiltros },
-                    resumo: data.relatorio?.substring(0, 200) + "..."
-                }, ...prev].slice(0, 10)); // Manter últimos 10
+                // Recarregar histórico do banco
+                carregarHistoricoRelatoriosIA();
                 
                 console.log("✅ Relatório IA gerado com sucesso");
             } catch (e) {
@@ -3335,6 +3333,72 @@ const hideLoadingScreen = () => {
                 setRelatorioIALoading(false);
             }
         };
+        
+        // Função para carregar histórico de relatórios do banco
+        const carregarHistoricoRelatoriosIA = async () => {
+            try {
+                const response = await fetch(`${API_URL}/bi/relatorio-ia/historico`);
+                const data = await response.json();
+                setRelatorioIAHistoricoDB(Array.isArray(data) ? data : []);
+            } catch (e) {
+                console.error("Erro ao carregar histórico:", e);
+            }
+        };
+        
+        // Função para gerar Word de um relatório do histórico
+        const gerarWordHistorico = async (relatorio) => {
+            try {
+                const response = await fetch(`${API_URL}/bi/relatorio-ia/word`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        tipo_analise: relatorio.tipo_analise,
+                        periodo: { inicio: relatorio.data_inicio, fim: relatorio.data_fim },
+                        metricas: relatorio.metricas,
+                        relatorio: relatorio.relatorio,
+                        filtros: relatorio.filtros
+                    })
+                });
+                
+                if (!response.ok) throw new Error('Erro ao gerar documento');
+                
+                let nomeArquivo = 'relatorio-operacional';
+                if (relatorio.cod_cliente) nomeArquivo += '-' + relatorio.cod_cliente;
+                nomeArquivo += '-' + new Date(relatorio.created_at).toISOString().split('T')[0] + '.docx';
+                
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = nomeArquivo;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+            } catch (err) {
+                console.error('Erro ao gerar Word:', err);
+                alert('Erro ao gerar documento: ' + err.message);
+            }
+        };
+        
+        // Função para deletar relatório do histórico
+        const deletarRelatorioHistorico = async (id) => {
+            if (!confirm('Deseja realmente excluir este relatório?')) return;
+            try {
+                await fetch(`${API_URL}/bi/relatorio-ia/historico/${id}`, { method: 'DELETE' });
+                carregarHistoricoRelatoriosIA();
+                ja('Relatório excluído!', 'success');
+            } catch (e) {
+                ja('Erro ao excluir', 'error');
+            }
+        };
+        
+        // useEffect para carregar histórico ao entrar na aba Relatório IA
+        useEffect(() => {
+            if (Et === "relatorio-ia") {
+                carregarHistoricoRelatoriosIA();
+            }
+        }, [Et]);
         
         // Função para toggle de tipo de relatório
         const toggleRelatorioIATipo = (tipo) => {
@@ -18977,24 +19041,69 @@ const hideLoadingScreen = () => {
                     )
                 ),
                 
-                // Histórico
-                relatorioIAHistorico.length > 0 && React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-6"},
-                    React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-4 flex items-center gap-2"},
-                        React.createElement("span", null, "📜"),
-                        "Histórico de Relatórios"
+                // Histórico de Relatórios do Banco de Dados
+                React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-6"},
+                    React.createElement("div", {className: "flex items-center justify-between mb-4"},
+                        React.createElement("h3", {className: "text-lg font-bold text-gray-800 flex items-center gap-2"},
+                            React.createElement("span", null, "📜"),
+                            "Histórico de Relatórios"
+                        ),
+                        React.createElement("span", {className: "text-sm text-gray-500"}, 
+                            relatorioIAHistoricoDB.length + " relatório(s)"
+                        )
                     ),
-                    React.createElement("div", {className: "space-y-2"},
-                        relatorioIAHistorico.map(function(item) {
-                            return React.createElement("div", {key: item.id, className: "flex items-center justify-between p-3 bg-gray-50 rounded-lg"},
-                                React.createElement("div", null,
-                                    React.createElement("span", {className: "font-medium text-gray-800"}, item.tipo),
-                                    React.createElement("span", {className: "text-gray-400 mx-2"}, "•"),
-                                    React.createElement("span", {className: "text-sm text-gray-500"}, item.data)
-                                ),
-                                React.createElement("span", {className: "text-xs text-gray-400 max-w-xs truncate"}, item.resumo)
-                            );
-                        })
-                    )
+                    relatorioIAHistoricoDB.length === 0 
+                        ? React.createElement("div", {className: "text-center py-8 text-gray-400"},
+                            React.createElement("div", {className: "text-4xl mb-2"}, "📋"),
+                            "Nenhum relatório gerado ainda"
+                        )
+                        : React.createElement("div", {className: "space-y-3 max-h-96 overflow-y-auto"},
+                            relatorioIAHistoricoDB.map(function(item) {
+                                return React.createElement("div", {
+                                    key: item.id, 
+                                    className: "p-4 bg-gradient-to-r from-violet-50 to-purple-50 rounded-xl border border-violet-100"
+                                },
+                                    React.createElement("div", {className: "flex items-start justify-between gap-4"},
+                                        React.createElement("div", {className: "flex-1 min-w-0"},
+                                            // Título com cliente
+                                            React.createElement("div", {className: "flex items-center gap-2 flex-wrap"},
+                                                React.createElement("span", {className: "font-bold text-violet-800"}, 
+                                                    item.cod_cliente ? item.cod_cliente + " - " + (item.nome_cliente || "Cliente") : "Todos os Clientes"
+                                                ),
+                                                item.centro_custo && React.createElement("span", {className: "text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full"},
+                                                    "📁 " + item.centro_custo
+                                                )
+                                            ),
+                                            // Tipo de análise
+                                            React.createElement("div", {className: "text-sm text-gray-600 mt-1"},
+                                                "📊 " + (item.tipo_analise || "Análise Geral")
+                                            ),
+                                            // Período
+                                            React.createElement("div", {className: "text-xs text-gray-500 mt-1"},
+                                                "📅 Período: " + (item.data_inicio ? new Date(item.data_inicio).toLocaleDateString("pt-BR") : "-") + 
+                                                " a " + (item.data_fim ? new Date(item.data_fim).toLocaleDateString("pt-BR") : "-")
+                                            ),
+                                            // Usuário e data de criação
+                                            React.createElement("div", {className: "flex items-center gap-3 mt-2 text-xs text-gray-400"},
+                                                React.createElement("span", null, "👤 " + (item.usuario_nome || "Usuário")),
+                                                React.createElement("span", null, "🕐 " + new Date(item.created_at).toLocaleString("pt-BR"))
+                                            )
+                                        ),
+                                        // Botões de ação
+                                        React.createElement("div", {className: "flex flex-col gap-2"},
+                                            React.createElement("button", {
+                                                onClick: () => gerarWordHistorico(item),
+                                                className: "px-3 py-1.5 bg-violet-600 text-white text-xs rounded-lg hover:bg-violet-700 flex items-center gap-1 whitespace-nowrap"
+                                            }, "📄 Word"),
+                                            React.createElement("button", {
+                                                onClick: () => deletarRelatorioHistorico(item.id),
+                                                className: "px-3 py-1.5 bg-red-100 text-red-600 text-xs rounded-lg hover:bg-red-200 flex items-center gap-1"
+                                            }, "🗑️")
+                                        )
+                                    )
+                                );
+                            })
+                        )
                 )
             ),
             
