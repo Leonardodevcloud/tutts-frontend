@@ -3451,6 +3451,7 @@ const hideLoadingScreen = () => {
         
         // Função para carregar dados do módulo Garantido
         const carregarGarantido = async () => {
+            console.log('💰💰💰 FUNÇÃO carregarGarantido CHAMADA! 💰💰💰');
             try {
                 setGarantidoLoading(true);
                 
@@ -3467,7 +3468,9 @@ const hideLoadingScreen = () => {
                 console.log('💰 Garantido - URL params:', params.toString() || '(sem filtros)');
                 
                 // Carregar dados principais
-                const response = await fetch(`${API_URL}/bi/garantido?${params}`);
+                const url = `${API_URL}/bi/garantido?${params}`;
+                console.log('💰 Garantido - Chamando URL:', url);
+                const response = await fetch(url);
                 const data = await response.json();
                 console.log('💰 Garantido - Resposta:', data);
                 setGarantidoData(data.dados || []);
@@ -17139,7 +17142,7 @@ const hideLoadingScreen = () => {
                 className: "px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-all " + ("profissionais" === Et ? "border-purple-600 text-purple-600 bg-purple-50" : "border-transparent text-gray-600 hover:text-gray-800")
             }, "👤 Por Profissional"), 
             React.createElement("button", {
-                onClick: () => { ht("garantido"); carregarGarantido(); },
+                onClick: () => { console.log('🔘 Botão Garantido clicado!'); ht("garantido"); carregarGarantido(); },
                 className: "px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-all " + ("garantido" === Et ? "border-green-600 text-green-600 bg-green-50" : "border-transparent text-gray-600 hover:text-gray-800")
             }, "💰 Garantido"), 
             React.createElement("button", {
