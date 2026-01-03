@@ -3520,7 +3520,7 @@ const hideLoadingScreen = () => {
                         cod_cliente: registro.cod_cliente_garantido,
                         status: novoStatus,
                         motivo_reprovado: motivo,
-                        alterado_por: an || 'Admin'
+                        alterado_por: l?.fullName || l?.username || 'Admin'
                     })
                 });
                 
