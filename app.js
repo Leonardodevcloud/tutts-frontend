@@ -941,6 +941,8 @@ const hideLoadingScreen = () => {
         [mapaCalorDados, setMapaCalorDados] = useState(null),
         [mapaCalorLoading, setMapaCalorLoading] = useState(false),
         [mapaCalorVisivel, setMapaCalorVisivel] = useState(true),
+        // Estado para datas com dados no BI
+        [biDatasComDados, setBiDatasComDados] = useState(new Set()),
         // Estados do módulo Social
         [socialProfile, setSocialProfile] = useState(null),
         [socialUsers, setSocialUsers] = useState([]),
@@ -4032,6 +4034,19 @@ const hideLoadingScreen = () => {
                 console.log("📊 Datas recebidas:", l?.length || 0);
                 console.log("📊 Clientes recebidos:", i?.length || 0);
                 Ct(i); St(t || []); Pt(t || []); Dt(c || {}); It(a || []); $t(l || []); Ot(r || []); Yt(o || []); oa(s || []); xa(s || []); la(n || []); ma(m || []); da(i);
+                
+                // Popular Set de datas com dados para indicador visual no filtro
+                if (l && l.length > 0) {
+                    const datasSet = new Set();
+                    l.forEach(item => {
+                        if (item.data) {
+                            const dataFormatada = new Date(item.data).toISOString().split('T')[0];
+                            datasSet.add(dataFormatada);
+                        }
+                    });
+                    setBiDatasComDados(datasSet);
+                    console.log("📊 Datas com dados carregadas:", datasSet.size);
+                }
                 
                 let novosFiltros = {};
                 if (l && l.length > 0) {
@@ -17385,29 +17400,33 @@ const hideLoadingScreen = () => {
             }, React.createElement("div", {
                 className: "grid grid-cols-2 md:grid-cols-4 gap-4 mb-4"
             }, React.createElement("div", {
-                className: "border rounded-lg p-3 bg-gray-50"
+                className: "border rounded-lg p-3 " + (ua.data_inicio ? (biDatasComDados.has(ua.data_inicio) ? "bg-green-50 border-green-300" : "bg-red-50 border-red-300") : "bg-gray-50")
             }, React.createElement("h3", {
-                className: "font-semibold text-gray-700 mb-2 text-sm"
-            }, "📅 Data Início"), React.createElement("input", {
+                className: "font-semibold text-gray-700 mb-2 text-sm flex items-center gap-2"
+            }, "📅 Data Início", ua.data_inicio && React.createElement("span", {
+                className: "text-xs px-2 py-0.5 rounded-full " + (biDatasComDados.has(ua.data_inicio) ? "bg-green-200 text-green-700" : "bg-red-200 text-red-700")
+            }, biDatasComDados.has(ua.data_inicio) ? "✓ Com dados" : "✗ Sem dados")), React.createElement("input", {
                 type: "date",
                 value: ua.data_inicio,
                 onChange: e => ga({
                     ...ua,
                     data_inicio: e.target.value
                 }),
-                className: "w-full px-3 py-2 border rounded text-sm"
+                className: "w-full px-3 py-2 border rounded text-sm " + (ua.data_inicio ? (biDatasComDados.has(ua.data_inicio) ? "border-green-400 bg-green-50" : "border-red-400 bg-red-50") : "")
             })), React.createElement("div", {
-                className: "border rounded-lg p-3 bg-gray-50"
+                className: "border rounded-lg p-3 " + (ua.data_fim ? (biDatasComDados.has(ua.data_fim) ? "bg-green-50 border-green-300" : "bg-red-50 border-red-300") : "bg-gray-50")
             }, React.createElement("h3", {
-                className: "font-semibold text-gray-700 mb-2 text-sm"
-            }, "📅 Data Fim"), React.createElement("input", {
+                className: "font-semibold text-gray-700 mb-2 text-sm flex items-center gap-2"
+            }, "📅 Data Fim", ua.data_fim && React.createElement("span", {
+                className: "text-xs px-2 py-0.5 rounded-full " + (biDatasComDados.has(ua.data_fim) ? "bg-green-200 text-green-700" : "bg-red-200 text-red-700")
+            }, biDatasComDados.has(ua.data_fim) ? "✓ Com dados" : "✗ Sem dados")), React.createElement("input", {
                 type: "date",
                 value: ua.data_fim,
                 onChange: e => ga({
                     ...ua,
                     data_fim: e.target.value
                 }),
-                className: "w-full px-3 py-2 border rounded text-sm"
+                className: "w-full px-3 py-2 border rounded text-sm " + (ua.data_fim ? (biDatasComDados.has(ua.data_fim) ? "border-green-400 bg-green-50" : "border-red-400 bg-red-50") : "")
             })), React.createElement("div", {
                 className: "border rounded-lg p-3 bg-gray-50"
             }, React.createElement("h3", {
