@@ -19797,22 +19797,21 @@ const hideLoadingScreen = () => {
                         React.createElement("table", {className: "w-full"},
                             React.createElement("thead", {className: "bg-gradient-to-r from-blue-100 to-blue-200"},
                                 React.createElement("tr", null,
-                                    React.createElement("th", {className: "px-4 py-3 text-left text-xs font-bold text-blue-800"}, "Onde Rodou?"),
+                                    React.createElement("th", {rowSpan: 2, className: "px-4 py-3 text-left text-xs font-bold text-blue-800 border-r"}, "Onde Rodou?"),
                                     // Colunas dinâmicas por semana
-                                    garantidoSemanal.length > 0 && garantidoSemanal[0]?.semanas?.map((sem, i) =>
-                                        React.createElement("th", {key: i, colSpan: 3, className: "px-2 py-3 text-center text-xs font-bold text-blue-800 border-l"},
-                                            new Date(sem.semana + 'T12:00:00').toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit'})
+                                    garantidoSemanal.length > 0 && garantidoSemanal[0]?.semanas?.map((sem, i) => 
+                                        React.createElement("th", {key: i, colSpan: 3, className: "px-2 py-2 text-center text-xs font-bold text-blue-800 border-l bg-blue-200"},
+                                            sem.semana
                                         )
                                     )
                                 ),
                                 React.createElement("tr", {className: "bg-blue-50"},
-                                    React.createElement("th", {className: "px-4 py-2"}),
-                                    // Sub-headers
+                                    // Sub-headers para cada semana
                                     garantidoSemanal.length > 0 && garantidoSemanal[0]?.semanas?.map((_, i) =>
                                         React.createElement(React.Fragment, {key: i},
-                                            React.createElement("th", {className: "px-2 py-2 text-xs text-blue-600 border-l"}, "Negociado"),
-                                            React.createElement("th", {className: "px-2 py-2 text-xs text-blue-600"}, "Produzido"),
-                                            React.createElement("th", {className: "px-2 py-2 text-xs text-blue-600"}, "Compl.")
+                                            React.createElement("th", {className: "px-2 py-2 text-xs text-blue-600 border-l text-right"}, "Negociado"),
+                                            React.createElement("th", {className: "px-2 py-2 text-xs text-blue-600 text-right"}, "Produzido"),
+                                            React.createElement("th", {className: "px-2 py-2 text-xs text-blue-600 text-right"}, "Compl.")
                                         )
                                     )
                                 )
@@ -19820,24 +19819,24 @@ const hideLoadingScreen = () => {
                             React.createElement("tbody", null,
                                 garantidoSemanal.length === 0 && React.createElement("tr", null,
                                     React.createElement("td", {colSpan: 20, className: "px-4 py-12 text-center text-gray-500"},
-                                        "Nenhum dado semanal encontrado."
+                                        "Nenhum dado semanal encontrado. Selecione um período de datas."
                                     )
                                 ),
                                 garantidoSemanal.map((local, idx) =>
                                     React.createElement("tr", {key: idx, className: "border-b hover:bg-gray-50"},
-                                        React.createElement("td", {className: "px-4 py-2 text-sm font-semibold"}, local.onde_rodou),
+                                        React.createElement("td", {className: "px-4 py-2 text-sm font-semibold border-r whitespace-nowrap"}, local.onde_rodou),
                                         local.semanas?.map((sem, i) =>
                                             React.createElement(React.Fragment, {key: i},
                                                 React.createElement("td", {className: "px-2 py-2 text-sm text-right border-l"}, 
-                                                    "R$", (sem.negociado || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})
+                                                    sem.negociado > 0 ? `R$${sem.negociado.toLocaleString('pt-BR', {minimumFractionDigits: 2})}` : ''
                                                 ),
                                                 React.createElement("td", {className: "px-2 py-2 text-sm text-right"}, 
-                                                    "R$", (sem.produzido || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})
+                                                    sem.produzido > 0 ? `R$${sem.produzido.toLocaleString('pt-BR', {minimumFractionDigits: 2})}` : ''
                                                 ),
                                                 React.createElement("td", {className: "px-2 py-2 text-sm text-right font-semibold " + 
-                                                    (sem.complemento > 0 ? 'text-red-600' : 'text-green-600')
+                                                    (sem.complemento > 0 ? 'text-red-600' : sem.negociado > 0 ? 'text-green-600' : '')
                                                 }, 
-                                                    "R$", (sem.complemento || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})
+                                                    sem.negociado > 0 ? `R$${sem.complemento.toLocaleString('pt-BR', {minimumFractionDigits: 2})}` : ''
                                                 )
                                             )
                                         )
