@@ -74,7 +74,7 @@ const SISTEMA_MODULOS_CONFIG = [
       abas: [{id: "solicitacoes", label: "Solicitações"}, {id: "validacao", label: "Validação"}, {id: "conciliacao", label: "Conciliação"}, {id: "resumo", label: "Resumo"}, {id: "gratuidades", label: "Gratuidades"}, {id: "restritos", label: "Restritos"}, {id: "indicacoes", label: "Indicações"}, {id: "promo-novatos", label: "Promo Novatos"}, {id: "loja", label: "Loja"}, {id: "relatorios", label: "Relatórios"}, {id: "horarios", label: "Horários"}, {id: "avisos", label: "Avisos"}, {id: "backup", label: "Backup"}]
     },
     { id: "operacional", label: "Operacional", icon: "⚙️",
-      abas: [{id: "indicacoes", label: "Indicações"}, {id: "promo-novatos", label: "Promo Novatos"}, {id: "avisos", label: "Avisos"}, {id: "novas-operacoes", label: "Novas Operações"}, {id: "localizacao-clientes", label: "Localização Clientes"}, {id: "relatorio-diario", label: "Relatório Diário"}]
+      abas: [{id: "indicacoes", label: "Indicações"}, {id: "promo-novatos", label: "Promo Novatos"}, {id: "avisos", label: "Avisos"}, {id: "novas-operacoes", label: "Novas Operações"}, {id: "recrutamento", label: "Recrutamento"}, {id: "localizacao-clientes", label: "Localização Clientes"}, {id: "relatorio-diario", label: "Relatório Diário"}]
     },
     { id: "disponibilidade", label: "Disponibilidade", icon: "📅",
       abas: [{id: "panorama", label: "Panorama"}, {id: "principal", label: "Principal"}, {id: "faltosos", label: "Faltosos"}, {id: "espelho", label: "Espelho"}, {id: "relatorios", label: "Relatórios"}, {id: "motoboys", label: "Motoboys"}, {id: "restricoes", label: "Restrições"}, {id: "config", label: "Configurações"}]
@@ -989,6 +989,21 @@ const hideLoadingScreen = () => {
         [operacaoExpandida, setOperacaoExpandida] = useState(null),
         [checklistMotos, setChecklistMotos] = useState({}),
         [operacaoSubTab, setOperacaoSubTab] = useState('execucao'),
+        // Estados para Recrutamento
+        [recrutamentoData, setRecrutamentoData] = useState([]),
+        [recrutamentoLoading, setRecrutamentoLoading] = useState(false),
+        [recrutamentoModal, setRecrutamentoModal] = useState(false),
+        [recrutamentoEdit, setRecrutamentoEdit] = useState(null),
+        [recrutamentoForm, setRecrutamentoForm] = useState({
+            nome_cliente: '',
+            data_conclusao: '',
+            quantidade_motos: 1,
+            quantidade_backup: 0,
+            observacao: ''
+        }),
+        [recrutamentoStats, setRecrutamentoStats] = useState(null),
+        [recrutamentoCodBusca, setRecrutamentoCodBusca] = useState({}), // {necessidade_id_tipo: {codigo: '', nome: '', loading: false}}
+        [recrutamentoSubTab, setRecrutamentoSubTab] = useState('em_andamento'),
         // Estados para Localização de Clientes
         [localizacaoClientes, setLocalizacaoClientes] = useState([]),
         [localizacaoFiltro, setLocalizacaoFiltro] = useState(''),
@@ -1769,6 +1784,169 @@ const hideLoadingScreen = () => {
             } catch (err) { 
                 console.error('Erro ao carregar operações:', err); 
                 setOperacoesData([]);
+            }
+        };
+        
+        // ==================== FUNÇÕES RECRUTAMENTO ====================
+        // Função para carregar necessidades de recrutamento
+        const carregarRecrutamento = async () => {
+            setRecrutamentoLoading(true);
+            try {
+                const res = await fetch(`${API_URL}/recrutamento`);
+                const data = await res.json();
+                setRecrutamentoData(Array.isArray(data) ? data : []);
+                
+                // Carregar estatísticas
+                const statsRes = await fetch(`${API_URL}/recrutamento/estatisticas`);
+                const stats = await statsRes.json();
+                setRecrutamentoStats(stats);
+            } catch (err) { 
+                console.error('Erro ao carregar recrutamento:', err); 
+                setRecrutamentoData([]);
+            }
+            setRecrutamentoLoading(false);
+        };
+        
+        // Função para salvar necessidade de recrutamento
+        const salvarRecrutamento = async () => {
+            try {
+                const url = recrutamentoEdit 
+                    ? `${API_URL}/recrutamento/${recrutamentoEdit.id}`
+                    : `${API_URL}/recrutamento`;
+                const method = recrutamentoEdit ? 'PUT' : 'POST';
+                
+                const res = await fetch(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        ...recrutamentoForm,
+                        criado_por: l?.fullName || 'Admin'
+                    })
+                });
+                
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.error);
+                }
+                
+                ja(recrutamentoEdit ? '✅ Necessidade atualizada!' : '✅ Necessidade criada!', 'success');
+                setRecrutamentoModal(false);
+                setRecrutamentoEdit(null);
+                setRecrutamentoForm({
+                    nome_cliente: '',
+                    data_conclusao: '',
+                    quantidade_motos: 1,
+                    quantidade_backup: 0,
+                    observacao: ''
+                });
+                carregarRecrutamento();
+            } catch (err) {
+                ja('❌ Erro: ' + err.message, 'error');
+            }
+        };
+        
+        // Função para buscar profissional pelo código
+        const buscarProfissionalRecrutamento = async (necessidadeId, tipo, codigo) => {
+            const key = `${necessidadeId}_${tipo}`;
+            setRecrutamentoCodBusca(prev => ({
+                ...prev,
+                [key]: { ...prev[key], codigo, loading: true, nome: '', erro: '' }
+            }));
+            
+            try {
+                const res = await fetch(`${API_URL}/recrutamento/buscar-profissional/${codigo}`);
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.error || 'Não encontrado');
+                }
+                const data = await res.json();
+                setRecrutamentoCodBusca(prev => ({
+                    ...prev,
+                    [key]: { ...prev[key], codigo, nome: data.nome_profissional || data.full_name, loading: false }
+                }));
+            } catch (err) {
+                setRecrutamentoCodBusca(prev => ({
+                    ...prev,
+                    [key]: { ...prev[key], codigo, nome: '', loading: false, erro: err.message }
+                }));
+            }
+        };
+        
+        // Função para atribuir profissional
+        const atribuirProfissionalRecrutamento = async (necessidadeId, tipo) => {
+            const key = `${necessidadeId}_${tipo}`;
+            const info = recrutamentoCodBusca[key];
+            if (!info || !info.codigo) {
+                ja('❌ Digite o código do profissional', 'error');
+                return;
+            }
+            
+            try {
+                const res = await fetch(`${API_URL}/recrutamento/${necessidadeId}/atribuir`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        cod_profissional: info.codigo,
+                        tipo,
+                        atribuido_por: l?.fullName || 'Admin'
+                    })
+                });
+                
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.error);
+                }
+                
+                ja('✅ Profissional atribuído!', 'success');
+                setRecrutamentoCodBusca(prev => ({
+                    ...prev,
+                    [key]: { codigo: '', nome: '', loading: false }
+                }));
+                carregarRecrutamento();
+            } catch (err) {
+                ja('❌ Erro: ' + err.message, 'error');
+            }
+        };
+        
+        // Função para remover atribuição
+        const removerAtribuicaoRecrutamento = async (atribuicaoId) => {
+            if (!confirm('Remover esta atribuição?')) return;
+            
+            try {
+                const res = await fetch(`${API_URL}/recrutamento/atribuicao/${atribuicaoId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.error);
+                }
+                
+                ja('✅ Atribuição removida!', 'success');
+                carregarRecrutamento();
+            } catch (err) {
+                ja('❌ Erro: ' + err.message, 'error');
+            }
+        };
+        
+        // Função para deletar necessidade
+        const deletarRecrutamento = async (id) => {
+            if (!confirm('Excluir esta necessidade de recrutamento? Todas as atribuições serão removidas.')) return;
+            
+            try {
+                const res = await fetch(`${API_URL}/recrutamento/${id}`, {
+                    method: 'DELETE'
+                });
+                
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.error);
+                }
+                
+                ja('✅ Necessidade excluída!', 'success');
+                carregarRecrutamento();
+            } catch (err) {
+                ja('❌ Erro: ' + err.message, 'error');
             }
         };
         
@@ -14306,6 +14484,16 @@ const hideLoadingScreen = () => {
                         onClick: function() { x(e => ({...e, opTab: "novas-operacoes"})); carregarOperacoes(); },
                         className: "px-4 py-2.5 text-sm font-semibold whitespace-nowrap " + (p.opTab === "novas-operacoes" ? "text-teal-700 border-b-2 border-teal-600 bg-teal-50" : "text-gray-600 hover:bg-gray-100")
                     }, "🏢 Novas Operações"),
+                    // Aba Recrutamento - verifica permissão
+                    (function() {
+                        if ("admin_master" === l.role) return true;
+                        const abas = l.permissions && l.permissions.abas ? l.permissions.abas : {};
+                        if (Object.keys(abas).length === 0) return true;
+                        return abas["operacional_recrutamento"] !== false;
+                    })() && React.createElement("button", {
+                        onClick: function() { x(e => ({...e, opTab: "recrutamento"})); carregarRecrutamento(); },
+                        className: "px-4 py-2.5 text-sm font-semibold whitespace-nowrap " + (p.opTab === "recrutamento" ? "text-teal-700 border-b-2 border-teal-600 bg-teal-50" : "text-gray-600 hover:bg-gray-100")
+                    }, "🏍️ Recrutamento"),
                     // Aba Localização Clientes - verifica permissão
                     (function() {
                         if ("admin_master" === l.role) return true;
@@ -15098,6 +15286,464 @@ const hideLoadingScreen = () => {
                                 },
                                 className: "flex-1 px-6 py-3 bg-teal-600 text-white rounded-xl font-semibold hover:bg-teal-700"
                             }, operacaoEdit ? "💾 Salvar Alterações" : "➕ Criar Operação")
+                        )
+                    )
+                )
+            ),
+            // ==================== CONTEÚDO RECRUTAMENTO ====================
+            p.opTab === "recrutamento" && React.createElement("div", {className: "max-w-7xl mx-auto p-6"},
+                React.createElement("div", {className: "space-y-6"},
+                    // Header
+                    React.createElement("div", {className: "flex flex-col md:flex-row justify-between items-start md:items-center gap-4"},
+                        React.createElement("div", null,
+                            React.createElement("h2", {className: "text-2xl font-bold text-gray-800"}, "🏍️ Recrutamento de Motos"),
+                            React.createElement("p", {className: "text-gray-600"}, "Gerencie as necessidades de recrutamento de motoboys")
+                        ),
+                        React.createElement("div", {className: "flex gap-3"},
+                            React.createElement("button", {
+                                onClick: carregarRecrutamento,
+                                disabled: recrutamentoLoading,
+                                className: "px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 disabled:opacity-50"
+                            }, "🔄"),
+                            React.createElement("button", {
+                                onClick: () => {
+                                    setRecrutamentoEdit(null);
+                                    setRecrutamentoForm({
+                                        nome_cliente: '',
+                                        data_conclusao: '',
+                                        quantidade_motos: 1,
+                                        quantidade_backup: 0,
+                                        observacao: ''
+                                    });
+                                    setRecrutamentoModal(true);
+                                },
+                                className: "px-6 py-3 bg-teal-600 text-white rounded-xl font-semibold hover:bg-teal-700 flex items-center gap-2 shadow-lg"
+                            }, "➕ Nova Necessidade")
+                        )
+                    ),
+                    
+                    // Card de Progresso Geral
+                    recrutamentoStats && React.createElement("div", {className: "bg-gradient-to-r from-teal-500 to-teal-600 rounded-2xl shadow-lg p-6 text-white"},
+                        React.createElement("div", {className: "flex items-center justify-between mb-4"},
+                            React.createElement("h3", {className: "text-xl font-bold"}, "📊 Progresso Geral de Recrutamento"),
+                            React.createElement("span", {className: "text-4xl"}, "🎯")
+                        ),
+                        React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-4 gap-4 mb-4"},
+                            React.createElement("div", {className: "text-center"},
+                                React.createElement("p", {className: "text-3xl font-bold"}, recrutamentoStats.total_necessidades || 0),
+                                React.createElement("p", {className: "text-sm opacity-80"}, "Total Demandas")
+                            ),
+                            React.createElement("div", {className: "text-center"},
+                                React.createElement("p", {className: "text-3xl font-bold text-yellow-300"}, recrutamentoStats.em_andamento || 0),
+                                React.createElement("p", {className: "text-sm opacity-80"}, "Em Andamento")
+                            ),
+                            React.createElement("div", {className: "text-center"},
+                                React.createElement("p", {className: "text-3xl font-bold text-green-300"}, recrutamentoStats.concluidas || 0),
+                                React.createElement("p", {className: "text-sm opacity-80"}, "Concluídas")
+                            ),
+                            React.createElement("div", {className: "text-center"},
+                                React.createElement("p", {className: "text-3xl font-bold"}, 
+                                    (parseInt(recrutamentoStats.total_motos_atribuidas) || 0), " / ", (parseInt(recrutamentoStats.total_motos_necessarias) || 0)
+                                ),
+                                React.createElement("p", {className: "text-sm opacity-80"}, "Motos Atribuídas")
+                            )
+                        ),
+                        // Barra de progresso geral
+                        React.createElement("div", null,
+                            React.createElement("div", {className: "flex justify-between text-sm mb-1"},
+                                React.createElement("span", null, "Progresso Total"),
+                                React.createElement("span", null, 
+                                    Math.round(((parseInt(recrutamentoStats.total_motos_atribuidas) || 0) / Math.max(1, parseInt(recrutamentoStats.total_motos_necessarias) || 1)) * 100), "%"
+                                )
+                            ),
+                            React.createElement("div", {className: "w-full h-4 bg-white/30 rounded-full overflow-hidden"},
+                                React.createElement("div", {
+                                    className: "h-full bg-white rounded-full transition-all duration-500",
+                                    style: { width: `${Math.min(100, Math.round(((parseInt(recrutamentoStats.total_motos_atribuidas) || 0) / Math.max(1, parseInt(recrutamentoStats.total_motos_necessarias) || 1)) * 100))}%` }
+                                })
+                            )
+                        )
+                    ),
+                    
+                    // Sub-abas
+                    React.createElement("div", {className: "bg-white rounded-xl shadow overflow-hidden"},
+                        React.createElement("div", {className: "flex border-b"},
+                            React.createElement("button", {
+                                onClick: () => setRecrutamentoSubTab('em_andamento'),
+                                className: "flex-1 px-4 py-3 text-sm font-semibold " + 
+                                    (recrutamentoSubTab === 'em_andamento' ? 'bg-teal-50 text-teal-700 border-b-2 border-teal-600' : 'text-gray-600 hover:bg-gray-50')
+                            }, "🚀 Em Andamento (", recrutamentoData.filter(r => r.status === 'em_andamento').length, ")"),
+                            React.createElement("button", {
+                                onClick: () => setRecrutamentoSubTab('concluido'),
+                                className: "flex-1 px-4 py-3 text-sm font-semibold " + 
+                                    (recrutamentoSubTab === 'concluido' ? 'bg-teal-50 text-teal-700 border-b-2 border-teal-600' : 'text-gray-600 hover:bg-gray-50')
+                            }, "✅ Concluídas (", recrutamentoData.filter(r => r.status === 'concluido').length, ")"),
+                            React.createElement("button", {
+                                onClick: () => setRecrutamentoSubTab('todos'),
+                                className: "flex-1 px-4 py-3 text-sm font-semibold " + 
+                                    (recrutamentoSubTab === 'todos' ? 'bg-teal-50 text-teal-700 border-b-2 border-teal-600' : 'text-gray-600 hover:bg-gray-50')
+                            }, "📋 Todas (", recrutamentoData.length, ")")
+                        )
+                    ),
+                    
+                    // Loading
+                    recrutamentoLoading && React.createElement("div", {className: "bg-white rounded-xl shadow p-12 text-center"},
+                        React.createElement("div", {className: "inline-block w-12 h-12 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mb-4"}),
+                        React.createElement("p", {className: "text-gray-500"}, "Carregando necessidades...")
+                    ),
+                    
+                    // Lista de necessidades
+                    !recrutamentoLoading && React.createElement("div", {className: "space-y-4"},
+                        (recrutamentoData
+                            .filter(r => recrutamentoSubTab === 'todos' ? true : r.status === recrutamentoSubTab)
+                            .length === 0) && React.createElement("div", {className: "bg-white rounded-xl shadow p-12 text-center"},
+                            React.createElement("span", {className: "text-6xl block mb-4"}, "📭"),
+                            React.createElement("p", {className: "text-gray-500 text-lg"}, "Nenhuma necessidade encontrada"),
+                            React.createElement("p", {className: "text-gray-400 text-sm"}, "Clique em \"Nova Necessidade\" para cadastrar")
+                        ),
+                        
+                        recrutamentoData
+                            .filter(r => recrutamentoSubTab === 'todos' ? true : r.status === recrutamentoSubTab)
+                            .map(nec => {
+                                const motosAtribuidas = nec.atribuicoes?.filter(a => a.tipo === 'titular').length || 0;
+                                const backupsAtribuidos = nec.atribuicoes?.filter(a => a.tipo === 'backup').length || 0;
+                                const progressoMotos = Math.round((motosAtribuidas / Math.max(1, nec.quantidade_motos)) * 100);
+                                const progressoBackups = nec.quantidade_backup > 0 ? Math.round((backupsAtribuidos / nec.quantidade_backup) * 100) : 100;
+                                const progressoTotal = Math.round(((motosAtribuidas + backupsAtribuidos) / Math.max(1, nec.quantidade_motos + nec.quantidade_backup)) * 100);
+                                
+                                // Calcular dias restantes
+                                const hoje = new Date();
+                                const dataConclusao = new Date(nec.data_conclusao);
+                                const diasRestantes = Math.ceil((dataConclusao - hoje) / (1000 * 60 * 60 * 24));
+                                
+                                return React.createElement("div", {
+                                    key: nec.id,
+                                    className: "bg-white rounded-2xl shadow-lg overflow-hidden border-l-4 " +
+                                        (nec.status === 'concluido' ? 'border-green-500' : 
+                                         diasRestantes < 0 ? 'border-red-500' :
+                                         diasRestantes <= 3 ? 'border-yellow-500' : 'border-teal-500')
+                                },
+                                    // Header do card
+                                    React.createElement("div", {className: "p-6"},
+                                        React.createElement("div", {className: "flex justify-between items-start mb-4"},
+                                            React.createElement("div", null,
+                                                React.createElement("div", {className: "flex items-center gap-3 mb-2"},
+                                                    React.createElement("h3", {className: "text-xl font-bold text-gray-800"}, nec.nome_cliente),
+                                                    React.createElement("span", {
+                                                        className: "px-3 py-1 rounded-full text-xs font-bold " +
+                                                            (nec.status === 'concluido' ? 'bg-green-100 text-green-700' : 
+                                                             nec.status === 'cancelado' ? 'bg-red-100 text-red-700' :
+                                                             'bg-yellow-100 text-yellow-700')
+                                                    }, nec.status === 'concluido' ? '✅ Concluído' : 
+                                                       nec.status === 'cancelado' ? '❌ Cancelado' : '🚀 Em Andamento')
+                                                ),
+                                                React.createElement("div", {className: "flex items-center gap-4 text-sm text-gray-600"},
+                                                    React.createElement("span", {className: "flex items-center gap-1"},
+                                                        "📅 Conclusão: ",
+                                                        React.createElement("strong", null, new Date(nec.data_conclusao).toLocaleDateString('pt-BR'))
+                                                    ),
+                                                    React.createElement("span", {
+                                                        className: "px-2 py-1 rounded text-xs font-bold " +
+                                                            (diasRestantes < 0 ? 'bg-red-100 text-red-700' :
+                                                             diasRestantes <= 3 ? 'bg-yellow-100 text-yellow-700' :
+                                                             'bg-teal-100 text-teal-700')
+                                                    }, diasRestantes < 0 ? `${Math.abs(diasRestantes)} dias atrasado` :
+                                                       diasRestantes === 0 ? 'Hoje!' :
+                                                       diasRestantes === 1 ? 'Amanhã' :
+                                                       `${diasRestantes} dias restantes`)
+                                                )
+                                            ),
+                                            React.createElement("div", {className: "flex gap-2"},
+                                                React.createElement("button", {
+                                                    onClick: () => {
+                                                        setRecrutamentoEdit(nec);
+                                                        setRecrutamentoForm({
+                                                            nome_cliente: nec.nome_cliente,
+                                                            data_conclusao: nec.data_conclusao?.split('T')[0] || '',
+                                                            quantidade_motos: nec.quantidade_motos,
+                                                            quantidade_backup: nec.quantidade_backup,
+                                                            observacao: nec.observacao || ''
+                                                        });
+                                                        setRecrutamentoModal(true);
+                                                    },
+                                                    className: "px-3 py-2 bg-teal-100 text-teal-700 rounded-lg hover:bg-teal-200"
+                                                }, "✏️"),
+                                                React.createElement("button", {
+                                                    onClick: () => deletarRecrutamento(nec.id),
+                                                    className: "px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200"
+                                                }, "🗑️")
+                                            )
+                                        ),
+                                        
+                                        // Barra de progresso geral do card
+                                        React.createElement("div", {className: "mb-4"},
+                                            React.createElement("div", {className: "flex justify-between text-sm mb-1"},
+                                                React.createElement("span", {className: "text-gray-600"}, "Progresso Total"),
+                                                React.createElement("span", {className: "font-bold " + (progressoTotal === 100 ? 'text-green-600' : 'text-teal-600')}, 
+                                                    progressoTotal, "%"
+                                                )
+                                            ),
+                                            React.createElement("div", {className: "w-full h-3 bg-gray-200 rounded-full overflow-hidden"},
+                                                React.createElement("div", {
+                                                    className: "h-full rounded-full transition-all duration-500 " +
+                                                        (progressoTotal === 100 ? 'bg-green-500' : 'bg-teal-500'),
+                                                    style: { width: `${progressoTotal}%` }
+                                                })
+                                            )
+                                        ),
+                                        
+                                        // Observação
+                                        nec.observacao && React.createElement("p", {className: "text-sm text-gray-500 italic mb-4"}, 
+                                            "📝 ", nec.observacao
+                                        ),
+                                        
+                                        // Grid de seções: Titulares e Backups
+                                        React.createElement("div", {className: "grid md:grid-cols-2 gap-4"},
+                                            // Seção Motos Titulares
+                                            React.createElement("div", {className: "bg-gray-50 rounded-xl p-4"},
+                                                React.createElement("div", {className: "flex justify-between items-center mb-3"},
+                                                    React.createElement("h4", {className: "font-bold text-gray-700"}, 
+                                                        "🏍️ Motos Titulares"
+                                                    ),
+                                                    React.createElement("span", {className: "text-sm font-bold " + 
+                                                        (motosAtribuidas >= nec.quantidade_motos ? 'text-green-600' : 'text-orange-600')
+                                                    }, motosAtribuidas, " / ", nec.quantidade_motos)
+                                                ),
+                                                // Barra de progresso titulares
+                                                React.createElement("div", {className: "w-full h-2 bg-gray-200 rounded-full overflow-hidden mb-3"},
+                                                    React.createElement("div", {
+                                                        className: "h-full rounded-full transition-all duration-500 " +
+                                                            (progressoMotos === 100 ? 'bg-green-500' : 'bg-orange-500'),
+                                                        style: { width: `${Math.min(100, progressoMotos)}%` }
+                                                    })
+                                                ),
+                                                // Lista de atribuídos
+                                                React.createElement("div", {className: "space-y-2 mb-3 max-h-40 overflow-y-auto"},
+                                                    (nec.atribuicoes?.filter(a => a.tipo === 'titular') || []).map(attr => 
+                                                        React.createElement("div", {
+                                                            key: attr.id,
+                                                            className: "flex items-center justify-between bg-white rounded-lg p-2 shadow-sm"
+                                                        },
+                                                            React.createElement("div", null,
+                                                                React.createElement("span", {className: "font-mono text-teal-600 font-bold"}, attr.cod_profissional),
+                                                                attr.nome_profissional && React.createElement("span", {className: "ml-2 text-gray-600 text-sm"}, attr.nome_profissional)
+                                                            ),
+                                                            React.createElement("button", {
+                                                                onClick: () => removerAtribuicaoRecrutamento(attr.id),
+                                                                className: "text-red-500 hover:text-red-700 text-sm"
+                                                            }, "✕")
+                                                        )
+                                                    )
+                                                ),
+                                                // Campo para adicionar
+                                                motosAtribuidas < nec.quantidade_motos && React.createElement("div", {className: "flex gap-2"},
+                                                    React.createElement("div", {className: "flex-1"},
+                                                        React.createElement("input", {
+                                                            type: "text",
+                                                            placeholder: "Código do motoboy",
+                                                            value: recrutamentoCodBusca[`${nec.id}_titular`]?.codigo || '',
+                                                            onChange: (e) => {
+                                                                const codigo = e.target.value;
+                                                                setRecrutamentoCodBusca(prev => ({
+                                                                    ...prev,
+                                                                    [`${nec.id}_titular`]: { ...prev[`${nec.id}_titular`], codigo, nome: '', erro: '' }
+                                                                }));
+                                                                if (codigo.length >= 3) {
+                                                                    buscarProfissionalRecrutamento(nec.id, 'titular', codigo);
+                                                                }
+                                                            },
+                                                            className: "w-full px-3 py-2 border rounded-lg text-sm"
+                                                        }),
+                                                        recrutamentoCodBusca[`${nec.id}_titular`]?.loading && 
+                                                            React.createElement("p", {className: "text-xs text-gray-400 mt-1"}, "Buscando..."),
+                                                        recrutamentoCodBusca[`${nec.id}_titular`]?.nome && 
+                                                            React.createElement("p", {className: "text-xs text-green-600 mt-1"}, 
+                                                                "✅ ", recrutamentoCodBusca[`${nec.id}_titular`].nome
+                                                            ),
+                                                        recrutamentoCodBusca[`${nec.id}_titular`]?.erro && 
+                                                            React.createElement("p", {className: "text-xs text-red-500 mt-1"}, 
+                                                                "❌ ", recrutamentoCodBusca[`${nec.id}_titular`].erro
+                                                            )
+                                                    ),
+                                                    React.createElement("button", {
+                                                        onClick: () => atribuirProfissionalRecrutamento(nec.id, 'titular'),
+                                                        disabled: !recrutamentoCodBusca[`${nec.id}_titular`]?.nome,
+                                                        className: "px-4 py-2 bg-teal-600 text-white rounded-lg font-semibold hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    }, "➕")
+                                                )
+                                            ),
+                                            
+                                            // Seção Motos Backup
+                                            nec.quantidade_backup > 0 && React.createElement("div", {className: "bg-blue-50 rounded-xl p-4"},
+                                                React.createElement("div", {className: "flex justify-between items-center mb-3"},
+                                                    React.createElement("h4", {className: "font-bold text-gray-700"}, 
+                                                        "🔄 Motos Backup"
+                                                    ),
+                                                    React.createElement("span", {className: "text-sm font-bold " + 
+                                                        (backupsAtribuidos >= nec.quantidade_backup ? 'text-green-600' : 'text-blue-600')
+                                                    }, backupsAtribuidos, " / ", nec.quantidade_backup)
+                                                ),
+                                                // Barra de progresso backups
+                                                React.createElement("div", {className: "w-full h-2 bg-gray-200 rounded-full overflow-hidden mb-3"},
+                                                    React.createElement("div", {
+                                                        className: "h-full rounded-full transition-all duration-500 " +
+                                                            (progressoBackups === 100 ? 'bg-green-500' : 'bg-blue-500'),
+                                                        style: { width: `${Math.min(100, progressoBackups)}%` }
+                                                    })
+                                                ),
+                                                // Lista de atribuídos
+                                                React.createElement("div", {className: "space-y-2 mb-3 max-h-40 overflow-y-auto"},
+                                                    (nec.atribuicoes?.filter(a => a.tipo === 'backup') || []).map(attr => 
+                                                        React.createElement("div", {
+                                                            key: attr.id,
+                                                            className: "flex items-center justify-between bg-white rounded-lg p-2 shadow-sm"
+                                                        },
+                                                            React.createElement("div", null,
+                                                                React.createElement("span", {className: "font-mono text-blue-600 font-bold"}, attr.cod_profissional),
+                                                                attr.nome_profissional && React.createElement("span", {className: "ml-2 text-gray-600 text-sm"}, attr.nome_profissional)
+                                                            ),
+                                                            React.createElement("button", {
+                                                                onClick: () => removerAtribuicaoRecrutamento(attr.id),
+                                                                className: "text-red-500 hover:text-red-700 text-sm"
+                                                            }, "✕")
+                                                        )
+                                                    )
+                                                ),
+                                                // Campo para adicionar
+                                                backupsAtribuidos < nec.quantidade_backup && React.createElement("div", {className: "flex gap-2"},
+                                                    React.createElement("div", {className: "flex-1"},
+                                                        React.createElement("input", {
+                                                            type: "text",
+                                                            placeholder: "Código do motoboy",
+                                                            value: recrutamentoCodBusca[`${nec.id}_backup`]?.codigo || '',
+                                                            onChange: (e) => {
+                                                                const codigo = e.target.value;
+                                                                setRecrutamentoCodBusca(prev => ({
+                                                                    ...prev,
+                                                                    [`${nec.id}_backup`]: { ...prev[`${nec.id}_backup`], codigo, nome: '', erro: '' }
+                                                                }));
+                                                                if (codigo.length >= 3) {
+                                                                    buscarProfissionalRecrutamento(nec.id, 'backup', codigo);
+                                                                }
+                                                            },
+                                                            className: "w-full px-3 py-2 border rounded-lg text-sm"
+                                                        }),
+                                                        recrutamentoCodBusca[`${nec.id}_backup`]?.loading && 
+                                                            React.createElement("p", {className: "text-xs text-gray-400 mt-1"}, "Buscando..."),
+                                                        recrutamentoCodBusca[`${nec.id}_backup`]?.nome && 
+                                                            React.createElement("p", {className: "text-xs text-green-600 mt-1"}, 
+                                                                "✅ ", recrutamentoCodBusca[`${nec.id}_backup`].nome
+                                                            ),
+                                                        recrutamentoCodBusca[`${nec.id}_backup`]?.erro && 
+                                                            React.createElement("p", {className: "text-xs text-red-500 mt-1"}, 
+                                                                "❌ ", recrutamentoCodBusca[`${nec.id}_backup`].erro
+                                                            )
+                                                    ),
+                                                    React.createElement("button", {
+                                                        onClick: () => atribuirProfissionalRecrutamento(nec.id, 'backup'),
+                                                        disabled: !recrutamentoCodBusca[`${nec.id}_backup`]?.nome,
+                                                        className: "px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    }, "➕")
+                                                )
+                                            ),
+                                            
+                                            // Se não tem backup, ocupar espaço vazio ou mostrar info
+                                            nec.quantidade_backup === 0 && React.createElement("div", {className: "bg-gray-100 rounded-xl p-4 flex items-center justify-center"},
+                                                React.createElement("p", {className: "text-gray-400 text-sm"}, "Sem necessidade de backup")
+                                            )
+                                        ),
+                                        
+                                        // Rodapé com info de criação
+                                        React.createElement("p", {className: "text-xs text-gray-400 mt-4 text-right"}, 
+                                            "Criado por: ", nec.criado_por || '-', " em ", new Date(nec.created_at).toLocaleDateString('pt-BR')
+                                        )
+                                    )
+                                );
+                            })
+                    )
+                ),
+                
+                // Modal de criar/editar necessidade
+                recrutamentoModal && React.createElement("div", {className: "fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"},
+                    React.createElement("div", {className: "bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"},
+                        // Header do modal
+                        React.createElement("div", {className: "p-6 border-b bg-gradient-to-r from-teal-500 to-teal-600 text-white rounded-t-2xl"},
+                            React.createElement("h3", {className: "text-xl font-bold"}, 
+                                recrutamentoEdit ? "✏️ Editar Necessidade" : "➕ Nova Necessidade de Recrutamento"
+                            ),
+                            React.createElement("p", {className: "text-sm opacity-80"}, 
+                                "Preencha os dados da necessidade de motos"
+                            )
+                        ),
+                        // Corpo do modal
+                        React.createElement("div", {className: "p-6 space-y-4"},
+                            // Nome do cliente
+                            React.createElement("div", null,
+                                React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-1"}, "Nome do Cliente *"),
+                                React.createElement("input", {
+                                    type: "text",
+                                    value: recrutamentoForm.nome_cliente,
+                                    onChange: (e) => setRecrutamentoForm(f => ({...f, nome_cliente: e.target.value})),
+                                    placeholder: "Ex: Magazine Luiza",
+                                    className: "w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-teal-500"
+                                })
+                            ),
+                            // Data de conclusão
+                            React.createElement("div", null,
+                                React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-1"}, "Data de Conclusão *"),
+                                React.createElement("input", {
+                                    type: "date",
+                                    value: recrutamentoForm.data_conclusao,
+                                    onChange: (e) => setRecrutamentoForm(f => ({...f, data_conclusao: e.target.value})),
+                                    className: "w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-teal-500"
+                                })
+                            ),
+                            // Quantidades
+                            React.createElement("div", {className: "grid grid-cols-2 gap-4"},
+                                React.createElement("div", null,
+                                    React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-1"}, "🏍️ Quantidade de Motos *"),
+                                    React.createElement("input", {
+                                        type: "number",
+                                        min: "1",
+                                        value: recrutamentoForm.quantidade_motos,
+                                        onChange: (e) => setRecrutamentoForm(f => ({...f, quantidade_motos: parseInt(e.target.value) || 1})),
+                                        className: "w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-teal-500"
+                                    })
+                                ),
+                                React.createElement("div", null,
+                                    React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-1"}, "🔄 Quantidade de Backup"),
+                                    React.createElement("input", {
+                                        type: "number",
+                                        min: "0",
+                                        value: recrutamentoForm.quantidade_backup,
+                                        onChange: (e) => setRecrutamentoForm(f => ({...f, quantidade_backup: parseInt(e.target.value) || 0})),
+                                        className: "w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-teal-500"
+                                    })
+                                )
+                            ),
+                            // Observação
+                            React.createElement("div", null,
+                                React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-1"}, "📝 Observação (opcional)"),
+                                React.createElement("textarea", {
+                                    value: recrutamentoForm.observacao,
+                                    onChange: (e) => setRecrutamentoForm(f => ({...f, observacao: e.target.value})),
+                                    placeholder: "Ex: Preferência por motoboys com experiência em delivery de documentos",
+                                    rows: 3,
+                                    className: "w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-teal-500"
+                                })
+                            )
+                        ),
+                        // Footer do modal
+                        React.createElement("div", {className: "p-6 border-t bg-gray-50 flex gap-3 rounded-b-2xl"},
+                            React.createElement("button", {
+                                onClick: () => { setRecrutamentoModal(false); setRecrutamentoEdit(null); },
+                                className: "flex-1 px-4 py-3 bg-gray-200 text-gray-700 rounded-xl font-semibold hover:bg-gray-300"
+                            }, "Cancelar"),
+                            React.createElement("button", {
+                                onClick: salvarRecrutamento,
+                                disabled: !recrutamentoForm.nome_cliente || !recrutamentoForm.data_conclusao || !recrutamentoForm.quantidade_motos,
+                                className: "flex-1 px-4 py-3 bg-teal-600 text-white rounded-xl font-semibold hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            }, recrutamentoEdit ? "💾 Salvar Alterações" : "➕ Criar Necessidade")
                         )
                     )
                 )
