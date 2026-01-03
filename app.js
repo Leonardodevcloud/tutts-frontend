@@ -19866,11 +19866,11 @@ const hideLoadingScreen = () => {
                                             let setaClass = '';
                                             if (i > 0 && semanaAnterior?.negociado > 0 && sem.negociado > 0) {
                                                 if (complementoAtual > complementoAnterior) {
-                                                    seta = ' ↑'; // Subiu = ruim = vermelho
-                                                    setaClass = 'text-red-600';
+                                                    seta = '▲'; // Subiu = ruim = vermelho
+                                                    setaClass = 'text-red-500 text-lg animate-pulse';
                                                 } else if (complementoAtual < complementoAnterior) {
-                                                    seta = ' ↓'; // Diminuiu = bom = verde
-                                                    setaClass = 'text-green-600';
+                                                    seta = '▼'; // Diminuiu = bom = verde
+                                                    setaClass = 'text-green-500 text-lg';
                                                 }
                                             }
                                             
@@ -19884,14 +19884,53 @@ const hideLoadingScreen = () => {
                                                 React.createElement("td", {className: "px-2 py-2 text-sm text-right font-semibold " + 
                                                     (sem.complemento > 0 ? 'text-red-600' : sem.negociado > 0 ? 'text-green-600' : '')
                                                 }, 
-                                                    sem.negociado > 0 ? React.createElement("span", null,
-                                                        `R$${sem.complemento.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`,
-                                                        seta && React.createElement("span", {className: setaClass + " ml-1 font-bold"}, seta)
+                                                    sem.negociado > 0 ? React.createElement("div", {className: "flex items-center justify-end gap-1"},
+                                                        React.createElement("span", null, `R$${sem.complemento.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`),
+                                                        seta && React.createElement("span", {className: setaClass + " font-bold", title: seta === '▲' ? 'Aumentou em relação à semana anterior' : 'Diminuiu em relação à semana anterior'}, seta)
                                                     ) : ''
                                                 )
                                             );
                                         })
                                     )
+                                ),
+                                // Rodapé com totais
+                                garantidoSemanal.length > 0 && React.createElement("tr", {className: "bg-gradient-to-r from-blue-100 to-blue-200 font-bold border-t-2 border-blue-400"},
+                                    React.createElement("td", {className: "px-4 py-3 text-sm font-bold border-r text-blue-800"}, "TOTAL"),
+                                    garantidoSemanal[0]?.semanas?.map((_, semIdx) => {
+                                        // Calcular totais da coluna
+                                        const totalNegociado = garantidoSemanal.reduce((sum, local) => sum + (local.semanas[semIdx]?.negociado || 0), 0);
+                                        const totalProduzido = garantidoSemanal.reduce((sum, local) => sum + (local.semanas[semIdx]?.produzido || 0), 0);
+                                        const totalComplemento = garantidoSemanal.reduce((sum, local) => sum + (local.semanas[semIdx]?.complemento || 0), 0);
+                                        
+                                        // Calcular variação do total em relação à semana anterior
+                                        let setaTotal = '';
+                                        let setaTotalClass = '';
+                                        if (semIdx > 0) {
+                                            const totalCompAnterior = garantidoSemanal.reduce((sum, local) => sum + (local.semanas[semIdx-1]?.complemento || 0), 0);
+                                            if (totalComplemento > totalCompAnterior) {
+                                                setaTotal = '▲';
+                                                setaTotalClass = 'text-red-600 text-xl animate-pulse';
+                                            } else if (totalComplemento < totalCompAnterior) {
+                                                setaTotal = '▼';
+                                                setaTotalClass = 'text-green-600 text-xl';
+                                            }
+                                        }
+                                        
+                                        return React.createElement(React.Fragment, {key: semIdx},
+                                            React.createElement("td", {className: "px-2 py-3 text-sm text-right border-l text-blue-800"}, 
+                                                `R$${totalNegociado.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`
+                                            ),
+                                            React.createElement("td", {className: "px-2 py-3 text-sm text-right text-purple-700"}, 
+                                                `R$${totalProduzido.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`
+                                            ),
+                                            React.createElement("td", {className: "px-2 py-3 text-sm text-right text-red-700"}, 
+                                                React.createElement("div", {className: "flex items-center justify-end gap-1"},
+                                                    React.createElement("span", null, `R$${totalComplemento.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`),
+                                                    setaTotal && React.createElement("span", {className: setaTotalClass + " font-bold"}, setaTotal)
+                                                )
+                                            )
+                                        );
+                                    })
                                 )
                             )
                         )
