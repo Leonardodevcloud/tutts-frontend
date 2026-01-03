@@ -3463,9 +3463,13 @@ const hideLoadingScreen = () => {
                     params.append('filtro_status', garantidoFiltros.filtro_status);
                 }
                 
+                console.log('💰 Garantido - Filtros usados:', garantidoFiltros);
+                console.log('💰 Garantido - URL params:', params.toString() || '(sem filtros)');
+                
                 // Carregar dados principais
                 const response = await fetch(`${API_URL}/bi/garantido?${params}`);
                 const data = await response.json();
+                console.log('💰 Garantido - Resposta:', data);
                 setGarantidoData(data.dados || []);
                 setGarantidoStats(data.totais || null);
                 
