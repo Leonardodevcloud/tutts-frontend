@@ -80,7 +80,7 @@ const SISTEMA_MODULOS_CONFIG = [
       abas: [{id: "panorama", label: "Panorama"}, {id: "principal", label: "Principal"}, {id: "faltosos", label: "Faltosos"}, {id: "espelho", label: "Espelho"}, {id: "relatorios", label: "Relatórios"}, {id: "motoboys", label: "Motoboys"}, {id: "restricoes", label: "Restrições"}, {id: "config", label: "Configurações"}]
     },
     { id: "bi", label: "BI", icon: "📊",
-      abas: [{id: "dashboard", label: "Dashboard"}, {id: "acompanhamento", label: "Acompanhamento"}, {id: "profissionais", label: "Por Profissional"}, {id: "os", label: "Análise por OS"}, {id: "upload", label: "Upload"}, {id: "config", label: "Configurações"}]
+      abas: [{id: "dashboard", label: "Dashboard"}, {id: "acompanhamento", label: "Acompanhamento"}, {id: "profissionais", label: "Por Profissional"}, {id: "garantido", label: "Garantido"}, {id: "os", label: "Análise por OS"}, {id: "upload", label: "Upload"}, {id: "config", label: "Configurações"}]
     },
     { id: "todo", label: "TO-DO", icon: "📝",
       abas: [{id: "tarefas", label: "Tarefas"}, {id: "metricas", label: "Métricas"}]
@@ -920,6 +920,20 @@ const hideLoadingScreen = () => {
         [profPaginaAtual, setProfPaginaAtual] = useState(1),
         [profOsExpandido, setProfOsExpandido] = useState({}), // {cod_prof: [lista de OS]}
         [profOsLoading, setProfOsLoading] = useState(null), // cod_prof que está carregando
+        // Estados do módulo Garantido (BI)
+        [garantidoData, setGarantidoData] = useState([]),
+        [garantidoLoading, setGarantidoLoading] = useState(false),
+        [garantidoFiltros, setGarantidoFiltros] = useState({
+            data_inicio: '',
+            data_fim: '',
+            cod_cliente: '',
+            cod_prof: '',
+            filtro_status: 'todos' // todos, abaixo, acima, nao_rodou, rodou
+        }),
+        [garantidoStats, setGarantidoStats] = useState(null),
+        [garantidoSubTab, setGarantidoSubTab] = useState('analise'), // analise, semanal, cliente
+        [garantidoSemanal, setGarantidoSemanal] = useState([]),
+        [garantidoPorCliente, setGarantidoPorCliente] = useState([]),
         // Estados do Mapa de Calor
         [mapaCalorDados, setMapaCalorDados] = useState(null),
         [mapaCalorLoading, setMapaCalorLoading] = useState(false),
@@ -3432,6 +3446,45 @@ const hideLoadingScreen = () => {
                 console.error("Erro acompanhamento:", e);
             } finally {
                 setAcompLoading(false);
+            }
+        };
+        
+        // Função para carregar dados do módulo Garantido
+        const carregarGarantido = async () => {
+            try {
+                setGarantidoLoading(true);
+                
+                const params = new URLSearchParams();
+                if (garantidoFiltros.data_inicio) params.append('data_inicio', garantidoFiltros.data_inicio);
+                if (garantidoFiltros.data_fim) params.append('data_fim', garantidoFiltros.data_fim);
+                if (garantidoFiltros.cod_cliente) params.append('cod_cliente', garantidoFiltros.cod_cliente);
+                if (garantidoFiltros.cod_prof) params.append('cod_prof', garantidoFiltros.cod_prof);
+                if (garantidoFiltros.filtro_status && garantidoFiltros.filtro_status !== 'todos') {
+                    params.append('filtro_status', garantidoFiltros.filtro_status);
+                }
+                
+                // Carregar dados principais
+                const response = await fetch(`${API_URL}/bi/garantido?${params}`);
+                const data = await response.json();
+                setGarantidoData(data.dados || []);
+                setGarantidoStats(data.totais || null);
+                
+                // Carregar análise semanal
+                const semanalRes = await fetch(`${API_URL}/bi/garantido/semanal?${params}`);
+                const semanalData = await semanalRes.json();
+                setGarantidoSemanal(Array.isArray(semanalData) ? semanalData : []);
+                
+                // Carregar resumo por cliente
+                const clienteRes = await fetch(`${API_URL}/bi/garantido/por-cliente?${params}`);
+                const clienteData = await clienteRes.json();
+                setGarantidoPorCliente(clienteData.dados || []);
+                
+            } catch (e) {
+                console.error("Erro ao carregar garantido:", e);
+                setGarantidoData([]);
+                setGarantidoStats(null);
+            } finally {
+                setGarantidoLoading(false);
             }
         };
         
@@ -17082,6 +17135,10 @@ const hideLoadingScreen = () => {
                 className: "px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-all " + ("profissionais" === Et ? "border-purple-600 text-purple-600 bg-purple-50" : "border-transparent text-gray-600 hover:text-gray-800")
             }, "👤 Por Profissional"), 
             React.createElement("button", {
+                onClick: () => { ht("garantido"); carregarGarantido(); },
+                className: "px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-all " + ("garantido" === Et ? "border-green-600 text-green-600 bg-green-50" : "border-transparent text-gray-600 hover:text-gray-800")
+            }, "💰 Garantido"), 
+            React.createElement("button", {
                 onClick: () => { ht("os"); (async () => {
                         try {
                             Ra(!0);
@@ -19364,7 +19421,388 @@ const hideLoadingScreen = () => {
                     className: "px-3 py-1 rounded " + (profPaginaAtual === Math.ceil(Vt.length / 20) ? "bg-gray-200 text-gray-400" : "bg-purple-600 text-white hover:bg-purple-700")
                 }, "»"),
                 React.createElement("span", {className: "ml-4 text-sm text-purple-700"}, "Página ", profPaginaAtual, " de ", Math.ceil(Vt.length / 20))
-            )), "os" === Et && React.createElement("div", {
+            )), 
+            
+            // ==================== ABA GARANTIDO ====================
+            "garantido" === Et && React.createElement("div", {className: "space-y-4"},
+                // Header
+                React.createElement("div", {className: "bg-gradient-to-r from-green-600 to-emerald-800 rounded-xl p-6 text-white"},
+                    React.createElement("div", {className: "flex justify-between items-center"},
+                        React.createElement("div", null,
+                            React.createElement("h2", {className: "text-2xl font-bold mb-2"}, "💰 Análise Mínimo Garantido"),
+                            React.createElement("p", {className: "opacity-80"}, "Comparativo entre valor negociado e produção real dos profissionais")
+                        ),
+                        React.createElement("button", {
+                            onClick: carregarGarantido,
+                            disabled: garantidoLoading,
+                            className: "px-4 py-2 bg-white/20 rounded-lg hover:bg-white/30 disabled:opacity-50"
+                        }, garantidoLoading ? "🔄 Carregando..." : "🔄 Atualizar")
+                    )
+                ),
+                
+                // Filtros
+                React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-4"},
+                    React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-5 gap-4"},
+                        React.createElement("div", null,
+                            React.createElement("label", {className: "block text-xs font-semibold text-gray-600 mb-1"}, "Data Início"),
+                            React.createElement("input", {
+                                type: "date",
+                                value: garantidoFiltros.data_inicio,
+                                onChange: (e) => setGarantidoFiltros(f => ({...f, data_inicio: e.target.value})),
+                                className: "w-full px-3 py-2 border rounded-lg text-sm"
+                            })
+                        ),
+                        React.createElement("div", null,
+                            React.createElement("label", {className: "block text-xs font-semibold text-gray-600 mb-1"}, "Data Fim"),
+                            React.createElement("input", {
+                                type: "date",
+                                value: garantidoFiltros.data_fim,
+                                onChange: (e) => setGarantidoFiltros(f => ({...f, data_fim: e.target.value})),
+                                className: "w-full px-3 py-2 border rounded-lg text-sm"
+                            })
+                        ),
+                        React.createElement("div", null,
+                            React.createElement("label", {className: "block text-xs font-semibold text-gray-600 mb-1"}, "Cód. Cliente"),
+                            React.createElement("input", {
+                                type: "text",
+                                placeholder: "Ex: 767",
+                                value: garantidoFiltros.cod_cliente,
+                                onChange: (e) => setGarantidoFiltros(f => ({...f, cod_cliente: e.target.value})),
+                                className: "w-full px-3 py-2 border rounded-lg text-sm"
+                            })
+                        ),
+                        React.createElement("div", null,
+                            React.createElement("label", {className: "block text-xs font-semibold text-gray-600 mb-1"}, "Cód. Profissional"),
+                            React.createElement("input", {
+                                type: "text",
+                                placeholder: "Ex: 12345",
+                                value: garantidoFiltros.cod_prof,
+                                onChange: (e) => setGarantidoFiltros(f => ({...f, cod_prof: e.target.value})),
+                                className: "w-full px-3 py-2 border rounded-lg text-sm"
+                            })
+                        ),
+                        React.createElement("div", {className: "flex items-end"},
+                            React.createElement("button", {
+                                onClick: carregarGarantido,
+                                className: "w-full px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700"
+                            }, "🔍 Filtrar")
+                        )
+                    ),
+                    // Filtros de status
+                    React.createElement("div", {className: "flex flex-wrap gap-2 mt-4"},
+                        React.createElement("button", {
+                            onClick: () => { setGarantidoFiltros(f => ({...f, filtro_status: 'todos'})); setTimeout(carregarGarantido, 100); },
+                            className: "px-4 py-2 rounded-lg text-sm font-semibold " + 
+                                (garantidoFiltros.filtro_status === 'todos' ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200')
+                        }, "📋 Todos"),
+                        React.createElement("button", {
+                            onClick: () => { setGarantidoFiltros(f => ({...f, filtro_status: 'abaixo'})); setTimeout(carregarGarantido, 100); },
+                            className: "px-4 py-2 rounded-lg text-sm font-semibold " + 
+                                (garantidoFiltros.filtro_status === 'abaixo' ? 'bg-red-600 text-white' : 'bg-red-100 text-red-600 hover:bg-red-200')
+                        }, "🔴 Abaixo Garantido"),
+                        React.createElement("button", {
+                            onClick: () => { setGarantidoFiltros(f => ({...f, filtro_status: 'acima'})); setTimeout(carregarGarantido, 100); },
+                            className: "px-4 py-2 rounded-lg text-sm font-semibold " + 
+                                (garantidoFiltros.filtro_status === 'acima' ? 'bg-green-600 text-white' : 'bg-green-100 text-green-600 hover:bg-green-200')
+                        }, "🟢 Acima Garantido"),
+                        React.createElement("button", {
+                            onClick: () => { setGarantidoFiltros(f => ({...f, filtro_status: 'nao_rodou'})); setTimeout(carregarGarantido, 100); },
+                            className: "px-4 py-2 rounded-lg text-sm font-semibold " + 
+                                (garantidoFiltros.filtro_status === 'nao_rodou' ? 'bg-gray-600 text-white' : 'bg-gray-200 text-gray-600 hover:bg-gray-300')
+                        }, "⚫ Não Rodou"),
+                        React.createElement("button", {
+                            onClick: () => { setGarantidoFiltros(f => ({...f, filtro_status: 'rodou'})); setTimeout(carregarGarantido, 100); },
+                            className: "px-4 py-2 rounded-lg text-sm font-semibold " + 
+                                (garantidoFiltros.filtro_status === 'rodou' ? 'bg-blue-600 text-white' : 'bg-blue-100 text-blue-600 hover:bg-blue-200')
+                        }, "🔵 Rodou")
+                    )
+                ),
+                
+                // Cards de totais
+                garantidoStats && React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-5 gap-4"},
+                    React.createElement("div", {className: "bg-white rounded-xl shadow p-4 text-center"},
+                        React.createElement("p", {className: "text-2xl font-bold text-gray-800"}, garantidoStats.total_registros || 0),
+                        React.createElement("p", {className: "text-xs text-gray-500"}, "Total Registros")
+                    ),
+                    React.createElement("div", {className: "bg-white rounded-xl shadow p-4 text-center"},
+                        React.createElement("p", {className: "text-2xl font-bold text-blue-600"}, "R$ ", (garantidoStats.total_negociado || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})),
+                        React.createElement("p", {className: "text-xs text-gray-500"}, "Total Negociado")
+                    ),
+                    React.createElement("div", {className: "bg-white rounded-xl shadow p-4 text-center"},
+                        React.createElement("p", {className: "text-2xl font-bold text-purple-600"}, "R$ ", (garantidoStats.total_produzido || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})),
+                        React.createElement("p", {className: "text-xs text-gray-500"}, "Total Produzido")
+                    ),
+                    React.createElement("div", {className: "bg-white rounded-xl shadow p-4 text-center"},
+                        React.createElement("p", {className: "text-2xl font-bold text-red-600"}, "R$ ", (garantidoStats.total_complemento || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})),
+                        React.createElement("p", {className: "text-xs text-gray-500"}, "Total Complemento")
+                    ),
+                    React.createElement("div", {className: "bg-white rounded-xl shadow p-4 text-center"},
+                        React.createElement("div", {className: "flex justify-center gap-4"},
+                            React.createElement("span", {className: "text-red-600 font-bold"}, "🔴 ", garantidoStats.qtd_abaixo || 0),
+                            React.createElement("span", {className: "text-green-600 font-bold"}, "🟢 ", garantidoStats.qtd_acima || 0),
+                            React.createElement("span", {className: "text-gray-600 font-bold"}, "⚫ ", garantidoStats.qtd_nao_rodou || 0)
+                        ),
+                        React.createElement("p", {className: "text-xs text-gray-500 mt-1"}, "Abaixo / Acima / N.Rodou")
+                    )
+                ),
+                
+                // Sub-abas
+                React.createElement("div", {className: "bg-white rounded-xl shadow overflow-hidden"},
+                    React.createElement("div", {className: "flex border-b"},
+                        React.createElement("button", {
+                            onClick: () => setGarantidoSubTab('analise'),
+                            className: "flex-1 px-4 py-3 text-sm font-semibold " + 
+                                (garantidoSubTab === 'analise' ? 'bg-green-50 text-green-700 border-b-2 border-green-600' : 'text-gray-600 hover:bg-gray-50')
+                        }, "📋 Análise Mínimo Garantido"),
+                        React.createElement("button", {
+                            onClick: () => setGarantidoSubTab('semanal'),
+                            className: "flex-1 px-4 py-3 text-sm font-semibold " + 
+                                (garantidoSubTab === 'semanal' ? 'bg-green-50 text-green-700 border-b-2 border-green-600' : 'text-gray-600 hover:bg-gray-50')
+                        }, "📅 Análise Semanal"),
+                        React.createElement("button", {
+                            onClick: () => setGarantidoSubTab('cliente'),
+                            className: "flex-1 px-4 py-3 text-sm font-semibold " + 
+                                (garantidoSubTab === 'cliente' ? 'bg-green-50 text-green-700 border-b-2 border-green-600' : 'text-gray-600 hover:bg-gray-50')
+                        }, "🏢 Por Cliente")
+                    )
+                ),
+                
+                // Loading
+                garantidoLoading && React.createElement("div", {className: "bg-white rounded-xl shadow p-12 text-center"},
+                    React.createElement("div", {className: "inline-block w-12 h-12 border-4 border-green-500 border-t-transparent rounded-full animate-spin mb-4"}),
+                    React.createElement("p", {className: "text-gray-500"}, "Carregando dados do garantido...")
+                ),
+                
+                // Conteúdo Sub-aba: Análise Principal
+                !garantidoLoading && garantidoSubTab === 'analise' && React.createElement("div", {className: "bg-white rounded-xl shadow-lg overflow-hidden"},
+                    React.createElement("div", {className: "overflow-x-auto"},
+                        React.createElement("table", {className: "w-full"},
+                            React.createElement("thead", {className: "bg-gradient-to-r from-purple-100 to-purple-200"},
+                                React.createElement("tr", null,
+                                    React.createElement("th", {className: "px-3 py-3 text-left text-xs font-bold text-purple-800"}, "Data"),
+                                    React.createElement("th", {className: "px-3 py-3 text-left text-xs font-bold text-purple-800"}, "Cód. Prof."),
+                                    React.createElement("th", {className: "px-3 py-3 text-left text-xs font-bold text-purple-800"}, "Profissional"),
+                                    React.createElement("th", {className: "px-3 py-3 text-left text-xs font-bold text-purple-800"}, "Cód. Mín"),
+                                    React.createElement("th", {className: "px-3 py-3 text-left text-xs font-bold text-purple-800"}, "Onde Rodou?"),
+                                    React.createElement("th", {className: "px-3 py-3 text-center text-xs font-bold text-purple-800"}, "Entregas"),
+                                    React.createElement("th", {className: "px-3 py-3 text-center text-xs font-bold text-purple-800"}, "Tempo Entrega"),
+                                    React.createElement("th", {className: "px-3 py-3 text-center text-xs font-bold text-purple-800"}, "Distância"),
+                                    React.createElement("th", {className: "px-3 py-3 text-right text-xs font-bold text-purple-800"}, "Negociado"),
+                                    React.createElement("th", {className: "px-3 py-3 text-right text-xs font-bold text-purple-800"}, "Produção"),
+                                    React.createElement("th", {className: "px-3 py-3 text-right text-xs font-bold text-purple-800"}, "Complemento")
+                                )
+                            ),
+                            React.createElement("tbody", null,
+                                garantidoData.length === 0 && React.createElement("tr", null,
+                                    React.createElement("td", {colSpan: 11, className: "px-4 py-12 text-center text-gray-500"},
+                                        "Nenhum dado encontrado. Ajuste os filtros ou verifique a planilha de garantido."
+                                    )
+                                ),
+                                garantidoData.map((row, idx) => 
+                                    React.createElement("tr", {
+                                        key: idx,
+                                        className: (row.status === 'nao_rodou' ? 'bg-gray-100' : 
+                                                   row.status === 'abaixo' ? 'bg-red-50' : 'bg-green-50') + 
+                                                  " border-b hover:bg-opacity-80"
+                                    },
+                                        React.createElement("td", {className: "px-3 py-2 text-sm"}, 
+                                            new Date(row.data + 'T12:00:00').toLocaleDateString('pt-BR')
+                                        ),
+                                        React.createElement("td", {className: "px-3 py-2 text-sm font-mono"}, row.cod_prof),
+                                        React.createElement("td", {className: "px-3 py-2 text-sm font-semibold"}, row.profissional),
+                                        React.createElement("td", {className: "px-3 py-2 text-sm font-mono"}, row.cod_cliente_garantido),
+                                        React.createElement("td", {className: "px-3 py-2 text-sm"}, row.onde_rodou),
+                                        React.createElement("td", {className: "px-3 py-2 text-sm text-center"}, row.entregas),
+                                        React.createElement("td", {className: "px-3 py-2 text-sm text-center font-mono"}, row.tempo_entrega || '-'),
+                                        React.createElement("td", {className: "px-3 py-2 text-sm text-center"}, 
+                                            row.distancia ? row.distancia.toFixed(2) + ' KM' : '-'
+                                        ),
+                                        React.createElement("td", {className: "px-3 py-2 text-sm text-right font-semibold"}, 
+                                            "R$", row.valor_negociado?.toFixed(2)
+                                        ),
+                                        React.createElement("td", {className: "px-3 py-2 text-sm text-right font-semibold"}, 
+                                            "R$", row.valor_produzido?.toFixed(2)
+                                        ),
+                                        React.createElement("td", {className: "px-3 py-2 text-right"},
+                                            React.createElement("span", {
+                                                className: "inline-flex items-center gap-1 px-2 py-1 rounded text-sm font-bold " +
+                                                    (row.complemento > 0 ? 'bg-red-200 text-red-800' : 'bg-green-200 text-green-800')
+                                            },
+                                                row.complemento > 0 ? '🔴' : '🟢',
+                                                " R$", row.complemento?.toFixed(2)
+                                            )
+                                        )
+                                    )
+                                ),
+                                // Linha de totais
+                                garantidoData.length > 0 && React.createElement("tr", {className: "bg-purple-200 font-bold"},
+                                    React.createElement("td", {colSpan: 5, className: "px-3 py-3 text-right text-purple-800"}, "Total"),
+                                    React.createElement("td", {className: "px-3 py-3 text-center text-purple-800"}, 
+                                        garantidoStats?.total_entregas || garantidoData.reduce((s, r) => s + r.entregas, 0)
+                                    ),
+                                    React.createElement("td", {className: "px-3 py-3 text-center"}, "-"),
+                                    React.createElement("td", {className: "px-3 py-3 text-center text-purple-800"}, 
+                                        (garantidoStats?.total_distancia || garantidoData.reduce((s, r) => s + (r.distancia || 0), 0)).toFixed(2), " KM"
+                                    ),
+                                    React.createElement("td", {className: "px-3 py-3 text-right text-purple-800"}, 
+                                        "R$", (garantidoStats?.total_negociado || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})
+                                    ),
+                                    React.createElement("td", {className: "px-3 py-3 text-right text-purple-800"}, 
+                                        "R$", (garantidoStats?.total_produzido || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})
+                                    ),
+                                    React.createElement("td", {className: "px-3 py-3 text-right text-red-800"}, 
+                                        "R$", (garantidoStats?.total_complemento || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})
+                                    )
+                                )
+                            )
+                        )
+                    )
+                ),
+                
+                // Conteúdo Sub-aba: Análise Semanal
+                !garantidoLoading && garantidoSubTab === 'semanal' && React.createElement("div", {className: "bg-white rounded-xl shadow-lg overflow-hidden"},
+                    React.createElement("div", {className: "overflow-x-auto"},
+                        React.createElement("table", {className: "w-full"},
+                            React.createElement("thead", {className: "bg-gradient-to-r from-blue-100 to-blue-200"},
+                                React.createElement("tr", null,
+                                    React.createElement("th", {className: "px-4 py-3 text-left text-xs font-bold text-blue-800"}, "Onde Rodou?"),
+                                    // Colunas dinâmicas por semana
+                                    garantidoSemanal.length > 0 && garantidoSemanal[0]?.semanas?.map((sem, i) =>
+                                        React.createElement("th", {key: i, colSpan: 3, className: "px-2 py-3 text-center text-xs font-bold text-blue-800 border-l"},
+                                            new Date(sem.semana + 'T12:00:00').toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit'})
+                                        )
+                                    )
+                                ),
+                                React.createElement("tr", {className: "bg-blue-50"},
+                                    React.createElement("th", {className: "px-4 py-2"}),
+                                    // Sub-headers
+                                    garantidoSemanal.length > 0 && garantidoSemanal[0]?.semanas?.map((_, i) =>
+                                        React.createElement(React.Fragment, {key: i},
+                                            React.createElement("th", {className: "px-2 py-2 text-xs text-blue-600 border-l"}, "Negociado"),
+                                            React.createElement("th", {className: "px-2 py-2 text-xs text-blue-600"}, "Produzido"),
+                                            React.createElement("th", {className: "px-2 py-2 text-xs text-blue-600"}, "Compl.")
+                                        )
+                                    )
+                                )
+                            ),
+                            React.createElement("tbody", null,
+                                garantidoSemanal.length === 0 && React.createElement("tr", null,
+                                    React.createElement("td", {colSpan: 20, className: "px-4 py-12 text-center text-gray-500"},
+                                        "Nenhum dado semanal encontrado."
+                                    )
+                                ),
+                                garantidoSemanal.map((local, idx) =>
+                                    React.createElement("tr", {key: idx, className: "border-b hover:bg-gray-50"},
+                                        React.createElement("td", {className: "px-4 py-2 text-sm font-semibold"}, local.onde_rodou),
+                                        local.semanas?.map((sem, i) =>
+                                            React.createElement(React.Fragment, {key: i},
+                                                React.createElement("td", {className: "px-2 py-2 text-sm text-right border-l"}, 
+                                                    "R$", (sem.negociado || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})
+                                                ),
+                                                React.createElement("td", {className: "px-2 py-2 text-sm text-right"}, 
+                                                    "R$", (sem.produzido || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})
+                                                ),
+                                                React.createElement("td", {className: "px-2 py-2 text-sm text-right font-semibold " + 
+                                                    (sem.complemento > 0 ? 'text-red-600' : 'text-green-600')
+                                                }, 
+                                                    "R$", (sem.complemento || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})
+                                                )
+                                            )
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    )
+                ),
+                
+                // Conteúdo Sub-aba: Por Cliente
+                !garantidoLoading && garantidoSubTab === 'cliente' && React.createElement("div", {className: "grid md:grid-cols-2 gap-6"},
+                    // Tabela por cliente
+                    React.createElement("div", {className: "bg-white rounded-xl shadow-lg overflow-hidden"},
+                        React.createElement("div", {className: "overflow-x-auto"},
+                            React.createElement("table", {className: "w-full"},
+                                React.createElement("thead", {className: "bg-gradient-to-r from-emerald-100 to-emerald-200"},
+                                    React.createElement("tr", null,
+                                        React.createElement("th", {className: "px-4 py-3 text-left text-xs font-bold text-emerald-800"}, "Onde Rodou?"),
+                                        React.createElement("th", {className: "px-4 py-3 text-right text-xs font-bold text-emerald-800"}, "Negociado"),
+                                        React.createElement("th", {className: "px-4 py-3 text-right text-xs font-bold text-emerald-800"}, "Produzido"),
+                                        React.createElement("th", {className: "px-4 py-3 text-right text-xs font-bold text-emerald-800"}, "Complemento")
+                                    )
+                                ),
+                                React.createElement("tbody", null,
+                                    garantidoPorCliente.length === 0 && React.createElement("tr", null,
+                                        React.createElement("td", {colSpan: 4, className: "px-4 py-12 text-center text-gray-500"},
+                                            "Nenhum dado por cliente encontrado."
+                                        )
+                                    ),
+                                    garantidoPorCliente.map((cli, idx) =>
+                                        React.createElement("tr", {key: idx, className: "border-b hover:bg-gray-50"},
+                                            React.createElement("td", {className: "px-4 py-3 text-sm font-semibold"}, cli.onde_rodou),
+                                            React.createElement("td", {className: "px-4 py-3 text-sm text-right"}, 
+                                                "R$", (cli.negociado || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})
+                                            ),
+                                            React.createElement("td", {className: "px-4 py-3 text-sm text-right"}, 
+                                                "R$", (cli.produzido || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})
+                                            ),
+                                            React.createElement("td", {className: "px-4 py-3 text-sm text-right font-bold " + 
+                                                (cli.complemento > 0 ? 'text-red-600' : 'text-green-600')
+                                            }, 
+                                                "R$", (cli.complemento || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})
+                                            )
+                                        )
+                                    ),
+                                    // Linha de total
+                                    garantidoPorCliente.length > 0 && React.createElement("tr", {className: "bg-emerald-200 font-bold"},
+                                        React.createElement("td", {className: "px-4 py-3 text-emerald-800"}, "Total"),
+                                        React.createElement("td", {className: "px-4 py-3 text-right text-emerald-800"}, 
+                                            "R$", garantidoPorCliente.reduce((s, c) => s + (c.negociado || 0), 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})
+                                        ),
+                                        React.createElement("td", {className: "px-4 py-3 text-right text-emerald-800"}, 
+                                            "R$", garantidoPorCliente.reduce((s, c) => s + (c.produzido || 0), 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})
+                                        ),
+                                        React.createElement("td", {className: "px-4 py-3 text-right text-red-700"}, 
+                                            "R$", garantidoPorCliente.reduce((s, c) => s + (c.complemento || 0), 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    ),
+                    
+                    // Gráfico de pizza
+                    React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-6"},
+                        React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-4"}, "Valor Mínimo por Cliente (Total)"),
+                        garantidoPorCliente.length > 0 ? React.createElement("div", {className: "relative"},
+                            // Simulação de gráfico com barras horizontais (mais simples que pizza)
+                            React.createElement("div", {className: "space-y-3"},
+                                garantidoPorCliente.slice(0, 10).map((cli, idx) => {
+                                    const total = garantidoPorCliente.reduce((s, c) => s + (c.complemento || 0), 0);
+                                    const percent = total > 0 ? ((cli.complemento || 0) / total * 100) : 0;
+                                    const colors = ['bg-purple-500', 'bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-red-500', 'bg-pink-500', 'bg-indigo-500', 'bg-teal-500', 'bg-orange-500', 'bg-cyan-500'];
+                                    return React.createElement("div", {key: idx},
+                                        React.createElement("div", {className: "flex justify-between text-sm mb-1"},
+                                            React.createElement("span", {className: "truncate max-w-[200px]"}, cli.onde_rodou),
+                                            React.createElement("span", {className: "font-semibold"}, 
+                                                "R$", (cli.complemento || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2}),
+                                                " (", percent.toFixed(1), "%)"
+                                            )
+                                        ),
+                                        React.createElement("div", {className: "w-full h-4 bg-gray-200 rounded-full overflow-hidden"},
+                                            React.createElement("div", {
+                                                className: `h-full ${colors[idx % colors.length]} rounded-full transition-all`,
+                                                style: {width: `${percent}%`}
+                                            })
+                                        )
+                                    );
+                                })
+                            )
+                        ) : React.createElement("p", {className: "text-gray-500 text-center py-8"}, "Sem dados para exibir")
+                    )
+                )
+            ),
+            
+            "os" === Et && React.createElement("div", {
                 className: "space-y-4"
             }, 
             // Header
