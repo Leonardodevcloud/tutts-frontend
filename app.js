@@ -934,6 +934,9 @@ const hideLoadingScreen = () => {
         [garantidoSubTab, setGarantidoSubTab] = useState('analise'), // analise, semanal, cliente
         [garantidoSemanal, setGarantidoSemanal] = useState([]),
         [garantidoPorCliente, setGarantidoPorCliente] = useState([]),
+        [garantidoStatusMap, setGarantidoStatusMap] = useState({}), // Mapa de status salvos
+        [garantidoModalStatus, setGarantidoModalStatus] = useState(null), // Modal para alterar status
+        [garantidoMotivoReprovado, setGarantidoMotivoReprovado] = useState(''), // Motivo quando reprovado
         // Estados do Mapa de Calor
         [mapaCalorDados, setMapaCalorDados] = useState(null),
         [mapaCalorLoading, setMapaCalorLoading] = useState(false),
@@ -3486,12 +3489,60 @@ const hideLoadingScreen = () => {
                 const clienteData = await clienteRes.json();
                 setGarantidoPorCliente(clienteData.dados || []);
                 
+                // Carregar status salvos
+                const statusRes = await fetch(`${API_URL}/bi/garantido/status`);
+                const statusData = await statusRes.json();
+                setGarantidoStatusMap(statusData || {});
+                
             } catch (e) {
                 console.error("Erro ao carregar garantido:", e);
                 setGarantidoData([]);
                 setGarantidoStats(null);
             } finally {
                 setGarantidoLoading(false);
+            }
+        };
+        
+        // Função para salvar status do garantido
+        const salvarStatusGarantido = async (registro, novoStatus, motivo = '') => {
+            try {
+                if (novoStatus === 'reprovado' && !motivo) {
+                    alert('Informe o motivo da reprovação!');
+                    return false;
+                }
+                
+                const response = await fetch(`${API_URL}/bi/garantido/status`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        cod_prof: registro.cod_prof,
+                        data: registro.data,
+                        cod_cliente: registro.cod_cliente_garantido,
+                        status: novoStatus,
+                        motivo_reprovado: motivo,
+                        alterado_por: an || 'Admin'
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    // Atualizar mapa local
+                    const key = `${registro.cod_prof}_${registro.data}_${registro.cod_cliente_garantido}`;
+                    setGarantidoStatusMap(prev => ({
+                        ...prev,
+                        [key]: data.data
+                    }));
+                    setGarantidoModalStatus(null);
+                    setGarantidoMotivoReprovado('');
+                    return true;
+                } else {
+                    alert('Erro ao salvar: ' + (data.error || 'Erro desconhecido'));
+                    return false;
+                }
+            } catch (error) {
+                console.error('Erro ao salvar status:', error);
+                alert('Erro ao salvar status');
+                return false;
             }
         };
         
@@ -19589,24 +19640,27 @@ const hideLoadingScreen = () => {
                                     React.createElement("th", {className: "px-3 py-3 text-left text-xs font-bold text-purple-800"}, "Data"),
                                     React.createElement("th", {className: "px-3 py-3 text-left text-xs font-bold text-purple-800"}, "Cód. Prof."),
                                     React.createElement("th", {className: "px-3 py-3 text-left text-xs font-bold text-purple-800"}, "Profissional"),
-                                    React.createElement("th", {className: "px-3 py-3 text-left text-xs font-bold text-purple-800"}, "Cód. Mín"),
                                     React.createElement("th", {className: "px-3 py-3 text-left text-xs font-bold text-purple-800"}, "Onde Rodou?"),
                                     React.createElement("th", {className: "px-3 py-3 text-center text-xs font-bold text-purple-800"}, "Entregas"),
-                                    React.createElement("th", {className: "px-3 py-3 text-center text-xs font-bold text-purple-800"}, "Tempo Entrega"),
                                     React.createElement("th", {className: "px-3 py-3 text-center text-xs font-bold text-purple-800"}, "Distância"),
                                     React.createElement("th", {className: "px-3 py-3 text-right text-xs font-bold text-purple-800"}, "Negociado"),
                                     React.createElement("th", {className: "px-3 py-3 text-right text-xs font-bold text-purple-800"}, "Produção"),
-                                    React.createElement("th", {className: "px-3 py-3 text-right text-xs font-bold text-purple-800"}, "Complemento")
+                                    React.createElement("th", {className: "px-3 py-3 text-right text-xs font-bold text-purple-800"}, "Complemento"),
+                                    React.createElement("th", {className: "px-3 py-3 text-center text-xs font-bold text-purple-800"}, "Status Pagamento")
                                 )
                             ),
                             React.createElement("tbody", null,
                                 garantidoData.length === 0 && React.createElement("tr", null,
-                                    React.createElement("td", {colSpan: 11, className: "px-4 py-12 text-center text-gray-500"},
+                                    React.createElement("td", {colSpan: 10, className: "px-4 py-12 text-center text-gray-500"},
                                         "Nenhum dado encontrado. Ajuste os filtros ou verifique a planilha de garantido."
                                     )
                                 ),
-                                garantidoData.map((row, idx) => 
-                                    React.createElement("tr", {
+                                garantidoData.map((row, idx) => {
+                                    const statusKey = `${row.cod_prof}_${row.data}_${row.cod_cliente_garantido}`;
+                                    const statusInfo = garantidoStatusMap[statusKey];
+                                    const statusAtual = statusInfo?.status || 'analise';
+                                    
+                                    return React.createElement("tr", {
                                         key: idx,
                                         className: (row.status === 'nao_rodou' ? 'bg-gray-100' : 
                                                    row.status === 'abaixo' ? 'bg-red-50' : 'bg-green-50') + 
@@ -19617,10 +19671,8 @@ const hideLoadingScreen = () => {
                                         ),
                                         React.createElement("td", {className: "px-3 py-2 text-sm font-mono"}, row.cod_prof),
                                         React.createElement("td", {className: "px-3 py-2 text-sm font-semibold"}, row.profissional),
-                                        React.createElement("td", {className: "px-3 py-2 text-sm font-mono"}, row.cod_cliente_garantido),
                                         React.createElement("td", {className: "px-3 py-2 text-sm"}, row.onde_rodou),
                                         React.createElement("td", {className: "px-3 py-2 text-sm text-center"}, row.entregas),
-                                        React.createElement("td", {className: "px-3 py-2 text-sm text-center font-mono"}, row.tempo_entrega || '-'),
                                         React.createElement("td", {className: "px-3 py-2 text-sm text-center"}, 
                                             row.distancia ? row.distancia.toFixed(2) + ' KM' : '-'
                                         ),
@@ -19638,16 +19690,56 @@ const hideLoadingScreen = () => {
                                                 row.complemento > 0 ? '🔴' : '🟢',
                                                 " R$", row.complemento?.toFixed(2)
                                             )
+                                        ),
+                                        // Coluna de Status com dropdown
+                                        React.createElement("td", {className: "px-3 py-2 text-center"},
+                                            React.createElement("div", {className: "flex flex-col items-center gap-1"},
+                                                React.createElement("select", {
+                                                    value: statusAtual,
+                                                    onChange: (e) => {
+                                                        const novoStatus = e.target.value;
+                                                        if (novoStatus === 'reprovado') {
+                                                            setGarantidoModalStatus(row);
+                                                            setGarantidoMotivoReprovado('');
+                                                        } else {
+                                                            salvarStatusGarantido(row, novoStatus);
+                                                        }
+                                                    },
+                                                    className: "px-2 py-1 text-xs font-semibold rounded border " +
+                                                        (statusAtual === 'lancado' ? 'bg-green-100 text-green-800 border-green-300' :
+                                                         statusAtual === 'reprovado' ? 'bg-red-100 text-red-800 border-red-300' :
+                                                         'bg-yellow-100 text-yellow-800 border-yellow-300')
+                                                },
+                                                    React.createElement("option", {value: "analise"}, "🔍 Análise"),
+                                                    React.createElement("option", {value: "lancado"}, "✅ Lançado"),
+                                                    React.createElement("option", {value: "reprovado"}, "❌ Reprovado")
+                                                ),
+                                                // Mostrar info de quem alterou
+                                                statusInfo?.alterado_por && React.createElement("div", {className: "text-xs text-gray-500"},
+                                                    statusInfo.alterado_por
+                                                ),
+                                                statusInfo?.alterado_em && React.createElement("div", {className: "text-xs text-gray-400"},
+                                                    new Date(statusInfo.alterado_em).toLocaleString('pt-BR', {
+                                                        day: '2-digit', month: '2-digit', year: '2-digit',
+                                                        hour: '2-digit', minute: '2-digit'
+                                                    })
+                                                ),
+                                                // Mostrar motivo se reprovado
+                                                statusAtual === 'reprovado' && statusInfo?.motivo_reprovado && 
+                                                    React.createElement("div", {
+                                                        className: "text-xs text-red-600 italic max-w-32 truncate",
+                                                        title: statusInfo.motivo_reprovado
+                                                    }, "📝 ", statusInfo.motivo_reprovado)
+                                            )
                                         )
-                                    )
-                                ),
+                                    );
+                                }),
                                 // Linha de totais
                                 garantidoData.length > 0 && React.createElement("tr", {className: "bg-purple-200 font-bold"},
-                                    React.createElement("td", {colSpan: 5, className: "px-3 py-3 text-right text-purple-800"}, "Total"),
+                                    React.createElement("td", {colSpan: 4, className: "px-3 py-3 text-right text-purple-800"}, "Total"),
                                     React.createElement("td", {className: "px-3 py-3 text-center text-purple-800"}, 
                                         garantidoStats?.total_entregas || garantidoData.reduce((s, r) => s + r.entregas, 0)
                                     ),
-                                    React.createElement("td", {className: "px-3 py-3 text-center"}, "-"),
                                     React.createElement("td", {className: "px-3 py-3 text-center text-purple-800"}, 
                                         (garantidoStats?.total_distancia || garantidoData.reduce((s, r) => s + (r.distancia || 0), 0)).toFixed(2), " KM"
                                     ),
@@ -19659,8 +19751,49 @@ const hideLoadingScreen = () => {
                                     ),
                                     React.createElement("td", {className: "px-3 py-3 text-right text-red-800"}, 
                                         "R$", (garantidoStats?.total_complemento || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})
-                                    )
+                                    ),
+                                    React.createElement("td", {className: "px-3 py-3"})
                                 )
+                            )
+                        )
+                    ),
+                    // Modal para informar motivo de reprovação
+                    garantidoModalStatus && React.createElement("div", {
+                        className: "fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+                    },
+                        React.createElement("div", {className: "bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4"},
+                            React.createElement("h3", {className: "text-lg font-bold text-red-700 mb-4"}, 
+                                "❌ Reprovar Complemento"
+                            ),
+                            React.createElement("p", {className: "text-sm text-gray-600 mb-2"},
+                                "Profissional: ", React.createElement("strong", null, garantidoModalStatus.profissional)
+                            ),
+                            React.createElement("p", {className: "text-sm text-gray-600 mb-4"},
+                                "Data: ", React.createElement("strong", null, new Date(garantidoModalStatus.data + 'T12:00:00').toLocaleDateString('pt-BR'))
+                            ),
+                            React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-2"}, 
+                                "Motivo da Reprovação *"
+                            ),
+                            React.createElement("textarea", {
+                                value: garantidoMotivoReprovado,
+                                onChange: (e) => setGarantidoMotivoReprovado(e.target.value),
+                                placeholder: "Informe o motivo da reprovação...",
+                                className: "w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500",
+                                rows: 3
+                            }),
+                            React.createElement("div", {className: "flex gap-3 mt-4"},
+                                React.createElement("button", {
+                                    onClick: () => {
+                                        setGarantidoModalStatus(null);
+                                        setGarantidoMotivoReprovado('');
+                                    },
+                                    className: "flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                                }, "Cancelar"),
+                                React.createElement("button", {
+                                    onClick: () => salvarStatusGarantido(garantidoModalStatus, 'reprovado', garantidoMotivoReprovado),
+                                    disabled: !garantidoMotivoReprovado.trim(),
+                                    className: "flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                }, "Confirmar Reprovação")
                             )
                         )
                     )
