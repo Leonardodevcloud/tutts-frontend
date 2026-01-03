@@ -17206,26 +17206,27 @@ const hideLoadingScreen = () => {
             }, React.createElement("div", {
                 className: "max-w-full mx-auto px-4 flex gap-1 overflow-x-auto"
             }, 
+            // 1. Home
             React.createElement("button", {
                 onClick: () => { ht("home-bi"); },
                 className: "px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-all " + ("home-bi" === Et ? "border-purple-600 text-purple-600 bg-purple-50" : "border-transparent text-gray-600 hover:text-gray-800")
             }, "🏠 Home"), 
+            // 2. Dashboard
             React.createElement("button", {
                 onClick: () => { ht("dashboard"); el(); },
                 className: "px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-all " + ("dashboard" === Et ? "border-purple-600 text-purple-600 bg-purple-50" : "border-transparent text-gray-600 hover:text-gray-800")
             }, "📊 Dashboard"), 
+            // 3. Acompanhamento
             React.createElement("button", {
                 onClick: () => { ht("acompanhamento"); carregarAcompanhamento(); },
                 className: "px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-all " + ("acompanhamento" === Et ? "border-purple-600 text-purple-600 bg-purple-50" : "border-transparent text-gray-600 hover:text-gray-800")
             }, "📈 Acompanhamento"), 
+            // 4. Por Profissional
             React.createElement("button", {
                 onClick: () => { ht("profissionais"); el(); },
                 className: "px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-all " + ("profissionais" === Et ? "border-purple-600 text-purple-600 bg-purple-50" : "border-transparent text-gray-600 hover:text-gray-800")
             }, "👤 Por Profissional"), 
-            React.createElement("button", {
-                onClick: () => { console.log('🔘 Botão Garantido clicado!'); ht("garantido"); carregarGarantido(); },
-                className: "px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-all " + ("garantido" === Et ? "border-green-600 text-green-600 bg-green-50" : "border-transparent text-gray-600 hover:text-gray-800")
-            }, "💰 Garantido"), 
+            // 5. Análise por OS
             React.createElement("button", {
                 onClick: () => { ht("os"); (async () => {
                         try {
@@ -17242,20 +17243,32 @@ const hideLoadingScreen = () => {
                 },
                 className: "px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-all " + ("os" === Et ? "border-purple-600 text-purple-600 bg-purple-50" : "border-transparent text-gray-600 hover:text-gray-800")
             }, "📋 Análise por OS"), 
+            // 6. Cliente 767
             React.createElement("button", {
-                onClick: () => { ht("upload"); },
-                className: "px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-all " + ("upload" === Et ? "border-purple-600 text-purple-600 bg-purple-50" : "border-transparent text-gray-600 hover:text-gray-800")
-            }, "📤 Upload"), React.createElement("button", {
                 onClick: () => {
                     ht("cliente767"), carregarCliente767()
                 },
                 className: "px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-all " + ("cliente767" === Et ? "border-orange-600 text-orange-600 bg-orange-50" : "border-transparent text-gray-600 hover:text-gray-800")
-            }, "🏢 Cliente 767"), React.createElement("button", {
+            }, "🏢 Cliente 767"), 
+            // 7. Garantido
+            React.createElement("button", {
+                onClick: () => { console.log('🔘 Botão Garantido clicado!'); ht("garantido"); carregarGarantido(); },
+                className: "px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-all " + ("garantido" === Et ? "border-green-600 text-green-600 bg-green-50" : "border-transparent text-gray-600 hover:text-gray-800")
+            }, "💰 Garantido"), 
+            // 8. Relatório IA
+            React.createElement("button", {
                 onClick: () => {
                     ht("relatorio-ia")
                 },
                 className: "px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-all flex items-center gap-2 " + ("relatorio-ia" === Et ? "border-violet-600 text-violet-600 bg-violet-50" : "border-transparent text-gray-600 hover:text-gray-800")
-            }, React.createElement("img", {src: "https://raw.githubusercontent.com/Leonardodevcloud/tutts-frontend/main/gemini-app-icon-hd.png", alt: "", className: "w-5 h-5 rounded"}), "Relatório IA"), React.createElement("button", {
+            }, React.createElement("img", {src: "https://raw.githubusercontent.com/Leonardodevcloud/tutts-frontend/main/gemini-app-icon-hd.png", alt: "", className: "w-5 h-5 rounded"}), "Relatório IA"), 
+            // 9. Upload
+            React.createElement("button", {
+                onClick: () => { ht("upload"); },
+                className: "px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-all " + ("upload" === Et ? "border-purple-600 text-purple-600 bg-purple-50" : "border-transparent text-gray-600 hover:text-gray-800")
+            }, "📤 Upload"), 
+            // 10. Config
+            React.createElement("button", {
                 onClick: () => {
                     ht("config"), tl(), al(), carregarPrazosProf()
                 },
@@ -17776,6 +17789,21 @@ const hideLoadingScreen = () => {
                                 ),
                                 React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Cliente 767"),
                                 React.createElement("p", {className: "text-sm text-gray-500"}, "Dashboard exclusivo com prazo especial de 120 minutos e meta mensal.")
+                            )
+                        ),
+                        
+                        // Card Garantido
+                        React.createElement("div", {
+                            onClick: () => { ht("garantido"); carregarGarantido(); },
+                            className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-emerald-300"
+                        },
+                            React.createElement("div", {className: "h-2 bg-gradient-to-r from-emerald-500 to-green-600"}),
+                            React.createElement("div", {className: "p-6"},
+                                React.createElement("div", {className: "w-14 h-14 bg-emerald-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
+                                    React.createElement("span", {className: "text-3xl"}, "💰")
+                                ),
+                                React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Garantido"),
+                                React.createElement("p", {className: "text-sm text-gray-500"}, "Análise de mínimo garantido, complementos e acompanhamento semanal.")
                             )
                         ),
                         
@@ -19993,11 +20021,11 @@ const hideLoadingScreen = () => {
                     
                     // Gráfico de pizza
                     React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-6"},
-                        React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-4"}, "Top 10 - Maior Complemento por Cliente"),
-                        garantidoPorCliente.length > 0 ? React.createElement("div", {className: "relative"},
-                            // Simulação de gráfico com barras horizontais (mais simples que pizza)
+                        React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-4"}, "Complemento por Cliente"),
+                        garantidoPorCliente.length > 0 ? React.createElement("div", {className: "relative max-h-[500px] overflow-y-auto"},
+                            // Gráfico com barras horizontais - todos os clientes
                             React.createElement("div", {className: "space-y-3"},
-                                garantidoPorCliente.slice(0, 10).map((cli, idx) => {
+                                garantidoPorCliente.map((cli, idx) => {
                                     const total = garantidoPorCliente.reduce((s, c) => s + (c.complemento || 0), 0);
                                     const percent = total > 0 ? ((cli.complemento || 0) / total * 100) : 0;
                                     const colors = ['bg-purple-500', 'bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-red-500', 'bg-pink-500', 'bg-indigo-500', 'bg-teal-500', 'bg-orange-500', 'bg-cyan-500'];
