@@ -17419,11 +17419,8 @@ const hideLoadingScreen = () => {
                     value: ua.data_inicio ? new Date(ua.data_inicio + 'T12:00:00').toLocaleDateString('pt-BR') : '',
                     onClick: () => { setCalDataInicioAberto(!calDataInicioAberto); setCalDataFimAberto(false); setCalMesAtual(ua.data_inicio ? new Date(ua.data_inicio + 'T12:00:00') : new Date()); },
                     placeholder: "Selecione...",
-                    className: "w-full px-3 py-2 border rounded text-sm cursor-pointer " + (ua.data_inicio ? (biDatasComDados.has(ua.data_inicio) ? "border-green-400 bg-green-50" : "border-red-400 bg-red-50") : "")
-                }),
-                ua.data_inicio && React.createElement("span", {
-                    className: "absolute right-2 top-1/2 -translate-y-1/2 text-xs px-1.5 py-0.5 rounded " + (biDatasComDados.has(ua.data_inicio) ? "bg-green-500 text-white" : "bg-red-500 text-white")
-                }, biDatasComDados.has(ua.data_inicio) ? "✓" : "✗")
+                    className: "w-full px-3 py-2 border rounded text-sm cursor-pointer"
+                })
             ),
             // Calendário dropdown Data Início
             calDataInicioAberto && React.createElement("div", {
@@ -17511,11 +17508,8 @@ const hideLoadingScreen = () => {
                     value: ua.data_fim ? new Date(ua.data_fim + 'T12:00:00').toLocaleDateString('pt-BR') : '',
                     onClick: () => { setCalDataFimAberto(!calDataFimAberto); setCalDataInicioAberto(false); setCalMesAtual(ua.data_fim ? new Date(ua.data_fim + 'T12:00:00') : new Date()); },
                     placeholder: "Selecione...",
-                    className: "w-full px-3 py-2 border rounded text-sm cursor-pointer " + (ua.data_fim ? (biDatasComDados.has(ua.data_fim) ? "border-green-400 bg-green-50" : "border-red-400 bg-red-50") : "")
-                }),
-                ua.data_fim && React.createElement("span", {
-                    className: "absolute right-2 top-1/2 -translate-y-1/2 text-xs px-1.5 py-0.5 rounded " + (biDatasComDados.has(ua.data_fim) ? "bg-green-500 text-white" : "bg-red-500 text-white")
-                }, biDatasComDados.has(ua.data_fim) ? "✓" : "✗")
+                    className: "w-full px-3 py-2 border rounded text-sm cursor-pointer"
+                })
             ),
             // Calendário dropdown Data Fim
             calDataFimAberto && React.createElement("div", {
