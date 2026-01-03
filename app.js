@@ -943,6 +943,10 @@ const hideLoadingScreen = () => {
         [mapaCalorVisivel, setMapaCalorVisivel] = useState(true),
         // Estado para datas com dados no BI
         [biDatasComDados, setBiDatasComDados] = useState(new Set()),
+        // Estados para calendário customizado
+        [calDataInicioAberto, setCalDataInicioAberto] = useState(false),
+        [calDataFimAberto, setCalDataFimAberto] = useState(false),
+        [calMesAtual, setCalMesAtual] = useState(new Date()),
         // Estados do módulo Social
         [socialProfile, setSocialProfile] = useState(null),
         [socialUsers, setSocialUsers] = useState([]),
@@ -17399,35 +17403,192 @@ const hideLoadingScreen = () => {
                 className: "p-6"
             }, React.createElement("div", {
                 className: "grid grid-cols-2 md:grid-cols-4 gap-4 mb-4"
-            }, React.createElement("div", {
-                className: "border rounded-lg p-3 " + (ua.data_inicio ? (biDatasComDados.has(ua.data_inicio) ? "bg-green-50 border-green-300" : "bg-red-50 border-red-300") : "bg-gray-50")
+            }, 
+            // Calendário Data Início
+            React.createElement("div", {
+                className: "border rounded-lg p-3 bg-gray-50 relative"
             }, React.createElement("h3", {
-                className: "font-semibold text-gray-700 mb-2 text-sm flex items-center gap-2"
-            }, "📅 Data Início", ua.data_inicio && React.createElement("span", {
-                className: "text-xs px-2 py-0.5 rounded-full " + (biDatasComDados.has(ua.data_inicio) ? "bg-green-200 text-green-700" : "bg-red-200 text-red-700")
-            }, biDatasComDados.has(ua.data_inicio) ? "✓ Com dados" : "✗ Sem dados")), React.createElement("input", {
-                type: "date",
-                value: ua.data_inicio,
-                onChange: e => ga({
-                    ...ua,
-                    data_inicio: e.target.value
+                className: "font-semibold text-gray-700 mb-2 text-sm"
+            }, "📅 Data Início"),
+            React.createElement("div", {
+                className: "relative"
+            },
+                React.createElement("input", {
+                    type: "text",
+                    readOnly: true,
+                    value: ua.data_inicio ? new Date(ua.data_inicio + 'T12:00:00').toLocaleDateString('pt-BR') : '',
+                    onClick: () => { setCalDataInicioAberto(!calDataInicioAberto); setCalDataFimAberto(false); setCalMesAtual(ua.data_inicio ? new Date(ua.data_inicio + 'T12:00:00') : new Date()); },
+                    placeholder: "Selecione...",
+                    className: "w-full px-3 py-2 border rounded text-sm cursor-pointer " + (ua.data_inicio ? (biDatasComDados.has(ua.data_inicio) ? "border-green-400 bg-green-50" : "border-red-400 bg-red-50") : "")
                 }),
-                className: "w-full px-3 py-2 border rounded text-sm " + (ua.data_inicio ? (biDatasComDados.has(ua.data_inicio) ? "border-green-400 bg-green-50" : "border-red-400 bg-red-50") : "")
-            })), React.createElement("div", {
-                className: "border rounded-lg p-3 " + (ua.data_fim ? (biDatasComDados.has(ua.data_fim) ? "bg-green-50 border-green-300" : "bg-red-50 border-red-300") : "bg-gray-50")
+                ua.data_inicio && React.createElement("span", {
+                    className: "absolute right-2 top-1/2 -translate-y-1/2 text-xs px-1.5 py-0.5 rounded " + (biDatasComDados.has(ua.data_inicio) ? "bg-green-500 text-white" : "bg-red-500 text-white")
+                }, biDatasComDados.has(ua.data_inicio) ? "✓" : "✗")
+            ),
+            // Calendário dropdown Data Início
+            calDataInicioAberto && React.createElement("div", {
+                className: "absolute z-50 mt-1 bg-white border rounded-lg shadow-xl p-3 left-0 right-0"
+            },
+                // Header do calendário
+                React.createElement("div", {className: "flex items-center justify-between mb-3"},
+                    React.createElement("button", {
+                        onClick: () => setCalMesAtual(new Date(calMesAtual.getFullYear(), calMesAtual.getMonth() - 1, 1)),
+                        className: "p-1 hover:bg-gray-100 rounded"
+                    }, "◀"),
+                    React.createElement("span", {className: "font-semibold text-sm"},
+                        calMesAtual.toLocaleDateString('pt-BR', {month: 'long', year: 'numeric'})
+                    ),
+                    React.createElement("button", {
+                        onClick: () => setCalMesAtual(new Date(calMesAtual.getFullYear(), calMesAtual.getMonth() + 1, 1)),
+                        className: "p-1 hover:bg-gray-100 rounded"
+                    }, "▶")
+                ),
+                // Dias da semana
+                React.createElement("div", {className: "grid grid-cols-7 gap-1 mb-1"},
+                    ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map((d, i) => 
+                        React.createElement("div", {key: i, className: "text-center text-xs font-semibold text-gray-500 py-1"}, d)
+                    )
+                ),
+                // Dias do mês
+                React.createElement("div", {className: "grid grid-cols-7 gap-1"},
+                    (() => {
+                        const ano = calMesAtual.getFullYear();
+                        const mes = calMesAtual.getMonth();
+                        const primeiroDia = new Date(ano, mes, 1).getDay();
+                        const ultimoDia = new Date(ano, mes + 1, 0).getDate();
+                        const dias = [];
+                        // Dias vazios antes
+                        for (let i = 0; i < primeiroDia; i++) {
+                            dias.push(React.createElement("div", {key: 'empty-' + i}));
+                        }
+                        // Dias do mês
+                        for (let dia = 1; dia <= ultimoDia; dia++) {
+                            const dataStr = `${ano}-${String(mes + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+                            const temDados = biDatasComDados.has(dataStr);
+                            const selecionado = ua.data_inicio === dataStr;
+                            dias.push(React.createElement("button", {
+                                key: dia,
+                                onClick: () => { ga({...ua, data_inicio: dataStr}); setCalDataInicioAberto(false); },
+                                className: "p-1.5 text-xs rounded-full transition-all " + 
+                                    (selecionado ? "bg-purple-600 text-white font-bold" : 
+                                    temDados ? "bg-green-100 text-green-700 hover:bg-green-200 font-semibold" : 
+                                    "text-gray-400 hover:bg-gray-100")
+                            }, dia));
+                        }
+                        return dias;
+                    })()
+                ),
+                // Legenda
+                React.createElement("div", {className: "flex items-center justify-center gap-4 mt-3 pt-2 border-t text-xs"},
+                    React.createElement("span", {className: "flex items-center gap-1"},
+                        React.createElement("span", {className: "w-3 h-3 rounded-full bg-green-200"}),
+                        "Com dados"
+                    ),
+                    React.createElement("span", {className: "flex items-center gap-1"},
+                        React.createElement("span", {className: "w-3 h-3 rounded-full bg-gray-200"}),
+                        "Sem dados"
+                    )
+                ),
+                // Botão fechar
+                React.createElement("button", {
+                    onClick: () => setCalDataInicioAberto(false),
+                    className: "w-full mt-2 py-1 text-xs text-gray-500 hover:text-gray-700"
+                }, "Fechar")
+            )),
+            
+            // Calendário Data Fim
+            React.createElement("div", {
+                className: "border rounded-lg p-3 bg-gray-50 relative"
             }, React.createElement("h3", {
-                className: "font-semibold text-gray-700 mb-2 text-sm flex items-center gap-2"
-            }, "📅 Data Fim", ua.data_fim && React.createElement("span", {
-                className: "text-xs px-2 py-0.5 rounded-full " + (biDatasComDados.has(ua.data_fim) ? "bg-green-200 text-green-700" : "bg-red-200 text-red-700")
-            }, biDatasComDados.has(ua.data_fim) ? "✓ Com dados" : "✗ Sem dados")), React.createElement("input", {
-                type: "date",
-                value: ua.data_fim,
-                onChange: e => ga({
-                    ...ua,
-                    data_fim: e.target.value
+                className: "font-semibold text-gray-700 mb-2 text-sm"
+            }, "📅 Data Fim"),
+            React.createElement("div", {
+                className: "relative"
+            },
+                React.createElement("input", {
+                    type: "text",
+                    readOnly: true,
+                    value: ua.data_fim ? new Date(ua.data_fim + 'T12:00:00').toLocaleDateString('pt-BR') : '',
+                    onClick: () => { setCalDataFimAberto(!calDataFimAberto); setCalDataInicioAberto(false); setCalMesAtual(ua.data_fim ? new Date(ua.data_fim + 'T12:00:00') : new Date()); },
+                    placeholder: "Selecione...",
+                    className: "w-full px-3 py-2 border rounded text-sm cursor-pointer " + (ua.data_fim ? (biDatasComDados.has(ua.data_fim) ? "border-green-400 bg-green-50" : "border-red-400 bg-red-50") : "")
                 }),
-                className: "w-full px-3 py-2 border rounded text-sm " + (ua.data_fim ? (biDatasComDados.has(ua.data_fim) ? "border-green-400 bg-green-50" : "border-red-400 bg-red-50") : "")
-            })), React.createElement("div", {
+                ua.data_fim && React.createElement("span", {
+                    className: "absolute right-2 top-1/2 -translate-y-1/2 text-xs px-1.5 py-0.5 rounded " + (biDatasComDados.has(ua.data_fim) ? "bg-green-500 text-white" : "bg-red-500 text-white")
+                }, biDatasComDados.has(ua.data_fim) ? "✓" : "✗")
+            ),
+            // Calendário dropdown Data Fim
+            calDataFimAberto && React.createElement("div", {
+                className: "absolute z-50 mt-1 bg-white border rounded-lg shadow-xl p-3 left-0 right-0"
+            },
+                // Header do calendário
+                React.createElement("div", {className: "flex items-center justify-between mb-3"},
+                    React.createElement("button", {
+                        onClick: () => setCalMesAtual(new Date(calMesAtual.getFullYear(), calMesAtual.getMonth() - 1, 1)),
+                        className: "p-1 hover:bg-gray-100 rounded"
+                    }, "◀"),
+                    React.createElement("span", {className: "font-semibold text-sm"},
+                        calMesAtual.toLocaleDateString('pt-BR', {month: 'long', year: 'numeric'})
+                    ),
+                    React.createElement("button", {
+                        onClick: () => setCalMesAtual(new Date(calMesAtual.getFullYear(), calMesAtual.getMonth() + 1, 1)),
+                        className: "p-1 hover:bg-gray-100 rounded"
+                    }, "▶")
+                ),
+                // Dias da semana
+                React.createElement("div", {className: "grid grid-cols-7 gap-1 mb-1"},
+                    ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map((d, i) => 
+                        React.createElement("div", {key: i, className: "text-center text-xs font-semibold text-gray-500 py-1"}, d)
+                    )
+                ),
+                // Dias do mês
+                React.createElement("div", {className: "grid grid-cols-7 gap-1"},
+                    (() => {
+                        const ano = calMesAtual.getFullYear();
+                        const mes = calMesAtual.getMonth();
+                        const primeiroDia = new Date(ano, mes, 1).getDay();
+                        const ultimoDia = new Date(ano, mes + 1, 0).getDate();
+                        const dias = [];
+                        // Dias vazios antes
+                        for (let i = 0; i < primeiroDia; i++) {
+                            dias.push(React.createElement("div", {key: 'empty-' + i}));
+                        }
+                        // Dias do mês
+                        for (let dia = 1; dia <= ultimoDia; dia++) {
+                            const dataStr = `${ano}-${String(mes + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+                            const temDados = biDatasComDados.has(dataStr);
+                            const selecionado = ua.data_fim === dataStr;
+                            dias.push(React.createElement("button", {
+                                key: dia,
+                                onClick: () => { ga({...ua, data_fim: dataStr}); setCalDataFimAberto(false); },
+                                className: "p-1.5 text-xs rounded-full transition-all " + 
+                                    (selecionado ? "bg-purple-600 text-white font-bold" : 
+                                    temDados ? "bg-green-100 text-green-700 hover:bg-green-200 font-semibold" : 
+                                    "text-gray-400 hover:bg-gray-100")
+                            }, dia));
+                        }
+                        return dias;
+                    })()
+                ),
+                // Legenda
+                React.createElement("div", {className: "flex items-center justify-center gap-4 mt-3 pt-2 border-t text-xs"},
+                    React.createElement("span", {className: "flex items-center gap-1"},
+                        React.createElement("span", {className: "w-3 h-3 rounded-full bg-green-200"}),
+                        "Com dados"
+                    ),
+                    React.createElement("span", {className: "flex items-center gap-1"},
+                        React.createElement("span", {className: "w-3 h-3 rounded-full bg-gray-200"}),
+                        "Sem dados"
+                    )
+                ),
+                // Botão fechar
+                React.createElement("button", {
+                    onClick: () => setCalDataFimAberto(false),
+                    className: "w-full mt-2 py-1 text-xs text-gray-500 hover:text-gray-700"
+                }, "Fechar")
+            )),
+            
+            React.createElement("div", {
                 className: "border rounded-lg p-3 bg-gray-50"
             }, React.createElement("h3", {
                 className: "font-semibold text-gray-700 mb-2 text-sm"
