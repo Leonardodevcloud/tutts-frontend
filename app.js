@@ -19577,30 +19577,22 @@ const hideLoadingScreen = () => {
                 ),
                 
                 // Cards de totais
-                garantidoStats && React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-5 gap-4"},
+                garantidoStats && React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-4 gap-4"},
                     React.createElement("div", {className: "bg-white rounded-xl shadow p-4 text-center"},
-                        React.createElement("p", {className: "text-2xl font-bold text-gray-800"}, garantidoStats.total_registros || 0),
-                        React.createElement("p", {className: "text-xs text-gray-500"}, "Total Registros")
+                        React.createElement("p", {className: "text-2xl font-bold text-blue-600"}, "R$", (garantidoStats.total_negociado || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})),
+                        React.createElement("p", {className: "text-xs text-gray-500"}, "Valor Total Negociado")
                     ),
                     React.createElement("div", {className: "bg-white rounded-xl shadow p-4 text-center"},
-                        React.createElement("p", {className: "text-2xl font-bold text-blue-600"}, "R$ ", (garantidoStats.total_negociado || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})),
-                        React.createElement("p", {className: "text-xs text-gray-500"}, "Total Negociado")
+                        React.createElement("p", {className: "text-2xl font-bold text-purple-600"}, "R$", (garantidoStats.total_produzido || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})),
+                        React.createElement("p", {className: "text-xs text-gray-500"}, "Valor Total Produção")
                     ),
                     React.createElement("div", {className: "bg-white rounded-xl shadow p-4 text-center"},
-                        React.createElement("p", {className: "text-2xl font-bold text-purple-600"}, "R$ ", (garantidoStats.total_produzido || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})),
-                        React.createElement("p", {className: "text-xs text-gray-500"}, "Total Produzido")
+                        React.createElement("p", {className: "text-2xl font-bold text-red-600"}, "R$", (garantidoStats.total_complemento || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})),
+                        React.createElement("p", {className: "text-xs text-gray-500"}, "Valor Total Complemento")
                     ),
                     React.createElement("div", {className: "bg-white rounded-xl shadow p-4 text-center"},
-                        React.createElement("p", {className: "text-2xl font-bold text-red-600"}, "R$ ", (garantidoStats.total_complemento || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})),
-                        React.createElement("p", {className: "text-xs text-gray-500"}, "Total Complemento")
-                    ),
-                    React.createElement("div", {className: "bg-white rounded-xl shadow p-4 text-center"},
-                        React.createElement("div", {className: "flex justify-center gap-4"},
-                            React.createElement("span", {className: "text-red-600 font-bold"}, "🔴 ", garantidoStats.qtd_abaixo || 0),
-                            React.createElement("span", {className: "text-green-600 font-bold"}, "🟢 ", garantidoStats.qtd_acima || 0),
-                            React.createElement("span", {className: "text-gray-600 font-bold"}, "⚫ ", garantidoStats.qtd_nao_rodou || 0)
-                        ),
-                        React.createElement("p", {className: "text-xs text-gray-500 mt-1"}, "Abaixo / Acima / N.Rodou")
+                        React.createElement("p", {className: "text-2xl font-bold text-gray-600"}, "R$", (garantidoStats.valor_nao_rodou || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})),
+                        React.createElement("p", {className: "text-xs text-gray-500"}, "Valor Prof. Não Rodou")
                     )
                 ),
                 
