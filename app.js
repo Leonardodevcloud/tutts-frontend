@@ -19993,7 +19993,7 @@ const hideLoadingScreen = () => {
                     
                     // Gráfico de pizza
                     React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-6"},
-                        React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-4"}, "Valor Mínimo por Cliente (Total)"),
+                        React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-4"}, "Top 10 - Maior Complemento por Cliente"),
                         garantidoPorCliente.length > 0 ? React.createElement("div", {className: "relative"},
                             // Simulação de gráfico com barras horizontais (mais simples que pizza)
                             React.createElement("div", {className: "space-y-3"},
@@ -20002,9 +20002,9 @@ const hideLoadingScreen = () => {
                                     const percent = total > 0 ? ((cli.complemento || 0) / total * 100) : 0;
                                     const colors = ['bg-purple-500', 'bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-red-500', 'bg-pink-500', 'bg-indigo-500', 'bg-teal-500', 'bg-orange-500', 'bg-cyan-500'];
                                     return React.createElement("div", {key: idx},
-                                        React.createElement("div", {className: "flex justify-between text-sm mb-1"},
-                                            React.createElement("span", {className: "truncate max-w-[200px]"}, cli.onde_rodou),
-                                            React.createElement("span", {className: "font-semibold"}, 
+                                        React.createElement("div", {className: "flex justify-between text-sm mb-1 gap-2"},
+                                            React.createElement("span", {className: "text-xs font-medium text-gray-700", title: cli.onde_rodou}, cli.onde_rodou),
+                                            React.createElement("span", {className: "font-semibold whitespace-nowrap"}, 
                                                 "R$", (cli.complemento || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2}),
                                                 " (", percent.toFixed(1), "%)"
                                             )
