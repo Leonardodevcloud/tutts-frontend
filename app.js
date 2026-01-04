@@ -3,6 +3,56 @@ const {
     useEffect: useEffect
 } = React, API_URL = "https://tutts-backend-production.up.railway.app/api";
 
+// ==================== SISTEMA DE VERSÃO E CACHE ====================
+const APP_VERSION = "2.1.0"; // Incrementar a cada deploy importante
+const VERSION_KEY = "tutts_app_version";
+
+// Verificar se precisa limpar cache (versão diferente)
+(function checkVersion() {
+    const savedVersion = localStorage.getItem(VERSION_KEY);
+    if (savedVersion !== APP_VERSION) {
+        console.log(`🔄 Atualizando de ${savedVersion || 'inicial'} para ${APP_VERSION}`);
+        
+        // Limpar caches
+        if ('caches' in window) {
+            caches.keys().then(names => {
+                names.forEach(name => {
+                    caches.delete(name);
+                    console.log(`🗑️ Cache ${name} limpo`);
+                });
+            });
+        }
+        
+        // Limpar localStorage antigo (exceto dados importantes)
+        const keysToKeep = ['tutts_user', 'tutts_token', VERSION_KEY];
+        Object.keys(localStorage).forEach(key => {
+            if (!keysToKeep.includes(key) && !key.startsWith('tutts_tutorial')) {
+                localStorage.removeItem(key);
+            }
+        });
+        
+        // Salvar nova versão
+        localStorage.setItem(VERSION_KEY, APP_VERSION);
+        
+        // Forçar reload se tinha versão anterior (não no primeiro acesso)
+        if (savedVersion) {
+            console.log('🔄 Recarregando para aplicar atualizações...');
+            window.location.reload(true);
+        }
+    }
+})();
+
+// Forçar atualização do Service Worker se existir
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(registrations => {
+        registrations.forEach(registration => {
+            registration.update();
+        });
+    });
+}
+
+// ==================== FIM SISTEMA DE VERSÃO ====================
+
 // ==================== FUNÇÕES DE AUTENTICAÇÃO ====================
 
 // Obter token JWT armazenado
@@ -31,22 +81,27 @@ const fetchAuth = async (url, options = {}) => {
         headers['Authorization'] = `Bearer ${token}`;
     }
     
-    const response = await fetch(url, {
-        ...options,
-        headers
-    });
-    
-    // Se token expirou, fazer logout
-    if (response.status === 401) {
-        const data = await response.json().catch(() => ({}));
-        if (data.expired) {
-            sessionStorage.removeItem("tutts_user");
-            sessionStorage.removeItem("tutts_token");
-            window.location.reload();
+    try {
+        const response = await fetch(url, {
+            ...options,
+            headers
+        });
+        
+        // Se token expirou, fazer logout (apenas se tinha token)
+        if (response.status === 401 && token) {
+            const data = await response.json().catch(() => ({}));
+            if (data.expired) {
+                sessionStorage.removeItem("tutts_user");
+                sessionStorage.removeItem("tutts_token");
+                window.location.reload();
+            }
         }
+        
+        return response;
+    } catch (error) {
+        console.error('Erro na requisição:', error);
+        throw error;
     }
-    
-    return response;
 };
 
 // ==================== FIM FUNÇÕES DE AUTENTICAÇÃO ====================
@@ -17257,7 +17312,7 @@ const hideLoadingScreen = () => {
                         React.createElement("div", {className: "grid md:grid-cols-2 gap-4"},
                             React.createElement("div", {className: "bg-gray-50 rounded-lg p-4"},
                                 React.createElement("p", {className: "text-sm text-gray-500"}, "Versão"),
-                                React.createElement("p", {className: "font-bold text-lg"}, "Sistema Tutts v2.0")
+                                React.createElement("p", {className: "font-bold text-lg"}, "Sistema Tutts v" + APP_VERSION)
                             ),
                             React.createElement("div", {className: "bg-gray-50 rounded-lg p-4"},
                                 React.createElement("p", {className: "text-sm text-gray-500"}, "Usuário Logado"),
@@ -17276,12 +17331,42 @@ const hideLoadingScreen = () => {
                     React.createElement("div", {className: "bg-yellow-50 border border-yellow-200 rounded-xl p-6"},
                         React.createElement("h3", {className: "font-bold text-yellow-800 mb-2"}, "⚠️ Zona de Perigo"),
                         React.createElement("p", {className: "text-yellow-700 text-sm mb-4"}, "Ações irreversíveis. Use com cuidado."),
-                        React.createElement("div", {className: "flex gap-3"},
+                        React.createElement("div", {className: "flex flex-wrap gap-3"},
                             React.createElement("button", {
                                 onClick: function() { if(confirm("Limpar cache local?")) { localStorage.clear(); sessionStorage.clear(); ja("Cache limpo!", "success"); } },
                                 className: "px-4 py-2 bg-yellow-600 text-white rounded-lg text-sm hover:bg-yellow-700"
-                            }, "🗑️ Limpar Cache")
+                            }, "🗑️ Limpar Cache"),
+                            React.createElement("button", {
+                                onClick: function() { 
+                                    if(confirm("Forçar atualização do aplicativo? O app será recarregado.")) { 
+                                        // Limpar tudo
+                                        localStorage.removeItem(VERSION_KEY);
+                                        if ('caches' in window) {
+                                            caches.keys().then(names => names.forEach(name => caches.delete(name)));
+                                        }
+                                        if ('serviceWorker' in navigator) {
+                                            navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(reg => reg.unregister()));
+                                        }
+                                        setTimeout(() => window.location.reload(true), 500);
+                                    } 
+                                },
+                                className: "px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
+                            }, "🔄 Forçar Atualização")
                         )
+                    ),
+                    // Info da versão
+                    React.createElement("div", {className: "bg-gray-100 rounded-xl p-4 text-center text-sm text-gray-500"},
+                        "Versão: " + APP_VERSION + " • ",
+                        React.createElement("a", {
+                            href: "#",
+                            onClick: function(e) {
+                                e.preventDefault();
+                                localStorage.removeItem(VERSION_KEY);
+                                if ('caches' in window) caches.keys().then(names => names.forEach(name => caches.delete(name)));
+                                window.location.reload(true);
+                            },
+                            className: "text-blue-600 hover:underline"
+                        }, "Verificar atualizações")
                     )
                 ),
                 // TAB AUDITORIA
