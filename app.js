@@ -26335,6 +26335,37 @@ function ScoreEntregador({ user, apiUrl, showToast }) {
           React.createElement('div', { className: 'flex items-center gap-2' }, React.createElement('span', { className: 'text-orange-500' }, '🔥'), 'Bônus 16h-18h: +0,75 pts extra'),
           React.createElement('div', { className: 'flex items-center gap-2 text-red-600' }, React.createElement('span', null, '⚠️'), 'Fora do prazo: -1,00 pt')
         )
+      ),
+      // Tabela de Prazos por KM
+      React.createElement('div', { className: 'bg-gray-50 rounded-xl p-4 border border-gray-200' },
+        React.createElement('h4', { className: 'font-bold text-gray-800 mb-3 flex items-center gap-2' },
+          React.createElement('span', null, '📏'), 'Prazo por Distância (após coletar)'
+        ),
+        React.createElement('div', { className: 'grid grid-cols-2 gap-2 text-sm' },
+          [
+            { km: '0 - 10', tempo: '50 min' },
+            { km: '10 - 15', tempo: '60 min' },
+            { km: '15 - 20', tempo: '70 min' },
+            { km: '20 - 25', tempo: '80 min' },
+            { km: '25 - 30', tempo: '90 min' },
+            { km: '30 - 35', tempo: '100 min' },
+            { km: '35 - 40', tempo: '110 min' },
+            { km: '40 - 45', tempo: '120 min' },
+            { km: '45 - 50', tempo: '130 min' },
+            { km: '50 - 55', tempo: '140 min' },
+            { km: '55 - 60', tempo: '150 min' },
+            { km: '60 - 65', tempo: '160 min' },
+            { km: '65 - 70', tempo: '170 min' },
+            { km: '70 - 75', tempo: '180 min' },
+            { km: '75 - 80', tempo: '190 min' },
+            { km: '80 - 85', tempo: '200 min' }
+          ].map((faixa, idx) => 
+            React.createElement('div', { key: idx, className: 'flex justify-between items-center bg-white rounded-lg px-3 py-2 border border-gray-100' },
+              React.createElement('span', { className: 'text-gray-600' }, `${faixa.km} km`),
+              React.createElement('span', { className: 'font-medium text-purple-600' }, faixa.tempo)
+            )
+          )
+        )
       )
     ),
     // Aba Extrato
