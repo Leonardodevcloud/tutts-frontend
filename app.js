@@ -26203,7 +26203,13 @@ function ScoreEntregador({ user, apiUrl, showToast }) {
 
   React.useEffect(() => { carregarDados(); }, [carregarDados]);
 
-  const formatarData = (data) => data ? new Date(data).toLocaleDateString('pt-BR') : '-';
+  const formatarData = (data) => {
+    if (!data) return '-';
+    // Evitar problema de fuso horário: pegar apenas a parte da data (YYYY-MM-DD)
+    const dataStr = typeof data === 'string' ? data.split('T')[0] : data;
+    const [ano, mes, dia] = dataStr.split('-');
+    return `${dia}/${mes}/${ano}`;
+  };
   const formatarHora = (hora) => hora ? (typeof hora === 'string' ? hora.substring(0, 5) : hora) : '-';
 
   if (loading && !dados) {
