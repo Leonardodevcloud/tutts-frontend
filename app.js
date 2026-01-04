@@ -137,7 +137,7 @@ const SISTEMA_MODULOS_CONFIG = [
       abas: [{id: "perfil", label: "Meu Perfil"}, {id: "comunidade", label: "Comunidade"}, {id: "mensagens", label: "Mensagens"}]
     },
     { id: "config", label: "Configurações", icon: "🔧",
-      abas: [{id: "usuarios", label: "Usuários"}, {id: "permissoes", label: "Permissões ADM"}, {id: "sistema", label: "Sistema"}]
+      abas: [{id: "usuarios", label: "Usuários"}, {id: "permissoes", label: "Permissões ADM"}, {id: "auditoria", label: "Auditoria"}, {id: "sistema", label: "Sistema"}]
     }
 ];
 
@@ -16631,6 +16631,11 @@ const hideLoadingScreen = () => {
                         onClick: function() { x({...p, configTab: "permissoes", permsLoaded: false}); },
                         className: "px-4 py-2.5 text-sm font-semibold whitespace-nowrap " + (p.configTab === "permissoes" ? "text-gray-700 border-b-2 border-gray-600 bg-gray-50" : "text-gray-500 hover:bg-gray-100")
                     }, "🔐 Permissões ADM"),
+                    // Aba Auditoria - apenas admin_master
+                    ("admin_master" === l.role || "admin" === l.role) && React.createElement("button", {
+                        onClick: function() { x({...p, configTab: "auditoria"}); },
+                        className: "px-4 py-2.5 text-sm font-semibold whitespace-nowrap " + (p.configTab === "auditoria" ? "text-gray-700 border-b-2 border-gray-600 bg-gray-50" : "text-gray-500 hover:bg-gray-100")
+                    }, "📋 Auditoria"),
                     // Aba Sistema - verifica permissão
                     (function() {
                         if ("admin_master" === l.role) return true;
@@ -17278,7 +17283,9 @@ const hideLoadingScreen = () => {
                             }, "🗑️ Limpar Cache")
                         )
                     )
-                )
+                ),
+                // TAB AUDITORIA
+                p.configTab === "auditoria" && ("admin_master" === l.role || "admin" === l.role) && React.createElement(AuditLogs, { apiUrl: API_URL, showToast: ja })
             ));
         }
         // Verificar permissão para BI (admin comum)
@@ -26854,6 +26861,313 @@ function ScoreAdmin({ apiUrl, showToast }) {
           )
         )
       )
+    )
+  );
+}
+
+// =====================================================
+// COMPONENTE: AuditLogs
+// Visualização de logs de auditoria para administradores
+// =====================================================
+function AuditLogs({ apiUrl, showToast }) {
+  const [logs, setLogs] = React.useState([]);
+  const [stats, setStats] = React.useState(null);
+  const [loading, setLoading] = React.useState(true);
+  const [filtros, setFiltros] = React.useState({
+    page: 1,
+    limit: 30,
+    category: '',
+    action: '',
+    user_cod: '',
+    data_inicio: '',
+    data_fim: '',
+    search: ''
+  });
+  const [abaAtiva, setAbaAtiva] = React.useState('logs');
+
+  const carregarLogs = async () => {
+    try {
+      setLoading(true);
+      const params = new URLSearchParams();
+      Object.entries(filtros).forEach(([key, value]) => {
+        if (value) params.append(key, value);
+      });
+      
+      const response = await fetchAuth(`${apiUrl}/audit/logs?${params}`);
+      if (response.ok) {
+        const data = await response.json();
+        setLogs(data.logs || []);
+        setFiltros(prev => ({ ...prev, totalPages: data.pagination?.totalPages || 1, total: data.pagination?.total || 0 }));
+      }
+    } catch (error) {
+      console.error('Erro ao carregar logs:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const carregarStats = async () => {
+    try {
+      const response = await fetchAuth(`${apiUrl}/audit/stats?dias=7`);
+      if (response.ok) {
+        const data = await response.json();
+        setStats(data);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar stats:', error);
+    }
+  };
+
+  const exportarCSV = async () => {
+    try {
+      const params = new URLSearchParams();
+      if (filtros.data_inicio) params.append('data_inicio', filtros.data_inicio);
+      if (filtros.data_fim) params.append('data_fim', filtros.data_fim);
+      if (filtros.category) params.append('category', filtros.category);
+      
+      const response = await fetchAuth(`${apiUrl}/audit/export?${params}`);
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `audit_logs_${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        showToast && showToast('Exportação concluída!', 'success');
+      }
+    } catch (error) {
+      showToast && showToast('Erro ao exportar', 'error');
+    }
+  };
+
+  React.useEffect(() => {
+    carregarLogs();
+    carregarStats();
+  }, []);
+
+  React.useEffect(() => {
+    carregarLogs();
+  }, [filtros.page, filtros.category]);
+
+  const getCategoryColor = (cat) => {
+    const colors = {
+      auth: 'bg-blue-100 text-blue-700',
+      user: 'bg-purple-100 text-purple-700',
+      financial: 'bg-green-100 text-green-700',
+      data: 'bg-yellow-100 text-yellow-700',
+      config: 'bg-gray-100 text-gray-700',
+      score: 'bg-orange-100 text-orange-700',
+      admin: 'bg-red-100 text-red-700'
+    };
+    return colors[cat] || 'bg-gray-100 text-gray-700';
+  };
+
+  const getActionIcon = (action) => {
+    if (action.includes('LOGIN')) return '🔐';
+    if (action.includes('DELETE')) return '🗑️';
+    if (action.includes('CREATE')) return '➕';
+    if (action.includes('WITHDRAWAL')) return '💰';
+    if (action.includes('EXPORT')) return '📤';
+    return '📋';
+  };
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '-';
+    const date = new Date(dateStr);
+    return date.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  };
+
+  return React.createElement('div', { className: 'space-y-6' },
+    // Header
+    React.createElement('div', { className: 'flex justify-between items-center' },
+      React.createElement('div', null,
+        React.createElement('h2', { className: 'text-2xl font-bold text-gray-800' }, '📋 Logs de Auditoria'),
+        React.createElement('p', { className: 'text-gray-500' }, 'Registro de todas as ações do sistema')
+      ),
+      React.createElement('button', {
+        onClick: exportarCSV,
+        className: 'px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 flex items-center gap-2'
+      }, '📥 Exportar CSV')
+    ),
+
+    // Abas
+    React.createElement('div', { className: 'flex bg-gray-100 rounded-xl p-1' },
+      [{ id: 'logs', label: '📋 Logs' }, { id: 'stats', label: '📊 Estatísticas' }].map(aba =>
+        React.createElement('button', {
+          key: aba.id,
+          onClick: () => setAbaAtiva(aba.id),
+          className: `flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${abaAtiva === aba.id ? 'bg-white text-gray-700 shadow' : 'text-gray-500 hover:text-gray-700'}`
+        }, aba.label)
+      )
+    ),
+
+    // Aba Estatísticas
+    abaAtiva === 'stats' && stats && React.createElement('div', { className: 'space-y-6' },
+      // Cards de resumo
+      React.createElement('div', { className: 'grid grid-cols-2 md:grid-cols-4 gap-4' },
+        React.createElement('div', { className: 'bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white' },
+          React.createElement('div', { className: 'text-3xl mb-1' }, '📊'),
+          React.createElement('div', { className: 'text-2xl font-bold' }, stats.total_acoes),
+          React.createElement('div', { className: 'text-sm opacity-80' }, `Ações (${stats.periodo_dias} dias)`)
+        ),
+        React.createElement('div', { className: 'bg-gradient-to-br from-red-500 to-red-600 rounded-xl p-4 text-white' },
+          React.createElement('div', { className: 'text-3xl mb-1' }, '⚠️'),
+          React.createElement('div', { className: 'text-2xl font-bold' }, stats.falhas_login),
+          React.createElement('div', { className: 'text-sm opacity-80' }, 'Falhas de Login')
+        ),
+        React.createElement('div', { className: 'bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-4 text-white' },
+          React.createElement('div', { className: 'text-3xl mb-1' }, '👥'),
+          React.createElement('div', { className: 'text-2xl font-bold' }, stats.usuarios_ativos?.length || 0),
+          React.createElement('div', { className: 'text-sm opacity-80' }, 'Usuários Ativos')
+        ),
+        React.createElement('div', { className: 'bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-4 text-white' },
+          React.createElement('div', { className: 'text-3xl mb-1' }, '✅'),
+          React.createElement('div', { className: 'text-2xl font-bold' }, stats.por_categoria?.length || 0),
+          React.createElement('div', { className: 'text-sm opacity-80' }, 'Categorias')
+        )
+      ),
+
+      // Top ações e usuários
+      React.createElement('div', { className: 'grid md:grid-cols-2 gap-6' },
+        React.createElement('div', { className: 'bg-white rounded-xl p-6 shadow' },
+          React.createElement('h3', { className: 'font-bold text-lg mb-4' }, '🔥 Top Ações'),
+          React.createElement('div', { className: 'space-y-2' },
+            stats.top_acoes?.map((item, idx) =>
+              React.createElement('div', { key: idx, className: 'flex justify-between items-center p-2 bg-gray-50 rounded-lg' },
+                React.createElement('span', { className: 'text-sm' }, item.action),
+                React.createElement('span', { className: 'font-bold text-purple-600' }, item.total)
+              )
+            )
+          )
+        ),
+        React.createElement('div', { className: 'bg-white rounded-xl p-6 shadow' },
+          React.createElement('h3', { className: 'font-bold text-lg mb-4' }, '👥 Usuários Mais Ativos'),
+          React.createElement('div', { className: 'space-y-2' },
+            stats.usuarios_ativos?.map((item, idx) =>
+              React.createElement('div', { key: idx, className: 'flex justify-between items-center p-2 bg-gray-50 rounded-lg' },
+                React.createElement('div', null,
+                  React.createElement('span', { className: 'text-sm font-medium' }, item.user_name),
+                  React.createElement('span', { className: 'text-xs text-gray-500 ml-2' }, `#${item.user_cod}`)
+                ),
+                React.createElement('span', { className: 'font-bold text-purple-600' }, item.total)
+              )
+            )
+          )
+        )
+      )
+    ),
+
+    // Aba Logs
+    abaAtiva === 'logs' && React.createElement('div', { className: 'space-y-4' },
+      // Filtros
+      React.createElement('div', { className: 'bg-white rounded-xl p-4 shadow flex flex-wrap gap-4 items-end' },
+        React.createElement('div', { className: 'flex-1 min-w-[150px]' },
+          React.createElement('label', { className: 'block text-sm text-gray-600 mb-1' }, 'Categoria'),
+          React.createElement('select', {
+            value: filtros.category,
+            onChange: (e) => setFiltros(prev => ({ ...prev, category: e.target.value, page: 1 })),
+            className: 'w-full px-3 py-2 border rounded-lg'
+          },
+            React.createElement('option', { value: '' }, 'Todas'),
+            React.createElement('option', { value: 'auth' }, '🔐 Autenticação'),
+            React.createElement('option', { value: 'user' }, '👥 Usuários'),
+            React.createElement('option', { value: 'financial' }, '💰 Financeiro'),
+            React.createElement('option', { value: 'data' }, '📊 Dados'),
+            React.createElement('option', { value: 'admin' }, '⚙️ Admin')
+          )
+        ),
+        React.createElement('div', { className: 'flex-1 min-w-[150px]' },
+          React.createElement('label', { className: 'block text-sm text-gray-600 mb-1' }, 'Data Início'),
+          React.createElement('input', { type: 'date', value: filtros.data_inicio, onChange: (e) => setFiltros(prev => ({ ...prev, data_inicio: e.target.value })), className: 'w-full px-3 py-2 border rounded-lg' })
+        ),
+        React.createElement('div', { className: 'flex-1 min-w-[150px]' },
+          React.createElement('label', { className: 'block text-sm text-gray-600 mb-1' }, 'Data Fim'),
+          React.createElement('input', { type: 'date', value: filtros.data_fim, onChange: (e) => setFiltros(prev => ({ ...prev, data_fim: e.target.value })), className: 'w-full px-3 py-2 border rounded-lg' })
+        ),
+        React.createElement('div', { className: 'flex-1 min-w-[200px]' },
+          React.createElement('label', { className: 'block text-sm text-gray-600 mb-1' }, 'Buscar'),
+          React.createElement('input', {
+            type: 'text',
+            value: filtros.search,
+            onChange: (e) => setFiltros(prev => ({ ...prev, search: e.target.value })),
+            placeholder: 'Usuário, ação...',
+            className: 'w-full px-3 py-2 border rounded-lg'
+          })
+        ),
+        React.createElement('button', {
+          onClick: () => { setFiltros(prev => ({ ...prev, page: 1 })); carregarLogs(); },
+          className: 'px-4 py-2 bg-purple-600 text-white rounded-lg font-medium'
+        }, '🔍 Filtrar')
+      ),
+
+      // Tabela de logs
+      loading
+        ? React.createElement('div', { className: 'flex items-center justify-center py-12' },
+            React.createElement('div', { className: 'w-12 h-12 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin' })
+          )
+        : React.createElement('div', { className: 'bg-white rounded-xl shadow overflow-hidden' },
+            React.createElement('div', { className: 'overflow-x-auto' },
+              React.createElement('table', { className: 'w-full' },
+                React.createElement('thead', { className: 'bg-gray-50' },
+                  React.createElement('tr', null,
+                    React.createElement('th', { className: 'px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase' }, 'Data/Hora'),
+                    React.createElement('th', { className: 'px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase' }, 'Usuário'),
+                    React.createElement('th', { className: 'px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase' }, 'Ação'),
+                    React.createElement('th', { className: 'px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase' }, 'Categoria'),
+                    React.createElement('th', { className: 'px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase' }, 'Recurso'),
+                    React.createElement('th', { className: 'px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase' }, 'Status')
+                  )
+                ),
+                React.createElement('tbody', { className: 'divide-y divide-gray-200' },
+                  logs.length === 0
+                    ? React.createElement('tr', null,
+                        React.createElement('td', { colSpan: 6, className: 'px-4 py-8 text-center text-gray-500' }, 'Nenhum log encontrado')
+                      )
+                    : logs.map((log, idx) =>
+                        React.createElement('tr', { key: idx, className: 'hover:bg-gray-50' },
+                          React.createElement('td', { className: 'px-4 py-3 text-sm text-gray-600' }, formatDate(log.created_at)),
+                          React.createElement('td', { className: 'px-4 py-3' },
+                            React.createElement('div', { className: 'font-medium text-gray-800 text-sm' }, log.user_name || 'Anônimo'),
+                            React.createElement('div', { className: 'text-xs text-gray-400' }, log.user_cod || '-')
+                          ),
+                          React.createElement('td', { className: 'px-4 py-3 text-sm' },
+                            React.createElement('span', { className: 'flex items-center gap-1' },
+                              React.createElement('span', null, getActionIcon(log.action)),
+                              log.action
+                            )
+                          ),
+                          React.createElement('td', { className: 'px-4 py-3' },
+                            React.createElement('span', { className: `px-2 py-1 rounded-full text-xs font-medium ${getCategoryColor(log.category)}` }, log.category)
+                          ),
+                          React.createElement('td', { className: 'px-4 py-3 text-sm text-gray-600' }, log.resource || '-'),
+                          React.createElement('td', { className: 'px-4 py-3' },
+                            React.createElement('span', { className: `px-2 py-1 rounded-full text-xs font-medium ${log.status === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}` },
+                              log.status === 'success' ? '✓ OK' : '✗ Falha'
+                            )
+                          )
+                        )
+                      )
+                )
+              )
+            ),
+            // Paginação
+            React.createElement('div', { className: 'px-4 py-3 bg-gray-50 flex justify-between items-center' },
+              React.createElement('span', { className: 'text-sm text-gray-500' }, `${filtros.total || 0} registros`),
+              React.createElement('div', { className: 'flex gap-2' },
+                React.createElement('button', {
+                  onClick: () => setFiltros(prev => ({ ...prev, page: Math.max(1, prev.page - 1) })),
+                  disabled: filtros.page <= 1,
+                  className: 'px-3 py-1 border rounded text-sm disabled:opacity-50'
+                }, '← Anterior'),
+                React.createElement('span', { className: 'px-3 py-1 text-sm' }, `Página ${filtros.page} de ${filtros.totalPages || 1}`),
+                React.createElement('button', {
+                  onClick: () => setFiltros(prev => ({ ...prev, page: prev.page + 1 })),
+                  disabled: filtros.page >= (filtros.totalPages || 1),
+                  className: 'px-3 py-1 border rounded text-sm disabled:opacity-50'
+                }, 'Próxima →')
+              )
+            )
+          )
     )
   );
 }
