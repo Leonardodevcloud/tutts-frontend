@@ -26323,15 +26323,16 @@ function ScoreEntregador({ user, apiUrl, showToast }) {
       ),
       React.createElement('div', { className: 'space-y-2' },
         extrato && extrato.length > 0 
-          ? extrato.map((item, idx) => 
-              React.createElement('div', { key: idx, className: `bg-white rounded-xl p-4 shadow border-l-4 ${item.dentro_prazo ? 'border-green-500' : 'border-red-500'}` },
+          ? extrato.map((item, idx) => {
+              const pontoTotal = parseFloat(item.ponto_total) || 0;
+              return React.createElement('div', { key: idx, className: `bg-white rounded-xl p-4 shadow border-l-4 ${item.dentro_prazo ? 'border-green-500' : 'border-red-500'}` },
                 React.createElement('div', { className: 'flex justify-between items-start mb-2' },
                   React.createElement('div', null,
                     React.createElement('span', { className: 'font-bold text-gray-800' }, `OS ${item.os}`),
                     React.createElement('span', { className: 'text-gray-400 text-sm ml-2' }, formatarData(item.data_os))
                   ),
-                  React.createElement('span', { className: `text-lg font-bold ${item.ponto_total >= 0 ? 'text-green-600' : 'text-red-600'}` }, 
-                    `${item.ponto_total >= 0 ? '+' : ''}${item.ponto_total.toFixed(2)}`
+                  React.createElement('span', { className: `text-lg font-bold ${pontoTotal >= 0 ? 'text-green-600' : 'text-red-600'}` }, 
+                    `${pontoTotal >= 0 ? '+' : ''}${pontoTotal.toFixed(2)}`
                   )
                 ),
                 React.createElement('div', { className: 'text-sm text-gray-600' },
@@ -26339,8 +26340,8 @@ function ScoreEntregador({ user, apiUrl, showToast }) {
                   item.janela_bonus && React.createElement('span', { className: 'px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full text-xs' }, `🎯 ${item.janela_bonus}`)
                 ),
                 React.createElement('div', { className: 'mt-2 text-xs text-gray-500' }, item.detalhamento)
-              )
-            )
+              );
+            })
           : React.createElement('div', { className: 'text-center py-8 text-gray-500' },
               React.createElement('span', { className: 'text-4xl block mb-2' }, '📭'), 'Nenhuma entrega registrada no período'
             )
