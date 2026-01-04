@@ -74,7 +74,7 @@ const SISTEMA_MODULOS_CONFIG = [
       abas: [{id: "solicitacoes", label: "Solicitações"}, {id: "validacao", label: "Validação"}, {id: "conciliacao", label: "Conciliação"}, {id: "resumo", label: "Resumo"}, {id: "gratuidades", label: "Gratuidades"}, {id: "restritos", label: "Restritos"}, {id: "indicacoes", label: "Indicações"}, {id: "promo-novatos", label: "Promo Novatos"}, {id: "loja", label: "Loja"}, {id: "relatorios", label: "Relatórios"}, {id: "horarios", label: "Horários"}, {id: "avisos", label: "Avisos"}, {id: "backup", label: "Backup"}]
     },
     { id: "operacional", label: "Operacional", icon: "⚙️",
-      abas: [{id: "indicacoes", label: "Indicações"}, {id: "promo-novatos", label: "Promo Novatos"}, {id: "avisos", label: "Avisos"}, {id: "novas-operacoes", label: "Novas Operações"}, {id: "recrutamento", label: "Recrutamento"}, {id: "localizacao-clientes", label: "Localização Clientes"}, {id: "relatorio-diario", label: "Relatório Diário"}]
+      abas: [{id: "indicacoes", label: "Indicações"}, {id: "promo-novatos", label: "Promo Novatos"}, {id: "avisos", label: "Avisos"}, {id: "novas-operacoes", label: "Novas Operações"}, {id: "recrutamento", label: "Recrutamento"}, {id: "localizacao-clientes", label: "Localização Clientes"}, {id: "relatorio-diario", label: "Relatório Diário"}, {id: "score-prof", label: "Score Prof"}]
     },
     { id: "disponibilidade", label: "Disponibilidade", icon: "📅",
       abas: [{id: "panorama", label: "Panorama"}, {id: "principal", label: "Principal"}, {id: "faltosos", label: "Faltosos"}, {id: "espelho", label: "Espelho"}, {id: "relatorios", label: "Relatórios"}, {id: "motoboys", label: "Motoboys"}, {id: "restricoes", label: "Restrições"}, {id: "config", label: "Configurações"}]
@@ -14693,7 +14693,17 @@ const hideLoadingScreen = () => {
                     })() && React.createElement("button", {
                         onClick: function() { x(e => ({...e, opTab: "relatorio-diario"})); carregarRelatoriosDiarios(); },
                         className: "px-4 py-2.5 text-sm font-semibold whitespace-nowrap " + (p.opTab === "relatorio-diario" ? "text-teal-700 border-b-2 border-teal-600 bg-teal-50" : "text-gray-600 hover:bg-gray-100")
-                    }, "📝 Relatório Diário")
+                    }, "📝 Relatório Diário"),
+                    // Botão Score Prof
+                    (() => {
+                        if ("admin_master" === l.role) return true;
+                        const abas = l.permissions && l.permissions.abas ? l.permissions.abas : {};
+                        if (Object.keys(abas).length === 0) return true;
+                        return abas["operacional_scoreprof"] !== false;
+                    })() && React.createElement("button", {
+                        onClick: function() { x(e => ({...e, opTab: "score-prof"})); },
+                        className: "px-4 py-2.5 text-sm font-semibold whitespace-nowrap " + (p.opTab === "score-prof" ? "text-teal-700 border-b-2 border-teal-600 bg-teal-50" : "text-gray-600 hover:bg-gray-100")
+                    }, "⭐ Score Prof")
                 )
             ),
             // Conteúdo das abas
@@ -16432,6 +16442,11 @@ const hideLoadingScreen = () => {
                     )
                 )
             ),
+            // ==================== CONTEÚDO SCORE PROF ====================
+            p.opTab === "score-prof" && React.createElement(ScoreAdmin, {
+                apiUrl: API_URL,
+                showToast: ja
+            }),
             // Modal de imagem ampliada
             relatorioImagemAmpliada && React.createElement("div", {
                 className: "fixed inset-0 bg-black/90 flex items-center justify-center z-[60] p-4",
@@ -26488,12 +26503,12 @@ function ScoreAdmin({ apiUrl, showToast }) {
   return React.createElement('div', { className: 'space-y-6' },
     React.createElement('div', { className: 'flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4' },
       React.createElement('div', null,
-        React.createElement('h2', { className: 'text-2xl font-bold text-gray-800' }, '🏆 Score & Gamificação'),
-        React.createElement('p', { className: 'text-gray-500' }, 'Gestão de pontuação dos entregadores')
+        React.createElement('h2', { className: 'text-2xl font-bold text-gray-800' }, '⭐ Score Prof'),
+        React.createElement('p', { className: 'text-gray-500' }, 'Gestão de pontuação dos profissionais')
       ),
       React.createElement('button', {
         onClick: recalcularScores, disabled: recalculando,
-        className: `px-4 py-2 rounded-lg font-medium flex items-center gap-2 ${recalculando ? 'bg-gray-300 text-gray-500' : 'bg-purple-600 text-white hover:bg-purple-700'}`
+        className: `px-4 py-2 rounded-lg font-medium flex items-center gap-2 ${recalculando ? 'bg-gray-300 text-gray-500' : 'bg-teal-600 text-white hover:bg-teal-700'}`
       }, recalculando ? '⏳ Processando...' : '🔄 Recalcular Scores')
     ),
     React.createElement('div', { className: 'bg-white rounded-xl p-4 shadow flex flex-wrap gap-4 items-end' },
