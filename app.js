@@ -26401,14 +26401,19 @@ function ScoreEntregador({ user, apiUrl, showToast }) {
         React.createElement('h3', { className: 'text-xl font-bold text-gray-800' }, '🎁 Clube de Benefícios'),
         React.createElement('p', { className: 'text-gray-500 text-sm' }, 'Alcance marcos e desbloqueie prêmios!')
       ),
-      milestones && milestones.map((milestone, idx) => 
-        React.createElement('div', { key: idx, className: `rounded-xl p-4 border-2 transition-all ${milestone.conquistado ? 'bg-gradient-to-r from-purple-50 to-indigo-50 border-purple-300 shadow-lg' : 'bg-gray-50 border-gray-200 opacity-70'}` },
+      milestones && milestones.map((milestone, idx) => {
+        const isPremioFisico = milestone.pontos_necessarios === 250 || milestone.pontos_necessarios === 300;
+        const premioRecebido = milestone.premio_recebido || milestone.premio_status === 'entregue';
+        
+        return React.createElement('div', { key: idx, className: `rounded-xl p-4 border-2 transition-all ${milestone.conquistado ? 'bg-gradient-to-r from-purple-50 to-indigo-50 border-purple-300 shadow-lg' : 'bg-gray-50 border-gray-200 opacity-70'}` },
           React.createElement('div', { className: 'flex items-center gap-4' },
             React.createElement('span', { className: `text-4xl ${milestone.conquistado ? '' : 'grayscale opacity-50'}` }, milestone.icone),
             React.createElement('div', { className: 'flex-1' },
-              React.createElement('div', { className: 'flex items-center gap-2' },
+              React.createElement('div', { className: 'flex items-center gap-2 flex-wrap' },
                 React.createElement('h4', { className: `font-bold ${milestone.conquistado ? 'text-purple-800' : 'text-gray-500'}` }, milestone.nome),
-                milestone.conquistado && React.createElement('span', { className: 'text-xs px-2 py-0.5 bg-green-500 text-white rounded-full' }, '✓ Conquistado!')
+                milestone.conquistado && !isPremioFisico && React.createElement('span', { className: 'text-xs px-2 py-0.5 bg-green-500 text-white rounded-full' }, '✓ Conquistado!'),
+                milestone.conquistado && isPremioFisico && premioRecebido && React.createElement('span', { className: 'text-xs px-2 py-0.5 bg-green-500 text-white rounded-full' }, '✓ Prêmio Recebido'),
+                milestone.conquistado && isPremioFisico && !premioRecebido && React.createElement('span', { className: 'text-xs px-2 py-0.5 bg-yellow-500 text-white rounded-full animate-pulse' }, '🎁 Disponível para retirada!')
               ),
               React.createElement('p', { className: 'text-sm text-gray-600' }, milestone.descricao),
               React.createElement('p', { className: `text-xs mt-1 ${milestone.conquistado ? 'text-purple-600' : 'text-gray-400'}` }, `${milestone.pontos_necessarios} pontos necessários`)
@@ -26416,10 +26421,11 @@ function ScoreEntregador({ user, apiUrl, showToast }) {
           ),
           milestone.beneficio && React.createElement('div', { className: 'mt-3 pt-3 border-t border-gray-200 text-sm' },
             React.createElement('span', { className: 'text-gray-500' }, '🎁 Benefício: '),
-            React.createElement('span', { className: milestone.conquistado ? 'text-purple-700 font-medium' : 'text-gray-400' }, milestone.beneficio)
+            React.createElement('span', { className: milestone.conquistado ? 'text-purple-700 font-medium' : 'text-gray-400' }, milestone.beneficio),
+            isPremioFisico && milestone.conquistado && !premioRecebido && React.createElement('p', { className: 'text-xs text-yellow-600 mt-1' }, '⚠️ Procure o escritório para retirar seu prêmio!')
           )
-        )
-      )
+        );
+      })
     )
   );
 }
@@ -26439,6 +26445,7 @@ function ScoreAdmin({ apiUrl, showToast }) {
   const [recalculando, setRecalculando] = React.useState(false);
   const [abaAtiva, setAbaAtiva] = React.useState('ranking');
   const [dadosCarregados, setDadosCarregados] = React.useState(false);
+  const [premiosPendentes, setPremiosPendentes] = React.useState([]);
 
   const carregarDados = async () => {
     try {
@@ -26462,6 +26469,16 @@ function ScoreAdmin({ apiUrl, showToast }) {
       showToast && showToast('Erro ao carregar dados', 'error');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const carregarPremios = async () => {
+    try {
+      const res = await fetch(`${apiUrl}/score/premios-pendentes`);
+      const data = await res.json();
+      setPremiosPendentes(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar prêmios:', error);
     }
   };
 
@@ -26580,9 +26597,9 @@ function ScoreAdmin({ apiUrl, showToast }) {
       )
     ),
     React.createElement('div', { className: 'flex bg-gray-100 rounded-xl p-1' },
-      [{ id: 'ranking', label: '🏅 Ranking' }, { id: 'estatisticas', label: '📊 Estatísticas' }].map(aba => 
-        React.createElement('button', { key: aba.id, onClick: () => setAbaAtiva(aba.id),
-          className: `flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${abaAtiva === aba.id ? 'bg-white text-purple-700 shadow' : 'text-gray-500 hover:text-gray-700'}`
+      [{ id: 'ranking', label: '🏅 Ranking' }, { id: 'premios', label: '🎁 Prêmios' }, { id: 'estatisticas', label: '📊 Estatísticas' }].map(aba => 
+        React.createElement('button', { key: aba.id, onClick: () => { setAbaAtiva(aba.id); if (aba.id === 'premios') carregarPremios(); },
+          className: `flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${abaAtiva === aba.id ? 'bg-white text-teal-700 shadow' : 'text-gray-500 hover:text-gray-700'}`
         }, aba.label)
       )
     ),
@@ -26595,12 +26612,21 @@ function ScoreAdmin({ apiUrl, showToast }) {
               React.createElement('th', { className: 'px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase' }, 'Profissional'),
               React.createElement('th', { className: 'px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase' }, 'Score'),
               React.createElement('th', { className: 'px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase' }, 'Entregas'),
-              React.createElement('th', { className: 'px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase' }, 'Taxa Prazo')
+              React.createElement('th', { className: 'px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase' }, 'Taxa Prazo'),
+              React.createElement('th', { className: 'px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase' }, 'Nível')
             )
           ),
           React.createElement('tbody', { className: 'divide-y divide-gray-200' },
-            ranking.map((prof, idx) => 
-              React.createElement('tr', { key: idx, className: 'hover:bg-gray-50 cursor-pointer',
+            ranking.map((prof, idx) => {
+              const score = parseFloat(prof.score_total) || 0;
+              let nivel = { icone: '⚪', nome: 'Sem nível', cor: 'bg-gray-100 text-gray-600' };
+              if (score >= 500) nivel = { icone: '👑', nome: 'Diamante', cor: 'bg-cyan-100 text-cyan-700' };
+              else if (score >= 300) nivel = { icone: '💎', nome: 'Platina', cor: 'bg-purple-100 text-purple-700' };
+              else if (score >= 250) nivel = { icone: '🥇', nome: 'Ouro', cor: 'bg-yellow-100 text-yellow-700' };
+              else if (score >= 100) nivel = { icone: '🥈', nome: 'Prata', cor: 'bg-gray-200 text-gray-700' };
+              else if (score >= 80) nivel = { icone: '🥉', nome: 'Bronze', cor: 'bg-orange-100 text-orange-700' };
+              
+              return React.createElement('tr', { key: idx, className: 'hover:bg-gray-50 cursor-pointer',
                 onClick: async () => { const res = await fetch(`${apiUrl}/score/profissional/${prof.cod_prof}`); setProfissionalSelecionado(await res.json()); }
               },
                 React.createElement('td', { className: 'px-4 py-3' },
@@ -26615,10 +26641,102 @@ function ScoreAdmin({ apiUrl, showToast }) {
                 React.createElement('td', { className: 'px-4 py-3 text-right text-gray-600' }, prof.total_os),
                 React.createElement('td', { className: 'px-4 py-3 text-right' },
                   React.createElement('span', { className: `px-2 py-1 rounded-full text-xs font-medium ${prof.taxa_prazo >= 90 ? 'bg-green-100 text-green-700' : prof.taxa_prazo >= 70 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}` }, `${prof.taxa_prazo}%`)
+                ),
+                React.createElement('td', { className: 'px-4 py-3 text-center' },
+                  React.createElement('span', { className: `px-2 py-1 rounded-full text-xs font-medium ${nivel.cor}` }, `${nivel.icone} ${nivel.nome}`)
+                )
+              );
+            })
+          )
+        )
+      )
+    ),
+    abaAtiva === 'premios' && React.createElement('div', { className: 'space-y-6' },
+      React.createElement('div', { className: 'bg-white rounded-xl p-6 shadow' },
+        React.createElement('div', { className: 'flex justify-between items-center mb-4' },
+          React.createElement('h3', { className: 'font-bold text-lg' }, '🎁 Prêmios Físicos Pendentes'),
+          React.createElement('button', { onClick: carregarPremios, className: 'px-3 py-1 bg-teal-100 text-teal-700 rounded-lg text-sm font-medium hover:bg-teal-200' }, '🔄 Atualizar')
+        ),
+        premiosPendentes.length === 0 
+          ? React.createElement('div', { className: 'text-center py-8 text-gray-500' },
+              React.createElement('span', { className: 'text-4xl block mb-2' }, '🎯'),
+              React.createElement('p', null, 'Nenhum profissional atingiu nível Ouro (250pts) ou Platina (300pts) ainda')
+            )
+          : React.createElement('div', { className: 'space-y-4' },
+              premiosPendentes.map((prof, idx) =>
+                React.createElement('div', { key: idx, className: 'border rounded-xl p-4 bg-gray-50' },
+                  React.createElement('div', { className: 'flex justify-between items-start mb-3' },
+                    React.createElement('div', null,
+                      React.createElement('div', { className: 'font-bold text-gray-800' }, prof.nome_prof),
+                      React.createElement('div', { className: 'text-sm text-gray-500' }, `#${prof.cod_prof} • ${prof.score_total.toFixed(2)} pontos`)
+                    )
+                  ),
+                  React.createElement('div', { className: 'space-y-2' },
+                    prof.premios.map((premio, pIdx) =>
+                      React.createElement('div', { key: pIdx, className: `flex items-center justify-between p-3 rounded-lg ${premio.status === 'entregue' ? 'bg-green-50 border border-green-200' : 'bg-white border border-gray-200'}` },
+                        React.createElement('div', { className: 'flex items-center gap-3' },
+                          React.createElement('span', { className: 'text-2xl' }, premio.icone),
+                          React.createElement('div', null,
+                            React.createElement('div', { className: 'font-medium' }, premio.milestone_nome),
+                            React.createElement('div', { className: 'text-sm text-gray-500' }, premio.beneficio)
+                          )
+                        ),
+                        premio.status === 'entregue'
+                          ? React.createElement('span', { className: 'px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium' }, '✅ Entregue')
+                          : React.createElement('button', { 
+                              onClick: async () => {
+                                if (!window.confirm(`Confirmar entrega de "${premio.beneficio}" para ${prof.nome_prof}?`)) return;
+                                try {
+                                  const res = await fetch(`${apiUrl}/score/premios-fisicos/confirmar`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ cod_prof: prof.cod_prof, milestone_id: premio.milestone_id, confirmado_por: 'Admin' })
+                                  });
+                                  const data = await res.json();
+                                  if (data.success) {
+                                    showToast && showToast('Prêmio confirmado!', 'success');
+                                    carregarPremios();
+                                  }
+                                } catch (err) {
+                                  showToast && showToast('Erro ao confirmar', 'error');
+                                }
+                              },
+                              className: 'px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700'
+                            }, '✓ Confirmar Entrega')
+                      )
+                    )
+                  )
                 )
               )
             )
-          )
+      ),
+      // Progresso geral dos milestones
+      React.createElement('div', { className: 'bg-white rounded-xl p-6 shadow' },
+        React.createElement('h3', { className: 'font-bold text-lg mb-4' }, '📊 Progresso dos Milestones'),
+        React.createElement('div', { className: 'space-y-4' },
+          milestones.map((m, idx) => {
+            const total = ranking.length;
+            const alcancaram = ranking.filter(p => parseFloat(p.score_total) >= m.pontos_necessarios).length;
+            const percentual = total > 0 ? (alcancaram / total * 100).toFixed(1) : 0;
+            return React.createElement('div', { key: idx, className: 'border rounded-lg p-4' },
+              React.createElement('div', { className: 'flex justify-between items-center mb-2' },
+                React.createElement('div', { className: 'flex items-center gap-2' },
+                  React.createElement('span', { className: 'text-2xl' }, m.icone),
+                  React.createElement('div', null,
+                    React.createElement('div', { className: 'font-medium' }, m.nome),
+                    React.createElement('div', { className: 'text-sm text-gray-500' }, `${m.pontos_necessarios} pts - ${m.beneficio}`)
+                  )
+                ),
+                React.createElement('div', { className: 'text-right' },
+                  React.createElement('div', { className: 'font-bold text-teal-600' }, `${alcancaram}/${total}`),
+                  React.createElement('div', { className: 'text-xs text-gray-500' }, `${percentual}%`)
+                )
+              ),
+              React.createElement('div', { className: 'w-full bg-gray-200 rounded-full h-2' },
+                React.createElement('div', { className: 'bg-teal-500 h-2 rounded-full transition-all', style: { width: `${percentual}%` } })
+              )
+            );
+          })
         )
       )
     ),
