@@ -26331,7 +26331,13 @@ function ScoreEntregador({ user, apiUrl, showToast }) {
         extrato && extrato.length > 0 
           ? extrato.map((item, idx) => {
               const pontoTotal = parseFloat(item.ponto_total) || 0;
+              const pontoPrazo = parseFloat(item.ponto_prazo) || 0;
+              const pontoBonus = parseFloat(item.ponto_bonus_janela) || 0;
+              const tempoEntrega = parseFloat(item.tempo_entrega_minutos) || 0;
+              const prazoMinutos = parseFloat(item.prazo_minutos) || 0;
+              const distanciaKm = parseFloat(item.distancia_km) || 0;
               return React.createElement('div', { key: idx, className: `bg-white rounded-xl p-4 shadow border-l-4 ${item.dentro_prazo ? 'border-green-500' : 'border-red-500'}` },
+                // Linha 1: OS, Data e Pontuação Total
                 React.createElement('div', { className: 'flex justify-between items-start mb-2' },
                   React.createElement('div', null,
                     React.createElement('span', { className: 'font-bold text-gray-800' }, `OS ${item.os}`),
@@ -26341,11 +26347,30 @@ function ScoreEntregador({ user, apiUrl, showToast }) {
                     `${pontoTotal >= 0 ? '+' : ''}${pontoTotal.toFixed(2)}`
                   )
                 ),
-                React.createElement('div', { className: 'text-sm text-gray-600' },
-                  React.createElement('span', { className: 'mr-3' }, `⏰ ${formatarHora(item.hora_solicitacao)}`),
-                  item.janela_bonus && React.createElement('span', { className: 'px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full text-xs' }, `🎯 ${item.janela_bonus}`)
+                // Linha 2: Horário, KM e Tempo
+                React.createElement('div', { className: 'flex flex-wrap gap-3 text-sm text-gray-600 mb-2' },
+                  React.createElement('span', { className: 'flex items-center gap-1' }, 
+                    React.createElement('span', { className: 'text-purple-500' }, '⏰'),
+                    `${formatarHora(item.hora_solicitacao)}`
+                  ),
+                  React.createElement('span', { className: 'flex items-center gap-1' },
+                    React.createElement('span', { className: 'text-blue-500' }, '📍'),
+                    `${distanciaKm.toFixed(1)} km`
+                  ),
+                  React.createElement('span', { className: 'flex items-center gap-1' },
+                    React.createElement('span', { className: item.dentro_prazo ? 'text-green-500' : 'text-red-500' }, '🚀'),
+                    `${tempoEntrega.toFixed(0)}/${prazoMinutos.toFixed(0)} min`
+                  )
                 ),
-                React.createElement('div', { className: 'mt-2 text-xs text-gray-500' }, item.detalhamento)
+                // Linha 3: Detalhamento dos pontos
+                React.createElement('div', { className: 'flex flex-wrap gap-2 text-xs' },
+                  React.createElement('span', { className: `px-2 py-1 rounded-full ${item.dentro_prazo ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}` },
+                    item.dentro_prazo ? `✓ No prazo (+${pontoPrazo.toFixed(2)})` : `✗ Fora do prazo (${pontoPrazo.toFixed(2)})`
+                  ),
+                  pontoBonus > 0 && React.createElement('span', { className: 'px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full' },
+                    `🎯 Bônus ${item.janela_bonus} (+${pontoBonus.toFixed(2)})`
+                  )
+                )
               );
             })
           : React.createElement('div', { className: 'text-center py-8 text-gray-500' },
