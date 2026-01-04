@@ -6081,6 +6081,22 @@ const hideLoadingScreen = () => {
         }, React.createElement("button", {
             onClick: () => x({
                 ...p,
+                userTab: "score"
+            }),
+            className: "w-full bg-gradient-to-r from-yellow-400 to-orange-500 rounded-2xl shadow-lg p-6 flex items-center gap-4 hover:shadow-xl transition-all hover:scale-[1.02]"
+        }, React.createElement("div", {
+            className: "w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center text-3xl"
+        }, "⭐"), React.createElement("div", {
+            className: "text-left flex-1"
+        }, React.createElement("h3", {
+            className: "text-lg font-bold text-white"
+        }, "Meu Score"), React.createElement("p", {
+            className: "text-sm text-white/80"
+        }, "Pontuação e Clube de Benefícios")), React.createElement("span", {
+            className: "text-white/60 text-2xl"
+        }, "›")), React.createElement("button", {
+            onClick: () => x({
+                ...p,
                 userTab: "solicitacoes"
             }),
             className: "w-full bg-white rounded-2xl shadow-lg p-6 flex items-center gap-4 hover:shadow-xl transition-all hover:scale-[1.02] border-l-4 border-purple-600"
@@ -6162,22 +6178,6 @@ const hideLoadingScreen = () => {
             className: "text-sm text-white/80"
         }, "Ofertas exclusivas com abatimento no saldo!")), React.createElement("span", {
             className: "text-white/60 text-2xl"
-        }, "›")), React.createElement("button", {
-            onClick: () => x({
-                ...p,
-                userTab: "score"
-            }),
-            className: "w-full bg-white rounded-2xl shadow-lg p-6 flex items-center gap-4 hover:shadow-xl transition-all hover:scale-[1.02] border-l-4 border-yellow-500"
-        }, React.createElement("div", {
-            className: "w-16 h-16 bg-yellow-100 rounded-xl flex items-center justify-center text-3xl"
-        }, "⭐"), React.createElement("div", {
-            className: "text-left flex-1"
-        }, React.createElement("h3", {
-            className: "text-lg font-bold text-gray-800"
-        }, "Meu Score"), React.createElement("p", {
-            className: "text-sm text-gray-500"
-        }, "Pontuação e Club de Benefícios")), React.createElement("span", {
-            className: "text-yellow-400 text-2xl"
         }, "›")), (() => {
             if (!l || !l.codProfissional) return !1;
             if (parseInt(l.codProfissional.replace(/\D/g, "")) < 14e3) return !1;
@@ -26197,7 +26197,7 @@ function ScoreEntregador({ user, apiUrl, showToast }) {
   const [loading, setLoading] = React.useState(true);
   const [dados, setDados] = React.useState(null);
   const [filtroData, setFiltroData] = React.useState({ inicio: '', fim: '' });
-  const [abaAtiva, setAbaAtiva] = React.useState('resumo');
+  const [abaAtiva, setAbaAtiva] = React.useState('clube');
 
   const carregarDados = React.useCallback(async () => {
     try {
