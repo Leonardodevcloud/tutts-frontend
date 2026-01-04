@@ -26438,8 +26438,9 @@ function ScoreAdmin({ apiUrl, showToast }) {
   const [profissionalSelecionado, setProfissionalSelecionado] = React.useState(null);
   const [recalculando, setRecalculando] = React.useState(false);
   const [abaAtiva, setAbaAtiva] = React.useState('ranking');
+  const [dadosCarregados, setDadosCarregados] = React.useState(false);
 
-  const carregarDados = React.useCallback(async () => {
+  const carregarDados = async () => {
     try {
       setLoading(true);
       let rankingUrl = `${apiUrl}/score/ranking?limite=${filtros.limite}`;
@@ -26455,15 +26456,18 @@ function ScoreAdmin({ apiUrl, showToast }) {
       setRanking(rankingRes.ranking || []);
       setEstatisticas(estatRes);
       setMilestones(milestonesRes);
+      setDadosCarregados(true);
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
       showToast && showToast('Erro ao carregar dados', 'error');
     } finally {
       setLoading(false);
     }
-  }, [apiUrl, filtros, showToast]);
+  };
 
-  React.useEffect(() => { carregarDados(); }, [carregarDados]);
+  React.useEffect(() => { 
+    if (!dadosCarregados) carregarDados(); 
+  }, []);
 
   const recalcularScores = async () => {
     if (!window.confirm('Recalcular todos os scores? Isso pode levar alguns minutos.')) return;
