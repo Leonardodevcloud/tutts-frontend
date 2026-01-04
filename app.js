@@ -26498,7 +26498,7 @@ function ScoreEntregador({ user, apiUrl, showToast }) {
       // Tabela de Prazos por KM
       React.createElement('div', { className: 'bg-gray-50 rounded-xl p-4 border border-gray-200' },
         React.createElement('h4', { className: 'font-bold text-gray-800 mb-3 flex items-center gap-2' },
-          React.createElement('span', null, '📏'), 'Prazo por Distância (após coletar)'
+          React.createElement('span', null, '📏'), 'Prazo por Distância'
         ),
         React.createElement('div', { className: 'grid grid-cols-2 gap-2 text-sm' },
           [
