@@ -899,7 +899,7 @@ const hideLoadingScreen = () => {
             validacao: [],
             loja: [],
             gratuidades: []
-        }), [j, C] = useState([]), [A, S] = useState([]), [k, P] = useState(!1), [T, D] = useState(null), [L, I] = useState([]), [F, $] = useState(!1), [M, O] = useState([]), [q, U] = useState([]), [z, B] = useState([]), [V, J] = useState(null), [Q, H] = useState([]), [G, W] = useState([]), [Z, Y] = useState([]), [K, X] = useState({}), [ee, te] = useState([]), [ae, le] = useState([]), [re, oe] = useState([]), [ce, se] = useState([]), [ne, me] = useState([]), [ie, de] = useState([]), [pe, xe] = useState([]), [ue, ge] = useState(!1), [be, Re] = useState(null), [Ee, he] = useState("home"), [mensagemGentileza, setMensagemGentileza] = useState(() => getMensagemGentileza()), [fe, Ne] = useState({
+        }), [j, C] = useState([]), [A, S] = useState([]), [k, P] = useState(!1), [T, D] = useState(null), [L, I] = useState([]), [F, $] = useState(!1), [M, O] = useState([]), [q, U] = useState([]), [z, B] = useState([]), [V, J] = useState(null), [Q, H] = useState([]), [G, W] = useState([]), [Z, Y] = useState([]), [K, X] = useState({}), [ee, te] = useState([]), [ae, le] = useState([]), [re, oe] = useState([]), [ce, se] = useState([]), [ne, me] = useState([]), [ie, de] = useState([]), [pe, xe] = useState([]), [ue, ge] = useState(!1), [be, Re] = useState(null), [Ee, he] = useState("home"), [mensagemGentileza, setMensagemGentileza] = useState(() => getMensagemGentileza()), [elegibilidadeNovatos, setElegibilidadeNovatos] = useState({ elegivel: false, motivo: '', promocoes: [], carregando: true }), [regioesNovatos, setRegioesNovatos] = useState([]), [fe, Ne] = useState({
             titulo: "Acerte os procedimentos e ganhe saque gratuito de R$ 500,00",
             imagens: [null, null, null, null],
             perguntas: [{
@@ -1753,7 +1753,7 @@ const hideLoadingScreen = () => {
                             await wl(), await vl(), await jl(), await _l();
                             break;
                         case "promo-novatos":
-                            await Cl(), await Sl(), await Ll();
+                            await verificarElegibilidadeNovatos(), await Cl(), await Sl(), await Ll(), await carregarRegioesNovatos();
                             break;
                         case "resumo":
                             await Va();
@@ -1782,6 +1782,11 @@ const hideLoadingScreen = () => {
                 N(!1)
             }, 6e4);
             return () => clearInterval(e)
+        }, [l]), useEffect(() => {
+            // Verificar elegibilidade para promoções novatos quando usuário logar
+            if (l && l.codProfissional && l.role === 'profissional') {
+                verificarElegibilidadeNovatos();
+            }
         }, [l]), useEffect(() => {
             if (!l || !["admin", "admin_master"].includes(l.role)) return;
             if ("disponibilidade" !== p.adminTab) return;
@@ -4645,7 +4650,37 @@ const hideLoadingScreen = () => {
             } catch (e) {
                 console.error("Erro ao carregar promoções novatos:", e)
             }
-        }, Al = async () => {
+        },
+        // Função para carregar regiões disponíveis da planilha
+        carregarRegioesNovatos = async () => {
+            try {
+                const response = await fetch(`${API_URL}/promocoes-novatos/regioes`);
+                const regioes = await response.json();
+                setRegioesNovatos(regioes);
+            } catch (e) {
+                console.error("Erro ao carregar regiões novatos:", e);
+            }
+        },
+        // Função para verificar elegibilidade do usuário para promoções novatos
+        verificarElegibilidadeNovatos = async () => {
+            if (!l || !l.codProfissional) {
+                setElegibilidadeNovatos({ elegivel: false, motivo: 'Usuário não logado', promocoes: [], carregando: false });
+                return;
+            }
+            try {
+                const response = await fetch(`${API_URL}/promocoes-novatos/elegibilidade/${l.codProfissional}`);
+                const data = await response.json();
+                setElegibilidadeNovatos({ ...data, carregando: false });
+                // Também atualiza a lista de promoções disponíveis
+                if (data.promocoes && data.promocoes.length > 0) {
+                    se(data.promocoes);
+                }
+            } catch (e) {
+                console.error("Erro ao verificar elegibilidade novatos:", e);
+                setElegibilidadeNovatos({ elegivel: false, motivo: 'Erro ao verificar elegibilidade', promocoes: [], carregando: false });
+            }
+        },
+        Al = async () => {
             try {
                 const e = await fetch(`${API_URL}/promocoes-novatos/ativas`);
                 se(await e.json())
@@ -6301,19 +6336,18 @@ const hideLoadingScreen = () => {
         }, "Ofertas exclusivas com abatimento no saldo!")), React.createElement("span", {
             className: "text-white/60 text-2xl"
         }, "›")), (() => {
+            // Nova lógica: usa elegibilidade do backend
+            // Mostra se elegível OU se ainda está carregando (para não piscar)
             if (!l || !l.codProfissional) return !1;
-            if (parseInt(l.codProfissional.replace(/\D/g, "")) < 14e3) return !1;
-            if (l.createdAt) {
-                const e = new Date(l.createdAt),
-                    t = new Date;
-                if (Math.floor((t - e) / 864e5) > 30) return !1
-            }
-            return !0
+            if (elegibilidadeNovatos.carregando) return !1;
+            return elegibilidadeNovatos.elegivel;
         })() && React.createElement("button", {
-            onClick: () => x({
+            onClick: () => {
+                verificarElegibilidadeNovatos(); // Recarrega ao clicar
+                x({
                 ...p,
                 userTab: "promo-novatos"
-            }),
+            })},
             className: "w-full bg-white rounded-2xl shadow-lg p-6 flex items-center gap-4 hover:shadow-xl transition-all hover:scale-[1.02] border-l-4 border-orange-500"
         }, React.createElement("div", {
             className: "w-16 h-16 bg-orange-100 rounded-xl flex items-center justify-center text-3xl"
@@ -6323,19 +6357,13 @@ const hideLoadingScreen = () => {
             className: "text-lg font-bold text-gray-800"
         }, "Promoções Novatos"), React.createElement("p", {
             className: "text-sm text-gray-500"
-        }, "Promoções especiais para novos profissionais"), React.createElement("div", {
+        }, elegibilidadeNovatos.motivo || "Promoções especiais para você!"), React.createElement("div", {
             className: "flex gap-2 mt-1 flex-wrap"
-        }, ce.length > 0 && React.createElement("span", {
+        }, elegibilidadeNovatos.promocoes && elegibilidadeNovatos.promocoes.length > 0 && React.createElement("span", {
             className: "inline-block px-2 py-0.5 bg-orange-500 text-white text-xs rounded-full"
-        }, ce.length, " promoção(ões)"), React.createElement("span", {
-            className: "inline-block px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded-full font-semibold"
-        }, "⏰ ", (() => {
-            if (!l || !l.createdAt) return 0;
-            const e = new Date(l.createdAt),
-                t = new Date,
-                a = Math.floor((t - e) / 864e5);
-            return Math.max(0, 30 - a)
-        })(), " dias restantes"))), React.createElement("span", {
+        }, elegibilidadeNovatos.promocoes.length, " promoção(ões)"), elegibilidadeNovatos.diasSemEntrega !== null && elegibilidadeNovatos.diasSemEntrega !== undefined && React.createElement("span", {
+            className: "inline-block px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full font-semibold"
+        }, "📅 ", elegibilidadeNovatos.diasSemEntrega, " dias sem entregas"))), React.createElement("span", {
             className: "text-orange-400 text-2xl"
         }, "›"))), React.createElement("div", {
             className: "mt-8 grid grid-cols-3 gap-4"
@@ -10576,16 +10604,17 @@ const hideLoadingScreen = () => {
                 className: "grid md:grid-cols-3 gap-4 mb-4"
             }, React.createElement("div", null, React.createElement("label", {
                 className: "block text-sm font-semibold mb-1"
-            }, "Região *"), React.createElement("input", {
-                type: "text",
+            }, "Região *"), React.createElement("select", {
                 value: p.novatosRegiao || "",
                 onChange: e => x({
                     ...p,
                     novatosRegiao: e.target.value
                 }),
-                className: "w-full px-4 py-2 border rounded-lg",
-                placeholder: "Ex: Salvador - BA"
-            })), React.createElement("div", null, React.createElement("label", {
+                className: "w-full px-4 py-2 border rounded-lg bg-white"
+            }, React.createElement("option", { value: "" }, "Selecione uma região..."),
+               React.createElement("option", { value: "Todas" }, "🌍 Todas as Regiões"),
+               regioesNovatos.map(regiao => React.createElement("option", { key: regiao, value: regiao }, regiao))
+            )), React.createElement("div", null, React.createElement("label", {
                 className: "block text-sm font-semibold mb-1"
             }, "Cliente *"), React.createElement("input", {
                 type: "text",
