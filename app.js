@@ -1784,7 +1784,8 @@ const hideLoadingScreen = () => {
             return () => clearInterval(e)
         }, [l]), useEffect(() => {
             // Verificar elegibilidade para promoções novatos quando usuário logar
-            if (l && l.codProfissional && l.role === 'profissional') {
+            // Aplica para qualquer usuário que não seja admin
+            if (l && l.codProfissional && !['admin', 'admin_master', 'admin_financeiro'].includes(l.role)) {
                 verificarElegibilidadeNovatos();
             }
         }, [l]), useEffect(() => {
@@ -4663,6 +4664,7 @@ const hideLoadingScreen = () => {
         },
         // Função para verificar elegibilidade do usuário para promoções novatos
         verificarElegibilidadeNovatos = async () => {
+            console.log("🔍 Verificando elegibilidade novatos para:", l?.codProfissional);
             if (!l || !l.codProfissional) {
                 setElegibilidadeNovatos({ elegivel: false, motivo: 'Usuário não logado', promocoes: [], carregando: false });
                 return;
@@ -4670,13 +4672,14 @@ const hideLoadingScreen = () => {
             try {
                 const response = await fetch(`${API_URL}/promocoes-novatos/elegibilidade/${l.codProfissional}`);
                 const data = await response.json();
+                console.log("✅ Resposta elegibilidade novatos:", data);
                 setElegibilidadeNovatos({ ...data, carregando: false });
                 // Também atualiza a lista de promoções disponíveis
                 if (data.promocoes && data.promocoes.length > 0) {
                     se(data.promocoes);
                 }
             } catch (e) {
-                console.error("Erro ao verificar elegibilidade novatos:", e);
+                console.error("❌ Erro ao verificar elegibilidade novatos:", e);
                 setElegibilidadeNovatos({ elegivel: false, motivo: 'Erro ao verificar elegibilidade', promocoes: [], carregando: false });
             }
         },
