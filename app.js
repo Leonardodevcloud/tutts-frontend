@@ -16443,10 +16443,12 @@ const hideLoadingScreen = () => {
                 )
             ),
             // ==================== CONTEÚDO SCORE PROF ====================
-            p.opTab === "score-prof" && React.createElement(ScoreAdmin, {
-                apiUrl: API_URL,
-                showToast: ja
-            }),
+            p.opTab === "score-prof" && React.createElement("div", {className: "max-w-7xl mx-auto p-6"},
+                React.createElement(ScoreAdmin, {
+                    apiUrl: API_URL,
+                    showToast: ja
+                })
+            ),
             // Modal de imagem ampliada
             relatorioImagemAmpliada && React.createElement("div", {
                 className: "fixed inset-0 bg-black/90 flex items-center justify-center z-[60] p-4",
