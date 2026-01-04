@@ -3,6 +3,54 @@ const {
     useEffect: useEffect
 } = React, API_URL = "https://tutts-backend-production.up.railway.app/api";
 
+// ==================== FUNÇÕES DE AUTENTICAÇÃO ====================
+
+// Obter token JWT armazenado
+const getToken = () => {
+    return sessionStorage.getItem("tutts_token");
+};
+
+// Salvar token JWT
+const setToken = (token) => {
+    if (token) {
+        sessionStorage.setItem("tutts_token", token);
+    } else {
+        sessionStorage.removeItem("tutts_token");
+    }
+};
+
+// Função para fazer requisições autenticadas
+const fetchAuth = async (url, options = {}) => {
+    const token = getToken();
+    const headers = {
+        'Content-Type': 'application/json',
+        ...options.headers
+    };
+    
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    const response = await fetch(url, {
+        ...options,
+        headers
+    });
+    
+    // Se token expirou, fazer logout
+    if (response.status === 401) {
+        const data = await response.json().catch(() => ({}));
+        if (data.expired) {
+            sessionStorage.removeItem("tutts_user");
+            sessionStorage.removeItem("tutts_token");
+            window.location.reload();
+        }
+    }
+    
+    return response;
+};
+
+// ==================== FIM FUNÇÕES DE AUTENTICAÇÃO ====================
+
 // Função helper para verificar permissões de módulo
 // Retorna true se o usuário tem acesso ao módulo
 function hasModuleAccess(user, moduleId) {
@@ -779,7 +827,13 @@ const hideLoadingScreen = () => {
                 return null
             }
         }), o = e => {
-            e ? sessionStorage.setItem("tutts_user", JSON.stringify(e)) : sessionStorage.removeItem("tutts_user"), r(e)
+            if (e) {
+                sessionStorage.setItem("tutts_user", JSON.stringify(e));
+            } else {
+                sessionStorage.removeItem("tutts_user");
+                sessionStorage.removeItem("tutts_token"); // Limpar token JWT no logout
+            }
+            r(e);
         }, [c, s] = useState(!1), [n, m] = useState(!1), [i, d] = useState(null), [p, x] = useState({}), [u, g] = useState(null), [b, R] = useState(Date.now()), [E, h] = useState(null), [f, N] = useState(!1), [y, v] = useState({
             solicitacoes: 0,
             validacao: 0,
@@ -4828,6 +4882,10 @@ const hideLoadingScreen = () => {
                         console.log("Sem permissões definidas, usando padrão");
                     }
                 }
+                // Salvar token JWT se retornado
+                if (t.token) {
+                    setToken(t.token);
+                }
                 o({
                     ...t,
                     codProfissional: t.cod_profissional,
@@ -4841,7 +4899,7 @@ const hideLoadingScreen = () => {
         }, Ul = async () => {
             s(!0);
             try {
-                if (!(await fetch(`${API_URL}/users/register`, {
+                const response = await fetch(`${API_URL}/users/register`, {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json"
@@ -4851,7 +4909,16 @@ const hideLoadingScreen = () => {
                             password: p.password,
                             fullName: p.name
                         })
-                    })).ok) throw new Error("Erro no cadastro");
+                    });
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.error || "Erro no cadastro");
+                }
+                const data = await response.json();
+                // Salvar token se retornado
+                if (data.token) {
+                    setToken(data.token);
+                }
                 ja("Cadastro realizado!", "success"), x({
                     view: "login"
                 })
