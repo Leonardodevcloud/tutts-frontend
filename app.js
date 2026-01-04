@@ -6254,6 +6254,36 @@ const hideLoadingScreen = () => {
             className: "text-sm text-white/80"
         }, "Pontuação e Clube de Benefícios")), React.createElement("span", {
             className: "text-white/60 text-2xl"
+        }, "›")), (() => {
+            // Nova lógica: usa elegibilidade do backend
+            // Mostra se elegível OU se ainda está carregando (para não piscar)
+            if (!l || !l.codProfissional) return !1;
+            if (elegibilidadeNovatos.carregando) return !1;
+            return elegibilidadeNovatos.elegivel;
+        })() && React.createElement("button", {
+            onClick: () => {
+                verificarElegibilidadeNovatos(); // Recarrega ao clicar
+                x({
+                ...p,
+                userTab: "promo-novatos"
+            })},
+            className: "w-full bg-white rounded-2xl shadow-lg p-6 flex items-center gap-4 hover:shadow-xl transition-all hover:scale-[1.02] border-l-4 border-orange-500"
+        }, React.createElement("div", {
+            className: "w-16 h-16 bg-orange-100 rounded-xl flex items-center justify-center text-3xl"
+        }, "🚀"), React.createElement("div", {
+            className: "text-left flex-1"
+        }, React.createElement("h3", {
+            className: "text-lg font-bold text-gray-800"
+        }, "Promoções Novatos"), React.createElement("p", {
+            className: "text-sm text-gray-500"
+        }, elegibilidadeNovatos.motivo || "Promoções especiais para você!"), React.createElement("div", {
+            className: "flex gap-2 mt-1 flex-wrap"
+        }, elegibilidadeNovatos.promocoes && elegibilidadeNovatos.promocoes.length > 0 && React.createElement("span", {
+            className: "inline-block px-2 py-0.5 bg-orange-500 text-white text-xs rounded-full"
+        }, elegibilidadeNovatos.promocoes.length, " promoção(ões)"), elegibilidadeNovatos.diasSemEntrega !== null && elegibilidadeNovatos.diasSemEntrega !== undefined && React.createElement("span", {
+            className: "inline-block px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full font-semibold"
+        }, "📅 ", elegibilidadeNovatos.diasSemEntrega, " dias sem entregas"))), React.createElement("span", {
+            className: "text-orange-400 text-2xl"
         }, "›")), React.createElement("button", {
             onClick: () => x({
                 ...p,
@@ -6338,36 +6368,6 @@ const hideLoadingScreen = () => {
             className: "text-sm text-white/80"
         }, "Ofertas exclusivas com abatimento no saldo!")), React.createElement("span", {
             className: "text-white/60 text-2xl"
-        }, "›")), (() => {
-            // Nova lógica: usa elegibilidade do backend
-            // Mostra se elegível OU se ainda está carregando (para não piscar)
-            if (!l || !l.codProfissional) return !1;
-            if (elegibilidadeNovatos.carregando) return !1;
-            return elegibilidadeNovatos.elegivel;
-        })() && React.createElement("button", {
-            onClick: () => {
-                verificarElegibilidadeNovatos(); // Recarrega ao clicar
-                x({
-                ...p,
-                userTab: "promo-novatos"
-            })},
-            className: "w-full bg-white rounded-2xl shadow-lg p-6 flex items-center gap-4 hover:shadow-xl transition-all hover:scale-[1.02] border-l-4 border-orange-500"
-        }, React.createElement("div", {
-            className: "w-16 h-16 bg-orange-100 rounded-xl flex items-center justify-center text-3xl"
-        }, "🚀"), React.createElement("div", {
-            className: "text-left flex-1"
-        }, React.createElement("h3", {
-            className: "text-lg font-bold text-gray-800"
-        }, "Promoções Novatos"), React.createElement("p", {
-            className: "text-sm text-gray-500"
-        }, elegibilidadeNovatos.motivo || "Promoções especiais para você!"), React.createElement("div", {
-            className: "flex gap-2 mt-1 flex-wrap"
-        }, elegibilidadeNovatos.promocoes && elegibilidadeNovatos.promocoes.length > 0 && React.createElement("span", {
-            className: "inline-block px-2 py-0.5 bg-orange-500 text-white text-xs rounded-full"
-        }, elegibilidadeNovatos.promocoes.length, " promoção(ões)"), elegibilidadeNovatos.diasSemEntrega !== null && elegibilidadeNovatos.diasSemEntrega !== undefined && React.createElement("span", {
-            className: "inline-block px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full font-semibold"
-        }, "📅 ", elegibilidadeNovatos.diasSemEntrega, " dias sem entregas"))), React.createElement("span", {
-            className: "text-orange-400 text-2xl"
         }, "›"))), React.createElement("div", {
             className: "mt-8 grid grid-cols-3 gap-4"
         }, React.createElement("div", {
