@@ -6162,6 +6162,22 @@ const hideLoadingScreen = () => {
             className: "text-sm text-white/80"
         }, "Ofertas exclusivas com abatimento no saldo!")), React.createElement("span", {
             className: "text-white/60 text-2xl"
+        }, "›")), React.createElement("button", {
+            onClick: () => x({
+                ...p,
+                userTab: "score"
+            }),
+            className: "w-full bg-white rounded-2xl shadow-lg p-6 flex items-center gap-4 hover:shadow-xl transition-all hover:scale-[1.02] border-l-4 border-yellow-500"
+        }, React.createElement("div", {
+            className: "w-16 h-16 bg-yellow-100 rounded-xl flex items-center justify-center text-3xl"
+        }, "⭐"), React.createElement("div", {
+            className: "text-left flex-1"
+        }, React.createElement("h3", {
+            className: "text-lg font-bold text-gray-800"
+        }, "Meu Score"), React.createElement("p", {
+            className: "text-sm text-gray-500"
+        }, "Pontuação e Club de Benefícios")), React.createElement("span", {
+            className: "text-yellow-400 text-2xl"
         }, "›")), (() => {
             if (!l || !l.codProfissional) return !1;
             if (parseInt(l.codProfissional.replace(/\D/g, "")) < 14e3) return !1;
@@ -7587,7 +7603,11 @@ const hideLoadingScreen = () => {
             className: "font-bold text-gray-800 mb-2"
         }, "Outras Informações"), React.createElement("ul", {
             className: "list-disc pl-5 space-y-1"
-        }, React.createElement("li", null, React.createElement("strong", null, "Sem carência:"), " você estará coberto a partir da primeira entrega feita no dia."), React.createElement("li", null, "A cobertura se renova a cada entrega aceita na plataforma da Tutts."))))))), "loja" === p.userTab && React.createElement(React.Fragment, null, rt && React.createElement("div", {
+        }, React.createElement("li", null, React.createElement("strong", null, "Sem carência:"), " você estará coberto a partir da primeira entrega feita no dia."), React.createElement("li", null, "A cobertura se renova a cada entrega aceita na plataforma da Tutts."))))))), "score" === p.userTab && React.createElement(ScoreEntregador, {
+            user: l,
+            apiUrl: API_URL,
+            showToast: ja
+        }), "loja" === p.userTab && React.createElement(React.Fragment, null, rt && React.createElement("div", {
             className: "fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
         }, React.createElement("div", {
             className: "bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden"
@@ -26151,4 +26171,422 @@ const hideLoadingScreen = () => {
             className: "px-4 py-2 bg-red-600 text-white rounded text-sm font-semibold"
         }, "🗑️"))))))))
     };
+
+// =====================================================
+// COMPONENTE: ScoreEntregador
+// Visualização completa do score para o profissional
+// =====================================================
+function ScoreEntregador({ user, apiUrl, showToast }) {
+  const [loading, setLoading] = React.useState(true);
+  const [dados, setDados] = React.useState(null);
+  const [filtroData, setFiltroData] = React.useState({ inicio: '', fim: '' });
+  const [abaAtiva, setAbaAtiva] = React.useState('resumo');
+
+  const carregarDados = React.useCallback(async () => {
+    try {
+      setLoading(true);
+      let url = `${apiUrl}/score/profissional/${user.codProfissional || user.cod_profissional}`;
+      const params = new URLSearchParams();
+      if (filtroData.inicio) params.append('data_inicio', filtroData.inicio);
+      if (filtroData.fim) params.append('data_fim', filtroData.fim);
+      if (params.toString()) url += `?${params.toString()}`;
+      const response = await fetch(url);
+      const data = await response.json();
+      setDados(data);
+    } catch (error) {
+      console.error('Erro ao carregar score:', error);
+      showToast && showToast('Erro ao carregar seus pontos', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, [user, apiUrl, filtroData, showToast]);
+
+  React.useEffect(() => { carregarDados(); }, [carregarDados]);
+
+  const formatarData = (data) => data ? new Date(data).toLocaleDateString('pt-BR') : '-';
+  const formatarHora = (hora) => hora ? (typeof hora === 'string' ? hora.substring(0, 5) : hora) : '-';
+
+  if (loading && !dados) {
+    return React.createElement('div', { className: 'flex items-center justify-center min-h-[400px]' },
+      React.createElement('div', { className: 'text-center' },
+        React.createElement('div', { className: 'w-12 h-12 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mx-auto mb-4' }),
+        React.createElement('p', { className: 'text-gray-600' }, 'Carregando seus pontos...')
+      )
+    );
+  }
+
+  if (!dados) {
+    return React.createElement('div', { className: 'text-center py-12' },
+      React.createElement('p', { className: 'text-gray-500' }, 'Não foi possível carregar seus dados de pontuação.'),
+      React.createElement('button', { onClick: carregarDados, className: 'mt-4 px-4 py-2 bg-purple-600 text-white rounded-lg' }, '🔄 Tentar novamente')
+    );
+  }
+
+  const { profissional, score, extrato, milestones, proximo_milestone } = dados;
+
+  return React.createElement('div', { className: 'space-y-6 pb-20' },
+    // Header com Score Total
+    React.createElement('div', { className: 'bg-gradient-to-br from-purple-600 via-purple-700 to-indigo-800 rounded-2xl p-6 text-white shadow-xl' },
+      React.createElement('div', { className: 'flex items-center justify-between mb-4' },
+        React.createElement('div', null,
+          React.createElement('h2', { className: 'text-lg opacity-90' }, 'Meu Score'),
+          React.createElement('p', { className: 'text-sm opacity-70' }, profissional?.nome || 'Entregador')
+        ),
+        React.createElement('div', { className: 'text-5xl' }, '⭐')
+      ),
+      React.createElement('div', { className: 'text-center py-4' },
+        React.createElement('div', { className: 'text-6xl font-bold mb-2' }, 
+          (score?.total || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+        ),
+        React.createElement('p', { className: 'text-purple-200' }, 'pontos acumulados')
+      ),
+      React.createElement('div', { className: 'grid grid-cols-3 gap-4 mt-4 pt-4 border-t border-purple-500/30' },
+        React.createElement('div', { className: 'text-center' },
+          React.createElement('div', { className: 'text-2xl font-bold' }, score?.total_os || 0),
+          React.createElement('div', { className: 'text-xs opacity-70' }, 'Entregas')
+        ),
+        React.createElement('div', { className: 'text-center' },
+          React.createElement('div', { className: 'text-2xl font-bold text-green-300' }, `${score?.taxa_no_prazo || 0}%`),
+          React.createElement('div', { className: 'text-xs opacity-70' }, 'No Prazo')
+        ),
+        React.createElement('div', { className: 'text-center' },
+          React.createElement('div', { className: 'text-2xl font-bold text-yellow-300' }, `+${(score?.bonus_janela_total || 0).toFixed(1)}`),
+          React.createElement('div', { className: 'text-xs opacity-70' }, 'Bônus Pico')
+        )
+      )
+    ),
+    // Próximo Milestone
+    proximo_milestone && React.createElement('div', { className: 'bg-white rounded-xl p-4 shadow-lg border-l-4 border-purple-500' },
+      React.createElement('div', { className: 'flex items-center gap-3 mb-3' },
+        React.createElement('span', { className: 'text-3xl' }, proximo_milestone.milestone?.icone || '🏆'),
+        React.createElement('div', { className: 'flex-1' },
+          React.createElement('h3', { className: 'font-bold text-gray-800' }, `Próximo: ${proximo_milestone.milestone?.nome || 'Meta'}`),
+          React.createElement('p', { className: 'text-sm text-gray-500' }, `Faltam ${(proximo_milestone.pontos_faltam || 0).toFixed(1)} pontos`)
+        )
+      ),
+      React.createElement('div', { className: 'w-full bg-gray-200 rounded-full h-3 overflow-hidden' },
+        React.createElement('div', { 
+          className: 'h-full rounded-full transition-all duration-500',
+          style: { width: `${proximo_milestone.progresso_percentual || 0}%`, background: `linear-gradient(90deg, ${proximo_milestone.milestone?.cor || '#7c3aed'}, #7c3aed)` }
+        })
+      ),
+      React.createElement('p', { className: 'text-xs text-gray-500 mt-2 text-center' }, `${(proximo_milestone.progresso_percentual || 0).toFixed(0)}% concluído`)
+    ),
+    // Abas
+    React.createElement('div', { className: 'flex bg-gray-100 rounded-xl p-1' },
+      ['resumo', 'extrato', 'clube'].map(aba => 
+        React.createElement('button', {
+          key: aba,
+          onClick: () => setAbaAtiva(aba),
+          className: `flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${abaAtiva === aba ? 'bg-white text-purple-700 shadow' : 'text-gray-500 hover:text-gray-700'}`
+        }, aba === 'resumo' ? '📊 Resumo' : aba === 'extrato' ? '📋 Extrato' : '🎁 Clube')
+      )
+    ),
+    // Aba Resumo
+    abaAtiva === 'resumo' && React.createElement('div', { className: 'space-y-4' },
+      React.createElement('div', { className: 'grid grid-cols-2 gap-4' },
+        React.createElement('div', { className: 'bg-green-50 rounded-xl p-4 border border-green-200' },
+          React.createElement('div', { className: 'flex items-center gap-2 mb-2' },
+            React.createElement('span', { className: 'text-green-500 text-xl' }, '✓'),
+            React.createElement('span', { className: 'text-green-700 font-medium' }, 'No Prazo')
+          ),
+          React.createElement('div', { className: 'text-2xl font-bold text-green-700' }, score?.os_no_prazo || 0),
+          React.createElement('div', { className: 'text-xs text-green-600' }, `+${((score?.os_no_prazo || 0) * 0.75).toFixed(2)} pts`)
+        ),
+        React.createElement('div', { className: 'bg-red-50 rounded-xl p-4 border border-red-200' },
+          React.createElement('div', { className: 'flex items-center gap-2 mb-2' },
+            React.createElement('span', { className: 'text-red-500 text-xl' }, '✗'),
+            React.createElement('span', { className: 'text-red-700 font-medium' }, 'Fora do Prazo')
+          ),
+          React.createElement('div', { className: 'text-2xl font-bold text-red-700' }, score?.os_fora_prazo || 0),
+          React.createElement('div', { className: 'text-xs text-red-600' }, `${((score?.os_fora_prazo || 0) * -1).toFixed(2)} pts`)
+        )
+      ),
+      React.createElement('div', { className: 'bg-blue-50 rounded-xl p-4 border border-blue-200' },
+        React.createElement('h4', { className: 'font-bold text-blue-800 mb-3 flex items-center gap-2' },
+          React.createElement('span', null, '💡'), 'Como ganhar mais pontos?'
+        ),
+        React.createElement('div', { className: 'space-y-2 text-sm text-blue-700' },
+          React.createElement('div', { className: 'flex items-center gap-2' }, React.createElement('span', { className: 'text-green-500' }, '✓'), 'Entrega no prazo: +0,75 pts'),
+          React.createElement('div', { className: 'flex items-center gap-2' }, React.createElement('span', { className: 'text-yellow-500' }, '⏰'), 'Bônus 10h-12h: +0,50 pts extra'),
+          React.createElement('div', { className: 'flex items-center gap-2' }, React.createElement('span', { className: 'text-orange-500' }, '🔥'), 'Bônus 16h-18h: +0,75 pts extra'),
+          React.createElement('div', { className: 'flex items-center gap-2 text-red-600' }, React.createElement('span', null, '⚠️'), 'Fora do prazo: -1,00 pt')
+        )
+      )
+    ),
+    // Aba Extrato
+    abaAtiva === 'extrato' && React.createElement('div', { className: 'space-y-4' },
+      React.createElement('div', { className: 'flex gap-2' },
+        React.createElement('input', { type: 'date', value: filtroData.inicio, onChange: (e) => setFiltroData(prev => ({ ...prev, inicio: e.target.value })), className: 'flex-1 px-3 py-2 border rounded-lg text-sm' }),
+        React.createElement('input', { type: 'date', value: filtroData.fim, onChange: (e) => setFiltroData(prev => ({ ...prev, fim: e.target.value })), className: 'flex-1 px-3 py-2 border rounded-lg text-sm' }),
+        React.createElement('button', { onClick: carregarDados, className: 'px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium' }, '🔍')
+      ),
+      React.createElement('div', { className: 'space-y-2' },
+        extrato && extrato.length > 0 
+          ? extrato.map((item, idx) => 
+              React.createElement('div', { key: idx, className: `bg-white rounded-xl p-4 shadow border-l-4 ${item.dentro_prazo ? 'border-green-500' : 'border-red-500'}` },
+                React.createElement('div', { className: 'flex justify-between items-start mb-2' },
+                  React.createElement('div', null,
+                    React.createElement('span', { className: 'font-bold text-gray-800' }, `OS ${item.os}`),
+                    React.createElement('span', { className: 'text-gray-400 text-sm ml-2' }, formatarData(item.data_os))
+                  ),
+                  React.createElement('span', { className: `text-lg font-bold ${item.ponto_total >= 0 ? 'text-green-600' : 'text-red-600'}` }, 
+                    `${item.ponto_total >= 0 ? '+' : ''}${item.ponto_total.toFixed(2)}`
+                  )
+                ),
+                React.createElement('div', { className: 'text-sm text-gray-600' },
+                  React.createElement('span', { className: 'mr-3' }, `⏰ ${formatarHora(item.hora_solicitacao)}`),
+                  item.janela_bonus && React.createElement('span', { className: 'px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full text-xs' }, `🎯 ${item.janela_bonus}`)
+                ),
+                React.createElement('div', { className: 'mt-2 text-xs text-gray-500' }, item.detalhamento)
+              )
+            )
+          : React.createElement('div', { className: 'text-center py-8 text-gray-500' },
+              React.createElement('span', { className: 'text-4xl block mb-2' }, '📭'), 'Nenhuma entrega registrada no período'
+            )
+      )
+    ),
+    // Aba Clube
+    abaAtiva === 'clube' && React.createElement('div', { className: 'space-y-4' },
+      React.createElement('div', { className: 'text-center mb-4' },
+        React.createElement('h3', { className: 'text-xl font-bold text-gray-800' }, '🎁 Clube de Benefícios'),
+        React.createElement('p', { className: 'text-gray-500 text-sm' }, 'Alcance marcos e desbloqueie prêmios!')
+      ),
+      milestones && milestones.map((milestone, idx) => 
+        React.createElement('div', { key: idx, className: `rounded-xl p-4 border-2 transition-all ${milestone.conquistado ? 'bg-gradient-to-r from-purple-50 to-indigo-50 border-purple-300 shadow-lg' : 'bg-gray-50 border-gray-200 opacity-70'}` },
+          React.createElement('div', { className: 'flex items-center gap-4' },
+            React.createElement('span', { className: `text-4xl ${milestone.conquistado ? '' : 'grayscale opacity-50'}` }, milestone.icone),
+            React.createElement('div', { className: 'flex-1' },
+              React.createElement('div', { className: 'flex items-center gap-2' },
+                React.createElement('h4', { className: `font-bold ${milestone.conquistado ? 'text-purple-800' : 'text-gray-500'}` }, milestone.nome),
+                milestone.conquistado && React.createElement('span', { className: 'text-xs px-2 py-0.5 bg-green-500 text-white rounded-full' }, '✓ Conquistado!')
+              ),
+              React.createElement('p', { className: 'text-sm text-gray-600' }, milestone.descricao),
+              React.createElement('p', { className: `text-xs mt-1 ${milestone.conquistado ? 'text-purple-600' : 'text-gray-400'}` }, `${milestone.pontos_necessarios} pontos necessários`)
+            )
+          ),
+          milestone.beneficio && React.createElement('div', { className: 'mt-3 pt-3 border-t border-gray-200 text-sm' },
+            React.createElement('span', { className: 'text-gray-500' }, '🎁 Benefício: '),
+            React.createElement('span', { className: milestone.conquistado ? 'text-purple-700 font-medium' : 'text-gray-400' }, milestone.beneficio)
+          )
+        )
+      )
+    )
+  );
+}
+
+// =====================================================
+// COMPONENTE: ScoreAdmin
+// Dashboard administrativo para gestores
+// =====================================================
+function ScoreAdmin({ apiUrl, showToast }) {
+  const [loading, setLoading] = React.useState(true);
+  const [estatisticas, setEstatisticas] = React.useState(null);
+  const [ranking, setRanking] = React.useState([]);
+  const [milestones, setMilestones] = React.useState([]);
+  const [filtros, setFiltros] = React.useState({ data_inicio: '', data_fim: '', limite: 50 });
+  const [buscaProfissional, setBuscaProfissional] = React.useState('');
+  const [profissionalSelecionado, setProfissionalSelecionado] = React.useState(null);
+  const [recalculando, setRecalculando] = React.useState(false);
+  const [abaAtiva, setAbaAtiva] = React.useState('ranking');
+
+  const carregarDados = React.useCallback(async () => {
+    try {
+      setLoading(true);
+      let rankingUrl = `${apiUrl}/score/ranking?limite=${filtros.limite}`;
+      if (filtros.data_inicio) rankingUrl += `&data_inicio=${filtros.data_inicio}`;
+      if (filtros.data_fim) rankingUrl += `&data_fim=${filtros.data_fim}`;
+      
+      const [rankingRes, estatRes, milestonesRes] = await Promise.all([
+        fetch(rankingUrl).then(r => r.json()),
+        fetch(`${apiUrl}/score/estatisticas${filtros.data_inicio ? `?data_inicio=${filtros.data_inicio}&data_fim=${filtros.data_fim}` : ''}`).then(r => r.json()),
+        fetch(`${apiUrl}/score/milestones`).then(r => r.json())
+      ]);
+      
+      setRanking(rankingRes.ranking || []);
+      setEstatisticas(estatRes);
+      setMilestones(milestonesRes);
+    } catch (error) {
+      console.error('Erro ao carregar dados:', error);
+      showToast && showToast('Erro ao carregar dados', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, [apiUrl, filtros, showToast]);
+
+  React.useEffect(() => { carregarDados(); }, [carregarDados]);
+
+  const recalcularScores = async () => {
+    if (!window.confirm('Recalcular todos os scores? Isso pode levar alguns minutos.')) return;
+    try {
+      setRecalculando(true);
+      const response = await fetch(`${apiUrl}/score/recalcular`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data_inicio: filtros.data_inicio || null, data_fim: filtros.data_fim || null })
+      });
+      const result = await response.json();
+      if (result.success) {
+        showToast && showToast(`Score recalculado: ${result.processadas} OS processadas`, 'success');
+        carregarDados();
+      }
+    } catch (error) {
+      showToast && showToast('Erro ao recalcular scores', 'error');
+    } finally {
+      setRecalculando(false);
+    }
+  };
+
+  const buscarProfissional = async () => {
+    if (!buscaProfissional) return;
+    try {
+      const response = await fetch(`${apiUrl}/score/profissional/${buscaProfissional}`);
+      const data = await response.json();
+      setProfissionalSelecionado(data);
+    } catch (error) {
+      showToast && showToast('Profissional não encontrado', 'error');
+    }
+  };
+
+  if (loading && !estatisticas) {
+    return React.createElement('div', { className: 'flex items-center justify-center min-h-[400px]' },
+      React.createElement('div', { className: 'w-12 h-12 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin' })
+    );
+  }
+
+  return React.createElement('div', { className: 'space-y-6' },
+    React.createElement('div', { className: 'flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4' },
+      React.createElement('div', null,
+        React.createElement('h2', { className: 'text-2xl font-bold text-gray-800' }, '🏆 Score & Gamificação'),
+        React.createElement('p', { className: 'text-gray-500' }, 'Gestão de pontuação dos entregadores')
+      ),
+      React.createElement('button', {
+        onClick: recalcularScores, disabled: recalculando,
+        className: `px-4 py-2 rounded-lg font-medium flex items-center gap-2 ${recalculando ? 'bg-gray-300 text-gray-500' : 'bg-purple-600 text-white hover:bg-purple-700'}`
+      }, recalculando ? '⏳ Processando...' : '🔄 Recalcular Scores')
+    ),
+    React.createElement('div', { className: 'bg-white rounded-xl p-4 shadow flex flex-wrap gap-4 items-end' },
+      React.createElement('div', { className: 'flex-1 min-w-[150px]' },
+        React.createElement('label', { className: 'block text-sm text-gray-600 mb-1' }, 'Data Início'),
+        React.createElement('input', { type: 'date', value: filtros.data_inicio, onChange: (e) => setFiltros(prev => ({ ...prev, data_inicio: e.target.value })), className: 'w-full px-3 py-2 border rounded-lg' })
+      ),
+      React.createElement('div', { className: 'flex-1 min-w-[150px]' },
+        React.createElement('label', { className: 'block text-sm text-gray-600 mb-1' }, 'Data Fim'),
+        React.createElement('input', { type: 'date', value: filtros.data_fim, onChange: (e) => setFiltros(prev => ({ ...prev, data_fim: e.target.value })), className: 'w-full px-3 py-2 border rounded-lg' })
+      ),
+      React.createElement('div', { className: 'flex-1 min-w-[200px]' },
+        React.createElement('label', { className: 'block text-sm text-gray-600 mb-1' }, 'Buscar Profissional'),
+        React.createElement('div', { className: 'flex gap-2' },
+          React.createElement('input', { type: 'text', value: buscaProfissional, onChange: (e) => setBuscaProfissional(e.target.value), placeholder: 'Código', className: 'flex-1 px-3 py-2 border rounded-lg' }),
+          React.createElement('button', { onClick: buscarProfissional, className: 'px-4 py-2 bg-gray-600 text-white rounded-lg' }, '🔍')
+        )
+      ),
+      React.createElement('button', { onClick: carregarDados, className: 'px-4 py-2 bg-purple-600 text-white rounded-lg font-medium' }, 'Filtrar')
+    ),
+    estatisticas?.resumo && React.createElement('div', { className: 'grid grid-cols-2 md:grid-cols-4 gap-4' },
+      React.createElement('div', { className: 'bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-4 text-white' },
+        React.createElement('div', { className: 'text-3xl mb-1' }, '👥'),
+        React.createElement('div', { className: 'text-2xl font-bold' }, estatisticas.resumo.total_profissionais),
+        React.createElement('div', { className: 'text-sm opacity-80' }, 'Profissionais')
+      ),
+      React.createElement('div', { className: 'bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white' },
+        React.createElement('div', { className: 'text-3xl mb-1' }, '📦'),
+        React.createElement('div', { className: 'text-2xl font-bold' }, estatisticas.resumo.total_os),
+        React.createElement('div', { className: 'text-sm opacity-80' }, 'Entregas')
+      ),
+      React.createElement('div', { className: 'bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-4 text-white' },
+        React.createElement('div', { className: 'text-3xl mb-1' }, '⭐'),
+        React.createElement('div', { className: 'text-2xl font-bold' }, (estatisticas.resumo.pontos_distribuidos || 0).toLocaleString('pt-BR', { maximumFractionDigits: 0 })),
+        React.createElement('div', { className: 'text-sm opacity-80' }, 'Pontos Distribuídos')
+      ),
+      React.createElement('div', { className: 'bg-gradient-to-br from-yellow-500 to-orange-500 rounded-xl p-4 text-white' },
+        React.createElement('div', { className: 'text-3xl mb-1' }, '🎯'),
+        React.createElement('div', { className: 'text-2xl font-bold' }, `${estatisticas.resumo.taxa_prazo}%`),
+        React.createElement('div', { className: 'text-sm opacity-80' }, 'Taxa No Prazo')
+      )
+    ),
+    profissionalSelecionado && React.createElement('div', { className: 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4', onClick: () => setProfissionalSelecionado(null) },
+      React.createElement('div', { className: 'bg-white rounded-2xl max-w-lg w-full max-h-[80vh] overflow-y-auto p-6', onClick: (e) => e.stopPropagation() },
+        React.createElement('div', { className: 'flex justify-between items-center mb-4' },
+          React.createElement('h3', { className: 'text-xl font-bold' }, profissionalSelecionado.profissional?.nome),
+          React.createElement('button', { onClick: () => setProfissionalSelecionado(null), className: 'text-gray-400 hover:text-gray-600 text-2xl' }, '×')
+        ),
+        React.createElement('div', { className: 'bg-purple-50 rounded-xl p-4 text-center mb-4' },
+          React.createElement('div', { className: 'text-4xl font-bold text-purple-700' }, (profissionalSelecionado.score?.total || 0).toFixed(2)),
+          React.createElement('div', { className: 'text-purple-600' }, 'pontos totais')
+        ),
+        React.createElement('div', { className: 'grid grid-cols-2 gap-4' },
+          React.createElement('div', { className: 'text-center p-3 bg-green-50 rounded-lg' },
+            React.createElement('div', { className: 'text-2xl font-bold text-green-700' }, profissionalSelecionado.score?.os_no_prazo || 0),
+            React.createElement('div', { className: 'text-sm text-green-600' }, 'No Prazo')
+          ),
+          React.createElement('div', { className: 'text-center p-3 bg-red-50 rounded-lg' },
+            React.createElement('div', { className: 'text-2xl font-bold text-red-700' }, profissionalSelecionado.score?.os_fora_prazo || 0),
+            React.createElement('div', { className: 'text-sm text-red-600' }, 'Fora Prazo')
+          )
+        )
+      )
+    ),
+    React.createElement('div', { className: 'flex bg-gray-100 rounded-xl p-1' },
+      [{ id: 'ranking', label: '🏅 Ranking' }, { id: 'estatisticas', label: '📊 Estatísticas' }].map(aba => 
+        React.createElement('button', { key: aba.id, onClick: () => setAbaAtiva(aba.id),
+          className: `flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${abaAtiva === aba.id ? 'bg-white text-purple-700 shadow' : 'text-gray-500 hover:text-gray-700'}`
+        }, aba.label)
+      )
+    ),
+    abaAtiva === 'ranking' && React.createElement('div', { className: 'bg-white rounded-xl shadow overflow-hidden' },
+      React.createElement('div', { className: 'overflow-x-auto' },
+        React.createElement('table', { className: 'w-full' },
+          React.createElement('thead', { className: 'bg-gray-50' },
+            React.createElement('tr', null,
+              React.createElement('th', { className: 'px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase' }, '#'),
+              React.createElement('th', { className: 'px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase' }, 'Profissional'),
+              React.createElement('th', { className: 'px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase' }, 'Score'),
+              React.createElement('th', { className: 'px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase' }, 'Entregas'),
+              React.createElement('th', { className: 'px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase' }, 'Taxa Prazo')
+            )
+          ),
+          React.createElement('tbody', { className: 'divide-y divide-gray-200' },
+            ranking.map((prof, idx) => 
+              React.createElement('tr', { key: idx, className: 'hover:bg-gray-50 cursor-pointer',
+                onClick: async () => { const res = await fetch(`${apiUrl}/score/profissional/${prof.cod_prof}`); setProfissionalSelecionado(await res.json()); }
+              },
+                React.createElement('td', { className: 'px-4 py-3' },
+                  React.createElement('span', { className: `inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold ${prof.posicao === 1 ? 'bg-yellow-100 text-yellow-700' : prof.posicao === 2 ? 'bg-gray-200 text-gray-700' : prof.posicao === 3 ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-600'}` }, 
+                    prof.posicao <= 3 ? ['🥇', '🥈', '🥉'][prof.posicao - 1] : prof.posicao)
+                ),
+                React.createElement('td', { className: 'px-4 py-3' },
+                  React.createElement('div', { className: 'font-medium text-gray-800' }, prof.nome),
+                  React.createElement('div', { className: 'text-xs text-gray-400' }, `#${prof.cod_prof}`)
+                ),
+                React.createElement('td', { className: 'px-4 py-3 text-right font-bold text-purple-600' }, prof.score_total.toFixed(2)),
+                React.createElement('td', { className: 'px-4 py-3 text-right text-gray-600' }, prof.total_os),
+                React.createElement('td', { className: 'px-4 py-3 text-right' },
+                  React.createElement('span', { className: `px-2 py-1 rounded-full text-xs font-medium ${prof.taxa_prazo >= 90 ? 'bg-green-100 text-green-700' : prof.taxa_prazo >= 70 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}` }, `${prof.taxa_prazo}%`)
+                )
+              )
+            )
+          )
+        )
+      )
+    ),
+    abaAtiva === 'estatisticas' && estatisticas && React.createElement('div', { className: 'space-y-6' },
+      React.createElement('div', { className: 'bg-white rounded-xl p-6 shadow' },
+        React.createElement('h3', { className: 'font-bold text-lg mb-4' }, '🏆 Top 10 do Período'),
+        React.createElement('div', { className: 'space-y-3' },
+          estatisticas.top_10?.map((prof, idx) => 
+            React.createElement('div', { key: idx, className: 'flex items-center gap-4 p-3 bg-gray-50 rounded-lg' },
+              React.createElement('span', { className: 'text-2xl' }, idx < 3 ? ['🥇', '🥈', '🥉'][idx] : `${idx + 1}º`),
+              React.createElement('div', { className: 'flex-1' },
+                React.createElement('div', { className: 'font-medium' }, prof.nome),
+                React.createElement('div', { className: 'text-sm text-gray-500' }, `${prof.total_os} entregas`)
+              ),
+              React.createElement('div', { className: 'text-xl font-bold text-purple-600' }, prof.score_total.toFixed(1))
+            )
+          )
+        )
+      )
+    )
+  );
+}
+
 ReactDOM.render(React.createElement(App, null), document.getElementById("root"), hideLoadingScreen);
