@@ -1,17 +1,17 @@
 // Service Worker - Sistema Tutts PWA
-// IMPORTANTE: Mude este número a cada deploy para forçar atualização!
-const CACHE_VERSION = '20241222_001';
+// IMPORTANTE: Mude este numero a cada deploy para forcar atualizacao!
+const CACHE_VERSION = '20250105_001';
 const CACHE_NAME = `tutts-cache-${CACHE_VERSION}`;
 const API_URL = 'https://tutts-backend-production.up.railway.app';
 
-// Arquivos que SEMPRE devem buscar da rede (críticos)
+// Arquivos que SEMPRE devem buscar da rede (criticos)
 const NETWORK_FIRST_FILES = [
   '/app.js',
   '/index.html',
   '/'
 ];
 
-// Arquivos para cachear (shell da aplicação)
+// Arquivos para cachear (shell da aplicacao)
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -22,70 +22,60 @@ const STATIC_ASSETS = [
   '/icon-512.png'
 ];
 
-// CDNs externos para cachear (estes podem usar Cache First pois não mudam)
+// CDNs externos para cachear (estes podem usar Cache First pois nao mudam)
 const EXTERNAL_ASSETS = [
   'https://cdn.tailwindcss.com',
   'https://unpkg.com/react@18/umd/react.production.min.js',
   'https://unpkg.com/react-dom@18/umd/react-dom.production.min.js'
 ];
 
-// Instalação - cacheia arquivos estáticos
+// Instalacao - cacheia arquivos estaticos
 self.addEventListener('install', (event) => {
-  console.log(`🔧 Service Worker ${CACHE_VERSION}: Instalando...`);
+  console.log(`Service Worker ${CACHE_VERSION}: Instalando...`);
   
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('📦 Service Worker: Cacheando arquivos estáticos');
+      console.log('Service Worker: Cacheando arquivos estaticos');
       return Promise.all([
         ...EXTERNAL_ASSETS.map(url => 
-          cache.add(url).catch(err => console.log('⚠️ Não cacheou:', url))
+          cache.add(url).catch(err => console.log('Nao cacheou:', url))
         ),
         ...STATIC_ASSETS.map(url => 
-          cache.add(url).catch(err => console.log('⚠️ Não cacheou:', url))
+          cache.add(url).catch(err => console.log('Nao cacheou:', url))
         )
       ]);
     }).then(() => {
-      console.log('✅ Service Worker: Instalação completa!');
-      // FORÇA ativação imediata (não espera abas fecharem)
-      return self.skipWaiting();
+      console.log('Service Worker: Instalacao completa!');
+      // NAO forca skipWaiting - deixa o usuario decidir quando atualizar
+      // Isso evita problemas de paginas fechando inesperadamente
     })
   );
 });
 
-// Ativação - limpa TODOS os caches antigos
+// Ativacao - limpa caches antigos
 self.addEventListener('activate', (event) => {
-  console.log(`🚀 Service Worker ${CACHE_VERSION}: Ativando...`);
+  console.log(`Service Worker ${CACHE_VERSION}: Ativando...`);
   
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
-          // Remove qualquer cache que não seja o atual
+          // Remove qualquer cache que nao seja o atual
           if (cacheName !== CACHE_NAME) {
-            console.log('🗑️ Service Worker: Removendo cache antigo:', cacheName);
+            console.log('Service Worker: Removendo cache antigo:', cacheName);
             return caches.delete(cacheName);
           }
         })
       );
     }).then(() => {
-      console.log('✅ Service Worker: Ativado e caches limpos!');
-      // FORÇA controle imediato de todas as abas
-      return self.clients.claim();
-    }).then(() => {
-      // Notifica todas as abas que há uma nova versão
-      return self.clients.matchAll().then(clients => {
-        clients.forEach(client => {
-          client.postMessage({
-            type: 'SW_UPDATED',
-            version: CACHE_VERSION
-          });
-        });
-      });
+      console.log('Service Worker: Ativado e caches limpos!');
+      // NAO forca clients.claim() para evitar reloads inesperados
+      // O controle sera assumido naturalmente na proxima navegacao
     })
   );
 });
 
-// Verifica se é um arquivo crítico que deve usar Network First
+// Verifica se eh um arquivo critico que deve usar Network First
 function isNetworkFirstFile(url) {
   const pathname = new URL(url).pathname;
   return NETWORK_FIRST_FILES.some(file => 
@@ -93,33 +83,38 @@ function isNetworkFirstFile(url) {
   );
 }
 
-// Verifica se é um CDN externo (pode usar Cache First)
+// Verifica se eh um CDN externo (pode usar Cache First)
 function isExternalCDN(url) {
   return EXTERNAL_ASSETS.some(cdn => url.startsWith(cdn));
 }
 
-// Fetch - estratégia inteligente de cache
+// Fetch - estrategia inteligente de cache
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
   
-  // Ignora requisições não-GET
+  // Ignora requisicoes nao-GET
   if (event.request.method !== 'GET') {
     return;
   }
   
-  // API requests - Network First (sempre busca online)
-  if (url.href.includes(API_URL)) {
-    event.respondWith(networkFirstStrategy(event.request, false));
+  // Ignora requisicoes de extensoes do Chrome
+  if (url.protocol === 'chrome-extension:') {
     return;
   }
   
-  // Arquivos críticos (app.js, index.html) - NETWORK FIRST
+  // API requests - Network Only (nao cacheia API)
+  if (url.href.includes(API_URL)) {
+    event.respondWith(networkOnlyStrategy(event.request));
+    return;
+  }
+  
+  // Arquivos criticos (app.js, index.html) - NETWORK FIRST
   if (isNetworkFirstFile(event.request.url)) {
     event.respondWith(networkFirstStrategy(event.request, true));
     return;
   }
   
-  // CDNs externos - Cache First (não mudam)
+  // CDNs externos - Cache First (nao mudam)
   if (isExternalCDN(event.request.url)) {
     event.respondWith(cacheFirstStrategy(event.request));
     return;
@@ -129,7 +124,22 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(staleWhileRevalidate(event.request));
 });
 
-// Estratégia Network First - busca na rede, fallback para cache
+// Estrategia Network Only - apenas rede, sem cache (para API)
+async function networkOnlyStrategy(request) {
+  try {
+    const response = await fetch(request);
+    return response;
+  } catch (error) {
+    // Se falhar, retorna erro generico ao inves de quebrar
+    console.log('Erro de rede:', request.url);
+    return new Response(JSON.stringify({ error: 'Offline' }), {
+      status: 503,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+}
+
+// Estrategia Network First - busca na rede, fallback para cache
 async function networkFirstStrategy(request, shouldCache) {
   try {
     const response = await fetch(request);
@@ -145,19 +155,25 @@ async function networkFirstStrategy(request, shouldCache) {
     // Offline - tenta o cache
     const cachedResponse = await caches.match(request);
     if (cachedResponse) {
+      console.log('Usando cache para:', request.url);
       return cachedResponse;
     }
     
-    // Se é documento, retorna a página principal
+    // Se eh documento, retorna a pagina principal
     if (request.destination === 'document') {
-      return caches.match('/');
+      const indexCache = await caches.match('/');
+      if (indexCache) return indexCache;
     }
     
-    throw error;
+    // Retorna pagina de erro offline
+    return new Response('Offline - Sem conexao com a internet', {
+      status: 503,
+      headers: { 'Content-Type': 'text/plain' }
+    });
   }
 }
 
-// Estratégia Cache First - busca no cache, fallback para rede
+// Estrategia Cache First - busca no cache, fallback para rede
 async function cacheFirstStrategy(request) {
   const cachedResponse = await caches.match(request);
   
@@ -167,20 +183,23 @@ async function cacheFirstStrategy(request) {
   
   try {
     const response = await fetch(request);
-    const cache = await caches.open(CACHE_NAME);
-    cache.put(request, response.clone());
+    if (response.ok) {
+      const cache = await caches.open(CACHE_NAME);
+      cache.put(request, response.clone());
+    }
     return response;
   } catch (error) {
-    throw error;
+    console.log('Erro ao buscar:', request.url);
+    return new Response('', { status: 503 });
   }
 }
 
-// Estratégia Stale While Revalidate - retorna cache, atualiza em background
+// Estrategia Stale While Revalidate - retorna cache, atualiza em background
 async function staleWhileRevalidate(request) {
   const cache = await caches.open(CACHE_NAME);
   const cachedResponse = await cache.match(request);
   
-  // Busca atualização em background
+  // Busca atualizacao em background (nao bloqueia)
   const fetchPromise = fetch(request).then(response => {
     if (response.ok) {
       cache.put(request, response.clone());
@@ -188,15 +207,24 @@ async function staleWhileRevalidate(request) {
     return response;
   }).catch(() => null);
   
-  // Retorna cache se existir, senão espera a rede
-  return cachedResponse || fetchPromise;
+  // Retorna cache se existir, senao espera a rede
+  if (cachedResponse) {
+    return cachedResponse;
+  }
+  
+  const networkResponse = await fetchPromise;
+  if (networkResponse) {
+    return networkResponse;
+  }
+  
+  return new Response('', { status: 503 });
 }
 
-// Push Notifications (preparado para uso futuro)
+// Push Notifications
 self.addEventListener('push', (event) => {
-  console.log('📬 Push recebido:', event);
+  console.log('Push recebido:', event);
   
-  let data = { title: 'Sistema Tutts', body: 'Nova notificação!' };
+  let data = { title: 'Sistema Tutts', body: 'Nova notificacao!' };
   
   if (event.data) {
     try {
@@ -225,9 +253,9 @@ self.addEventListener('push', (event) => {
   );
 });
 
-// Clique na notificação
+// Clique na notificacao
 self.addEventListener('notificationclick', (event) => {
-  console.log('🔔 Notificação clicada:', event.action);
+  console.log('Notificacao clicada:', event.action);
   
   event.notification.close();
   
@@ -249,49 +277,17 @@ self.addEventListener('notificationclick', (event) => {
   );
 });
 
-// Background Sync
-self.addEventListener('sync', (event) => {
-  console.log('🔄 Background Sync:', event.tag);
-  
-  if (event.tag === 'sync-solicitacoes') {
-    event.waitUntil(syncPendingSubmissions());
-  }
-});
-
-async function syncPendingSubmissions() {
-  try {
-    const cache = await caches.open(CACHE_NAME);
-    const pendingRequests = await cache.match('pending-submissions');
-    
-    if (!pendingRequests) return;
-    
-    const submissions = await pendingRequests.json();
-    
-    for (const submission of submissions) {
-      await fetch(`${API_URL}/solicitacoes`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(submission)
-      });
-    }
-    
-    await cache.delete('pending-submissions');
-    console.log('✅ Solicitações sincronizadas!');
-  } catch (error) {
-    console.error('❌ Erro ao sincronizar:', error);
-  }
-}
-
-// Mensagem para verificar versão
+// Mensagem para verificar versao
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'GET_VERSION') {
     event.ports[0].postMessage({ version: CACHE_VERSION });
   }
   
-  // Força atualização quando solicitado
+  // Forca atualizacao APENAS quando o usuario clicar no banner
   if (event.data && event.data.type === 'SKIP_WAITING') {
+    console.log('Usuario solicitou atualizacao, aplicando...');
     self.skipWaiting();
   }
 });
 
-console.log(`🚀 Service Worker ${CACHE_VERSION} carregado!`);
+console.log(`Service Worker ${CACHE_VERSION} carregado!`);
