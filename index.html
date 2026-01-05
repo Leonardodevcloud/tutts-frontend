@@ -308,10 +308,10 @@
             });
           });
           
-          // Verifica por atualizações a cada 60 segundos
+          // Verifica por atualizações a cada 5 minutos (não 60 segundos para evitar muitas verificações)
           setInterval(() => {
             registration.update();
-          }, 60000);
+          }, 300000);
           
           // Verifica imediatamente por atualizações
           registration.update();
@@ -329,11 +329,22 @@
         }
       });
       
-      // Recarrega quando o novo SW assumir controle
+      // Recarrega quando o novo SW assumir controle - COM PROTEÇÃO CONTRA LOOP
       let refreshing = false;
+      let lastRefresh = localStorage.getItem('sw_last_refresh');
+      let now = Date.now();
+      
+      // Evita reload se já recarregou nos últimos 10 segundos
       navigator.serviceWorker.addEventListener('controllerchange', () => {
         if (!refreshing) {
+          // Verifica se não está em loop de reload
+          if (lastRefresh && (now - parseInt(lastRefresh)) < 10000) {
+            console.log('⚠️ Evitando loop de reload do Service Worker');
+            return;
+          }
+          
           refreshing = true;
+          localStorage.setItem('sw_last_refresh', now.toString());
           console.log('🔄 Novo Service Worker assumiu, recarregando...');
           window.location.reload(true);
         }
