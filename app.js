@@ -17180,9 +17180,14 @@ const hideLoadingScreen = () => {
                                             }, "🔑 Senha"),
                                             user.role !== "admin_master" && React.createElement("button", {
                                                 onClick: async function() {
+                                                    const userCod = user.codProfissional || user.cod_profissional;
+                                                    if (!userCod) {
+                                                        ja("❌ Código do usuário não encontrado", "error");
+                                                        return;
+                                                    }
                                                     if (confirm("⚠️ Excluir " + user.fullName + "?\\n\\nEsta ação não pode ser desfeita!")) {
                                                         try {
-                                                            await fetch(API_URL + "/users/" + user.codProfissional, {method: "DELETE"});
+                                                            await fetch(API_URL + "/users/" + userCod, {method: "DELETE"});
                                                             ja("🗑️ Usuário excluído!", "success");
                                                             Ia();
                                                         } catch (err) {
