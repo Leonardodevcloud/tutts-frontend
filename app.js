@@ -899,7 +899,7 @@ const hideLoadingScreen = () => {
             validacao: [],
             loja: [],
             gratuidades: []
-        }), [j, C] = useState([]), [A, S] = useState([]), [k, P] = useState(!1), [T, D] = useState(null), [L, I] = useState([]), [F, $] = useState(!1), [M, O] = useState([]), [q, U] = useState([]), [z, B] = useState([]), [V, J] = useState(null), [Q, H] = useState([]), [G, W] = useState([]), [Z, Y] = useState([]), [K, X] = useState({}), [ee, te] = useState([]), [ae, le] = useState([]), [re, oe] = useState([]), [ce, se] = useState([]), [ne, me] = useState([]), [ie, de] = useState([]), [pe, xe] = useState([]), [ue, ge] = useState(!1), [be, Re] = useState(null), [Ee, he] = useState("home"), [mensagemGentileza, setMensagemGentileza] = useState(() => getMensagemGentileza()), [elegibilidadeNovatos, setElegibilidadeNovatos] = useState({ elegivel: false, motivo: '', promocoes: [], carregando: true }), [regioesNovatos, setRegioesNovatos] = useState([]), [solicitacoesPagina, setSolicitacoesPagina] = useState(1), [solicitacoesPorPagina] = useState(30), [fe, Ne] = useState({
+        }), [j, C] = useState([]), [A, S] = useState([]), [k, P] = useState(!1), [T, D] = useState(null), [L, I] = useState([]), [F, $] = useState(!1), [M, O] = useState([]), [q, U] = useState([]), [z, B] = useState([]), [V, J] = useState(null), [Q, H] = useState([]), [G, W] = useState([]), [Z, Y] = useState([]), [K, X] = useState({}), [ee, te] = useState([]), [ae, le] = useState([]), [re, oe] = useState([]), [ce, se] = useState([]), [ne, me] = useState([]), [ie, de] = useState([]), [pe, xe] = useState([]), [ue, ge] = useState(!1), [be, Re] = useState(null), [Ee, he] = useState("home"), [mensagemGentileza, setMensagemGentileza] = useState(() => getMensagemGentileza()), [elegibilidadeNovatos, setElegibilidadeNovatos] = useState({ elegivel: false, motivo: '', promocoes: [], carregando: true }), [regioesNovatos, setRegioesNovatos] = useState([]), [solicitacoesPagina, setSolicitacoesPagina] = useState(1), [solicitacoesPorPagina] = useState(30), [conciliacaoPagina, setConciliacaoPagina] = useState(1), [conciliacaoPorPagina] = useState(30), [fe, Ne] = useState({
             titulo: "Acerte os procedimentos e ganhe saque gratuito de R$ 500,00",
             imagens: [null, null, null, null],
             perguntas: [{
@@ -9397,7 +9397,7 @@ const hideLoadingScreen = () => {
                             React.createElement("input", {
                                 type: "date",
                                 value: p.concDataSolicitacao || "",
-                                onChange: e => x({...p, concDataSolicitacao: e.target.value}),
+                                onChange: e => { setConciliacaoPagina(1); x({...p, concDataSolicitacao: e.target.value}); },
                                 className: "px-3 py-2 border rounded-lg text-sm"
                             })
                         ),
@@ -9407,21 +9407,21 @@ const hideLoadingScreen = () => {
                             React.createElement("input", {
                                 type: "date",
                                 value: p.concDataRealizacao || "",
-                                onChange: e => x({...p, concDataRealizacao: e.target.value}),
+                                onChange: e => { setConciliacaoPagina(1); x({...p, concDataRealizacao: e.target.value}); },
                                 className: "px-3 py-2 border rounded-lg text-sm"
                             })
                         ),
                         // Filtro de Gratuidade
                         React.createElement("div", {className: "flex items-center gap-2"},
                             React.createElement("button", {
-                                onClick: () => x({...p, concApenasGratuidade: !p.concApenasGratuidade}),
+                                onClick: () => { setConciliacaoPagina(1); x({...p, concApenasGratuidade: !p.concApenasGratuidade}); },
                                 className: "px-4 py-2 rounded-lg text-sm font-semibold " + 
                                     (p.concApenasGratuidade ? "bg-blue-600 text-white" : "bg-gray-100 hover:bg-gray-200")
                             }, "🎁 Apenas Gratuidades")
                         ),
                         // Botão Limpar Filtros
                         (p.concDataSolicitacao || p.concDataRealizacao || p.concApenasGratuidade) && React.createElement("button", {
-                            onClick: () => x({...p, concDataSolicitacao: "", concDataRealizacao: "", concApenasGratuidade: false}),
+                            onClick: () => { setConciliacaoPagina(1); x({...p, concDataSolicitacao: "", concDataRealizacao: "", concApenasGratuidade: false}); },
                             className: "px-4 py-2 bg-red-100 text-red-700 rounded-lg text-sm font-semibold hover:bg-red-200"
                         }, "✕ Limpar Filtros")
                     )
@@ -9504,28 +9504,36 @@ const hideLoadingScreen = () => {
                 className: "px-4 py-3 text-center"
             }, "Gratuidade"), React.createElement("th", {
                 className: "px-4 py-3 text-center"
-            }, "OMIE"))), React.createElement("tbody", null, q.filter(e => {
-                // Filtro base: apenas aprovados
-                if (!e.status?.includes("aprovado")) return false;
+            }, "OMIE"))), React.createElement("tbody", null, (() => {
+                // Filtrar dados
+                const filtrados = q.filter(e => {
+                    // Filtro base: apenas aprovados
+                    if (!e.status?.includes("aprovado")) return false;
+                    
+                    // Filtro por data de solicitação
+                    if (p.concDataSolicitacao) {
+                        const dataSolic = new Date(e.created_at).toISOString().split('T')[0];
+                        if (dataSolic !== p.concDataSolicitacao) return false;
+                    }
+                    
+                    // Filtro por data de realização
+                    if (p.concDataRealizacao) {
+                        if (!e.approved_at) return false;
+                        const dataReal = new Date(e.approved_at).toISOString().split('T')[0];
+                        if (dataReal !== p.concDataRealizacao) return false;
+                    }
+                    
+                    // Filtro apenas gratuidades
+                    if (p.concApenasGratuidade && !e.has_gratuity) return false;
+                    
+                    return true;
+                });
                 
-                // Filtro por data de solicitação
-                if (p.concDataSolicitacao) {
-                    const dataSolic = new Date(e.created_at).toISOString().split('T')[0];
-                    if (dataSolic !== p.concDataSolicitacao) return false;
-                }
-                
-                // Filtro por data de realização
-                if (p.concDataRealizacao) {
-                    if (!e.approved_at) return false;
-                    const dataReal = new Date(e.approved_at).toISOString().split('T')[0];
-                    if (dataReal !== p.concDataRealizacao) return false;
-                }
-                
-                // Filtro apenas gratuidades
-                if (p.concApenasGratuidade && !e.has_gratuity) return false;
-                
-                return true;
-            }).map(e => {
+                // Aplicar paginação
+                const inicio = (conciliacaoPagina - 1) * conciliacaoPorPagina;
+                const fim = inicio + conciliacaoPorPagina;
+                return filtrados.slice(inicio, fim);
+            })().map(e => {
                 const t = new Date(e.created_at),
                     a = t.toLocaleDateString("pt-BR"),
                     l = t.toLocaleTimeString("pt-BR", {
@@ -9596,7 +9604,59 @@ const hideLoadingScreen = () => {
                     })(e.id, "conciliacaoOmie", t.target.checked),
                     className: "w-5 h-5"
                 })))
-            }))))), "resumo" === p.finTab && React.createElement(React.Fragment, null, React.createElement("div", {
+            }))),
+            // Controles de paginação da Conciliação
+            (() => {
+                const filtrados = q.filter(e => {
+                    if (!e.status?.includes("aprovado")) return false;
+                    if (p.concDataSolicitacao) {
+                        const dataSolic = new Date(e.created_at).toISOString().split('T')[0];
+                        if (dataSolic !== p.concDataSolicitacao) return false;
+                    }
+                    if (p.concDataRealizacao) {
+                        if (!e.approved_at) return false;
+                        const dataReal = new Date(e.approved_at).toISOString().split('T')[0];
+                        if (dataReal !== p.concDataRealizacao) return false;
+                    }
+                    if (p.concApenasGratuidade && !e.has_gratuity) return false;
+                    return true;
+                });
+                const totalPaginas = Math.ceil(filtrados.length / conciliacaoPorPagina);
+                if (totalPaginas <= 1) return null;
+                return React.createElement("div", {
+                    className: "flex items-center justify-between bg-white rounded-xl shadow p-4 mt-4"
+                }, 
+                    React.createElement("div", { className: "text-sm text-gray-600" },
+                        `Mostrando ${Math.min((conciliacaoPagina - 1) * conciliacaoPorPagina + 1, filtrados.length)}-${Math.min(conciliacaoPagina * conciliacaoPorPagina, filtrados.length)} de ${filtrados.length} registros`
+                    ),
+                    React.createElement("div", { className: "flex items-center gap-2" },
+                        React.createElement("button", {
+                            onClick: () => setConciliacaoPagina(1),
+                            disabled: conciliacaoPagina === 1,
+                            className: "px-3 py-1 rounded text-sm font-semibold " + (conciliacaoPagina === 1 ? "bg-gray-100 text-gray-400" : "bg-gray-200 text-gray-700 hover:bg-gray-300")
+                        }, "⏮️"),
+                        React.createElement("button", {
+                            onClick: () => setConciliacaoPagina(pg => Math.max(1, pg - 1)),
+                            disabled: conciliacaoPagina === 1,
+                            className: "px-3 py-1 rounded text-sm font-semibold " + (conciliacaoPagina === 1 ? "bg-gray-100 text-gray-400" : "bg-gray-200 text-gray-700 hover:bg-gray-300")
+                        }, "◀️ Anterior"),
+                        React.createElement("span", { className: "px-4 py-1 bg-purple-100 text-purple-700 rounded font-bold" },
+                            `${conciliacaoPagina} / ${totalPaginas}`
+                        ),
+                        React.createElement("button", {
+                            onClick: () => setConciliacaoPagina(pg => Math.min(totalPaginas, pg + 1)),
+                            disabled: conciliacaoPagina === totalPaginas,
+                            className: "px-3 py-1 rounded text-sm font-semibold " + (conciliacaoPagina === totalPaginas ? "bg-gray-100 text-gray-400" : "bg-gray-200 text-gray-700 hover:bg-gray-300")
+                        }, "Próxima ▶️"),
+                        React.createElement("button", {
+                            onClick: () => setConciliacaoPagina(totalPaginas),
+                            disabled: conciliacaoPagina === totalPaginas,
+                            className: "px-3 py-1 rounded text-sm font-semibold " + (conciliacaoPagina === totalPaginas ? "bg-gray-100 text-gray-400" : "bg-gray-200 text-gray-700 hover:bg-gray-300")
+                        }, "⏭️")
+                    )
+                );
+            })()
+            )), "resumo" === p.finTab && React.createElement(React.Fragment, null, React.createElement("div", {
                 className: "bg-white rounded-xl shadow p-4 mb-6"
             }, React.createElement("div", {
                 className: "flex gap-4"
