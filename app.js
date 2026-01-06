@@ -1733,6 +1733,7 @@ const hideLoadingScreen = () => {
                 N(!0);
                 const e = p.finTab || "home-fin";
                 try {
+                    // Requisições básicas para contadores (sempre necessárias)
                     const [t, a, l] = await Promise.all([fetch(`${API_URL}/withdrawals`), fetch(`${API_URL}/loja/pedidos`), fetch(`${API_URL}/gratuities`)]), r = await t.json(), o = await a.json(), c = await l.json(), s = r.filter(e => "pending" === e.status && !ka.current.solicitacoes.has(e.id)), n = o.filter(e => "pendente" === e.status && !ka.current.loja.has(e.id)), m = c.filter(e => "pending" === e.status && !ka.current.gratuidades.has(e.id));
                     v({
                         solicitacoes: s.length,
@@ -1745,7 +1746,33 @@ const hideLoadingScreen = () => {
                     d > i && i > 0 && (Ca(), ja("🔔 Novo saque solicitado!", "info")), Aa.current = d;
                     const p = Sa.current,
                         x = o.filter(e => "pendente" === e.status).length;
-                    switch (x > p && p > 0 && (Ca(), ja("🛒 Novo pedido na loja!", "info")), Sa.current = x, U(r), tt(o), H(c), e) {
+                    x > p && p > 0 && (Ca(), ja("🛒 Novo pedido na loja!", "info")), Sa.current = x, U(r), tt(o), H(c);
+                    
+                    // Requisições extras SOMENTE na primeira vez ou quando mudar de aba
+                    // (não a cada polling para evitar lentidão)
+                    
+                    "solicitacoes" === e || "validacao" === e ? Pa("solicitacoes") : "loja" === e ? Pa("loja") : "gratuidades" === e && Pa("gratuidades"), h(new Date)
+                } catch (e) {
+                    console.error("Erro no polling:", e)
+                }
+                N(!1)
+            };
+            e();
+            // Polling a cada 30 segundos (antes era 10s - causava lentidão)
+            const t = setInterval(e, 3e4);
+            return () => clearInterval(t)
+        }, [l, p.finTab, Ee]), 
+        
+        // useEffect separado para carregar dados específicos da aba (só quando muda de aba)
+        useEffect(() => {
+            if (!l) return;
+            const canAccessFinEff = hasModuleAccess(l, "financeiro");
+            if (!canAccessFinEff) return;
+            
+            const e = p.finTab || "home-fin";
+            const loadTabData = async () => {
+                try {
+                    switch (e) {
                         case "restritos":
                             await Ba();
                             break;
@@ -1759,18 +1786,17 @@ const hideLoadingScreen = () => {
                             await Va();
                             break;
                         case "loja":
-                            await Ja(), await Ha()
+                            await Ja(), await Ha();
+                            break;
                     }
-                    "solicitacoes" === e || "validacao" === e ? Pa("solicitacoes") : "loja" === e ? Pa("loja") : "gratuidades" === e && Pa("gratuidades"), h(new Date)
-                } catch (e) {
-                    console.error("Erro no polling:", e)
+                } catch (err) {
+                    console.error("Erro ao carregar aba:", err);
                 }
-                N(!1)
             };
-            e();
-            const t = setInterval(e, 1e4);
-            return () => clearInterval(t)
-        }, [l, p.finTab, Ee]), useEffect(() => {
+            loadTabData();
+        }, [p.finTab]),
+        
+        useEffect(() => {
             if (!l || "admin" !== l.role) return;
             const e = setInterval(async () => {
                 N(!0);
