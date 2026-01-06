@@ -17181,16 +17181,24 @@ const hideLoadingScreen = () => {
                                             user.role !== "admin_master" && React.createElement("button", {
                                                 onClick: async function() {
                                                     const userCod = user.codProfissional || user.cod_profissional;
+                                                    console.log("🗑️ Tentando deletar usuário:", user, "Código:", userCod);
                                                     if (!userCod) {
                                                         ja("❌ Código do usuário não encontrado", "error");
                                                         return;
                                                     }
-                                                    if (confirm("⚠️ Excluir " + user.fullName + "?\\n\\nEsta ação não pode ser desfeita!")) {
+                                                    if (confirm("⚠️ Excluir " + (user.fullName || user.full_name) + "?\\n\\nEsta ação não pode ser desfeita!")) {
                                                         try {
-                                                            await fetch(API_URL + "/users/" + userCod, {method: "DELETE"});
-                                                            ja("🗑️ Usuário excluído!", "success");
-                                                            Ia();
+                                                            const response = await fetch(API_URL + "/users/" + userCod, {method: "DELETE"});
+                                                            console.log("🗑️ Resposta:", response.status, response.statusText);
+                                                            if (response.ok) {
+                                                                ja("🗑️ Usuário excluído!", "success");
+                                                                Ia();
+                                                            } else {
+                                                                const errData = await response.json().catch(() => ({}));
+                                                                ja("❌ Erro: " + (errData.error || response.statusText), "error");
+                                                            }
                                                         } catch (err) {
+                                                            console.error("❌ Erro ao excluir:", err);
                                                             ja("❌ Erro ao excluir", "error");
                                                         }
                                                     }
