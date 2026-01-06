@@ -17180,8 +17180,12 @@ const hideLoadingScreen = () => {
                                             }, "🔑 Senha"),
                                             user.role !== "admin_master" && React.createElement("button", {
                                                 onClick: async function() {
-                                                    const userCod = user.codProfissional || user.cod_profissional;
-                                                    console.log("🗑️ Tentando deletar usuário:", user, "Código:", userCod);
+                                                    let userCod = user.codProfissional || user.cod_profissional;
+                                                    // Remove # se existir no código
+                                                    if (userCod && typeof userCod === 'string') {
+                                                        userCod = userCod.replace('#', '');
+                                                    }
+                                                    console.log("🗑️ Tentando deletar usuário:", user.fullName || user.full_name, "Código:", userCod);
                                                     if (!userCod) {
                                                         ja("❌ Código do usuário não encontrado", "error");
                                                         return;
@@ -17189,7 +17193,6 @@ const hideLoadingScreen = () => {
                                                     if (confirm("⚠️ Excluir " + (user.fullName || user.full_name) + "?\\n\\nEsta ação não pode ser desfeita!")) {
                                                         try {
                                                             const response = await fetch(API_URL + "/users/" + userCod, {method: "DELETE"});
-                                                            console.log("🗑️ Resposta:", response.status, response.statusText);
                                                             if (response.ok) {
                                                                 ja("🗑️ Usuário excluído!", "success");
                                                                 Ia();
