@@ -899,7 +899,7 @@ const hideLoadingScreen = () => {
             validacao: [],
             loja: [],
             gratuidades: []
-        }), [j, C] = useState([]), [A, S] = useState([]), [k, P] = useState(!1), [T, D] = useState(null), [L, I] = useState([]), [F, $] = useState(!1), [M, O] = useState([]), [q, U] = useState([]), [z, B] = useState([]), [V, J] = useState(null), [Q, H] = useState([]), [G, W] = useState([]), [Z, Y] = useState([]), [K, X] = useState({}), [ee, te] = useState([]), [ae, le] = useState([]), [re, oe] = useState([]), [ce, se] = useState([]), [ne, me] = useState([]), [ie, de] = useState([]), [pe, xe] = useState([]), [ue, ge] = useState(!1), [be, Re] = useState(null), [Ee, he] = useState("home"), [mensagemGentileza, setMensagemGentileza] = useState(() => getMensagemGentileza()), [elegibilidadeNovatos, setElegibilidadeNovatos] = useState({ elegivel: false, motivo: '', promocoes: [], carregando: true }), [regioesNovatos, setRegioesNovatos] = useState([]), [fe, Ne] = useState({
+        }), [j, C] = useState([]), [A, S] = useState([]), [k, P] = useState(!1), [T, D] = useState(null), [L, I] = useState([]), [F, $] = useState(!1), [M, O] = useState([]), [q, U] = useState([]), [z, B] = useState([]), [V, J] = useState(null), [Q, H] = useState([]), [G, W] = useState([]), [Z, Y] = useState([]), [K, X] = useState({}), [ee, te] = useState([]), [ae, le] = useState([]), [re, oe] = useState([]), [ce, se] = useState([]), [ne, me] = useState([]), [ie, de] = useState([]), [pe, xe] = useState([]), [ue, ge] = useState(!1), [be, Re] = useState(null), [Ee, he] = useState("home"), [mensagemGentileza, setMensagemGentileza] = useState(() => getMensagemGentileza()), [elegibilidadeNovatos, setElegibilidadeNovatos] = useState({ elegivel: false, motivo: '', promocoes: [], carregando: true }), [regioesNovatos, setRegioesNovatos] = useState([]), [solicitacoesPagina, setSolicitacoesPagina] = useState(1), [solicitacoesPorPagina] = useState(30), [fe, Ne] = useState({
             titulo: "Acerte os procedimentos e ganhe saque gratuito de R$ 500,00",
             imagens: [null, null, null, null],
             perguntas: [{
@@ -8915,46 +8915,46 @@ const hideLoadingScreen = () => {
             }, React.createElement("div", {
                 className: "flex flex-wrap gap-2"
             }, React.createElement("button", {
-                onClick: () => x({
+                onClick: () => { setSolicitacoesPagina(1); x({
                     ...p,
                     filterStatus: ""
-                }),
+                }); },
                 className: "px-4 py-2 rounded-lg font-semibold text-sm " + (p.filterStatus ? "bg-gray-100 hover:bg-gray-200" : "bg-purple-600 text-white")
             }, "📋 Todas (", q.length, ")"), React.createElement("button", {
-                onClick: () => x({
+                onClick: () => { setSolicitacoesPagina(1); x({
                     ...p,
                     filterStatus: "atrasados"
-                }),
+                }); },
                 className: "px-4 py-2 rounded-lg font-semibold text-sm " + ("atrasados" === p.filterStatus ? "bg-red-600 text-white" : "bg-gray-100 hover:bg-gray-200")
             }, "🚨 Atrasados (", q.filter(e => "aguardando_aprovacao" === e.status && Date.now() - new Date(e.created_at).getTime() >= 36e5).length, ")"), React.createElement("button", {
-                onClick: () => x({
+                onClick: () => { setSolicitacoesPagina(1); x({
                     ...p,
                     filterStatus: "aguardando_aprovacao"
-                }),
+                }); },
                 className: "px-4 py-2 rounded-lg font-semibold text-sm " + ("aguardando_aprovacao" === p.filterStatus ? "bg-yellow-500 text-white" : "bg-gray-100 hover:bg-gray-200")
             }, "⏳ Aguardando (", q.filter(e => "aguardando_aprovacao" === e.status).length, ")"), React.createElement("button", {
-                onClick: () => x({
+                onClick: () => { setSolicitacoesPagina(1); x({
                     ...p,
                     filterStatus: "aprovado"
-                }),
+                }); },
                 className: "px-4 py-2 rounded-lg font-semibold text-sm " + ("aprovado" === p.filterStatus ? "bg-green-600 text-white" : "bg-gray-100 hover:bg-gray-200")
             }, "✅ Aprovadas (", q.filter(e => "aprovado" === e.status).length, ")"), React.createElement("button", {
-                onClick: () => x({
+                onClick: () => { setSolicitacoesPagina(1); x({
                     ...p,
                     filterStatus: "aprovado_gratuidade"
-                }),
+                }); },
                 className: "px-4 py-2 rounded-lg font-semibold text-sm " + ("aprovado_gratuidade" === p.filterStatus ? "bg-blue-600 text-white" : "bg-gray-100 hover:bg-gray-200")
             }, "🎁 Aprov. Gratuidade (", q.filter(e => "aprovado_gratuidade" === e.status).length, ")"), React.createElement("button", {
-                onClick: () => x({
+                onClick: () => { setSolicitacoesPagina(1); x({
                     ...p,
                     filterStatus: "rejeitado"
-                }),
+                }); },
                 className: "px-4 py-2 rounded-lg font-semibold text-sm " + ("rejeitado" === p.filterStatus ? "bg-red-600 text-white" : "bg-gray-100 hover:bg-gray-200")
             }, "❌ Rejeitadas (", q.filter(e => "rejeitado" === e.status).length, ")"), React.createElement("button", {
-                onClick: () => x({
+                onClick: () => { setSolicitacoesPagina(1); x({
                     ...p,
                     filterStatus: "inativo"
-                }),
+                }); },
                 className: "px-4 py-2 rounded-lg font-semibold text-sm " + ("inativo" === p.filterStatus ? "bg-orange-500 text-white" : "bg-gray-100 hover:bg-gray-200")
             }, "⚠️ Inativo (", q.filter(e => "inativo" === e.status).length, ")"))), z.length > 0 && React.createElement("div", {
                 className: "bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl p-4 mb-4 shadow-lg"
@@ -9022,7 +9022,15 @@ const hideLoadingScreen = () => {
                 className: "px-2 py-3 text-center w-[160px]"
             }, "Status"), React.createElement("th", {
                 className: "px-2 py-3 text-center w-[50px]"
-            }, "Ações"))), React.createElement("tbody", null, q.filter(e => !p.filterStatus || ("atrasados" === p.filterStatus ? "aguardando_aprovacao" === e.status && Date.now() - new Date(e.created_at).getTime() >= 36e5 : e.status === p.filterStatus)).map(e => {
+            }, "Ações"))), React.createElement("tbody", null, (() => {
+                // Filtra por status
+                const filtradas = q.filter(e => !p.filterStatus || ("atrasados" === p.filterStatus ? "aguardando_aprovacao" === e.status && Date.now() - new Date(e.created_at).getTime() >= 36e5 : e.status === p.filterStatus));
+                // Aplica paginação
+                const inicio = (solicitacoesPagina - 1) * solicitacoesPorPagina;
+                const fim = inicio + solicitacoesPorPagina;
+                const paginadas = filtradas.slice(inicio, fim);
+                return paginadas;
+            })().map(e => {
                 const t = "aguardando_aprovacao" === e.status && Date.now() - new Date(e.created_at).getTime() >= 36e5,
                     a = Math.floor((Date.now() - new Date(e.created_at).getTime()) / 6e4),
                     l = Math.floor(a / 60),
@@ -9197,7 +9205,46 @@ const hideLoadingScreen = () => {
                     className: "px-2 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700",
                     title: "Excluir"
                 }, "🗑️")))
-            })))))), "validacao" === p.finTab && React.createElement(React.Fragment, null, React.createElement("div", {
+            }))), 
+            // Controles de paginação
+            (() => {
+                const filtradas = q.filter(e => !p.filterStatus || ("atrasados" === p.filterStatus ? "aguardando_aprovacao" === e.status && Date.now() - new Date(e.created_at).getTime() >= 36e5 : e.status === p.filterStatus));
+                const totalPaginas = Math.ceil(filtradas.length / solicitacoesPorPagina);
+                if (totalPaginas <= 1) return null;
+                return React.createElement("div", {
+                    className: "flex items-center justify-between bg-white rounded-xl shadow p-4 mt-4"
+                }, 
+                    React.createElement("div", { className: "text-sm text-gray-600" },
+                        `Mostrando ${Math.min((solicitacoesPagina - 1) * solicitacoesPorPagina + 1, filtradas.length)}-${Math.min(solicitacoesPagina * solicitacoesPorPagina, filtradas.length)} de ${filtradas.length} solicitações`
+                    ),
+                    React.createElement("div", { className: "flex items-center gap-2" },
+                        React.createElement("button", {
+                            onClick: () => setSolicitacoesPagina(1),
+                            disabled: solicitacoesPagina === 1,
+                            className: "px-3 py-1 rounded text-sm font-semibold " + (solicitacoesPagina === 1 ? "bg-gray-100 text-gray-400" : "bg-gray-200 text-gray-700 hover:bg-gray-300")
+                        }, "⏮️"),
+                        React.createElement("button", {
+                            onClick: () => setSolicitacoesPagina(p => Math.max(1, p - 1)),
+                            disabled: solicitacoesPagina === 1,
+                            className: "px-3 py-1 rounded text-sm font-semibold " + (solicitacoesPagina === 1 ? "bg-gray-100 text-gray-400" : "bg-gray-200 text-gray-700 hover:bg-gray-300")
+                        }, "◀️ Anterior"),
+                        React.createElement("span", { className: "px-4 py-1 bg-purple-100 text-purple-700 rounded font-bold" },
+                            `${solicitacoesPagina} / ${totalPaginas}`
+                        ),
+                        React.createElement("button", {
+                            onClick: () => setSolicitacoesPagina(p => Math.min(totalPaginas, p + 1)),
+                            disabled: solicitacoesPagina === totalPaginas,
+                            className: "px-3 py-1 rounded text-sm font-semibold " + (solicitacoesPagina === totalPaginas ? "bg-gray-100 text-gray-400" : "bg-gray-200 text-gray-700 hover:bg-gray-300")
+                        }, "Próxima ▶️"),
+                        React.createElement("button", {
+                            onClick: () => setSolicitacoesPagina(totalPaginas),
+                            disabled: solicitacoesPagina === totalPaginas,
+                            className: "px-3 py-1 rounded text-sm font-semibold " + (solicitacoesPagina === totalPaginas ? "bg-gray-100 text-gray-400" : "bg-gray-200 text-gray-700 hover:bg-gray-300")
+                        }, "⏭️")
+                    )
+                );
+            })()
+            ))), "validacao" === p.finTab && React.createElement(React.Fragment, null, React.createElement("div", {
                 className: "bg-white rounded-xl shadow p-4 mb-6"
             }, React.createElement("div", {
                 className: "flex flex-wrap gap-4 items-end"
