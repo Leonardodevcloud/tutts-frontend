@@ -1065,6 +1065,13 @@ const hideLoadingScreen = () => {
         [socialTab, setSocialTab] = useState("perfil"),
         [socialLoading, setSocialLoading] = useState(false),
         [socialModalUser, setSocialModalUser] = useState(null),
+        // Estados para Mensagens da Liderança
+        [liderancaMensagens, setLiderancaMensagens] = useState([]),
+        [liderancaPendentes, setLiderancaPendentes] = useState([]),
+        [liderancaHistorico, setLiderancaHistorico] = useState([]),
+        [liderancaModal, setLiderancaModal] = useState(null), // {tipo: 'criar'|'visualizar'|'notificacao', dados: {...}}
+        [liderancaVisualizacoes, setLiderancaVisualizacoes] = useState([]),
+        [liderancaMensagensJaNotificadas, setLiderancaMensagensJaNotificadas] = useState([]),
         // Estados do Editor de Foto de Perfil
         [photoEditorOpen, setPhotoEditorOpen] = useState(false),
         [photoEditorSrc, setPhotoEditorSrc] = useState(null),
@@ -1516,6 +1523,152 @@ const hideLoadingScreen = () => {
         };
         // ==================== FIM FUNÇÕES MÓDULO SOCIAL ====================
         
+        // ==================== FUNÇÕES MENSAGENS DA LIDERANÇA ====================
+        
+        // Carregar todas as mensagens (para admin_master gerenciar)
+        const loadLiderancaMensagens = async () => {
+            try {
+                const res = await fetch(`${API_URL}/lideranca/mensagens`);
+                if (res.ok) {
+                    const msgs = await res.json();
+                    setLiderancaMensagens(msgs);
+                }
+            } catch (err) {
+                console.error("Erro ao carregar mensagens da liderança:", err);
+            }
+        };
+        
+        // Carregar mensagens pendentes (não visualizadas)
+        const loadLiderancaPendentes = async () => {
+            if (!l?.codProfissional) return [];
+            try {
+                const res = await fetch(`${API_URL}/lideranca/mensagens/pendentes/${l.codProfissional}`);
+                if (res.ok) {
+                    const msgs = await res.json();
+                    setLiderancaPendentes(msgs);
+                    return msgs;
+                }
+            } catch (err) {
+                console.error("Erro ao carregar mensagens pendentes:", err);
+            }
+            return [];
+        };
+        
+        // Carregar histórico de mensagens visualizadas
+        const loadLiderancaHistorico = async () => {
+            if (!l?.codProfissional) return;
+            try {
+                const res = await fetch(`${API_URL}/lideranca/mensagens/historico/${l.codProfissional}`);
+                if (res.ok) {
+                    const msgs = await res.json();
+                    setLiderancaHistorico(msgs);
+                }
+            } catch (err) {
+                console.error("Erro ao carregar histórico:", err);
+            }
+        };
+        
+        // Criar nova mensagem da liderança
+        const criarLiderancaMensagem = async (dados) => {
+            try {
+                const res = await fetch(`${API_URL}/lideranca/mensagens`, {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({
+                        ...dados,
+                        criado_por_cod: l.codProfissional,
+                        criado_por_nome: socialProfile?.display_name || l.fullName,
+                        criado_por_foto: socialProfile?.profile_photo || null
+                    })
+                });
+                if (res.ok) {
+                    ja("✅ Mensagem criada com sucesso!", "success");
+                    setLiderancaModal(null);
+                    await loadLiderancaMensagens();
+                    return true;
+                }
+            } catch (err) {
+                ja("Erro ao criar mensagem", "error");
+            }
+            return false;
+        };
+        
+        // Marcar mensagem como visualizada
+        const marcarLiderancaVisualizada = async (mensagemId) => {
+            try {
+                await fetch(`${API_URL}/lideranca/mensagens/${mensagemId}/visualizar`, {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({
+                        user_cod: l.codProfissional,
+                        user_nome: socialProfile?.display_name || l.fullName,
+                        user_foto: socialProfile?.profile_photo || null
+                    })
+                });
+            } catch (err) {
+                console.error("Erro ao marcar como visualizado:", err);
+            }
+        };
+        
+        // Carregar visualizações de uma mensagem
+        const loadVisualizacoes = async (mensagemId) => {
+            try {
+                const res = await fetch(`${API_URL}/lideranca/mensagens/${mensagemId}/visualizacoes`);
+                if (res.ok) {
+                    const viz = await res.json();
+                    setLiderancaVisualizacoes(viz);
+                }
+            } catch (err) {
+                console.error("Erro ao carregar visualizações:", err);
+            }
+        };
+        
+        // Deletar mensagem
+        const deletarLiderancaMensagem = async (id) => {
+            if (!confirm("Tem certeza que deseja excluir esta mensagem?")) return;
+            try {
+                const res = await fetch(`${API_URL}/lideranca/mensagens/${id}`, { method: "DELETE" });
+                if (res.ok) {
+                    ja("✅ Mensagem excluída!", "success");
+                    await loadLiderancaMensagens();
+                }
+            } catch (err) {
+                ja("Erro ao excluir", "error");
+            }
+        };
+        
+        // Verificar mensagens pendentes (para notificação)
+        const checkLiderancaPendentes = async (isInitialCheck = false) => {
+            if (!l?.codProfissional) return;
+            // Só admins recebem mensagens da liderança
+            if (!["admin", "admin_master", "admin_financeiro"].includes(l.role)) return;
+            
+            try {
+                const pendentes = await loadLiderancaPendentes();
+                
+                if (isInitialCheck) {
+                    // No login, mostra todas as pendentes
+                    if (pendentes.length > 0) {
+                        console.log(`📢 Login: ${pendentes.length} mensagem(ns) da liderança pendente(s)`);
+                        setLiderancaModal({ tipo: 'notificacao', dados: pendentes[0], fila: pendentes });
+                        setLiderancaMensagensJaNotificadas(pendentes.map(m => m.id));
+                    }
+                } else {
+                    // No polling, só mostra novas
+                    const novas = pendentes.filter(m => !liderancaMensagensJaNotificadas.includes(m.id));
+                    if (novas.length > 0) {
+                        console.log(`📢 Polling: ${novas.length} NOVA(S) mensagem(ns) da liderança!`);
+                        setLiderancaModal({ tipo: 'notificacao', dados: novas[0], fila: novas });
+                        setLiderancaMensagensJaNotificadas(prev => [...prev, ...novas.map(m => m.id)]);
+                    }
+                }
+            } catch (err) {
+                console.error("Erro ao verificar mensagens da liderança:", err);
+            }
+        };
+        
+        // ==================== FIM FUNÇÕES MENSAGENS DA LIDERANÇA ====================
+        
         // ==================== FUNÇÕES DO EDITOR DE FOTO DE PERFIL ====================
         const handlePhotoEditorOpen = (file) => {
             if (!file) return;
@@ -1617,6 +1770,12 @@ const hideLoadingScreen = () => {
                     setTimeout(() => checkTodoPendentes(true), 2000); // Aguarda 2s após login - inicial
                 }
                 
+                // Verificar mensagens da liderança (para admins)
+                const isAdmin = ["admin", "admin_master", "admin_financeiro"].includes(l.role);
+                if (isAdmin) {
+                    setTimeout(() => checkLiderancaPendentes(true), 3000); // Aguarda 3s após login
+                }
+                
                 // Atualizar status online periodicamente
                 const statusInterval = setInterval(() => {
                     updateOnlineStatus(true);
@@ -1632,6 +1791,15 @@ const hideLoadingScreen = () => {
                     }, 90000); // A cada 1.5 minutos
                 }
                 
+                // Polling: Verificar novas mensagens da liderança a cada 60 segundos
+                let liderancaPollingInterval = null;
+                if (isAdmin) {
+                    liderancaPollingInterval = setInterval(() => {
+                        console.log("📢 Polling: Verificando mensagens da liderança...");
+                        checkLiderancaPendentes(false);
+                    }, 60000); // A cada 1 minuto
+                }
+                
                 // Marcar como offline ao fechar
                 const handleBeforeUnload = () => updateOnlineStatus(false);
                 window.addEventListener('beforeunload', handleBeforeUnload);
@@ -1639,6 +1807,7 @@ const hideLoadingScreen = () => {
                 return () => {
                     clearInterval(statusInterval);
                     if (todoPollingInterval) clearInterval(todoPollingInterval);
+                    if (liderancaPollingInterval) clearInterval(liderancaPollingInterval);
                     window.removeEventListener('beforeunload', handleBeforeUnload);
                     updateOnlineStatus(false);
                 };
@@ -14668,22 +14837,34 @@ const hideLoadingScreen = () => {
             React.createElement("div", {
                 className: "bg-white border-b sticky top-0 z-10"
             }, React.createElement("div", {
-                className: "max-w-4xl mx-auto flex"
+                className: "max-w-4xl mx-auto flex overflow-x-auto"
             },
                 React.createElement("button", {
                     onClick: () => setSocialTab("perfil"),
-                    className: "flex-1 py-4 text-center font-semibold " + (socialTab === "perfil" ? "text-purple-600 border-b-2 border-purple-600" : "text-gray-500")
-                }, "👤 Meu Perfil"),
+                    className: "flex-1 py-4 text-center font-semibold whitespace-nowrap px-2 " + (socialTab === "perfil" ? "text-purple-600 border-b-2 border-purple-600" : "text-gray-500")
+                }, "👤 Perfil"),
                 React.createElement("button", {
                     onClick: () => { setSocialTab("comunidade"); loadSocialUsers(); },
-                    className: "flex-1 py-4 text-center font-semibold " + (socialTab === "comunidade" ? "text-purple-600 border-b-2 border-purple-600" : "text-gray-500")
+                    className: "flex-1 py-4 text-center font-semibold whitespace-nowrap px-2 " + (socialTab === "comunidade" ? "text-purple-600 border-b-2 border-purple-600" : "text-gray-500")
                 }, "👥 Comunidade"),
                 React.createElement("button", {
                     onClick: () => { setSocialTab("mensagens"); loadSocialMessages(); markMessagesAsRead(); },
-                    className: "flex-1 py-4 text-center font-semibold relative " + (socialTab === "mensagens" ? "text-purple-600 border-b-2 border-purple-600" : "text-gray-500")
+                    className: "flex-1 py-4 text-center font-semibold relative whitespace-nowrap px-2 " + (socialTab === "mensagens" ? "text-purple-600 border-b-2 border-purple-600" : "text-gray-500")
                 }, "💌 Mensagens", socialUnread > 0 && React.createElement("span", {
                     className: "absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center"
-                }, socialUnread > 9 ? "9+" : socialUnread))
+                }, socialUnread > 9 ? "9+" : socialUnread)),
+                // Aba Mensagens da Liderança (para todos admins verem o histórico)
+                ["admin", "admin_master", "admin_financeiro"].includes(l.role) && React.createElement("button", {
+                    onClick: () => { setSocialTab("lideranca_historico"); loadLiderancaHistorico(); },
+                    className: "flex-1 py-4 text-center font-semibold whitespace-nowrap px-2 relative " + (socialTab === "lideranca_historico" ? "text-purple-600 border-b-2 border-purple-600" : "text-gray-500")
+                }, "📢 Liderança", liderancaPendentes.length > 0 && React.createElement("span", {
+                    className: "absolute -top-1 -right-1 bg-orange-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center"
+                }, liderancaPendentes.length)),
+                // Aba Gerenciar (apenas admin_master)
+                l.role === "admin_master" && React.createElement("button", {
+                    onClick: () => { setSocialTab("lideranca_gerenciar"); loadLiderancaMensagens(); },
+                    className: "flex-1 py-4 text-center font-semibold whitespace-nowrap px-2 " + (socialTab === "lideranca_gerenciar" ? "text-purple-600 border-b-2 border-purple-600" : "text-gray-500")
+                }, "⚙️ Gerenciar")
             )),
             
             React.createElement("div", {className: "max-w-4xl mx-auto p-4"},
@@ -14808,6 +14989,405 @@ const hideLoadingScreen = () => {
                                 )
                             )
                         )
+                ),
+                
+                // ========== ABA MENSAGENS DA LIDERANÇA (HISTÓRICO) ==========
+                socialTab === "lideranca_historico" && React.createElement("div", null,
+                    React.createElement("div", {className: "bg-gradient-to-r from-orange-500 to-amber-500 rounded-2xl p-4 mb-4 text-white"},
+                        React.createElement("h2", {className: "text-xl font-bold flex items-center gap-2"}, "📢 Mensagens da Liderança"),
+                        React.createElement("p", {className: "text-sm text-orange-100 mt-1"}, "Comunicados importantes para a equipe")
+                    ),
+                    liderancaHistorico.length === 0 ?
+                        React.createElement("div", {className: "bg-white rounded-2xl shadow-lg p-8 text-center"},
+                            React.createElement("span", {className: "text-6xl block mb-4"}, "📭"),
+                            React.createElement("p", {className: "text-gray-500"}, "Nenhuma mensagem visualizada ainda"),
+                            React.createElement("p", {className: "text-sm text-gray-400 mt-2"}, "Quando você visualizar uma mensagem da liderança, ela aparecerá aqui")
+                        ) :
+                        React.createElement("div", {className: "space-y-4"},
+                            liderancaHistorico.map(msg => 
+                                React.createElement("div", {
+                                    key: msg.id,
+                                    className: "bg-white rounded-xl shadow-lg overflow-hidden"
+                                },
+                                    React.createElement("div", {className: "bg-gradient-to-r from-orange-100 to-amber-100 p-4 border-b"},
+                                        React.createElement("div", {className: "flex items-center gap-3"},
+                                            msg.criado_por_foto ? 
+                                                React.createElement("img", {src: msg.criado_por_foto, className: "w-12 h-12 rounded-full object-cover border-2 border-orange-300"}) :
+                                                React.createElement("div", {className: "w-12 h-12 rounded-full bg-gradient-to-br from-orange-400 to-amber-400 flex items-center justify-center text-white font-bold text-lg"}, 
+                                                    msg.criado_por_nome?.charAt(0)?.toUpperCase() || "?"
+                                                ),
+                                            React.createElement("div", {className: "flex-1"},
+                                                React.createElement("p", {className: "font-bold text-gray-800"}, msg.titulo),
+                                                React.createElement("p", {className: "text-sm text-gray-600"}, "Por: ", msg.criado_por_nome)
+                                            ),
+                                            React.createElement("div", {className: "text-right text-xs text-gray-500"},
+                                                React.createElement("p", null, "Criada: ", new Date(msg.created_at).toLocaleDateString("pt-BR")),
+                                                React.createElement("p", null, "Visualizada: ", new Date(msg.visualizado_em).toLocaleDateString("pt-BR"))
+                                            )
+                                        )
+                                    ),
+                                    React.createElement("div", {className: "p-4"},
+                                        React.createElement("div", {
+                                            className: "prose prose-sm max-w-none text-gray-700",
+                                            dangerouslySetInnerHTML: {__html: msg.conteudo?.replace(/\n/g, '<br>') || ''}
+                                        }),
+                                        msg.midia_url && msg.midia_tipo === 'video' && React.createElement("div", {className: "mt-4"},
+                                            msg.midia_url.includes('youtube') || msg.midia_url.includes('youtu.be') ?
+                                                React.createElement("iframe", {
+                                                    src: msg.midia_url.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/'),
+                                                    className: "w-full aspect-video rounded-lg",
+                                                    allowFullScreen: true
+                                                }) :
+                                                React.createElement("video", {src: msg.midia_url, controls: true, className: "w-full rounded-lg"})
+                                        ),
+                                        msg.midia_url && msg.midia_tipo === 'imagem' && React.createElement("img", {
+                                            src: msg.midia_url,
+                                            className: "mt-4 w-full rounded-lg max-h-96 object-contain"
+                                        }),
+                                        msg.midia_url && msg.midia_tipo === 'audio' && React.createElement("audio", {
+                                            src: msg.midia_url,
+                                            controls: true,
+                                            className: "mt-4 w-full"
+                                        }),
+                                        msg.recorrente && React.createElement("div", {className: "mt-3 flex items-center gap-2 text-xs text-orange-600 bg-orange-50 px-3 py-1 rounded-full w-fit"},
+                                            React.createElement("span", null, "🔄"),
+                                            React.createElement("span", null, "Recorrente: ", msg.tipo_recorrencia)
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                ),
+                
+                // ========== ABA GERENCIAR MENSAGENS (ADMIN_MASTER) ==========
+                socialTab === "lideranca_gerenciar" && l.role === "admin_master" && React.createElement("div", null,
+                    React.createElement("div", {className: "bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl p-4 mb-4 text-white flex justify-between items-center"},
+                        React.createElement("div", null,
+                            React.createElement("h2", {className: "text-xl font-bold flex items-center gap-2"}, "⚙️ Gerenciar Mensagens"),
+                            React.createElement("p", {className: "text-sm text-purple-200 mt-1"}, "Crie e gerencie comunicados para a equipe")
+                        ),
+                        React.createElement("button", {
+                            onClick: () => setLiderancaModal({tipo: 'criar', dados: {}}),
+                            className: "px-4 py-2 bg-white text-purple-600 rounded-xl font-bold hover:bg-purple-50 flex items-center gap-2"
+                        }, "➕ Nova Mensagem")
+                    ),
+                    liderancaMensagens.length === 0 ?
+                        React.createElement("div", {className: "bg-white rounded-2xl shadow-lg p-8 text-center"},
+                            React.createElement("span", {className: "text-6xl block mb-4"}, "📝"),
+                            React.createElement("p", {className: "text-gray-500"}, "Nenhuma mensagem criada ainda"),
+                            React.createElement("button", {
+                                onClick: () => setLiderancaModal({tipo: 'criar', dados: {}}),
+                                className: "mt-4 px-6 py-3 bg-purple-600 text-white rounded-xl font-semibold hover:bg-purple-700"
+                            }, "➕ Criar Primeira Mensagem")
+                        ) :
+                        React.createElement("div", {className: "space-y-4"},
+                            liderancaMensagens.map(msg => 
+                                React.createElement("div", {
+                                    key: msg.id,
+                                    className: "bg-white rounded-xl shadow-lg overflow-hidden"
+                                },
+                                    React.createElement("div", {className: "p-4 border-b flex items-center justify-between"},
+                                        React.createElement("div", {className: "flex items-center gap-3"},
+                                            msg.criado_por_foto ? 
+                                                React.createElement("img", {src: msg.criado_por_foto, className: "w-10 h-10 rounded-full object-cover"}) :
+                                                React.createElement("div", {className: "w-10 h-10 rounded-full bg-purple-200 flex items-center justify-center font-bold text-purple-700"}, 
+                                                    msg.criado_por_nome?.charAt(0)?.toUpperCase() || "?"
+                                                ),
+                                            React.createElement("div", null,
+                                                React.createElement("p", {className: "font-bold text-gray-800"}, msg.titulo),
+                                                React.createElement("p", {className: "text-xs text-gray-500"}, "Criada em ", new Date(msg.created_at).toLocaleString("pt-BR"))
+                                            )
+                                        ),
+                                        React.createElement("div", {className: "flex items-center gap-2"},
+                                            React.createElement("span", {
+                                                className: "px-3 py-1 rounded-full text-xs font-semibold " + (msg.ativo ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500")
+                                            }, msg.ativo ? "✓ Ativo" : "Inativo"),
+                                            msg.recorrente && React.createElement("span", {className: "px-3 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-700"}, "🔄 ", msg.tipo_recorrencia)
+                                        )
+                                    ),
+                                    React.createElement("div", {className: "p-4 bg-gray-50"},
+                                        React.createElement("p", {className: "text-sm text-gray-600 line-clamp-2"}, msg.conteudo?.substring(0, 150), msg.conteudo?.length > 150 ? "..." : "")
+                                    ),
+                                    React.createElement("div", {className: "p-4 flex justify-between items-center border-t"},
+                                        React.createElement("button", {
+                                            onClick: async () => { await loadVisualizacoes(msg.id); setLiderancaModal({tipo: 'visualizacoes', dados: msg}); },
+                                            className: "text-sm text-purple-600 hover:underline flex items-center gap-1"
+                                        }, "👁️ ", msg.total_visualizacoes || 0, " visualização(ões)"),
+                                        React.createElement("div", {className: "flex gap-2"},
+                                            React.createElement("button", {
+                                                onClick: () => setLiderancaModal({tipo: 'editar', dados: msg}),
+                                                className: "px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-sm hover:bg-blue-200"
+                                            }, "✏️ Editar"),
+                                            React.createElement("button", {
+                                                onClick: () => deletarLiderancaMensagem(msg.id),
+                                                className: "px-3 py-1 bg-red-100 text-red-700 rounded-lg text-sm hover:bg-red-200"
+                                            }, "🗑️ Excluir")
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                ),
+                
+                // ========== MODAL CRIAR/EDITAR MENSAGEM DA LIDERANÇA ==========
+                (liderancaModal?.tipo === 'criar' || liderancaModal?.tipo === 'editar') && React.createElement("div", {
+                    className: "fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4",
+                    onClick: () => setLiderancaModal(null)
+                },
+                    React.createElement("div", {
+                        className: "bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto",
+                        onClick: e => e.stopPropagation()
+                    },
+                        React.createElement("div", {className: "bg-gradient-to-r from-purple-600 to-indigo-600 p-4 text-white sticky top-0"},
+                            React.createElement("h2", {className: "text-xl font-bold"}, liderancaModal?.tipo === 'criar' ? "➕ Nova Mensagem" : "✏️ Editar Mensagem"),
+                            React.createElement("p", {className: "text-sm text-purple-200"}, "Crie um comunicado para todos os admins")
+                        ),
+                        React.createElement("div", {className: "p-6 space-y-4"},
+                            // Título
+                            React.createElement("div", null,
+                                React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-1"}, "📝 Título"),
+                                React.createElement("input", {
+                                    type: "text",
+                                    value: liderancaModal?.dados?.titulo || '',
+                                    onChange: e => setLiderancaModal({...liderancaModal, dados: {...liderancaModal.dados, titulo: e.target.value}}),
+                                    className: "w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500",
+                                    placeholder: "Título da mensagem..."
+                                })
+                            ),
+                            // Conteúdo
+                            React.createElement("div", null,
+                                React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-1"}, "💬 Conteúdo"),
+                                React.createElement("textarea", {
+                                    value: liderancaModal?.dados?.conteudo || '',
+                                    onChange: e => setLiderancaModal({...liderancaModal, dados: {...liderancaModal.dados, conteudo: e.target.value}}),
+                                    className: "w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 h-40 resize-none",
+                                    placeholder: "Digite o conteúdo da mensagem...\n\nVocê pode usar quebras de linha para formatar."
+                                }),
+                                React.createElement("p", {className: "text-xs text-gray-500 mt-1"}, "💡 Use Enter para quebrar linhas. A formatação será preservada.")
+                            ),
+                            // Mídia
+                            React.createElement("div", {className: "bg-gray-50 rounded-xl p-4"},
+                                React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-2"}, "📎 Mídia (opcional)"),
+                                React.createElement("div", {className: "flex gap-2 mb-3"},
+                                    React.createElement("button", {
+                                        onClick: () => setLiderancaModal({...liderancaModal, dados: {...liderancaModal.dados, midia_tipo: 'video'}}),
+                                        className: "px-3 py-2 rounded-lg text-sm " + (liderancaModal?.dados?.midia_tipo === 'video' ? "bg-purple-600 text-white" : "bg-gray-200 text-gray-700")
+                                    }, "🎬 Vídeo"),
+                                    React.createElement("button", {
+                                        onClick: () => setLiderancaModal({...liderancaModal, dados: {...liderancaModal.dados, midia_tipo: 'imagem'}}),
+                                        className: "px-3 py-2 rounded-lg text-sm " + (liderancaModal?.dados?.midia_tipo === 'imagem' ? "bg-purple-600 text-white" : "bg-gray-200 text-gray-700")
+                                    }, "🖼️ Imagem"),
+                                    React.createElement("button", {
+                                        onClick: () => setLiderancaModal({...liderancaModal, dados: {...liderancaModal.dados, midia_tipo: 'audio'}}),
+                                        className: "px-3 py-2 rounded-lg text-sm " + (liderancaModal?.dados?.midia_tipo === 'audio' ? "bg-purple-600 text-white" : "bg-gray-200 text-gray-700")
+                                    }, "🎵 Áudio")
+                                ),
+                                liderancaModal?.dados?.midia_tipo && React.createElement("input", {
+                                    type: "text",
+                                    value: liderancaModal?.dados?.midia_url || '',
+                                    onChange: e => setLiderancaModal({...liderancaModal, dados: {...liderancaModal.dados, midia_url: e.target.value}}),
+                                    className: "w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500",
+                                    placeholder: liderancaModal?.dados?.midia_tipo === 'video' ? "Cole o link do YouTube ou URL do vídeo..." : 
+                                                liderancaModal?.dados?.midia_tipo === 'imagem' ? "Cole a URL da imagem..." : "Cole a URL do áudio..."
+                                }),
+                                liderancaModal?.dados?.midia_tipo === 'video' && React.createElement("p", {className: "text-xs text-gray-500 mt-2"}, "💡 Links do YouTube serão reproduzidos automaticamente!")
+                            ),
+                            // Recorrência
+                            React.createElement("div", {className: "bg-orange-50 rounded-xl p-4"},
+                                React.createElement("div", {className: "flex items-center gap-3 mb-3"},
+                                    React.createElement("input", {
+                                        type: "checkbox",
+                                        id: "recorrente",
+                                        checked: liderancaModal?.dados?.recorrente || false,
+                                        onChange: e => setLiderancaModal({...liderancaModal, dados: {...liderancaModal.dados, recorrente: e.target.checked}}),
+                                        className: "w-5 h-5 text-orange-600 rounded"
+                                    }),
+                                    React.createElement("label", {htmlFor: "recorrente", className: "font-semibold text-gray-700"}, "🔄 Mensagem Recorrente")
+                                ),
+                                liderancaModal?.dados?.recorrente && React.createElement("div", {className: "grid grid-cols-2 gap-3"},
+                                    React.createElement("div", null,
+                                        React.createElement("label", {className: "block text-xs text-gray-600 mb-1"}, "Tipo"),
+                                        React.createElement("select", {
+                                            value: liderancaModal?.dados?.tipo_recorrencia || 'diaria',
+                                            onChange: e => setLiderancaModal({...liderancaModal, dados: {...liderancaModal.dados, tipo_recorrencia: e.target.value}}),
+                                            className: "w-full px-3 py-2 border rounded-lg"
+                                        },
+                                            React.createElement("option", {value: "diaria"}, "Diária"),
+                                            React.createElement("option", {value: "semanal"}, "Semanal"),
+                                            React.createElement("option", {value: "mensal"}, "Mensal")
+                                        )
+                                    ),
+                                    React.createElement("div", null,
+                                        React.createElement("label", {className: "block text-xs text-gray-600 mb-1"}, "Intervalo"),
+                                        React.createElement("input", {
+                                            type: "number",
+                                            min: "1",
+                                            value: liderancaModal?.dados?.intervalo_recorrencia || 1,
+                                            onChange: e => setLiderancaModal({...liderancaModal, dados: {...liderancaModal.dados, intervalo_recorrencia: parseInt(e.target.value) || 1}}),
+                                            className: "w-full px-3 py-2 border rounded-lg"
+                                        })
+                                    )
+                                ),
+                                liderancaModal?.dados?.recorrente && React.createElement("p", {className: "text-xs text-orange-600 mt-2"}, 
+                                    "📅 A mensagem será reexibida a cada ", liderancaModal?.dados?.intervalo_recorrencia || 1, " ",
+                                    liderancaModal?.dados?.tipo_recorrencia === 'diaria' ? 'dia(s)' : 
+                                    liderancaModal?.dados?.tipo_recorrencia === 'semanal' ? 'semana(s)' : 'mês(es)'
+                                )
+                            ),
+                            // Botões
+                            React.createElement("div", {className: "flex gap-3 pt-4"},
+                                React.createElement("button", {
+                                    onClick: () => setLiderancaModal(null),
+                                    className: "flex-1 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50"
+                                }, "Cancelar"),
+                                React.createElement("button", {
+                                    onClick: async () => {
+                                        if (!liderancaModal?.dados?.titulo?.trim()) {
+                                            ja("Informe o título", "error");
+                                            return;
+                                        }
+                                        if (!liderancaModal?.dados?.conteudo?.trim()) {
+                                            ja("Informe o conteúdo", "error");
+                                            return;
+                                        }
+                                        if (liderancaModal.tipo === 'criar') {
+                                            await criarLiderancaMensagem(liderancaModal.dados);
+                                        } else {
+                                            // Editar
+                                            try {
+                                                const res = await fetch(`${API_URL}/lideranca/mensagens/${liderancaModal.dados.id}`, {
+                                                    method: "PUT",
+                                                    headers: {"Content-Type": "application/json"},
+                                                    body: JSON.stringify(liderancaModal.dados)
+                                                });
+                                                if (res.ok) {
+                                                    ja("✅ Mensagem atualizada!", "success");
+                                                    setLiderancaModal(null);
+                                                    await loadLiderancaMensagens();
+                                                }
+                                            } catch (err) {
+                                                ja("Erro ao atualizar", "error");
+                                            }
+                                        }
+                                    },
+                                    className: "flex-1 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl font-semibold hover:opacity-90"
+                                }, liderancaModal?.tipo === 'criar' ? "📢 Publicar Mensagem" : "💾 Salvar Alterações")
+                            )
+                        )
+                    )
+                ),
+                
+                // ========== MODAL NOTIFICAÇÃO DE MENSAGEM ==========
+                liderancaModal?.tipo === 'notificacao' && React.createElement("div", {
+                    className: "fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4"
+                },
+                    React.createElement("div", {
+                        className: "bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto animate-bounce-in"
+                    },
+                        React.createElement("div", {className: "bg-gradient-to-r from-orange-500 to-amber-500 p-6 text-white text-center"},
+                            React.createElement("div", {className: "text-5xl mb-2"}, "📢"),
+                            React.createElement("h2", {className: "text-2xl font-bold"}, "Mensagem da Liderança"),
+                            liderancaModal?.fila?.length > 1 && React.createElement("p", {className: "text-sm text-orange-100 mt-1"}, 
+                                "1 de ", liderancaModal.fila.length, " mensagens"
+                            )
+                        ),
+                        React.createElement("div", {className: "p-6"},
+                            // Autor
+                            React.createElement("div", {className: "flex items-center gap-3 mb-4 pb-4 border-b"},
+                                liderancaModal?.dados?.criado_por_foto ?
+                                    React.createElement("img", {src: liderancaModal.dados.criado_por_foto, className: "w-14 h-14 rounded-full object-cover border-2 border-orange-300"}) :
+                                    React.createElement("div", {className: "w-14 h-14 rounded-full bg-gradient-to-br from-orange-400 to-amber-400 flex items-center justify-center text-white font-bold text-xl"}, 
+                                        liderancaModal?.dados?.criado_por_nome?.charAt(0)?.toUpperCase() || "?"
+                                    ),
+                                React.createElement("div", null,
+                                    React.createElement("p", {className: "font-bold text-lg text-gray-800"}, liderancaModal?.dados?.criado_por_nome),
+                                    React.createElement("p", {className: "text-sm text-gray-500"}, new Date(liderancaModal?.dados?.created_at).toLocaleString("pt-BR"))
+                                )
+                            ),
+                            // Título
+                            React.createElement("h3", {className: "text-xl font-bold text-gray-800 mb-3"}, liderancaModal?.dados?.titulo),
+                            // Conteúdo
+                            React.createElement("div", {
+                                className: "text-gray-700 whitespace-pre-wrap mb-4",
+                                dangerouslySetInnerHTML: {__html: liderancaModal?.dados?.conteudo?.replace(/\n/g, '<br>') || ''}
+                            }),
+                            // Mídia
+                            liderancaModal?.dados?.midia_url && liderancaModal?.dados?.midia_tipo === 'video' && React.createElement("div", {className: "mb-4"},
+                                (liderancaModal.dados.midia_url.includes('youtube') || liderancaModal.dados.midia_url.includes('youtu.be')) ?
+                                    React.createElement("iframe", {
+                                        src: liderancaModal.dados.midia_url.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/'),
+                                        className: "w-full aspect-video rounded-lg",
+                                        allowFullScreen: true
+                                    }) :
+                                    React.createElement("video", {src: liderancaModal.dados.midia_url, controls: true, className: "w-full rounded-lg"})
+                            ),
+                            liderancaModal?.dados?.midia_url && liderancaModal?.dados?.midia_tipo === 'imagem' && React.createElement("img", {
+                                src: liderancaModal.dados.midia_url,
+                                className: "mb-4 w-full rounded-lg max-h-64 object-contain"
+                            }),
+                            liderancaModal?.dados?.midia_url && liderancaModal?.dados?.midia_tipo === 'audio' && React.createElement("audio", {
+                                src: liderancaModal.dados.midia_url,
+                                controls: true,
+                                className: "mb-4 w-full"
+                            }),
+                            // Botão
+                            React.createElement("button", {
+                                onClick: async () => {
+                                    await marcarLiderancaVisualizada(liderancaModal.dados.id);
+                                    const filaRestante = liderancaModal.fila?.slice(1) || [];
+                                    if (filaRestante.length > 0) {
+                                        setLiderancaModal({tipo: 'notificacao', dados: filaRestante[0], fila: filaRestante});
+                                    } else {
+                                        setLiderancaModal(null);
+                                        await loadLiderancaHistorico();
+                                    }
+                                },
+                                className: "w-full py-4 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl font-bold text-lg hover:opacity-90"
+                            }, liderancaModal?.fila?.length > 1 ? "✓ Entendido - Próxima" : "✓ Entendido")
+                        )
+                    )
+                ),
+                
+                // ========== MODAL VISUALIZAÇÕES ==========
+                liderancaModal?.tipo === 'visualizacoes' && React.createElement("div", {
+                    className: "fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4",
+                    onClick: () => setLiderancaModal(null)
+                },
+                    React.createElement("div", {
+                        className: "bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[80vh] overflow-hidden",
+                        onClick: e => e.stopPropagation()
+                    },
+                        React.createElement("div", {className: "bg-gradient-to-r from-purple-600 to-indigo-600 p-4 text-white"},
+                            React.createElement("h2", {className: "text-lg font-bold"}, "👁️ Visualizações"),
+                            React.createElement("p", {className: "text-sm text-purple-200"}, liderancaModal?.dados?.titulo)
+                        ),
+                        React.createElement("div", {className: "p-4 max-h-[60vh] overflow-y-auto"},
+                            liderancaVisualizacoes.length === 0 ?
+                                React.createElement("p", {className: "text-center text-gray-500 py-8"}, "Ninguém visualizou ainda") :
+                                React.createElement("div", {className: "space-y-3"},
+                                    liderancaVisualizacoes.map(v => 
+                                        React.createElement("div", {key: v.id, className: "flex items-center gap-3 p-3 bg-gray-50 rounded-xl"},
+                                            v.user_foto ?
+                                                React.createElement("img", {src: v.user_foto, className: "w-10 h-10 rounded-full object-cover"}) :
+                                                React.createElement("div", {className: "w-10 h-10 rounded-full bg-purple-200 flex items-center justify-center font-bold text-purple-700"}, 
+                                                    v.user_nome?.charAt(0)?.toUpperCase() || "?"
+                                                ),
+                                            React.createElement("div", {className: "flex-1"},
+                                                React.createElement("p", {className: "font-semibold text-gray-800"}, v.user_nome),
+                                                React.createElement("p", {className: "text-xs text-gray-500"}, new Date(v.visualizado_em).toLocaleString("pt-BR"))
+                                            ),
+                                            React.createElement("span", {className: "text-green-500"}, "✓")
+                                        )
+                                    )
+                                )
+                        ),
+                        React.createElement("div", {className: "p-4 border-t"},
+                            React.createElement("button", {
+                                onClick: () => setLiderancaModal(null),
+                                className: "w-full py-2 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200"
+                            }, "Fechar")
+                        )
+                    )
                 ),
                 
                 // Modal do Editor de Foto de Perfil (dentro do módulo Social)
