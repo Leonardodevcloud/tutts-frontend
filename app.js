@@ -1791,38 +1791,51 @@ const hideLoadingScreen = () => {
                 // Tamanho da área de visualização (256px)
                 const viewSize = 256;
                 
-                // A imagem é dimensionada para cobrir o viewSize mantendo proporção
+                // Calcular escala para cobrir todo o círculo (como object-fit: cover)
                 const imgAspect = img.width / img.height;
-                let drawWidth, drawHeight;
+                let baseWidth, baseHeight;
                 
                 if (imgAspect > 1) {
-                    // Imagem mais larga que alta
-                    drawHeight = viewSize;
-                    drawWidth = viewSize * imgAspect;
+                    // Imagem mais larga que alta - altura preenche
+                    baseHeight = viewSize;
+                    baseWidth = viewSize * imgAspect;
                 } else {
-                    // Imagem mais alta que larga
-                    drawWidth = viewSize;
-                    drawHeight = viewSize / imgAspect;
+                    // Imagem mais alta que larga - largura preenche
+                    baseWidth = viewSize;
+                    baseHeight = viewSize / imgAspect;
                 }
                 
                 // Aplicar zoom
-                drawWidth *= photoEditorZoom;
-                drawHeight *= photoEditorZoom;
+                const zoomedWidth = baseWidth * photoEditorZoom;
+                const zoomedHeight = baseHeight * photoEditorZoom;
                 
-                // Calcular posição central com offset do arraste
-                const drawX = (outputSize - drawWidth) / 2 + (photoEditorPosition.x * outputSize / viewSize);
-                const drawY = (outputSize - drawHeight) / 2 + (photoEditorPosition.y * outputSize / viewSize);
+                // Escala do viewSize para outputSize
+                const scaleFactor = outputSize / viewSize;
                 
-                // Fundo branco (caso a imagem não cubra tudo)
-                ctx.fillStyle = '#f3f4f6';
+                // Dimensões finais no canvas
+                const finalWidth = zoomedWidth * scaleFactor;
+                const finalHeight = zoomedHeight * scaleFactor;
+                
+                // Posição centralizada com offset do arraste
+                const finalX = (outputSize - finalWidth) / 2 + (photoEditorPosition.x * scaleFactor);
+                const finalY = (outputSize - finalHeight) / 2 + (photoEditorPosition.y * scaleFactor);
+                
+                // Criar clip circular
+                ctx.beginPath();
+                ctx.arc(outputSize / 2, outputSize / 2, outputSize / 2, 0, Math.PI * 2);
+                ctx.closePath();
+                ctx.clip();
+                
+                // Fundo
+                ctx.fillStyle = '#7c3aed';
                 ctx.fillRect(0, 0, outputSize, outputSize);
                 
                 // Desenhar imagem
-                ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
+                ctx.drawImage(img, finalX, finalY, finalWidth, finalHeight);
                 
                 // Converter para base64 com compressão
-                const quality = 0.85;
-                const base64 = canvas.toDataURL('image/jpeg', quality);
+                const quality = 0.9;
+                const base64 = canvas.toDataURL('image/png');
                 
                 // Atualizar preview
                 x({...p, socialPhotoPreview: base64});
