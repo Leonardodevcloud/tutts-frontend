@@ -988,6 +988,7 @@ const hideLoadingScreen = () => {
         [todoFiltroCard, setTodoFiltroCard] = useState(null), // "pendentes", "atrasadas", "concluidas"
         [todoNotifModal, setTodoNotifModal] = useState(false),
         [todoPendentesNotif, setTodoPendentesNotif] = useState([]),
+        [todoTarefasJaNotificadas, setTodoTarefasJaNotificadas] = useState([]), // IDs de tarefas já notificadas
         // NOVOS ESTADOS - Kanban, Subtarefas, Timer
         [todoViewType, setTodoViewType] = useState("lista"), // "lista" | "kanban"
         [todoSubtarefas, setTodoSubtarefas] = useState({}), // {tarefa_id: [subtarefas]}
@@ -1610,10 +1611,10 @@ const hideLoadingScreen = () => {
                 updateOnlineStatus(true);
                 loadSocialMessages();
                 
-                // Verificar tarefas pendentes (para admins)
+                // Verificar tarefas pendentes (para usuários com acesso ao To Do)
                 const canAccessTodoEff = hasModuleAccess(l, "todo");
                 if (canAccessTodoEff) {
-                    setTimeout(() => checkTodoPendentes(), 2000); // Aguarda 2s após login
+                    setTimeout(() => checkTodoPendentes(true), 2000); // Aguarda 2s após login - inicial
                 }
                 
                 // Atualizar status online periodicamente
@@ -1622,12 +1623,22 @@ const hideLoadingScreen = () => {
                     loadSocialMessages();
                 }, 60000); // A cada 1 minuto
                 
+                // Polling: Verificar novas tarefas pendentes a cada 90 segundos
+                let todoPollingInterval = null;
+                if (canAccessTodoEff) {
+                    todoPollingInterval = setInterval(() => {
+                        console.log("🔔 Polling: Verificando novas tarefas...");
+                        checkTodoPendentes(false); // false = apenas novas tarefas
+                    }, 90000); // A cada 1.5 minutos
+                }
+                
                 // Marcar como offline ao fechar
                 const handleBeforeUnload = () => updateOnlineStatus(false);
                 window.addEventListener('beforeunload', handleBeforeUnload);
                 
                 return () => {
                     clearInterval(statusInterval);
+                    if (todoPollingInterval) clearInterval(todoPollingInterval);
                     window.removeEventListener('beforeunload', handleBeforeUnload);
                     updateOnlineStatus(false);
                 };
@@ -3254,7 +3265,8 @@ const hideLoadingScreen = () => {
         
         // Função para verificar tarefas pendentes e mostrar notificação
         // Só notifica se o usuário tem tarefas ATRIBUÍDAS a ele (não as que ele criou)
-        const checkTodoPendentes = async () => {
+        // Só notifica NOVAS tarefas (que ainda não foram notificadas nesta sessão)
+        const checkTodoPendentes = async (isInitialCheck = false) => {
             try {
                 const res = await fetch(`${API_URL}/todo/tarefas?user_cod=${l.codProfissional}&role=${l.role}`);
                 const todas = await res.json();
@@ -3264,8 +3276,6 @@ const hideLoadingScreen = () => {
                 // Normalizar código do usuário para string
                 const meuCod = String(l.codProfissional);
                 const meuNome = l.fullName;
-                
-                console.log("🔔 Verificando pendentes para:", { meuCod, meuNome, totalTarefas: todas.length });
                 
                 const pendentes = todas.filter(t => {
                     // Parsear responsáveis de forma segura
@@ -3281,12 +3291,10 @@ const hideLoadingScreen = () => {
                     }
                     
                     // Verificar se o usuário está na lista de responsáveis
-                    // Normalizar todos os valores para string e verificar diferentes formatos
                     const isAtribuidoParaMim = responsaveis.some(resp => {
                         if (typeof resp === 'string') {
                             return String(resp) === meuCod || resp === meuNome;
                         } else if (typeof resp === 'object' && resp !== null) {
-                            // Caso seja objeto {cod: "...", nome: "..."} ou {user_cod: "..."}
                             const respCod = String(resp.cod || resp.user_cod || '');
                             const respNome = resp.nome || resp.user_name || '';
                             return respCod === meuCod || respNome === meuNome;
@@ -3296,7 +3304,7 @@ const hideLoadingScreen = () => {
                         return false;
                     });
                     
-                    if (!isAtribuidoParaMim) return false; // Só notifica se está atribuída a mim
+                    if (!isAtribuidoParaMim) return false;
                     if (t.status === "concluida") return false;
                     
                     if (t.data_prazo) {
@@ -3307,11 +3315,26 @@ const hideLoadingScreen = () => {
                     return true; // Sem data = considera pendente
                 });
                 
-                console.log("🔔 Tarefas pendentes encontradas:", pendentes.length);
-                
-                if (pendentes.length > 0) {
-                    setTodoPendentesNotif(pendentes);
-                    setTodoNotifModal(true);
+                // Na verificação inicial (login), mostra TODAS as pendentes
+                if (isInitialCheck) {
+                    if (pendentes.length > 0) {
+                        console.log(`🔔 Login: ${pendentes.length} tarefa(s) pendente(s)`);
+                        setTodoPendentesNotif(pendentes);
+                        setTodoNotifModal(true);
+                        // Marca todas como já notificadas
+                        setTodoTarefasJaNotificadas(pendentes.map(t => t.id));
+                    }
+                } else {
+                    // No polling, mostra apenas NOVAS tarefas (não notificadas ainda)
+                    const novasTarefas = pendentes.filter(t => !todoTarefasJaNotificadas.includes(t.id));
+                    
+                    if (novasTarefas.length > 0) {
+                        console.log(`🔔 Polling: ${novasTarefas.length} NOVA(S) tarefa(s) pendente(s)!`);
+                        setTodoPendentesNotif(novasTarefas);
+                        setTodoNotifModal(true);
+                        // Adiciona às já notificadas
+                        setTodoTarefasJaNotificadas(prev => [...prev, ...novasTarefas.map(t => t.id)]);
+                    }
                 }
             } catch (err) {
                 console.error("Erro ao verificar pendentes:", err);
