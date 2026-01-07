@@ -1429,6 +1429,7 @@ const hideLoadingScreen = () => {
         const saveSocialProfile = async (displayName, photoBase64) => {
             try {
                 setSocialLoading(true);
+                console.log("📸 Salvando perfil:", { displayName, temFoto: !!photoBase64, tamanhoFoto: photoBase64?.length });
                 const res = await fetch(`${API_URL}/social/profile/${l.codProfissional}`, {
                     method: "PUT",
                     headers: {"Content-Type": "application/json"},
@@ -1439,10 +1440,16 @@ const hideLoadingScreen = () => {
                 });
                 if (res.ok) {
                     const profile = await res.json();
+                    console.log("📸 Perfil salvo:", profile);
                     setSocialProfile(profile);
                     ja("✅ Perfil atualizado!", "success");
+                } else {
+                    const err = await res.text();
+                    console.error("📸 Erro ao salvar:", err);
+                    ja("Erro ao salvar perfil", "error");
                 }
             } catch (err) {
+                console.error("📸 Erro:", err);
                 ja("Erro ao salvar perfil", "error");
             } finally {
                 setSocialLoading(false);
@@ -14991,10 +14998,10 @@ const hideLoadingScreen = () => {
                         })
                     ),
                     React.createElement("button", {
-                        onClick: () => {
+                        onClick: async () => {
                             const displayName = p.socialDisplayName !== undefined ? p.socialDisplayName : (socialProfile?.display_name || l.fullName);
                             const photo = p.socialPhotoPreview || socialProfile?.profile_photo;
-                            saveSocialProfile(displayName, photo);
+                            await saveSocialProfile(displayName, photo);
                             x({...p, socialPhotoPreview: undefined, socialDisplayName: undefined});
                         },
                         disabled: socialLoading,
@@ -15451,7 +15458,7 @@ const hideLoadingScreen = () => {
                     className: "fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4"
                 },
                     React.createElement("div", {
-                        className: "bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto animate-bounce-in"
+                        className: "bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-bounce-in"
                     },
                         React.createElement("div", {className: "bg-gradient-to-r from-orange-500 to-amber-500 p-6 text-white text-center"},
                             React.createElement("div", {className: "text-5xl mb-2"}, "📢"),
