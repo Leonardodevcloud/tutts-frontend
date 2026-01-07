@@ -1072,6 +1072,13 @@ const hideLoadingScreen = () => {
         [liderancaModal, setLiderancaModal] = useState(null), // {tipo: 'criar'|'visualizar'|'notificacao', dados: {...}}
         [liderancaVisualizacoes, setLiderancaVisualizacoes] = useState([]),
         [liderancaMensagensJaNotificadas, setLiderancaMensagensJaNotificadas] = useState([]),
+        // Estados para gravação de áudio
+        [liderancaGravando, setLiderancaGravando] = useState(false),
+        [liderancaMediaRecorder, setLiderancaMediaRecorder] = useState(null),
+        [liderancaAudioChunks, setLiderancaAudioChunks] = useState([]),
+        [liderancaAudioPreview, setLiderancaAudioPreview] = useState(null),
+        // Estado para preview de imagem
+        [liderancaImagemPreview, setLiderancaImagemPreview] = useState(null),
         // Estados do Editor de Foto de Perfil
         [photoEditorOpen, setPhotoEditorOpen] = useState(false),
         [photoEditorSrc, setPhotoEditorSrc] = useState(null),
@@ -1584,6 +1591,8 @@ const hideLoadingScreen = () => {
                 if (res.ok) {
                     ja("✅ Mensagem criada com sucesso!", "success");
                     setLiderancaModal(null);
+                    setLiderancaImagemPreview(null);
+                    setLiderancaAudioPreview(null);
                     await loadLiderancaMensagens();
                     return true;
                 }
@@ -1665,6 +1674,81 @@ const hideLoadingScreen = () => {
             } catch (err) {
                 console.error("Erro ao verificar mensagens da liderança:", err);
             }
+        };
+        
+        // Função para iniciar gravação de áudio
+        const iniciarGravacaoAudio = async () => {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const mediaRecorder = new MediaRecorder(stream);
+                const chunks = [];
+                
+                mediaRecorder.ondataavailable = (e) => {
+                    if (e.data.size > 0) {
+                        chunks.push(e.data);
+                    }
+                };
+                
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(chunks, { type: 'audio/webm' });
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        setLiderancaAudioPreview(reader.result);
+                        setLiderancaModal(prev => ({
+                            ...prev,
+                            dados: { ...prev.dados, midia_url: reader.result, midia_tipo: 'audio' }
+                        }));
+                    };
+                    reader.readAsDataURL(blob);
+                    stream.getTracks().forEach(track => track.stop());
+                };
+                
+                setLiderancaMediaRecorder(mediaRecorder);
+                setLiderancaAudioChunks(chunks);
+                mediaRecorder.start();
+                setLiderancaGravando(true);
+                ja("🎙️ Gravando...", "success");
+            } catch (err) {
+                console.error("Erro ao acessar microfone:", err);
+                ja("❌ Não foi possível acessar o microfone", "error");
+            }
+        };
+        
+        // Função para parar gravação de áudio
+        const pararGravacaoAudio = () => {
+            if (liderancaMediaRecorder && liderancaGravando) {
+                liderancaMediaRecorder.stop();
+                setLiderancaGravando(false);
+                ja("✅ Áudio gravado!", "success");
+            }
+        };
+        
+        // Função para upload de imagem
+        const handleLiderancaImagemUpload = (file) => {
+            if (!file) return;
+            if (file.size > 5 * 1024 * 1024) {
+                ja("Imagem muito grande! Máximo 5MB", "error");
+                return;
+            }
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setLiderancaImagemPreview(reader.result);
+                setLiderancaModal(prev => ({
+                    ...prev,
+                    dados: { ...prev.dados, midia_url: reader.result, midia_tipo: 'imagem' }
+                }));
+            };
+            reader.readAsDataURL(file);
+        };
+        
+        // Limpar mídia
+        const limparLiderancaMidia = () => {
+            setLiderancaImagemPreview(null);
+            setLiderancaAudioPreview(null);
+            setLiderancaModal(prev => ({
+                ...prev,
+                dados: { ...prev.dados, midia_url: null, midia_tipo: null }
+            }));
         };
         
         // ==================== FIM FUNÇÕES MENSAGENS DA LIDERANÇA ====================
@@ -1773,7 +1857,7 @@ const hideLoadingScreen = () => {
                 // Verificar mensagens da liderança (para admins)
                 const isAdmin = ["admin", "admin_master", "admin_financeiro"].includes(l.role);
                 if (isAdmin) {
-                    setTimeout(() => checkLiderancaPendentes(true), 3000); // Aguarda 3s após login
+                    setTimeout(() => checkLiderancaPendentes(true), 1000); // Aguarda 1s após login
                 }
                 
                 // Atualizar status online periodicamente
@@ -15168,29 +15252,114 @@ const hideLoadingScreen = () => {
                             // Mídia
                             React.createElement("div", {className: "bg-gray-50 rounded-xl p-4"},
                                 React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-2"}, "📎 Mídia (opcional)"),
-                                React.createElement("div", {className: "flex gap-2 mb-3"},
+                                React.createElement("div", {className: "flex gap-2 mb-3 flex-wrap"},
                                     React.createElement("button", {
-                                        onClick: () => setLiderancaModal({...liderancaModal, dados: {...liderancaModal.dados, midia_tipo: 'video'}}),
+                                        onClick: () => { limparLiderancaMidia(); setLiderancaModal({...liderancaModal, dados: {...liderancaModal.dados, midia_tipo: 'video', midia_url: ''}}); },
                                         className: "px-3 py-2 rounded-lg text-sm " + (liderancaModal?.dados?.midia_tipo === 'video' ? "bg-purple-600 text-white" : "bg-gray-200 text-gray-700")
                                     }, "🎬 Vídeo"),
                                     React.createElement("button", {
-                                        onClick: () => setLiderancaModal({...liderancaModal, dados: {...liderancaModal.dados, midia_tipo: 'imagem'}}),
+                                        onClick: () => { limparLiderancaMidia(); setLiderancaModal({...liderancaModal, dados: {...liderancaModal.dados, midia_tipo: 'imagem', midia_url: ''}}); },
                                         className: "px-3 py-2 rounded-lg text-sm " + (liderancaModal?.dados?.midia_tipo === 'imagem' ? "bg-purple-600 text-white" : "bg-gray-200 text-gray-700")
                                     }, "🖼️ Imagem"),
                                     React.createElement("button", {
-                                        onClick: () => setLiderancaModal({...liderancaModal, dados: {...liderancaModal.dados, midia_tipo: 'audio'}}),
+                                        onClick: () => { limparLiderancaMidia(); setLiderancaModal({...liderancaModal, dados: {...liderancaModal.dados, midia_tipo: 'audio', midia_url: ''}}); },
                                         className: "px-3 py-2 rounded-lg text-sm " + (liderancaModal?.dados?.midia_tipo === 'audio' ? "bg-purple-600 text-white" : "bg-gray-200 text-gray-700")
-                                    }, "🎵 Áudio")
+                                    }, "🎵 Áudio"),
+                                    liderancaModal?.dados?.midia_tipo && React.createElement("button", {
+                                        onClick: limparLiderancaMidia,
+                                        className: "px-3 py-2 rounded-lg text-sm bg-red-100 text-red-600 hover:bg-red-200"
+                                    }, "✕ Limpar")
                                 ),
-                                liderancaModal?.dados?.midia_tipo && React.createElement("input", {
-                                    type: "text",
-                                    value: liderancaModal?.dados?.midia_url || '',
-                                    onChange: e => setLiderancaModal({...liderancaModal, dados: {...liderancaModal.dados, midia_url: e.target.value}}),
-                                    className: "w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500",
-                                    placeholder: liderancaModal?.dados?.midia_tipo === 'video' ? "Cole o link do YouTube ou URL do vídeo..." : 
-                                                liderancaModal?.dados?.midia_tipo === 'imagem' ? "Cole a URL da imagem..." : "Cole a URL do áudio..."
-                                }),
-                                liderancaModal?.dados?.midia_tipo === 'video' && React.createElement("p", {className: "text-xs text-gray-500 mt-2"}, "💡 Links do YouTube serão reproduzidos automaticamente!")
+                                
+                                // Vídeo - Input de URL
+                                liderancaModal?.dados?.midia_tipo === 'video' && React.createElement("div", null,
+                                    React.createElement("input", {
+                                        type: "text",
+                                        value: liderancaModal?.dados?.midia_url || '',
+                                        onChange: e => setLiderancaModal({...liderancaModal, dados: {...liderancaModal.dados, midia_url: e.target.value}}),
+                                        className: "w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500",
+                                        placeholder: "Cole o link do YouTube ou URL do vídeo..."
+                                    }),
+                                    React.createElement("p", {className: "text-xs text-gray-500 mt-2"}, "💡 Links do YouTube serão reproduzidos automaticamente!")
+                                ),
+                                
+                                // Imagem - Upload ou URL
+                                liderancaModal?.dados?.midia_tipo === 'imagem' && React.createElement("div", {className: "space-y-3"},
+                                    React.createElement("div", {className: "flex gap-2"},
+                                        React.createElement("label", {
+                                            className: "flex-1 py-3 bg-purple-100 text-purple-700 rounded-xl font-semibold text-center cursor-pointer hover:bg-purple-200 transition-colors"
+                                        },
+                                            "📤 Fazer Upload",
+                                            React.createElement("input", {
+                                                type: "file",
+                                                accept: "image/*",
+                                                className: "hidden",
+                                                onChange: e => handleLiderancaImagemUpload(e.target.files[0])
+                                            })
+                                        )
+                                    ),
+                                    React.createElement("div", {className: "flex items-center gap-2"},
+                                        React.createElement("div", {className: "flex-1 h-px bg-gray-300"}),
+                                        React.createElement("span", {className: "text-xs text-gray-500"}, "ou cole uma URL"),
+                                        React.createElement("div", {className: "flex-1 h-px bg-gray-300"})
+                                    ),
+                                    React.createElement("input", {
+                                        type: "text",
+                                        value: !liderancaModal?.dados?.midia_url?.startsWith('data:') ? (liderancaModal?.dados?.midia_url || '') : '',
+                                        onChange: e => setLiderancaModal({...liderancaModal, dados: {...liderancaModal.dados, midia_url: e.target.value}}),
+                                        className: "w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500",
+                                        placeholder: "Cole a URL da imagem..."
+                                    }),
+                                    // Preview da imagem
+                                    (liderancaImagemPreview || liderancaModal?.dados?.midia_url) && React.createElement("div", {className: "mt-3"},
+                                        React.createElement("p", {className: "text-xs text-gray-500 mb-2"}, "📷 Preview:"),
+                                        React.createElement("img", {
+                                            src: liderancaImagemPreview || liderancaModal?.dados?.midia_url,
+                                            className: "max-h-48 rounded-lg border object-contain"
+                                        })
+                                    )
+                                ),
+                                
+                                // Áudio - Gravação ou URL
+                                liderancaModal?.dados?.midia_tipo === 'audio' && React.createElement("div", {className: "space-y-3"},
+                                    // Botões de gravação
+                                    React.createElement("div", {className: "flex gap-2"},
+                                        !liderancaGravando ? 
+                                            React.createElement("button", {
+                                                onClick: iniciarGravacaoAudio,
+                                                className: "flex-1 py-3 bg-red-500 text-white rounded-xl font-semibold hover:bg-red-600 flex items-center justify-center gap-2"
+                                            }, "🎙️ Iniciar Gravação") :
+                                            React.createElement("button", {
+                                                onClick: pararGravacaoAudio,
+                                                className: "flex-1 py-3 bg-gray-800 text-white rounded-xl font-semibold hover:bg-gray-900 flex items-center justify-center gap-2 animate-pulse"
+                                            }, "⏹️ Parar Gravação")
+                                    ),
+                                    liderancaGravando && React.createElement("div", {className: "flex items-center justify-center gap-2 text-red-600"},
+                                        React.createElement("span", {className: "w-3 h-3 bg-red-600 rounded-full animate-pulse"}),
+                                        React.createElement("span", {className: "text-sm font-medium"}, "Gravando...")
+                                    ),
+                                    React.createElement("div", {className: "flex items-center gap-2"},
+                                        React.createElement("div", {className: "flex-1 h-px bg-gray-300"}),
+                                        React.createElement("span", {className: "text-xs text-gray-500"}, "ou cole uma URL"),
+                                        React.createElement("div", {className: "flex-1 h-px bg-gray-300"})
+                                    ),
+                                    React.createElement("input", {
+                                        type: "text",
+                                        value: !liderancaModal?.dados?.midia_url?.startsWith('data:') ? (liderancaModal?.dados?.midia_url || '') : '',
+                                        onChange: e => setLiderancaModal({...liderancaModal, dados: {...liderancaModal.dados, midia_url: e.target.value}}),
+                                        className: "w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500",
+                                        placeholder: "Cole a URL do áudio..."
+                                    }),
+                                    // Preview do áudio
+                                    (liderancaAudioPreview || liderancaModal?.dados?.midia_url) && React.createElement("div", {className: "mt-3"},
+                                        React.createElement("p", {className: "text-xs text-gray-500 mb-2"}, "🎵 Preview:"),
+                                        React.createElement("audio", {
+                                            src: liderancaAudioPreview || liderancaModal?.dados?.midia_url,
+                                            controls: true,
+                                            className: "w-full"
+                                        })
+                                    )
+                                )
                             ),
                             // Recorrência
                             React.createElement("div", {className: "bg-orange-50 rounded-xl p-4"},
