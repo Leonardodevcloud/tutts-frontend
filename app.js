@@ -1788,23 +1788,37 @@ const hideLoadingScreen = () => {
                 canvas.width = outputSize;
                 canvas.height = outputSize;
                 
-                // Tamanho da área de visualização (256px = w-64 h-64)
+                // Tamanho da área de visualização (256px)
                 const viewSize = 256;
                 
-                // Calcular escala
-                const scale = Math.min(img.width, img.height) / viewSize * photoEditorZoom;
-                const srcSize = outputSize * scale / photoEditorZoom;
+                // A imagem é dimensionada para cobrir o viewSize mantendo proporção
+                const imgAspect = img.width / img.height;
+                let drawWidth, drawHeight;
                 
-                // Calcular posição do centro considerando o arraste
-                const centerX = img.width / 2 - (photoEditorPosition.x * scale / photoEditorZoom);
-                const centerY = img.height / 2 - (photoEditorPosition.y * scale / photoEditorZoom);
+                if (imgAspect > 1) {
+                    // Imagem mais larga que alta
+                    drawHeight = viewSize;
+                    drawWidth = viewSize * imgAspect;
+                } else {
+                    // Imagem mais alta que larga
+                    drawWidth = viewSize;
+                    drawHeight = viewSize / imgAspect;
+                }
                 
-                // Calcular área de recorte
-                const srcX = Math.max(0, Math.min(img.width - srcSize, centerX - srcSize / 2));
-                const srcY = Math.max(0, Math.min(img.height - srcSize, centerY - srcSize / 2));
+                // Aplicar zoom
+                drawWidth *= photoEditorZoom;
+                drawHeight *= photoEditorZoom;
                 
-                // Desenhar imagem recortada
-                ctx.drawImage(img, srcX, srcY, srcSize, srcSize, 0, 0, outputSize, outputSize);
+                // Calcular posição central com offset do arraste
+                const drawX = (outputSize - drawWidth) / 2 + (photoEditorPosition.x * outputSize / viewSize);
+                const drawY = (outputSize - drawHeight) / 2 + (photoEditorPosition.y * outputSize / viewSize);
+                
+                // Fundo branco (caso a imagem não cubra tudo)
+                ctx.fillStyle = '#f3f4f6';
+                ctx.fillRect(0, 0, outputSize, outputSize);
+                
+                // Desenhar imagem
+                ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
                 
                 // Converter para base64 com compressão
                 const quality = 0.85;
