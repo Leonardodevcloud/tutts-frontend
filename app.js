@@ -3020,13 +3020,40 @@ const hideLoadingScreen = () => {
                 const hoje = new Date();
                 hoje.setHours(0, 0, 0, 0);
                 
+                // Normalizar código do usuário para string
+                const meuCod = String(l.codProfissional);
+                const meuNome = l.fullName;
+                
                 // Filtrar APENAS tarefas ATRIBUÍDAS ao usuário (não as que ele criou)
                 // que são do dia ou vencidas
                 const meuDia = todas.filter(t => {
-                    const responsaveis = Array.isArray(t.responsaveis) ? t.responsaveis : (typeof t.responsaveis === 'string' ? JSON.parse(t.responsaveis || '[]') : []);
+                    // Parsear responsáveis de forma segura
+                    let responsaveis = [];
+                    try {
+                        if (Array.isArray(t.responsaveis)) {
+                            responsaveis = t.responsaveis;
+                        } else if (typeof t.responsaveis === 'string' && t.responsaveis) {
+                            responsaveis = JSON.parse(t.responsaveis);
+                        }
+                    } catch (e) {
+                        responsaveis = [];
+                    }
                     
-                    // Verifica se o usuário está na lista de responsáveis (por cod ou nome)
-                    const isAtribuidoParaMim = responsaveis.includes(l.codProfissional) || responsaveis.includes(l.fullName);
+                    // Verificar se o usuário está na lista de responsáveis
+                    // Normalizar todos os valores para string e verificar diferentes formatos
+                    const isAtribuidoParaMim = responsaveis.some(resp => {
+                        if (typeof resp === 'string') {
+                            return String(resp) === meuCod || resp === meuNome;
+                        } else if (typeof resp === 'object' && resp !== null) {
+                            // Caso seja objeto {cod: "...", nome: "..."} ou {user_cod: "..."}
+                            const respCod = String(resp.cod || resp.user_cod || '');
+                            const respNome = resp.nome || resp.user_name || '';
+                            return respCod === meuCod || respNome === meuNome;
+                        } else if (typeof resp === 'number') {
+                            return String(resp) === meuCod;
+                        }
+                        return false;
+                    });
                     
                     if (!isAtribuidoParaMim) return false; // Só mostra se está atribuída a mim
                     if (t.status === "concluida") return false; // Não mostrar concluídas no meu dia
@@ -3234,11 +3261,40 @@ const hideLoadingScreen = () => {
                 const hoje = new Date();
                 hoje.setHours(0, 0, 0, 0);
                 
+                // Normalizar código do usuário para string
+                const meuCod = String(l.codProfissional);
+                const meuNome = l.fullName;
+                
+                console.log("🔔 Verificando pendentes para:", { meuCod, meuNome, totalTarefas: todas.length });
+                
                 const pendentes = todas.filter(t => {
-                    const responsaveis = Array.isArray(t.responsaveis) ? t.responsaveis : (typeof t.responsaveis === 'string' ? JSON.parse(t.responsaveis || '[]') : []);
+                    // Parsear responsáveis de forma segura
+                    let responsaveis = [];
+                    try {
+                        if (Array.isArray(t.responsaveis)) {
+                            responsaveis = t.responsaveis;
+                        } else if (typeof t.responsaveis === 'string' && t.responsaveis) {
+                            responsaveis = JSON.parse(t.responsaveis);
+                        }
+                    } catch (e) {
+                        responsaveis = [];
+                    }
                     
-                    // Verifica se o usuário está na lista de responsáveis (por cod ou nome)
-                    const isAtribuidoParaMim = responsaveis.includes(l.codProfissional) || responsaveis.includes(l.fullName);
+                    // Verificar se o usuário está na lista de responsáveis
+                    // Normalizar todos os valores para string e verificar diferentes formatos
+                    const isAtribuidoParaMim = responsaveis.some(resp => {
+                        if (typeof resp === 'string') {
+                            return String(resp) === meuCod || resp === meuNome;
+                        } else if (typeof resp === 'object' && resp !== null) {
+                            // Caso seja objeto {cod: "...", nome: "..."} ou {user_cod: "..."}
+                            const respCod = String(resp.cod || resp.user_cod || '');
+                            const respNome = resp.nome || resp.user_name || '';
+                            return respCod === meuCod || respNome === meuNome;
+                        } else if (typeof resp === 'number') {
+                            return String(resp) === meuCod;
+                        }
+                        return false;
+                    });
                     
                     if (!isAtribuidoParaMim) return false; // Só notifica se está atribuída a mim
                     if (t.status === "concluida") return false;
@@ -3250,6 +3306,8 @@ const hideLoadingScreen = () => {
                     }
                     return true; // Sem data = considera pendente
                 });
+                
+                console.log("🔔 Tarefas pendentes encontradas:", pendentes.length);
                 
                 if (pendentes.length > 0) {
                     setTodoPendentesNotif(pendentes);
