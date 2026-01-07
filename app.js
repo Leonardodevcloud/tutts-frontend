@@ -1072,6 +1072,9 @@ const hideLoadingScreen = () => {
         [liderancaModal, setLiderancaModal] = useState(null), // {tipo: 'criar'|'visualizar'|'notificacao', dados: {...}}
         [liderancaVisualizacoes, setLiderancaVisualizacoes] = useState([]),
         [liderancaMensagensJaNotificadas, setLiderancaMensagensJaNotificadas] = useState([]),
+        [liderancaVizPorMsg, setLiderancaVizPorMsg] = useState({}), // {msg_id: [{user_cod, user_foto, user_nome}]}
+        [liderancaReacoes, setLiderancaReacoes] = useState({}), // {msg_id: [{user_cod, emoji}]}
+        [liderancaImagemExpandida, setLiderancaImagemExpandida] = useState(null), // URL da imagem expandida
         // Estados para gravação de áudio
         [liderancaGravando, setLiderancaGravando] = useState(false),
         [liderancaMediaRecorder, setLiderancaMediaRecorder] = useState(null),
@@ -1576,9 +1579,61 @@ const hideLoadingScreen = () => {
                 if (res.ok) {
                     const msgs = await res.json();
                     setLiderancaHistorico(msgs);
+                    // Carregar visualizações e reações de cada mensagem
+                    for (const msg of msgs) {
+                        loadVizPorMensagem(msg.id);
+                        loadReacoesPorMensagem(msg.id);
+                    }
                 }
             } catch (err) {
                 console.error("Erro ao carregar histórico:", err);
+            }
+        };
+        
+        // Carregar visualizações de uma mensagem específica (para exibir fotos no rodapé)
+        const loadVizPorMensagem = async (msgId) => {
+            try {
+                const res = await fetch(`${API_URL}/lideranca/mensagens/${msgId}/visualizacoes`);
+                if (res.ok) {
+                    const viz = await res.json();
+                    setLiderancaVizPorMsg(prev => ({...prev, [msgId]: viz}));
+                }
+            } catch (err) {
+                console.error("Erro ao carregar visualizações:", err);
+            }
+        };
+        
+        // Carregar reações de uma mensagem
+        const loadReacoesPorMensagem = async (msgId) => {
+            try {
+                const res = await fetch(`${API_URL}/lideranca/mensagens/${msgId}/reacoes`);
+                if (res.ok) {
+                    const reacoes = await res.json();
+                    setLiderancaReacoes(prev => ({...prev, [msgId]: reacoes}));
+                }
+            } catch (err) {
+                // Ignora se endpoint não existir ainda
+            }
+        };
+        
+        // Enviar reação a uma mensagem
+        const enviarReacaoLideranca = async (msgId, emoji) => {
+            try {
+                const res = await fetch(`${API_URL}/lideranca/mensagens/${msgId}/reagir`, {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({
+                        user_cod: l.codProfissional,
+                        user_nome: socialProfile?.display_name || l.fullName,
+                        user_foto: socialProfile?.profile_photo || null,
+                        emoji: emoji
+                    })
+                });
+                if (res.ok) {
+                    await loadReacoesPorMensagem(msgId);
+                }
+            } catch (err) {
+                console.error("Erro ao enviar reação:", err);
             }
         };
         
@@ -15160,7 +15215,9 @@ const hideLoadingScreen = () => {
                                         ),
                                         msg.midia_url && msg.midia_tipo === 'imagem' && React.createElement("img", {
                                             src: msg.midia_url,
-                                            className: "mt-4 w-full rounded-lg max-h-96 object-contain"
+                                            onClick: () => setLiderancaImagemExpandida(msg.midia_url),
+                                            className: "mt-4 w-full rounded-lg max-h-96 object-contain cursor-pointer hover:opacity-90 transition-opacity",
+                                            title: "Clique para expandir"
                                         }),
                                         msg.midia_url && msg.midia_tipo === 'audio' && React.createElement("audio", {
                                             src: msg.midia_url,
@@ -15170,6 +15227,49 @@ const hideLoadingScreen = () => {
                                         msg.recorrente && React.createElement("div", {className: "mt-3 flex items-center gap-2 text-xs text-orange-600 bg-orange-50 px-3 py-1 rounded-full w-fit"},
                                             React.createElement("span", null, "🔄"),
                                             React.createElement("span", null, "Recorrente: ", msg.tipo_recorrencia)
+                                        )
+                                    ),
+                                    // Rodapé com visualizações e reações
+                                    React.createElement("div", {className: "px-4 py-3 bg-gray-50 border-t flex items-center justify-between"},
+                                        // Fotos dos usuários que visualizaram
+                                        React.createElement("div", {className: "flex items-center gap-2"},
+                                            React.createElement("span", {className: "text-xs text-gray-500 mr-1"}, "👁️ Visto por:"),
+                                            React.createElement("div", {className: "flex -space-x-2"},
+                                                (liderancaVizPorMsg[msg.id] || []).slice(0, 8).map((viz, idx) => 
+                                                    viz.user_foto ?
+                                                        React.createElement("img", {
+                                                            key: idx,
+                                                            src: viz.user_foto,
+                                                            title: viz.user_nome,
+                                                            className: "w-7 h-7 rounded-full border-2 border-white object-cover hover:scale-110 transition-transform cursor-pointer"
+                                                        }) :
+                                                        React.createElement("div", {
+                                                            key: idx,
+                                                            title: viz.user_nome,
+                                                            className: "w-7 h-7 rounded-full border-2 border-white bg-gradient-to-br from-orange-400 to-amber-400 flex items-center justify-center text-white text-xs font-bold hover:scale-110 transition-transform cursor-pointer"
+                                                        }, viz.user_nome?.charAt(0)?.toUpperCase() || "?")
+                                                ),
+                                                (liderancaVizPorMsg[msg.id] || []).length > 8 && React.createElement("div", {
+                                                    className: "w-7 h-7 rounded-full border-2 border-white bg-gray-400 flex items-center justify-center text-white text-xs font-bold"
+                                                }, "+", (liderancaVizPorMsg[msg.id] || []).length - 8)
+                                            )
+                                        ),
+                                        // Reações
+                                        React.createElement("div", {className: "flex items-center gap-1"},
+                                            (liderancaReacoes[msg.id] || []).length > 0 && React.createElement("div", {className: "flex items-center gap-1 mr-2 bg-white px-2 py-1 rounded-full shadow-sm"},
+                                                [...new Set((liderancaReacoes[msg.id] || []).map(r => r.emoji))].map((emoji, idx) => 
+                                                    React.createElement("span", {key: idx, className: "text-sm", title: (liderancaReacoes[msg.id] || []).filter(r => r.emoji === emoji).map(r => r.user_nome).join(', ')}, emoji)
+                                                ),
+                                                React.createElement("span", {className: "text-xs text-gray-500 ml-1"}, (liderancaReacoes[msg.id] || []).length)
+                                            ),
+                                            // Botões de reação
+                                            ["✅", "🔥", "🎉", "💜", "😍"].map(emoji => 
+                                                React.createElement("button", {
+                                                    key: emoji,
+                                                    onClick: () => enviarReacaoLideranca(msg.id, emoji),
+                                                    className: "text-lg hover:scale-125 transition-transform hover:bg-gray-200 rounded-full p-1"
+                                                }, emoji)
+                                            )
                                         )
                                     )
                                 )
@@ -15526,13 +15626,31 @@ const hideLoadingScreen = () => {
                             ),
                             liderancaModal?.dados?.midia_url && liderancaModal?.dados?.midia_tipo === 'imagem' && React.createElement("img", {
                                 src: liderancaModal.dados.midia_url,
-                                className: "mb-4 w-full rounded-lg max-h-64 object-contain"
+                                onClick: () => setLiderancaImagemExpandida(liderancaModal.dados.midia_url),
+                                className: "mb-4 w-full rounded-lg max-h-64 object-contain cursor-pointer hover:opacity-90 transition-opacity",
+                                title: "Clique para expandir"
                             }),
                             liderancaModal?.dados?.midia_url && liderancaModal?.dados?.midia_tipo === 'audio' && React.createElement("audio", {
                                 src: liderancaModal.dados.midia_url,
                                 controls: true,
                                 className: "mb-4 w-full"
                             }),
+                            // Emojis de reação
+                            React.createElement("div", {className: "mb-4"},
+                                React.createElement("p", {className: "text-sm text-gray-600 mb-2 text-center"}, "Deixe sua reação:"),
+                                React.createElement("div", {className: "flex justify-center gap-2"},
+                                    ["✅", "🔥", "🎉", "💜", "😍"].map(emoji => 
+                                        React.createElement("button", {
+                                            key: emoji,
+                                            onClick: async () => {
+                                                await enviarReacaoLideranca(liderancaModal.dados.id, emoji);
+                                                ja(`${emoji} Reação enviada!`, "success");
+                                            },
+                                            className: "text-3xl hover:scale-125 transition-transform hover:bg-orange-100 rounded-full p-2"
+                                        }, emoji)
+                                    )
+                                )
+                            ),
                             // Botão
                             React.createElement("button", {
                                 onClick: async () => {
@@ -15549,6 +15667,25 @@ const hideLoadingScreen = () => {
                             }, liderancaModal?.fila?.length > 1 ? "✓ Entendido - Próxima" : "✓ Entendido")
                         )
                     )
+                ),
+                
+                // ========== MODAL IMAGEM EXPANDIDA ==========
+                liderancaImagemExpandida && React.createElement("div", {
+                    className: "fixed inset-0 bg-black/90 z-[60] flex items-center justify-center p-4 cursor-pointer",
+                    onClick: () => setLiderancaImagemExpandida(null)
+                },
+                    React.createElement("button", {
+                        onClick: () => setLiderancaImagemExpandida(null),
+                        className: "absolute top-4 right-4 text-white text-4xl hover:text-gray-300 z-10"
+                    }, "✕"),
+                    React.createElement("img", {
+                        src: liderancaImagemExpandida,
+                        className: "max-w-full max-h-full object-contain rounded-lg shadow-2xl",
+                        onClick: e => e.stopPropagation()
+                    }),
+                    React.createElement("p", {
+                        className: "absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white/70 text-sm"
+                    }, "Clique fora da imagem ou no ✕ para fechar")
                 ),
                 
                 // ========== MODAL VISUALIZAÇÕES ==========
