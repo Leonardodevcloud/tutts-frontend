@@ -13782,7 +13782,55 @@ const hideLoadingScreen = () => {
                 }, "💡 Dicas de Backup"), React.createElement("ul", {
                     className: "text-sm text-amber-700 mt-2 space-y-1"
                 }, React.createElement("li", null, "• Faça backups regularmente (recomendado: semanalmente)"), React.createElement("li", null, "• O arquivo JSON pode ser usado para restaurar dados"), React.createElement("li", null, "• O arquivo CSV pode ser aberto no Excel ou Google Sheets"), React.createElement("li", null, "• Guarde os backups em local seguro (Google Drive, OneDrive, etc.)"))))
-            })())))
+            })())), "saldo-plific" === p.finTab && React.createElement("div", {className: "space-y-6"},
+    React.createElement("div", {className: "bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl p-6 text-white"},
+        React.createElement("h2", {className: "text-2xl font-bold mb-2"}, "💳 Saldo Plific"),
+        React.createElement("p", {className: "text-purple-100"}, "Consulte saldos dos profissionais")
+    ),
+    React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-6"},
+        React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-4"}, "🔍 Consulta Individual"),
+        React.createElement("div", {className: "flex gap-3 items-end flex-wrap"},
+            React.createElement("div", {className: "flex-1 min-w-[200px]"},
+                React.createElement("label", {className: "block text-sm font-medium text-gray-700 mb-1"}, "ID do Profissional"),
+                React.createElement("input", {
+                    type: "number",
+                    value: plificState.idBusca,
+                    onChange: function(e) { setPlificState(Object.assign({}, plificState, {idBusca: e.target.value})); },
+                    placeholder: "Digite o ID...",
+                    className: "w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500"
+                })
+            ),
+            React.createElement("button", {
+                onClick: function() { consultarSaldoPlific(plificState.idBusca); },
+                disabled: plificState.loading,
+                className: "px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
+            }, plificState.loading ? "Consultando..." : "🔍 Consultar")
+        ),
+        plificState.consultaIndividual && plificState.consultaIndividual.profissional && React.createElement("div", {className: "mt-6 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200"},
+            React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-4 gap-4"},
+                React.createElement("div", null,
+                    React.createElement("p", {className: "text-sm text-gray-500"}, "Nome"),
+                    React.createElement("p", {className: "font-semibold text-gray-800"}, plificState.consultaIndividual.profissional.nome || "-")
+                ),
+                React.createElement("div", null,
+                    React.createElement("p", {className: "text-sm text-gray-500"}, "CPF"),
+                    React.createElement("p", {className: "font-semibold text-gray-800"}, plificState.consultaIndividual.profissional.cpf || "-")
+                ),
+                React.createElement("div", null,
+                    React.createElement("p", {className: "text-sm text-gray-500"}, "Celular"),
+                    React.createElement("p", {className: "font-semibold text-gray-800"}, plificState.consultaIndividual.profissional.celular || "-")
+                ),
+                React.createElement("div", null,
+                    React.createElement("p", {className: "text-sm text-gray-500"}, "Saldo"),
+                    React.createElement("p", {className: "text-2xl font-bold text-green-600"}, "R$ " + (plificState.consultaIndividual.profissional.saldo || 0).toFixed(2))
+                )
+            )
+        )
+    ),
+    React.createElement("div", {className: "bg-amber-50 border border-amber-200 rounded-lg p-4"},
+        React.createElement("p", {className: "text-sm text-amber-800"}, "⚠️ Ambiente de TESTE - Use ID 8888 para testar")
+    )
+))
         }
         // Verificar permissão para TO-DO (admin comum)
         const canAccessTodo = hasModuleAccess(l, "todo");
