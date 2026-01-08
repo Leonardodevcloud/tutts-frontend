@@ -18164,7 +18164,7 @@ const hideLoadingScreen = () => {
                                                     const newPass = prompt("Nova senha para " + user.fullName + ":");
                                                     if (newPass && newPass.length >= 4) {
                                                         try {
-                                                            await fetch(API_URL + "/users/reset-password", {
+                                                            await fetchAuth(API_URL + "/users/reset-password", {
                                                                 method: "POST",
                                                                 headers: {"Content-Type": "application/json"},
                                                                 body: JSON.stringify({codProfissional: user.codProfissional, newPassword: newPass})
@@ -18193,7 +18193,7 @@ const hideLoadingScreen = () => {
                                                     }
                                                     if (confirm("⚠️ Excluir " + (user.fullName || user.full_name) + "?\\n\\nEsta ação não pode ser desfeita!")) {
                                                         try {
-                                                            const response = await fetch(API_URL + "/users/" + userCod, {method: "DELETE"});
+                                                            const response = await fetchAuth(API_URL + "/users/" + userCod, {method: "DELETE"});
                                                             if (response.ok) {
                                                                 ja("🗑️ Usuário excluído!", "success");
                                                                 Ia();
@@ -27475,7 +27475,7 @@ const hideLoadingScreen = () => {
         }), React.createElement("button", {
             onClick: async () => {
                 const t = p[`newpass_${e.codProfissional}`];
-                !t || t.length < 4 ? ja("Senha muito curta", "error") : (await fetch(`${API_URL}/users/reset-password`, {
+                !t || t.length < 4 ? ja("Senha muito curta", "error") : (await fetchAuth(`${API_URL}/users/reset-password`, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json"
@@ -27495,7 +27495,7 @@ const hideLoadingScreen = () => {
                 const t = `⚠️ ATENÇÃO!\n\nExcluir ${e.fullName} (${e.codProfissional})?\n\nTODOS os dados associados serão excluídos:\n• Solicitações de saque\n• Histórico de saques\n• Gratuidades\n• Indicações\n• Inscrições em promoções\n• Respostas do quiz\n\nEsta ação NÃO pode ser desfeita!`;
                 if (confirm(t)) {
                     try {
-                        const t = await fetch(`${API_URL}/users/${e.codProfissional}`, {
+                        const t = await fetchAuth(`${API_URL}/users/${e.codProfissional}`, {
                                 method: "DELETE"
                             }),
                             a = await t.json();
