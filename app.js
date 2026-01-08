@@ -5694,7 +5694,13 @@ const hideLoadingScreen = () => {
                             pixKey: T.pix_key,
                             requestedAmount: e
                         })
-                    }), ja("✅ Saque solicitado!", "success"), x({
+                    }), ja("✅ Saque solicitado!", "success"), 
+                    // Abater visualmente do saldo (débito real será feito pelo financeiro)
+                    setSaldoPlificUser(prev => ({
+                        ...prev,
+                        saldo: prev.saldo !== null ? Math.max(0, prev.saldo - e) : null
+                    })),
+                    x({
                         ...p,
                         withdrawAmount: ""
                     }), Oa(), qa()
