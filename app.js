@@ -1192,7 +1192,7 @@ const hideLoadingScreen = () => {
         [regiaoClienteSelecionado, setRegiaoClienteSelecionado] = useState([]), // array de cod_cliente selecionados
         [regiaoCentrosCusto, setRegiaoCentrosCusto] = useState({}), // {cod_cliente: [centros]}
         [regiaoItensAdicionados, setRegiaoItensAdicionados] = useState([]), // [{cod_cliente, nome_cliente, centro_custo}]
-        [regiaoEditando, setRegiaoEditando] = useState(null), [plificState, setPlificState] = useState({ loading: false, loadingLote: false, consultaIndividual: null, consultaLote: [], idBusca: "", loadingDebito: false }), [modalDebitoPlific, setModalDebitoPlific] = useState(null), [debitoFormPlific, setDebitoFormPlific] = useState({ valor: "", descricao: "" }), [saldoPlificUser, setSaldoPlificUser] = useState({ saldo: null, loading: false, erro: null }),
+        [regiaoEditando, setRegiaoEditando] = useState(null), [plificState, setPlificState] = useState({ loading: false, loadingLote: false, consultaIndividual: null, consultaLote: [], idBusca: "", loadingDebito: false, pagina: 1, totalPaginas: 0, total: 0, somaTotal: 0 }), [modalDebitoPlific, setModalDebitoPlific] = useState(null), [debitoFormPlific, setDebitoFormPlific] = useState({ valor: "", descricao: "" }), [saldoPlificUser, setSaldoPlificUser] = useState({ saldo: null, loading: false, erro: null }),
         // Estados para dropdowns da aba Config
         [configSecaoAberta, setConfigSecaoAberta] = useState(""), // "" = todas fechadas
         ja = (e, t = "success") => {
@@ -2328,35 +2328,27 @@ const hideLoadingScreen = () => {
 
 
         // Consulta em Lote - busca saldos de múltiplos profissionais
-        const consultarSaldosLotePlific = async () => {
-            setPlificState(prev => ({ ...prev, loadingLote: true, consultaLote: [] }));
+        const consultarSaldosLotePlific = async (pagina = 1) => {
+            setPlificState(prev => ({ ...prev, loadingLote: true }));
             try {
-                // Primeiro busca lista de profissionais do banco local
-                const resProfissionais = await fetchAuth(`${API_URL}/plific/profissionais`);
-                const profissionais = await resProfissionais.json();
-                
-                if (!profissionais || profissionais.length === 0) {
-                    ja("Nenhum profissional encontrado", "warning");
-                    setPlificState(prev => ({ ...prev, loadingLote: false }));
-                    return;
-                }
-
-                // Limita a 100 profissionais por vez
-                const ids = profissionais.slice(0, 100).map(p => p.id || p.codigo);
-                
-                // Consulta em lote via backend
-                const response = await fetchAuth(`${API_URL}/plific/saldos-lote`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ ids })
-                });
-                
+                const response = await fetchAuth(`${API_URL}/plific/saldos-todos?pagina=${pagina}&porPagina=15`);
                 const data = await response.json();
                 
-                if (!response.ok) throw new Error(data.error || "Erro ao consultar lote");
+                if (!response.ok) throw new Error(data.error || "Erro ao consultar saldos");
                 
-                setPlificState(prev => ({ ...prev, consultaLote: data.resultados || [], loadingLote: false }));
-                ja(`${(data.resultados || []).filter(r => !r.erro).length} saldos consultados!`, "success");
+                setPlificState(prev => ({ 
+                    ...prev, 
+                    consultaLote: data.profissionais || [], 
+                    pagina: data.pagina || 1,
+                    totalPaginas: data.totalPaginas || 0,
+                    total: data.total || 0,
+                    somaTotal: data.somaTotal || 0,
+                    loadingLote: false 
+                }));
+                
+                if (pagina === 1) {
+                    ja(`${data.total || 0} profissionais encontrados!`, "success");
+                }
             } catch (error) {
                 setPlificState(prev => ({ ...prev, loadingLote: false }));
                 ja(error.message, "error");
@@ -14039,61 +14031,89 @@ const hideLoadingScreen = () => {
         )
     ),
     
-    // Consulta em Lote
+    // Histórico de Saldos
     React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-6"},
         React.createElement("div", {className: "flex items-center justify-between mb-4 flex-wrap gap-2"},
-            React.createElement("h3", {className: "text-lg font-bold text-gray-800"}, "📋 Consulta em Lote"),
+            React.createElement("div", null,
+                React.createElement("h3", {className: "text-lg font-bold text-gray-800"}, "📊 Histórico de Saldos"),
+                plificState.total > 0 && React.createElement("p", {className: "text-sm text-gray-500"}, 
+                    plificState.total + " profissionais | Soma total: R$ " + (plificState.somaTotal || 0).toFixed(2).replace(".", ",")
+                )
+            ),
             React.createElement("div", {className: "flex gap-2"},
                 React.createElement("button", {
-                    onClick: consultarSaldosLotePlific,
+                    onClick: function() { consultarSaldosLotePlific(1); },
                     disabled: plificState.loadingLote,
                     className: "px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
-                }, plificState.loadingLote ? "⏳ Carregando..." : "🔄 Carregar Saldos"),
+                }, plificState.loadingLote ? "⏳ Carregando..." : "🔄 Atualizar"),
                 plificState.consultaLote.length > 0 && React.createElement("button", {
                     onClick: exportarSaldosCSVPlific,
                     className: "px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-                }, "📥 Exportar CSV")
+                }, "📥 CSV")
             )
         ),
         plificState.loadingLote ? React.createElement("div", {className: "text-center py-12"},
             React.createElement("div", {className: "animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"}),
-            React.createElement("p", {className: "mt-4 text-gray-500"}, "Consultando saldos...")
-        ) : plificState.consultaLote.length > 0 ? React.createElement("div", {className: "overflow-x-auto"},
-            React.createElement("table", {className: "w-full"},
-                React.createElement("thead", {className: "bg-gray-100"},
-                    React.createElement("tr", null,
-                        React.createElement("th", {className: "px-4 py-3 text-left text-xs font-semibold text-gray-600"}, "ID"),
-                        React.createElement("th", {className: "px-4 py-3 text-left text-xs font-semibold text-gray-600"}, "Nome"),
-                        React.createElement("th", {className: "px-4 py-3 text-left text-xs font-semibold text-gray-600"}, "CPF"),
-                        React.createElement("th", {className: "px-4 py-3 text-right text-xs font-semibold text-gray-600"}, "Saldo"),
-                        React.createElement("th", {className: "px-4 py-3 text-center text-xs font-semibold text-gray-600"}, "Ações")
+            React.createElement("p", {className: "mt-4 text-gray-500"}, "Consultando saldos... isso pode demorar alguns segundos")
+        ) : plificState.consultaLote.length > 0 ? React.createElement(React.Fragment, null,
+            React.createElement("div", {className: "overflow-x-auto"},
+                React.createElement("table", {className: "w-full"},
+                    React.createElement("thead", {className: "bg-gray-100"},
+                        React.createElement("tr", null,
+                            React.createElement("th", {className: "px-4 py-3 text-left text-xs font-semibold text-gray-600"}, "#"),
+                            React.createElement("th", {className: "px-4 py-3 text-left text-xs font-semibold text-gray-600"}, "Código"),
+                            React.createElement("th", {className: "px-4 py-3 text-left text-xs font-semibold text-gray-600"}, "Nome"),
+                            React.createElement("th", {className: "px-4 py-3 text-left text-xs font-semibold text-gray-600"}, "CPF"),
+                            React.createElement("th", {className: "px-4 py-3 text-right text-xs font-semibold text-gray-600"}, "Saldo"),
+                            React.createElement("th", {className: "px-4 py-3 text-center text-xs font-semibold text-gray-600"}, "Ações")
+                        )
+                    ),
+                    React.createElement("tbody", null,
+                        plificState.consultaLote.map(function(prof, idx) {
+                            var saldoNum = parseFloat(prof.saldo || 0);
+                            var posicao = ((plificState.pagina - 1) * 15) + idx + 1;
+                            return React.createElement("tr", {key: prof.codigo || idx, className: idx % 2 === 0 ? "bg-white hover:bg-gray-50" : "bg-gray-50 hover:bg-gray-100"},
+                                React.createElement("td", {className: "px-4 py-3 text-sm text-gray-400"}, posicao),
+                                React.createElement("td", {className: "px-4 py-3 text-sm font-mono"}, prof.codigo),
+                                React.createElement("td", {className: "px-4 py-3 text-sm font-medium"}, prof.nome || "-"),
+                                React.createElement("td", {className: "px-4 py-3 text-sm text-gray-600"}, prof.cpf || "-"),
+                                React.createElement("td", {className: "px-4 py-3 text-sm text-right font-bold " + (saldoNum > 0 ? "text-green-600" : saldoNum < 0 ? "text-red-600" : "text-gray-400")}, 
+                                    "R$ " + saldoNum.toFixed(2).replace(".", ",")
+                                ),
+                                React.createElement("td", {className: "px-4 py-3 text-center"},
+                                    React.createElement("button", {
+                                        onClick: function() { setModalDebitoPlific({...prof, id: prof.codigo}); setDebitoFormPlific({valor: "", descricao: ""}); },
+                                        className: "px-3 py-1 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 text-xs font-medium"
+                                    }, "💳 Débito")
+                                )
+                            );
+                        })
                     )
-                ),
-                React.createElement("tbody", null,
-                    plificState.consultaLote.filter(function(r) { return !r.erro; }).map(function(prof, idx) {
-                        var saldoNum = parseFloat(String(prof.saldo || 0).replace(",", "."));
-                        return React.createElement("tr", {key: prof.idProf || prof.id || idx, className: idx % 2 === 0 ? "bg-white" : "bg-gray-50"},
-                            React.createElement("td", {className: "px-4 py-2 text-sm"}, prof.idProf || prof.id || prof.codigo),
-                            React.createElement("td", {className: "px-4 py-2 text-sm font-medium"}, prof.nome || "-"),
-                            React.createElement("td", {className: "px-4 py-2 text-sm text-gray-600"}, prof.cpf || "-"),
-                            React.createElement("td", {className: "px-4 py-2 text-sm text-right font-semibold " + (saldoNum >= 0 ? "text-green-600" : "text-red-600")}, "R$ " + saldoNum.toFixed(2).replace(".", ",")),
-                            React.createElement("td", {className: "px-4 py-2 text-center"},
-                                React.createElement("button", {
-                                    onClick: function() { setModalDebitoPlific(prof); setDebitoFormPlific({valor: "", descricao: ""}); },
-                                    className: "px-3 py-1 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 text-xs font-medium"
-                                }, "💳 Débito")
-                            )
-                        );
-                    })
                 )
             ),
-            React.createElement("div", {className: "mt-4 text-sm text-gray-500"},
-                "Total: " + plificState.consultaLote.filter(function(r) { return !r.erro; }).length + " profissionais | ",
-                "Saldo total: R$ " + plificState.consultaLote.filter(function(r) { return !r.erro; }).reduce(function(acc, p) { return acc + parseFloat(String(p.saldo || 0).replace(",", ".")); }, 0).toFixed(2).replace(".", ",")
+            // Paginação
+            plificState.totalPaginas > 1 && React.createElement("div", {className: "flex items-center justify-between mt-4 pt-4 border-t"},
+                React.createElement("p", {className: "text-sm text-gray-500"},
+                    "Página " + plificState.pagina + " de " + plificState.totalPaginas
+                ),
+                React.createElement("div", {className: "flex gap-2"},
+                    React.createElement("button", {
+                        onClick: function() { consultarSaldosLotePlific(plificState.pagina - 1); },
+                        disabled: plificState.pagina <= 1 || plificState.loadingLote,
+                        className: "px-3 py-1 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                    }, "← Anterior"),
+                    React.createElement("button", {
+                        onClick: function() { consultarSaldosLotePlific(plificState.pagina + 1); },
+                        disabled: plificState.pagina >= plificState.totalPaginas || plificState.loadingLote,
+                        className: "px-3 py-1 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                    }, "Próxima →")
+                )
             )
         ) : React.createElement("div", {className: "text-center py-12 text-gray-500"},
-            React.createElement("p", null, "Clique em \"Carregar Saldos\" para consultar os profissionais"),
-            React.createElement("p", {className: "text-xs mt-2"}, "Serão carregados até 100 profissionais por vez")
+            React.createElement("div", {className: "text-5xl mb-4"}, "📊"),
+            React.createElement("p", {className: "font-medium"}, "Histórico de Saldos"),
+            React.createElement("p", {className: "text-sm mt-2"}, "Clique em \"Atualizar\" para carregar os saldos de todos os profissionais"),
+            React.createElement("p", {className: "text-xs mt-1 text-gray-400"}, "Ordenado do maior para o menor saldo")
         )
     ),
     
