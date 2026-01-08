@@ -9748,15 +9748,22 @@ const hideLoadingScreen = () => {
                         var a, l
                     },
                     className: "px-1 py-1 border rounded text-xs w-full"
-                }, React.createElement("option", {
+                }, 
+                React.createElement("option", {
                     value: "aguardando_aprovacao"
-                }, "⏳ Aguardando"), React.createElement("option", {
+                }, "⏳ Aguardando"), 
+                // Mostrar "Aprovado" apenas para saques SEM gratuidade
+                !e.has_gratuity && React.createElement("option", {
                     value: "aprovado"
-                }, "✅ Aprovado"), React.createElement("option", {
+                }, "✅ Aprovado"), 
+                // Mostrar "c/ Gratuidade" apenas para saques COM gratuidade
+                e.has_gratuity && React.createElement("option", {
                     value: "aprovado_gratuidade"
-                }, "✅ c/ Gratuidade"), React.createElement("option", {
+                }, "✅ c/ Gratuidade"), 
+                React.createElement("option", {
                     value: "rejeitado"
-                }, "❌ Rejeitado"), React.createElement("option", {
+                }, "❌ Rejeitado"), 
+                React.createElement("option", {
                     value: "inativo"
                 }, "⚠️ Inativo")), p[`showReject_${e.id}`] && React.createElement("div", {
                     className: "mt-2 space-y-2"
