@@ -2236,7 +2236,26 @@ const hideLoadingScreen = () => {
                     })
                 }
             })()
-        }, [l, p.userTab]), useEffect(() => {
+        }, [l, p.userTab]), 
+        
+        // Polling para atualizar histórico de saques do usuário a cada 15 segundos
+        useEffect(() => {
+            if (!l || "user" !== l.role) return;
+            if ("saque" !== p.userTab) return;
+            
+            // Atualiza imediatamente ao entrar
+            Oa();
+            
+            // Polling a cada 15 segundos
+            const pollingInterval = setInterval(() => {
+                Oa();
+                buscarSaldoPlificUsuario();
+            }, 15000);
+            
+            return () => clearInterval(pollingInterval);
+        }, [l, p.userTab]),
+        
+        useEffect(() => {
             T && T.pix_tipo && x(e => ({
                 ...e,
                 pixTipo: T.pix_tipo,
