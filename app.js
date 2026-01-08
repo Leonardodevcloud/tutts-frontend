@@ -13822,7 +13822,7 @@ const hideLoadingScreen = () => {
                 ),
                 React.createElement("div", null,
                     React.createElement("p", {className: "text-sm text-gray-500"}, "Saldo"),
-                    React.createElement("p", {className: "text-2xl font-bold text-green-600"}, "R$ " + (plificState.consultaIndividual.profissional.saldo || 0).toFixed(2))
+                    React.createElement("p", {className: "text-2xl font-bold text-green-600"}, "R$ " + parseFloat(String(plificState.consultaIndividual.profissional.saldo || 0).replace(",", ".")).toFixed(2).replace(".", ","))
                 )
             )
         )
