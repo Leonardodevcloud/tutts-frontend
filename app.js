@@ -1192,7 +1192,7 @@ const hideLoadingScreen = () => {
         [regiaoClienteSelecionado, setRegiaoClienteSelecionado] = useState([]), // array de cod_cliente selecionados
         [regiaoCentrosCusto, setRegiaoCentrosCusto] = useState({}), // {cod_cliente: [centros]}
         [regiaoItensAdicionados, setRegiaoItensAdicionados] = useState([]), // [{cod_cliente, nome_cliente, centro_custo}]
-        [regiaoEditando, setRegiaoEditando] = useState(null), [plificState, setPlificState] = useState({ loading: false, loadingLote: false, consultaIndividual: null, consultaLote: [], idBusca: "", loadingDebito: false }), [modalDebitoPlific, setModalDebitoPlific] = useState(null), [debitoFormPlific, setDebitoFormPlific] = useState({ valor: "", descricao: "" }),
+        [regiaoEditando, setRegiaoEditando] = useState(null), [plificState, setPlificState] = useState({ loading: false, loadingLote: false, consultaIndividual: null, consultaLote: [], idBusca: "", loadingDebito: false }), [modalDebitoPlific, setModalDebitoPlific] = useState(null), [debitoFormPlific, setDebitoFormPlific] = useState({ valor: "", descricao: "" }), [saldoPlificUser, setSaldoPlificUser] = useState({ saldo: null, loading: false, erro: null }),
         // Estados para dropdowns da aba Config
         [configSecaoAberta, setConfigSecaoAberta] = useState(""), // "" = todas fechadas
         ja = (e, t = "success") => {
@@ -2223,7 +2223,7 @@ const hideLoadingScreen = () => {
         }, [l, p.finTab]), useEffect(() => {
             if (!l || "user" !== l.role) return;
             if ("saque" !== p.userTab) return;
-            We(!1), Je(0), Be(null);
+            We(!1), Je(0), Be(null); buscarSaldoPlificUsuario();
             (async () => {
                 try {
                     const [e, t] = await Promise.all([fetch(`${API_URL}/horarios/verificar`).then(e => e.json()), fetch(`${API_URL}/avisos?ativos=true`).then(e => e.json())]);
@@ -2404,6 +2404,28 @@ const hideLoadingScreen = () => {
             a.click();
             URL.revokeObjectURL(url);
             ja("CSV exportado!", "success");
+        };
+
+
+        // Buscar saldo Plific do usuário logado (para tela de saque)
+        const buscarSaldoPlificUsuario = async () => {
+            if (!l || !l.cod_profissional) return;
+            
+            setSaldoPlificUser(prev => ({ ...prev, loading: true, erro: null }));
+            try {
+                const response = await fetchAuth(`${API_URL}/plific/saldo/${l.cod_profissional}`);
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    setSaldoPlificUser({ saldo: null, loading: false, erro: data.error || "Erro ao consultar saldo" });
+                    return;
+                }
+                
+                const saldoNum = data.profissional ? parseFloat(String(data.profissional.saldo || 0).replace(",", ".")) : 0;
+                setSaldoPlificUser({ saldo: saldoNum, loading: false, erro: null });
+            } catch (error) {
+                setSaldoPlificUser({ saldo: null, loading: false, erro: error.message });
+            }
         };
 
         
@@ -5641,6 +5663,13 @@ const hideLoadingScreen = () => {
             const e = parseFloat(p.withdrawAmount);
             if (!e || e <= 0) return void ja("Valor inválido", "error");
             if (e < 10) return void ja("⚠️ Valor mínimo é R$ 10,00", "error");
+            // Verificar saldo Plific
+            if (saldoPlificUser.saldo !== null && e > saldoPlificUser.saldo) {
+                return void ja("⚠️ Saldo insuficiente! Seu saldo é R$ " + saldoPlificUser.saldo.toFixed(2).replace(".", ","), "error");
+            }
+            if (saldoPlificUser.saldo !== null && saldoPlificUser.saldo <= 0) {
+                return void ja("⚠️ Você não possui saldo disponível para saque!", "error");
+            }
             const t = new Date,
                 a = new Date(t.getTime() - 36e5),
                 r = M.filter(e => new Date(e.created_at) >= a);
@@ -7251,7 +7280,36 @@ const hideLoadingScreen = () => {
             }
             return React.createElement("div", {
                 className: "space-y-4"
-            }, React.createElement("div", {
+            }, 
+            // Card Saldo Plific
+            React.createElement("div", {
+                className: "rounded-xl p-4 border-2 " + (saldoPlificUser.loading ? "bg-gray-50 border-gray-200" : saldoPlificUser.erro ? "bg-red-50 border-red-300" : saldoPlificUser.saldo !== null && saldoPlificUser.saldo <= 0 ? "bg-red-50 border-red-300" : "bg-purple-50 border-purple-300")
+            }, 
+                React.createElement("div", {className: "flex items-center justify-between"},
+                    React.createElement("div", {className: "flex items-center gap-3"},
+                        React.createElement("span", {className: "text-3xl"}, "💰"),
+                        React.createElement("div", null,
+                            React.createElement("p", {className: "text-sm font-medium text-gray-600"}, "Seu Saldo Disponível"),
+                            saldoPlificUser.loading ? 
+                                React.createElement("p", {className: "text-lg font-bold text-gray-400"}, "Carregando...") :
+                            saldoPlificUser.erro ?
+                                React.createElement("p", {className: "text-lg font-bold text-red-600"}, "Erro ao carregar") :
+                            saldoPlificUser.saldo !== null ?
+                                React.createElement("p", {className: "text-2xl font-bold " + (saldoPlificUser.saldo > 0 ? "text-green-600" : "text-red-600")}, "R$ " + saldoPlificUser.saldo.toFixed(2).replace(".", ",")) :
+                                React.createElement("p", {className: "text-lg font-bold text-gray-400"}, "Não disponível")
+                        )
+                    ),
+                    React.createElement("button", {
+                        onClick: buscarSaldoPlificUsuario,
+                        disabled: saldoPlificUser.loading,
+                        className: "p-2 text-purple-600 hover:bg-purple-100 rounded-lg transition-colors"
+                    }, "🔄")
+                ),
+                saldoPlificUser.saldo !== null && saldoPlificUser.saldo <= 0 && React.createElement("p", {
+                    className: "text-sm text-red-600 mt-2 font-medium"
+                }, "⚠️ Você não possui saldo suficiente para solicitar saque emergencial.")
+            ),
+            React.createElement("div", {
                 className: "rounded-lg p-4 border " + (0 === m ? "bg-red-50 border-red-300" : 1 === m ? "bg-orange-50 border-orange-300" : "bg-blue-50 border-blue-300")
             }, React.createElement("div", {
                 className: "flex items-center justify-between"
@@ -7314,14 +7372,16 @@ const hideLoadingScreen = () => {
                 },
                 placeholder: "Ex: 50,00",
                 className: "w-full px-4 py-3 border rounded-lg text-lg " + (r || d || (p.withdrawAmount && parseFloat(p.withdrawAmount) < 10) ? "border-red-500 bg-red-50" : ""),
-                disabled: 0 === m
+                disabled: 0 === m || (saldoPlificUser.saldo !== null && saldoPlificUser.saldo <= 0)
             }), p.withdrawAmount && parseFloat(p.withdrawAmount) > 0 && parseFloat(p.withdrawAmount) < 10 && React.createElement("p", {
                 className: "text-red-600 text-sm mt-1 font-semibold"
             }, "❌ Valor mínimo é R$ 10,00"), r && React.createElement("p", {
                 className: "text-red-600 text-sm mt-1 font-semibold"
             }, "❌ Valor excede o limite da gratuidade (", er(a), ")"), d && !r && React.createElement("p", {
                 className: "text-red-600 text-sm mt-1 font-semibold"
-            }, "❌ Você já solicitou R$ ", l.toFixed(2), " na última hora. Escolha outro valor.")), p.withdrawAmount && parseFloat(p.withdrawAmount) >= 10 && !r && !d && (() => {
+            }, "❌ Você já solicitou R$ ", l.toFixed(2), " na última hora. Escolha outro valor.")), saldoPlificUser.saldo !== null && parseFloat(p.withdrawAmount || 0) > saldoPlificUser.saldo && React.createElement("p", {
+                className: "text-red-600 text-sm mt-1 font-semibold"
+            }, "❌ Valor excede seu saldo disponível (R$ " + saldoPlificUser.saldo.toFixed(2).replace(".", ",") + ")"), p.withdrawAmount && parseFloat(p.withdrawAmount) >= 10 && !r && !d && (() => {
                 const e = (e => {
                     const t = G.find(e => "ativa" === e.status && e.remaining > 0),
                         a = !!t,
@@ -7353,7 +7413,7 @@ const hideLoadingScreen = () => {
                 }, er(e.final))))
             })(), React.createElement("button", {
                 onClick: Vl,
-                disabled: c || !p.withdrawAmount || parseFloat(p.withdrawAmount) < 10 || r || d || 0 === m,
+                disabled: c || !p.withdrawAmount || parseFloat(p.withdrawAmount) < 10 || r || d || 0 === m || (saldoPlificUser.saldo !== null && saldoPlificUser.saldo <= 0) || (saldoPlificUser.saldo !== null && parseFloat(p.withdrawAmount || 0) > saldoPlificUser.saldo),
                 className: "w-full bg-green-600 text-white py-3 rounded-lg font-bold disabled:opacity-50"
             }, c ? "..." : 0 === m ? "🚫 Limite Atingido" : parseFloat(p.withdrawAmount || 0) < 10 ? "⚠️ Mínimo R$ 10" : "💸 Solicitar"))
         })(), React.createElement("h3", {
