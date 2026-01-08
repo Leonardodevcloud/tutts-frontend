@@ -2440,8 +2440,17 @@ const hideLoadingScreen = () => {
                     return;
                 }
                 
-                const saldoNum = data.profissional ? parseFloat(String(data.profissional.saldo || 0).replace(/\./g, "").replace(",", ".")) : 0;
-                setSaldoPlificUser({ saldo: saldoNum, loading: false, erro: null });
+                const saldoReal = data.profissional ? parseFloat(String(data.profissional.saldo || 0).replace(/\./g, "").replace(",", ".")) : 0;
+                
+                // Calcular total de saques pendentes (aguardando aprovação)
+                // M é o array de saques do usuário
+                const saquesPendentes = M.filter(s => s.status === "pending" || s.status === "aguardando_aprovacao");
+                const totalPendente = saquesPendentes.reduce((acc, s) => acc + parseFloat(s.requested_amount || 0), 0);
+                
+                // Saldo exibido = Saldo real - Saques pendentes
+                const saldoExibido = Math.max(0, saldoReal - totalPendente);
+                
+                setSaldoPlificUser({ saldo: saldoExibido, saldoReal: saldoReal, pendente: totalPendente, loading: false, erro: null });
             } catch (error) {
                 setSaldoPlificUser({ saldo: null, loading: false, erro: error.message });
             }
@@ -5714,15 +5723,14 @@ const hideLoadingScreen = () => {
                             requestedAmount: e
                         })
                     }), ja("✅ Saque solicitado!", "success"), 
-                    // Abater visualmente do saldo (débito real será feito pelo financeiro)
-                    setSaldoPlificUser(prev => ({
-                        ...prev,
-                        saldo: prev.saldo !== null ? Math.max(0, prev.saldo - e) : null
-                    })),
                     x({
                         ...p,
                         withdrawAmount: ""
-                    }), Oa(), qa()
+                    }), 
+                    // Recarrega saques e saldo (o cálculo automático subtrai pendentes)
+                    Oa(), 
+                    setTimeout(() => buscarSaldoPlificUsuario(), 500),
+                    qa()
                 } catch (e) {
                     ja("Erro", "error")
                 }
