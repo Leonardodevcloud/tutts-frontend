@@ -2442,18 +2442,19 @@ const hideLoadingScreen = () => {
                 
                 const saldoReal = data.profissional ? parseFloat(String(data.profissional.saldo || 0).replace(/\./g, "").replace(",", ".")) : 0;
                 
-                // Calcular total de saques pendentes (aguardando aprovação)
-                // M é o array de saques do usuário
-                const saquesPendentes = M.filter(s => s.status === "pending" || s.status === "aguardando_aprovacao");
-                const totalPendente = saquesPendentes.reduce((acc, s) => acc + parseFloat(s.requested_amount || 0), 0);
-                
-                // Saldo exibido = Saldo real - Saques pendentes
-                const saldoExibido = Math.max(0, saldoReal - totalPendente);
-                
-                setSaldoPlificUser({ saldo: saldoExibido, saldoReal: saldoReal, pendente: totalPendente, loading: false, erro: null });
+                // Guarda o saldo real - o cálculo com pendentes é feito no render
+                setSaldoPlificUser({ saldo: saldoReal, loading: false, erro: null });
             } catch (error) {
                 setSaldoPlificUser({ saldo: null, loading: false, erro: error.message });
             }
+        };
+        
+        // Calcular saldo disponível (saldo real - saques pendentes)
+        const calcularSaldoDisponivel = () => {
+            if (saldoPlificUser.saldo === null) return null;
+            const saquesPendentes = M.filter(s => s.status === "pending" || s.status === "aguardando_aprovacao");
+            const totalPendente = saquesPendentes.reduce((acc, s) => acc + parseFloat(s.requested_amount || 0), 0);
+            return Math.max(0, saldoPlificUser.saldo - totalPendente);
         };
 
         
@@ -5691,11 +5692,12 @@ const hideLoadingScreen = () => {
             const e = parseFloat(p.withdrawAmount);
             if (!e || e <= 0) return void ja("Valor inválido", "error");
             if (e < 10) return void ja("⚠️ Valor mínimo é R$ 10,00", "error");
-            // Verificar saldo Plific
-            if (saldoPlificUser.saldo !== null && e > saldoPlificUser.saldo) {
-                return void ja("⚠️ Saldo insuficiente! Seu saldo é R$ " + saldoPlificUser.saldo.toFixed(2).replace(".", ","), "error");
+            // Verificar saldo Plific (considerando saques pendentes)
+            const saldoDisp = calcularSaldoDisponivel();
+            if (saldoDisp !== null && e > saldoDisp) {
+                return void ja("⚠️ Saldo insuficiente! Seu saldo disponível é R$ " + saldoDisp.toFixed(2).replace(".", ","), "error");
             }
-            if (saldoPlificUser.saldo !== null && saldoPlificUser.saldo <= 0) {
+            if (saldoDisp !== null && saldoDisp <= 0) {
                 return void ja("⚠️ Você não possui saldo disponível para saque!", "error");
             }
             const t = new Date,
@@ -7305,6 +7307,11 @@ const hideLoadingScreen = () => {
                 m = Math.max(0, 2 - n.length),
                 i = n.map(e => parseFloat(e.requested_amount)),
                 d = i.includes(l) && l > 0;
+            
+            // Calcular saldo disponível (saldo real - saques pendentes)
+            const saquesPend = M.filter(sq => sq.status === "pending" || sq.status === "aguardando_aprovacao");
+            const totalPend = saquesPend.reduce((acc, sq) => acc + parseFloat(sq.requested_amount || 0), 0);
+            const saldoDisp = saldoPlificUser.saldo !== null ? Math.max(0, saldoPlificUser.saldo - totalPend) : null;
             let u = null;
             if (n.length >= 2) {
                 const e = new Date(Math.min(...n.map(e => new Date(e.created_at).getTime()))),
@@ -7316,7 +7323,7 @@ const hideLoadingScreen = () => {
             }, 
             // Card Saldo Plific
             React.createElement("div", {
-                className: "rounded-xl p-4 border-2 " + (saldoPlificUser.loading ? "bg-gray-50 border-gray-200" : saldoPlificUser.erro ? "bg-red-50 border-red-300" : saldoPlificUser.saldo !== null && saldoPlificUser.saldo <= 0 ? "bg-red-50 border-red-300" : "bg-purple-50 border-purple-300")
+                className: "rounded-xl p-4 border-2 " + (saldoPlificUser.loading ? "bg-gray-50 border-gray-200" : saldoPlificUser.erro ? "bg-red-50 border-red-300" : saldoDisp !== null && saldoDisp <= 0 ? "bg-red-50 border-red-300" : "bg-purple-50 border-purple-300")
             }, 
                 React.createElement("div", {className: "flex items-center justify-between"},
                     React.createElement("div", {className: "flex items-center gap-3"},
@@ -7327,8 +7334,8 @@ const hideLoadingScreen = () => {
                                 React.createElement("p", {className: "text-lg font-bold text-gray-400"}, "Carregando...") :
                             saldoPlificUser.erro ?
                                 React.createElement("p", {className: "text-lg font-bold text-red-600"}, "Erro ao carregar") :
-                            saldoPlificUser.saldo !== null ?
-                                React.createElement("p", {className: "text-2xl font-bold " + (saldoPlificUser.saldo > 0 ? "text-green-600" : "text-red-600")}, "R$ " + saldoPlificUser.saldo.toFixed(2).replace(".", ",")) :
+                            saldoDisp !== null ?
+                                React.createElement("p", {className: "text-2xl font-bold " + (saldoDisp > 0 ? "text-green-600" : "text-red-600")}, "R$ " + saldoDisp.toFixed(2).replace(".", ",")) :
                                 React.createElement("p", {className: "text-lg font-bold text-gray-400"}, "Não disponível")
                         )
                     ),
@@ -7338,7 +7345,10 @@ const hideLoadingScreen = () => {
                         className: "p-2 text-purple-600 hover:bg-purple-100 rounded-lg transition-colors"
                     }, "🔄")
                 ),
-                saldoPlificUser.saldo !== null && saldoPlificUser.saldo <= 0 && React.createElement("p", {
+                totalPend > 0 && React.createElement("p", {
+                    className: "text-xs text-purple-600 mt-2"
+                }, "📋 R$ " + totalPend.toFixed(2).replace(".", ",") + " em saques aguardando aprovação"),
+                saldoDisp !== null && saldoDisp <= 0 && React.createElement("p", {
                     className: "text-sm text-red-600 mt-2 font-medium"
                 }, "⚠️ Você não possui saldo suficiente para solicitar saque emergencial.")
             ),
@@ -7405,16 +7415,16 @@ const hideLoadingScreen = () => {
                 },
                 placeholder: "Ex: 50,00",
                 className: "w-full px-4 py-3 border rounded-lg text-lg " + (r || d || (p.withdrawAmount && parseFloat(p.withdrawAmount) < 10) ? "border-red-500 bg-red-50" : ""),
-                disabled: 0 === m || (saldoPlificUser.saldo !== null && saldoPlificUser.saldo <= 0)
+                disabled: 0 === m || (saldoDisp !== null && saldoDisp <= 0)
             }), p.withdrawAmount && parseFloat(p.withdrawAmount) > 0 && parseFloat(p.withdrawAmount) < 10 && React.createElement("p", {
                 className: "text-red-600 text-sm mt-1 font-semibold"
             }, "❌ Valor mínimo é R$ 10,00"), r && React.createElement("p", {
                 className: "text-red-600 text-sm mt-1 font-semibold"
             }, "❌ Valor excede o limite da gratuidade (", er(a), ")"), d && !r && React.createElement("p", {
                 className: "text-red-600 text-sm mt-1 font-semibold"
-            }, "❌ Você já solicitou R$ ", l.toFixed(2), " na última hora. Escolha outro valor.")), saldoPlificUser.saldo !== null && parseFloat(p.withdrawAmount || 0) > saldoPlificUser.saldo && React.createElement("p", {
+            }, "❌ Você já solicitou R$ ", l.toFixed(2), " na última hora. Escolha outro valor.")), saldoDisp !== null && parseFloat(p.withdrawAmount || 0) > saldoDisp && React.createElement("p", {
                 className: "text-red-600 text-sm mt-1 font-semibold"
-            }, "❌ Valor excede seu saldo disponível (R$ " + saldoPlificUser.saldo.toFixed(2).replace(".", ",") + ")"), p.withdrawAmount && parseFloat(p.withdrawAmount) >= 10 && !r && !d && (() => {
+            }, "❌ Valor excede seu saldo disponível (R$ " + saldoDisp.toFixed(2).replace(".", ",") + ")"), p.withdrawAmount && parseFloat(p.withdrawAmount) >= 10 && !r && !d && (() => {
                 const e = (e => {
                     const t = G.find(e => "ativa" === e.status && e.remaining > 0),
                         a = !!t,
@@ -7446,7 +7456,7 @@ const hideLoadingScreen = () => {
                 }, er(e.final))))
             })(), React.createElement("button", {
                 onClick: Vl,
-                disabled: c || !p.withdrawAmount || parseFloat(p.withdrawAmount) < 10 || r || d || 0 === m || (saldoPlificUser.saldo !== null && saldoPlificUser.saldo <= 0) || (saldoPlificUser.saldo !== null && parseFloat(p.withdrawAmount || 0) > saldoPlificUser.saldo),
+                disabled: c || !p.withdrawAmount || parseFloat(p.withdrawAmount) < 10 || r || d || 0 === m || (saldoDisp !== null && saldoDisp <= 0) || (saldoDisp !== null && parseFloat(p.withdrawAmount || 0) > saldoDisp),
                 className: "w-full bg-green-600 text-white py-3 rounded-lg font-bold disabled:opacity-50"
             }, c ? "..." : 0 === m ? "🚫 Limite Atingido" : parseFloat(p.withdrawAmount || 0) < 10 ? "⚠️ Mínimo R$ 10" : "💸 Solicitar"))
         })(), React.createElement("h3", {
