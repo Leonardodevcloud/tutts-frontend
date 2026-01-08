@@ -2421,7 +2421,7 @@ const hideLoadingScreen = () => {
                     return;
                 }
                 
-                const saldoNum = data.profissional ? parseFloat(String(data.profissional.saldo || 0).replace(",", ".")) : 0;
+                const saldoNum = data.profissional ? parseFloat(String(data.profissional.saldo || 0).replace(/\./g, "").replace(",", ".")) : 0;
                 setSaldoPlificUser({ saldo: saldoNum, loading: false, erro: null });
             } catch (error) {
                 setSaldoPlificUser({ saldo: null, loading: false, erro: error.message });
