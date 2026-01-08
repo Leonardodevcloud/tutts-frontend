@@ -18162,7 +18162,7 @@ const hideLoadingScreen = () => {
                                             React.createElement("button", {
                                                 onClick: async function() {
                                                     const newPass = prompt("Nova senha para " + user.fullName + ":");
-                                                    if (newPass && newPass.length >= 4) {
+                                                    if (newPass && newPass.length >= 6) {
                                                         try {
                                                             await fetchAuth(API_URL + "/users/reset-password", {
                                                                 method: "POST",
@@ -18174,7 +18174,7 @@ const hideLoadingScreen = () => {
                                                             ja("❌ Erro ao alterar senha", "error");
                                                         }
                                                     } else if (newPass) {
-                                                        ja("Senha muito curta (mín. 4)", "error");
+                                                        ja("Senha muito curta (mín. 6)", "error");
                                                     }
                                                 },
                                                 className: "px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors"
@@ -27475,7 +27475,7 @@ const hideLoadingScreen = () => {
         }), React.createElement("button", {
             onClick: async () => {
                 const t = p[`newpass_${e.codProfissional}`];
-                !t || t.length < 4 ? ja("Senha muito curta", "error") : (await fetchAuth(`${API_URL}/users/reset-password`, {
+                !t || t.length < 6 ? ja("Senha muito curta (mín. 6)", "error") : (await fetchAuth(`${API_URL}/users/reset-password`, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json"
