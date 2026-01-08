@@ -2315,7 +2315,7 @@ const hideLoadingScreen = () => {
             if (!idProf) { ja("Informe o ID", "error"); return; }
             setPlificState(prev => ({ ...prev, loading: true }));
             try {
-                const response = await fetchAuth(`${API_URL}/plific/saldo/${idProf}`);
+                const response = await fetchAuth(`${API_URL}/plific/saldo/${idProf}?refresh=true`);
                 const data = await response.json();
                 if (!response.ok) throw new Error(data.error || "Erro");
                 setPlificState(prev => ({ ...prev, consultaIndividual: data, loading: false }));
@@ -2419,12 +2419,15 @@ const hideLoadingScreen = () => {
 
 
         // Buscar saldo Plific do usuário logado (para tela de saque)
-        const buscarSaldoPlificUsuario = async () => {
+        const buscarSaldoPlificUsuario = async (forceRefresh = false) => {
             if (!l || !l.cod_profissional) return;
             
             setSaldoPlificUser(prev => ({ ...prev, loading: true, erro: null }));
             try {
-                const response = await fetchAuth(`${API_URL}/plific/saldo/${l.cod_profissional}`);
+                const url = forceRefresh 
+                    ? `${API_URL}/plific/saldo/${l.cod_profissional}?refresh=true`
+                    : `${API_URL}/plific/saldo/${l.cod_profissional}`;
+                const response = await fetchAuth(url);
                 const data = await response.json();
                 
                 if (!response.ok) {
@@ -7332,7 +7335,7 @@ const hideLoadingScreen = () => {
                         )
                     ),
                     React.createElement("button", {
-                        onClick: buscarSaldoPlificUsuario,
+                        onClick: function() { buscarSaldoPlificUsuario(true); },
                         disabled: saldoPlificUser.loading,
                         className: "p-2 text-purple-600 hover:bg-purple-100 rounded-lg transition-colors"
                     }, "🔄")
@@ -9117,7 +9120,7 @@ const hideLoadingScreen = () => {
                 onClick: () => { x({...p, finTab: "home-fin"}); },
                 className: "relative px-2 py-1.5 text-xs font-semibold whitespace-nowrap rounded-t-lg " + ("home-fin" === p.finTab ? "text-green-700 border-b-2 border-green-600 bg-green-50" : "text-gray-600 hover:bg-gray-100")
             }, "🏠 Home"),
-            ["solicitacoes", "validacao", "conciliacao", "resumo", "gratuidades", "restritos", "indicacoes", "promo-novatos", "loja", "relatorios", "horarios", "avisos", "backup"].filter(function(tabId) {
+            ["solicitacoes", "validacao", "conciliacao", "saldo-plific", "resumo", "gratuidades", "restritos", "indicacoes", "promo-novatos", "loja", "relatorios", "horarios", "avisos", "backup"].filter(function(tabId) {
                 // Admin master tem acesso a tudo
                 if ("admin_master" === l.role) return true;
                 // Verificar permissão da aba
@@ -24367,7 +24370,7 @@ const hideLoadingScreen = () => {
         hasModuleAccess(l, "financeiro") && React.createElement("button", {
             onClick: () => {
                 // Determinar primeira aba permitida
-                const todasAbas = ["solicitacoes", "validacao", "conciliacao", "resumo", "gratuidades", "restritos", "indicacoes", "promo-novatos", "loja", "relatorios", "horarios", "avisos", "backup"];
+                const todasAbas = ["solicitacoes", "validacao", "conciliacao", "saldo-plific", "resumo", "gratuidades", "restritos", "indicacoes", "promo-novatos", "loja", "relatorios", "horarios", "avisos", "backup"];
                 const abas = l.permissions && l.permissions.abas ? l.permissions.abas : {};
                 let primeiraAba = "solicitacoes";
                 for (let i = 0; i < todasAbas.length; i++) {
