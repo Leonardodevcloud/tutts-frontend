@@ -1192,7 +1192,7 @@ const hideLoadingScreen = () => {
         [regiaoClienteSelecionado, setRegiaoClienteSelecionado] = useState([]), // array de cod_cliente selecionados
         [regiaoCentrosCusto, setRegiaoCentrosCusto] = useState({}), // {cod_cliente: [centros]}
         [regiaoItensAdicionados, setRegiaoItensAdicionados] = useState([]), // [{cod_cliente, nome_cliente, centro_custo}]
-        [regiaoEditando, setRegiaoEditando] = useState(null), [plificState, setPlificState] = useState({ loading: false, consultaIndividual: null, idBusca: "" }), [modalDebitoPlific, setModalDebitoPlific] = useState(null),
+        [regiaoEditando, setRegiaoEditando] = useState(null), [plificState, setPlificState] = useState({ loading: false, loadingLote: false, consultaIndividual: null, consultaLote: [], idBusca: "", loadingDebito: false }), [modalDebitoPlific, setModalDebitoPlific] = useState(null), [debitoFormPlific, setDebitoFormPlific] = useState({ valor: "", descricao: "" }),
         // Estados para dropdowns da aba Config
         [configSecaoAberta, setConfigSecaoAberta] = useState(""), // "" = todas fechadas
         ja = (e, t = "success") => {
@@ -2305,6 +2305,105 @@ const hideLoadingScreen = () => {
                 setPlificState(prev => ({ ...prev, loading: false }));
                 ja(error.message, "error");
             }
+        };
+
+
+        // Consulta em Lote - busca saldos de múltiplos profissionais
+        const consultarSaldosLotePlific = async () => {
+            setPlificState(prev => ({ ...prev, loadingLote: true, consultaLote: [] }));
+            try {
+                // Primeiro busca lista de profissionais do banco local
+                const resProfissionais = await fetchAuth(`${API_URL}/plific/profissionais`);
+                const profissionais = await resProfissionais.json();
+                
+                if (!profissionais || profissionais.length === 0) {
+                    ja("Nenhum profissional encontrado", "warning");
+                    setPlificState(prev => ({ ...prev, loadingLote: false }));
+                    return;
+                }
+
+                // Limita a 100 profissionais por vez
+                const ids = profissionais.slice(0, 100).map(p => p.id || p.codigo);
+                
+                // Consulta em lote via backend
+                const response = await fetchAuth(`${API_URL}/plific/saldos-lote`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ids })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) throw new Error(data.error || "Erro ao consultar lote");
+                
+                setPlificState(prev => ({ ...prev, consultaLote: data.resultados || [], loadingLote: false }));
+                ja(`${(data.resultados || []).filter(r => !r.erro).length} saldos consultados!`, "success");
+            } catch (error) {
+                setPlificState(prev => ({ ...prev, loadingLote: false }));
+                ja(error.message, "error");
+            }
+        };
+
+        // Lançar Débito
+        const lancarDebitoPlific = async (idProf, valor, descricao) => {
+            if (!idProf || !valor || !descricao) {
+                ja("Preencha todos os campos", "error");
+                return false;
+            }
+            
+            const valorNum = parseFloat(String(valor).replace(",", "."));
+            if (isNaN(valorNum) || valorNum <= 0) {
+                ja("Valor inválido", "error");
+                return false;
+            }
+
+            setPlificState(prev => ({ ...prev, loadingDebito: true }));
+            try {
+                const response = await fetchAuth(`${API_URL}/plific/lancar-debito`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ idProf: parseInt(idProf), valor: valorNum, descricao })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) throw new Error(data.error || "Erro ao lançar débito");
+                
+                setPlificState(prev => ({ ...prev, loadingDebito: false }));
+                ja(`Débito de R$ ${valorNum.toFixed(2)} lançado com sucesso!`, "success");
+                
+                // Atualiza o saldo após débito
+                consultarSaldoPlific(idProf);
+                
+                return true;
+            } catch (error) {
+                setPlificState(prev => ({ ...prev, loadingDebito: false }));
+                ja(error.message, "error");
+                return false;
+            }
+        };
+
+        // Exportar CSV
+        const exportarSaldosCSVPlific = () => {
+            if (!plificState.consultaLote || plificState.consultaLote.length === 0) {
+                ja("Nenhum dado para exportar", "warning");
+                return;
+            }
+            
+            const dados = plificState.consultaLote.filter(r => !r.erro);
+            const csv = [
+                "ID;Nome;CPF;Celular;Saldo",
+                ...dados.map(p => `${p.idProf || p.id || ""};${p.nome || ""};${p.cpf || ""};${p.celular || ""};${parseFloat(String(p.saldo || 0).replace(",", ".")).toFixed(2).replace(".", ",")}`)
+            ].join("\n");
+            
+            const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `saldos_plific_${new Date().toISOString().split("T")[0]}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+            ja("CSV exportado!", "success");
         };
 
         
@@ -13783,10 +13882,13 @@ const hideLoadingScreen = () => {
                     className: "text-sm text-amber-700 mt-2 space-y-1"
                 }, React.createElement("li", null, "• Faça backups regularmente (recomendado: semanalmente)"), React.createElement("li", null, "• O arquivo JSON pode ser usado para restaurar dados"), React.createElement("li", null, "• O arquivo CSV pode ser aberto no Excel ou Google Sheets"), React.createElement("li", null, "• Guarde os backups em local seguro (Google Drive, OneDrive, etc.)"))))
             })())), "saldo-plific" === p.finTab && React.createElement("div", {className: "space-y-6"},
+    // Header
     React.createElement("div", {className: "bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl p-6 text-white"},
         React.createElement("h2", {className: "text-2xl font-bold mb-2"}, "💳 Saldo Plific"),
-        React.createElement("p", {className: "text-purple-100"}, "Consulte saldos dos profissionais")
+        React.createElement("p", {className: "text-purple-100"}, "Consulte e gerencie saldos dos profissionais")
     ),
+    
+    // Consulta Individual
     React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-6"},
         React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-4"}, "🔍 Consulta Individual"),
         React.createElement("div", {className: "flex gap-3 items-end flex-wrap"},
@@ -13807,7 +13909,7 @@ const hideLoadingScreen = () => {
             }, plificState.loading ? "Consultando..." : "🔍 Consultar")
         ),
         plificState.consultaIndividual && plificState.consultaIndividual.profissional && React.createElement("div", {className: "mt-6 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200"},
-            React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-4 gap-4"},
+            React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-5 gap-4"},
                 React.createElement("div", null,
                     React.createElement("p", {className: "text-sm text-gray-500"}, "Nome"),
                     React.createElement("p", {className: "font-semibold text-gray-800"}, plificState.consultaIndividual.profissional.nome || "-")
@@ -13822,13 +13924,135 @@ const hideLoadingScreen = () => {
                 ),
                 React.createElement("div", null,
                     React.createElement("p", {className: "text-sm text-gray-500"}, "Saldo"),
-                    React.createElement("p", {className: "text-2xl font-bold text-green-600"}, "R$ " + parseFloat(String(plificState.consultaIndividual.profissional.saldo || 0).replace(",", ".")).toFixed(2).replace(".", ","))
+                    React.createElement("p", {className: "text-2xl font-bold " + (parseFloat(String(plificState.consultaIndividual.profissional.saldo || 0).replace(",", ".")) >= 0 ? "text-green-600" : "text-red-600")}, "R$ " + parseFloat(String(plificState.consultaIndividual.profissional.saldo || 0).replace(",", ".")).toFixed(2).replace(".", ","))
+                ),
+                React.createElement("div", {className: "flex items-end"},
+                    React.createElement("button", {
+                        onClick: function() { setModalDebitoPlific(plificState.consultaIndividual.profissional); setDebitoFormPlific({valor: "", descricao: ""}); },
+                        className: "px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 text-sm"
+                    }, "💳 Lançar Débito")
                 )
             )
         )
     ),
+    
+    // Consulta em Lote
+    React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-6"},
+        React.createElement("div", {className: "flex items-center justify-between mb-4 flex-wrap gap-2"},
+            React.createElement("h3", {className: "text-lg font-bold text-gray-800"}, "📋 Consulta em Lote"),
+            React.createElement("div", {className: "flex gap-2"},
+                React.createElement("button", {
+                    onClick: consultarSaldosLotePlific,
+                    disabled: plificState.loadingLote,
+                    className: "px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+                }, plificState.loadingLote ? "⏳ Carregando..." : "🔄 Carregar Saldos"),
+                plificState.consultaLote.length > 0 && React.createElement("button", {
+                    onClick: exportarSaldosCSVPlific,
+                    className: "px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                }, "📥 Exportar CSV")
+            )
+        ),
+        plificState.loadingLote ? React.createElement("div", {className: "text-center py-12"},
+            React.createElement("div", {className: "animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"}),
+            React.createElement("p", {className: "mt-4 text-gray-500"}, "Consultando saldos...")
+        ) : plificState.consultaLote.length > 0 ? React.createElement("div", {className: "overflow-x-auto"},
+            React.createElement("table", {className: "w-full"},
+                React.createElement("thead", {className: "bg-gray-100"},
+                    React.createElement("tr", null,
+                        React.createElement("th", {className: "px-4 py-3 text-left text-xs font-semibold text-gray-600"}, "ID"),
+                        React.createElement("th", {className: "px-4 py-3 text-left text-xs font-semibold text-gray-600"}, "Nome"),
+                        React.createElement("th", {className: "px-4 py-3 text-left text-xs font-semibold text-gray-600"}, "CPF"),
+                        React.createElement("th", {className: "px-4 py-3 text-right text-xs font-semibold text-gray-600"}, "Saldo"),
+                        React.createElement("th", {className: "px-4 py-3 text-center text-xs font-semibold text-gray-600"}, "Ações")
+                    )
+                ),
+                React.createElement("tbody", null,
+                    plificState.consultaLote.filter(function(r) { return !r.erro; }).map(function(prof, idx) {
+                        var saldoNum = parseFloat(String(prof.saldo || 0).replace(",", "."));
+                        return React.createElement("tr", {key: prof.idProf || prof.id || idx, className: idx % 2 === 0 ? "bg-white" : "bg-gray-50"},
+                            React.createElement("td", {className: "px-4 py-2 text-sm"}, prof.idProf || prof.id || prof.codigo),
+                            React.createElement("td", {className: "px-4 py-2 text-sm font-medium"}, prof.nome || "-"),
+                            React.createElement("td", {className: "px-4 py-2 text-sm text-gray-600"}, prof.cpf || "-"),
+                            React.createElement("td", {className: "px-4 py-2 text-sm text-right font-semibold " + (saldoNum >= 0 ? "text-green-600" : "text-red-600")}, "R$ " + saldoNum.toFixed(2).replace(".", ",")),
+                            React.createElement("td", {className: "px-4 py-2 text-center"},
+                                React.createElement("button", {
+                                    onClick: function() { setModalDebitoPlific(prof); setDebitoFormPlific({valor: "", descricao: ""}); },
+                                    className: "px-3 py-1 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 text-xs font-medium"
+                                }, "💳 Débito")
+                            )
+                        );
+                    })
+                )
+            ),
+            React.createElement("div", {className: "mt-4 text-sm text-gray-500"},
+                "Total: " + plificState.consultaLote.filter(function(r) { return !r.erro; }).length + " profissionais | ",
+                "Saldo total: R$ " + plificState.consultaLote.filter(function(r) { return !r.erro; }).reduce(function(acc, p) { return acc + parseFloat(String(p.saldo || 0).replace(",", ".")); }, 0).toFixed(2).replace(".", ",")
+            )
+        ) : React.createElement("div", {className: "text-center py-12 text-gray-500"},
+            React.createElement("p", null, "Clique em \"Carregar Saldos\" para consultar os profissionais"),
+            React.createElement("p", {className: "text-xs mt-2"}, "Serão carregados até 100 profissionais por vez")
+        )
+    ),
+    
+    // Modal de Débito
+    modalDebitoPlific && React.createElement("div", {className: "fixed inset-0 bg-black/50 flex items-center justify-center z-50", onClick: function() { setModalDebitoPlific(null); }},
+        React.createElement("div", {className: "bg-white rounded-xl shadow-2xl p-6 w-full max-w-md mx-4", onClick: function(e) { e.stopPropagation(); }},
+            React.createElement("h3", {className: "text-xl font-bold text-gray-800 mb-4"}, "💳 Lançar Débito"),
+            React.createElement("div", {className: "bg-gray-50 rounded-lg p-3 mb-4"},
+                React.createElement("p", {className: "text-sm text-gray-600"}, "Profissional:"),
+                React.createElement("p", {className: "font-semibold text-lg"}, modalDebitoPlific.nome || "ID " + (modalDebitoPlific.idProf || modalDebitoPlific.id || modalDebitoPlific.codigo)),
+                React.createElement("p", {className: "text-sm text-gray-500"}, "Saldo atual: R$ " + parseFloat(String(modalDebitoPlific.saldo || 0).replace(",", ".")).toFixed(2).replace(".", ","))
+            ),
+            React.createElement("div", {className: "space-y-4"},
+                React.createElement("div", null,
+                    React.createElement("label", {className: "block text-sm font-medium text-gray-700 mb-1"}, "Valor do Débito *"),
+                    React.createElement("input", {
+                        type: "number",
+                        step: "0.01",
+                        min: "0.01",
+                        value: debitoFormPlific.valor,
+                        onChange: function(e) { setDebitoFormPlific(Object.assign({}, debitoFormPlific, {valor: e.target.value})); },
+                        placeholder: "0,00",
+                        className: "w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-500"
+                    })
+                ),
+                React.createElement("div", null,
+                    React.createElement("label", {className: "block text-sm font-medium text-gray-700 mb-1"}, "Descrição *"),
+                    React.createElement("input", {
+                        type: "text",
+                        value: debitoFormPlific.descricao,
+                        onChange: function(e) { setDebitoFormPlific(Object.assign({}, debitoFormPlific, {descricao: e.target.value})); },
+                        placeholder: "Ex: Saque emergencial, Taxa de serviço...",
+                        className: "w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-500"
+                    })
+                )
+            ),
+            React.createElement("div", {className: "flex gap-3 mt-6"},
+                React.createElement("button", {
+                    onClick: function() { setModalDebitoPlific(null); },
+                    className: "flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                }, "Cancelar"),
+                React.createElement("button", {
+                    onClick: async function() {
+                        var idProf = modalDebitoPlific.idProf || modalDebitoPlific.id || modalDebitoPlific.codigo;
+                        var sucesso = await lancarDebitoPlific(idProf, debitoFormPlific.valor, debitoFormPlific.descricao);
+                        if (sucesso) { setModalDebitoPlific(null); }
+                    },
+                    disabled: !debitoFormPlific.valor || !debitoFormPlific.descricao || plificState.loadingDebito,
+                    className: "flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+                }, plificState.loadingDebito ? "Processando..." : "💳 Confirmar Débito")
+            )
+        )
+    ),
+    
+    // Info
     React.createElement("div", {className: "bg-amber-50 border border-amber-200 rounded-lg p-4"},
-        React.createElement("p", {className: "text-sm text-amber-800"}, "⚠️ Ambiente de TESTE - Use ID 8888 para testar")
+        React.createElement("p", {className: "text-sm text-amber-800 font-medium"}, "ℹ️ Informações"),
+        React.createElement("ul", {className: "text-xs text-amber-700 mt-2 space-y-1"},
+            React.createElement("li", null, "• Rate limit: máximo 10 requisições por segundo"),
+            React.createElement("li", null, "• Cache: saldos são cacheados por 5 minutos"),
+            React.createElement("li", null, "• Consulta em lote: máximo 100 profissionais por vez")
+        )
     )
 ))
         }
