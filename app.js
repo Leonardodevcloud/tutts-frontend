@@ -9655,14 +9655,10 @@ const hideLoadingScreen = () => {
             }, "Código"), React.createElement("th", {
                 className: "px-2 py-3 text-right w-[90px]"
             }, "Solicitado"), React.createElement("th", {
-                className: "px-2 py-3 text-center w-[70px]"
-            }, "Débito"), React.createElement("th", {
                 className: "px-2 py-3 text-right w-[90px]"
             }, "Valor Prof."), React.createElement("th", {
                 className: "px-2 py-3 text-left w-[120px]"
             }, "PIX"), React.createElement("th", {
-                className: "px-2 py-3 text-center w-[130px]"
-            }, "Saldo"), React.createElement("th", {
                 className: "px-2 py-3 text-center w-[160px]"
             }, "Status"), React.createElement("th", {
                 className: "px-2 py-3 text-center w-[50px]"
@@ -9722,32 +9718,6 @@ const hideLoadingScreen = () => {
                 }, e.user_cod), React.createElement("td", {
                     className: "px-2 py-3 text-right text-xs " + (s ? "text-red-800 font-bold" : c ? "text-blue-800 font-bold" : o ? "text-green-800 font-bold" : "font-semibold")
                 }, er(e.requested_amount)), React.createElement("td", {
-                    className: "px-2 py-3 text-center"
-                }, React.createElement("div", {
-                    className: "flex flex-col items-center"
-                }, React.createElement("input", {
-                    type: "checkbox",
-                    checked: e.debito || !1,
-                    onChange: t => (async (e, t) => {
-                        try {
-                            await fetch(`${API_URL}/withdrawals/${e}/debito`, {
-                                method: "PATCH",
-                                headers: {
-                                    "Content-Type": "application/json"
-                                },
-                                body: JSON.stringify({
-                                    debito: t,
-                                    debitoAt: t ? (new Date).toISOString() : null
-                                })
-                            }), Ua(), ja(t ? "✅ Débito registrado!" : "❌ Débito removido", "success")
-                        } catch (e) {
-                            ja("Erro", "error")
-                        }
-                    })(e.id, t.target.checked),
-                    className: "w-4 h-4"
-                }), e.debito && e.debito_at && React.createElement("span", {
-                    className: "text-[10px] mt-1 " + (s ? "text-red-800" : c ? "text-blue-800" : o ? "text-green-800" : "text-gray-500")
-                }, new Date(e.debito_at).toLocaleDateString("pt-BR")))), React.createElement("td", {
                     className: "px-2 py-3 text-right text-xs " + (s ? "text-red-800 font-bold" : c ? "text-blue-800 font-bold" : o ? "text-green-800 font-bold" : "")
                 }, er(e.final_amount)), React.createElement("td", {
                     className: "px-2 py-3 " + (s ? "text-red-800 font-bold" : c ? "text-blue-800 font-bold" : o ? "text-green-800 font-bold" : "")
@@ -9763,32 +9733,6 @@ const hideLoadingScreen = () => {
                 }, "💠")), e.has_gratuity && React.createElement("p", {
                     className: "text-[10px] font-bold text-blue-700 mt-0.5"
                 }, "🎁 GRATUIDADE")), React.createElement("td", {
-                    className: "px-2 py-3 text-center"
-                }, "validado" === e.saldo_status ? React.createElement("div", {
-                    className: "flex flex-col items-center gap-1"
-                }, React.createElement("span", {
-                    className: "text-[10px] font-bold text-green-700 bg-green-100 px-2 py-1 rounded"
-                }, "SALDO VALIDADO"), React.createElement("button", {
-                    onClick: () => Ql(e.id, null),
-                    className: "text-[9px] text-gray-400 hover:text-gray-600"
-                }, "↩ desfazer")) : "insuficiente" === e.saldo_status ? React.createElement("div", {
-                    className: "flex flex-col items-center gap-1"
-                }, React.createElement("span", {
-                    className: "text-[10px] font-bold text-red-700 bg-red-100 px-2 py-1 rounded"
-                }, "SALDO INSUFICIENTE"), React.createElement("button", {
-                    onClick: () => Ql(e.id, null),
-                    className: "text-[9px] text-gray-400 hover:text-gray-600"
-                }, "↩ desfazer")) : React.createElement("div", {
-                    className: "flex gap-1 justify-center"
-                }, React.createElement("button", {
-                    onClick: () => Ql(e.id, "validado"),
-                    className: "text-lg hover:scale-125 transition-transform",
-                    title: "Saldo Validado"
-                }, "✅"), React.createElement("button", {
-                    onClick: () => Ql(e.id, "insuficiente"),
-                    className: "text-lg hover:scale-125 transition-transform",
-                    title: "Saldo Insuficiente"
-                }, "❌"))), React.createElement("td", {
                     className: "px-2 py-3"
                 }, React.createElement("select", {
                     value: p[`showReject_${e.id}`] ? "rejeitado" : e.status,
