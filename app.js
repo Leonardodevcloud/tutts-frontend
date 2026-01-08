@@ -13920,7 +13920,7 @@ const hideLoadingScreen = () => {
                 }, "💡 Dicas de Backup"), React.createElement("ul", {
                     className: "text-sm text-amber-700 mt-2 space-y-1"
                 }, React.createElement("li", null, "• Faça backups regularmente (recomendado: semanalmente)"), React.createElement("li", null, "• O arquivo JSON pode ser usado para restaurar dados"), React.createElement("li", null, "• O arquivo CSV pode ser aberto no Excel ou Google Sheets"), React.createElement("li", null, "• Guarde os backups em local seguro (Google Drive, OneDrive, etc.)"))))
-            })())), "saldo-plific" === p.finTab && React.createElement("div", {className: "space-y-6"},
+            })())), "saldo-plific" === p.finTab && React.createElement("div", {className: "max-w-7xl mx-auto p-6 space-y-6"},
     // Header
     React.createElement("div", {className: "bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl p-6 text-white"},
         React.createElement("h2", {className: "text-2xl font-bold mb-2"}, "💳 Saldo Plific"),
