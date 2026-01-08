@@ -1193,10 +1193,11 @@ const hideLoadingScreen = () => {
         [regiaoCentrosCusto, setRegiaoCentrosCusto] = useState({}), // {cod_cliente: [centros]}
         [regiaoItensAdicionados, setRegiaoItensAdicionados] = useState([]), // [{cod_cliente, nome_cliente, centro_custo}]
         [regiaoEditando, setRegiaoEditando] = useState(null), // ID da região sendo editada
-        // Estados para dropdowns da aba Config
+        // Estados para integração Plific
         [plificState, setPlificState] = useState({ loading: false, loadingLote: false, consultaIndividual: null, consultaLote: [], statusApi: null, idBusca: "", filtroSaldoMin: "", filtroSaldoMax: "", erro: null, ambiente: "teste" }),
         [modalDebitoPlific, setModalDebitoPlific] = useState(null),
         [debitoFormPlific, setDebitoFormPlific] = useState({ valor: "", descricao: "" }),
+        // Estados para dropdowns da aba Config
         [configSecaoAberta, setConfigSecaoAberta] = useState(""), // "" = todas fechadas
         ja = (e, t = "success") => {
             d({
