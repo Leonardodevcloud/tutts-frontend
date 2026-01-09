@@ -17917,10 +17917,15 @@ const hideLoadingScreen = () => {
                             // BOTÃO DO ROTEIRIZADOR
                             React.createElement("button", {
                                 onClick: async () => {
+                                    console.log("🗺️ Botão Roteirizador clicado!");
+                                    console.log("🗺️ localizacaoClientes:", localizacaoClientes?.length || 0);
                                     if (!localizacaoClientes || localizacaoClientes.length === 0) {
+                                        console.log("🗺️ Carregando clientes...");
                                         await carregarLocalizacaoClientes();
                                     }
+                                    console.log("🗺️ Abrindo modal...");
                                     setMostrarRoteirizador(true);
+                                    console.log("🗺️ mostrarRoteirizador setado para true");
                                 },
                                 className: "px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-xl font-semibold hover:from-purple-700 hover:to-purple-800 flex items-center gap-2 shadow-lg hover:shadow-xl transition-all"
                             }, "🗺️ Roteirizador"),
@@ -29128,9 +29133,11 @@ function AuditLogs({ apiUrl, showToast }) {
     ),
 
     // ==================== MODAL ROTEIRIZADOR ====================
+    // Debug: sempre mostra no console o estado
+    (console.log("🗺️ RENDER - mostrarRoteirizador:", mostrarRoteirizador), null),
     mostrarRoteirizador && React.createElement(RoteirizadorModule, {
       enderecosBi: localizacaoClientes,
-      onClose: () => setMostrarRoteirizador(false),
+      onClose: () => { console.log("🗺️ Fechando modal"); setMostrarRoteirizador(false); },
       showToast: ja
     })
   );
