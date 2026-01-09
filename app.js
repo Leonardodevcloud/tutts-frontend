@@ -899,7 +899,7 @@ const hideLoadingScreen = () => {
             validacao: [],
             loja: [],
             gratuidades: []
-        }), [j, C] = useState([]), [A, S] = useState([]), [k, P] = useState(!1), [T, D] = useState(null), [L, I] = useState([]), [F, $] = useState(!1), [M, O] = useState([]), [q, U] = useState([]), [z, B] = useState([]), [V, J] = useState(null), [Q, H] = useState([]), [G, W] = useState([]), [Z, Y] = useState([]), [K, X] = useState({}), [ee, te] = useState([]), [ae, le] = useState([]), [re, oe] = useState([]), [ce, se] = useState([]), [ne, me] = useState([]), [ie, de] = useState([]), [pe, xe] = useState([]), [ue, ge] = useState(!1), [be, Re] = useState(null), [Ee, he] = useState("home"), [mensagemGentileza, setMensagemGentileza] = useState(() => getMensagemGentileza()), [elegibilidadeNovatos, setElegibilidadeNovatos] = useState({ elegivel: false, motivo: '', promocoes: [], carregando: true }), [regioesNovatos, setRegioesNovatos] = useState([]), [solicitacoesPagina, setSolicitacoesPagina] = useState(1), [solicitacoesPorPagina] = useState(120), [conciliacaoPagina, setConciliacaoPagina] = useState(1), [conciliacaoPorPagina] = useState(120), [fe, Ne] = useState({
+        }), [j, C] = useState([]), [A, S] = useState([]), [k, P] = useState(!1), [T, D] = useState(null), [L, I] = useState([]), [F, $] = useState(!1), [M, O] = useState([]), [q, U] = useState([]), [z, B] = useState([]), [V, J] = useState(null), [Q, H] = useState([]), [G, W] = useState([]), [Z, Y] = useState([]), [K, X] = useState({}), [ee, te] = useState([]), [ae, le] = useState([]), [re, oe] = useState([]), [ce, se] = useState([]), [ne, me] = useState([]), [ie, de] = useState([]), [pe, xe] = useState([]), [ue, ge] = useState(!1), [be, Re] = useState(null), [Ee, he] = useState("home"), [mensagemGentileza, setMensagemGentileza] = useState(() => getMensagemGentileza()), [elegibilidadeNovatos, setElegibilidadeNovatos] = useState({ elegivel: false, motivo: '', promocoes: [], carregando: true }), [regioesNovatos, setRegioesNovatos] = useState([]), [solicitacoesPagina, setSolicitacoesPagina] = useState(1), [acertoRealizado, setAcertoRealizado] = useState(true), [solicitacoesPorPagina] = useState(120), [conciliacaoPagina, setConciliacaoPagina] = useState(1), [conciliacaoPorPagina] = useState(120), [fe, Ne] = useState({
             titulo: "Acerte os procedimentos e ganhe saque gratuito de R$ 500,00",
             imagens: [null, null, null, null],
             perguntas: [{
@@ -5735,7 +5735,25 @@ const hideLoadingScreen = () => {
             }
         }, Jl = async (e, t, a = null) => {
             try {
-                await fetch(`${API_URL}/withdrawals/${e}`, {
+                // Calcular data do débito baseado no toggle de acerto
+                let dataDebito = null;
+                if (t === "aprovado" || t === "aprovado_gratuidade") {
+                    if (acertoRealizado) {
+                        // Acerto realizado: data/hora atual
+                        dataDebito = new Date().toISOString();
+                    } else {
+                        // Acerto pendente: último domingo
+                        const hoje = new Date();
+                        const diaSemana = hoje.getDay(); // 0 = domingo
+                        const diasParaDomingo = diaSemana === 0 ? 7 : diaSemana;
+                        const ultimoDomingo = new Date(hoje);
+                        ultimoDomingo.setDate(hoje.getDate() - diasParaDomingo);
+                        ultimoDomingo.setHours(23, 59, 0, 0);
+                        dataDebito = ultimoDomingo.toISOString();
+                    }
+                }
+                
+                const response = await fetch(`${API_URL}/withdrawals/${e}`, {
                     method: "PATCH",
                     headers: {
                         "Content-Type": "application/json"
@@ -5744,9 +5762,19 @@ const hideLoadingScreen = () => {
                         status: t,
                         adminId: l.id,
                         adminName: l.fullName || "Admin Financeiro",
-                        rejectReason: a
+                        rejectReason: a,
+                        dataDebito: dataDebito
                     })
-                }), ja("✅ Status atualizado!", "success"), x({
+                });
+                
+                const data = await response.json();
+                if (!response.ok) {
+                    ja("❌ " + (data.error || "Erro ao atualizar"), "error");
+                    return;
+                }
+                
+                ja("✅ Status atualizado!" + (!acertoRealizado && (t === "aprovado" || t === "aprovado_gratuidade") ? " (Débito no último domingo)" : ""), "success");
+                x({
                     ...p,
                     [`reject_${e}`]: "",
                     [`showReject_${e}`]: !1
@@ -9603,7 +9631,27 @@ const hideLoadingScreen = () => {
                     filterStatus: "inativo"
                 }); },
                 className: "px-4 py-2 rounded-lg font-semibold text-sm " + ("inativo" === p.filterStatus ? "bg-orange-500 text-white" : "bg-gray-100 hover:bg-gray-200")
-            }, "⚠️ Inativo (", q.filter(e => "inativo" === e.status).length, ")"))), z.length > 0 && React.createElement("div", {
+            }, "⚠️ Inativo (", q.filter(e => "inativo" === e.status).length, ")"),
+            // Toggle de Acerto
+            React.createElement("div", {
+                className: "ml-auto flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-2"
+            },
+                React.createElement("span", {
+                    className: "text-xs font-medium " + (acertoRealizado ? "text-gray-400" : "text-orange-600 font-bold")
+                }, "Acerto Pendente"),
+                React.createElement("button", {
+                    onClick: () => setAcertoRealizado(!acertoRealizado),
+                    className: "relative w-12 h-6 rounded-full transition-colors " + (acertoRealizado ? "bg-green-500" : "bg-orange-500")
+                },
+                    React.createElement("span", {
+                        className: "absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform " + (acertoRealizado ? "right-1" : "left-1")
+                    })
+                ),
+                React.createElement("span", {
+                    className: "text-xs font-medium " + (acertoRealizado ? "text-green-600 font-bold" : "text-gray-400")
+                }, "Acerto Realizado")
+            )
+        )), z.length > 0 && React.createElement("div", {
                 className: "bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl p-4 mb-4 shadow-lg"
             }, React.createElement("div", {
                 className: "flex items-center justify-between flex-wrap gap-4"
