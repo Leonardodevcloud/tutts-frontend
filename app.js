@@ -868,6 +868,7 @@ const hideLoadingScreen = () => {
 
     // ==================== COMPONENTE ROTEIRIZADOR ====================
     RoteirizadorModule = ({ enderecosBi, onClose, showToast }) => {
+        console.log("🗺️ RoteirizadorModule RENDERIZANDO!", enderecosBi?.length || 0, "endereços");
         const [enderecosSelecionados, setEnderecosSelecionados] = useState([]);
         const [enderecosManuais, setEnderecosManuais] = useState(['', '']);
         const [modoEntrada, setModoEntrada] = useState('bi');
@@ -29133,15 +29134,12 @@ function AuditLogs({ apiUrl, showToast }) {
     ),
 
     // ==================== MODAL ROTEIRIZADOR ====================
-    // Usando createPortal para renderizar diretamente no body
-    mostrarRoteirizador && ReactDOM.createPortal(
-      React.createElement(RoteirizadorModule, {
-        enderecosBi: localizacaoClientes,
-        onClose: () => { console.log("🗺️ Fechando modal"); setMostrarRoteirizador(false); },
-        showToast: ja
-      }),
-      document.body
-    )
+    // Renderiza diretamente
+    mostrarRoteirizador ? React.createElement(RoteirizadorModule, {
+      enderecosBi: localizacaoClientes,
+      onClose: () => { console.log("🗺️ Fechando modal"); setMostrarRoteirizador(false); },
+      showToast: ja
+    }) : null
   );
 }
 
