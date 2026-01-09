@@ -5737,10 +5737,12 @@ const hideLoadingScreen = () => {
             try {
                 // Calcular data do débito baseado no toggle de acerto
                 let dataDebito = null;
+                console.log("🔍 Toggle acertoRealizado:", acertoRealizado);
                 if (t === "aprovado" || t === "aprovado_gratuidade") {
                     if (acertoRealizado) {
                         // Acerto realizado: data/hora atual
                         dataDebito = new Date().toISOString();
+                        console.log("📅 Data débito (hoje):", dataDebito);
                     } else {
                         // Acerto pendente: último domingo
                         const hoje = new Date();
@@ -5750,6 +5752,7 @@ const hideLoadingScreen = () => {
                         ultimoDomingo.setDate(hoje.getDate() - diasParaDomingo);
                         ultimoDomingo.setHours(23, 59, 0, 0);
                         dataDebito = ultimoDomingo.toISOString();
+                        console.log("📅 Data débito (último domingo):", dataDebito);
                     }
                 }
                 
