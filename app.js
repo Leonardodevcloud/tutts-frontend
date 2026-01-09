@@ -883,17 +883,22 @@ const hideLoadingScreen = () => {
         const [pontoPartidaPadrao, setPontoPartidaPadrao] = useState(null);
         const [mostrarConfigPartida, setMostrarConfigPartida] = useState(false);
 
-        // Carregar ponto de partida padrão do localStorage
+        // Limpar "Ponto X -" do endereço
+        const limparPonto = function(end) {
+            if (!end) return '';
+            return end.replace(/^Ponto\s*\d+\s*[-–]\s*/i, '').trim();
+        };
+
+        // Carregar ponto de partida padrão
         useEffect(() => {
             try {
                 var salvo = localStorage.getItem('roteirizador_partida_padrao');
                 if (salvo) {
                     var partida = JSON.parse(salvo);
                     setPontoPartidaPadrao(partida);
-                    // Adicionar automaticamente como primeiro ponto
                     setEnderecosSelecionados([Object.assign({}, partida, { id: Date.now() })]);
                 }
-            } catch(e) { console.error(e); }
+            } catch(e) {}
         }, []);
 
         // Carregar endereços do BI
@@ -907,12 +912,30 @@ const hideLoadingScreen = () => {
                         const map = new Map();
                         data.forEach(e => {
                             if (!e.endereco) return;
-                            const chave = normalizarEndereco(e.endereco).substring(0, 50).toLowerCase();
+                            var endLimpo = limparPonto(e.endereco);
+                            const chave = endLimpo.substring(0, 50).toLowerCase().replace(/\s+/g, ' ');
                             if (!map.has(chave)) {
-                                map.set(chave, { endereco: e.endereco, enderecoNormalizado: normalizarEndereco(e.endereco), bairro: e.bairro, cidade: e.cidade, estado: e.estado, latitude: e.latitude, longitude: e.longitude, contagem: 1 });
+                                map.set(chave, { 
+                                    enderecoOriginal: e.endereco,
+                                    endereco: endLimpo, 
+                                    bairro: e.bairro, 
+                                    cidade: e.cidade, 
+                                    estado: e.estado, 
+                                    latitude: e.latitude, 
+                                    longitude: e.longitude, 
+                                    contagem: 1 
+                                });
                             } else {
-                                const x = map.get(chave); x.contagem++;
-                                if (!x.latitude && e.latitude) { x.latitude = e.latitude; x.longitude = e.longitude; }
+                                const x = map.get(chave); 
+                                x.contagem++;
+                                // Priorizar coordenadas existentes
+                                if (!x.latitude && e.latitude) { 
+                                    x.latitude = e.latitude; 
+                                    x.longitude = e.longitude; 
+                                }
+                                // Priorizar cidade/estado se não tiver
+                                if (!x.cidade && e.cidade) x.cidade = e.cidade;
+                                if (!x.estado && e.estado) x.estado = e.estado;
                             }
                         });
                         setEnderecosBI(Array.from(map.values()));
@@ -943,7 +966,7 @@ const hideLoadingScreen = () => {
             return function() { if (mapInstance) try { mapInstance.remove(); } catch(e) {} };
         }, []);
 
-        // Atualizar marcadores quando endereços mudam (ANTES de calcular rota)
+        // Atualizar marcadores quando endereços mudam
         useEffect(() => {
             if (!mapaRoteirizador || !markersLayer) return;
             markersLayer.clearLayers();
@@ -952,7 +975,7 @@ const hideLoadingScreen = () => {
             var pontosValidos = enderecosSelecionados.filter(function(e) { return e.latitude && e.longitude; });
             pontosValidos.forEach(function(p, i) {
                 var icon = L.divIcon({ className: '', html: '<div style="background:' + (i === 0 ? '#10b981' : '#7c3aed') + ';color:#fff;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:12px;border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,0.3)">' + (i === 0 ? '🚩' : i) + '</div>', iconSize: [28, 28], iconAnchor: [14, 14] });
-                L.marker([p.latitude, p.longitude], { icon: icon }).addTo(markersLayer).bindPopup('<b>' + (i === 0 ? 'PARTIDA' : 'Parada ' + i) + '</b><br>' + (p.endereco || '').substring(0, 40));
+                L.marker([p.latitude, p.longitude], { icon: icon }).addTo(markersLayer).bindPopup('<b>' + (i === 0 ? 'PARTIDA' : 'Parada ' + i) + '</b><br>' + (p.endereco || '').substring(0, 50));
             });
             
             if (pontosValidos.length > 0) {
@@ -961,9 +984,11 @@ const hideLoadingScreen = () => {
             }
         }, [enderecosSelecionados, mapaRoteirizador, markersLayer]);
 
-        const normalizarEndereco = function(end) { return end ? end.replace(/^Ponto\s*\d+\s*[-–]\s*/i, '').replace(/\s+/g, ' ').trim().toUpperCase() : ''; };
         const similaridade = function(a, b) {
-            if (!a || !b) return 0; var s1 = a.toUpperCase(), s2 = b.toUpperCase(); if (s1 === s2) return 1;
+            if (!a || !b) return 0; 
+            var s1 = a.toUpperCase(), s2 = b.toUpperCase(); 
+            if (s1 === s2) return 1;
+            if (s1.includes(s2) || s2.includes(s1)) return 0.8;
             var bg1 = new Set(), bg2 = new Set();
             for (var i = 0; i < s1.length - 1; i++) bg1.add(s1.slice(i, i+2));
             for (var i = 0; i < s2.length - 1; i++) bg2.add(s2.slice(i, i+2));
@@ -976,60 +1001,172 @@ const hideLoadingScreen = () => {
             const buscar = async () => {
                 if (!termoBusca || termoBusca.length < 2) { setSugestoes([]); return; }
                 setBuscando(true);
-                var termo = termoBusca.toLowerCase(), termoNorm = normalizarEndereco(termoBusca);
+                var termo = termoBusca.toLowerCase();
                 
                 var resultadosBI = enderecosBI.filter(function(e) {
-                    return (e.endereco || '').toLowerCase().includes(termo) || similaridade(termoNorm, e.enderecoNormalizado) > 0.4;
-                }).sort(function(a, b) { return similaridade(termoNorm, b.enderecoNormalizado) - similaridade(termoNorm, a.enderecoNormalizado); })
-                  .slice(0, 8).map(function(e) { return { ...e, fonte: 'bi', label: e.endereco, sublabel: [e.bairro, e.cidade].filter(Boolean).join(' - ') }; });
+                    var endLower = (e.endereco || '').toLowerCase();
+                    var bairroLower = (e.bairro || '').toLowerCase();
+                    var cidadeLower = (e.cidade || '').toLowerCase();
+                    return endLower.includes(termo) || bairroLower.includes(termo) || cidadeLower.includes(termo) || similaridade(termo, endLower) > 0.4;
+                }).sort(function(a, b) { 
+                    // Priorizar os que têm coordenadas
+                    if (a.latitude && !b.latitude) return -1;
+                    if (!a.latitude && b.latitude) return 1;
+                    return similaridade(termo, (b.endereco || '').toLowerCase()) - similaridade(termo, (a.endereco || '').toLowerCase()); 
+                }).slice(0, 10).map(function(e) { 
+                    return { 
+                        endereco: e.endereco, 
+                        bairro: e.bairro, 
+                        cidade: e.cidade, 
+                        estado: e.estado, 
+                        latitude: e.latitude, 
+                        longitude: e.longitude,
+                        fonte: 'bi'
+                    }; 
+                });
                 
+                // CEP
                 var resultadosCEP = [];
                 var cepMatch = termoBusca.match(/(\d{5})-?(\d{3})/);
                 if (cepMatch) {
                     try {
                         var resp = await fetch('https://viacep.com.br/ws/' + cepMatch[1] + cepMatch[2] + '/json/');
                         var data = await resp.json();
-                        if (!data.erro) resultadosCEP.push({ endereco: data.logradouro + ', ' + data.bairro + ', ' + data.localidade + ' - ' + data.uf, bairro: data.bairro, cidade: data.localidade, estado: data.uf, fonte: 'cep', label: data.logradouro || 'CEP ' + data.cep, sublabel: data.bairro + ', ' + data.localidade, precisaGeo: true });
+                        if (!data.erro) resultadosCEP.push({ 
+                            endereco: data.logradouro + ', ' + data.bairro + ', ' + data.localidade + ' - ' + data.uf, 
+                            bairro: data.bairro, 
+                            cidade: data.localidade, 
+                            estado: data.uf, 
+                            cep: data.cep,
+                            fonte: 'cep',
+                            precisaGeo: true 
+                        });
                     } catch(e) {}
                 }
                 setSugestoes([].concat(resultadosBI, resultadosCEP).slice(0, 10));
                 setBuscando(false);
             };
-            var timer = setTimeout(buscar, 300);
+            var timer = setTimeout(buscar, 250);
             return function() { clearTimeout(timer); };
         }, [termoBusca, enderecosBI]);
 
-        const geocodificar = async function(sug) {
+        // Geocodificação PRECISA - usa cidade/estado para melhorar resultado
+        const geocodificarPreciso = async function(sug) {
             if (sug.latitude && sug.longitude) return sug;
-            try {
-                var q = sug.endereco || (sug.bairro + ', ' + sug.cidade + ', ' + sug.estado);
-                var resp = await fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(q) + '&limit=1&countrycodes=br', { headers: { 'User-Agent': 'TuttsRoteirizador/1.0' } });
-                var data = await resp.json();
-                if (data[0]) return Object.assign({}, sug, { latitude: parseFloat(data[0].lat), longitude: parseFloat(data[0].lon) });
-            } catch(e) {}
-            try {
-                var resp = await fetch('https://api.openrouteservice.org/geocode/search?api_key=' + ORS_API_KEY + '&text=' + encodeURIComponent(sug.endereco || sug.bairro + ', ' + sug.cidade) + '&boundary.country=BR&size=1');
-                var data = await resp.json();
-                if (data.features && data.features[0]) return Object.assign({}, sug, { latitude: data.features[0].geometry.coordinates[1], longitude: data.features[0].geometry.coordinates[0] });
-            } catch(e) {}
+            
+            // Montar query precisa com cidade e estado
+            var cidade = sug.cidade || '';
+            var estado = sug.estado || '';
+            var bairro = sug.bairro || '';
+            var endereco = sug.endereco || '';
+            
+            // Extrair número do endereço se houver
+            var numMatch = endereco.match(/,\s*(\d+)/);
+            var numero = numMatch ? numMatch[1] : '';
+            
+            // Query 1: Endereço completo com cidade e estado
+            var queries = [];
+            if (endereco && cidade) {
+                queries.push(endereco + ', ' + cidade + (estado ? ' - ' + estado : '') + ', Brasil');
+            }
+            if (bairro && cidade) {
+                queries.push(bairro + ', ' + cidade + (estado ? ' - ' + estado : '') + ', Brasil');
+            }
+            if (cidade && estado) {
+                queries.push(cidade + ', ' + estado + ', Brasil');
+            }
+            
+            // Tentar Nominatim com queries precisas
+            for (var i = 0; i < queries.length; i++) {
+                try {
+                    var resp = await fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(queries[i]) + '&limit=1&countrycodes=br', { headers: { 'User-Agent': 'TuttsRoteirizador/1.0' } });
+                    var data = await resp.json();
+                    if (data[0]) {
+                        // Verificar se a cidade bate (evitar erros grosseiros)
+                        var resultado = data[0].display_name.toLowerCase();
+                        if (!cidade || resultado.includes(cidade.toLowerCase())) {
+                            return Object.assign({}, sug, { latitude: parseFloat(data[0].lat), longitude: parseFloat(data[0].lon) });
+                        }
+                    }
+                } catch(e) {}
+            }
+            
+            // Fallback: ORS com mesma lógica
+            for (var i = 0; i < queries.length; i++) {
+                try {
+                    var resp = await fetch('https://api.openrouteservice.org/geocode/search?api_key=' + ORS_API_KEY + '&text=' + encodeURIComponent(queries[i]) + '&boundary.country=BR&size=1');
+                    var data = await resp.json();
+                    if (data.features && data.features[0]) {
+                        var props = data.features[0].properties;
+                        // Verificar cidade
+                        if (!cidade || (props.locality && props.locality.toLowerCase().includes(cidade.toLowerCase())) || (props.region && props.region.toLowerCase().includes(cidade.toLowerCase()))) {
+                            return Object.assign({}, sug, { latitude: data.features[0].geometry.coordinates[1], longitude: data.features[0].geometry.coordinates[0] });
+                        }
+                    }
+                } catch(e) {}
+            }
+            
             return null;
         };
 
-        const adicionar = async function(sug) {
+        // Adicionar endereço - SEM DELAY
+        const adicionar = function(sug) {
             if (enderecosSelecionados.length >= 15) { showToast && showToast('Máximo 15', 'error'); return; }
-            if (enderecosSelecionados.some(function(e) { return similaridade(normalizarEndereco(e.endereco), normalizarEndereco(sug.endereco)) > 0.85; })) { showToast && showToast('Já adicionado', 'error'); return; }
-            var end = sug;
-            if (!sug.latitude || !sug.longitude) { end = await geocodificar(sug); if (!end) { showToast && showToast('Não localizado', 'error'); return; } }
-            setEnderecosSelecionados(function(prev) { return prev.concat([{ id: Date.now(), endereco: end.endereco || end.label, bairro: end.bairro, cidade: end.cidade, latitude: end.latitude, longitude: end.longitude, lat: end.latitude, lon: end.longitude, fonte: end.fonte }]); });
-            setTermoBusca(''); setSugestoes([]);
+            
+            var endLimpo = limparPonto(sug.endereco);
+            if (enderecosSelecionados.some(function(e) { return similaridade(e.endereco, endLimpo) > 0.85; })) { 
+                showToast && showToast('Já adicionado', 'error'); 
+                return; 
+            }
+            
+            // Se já tem coordenadas, adiciona direto
+            if (sug.latitude && sug.longitude) {
+                setEnderecosSelecionados(function(prev) { 
+                    return prev.concat([{ 
+                        id: Date.now(), 
+                        endereco: endLimpo, 
+                        bairro: sug.bairro, 
+                        cidade: sug.cidade, 
+                        estado: sug.estado,
+                        latitude: sug.latitude, 
+                        longitude: sug.longitude,
+                        fonte: sug.fonte 
+                    }]); 
+                });
+                setTermoBusca(''); 
+                setSugestoes([]);
+                return;
+            }
+            
+            // Se não tem coordenadas, geocodificar em background
+            showToast && showToast('Localizando...', 'info');
+            geocodificarPreciso(sug).then(function(end) {
+                if (!end) { 
+                    showToast && showToast('Não localizado - verifique cidade/estado', 'error'); 
+                    return; 
+                }
+                setEnderecosSelecionados(function(prev) { 
+                    return prev.concat([{ 
+                        id: Date.now(), 
+                        endereco: limparPonto(end.endereco), 
+                        bairro: end.bairro, 
+                        cidade: end.cidade, 
+                        estado: end.estado,
+                        latitude: end.latitude, 
+                        longitude: end.longitude,
+                        fonte: end.fonte 
+                    }]); 
+                });
+            });
+            setTermoBusca(''); 
+            setSugestoes([]);
         };
 
         const remover = function(id) { setEnderecosSelecionados(function(prev) { return prev.filter(function(e) { return e.id !== id; }); }); };
         const mover = function(idx, dir) { var l = enderecosSelecionados.slice(), n = idx + dir; if (n < 0 || n >= l.length) return; var t = l[idx]; l[idx] = l[n]; l[n] = t; setEnderecosSelecionados(l); };
 
-        // Definir como partida padrão
         const definirPartidaPadrao = function(end) {
-            var partida = { endereco: end.endereco, bairro: end.bairro, cidade: end.cidade, latitude: end.latitude, longitude: end.longitude, lat: end.latitude, lon: end.longitude };
+            var partida = { endereco: end.endereco, bairro: end.bairro, cidade: end.cidade, estado: end.estado, latitude: end.latitude, longitude: end.longitude };
             localStorage.setItem('roteirizador_partida_padrao', JSON.stringify(partida));
             setPontoPartidaPadrao(partida);
             showToast && showToast('Partida padrão salva!', 'success');
@@ -1044,15 +1181,15 @@ const hideLoadingScreen = () => {
         };
 
         const otimizarRota = async function(pontos) {
-            var vehicle = { id: 1, profile: 'driving-car', start: [pontos[0].lon, pontos[0].lat] };
-            if (retornarInicio) vehicle.end = [pontos[0].lon, pontos[0].lat];
-            var resp = await fetch('https://api.openrouteservice.org/optimization', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': ORS_API_KEY }, body: JSON.stringify({ jobs: pontos.slice(1).map(function(p, i) { return { id: i + 1, location: [p.lon, p.lat] }; }), vehicles: [vehicle] }) });
-            if (!resp.ok) throw new Error('Erro');
+            var vehicle = { id: 1, profile: 'driving-car', start: [pontos[0].longitude, pontos[0].latitude] };
+            if (retornarInicio) vehicle.end = [pontos[0].longitude, pontos[0].latitude];
+            var resp = await fetch('https://api.openrouteservice.org/optimization', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': ORS_API_KEY }, body: JSON.stringify({ jobs: pontos.slice(1).map(function(p, i) { return { id: i + 1, location: [p.longitude, p.latitude] }; }), vehicles: [vehicle] }) });
+            if (!resp.ok) throw new Error('Erro na otimização');
             return resp.json();
         };
 
         const obterGeometria = async function(pontos) {
-            var resp = await fetch('https://api.openrouteservice.org/v2/directions/driving-car/geojson', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': ORS_API_KEY }, body: JSON.stringify({ coordinates: pontos.map(function(p) { return [p.lon, p.lat]; }) }) });
+            var resp = await fetch('https://api.openrouteservice.org/v2/directions/driving-car/geojson', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': ORS_API_KEY }, body: JSON.stringify({ coordinates: pontos.map(function(p) { return [p.longitude, p.latitude]; }) }) });
             return resp.ok ? resp.json() : null;
         };
 
@@ -1062,18 +1199,18 @@ const hideLoadingScreen = () => {
             if (routeLayer) { mapaRoteirizador.removeLayer(routeLayer); setRouteLayer(null); }
             pontos.filter(function(p) { return !p.isRetorno; }).forEach(function(p, i) {
                 var icon = L.divIcon({ className: '', html: '<div style="background:' + (i === 0 ? '#10b981' : '#7c3aed') + ';color:#fff;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:12px;border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,0.3)">' + (i === 0 ? '🚩' : i) + '</div>', iconSize: [28, 28], iconAnchor: [14, 14] });
-                L.marker([p.lat, p.lon], { icon: icon }).addTo(markersLayer).bindPopup('<b>' + (i === 0 ? 'PARTIDA' : 'Parada ' + i) + '</b><br>' + (p.endereco || '').substring(0, 40));
+                L.marker([p.latitude, p.longitude], { icon: icon }).addTo(markersLayer).bindPopup('<b>' + (i === 0 ? 'PARTIDA' : 'Parada ' + i) + '</b><br>' + (p.endereco || '').substring(0, 50));
             });
             if (geo && geo.features) { var layer = L.geoJSON(geo, { style: { color: '#7c3aed', weight: 5, opacity: 0.8 } }).addTo(mapaRoteirizador); setRouteLayer(layer); }
-            if (pontos.length > 0) mapaRoteirizador.fitBounds(L.latLngBounds(pontos.filter(function(p) { return !p.isRetorno; }).map(function(p) { return [p.lat, p.lon]; })), { padding: [50, 50] });
+            if (pontos.length > 0) mapaRoteirizador.fitBounds(L.latLngBounds(pontos.filter(function(p) { return !p.isRetorno; }).map(function(p) { return [p.latitude, p.longitude]; })), { padding: [50, 50] });
         };
 
         const roteirizar = async function() {
             if (enderecosSelecionados.length < 2) { showToast && showToast('Mínimo 2 endereços', 'error'); return; }
             setLoading(true); setResultado(null);
             try {
-                var pontos = enderecosSelecionados.map(function(e) { return { lat: e.latitude, lon: e.longitude, endereco: e.endereco, bairro: e.bairro, cidade: e.cidade }; });
-                if (pontos.some(function(p) { return !p.lat || !p.lon; })) throw new Error('Endereço sem coordenadas');
+                var pontos = enderecosSelecionados.map(function(e) { return { latitude: e.latitude, longitude: e.longitude, endereco: e.endereco, bairro: e.bairro, cidade: e.cidade }; });
+                if (pontos.some(function(p) { return !p.latitude || !p.longitude; })) throw new Error('Endereço sem coordenadas');
                 var otimizacao = await otimizarRota(pontos);
                 var ordem = [pontos[0]];
                 if (otimizacao.routes && otimizacao.routes[0]) otimizacao.routes[0].steps.filter(function(s) { return s.type === 'job'; }).forEach(function(s) { ordem.push(pontos[s.job]); });
@@ -1088,10 +1225,9 @@ const hideLoadingScreen = () => {
             setLoading(false);
         };
 
-        const abrirWaze = function() { if (resultado) { var p = resultado.ordemOtimizada.filter(function(x) { return !x.isRetorno; }); if (p.length) window.open('https://waze.com/ul?ll=' + p[p.length-1].lat + ',' + p[p.length-1].lon + '&navigate=yes', '_blank'); } };
-        const abrirMaps = function() { if (resultado) { var p = resultado.ordemOtimizada.filter(function(x) { return !x.isRetorno; }); if (p.length) window.open('https://www.google.com/maps/dir/' + p.map(function(x) { return x.lat + ',' + x.lon; }).join('/'), '_blank'); } };
+        const abrirWaze = function() { if (resultado) { var p = resultado.ordemOtimizada.filter(function(x) { return !x.isRetorno; }); if (p.length) window.open('https://waze.com/ul?ll=' + p[p.length-1].latitude + ',' + p[p.length-1].longitude + '&navigate=yes', '_blank'); } };
+        const abrirMaps = function() { if (resultado) { var p = resultado.ordemOtimizada.filter(function(x) { return !x.isRetorno; }); if (p.length) window.open('https://www.google.com/maps/dir/' + p.map(function(x) { return x.latitude + ',' + x.longitude; }).join('/'), '_blank'); } };
         const limpar = function() { 
-            // Manter partida padrão se existir
             if (pontoPartidaPadrao) {
                 setEnderecosSelecionados([Object.assign({}, pontoPartidaPadrao, { id: Date.now() })]);
             } else {
@@ -1102,7 +1238,7 @@ const hideLoadingScreen = () => {
         };
 
         return React.createElement('div', { className: 'fixed inset-0 z-[9999] flex flex-col', style: { background: '#1e1b4b' } },
-            // Header compacto
+            // Header
             React.createElement('div', { className: 'bg-purple-900 text-white px-4 py-2 flex items-center justify-between' },
                 React.createElement('div', { className: 'flex items-center gap-3' },
                     React.createElement('button', { onClick: onClose, className: 'px-3 py-1 bg-white/10 hover:bg-white/20 rounded text-sm' }, '← Voltar'),
@@ -1119,7 +1255,7 @@ const hideLoadingScreen = () => {
             ),
             // Content
             React.createElement('div', { className: 'flex-1 flex overflow-hidden' },
-                // Sidebar compacta
+                // Sidebar
                 React.createElement('div', { className: 'w-[360px] bg-white flex flex-col' },
                     // Busca
                     React.createElement('div', { className: 'p-3 border-b bg-purple-50' },
@@ -1133,13 +1269,15 @@ const hideLoadingScreen = () => {
                         ),
                         sugestoes.length > 0 && React.createElement('div', { className: 'mt-2 bg-white border border-purple-200 rounded-lg shadow-lg max-h-[200px] overflow-y-auto' },
                             sugestoes.map(function(sug, idx) {
+                                var temCoord = sug.latitude && sug.longitude;
                                 return React.createElement('div', { key: idx, onClick: function() { adicionar(sug); }, className: 'px-3 py-2 hover:bg-purple-50 cursor-pointer border-b last:border-b-0 text-sm' },
                                     React.createElement('div', { className: 'flex items-center gap-2' },
-                                        React.createElement('span', null, sug.fonte === 'bi' ? '📦' : '📮'),
+                                        React.createElement('span', null, sug.fonte === 'bi' ? (temCoord ? '📦' : '📦❓') : '📮'),
                                         React.createElement('div', { className: 'flex-1 min-w-0' },
-                                            React.createElement('div', { className: 'font-medium text-gray-800 truncate text-xs' }, sug.label),
-                                            React.createElement('div', { className: 'text-xs text-gray-500 truncate' }, sug.sublabel)
-                                        )
+                                            React.createElement('div', { className: 'font-medium text-gray-800 truncate text-xs' }, limparPonto(sug.endereco)),
+                                            React.createElement('div', { className: 'text-xs text-gray-500 truncate' }, [sug.bairro, sug.cidade, sug.estado].filter(Boolean).join(' - '))
+                                        ),
+                                        temCoord && React.createElement('span', { className: 'text-green-500 text-xs' }, '✓')
                                     )
                                 );
                             })
@@ -1169,9 +1307,8 @@ const hideLoadingScreen = () => {
                                                 React.createElement('button', { onClick: function() { remover(end.id); }, className: 'text-gray-400 hover:text-red-600' }, '✕')
                                             )
                                         ),
-                                        // Config partida padrão
                                         idx === 0 && mostrarConfigPartida && React.createElement('div', { className: 'mt-2 pt-2 border-t border-green-200 flex gap-2' },
-                                            React.createElement('button', { onClick: function() { definirPartidaPadrao(end); }, className: 'flex-1 px-2 py-1 bg-green-500 text-white rounded text-xs font-medium' }, '✓ Salvar como padrão'),
+                                            React.createElement('button', { onClick: function() { definirPartidaPadrao(end); }, className: 'flex-1 px-2 py-1 bg-green-500 text-white rounded text-xs font-medium' }, '✓ Salvar padrão'),
                                             pontoPartidaPadrao && React.createElement('button', { onClick: removerPartidaPadrao, className: 'px-2 py-1 bg-red-100 text-red-600 rounded text-xs' }, 'Remover')
                                         )
                                     );
