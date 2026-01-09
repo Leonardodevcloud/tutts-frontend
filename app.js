@@ -29133,13 +29133,15 @@ function AuditLogs({ apiUrl, showToast }) {
     ),
 
     // ==================== MODAL ROTEIRIZADOR ====================
-    // Debug: sempre mostra no console o estado
-    (console.log("🗺️ RENDER - mostrarRoteirizador:", mostrarRoteirizador), null),
-    mostrarRoteirizador && React.createElement(RoteirizadorModule, {
-      enderecosBi: localizacaoClientes,
-      onClose: () => { console.log("🗺️ Fechando modal"); setMostrarRoteirizador(false); },
-      showToast: ja
-    })
+    // Usando createPortal para renderizar diretamente no body
+    mostrarRoteirizador && ReactDOM.createPortal(
+      React.createElement(RoteirizadorModule, {
+        enderecosBi: localizacaoClientes,
+        onClose: () => { console.log("🗺️ Fechando modal"); setMostrarRoteirizador(false); },
+        showToast: ja
+      }),
+      document.body
+    )
   );
 }
 
