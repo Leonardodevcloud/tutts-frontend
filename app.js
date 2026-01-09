@@ -868,7 +868,6 @@ const hideLoadingScreen = () => {
 
     // ==================== COMPONENTE ROTEIRIZADOR ====================
     RoteirizadorModule = ({ enderecosBi, onClose, showToast }) => {
-        console.log("🗺️ RoteirizadorModule iniciando");
         const [enderecosSelecionados, setEnderecosSelecionados] = useState([]);
         const [termoBusca, setTermoBusca] = useState('');
         const [sugestoes, setSugestoes] = useState([]);
@@ -882,71 +881,44 @@ const hideLoadingScreen = () => {
         const [enderecosBI, setEnderecosBI] = useState([]);
         const [carregandoBI, setCarregandoBI] = useState(true);
 
-        // Carregar endereços do BI ao iniciar
         useEffect(() => {
             const carregarEnderecosBI = async () => {
                 try {
                     setCarregandoBI(true);
                     const response = await fetch(`${API_URL}/bi/entregas-lista?`);
                     const data = await response.json();
-                    
                     if (Array.isArray(data)) {
-                        const enderecosMap = new Map();
-                        
-                        data.forEach(entrega => {
-                            if (!entrega.endereco) return;
-                            const endNorm = normalizarEndereco(entrega.endereco);
-                            const chave = endNorm.substring(0, 50).toLowerCase();
-                            
-                            if (!enderecosMap.has(chave)) {
-                                enderecosMap.set(chave, {
-                                    endereco: entrega.endereco,
-                                    enderecoNormalizado: endNorm,
-                                    bairro: entrega.bairro,
-                                    cidade: entrega.cidade,
-                                    estado: entrega.estado,
-                                    latitude: entrega.latitude,
-                                    longitude: entrega.longitude,
-                                    contagem: 1
-                                });
+                        const map = new Map();
+                        data.forEach(e => {
+                            if (!e.endereco) return;
+                            const chave = normalizarEndereco(e.endereco).substring(0, 50).toLowerCase();
+                            if (!map.has(chave)) {
+                                map.set(chave, { endereco: e.endereco, enderecoNormalizado: normalizarEndereco(e.endereco), bairro: e.bairro, cidade: e.cidade, estado: e.estado, latitude: e.latitude, longitude: e.longitude, contagem: 1 });
                             } else {
-                                const e = enderecosMap.get(chave);
-                                e.contagem++;
-                                if (!e.latitude && entrega.latitude) {
-                                    e.latitude = entrega.latitude;
-                                    e.longitude = entrega.longitude;
-                                }
+                                const x = map.get(chave); x.contagem++;
+                                if (!x.latitude && e.latitude) { x.latitude = e.latitude; x.longitude = e.longitude; }
                             }
                         });
-                        
-                        const enderecosUnicos = Array.from(enderecosMap.values());
-                        console.log("🗺️ " + enderecosUnicos.length + " endereços únicos do BI");
-                        setEnderecosBI(enderecosUnicos);
+                        setEnderecosBI(Array.from(map.values()));
                     }
-                } catch (err) {
-                    console.error('Erro ao carregar BI:', err);
-                }
+                } catch (err) { console.error(err); }
                 setCarregandoBI(false);
             };
             carregarEnderecosBI();
         }, []);
 
-        // Inicializar mapa
         useEffect(() => {
             let mapInstance = null;
             const initMap = () => {
                 if (typeof L !== 'undefined') {
                     const container = document.getElementById('mapa-roteirizador');
                     if (container && !mapInstance) {
-                        container.innerHTML = '';
-                        container._leaflet_id = null;
+                        container.innerHTML = ''; container._leaflet_id = null;
                         mapInstance = L.map('mapa-roteirizador').setView([-16.6869, -49.2648], 4);
-                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(mapInstance);
+                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OSM' }).addTo(mapInstance);
                         setMapaRoteirizador(mapInstance);
                         setMarkersLayer(L.layerGroup().addTo(mapInstance));
-                        if (navigator.geolocation) {
-                            navigator.geolocation.getCurrentPosition(function(pos) { mapInstance && mapInstance.setView([pos.coords.latitude, pos.coords.longitude], 12); }, function() {});
-                        }
+                        navigator.geolocation && navigator.geolocation.getCurrentPosition(function(pos) { mapInstance && mapInstance.setView([pos.coords.latitude, pos.coords.longitude], 12); }, function() {});
                     }
                 }
             };
@@ -954,91 +926,43 @@ const hideLoadingScreen = () => {
             return function() { if (mapInstance) try { mapInstance.remove(); } catch(e) {} };
         }, []);
 
-        // Normalizar endereço
-        const normalizarEndereco = function(end) {
-            if (!end) return '';
-            return end.replace(/^Ponto\s*\d+\s*[-–]\s*/i, '').replace(/\s+/g, ' ').trim().toUpperCase();
-        };
-
-        // Calcular similaridade
+        const normalizarEndereco = function(end) { return end ? end.replace(/^Ponto\s*\d+\s*[-–]\s*/i, '').replace(/\s+/g, ' ').trim().toUpperCase() : ''; };
         const similaridade = function(a, b) {
-            if (!a || !b) return 0;
-            var s1 = a.toUpperCase(), s2 = b.toUpperCase();
-            if (s1 === s2) return 1;
+            if (!a || !b) return 0; var s1 = a.toUpperCase(), s2 = b.toUpperCase(); if (s1 === s2) return 1;
             var bg1 = new Set(), bg2 = new Set();
             for (var i = 0; i < s1.length - 1; i++) bg1.add(s1.slice(i, i+2));
             for (var i = 0; i < s2.length - 1; i++) bg2.add(s2.slice(i, i+2));
-            var inter = 0;
-            bg1.forEach(function(x) { if (bg2.has(x)) inter++; });
+            var inter = 0; bg1.forEach(function(x) { if (bg2.has(x)) inter++; });
             return (2 * inter) / (bg1.size + bg2.size);
         };
 
-        // Buscar sugestões
         useEffect(() => {
             const buscar = async () => {
                 if (!termoBusca || termoBusca.length < 2) { setSugestoes([]); return; }
-                
                 setBuscando(true);
-                var termo = termoBusca.toLowerCase();
-                var termoNorm = normalizarEndereco(termoBusca);
+                var termo = termoBusca.toLowerCase(), termoNorm = normalizarEndereco(termoBusca);
                 
-                // 1. Buscar no BI
                 var resultadosBI = enderecosBI.filter(function(e) {
-                    var endLower = (e.endereco || '').toLowerCase();
-                    var endNorm = e.enderecoNormalizado || normalizarEndereco(e.endereco);
-                    return endLower.includes(termo) || similaridade(termoNorm, endNorm) > 0.4;
-                }).sort(function(a, b) { 
-                    return similaridade(termoNorm, normalizarEndereco(b.endereco)) - similaridade(termoNorm, normalizarEndereco(a.endereco)); 
-                }).slice(0, 8).map(function(e) { 
-                    return { 
-                        endereco: e.endereco, enderecoNormalizado: e.enderecoNormalizado, bairro: e.bairro, 
-                        cidade: e.cidade, estado: e.estado, latitude: e.latitude, longitude: e.longitude,
-                        fonte: 'bi', label: e.endereco, sublabel: [e.bairro, e.cidade].filter(Boolean).join(' - ') 
-                    }; 
-                });
+                    return (e.endereco || '').toLowerCase().includes(termo) || similaridade(termoNorm, e.enderecoNormalizado) > 0.4;
+                }).sort(function(a, b) { return similaridade(termoNorm, b.enderecoNormalizado) - similaridade(termoNorm, a.enderecoNormalizado); })
+                  .slice(0, 8).map(function(e) { return { ...e, fonte: 'bi', label: e.endereco, sublabel: [e.bairro, e.cidade].filter(Boolean).join(' - ') }; });
                 
-                // 2. Se CEP, buscar ViaCEP
                 var resultadosCEP = [];
                 var cepMatch = termoBusca.match(/(\d{5})-?(\d{3})/);
                 if (cepMatch) {
                     try {
                         var resp = await fetch('https://viacep.com.br/ws/' + cepMatch[1] + cepMatch[2] + '/json/');
                         var data = await resp.json();
-                        if (!data.erro) {
-                            resultadosCEP.push({
-                                endereco: data.logradouro + ', ' + data.bairro + ', ' + data.localidade + ' - ' + data.uf,
-                                bairro: data.bairro, cidade: data.localidade, estado: data.uf, cep: data.cep,
-                                fonte: 'cep', label: data.logradouro || ('CEP ' + data.cep),
-                                sublabel: data.bairro + ', ' + data.localidade + ' - ' + data.uf, precisaGeo: true
-                            });
-                        }
+                        if (!data.erro) resultadosCEP.push({ endereco: data.logradouro + ', ' + data.bairro + ', ' + data.localidade + ' - ' + data.uf, bairro: data.bairro, cidade: data.localidade, estado: data.uf, fonte: 'cep', label: data.logradouro || 'CEP ' + data.cep, sublabel: data.bairro + ', ' + data.localidade, precisaGeo: true });
                     } catch(e) {}
                 }
-                
-                // 3. Se poucos resultados, buscar Nominatim
-                var resultadosWeb = [];
-                if (resultadosBI.length < 3 && termoBusca.length >= 4 && !cepMatch) {
-                    try {
-                        var resp = await fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(termoBusca + ', Brasil') + '&limit=5&countrycodes=br', { headers: { 'User-Agent': 'TuttsRoteirizador/1.0' } });
-                        var data = await resp.json();
-                        resultadosWeb = data.map(function(d) {
-                            return {
-                                endereco: d.display_name, latitude: parseFloat(d.lat), longitude: parseFloat(d.lon),
-                                fonte: 'web', label: d.display_name.split(',')[0], sublabel: d.display_name.split(',').slice(1, 3).join(',')
-                            };
-                        });
-                    } catch(e) {}
-                }
-                
-                setSugestoes([].concat(resultadosBI, resultadosCEP, resultadosWeb).slice(0, 12));
+                setSugestoes([].concat(resultadosBI, resultadosCEP).slice(0, 10));
                 setBuscando(false);
             };
-            
             var timer = setTimeout(buscar, 300);
             return function() { clearTimeout(timer); };
         }, [termoBusca, enderecosBI]);
 
-        // Geocodificar se necessário
         const geocodificar = async function(sug) {
             if (sug.latitude && sug.longitude) return sug;
             try {
@@ -1048,319 +972,161 @@ const hideLoadingScreen = () => {
                 if (data[0]) return Object.assign({}, sug, { latitude: parseFloat(data[0].lat), longitude: parseFloat(data[0].lon) });
             } catch(e) {}
             try {
-                var q = sug.endereco || (sug.bairro + ', ' + sug.cidade);
-                var resp = await fetch('https://api.openrouteservice.org/geocode/search?api_key=' + ORS_API_KEY + '&text=' + encodeURIComponent(q) + '&boundary.country=BR&size=1');
+                var resp = await fetch('https://api.openrouteservice.org/geocode/search?api_key=' + ORS_API_KEY + '&text=' + encodeURIComponent(sug.endereco || sug.bairro + ', ' + sug.cidade) + '&boundary.country=BR&size=1');
                 var data = await resp.json();
                 if (data.features && data.features[0]) return Object.assign({}, sug, { latitude: data.features[0].geometry.coordinates[1], longitude: data.features[0].geometry.coordinates[0] });
             } catch(e) {}
             return null;
         };
 
-        // Adicionar endereço
         const adicionar = async function(sug) {
-            if (enderecosSelecionados.length >= 15) { showToast && showToast('Máximo 15 endereços', 'error'); return; }
-            var jaExiste = enderecosSelecionados.some(function(e) { return similaridade(normalizarEndereco(e.endereco), normalizarEndereco(sug.endereco)) > 0.85; });
-            if (jaExiste) { showToast && showToast('Endereço similar já adicionado', 'error'); return; }
-            
+            if (enderecosSelecionados.length >= 15) { showToast && showToast('Máximo 15', 'error'); return; }
+            if (enderecosSelecionados.some(function(e) { return similaridade(normalizarEndereco(e.endereco), normalizarEndereco(sug.endereco)) > 0.85; })) { showToast && showToast('Já adicionado', 'error'); return; }
             var end = sug;
-            if (!sug.latitude || !sug.longitude) {
-                showToast && showToast('Localizando...', 'info');
-                end = await geocodificar(sug);
-                if (!end) { showToast && showToast('Não foi possível localizar', 'error'); return; }
-            }
-            
-            setEnderecosSelecionados(function(prev) { 
-                return prev.concat([{ 
-                    id: Date.now(), endereco: end.endereco || end.label, bairro: end.bairro, 
-                    cidade: end.cidade, estado: end.estado, latitude: end.latitude, longitude: end.longitude, 
-                    lat: end.latitude, lon: end.longitude, fonte: end.fonte 
-                }]); 
-            });
-            setTermoBusca('');
-            setSugestoes([]);
+            if (!sug.latitude || !sug.longitude) { end = await geocodificar(sug); if (!end) { showToast && showToast('Não localizado', 'error'); return; } }
+            setEnderecosSelecionados(function(prev) { return prev.concat([{ id: Date.now(), endereco: end.endereco || end.label, bairro: end.bairro, cidade: end.cidade, latitude: end.latitude, longitude: end.longitude, lat: end.latitude, lon: end.longitude, fonte: end.fonte }]); });
+            setTermoBusca(''); setSugestoes([]);
         };
 
         const remover = function(id) { setEnderecosSelecionados(function(prev) { return prev.filter(function(e) { return e.id !== id; }); }); };
-        
-        const mover = function(idx, dir) {
-            var novaLista = enderecosSelecionados.slice();
-            var novoIdx = idx + dir;
-            if (novoIdx < 0 || novoIdx >= novaLista.length) return;
-            var temp = novaLista[idx];
-            novaLista[idx] = novaLista[novoIdx];
-            novaLista[novoIdx] = temp;
-            setEnderecosSelecionados(novaLista);
-        };
+        const mover = function(idx, dir) { var l = enderecosSelecionados.slice(), n = idx + dir; if (n < 0 || n >= l.length) return; var t = l[idx]; l[idx] = l[n]; l[n] = t; setEnderecosSelecionados(l); };
 
-        // Otimizar rota
         const otimizarRota = async function(pontos) {
             var vehicle = { id: 1, profile: 'driving-car', start: [pontos[0].lon, pontos[0].lat] };
             if (retornarInicio) vehicle.end = [pontos[0].lon, pontos[0].lat];
-            var resp = await fetch('https://api.openrouteservice.org/optimization', { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/json', 'Authorization': ORS_API_KEY }, 
-                body: JSON.stringify({ 
-                    jobs: pontos.slice(1).map(function(p, i) { return { id: i + 1, location: [p.lon, p.lat], description: p.endereco }; }), 
-                    vehicles: [vehicle] 
-                }) 
-            });
-            if (!resp.ok) throw new Error('Erro na otimização');
+            var resp = await fetch('https://api.openrouteservice.org/optimization', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': ORS_API_KEY }, body: JSON.stringify({ jobs: pontos.slice(1).map(function(p, i) { return { id: i + 1, location: [p.lon, p.lat] }; }), vehicles: [vehicle] }) });
+            if (!resp.ok) throw new Error('Erro');
             return resp.json();
         };
 
-        // Obter geometria
         const obterGeometria = async function(pontos) {
-            var resp = await fetch('https://api.openrouteservice.org/v2/directions/driving-car/geojson', { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/json', 'Authorization': ORS_API_KEY }, 
-                body: JSON.stringify({ coordinates: pontos.map(function(p) { return [p.lon, p.lat]; }) }) 
-            });
+            var resp = await fetch('https://api.openrouteservice.org/v2/directions/driving-car/geojson', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': ORS_API_KEY }, body: JSON.stringify({ coordinates: pontos.map(function(p) { return [p.lon, p.lat]; }) }) });
             return resp.ok ? resp.json() : null;
         };
 
-        // Atualizar mapa
         const atualizarMapa = function(pontos, geo) {
             if (!mapaRoteirizador || !markersLayer) return;
             markersLayer.clearLayers();
             if (routeLayer) { mapaRoteirizador.removeLayer(routeLayer); setRouteLayer(null); }
-            
-            var pontosVisiveis = pontos.filter(function(p) { return !p.isRetorno; });
-            pontosVisiveis.forEach(function(p, i) {
-                var cor = i === 0 ? '#10b981' : '#7c3aed';
-                var icon = L.divIcon({ 
-                    className: '', 
-                    html: '<div style="background:' + cor + ';color:#fff;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:16px;border:3px solid #fff;box-shadow:0 3px 10px rgba(0,0,0,0.3)">' + (i === 0 ? '🚩' : i) + '</div>', 
-                    iconSize: [40, 40], 
-                    iconAnchor: [20, 20] 
-                });
-                L.marker([p.lat, p.lon], { icon: icon }).addTo(markersLayer).bindPopup('<b>' + (i === 0 ? '🚩 PARTIDA' : '📍 Parada ' + i) + '</b><br>' + (p.endereco || ''));
+            pontos.filter(function(p) { return !p.isRetorno; }).forEach(function(p, i) {
+                var icon = L.divIcon({ className: '', html: '<div style="background:' + (i === 0 ? '#10b981' : '#7c3aed') + ';color:#fff;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:12px;border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,0.3)">' + (i === 0 ? '🚩' : i) + '</div>', iconSize: [28, 28], iconAnchor: [14, 14] });
+                L.marker([p.lat, p.lon], { icon: icon }).addTo(markersLayer).bindPopup('<b>' + (i === 0 ? 'PARTIDA' : 'Parada ' + i) + '</b><br>' + (p.endereco || '').substring(0, 40));
             });
-            
-            if (geo && geo.features) { 
-                var layer = L.geoJSON(geo, { style: { color: '#7c3aed', weight: 6, opacity: 0.8 } }).addTo(mapaRoteirizador); 
-                setRouteLayer(layer); 
-            }
-            if (pontosVisiveis.length > 0) { 
-                var bounds = L.latLngBounds(pontosVisiveis.map(function(p) { return [p.lat, p.lon]; })); 
-                mapaRoteirizador.fitBounds(bounds, { padding: [80, 80] }); 
-            }
+            if (geo && geo.features) { var layer = L.geoJSON(geo, { style: { color: '#7c3aed', weight: 5, opacity: 0.8 } }).addTo(mapaRoteirizador); setRouteLayer(layer); }
+            if (pontos.length > 0) mapaRoteirizador.fitBounds(L.latLngBounds(pontos.filter(function(p) { return !p.isRetorno; }).map(function(p) { return [p.lat, p.lon]; })), { padding: [50, 50] });
         };
 
-        // Roteirizar
         const roteirizar = async function() {
-            if (enderecosSelecionados.length < 2) { showToast && showToast('Adicione pelo menos 2 endereços', 'error'); return; }
-            
-            setLoading(true); 
-            setResultado(null);
-            
+            if (enderecosSelecionados.length < 2) { showToast && showToast('Mínimo 2 endereços', 'error'); return; }
+            setLoading(true); setResultado(null);
             try {
-                var pontos = enderecosSelecionados.map(function(e) { 
-                    return { lat: e.latitude || e.lat, lon: e.longitude || e.lon, endereco: e.endereco, bairro: e.bairro, cidade: e.cidade }; 
-                });
-                
-                var semCoord = pontos.filter(function(p) { return !p.lat || !p.lon; });
-                if (semCoord.length > 0) throw new Error(semCoord.length + ' endereço(s) sem coordenadas');
-                
+                var pontos = enderecosSelecionados.map(function(e) { return { lat: e.latitude, lon: e.longitude, endereco: e.endereco, bairro: e.bairro, cidade: e.cidade }; });
+                if (pontos.some(function(p) { return !p.lat || !p.lon; })) throw new Error('Endereço sem coordenadas');
                 var otimizacao = await otimizarRota(pontos);
-                var ordemOtimizada = [pontos[0]];
-                if (otimizacao.routes && otimizacao.routes[0] && otimizacao.routes[0].steps) { 
-                    otimizacao.routes[0].steps.filter(function(s) { return s.type === 'job'; }).forEach(function(step) { 
-                        ordemOtimizada.push(pontos[step.job]); 
-                    }); 
-                }
-                if (retornarInicio) ordemOtimizada.push(Object.assign({}, pontos[0], { isRetorno: true }));
-                
-                var geometria = await obterGeometria(ordemOtimizada);
-                
-                var distanciaKm = 0, tempoMin = 0;
-                if (geometria && geometria.features && geometria.features[0] && geometria.features[0].properties && geometria.features[0].properties.segments) { 
-                    geometria.features[0].properties.segments.forEach(function(seg) { 
-                        distanciaKm += seg.distance || 0; 
-                        tempoMin += seg.duration || 0; 
-                    }); 
-                    distanciaKm = (distanciaKm / 1000).toFixed(1); 
-                    tempoMin = Math.round(tempoMin / 60); 
-                }
-                
-                setResultado({ ordemOtimizada: ordemOtimizada, distanciaKm: distanciaKm, tempoMin: tempoMin, geometria: geometria });
-                atualizarMapa(ordemOtimizada, geometria);
-                showToast && showToast('✅ Rota otimizada!', 'success');
-                
-            } catch (err) { 
-                showToast && showToast(err.message, 'error'); 
-            } finally { 
-                setLoading(false); 
-            }
+                var ordem = [pontos[0]];
+                if (otimizacao.routes && otimizacao.routes[0]) otimizacao.routes[0].steps.filter(function(s) { return s.type === 'job'; }).forEach(function(s) { ordem.push(pontos[s.job]); });
+                if (retornarInicio) ordem.push(Object.assign({}, pontos[0], { isRetorno: true }));
+                var geo = await obterGeometria(ordem);
+                var km = 0, min = 0;
+                if (geo && geo.features && geo.features[0] && geo.features[0].properties.segments) geo.features[0].properties.segments.forEach(function(s) { km += s.distance || 0; min += s.duration || 0; });
+                setResultado({ ordemOtimizada: ordem, distanciaKm: (km / 1000).toFixed(1), tempoMin: Math.round(min / 60), geometria: geo });
+                atualizarMapa(ordem, geo);
+                showToast && showToast('Rota calculada!', 'success');
+            } catch (err) { showToast && showToast(err.message, 'error'); }
+            setLoading(false);
         };
 
-        const abrirWaze = function() { 
-            if (!resultado || !resultado.ordemOtimizada) return; 
-            var pontos = resultado.ordemOtimizada.filter(function(p) { return !p.isRetorno; }); 
-            if (pontos.length > 0) { 
-                var destino = pontos[pontos.length - 1]; 
-                window.open('https://waze.com/ul?ll=' + destino.lat + ',' + destino.lon + '&navigate=yes', '_blank'); 
-            } 
-        };
-        
-        const abrirMaps = function() { 
-            if (!resultado || !resultado.ordemOtimizada) return; 
-            var pontos = resultado.ordemOtimizada.filter(function(p) { return !p.isRetorno; }); 
-            if (pontos.length > 0) { 
-                var waypoints = pontos.map(function(p) { return p.lat + ',' + p.lon; }).join('/'); 
-                window.open('https://www.google.com/maps/dir/' + waypoints, '_blank'); 
-            } 
-        };
-        
-        const limparTudo = function() {
-            setEnderecosSelecionados([]);
-            setResultado(null);
-            setTermoBusca('');
-            setSugestoes([]);
-            if (markersLayer) markersLayer.clearLayers();
-            if (routeLayer && mapaRoteirizador) { mapaRoteirizador.removeLayer(routeLayer); setRouteLayer(null); }
-        };
+        const abrirWaze = function() { if (resultado) { var p = resultado.ordemOtimizada.filter(function(x) { return !x.isRetorno; }); if (p.length) window.open('https://waze.com/ul?ll=' + p[p.length-1].lat + ',' + p[p.length-1].lon + '&navigate=yes', '_blank'); } };
+        const abrirMaps = function() { if (resultado) { var p = resultado.ordemOtimizada.filter(function(x) { return !x.isRetorno; }); if (p.length) window.open('https://www.google.com/maps/dir/' + p.map(function(x) { return x.lat + ',' + x.lon; }).join('/'), '_blank'); } };
+        const limpar = function() { setEnderecosSelecionados([]); setResultado(null); setTermoBusca(''); setSugestoes([]); markersLayer && markersLayer.clearLayers(); routeLayer && mapaRoteirizador && mapaRoteirizador.removeLayer(routeLayer); setRouteLayer(null); };
 
-        // RENDER
-        return React.createElement('div', { className: 'fixed inset-0 z-[9999] flex flex-col', style: { background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 100%)' } },
-            // Header
-            React.createElement('div', { className: 'bg-gradient-to-r from-purple-900 to-indigo-900 text-white px-6 py-4 flex items-center justify-between shadow-xl' },
-                React.createElement('div', { className: 'flex items-center gap-4' },
-                    React.createElement('button', { onClick: onClose, className: 'px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition font-medium' }, '← Voltar'),
-                    React.createElement('div', null,
-                        React.createElement('h1', { className: 'text-2xl font-bold' }, '🗺️ Roteirizador Inteligente'),
-                        React.createElement('p', { className: 'text-purple-300 text-sm' }, 'Busque endereços do BI ou digite manualmente')
-                    )
+        return React.createElement('div', { className: 'fixed inset-0 z-[9999] flex flex-col', style: { background: '#1e1b4b' } },
+            // Header compacto
+            React.createElement('div', { className: 'bg-purple-900 text-white px-4 py-2 flex items-center justify-between' },
+                React.createElement('div', { className: 'flex items-center gap-3' },
+                    React.createElement('button', { onClick: onClose, className: 'px-3 py-1 bg-white/10 hover:bg-white/20 rounded text-sm' }, '← Voltar'),
+                    React.createElement('span', { className: 'font-bold' }, '🗺️ Roteirizador')
                 ),
-                React.createElement('div', { className: 'flex items-center gap-4' },
-                    resultado && React.createElement('div', { className: 'flex items-center gap-6 bg-white/10 rounded-xl px-6 py-3' },
-                        React.createElement('div', { className: 'text-center' },
-                            React.createElement('div', { className: 'text-3xl font-bold text-green-400' }, resultado.distanciaKm || '0'),
-                            React.createElement('div', { className: 'text-xs text-purple-300' }, 'km')
-                        ),
-                        React.createElement('div', { className: 'w-px h-10 bg-purple-500' }),
-                        React.createElement('div', { className: 'text-center' },
-                            React.createElement('div', { className: 'text-3xl font-bold text-cyan-400' }, resultado.tempoMin || '0'),
-                            React.createElement('div', { className: 'text-xs text-purple-300' }, 'min')
-                        )
+                React.createElement('div', { className: 'flex items-center gap-3' },
+                    resultado && React.createElement('div', { className: 'flex items-center gap-3 bg-white/10 rounded px-3 py-1 text-sm' },
+                        React.createElement('span', { className: 'text-green-400 font-bold' }, resultado.distanciaKm + ' km'),
+                        React.createElement('span', { className: 'text-cyan-400 font-bold' }, resultado.tempoMin + ' min')
                     ),
-                    resultado && React.createElement('button', { onClick: abrirWaze, className: 'px-5 py-3 bg-cyan-500 text-white rounded-xl font-bold hover:bg-cyan-600 shadow-lg' }, '🚗 Waze'),
-                    resultado && React.createElement('button', { onClick: abrirMaps, className: 'px-5 py-3 bg-blue-500 text-white rounded-xl font-bold hover:bg-blue-600 shadow-lg' }, '📍 Maps')
+                    resultado && React.createElement('button', { onClick: abrirWaze, className: 'px-3 py-1 bg-cyan-500 rounded text-sm font-medium' }, 'Waze'),
+                    resultado && React.createElement('button', { onClick: abrirMaps, className: 'px-3 py-1 bg-blue-500 rounded text-sm font-medium' }, 'Maps')
                 )
             ),
-
             // Content
             React.createElement('div', { className: 'flex-1 flex overflow-hidden' },
-                // Sidebar
-                React.createElement('div', { className: 'w-[480px] bg-white flex flex-col shadow-2xl' },
-                    // Campo de busca
-                    React.createElement('div', { className: 'p-5 border-b bg-gradient-to-r from-purple-50 to-indigo-50' },
-                        React.createElement('label', { className: 'text-sm font-bold text-purple-800 mb-2 block' }, '🔍 Buscar Endereço'),
+                // Sidebar compacta
+                React.createElement('div', { className: 'w-[360px] bg-white flex flex-col' },
+                    // Busca
+                    React.createElement('div', { className: 'p-3 border-b bg-purple-50' },
                         React.createElement('div', { className: 'relative' },
-                            React.createElement('input', { 
-                                type: 'text', value: termoBusca, onChange: function(e) { setTermoBusca(e.target.value); },
-                                placeholder: 'Digite: Rua, Bairro, Cidade ou CEP...', 
-                                className: 'w-full px-4 py-4 pr-12 border-2 border-purple-200 rounded-xl text-base focus:border-purple-500 focus:outline-none',
-                                autoComplete: 'off'
-                            }),
-                            buscando && React.createElement('div', { className: 'absolute right-4 top-1/2 -translate-y-1/2' },
-                                React.createElement('div', { className: 'w-5 h-5 border-2 border-purple-500 border-t-transparent rounded-full animate-spin' })
-                            )
+                            React.createElement('input', { type: 'text', value: termoBusca, onChange: function(e) { setTermoBusca(e.target.value); }, placeholder: '🔍 Buscar endereço, CEP...', className: 'w-full px-3 py-2 border border-purple-200 rounded-lg text-sm focus:border-purple-500 focus:outline-none', autoComplete: 'off' }),
+                            buscando && React.createElement('div', { className: 'absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full animate-spin' })
                         ),
-                        React.createElement('p', { className: 'text-xs text-purple-600 mt-2' }, 
-                            carregandoBI ? '⏳ Carregando endereços do BI...' : ('✅ ' + enderecosBI.length + ' endereços do BI disponíveis')
-                        ),
-                        
-                        // Sugestões
-                        sugestoes.length > 0 && React.createElement('div', { className: 'mt-2 bg-white border-2 border-purple-200 rounded-xl shadow-xl max-h-[300px] overflow-y-auto' },
-                            sugestoes.map(function(sug, idx) { 
-                                return React.createElement('div', { 
-                                    key: idx, onClick: function() { adicionar(sug); },
-                                    className: 'px-4 py-3 hover:bg-purple-50 cursor-pointer border-b last:border-b-0 transition'
-                                },
-                                    React.createElement('div', { className: 'flex items-start gap-3' },
-                                        React.createElement('span', { className: 'text-lg' }, sug.fonte === 'bi' ? '📦' : sug.fonte === 'cep' ? '📮' : '🌐'),
+                        React.createElement('p', { className: 'text-xs text-purple-600 mt-1' }, carregandoBI ? '⏳ Carregando...' : '✅ ' + enderecosBI.length + ' endereços'),
+                        sugestoes.length > 0 && React.createElement('div', { className: 'mt-2 bg-white border border-purple-200 rounded-lg shadow-lg max-h-[200px] overflow-y-auto' },
+                            sugestoes.map(function(sug, idx) {
+                                return React.createElement('div', { key: idx, onClick: function() { adicionar(sug); }, className: 'px-3 py-2 hover:bg-purple-50 cursor-pointer border-b last:border-b-0 text-sm' },
+                                    React.createElement('div', { className: 'flex items-center gap-2' },
+                                        React.createElement('span', null, sug.fonte === 'bi' ? '📦' : '📮'),
                                         React.createElement('div', { className: 'flex-1 min-w-0' },
-                                            React.createElement('div', { className: 'font-medium text-gray-800 truncate' }, sug.label),
-                                            React.createElement('div', { className: 'text-xs text-gray-500 truncate' }, sug.sublabel),
-                                            React.createElement('span', { className: 'text-xs px-2 py-0.5 rounded-full ' + (sug.fonte === 'bi' ? 'bg-purple-100 text-purple-700' : sug.fonte === 'cep' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700') },
-                                                sug.fonte === 'bi' ? 'BI' : sug.fonte === 'cep' ? 'CEP' : 'Web'
-                                            )
+                                            React.createElement('div', { className: 'font-medium text-gray-800 truncate text-xs' }, sug.label),
+                                            React.createElement('div', { className: 'text-xs text-gray-500 truncate' }, sug.sublabel)
                                         )
                                     )
-                                ); 
+                                );
                             })
                         )
                     ),
-                    
-                    // Lista de endereços
-                    React.createElement('div', { className: 'flex-1 overflow-y-auto p-4' },
-                        React.createElement('div', { className: 'flex items-center justify-between mb-3' },
-                            React.createElement('h3', { className: 'font-bold text-gray-700' }, '📋 Rota (' + enderecosSelecionados.length + '/15 paradas)'),
-                            enderecosSelecionados.length > 0 && React.createElement('button', { onClick: limparTudo, className: 'text-xs text-red-600 hover:text-red-800 font-medium' }, '🗑️ Limpar')
+                    // Lista
+                    React.createElement('div', { className: 'flex-1 overflow-y-auto p-2' },
+                        React.createElement('div', { className: 'flex items-center justify-between mb-2' },
+                            React.createElement('span', { className: 'text-xs font-bold text-gray-600' }, 'Rota (' + enderecosSelecionados.length + '/15)'),
+                            enderecosSelecionados.length > 0 && React.createElement('button', { onClick: limpar, className: 'text-xs text-red-500' }, 'Limpar')
                         ),
-                        
-                        enderecosSelecionados.length === 0 
-                            ? React.createElement('div', { className: 'text-center py-12 text-gray-400' },
-                                React.createElement('div', { className: 'text-5xl mb-3' }, '📍'),
-                                React.createElement('p', null, 'Busque e adicione endereços'),
-                                React.createElement('p', { className: 'text-sm mt-1' }, 'O primeiro será o ponto de partida')
-                            )
-                            : React.createElement('div', { className: 'space-y-2' },
-                                enderecosSelecionados.map(function(end, idx) { 
-                                    return React.createElement('div', { 
-                                        key: end.id,
-                                        className: 'p-4 rounded-xl border-2 shadow-sm ' + (idx === 0 ? 'bg-green-50 border-green-300' : 'bg-white border-gray-200')
-                                    },
-                                        React.createElement('div', { className: 'flex items-start gap-3' },
-                                            React.createElement('div', { className: 'w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 font-bold text-lg ' + (idx === 0 ? 'bg-green-500 text-white' : 'bg-purple-600 text-white') }, 
-                                                idx === 0 ? '🚩' : idx
-                                            ),
+                        enderecosSelecionados.length === 0
+                            ? React.createElement('div', { className: 'text-center py-8 text-gray-400 text-sm' }, '📍 Adicione endereços')
+                            : React.createElement('div', { className: 'space-y-1' },
+                                enderecosSelecionados.map(function(end, idx) {
+                                    return React.createElement('div', { key: end.id, className: 'p-2 rounded border text-xs ' + (idx === 0 ? 'bg-green-50 border-green-200' : 'bg-white border-gray-200') },
+                                        React.createElement('div', { className: 'flex items-center gap-2' },
+                                            React.createElement('span', { className: 'w-6 h-6 rounded-full flex items-center justify-center font-bold text-white text-xs ' + (idx === 0 ? 'bg-green-500' : 'bg-purple-600') }, idx === 0 ? '🚩' : idx),
                                             React.createElement('div', { className: 'flex-1 min-w-0' },
-                                                React.createElement('div', { className: 'font-medium text-gray-800 text-sm' }, idx === 0 ? '📍 PARTIDA' : 'Parada ' + idx),
-                                                React.createElement('div', { className: 'text-sm text-gray-600 mt-1 truncate' }, end.endereco),
-                                                React.createElement('div', { className: 'text-xs text-gray-400 mt-1' }, [end.bairro, end.cidade].filter(Boolean).join(' - '))
+                                                React.createElement('div', { className: 'font-medium text-gray-800 truncate' }, end.endereco),
+                                                React.createElement('div', { className: 'text-gray-500 truncate' }, [end.bairro, end.cidade].filter(Boolean).join(' - '))
                                             ),
-                                            React.createElement('div', { className: 'flex flex-col gap-1' },
-                                                idx > 0 && React.createElement('button', { onClick: function() { mover(idx, -1); }, className: 'p-1 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded' }, '▲'),
-                                                idx < enderecosSelecionados.length - 1 && React.createElement('button', { onClick: function() { mover(idx, 1); }, className: 'p-1 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded' }, '▼'),
-                                                React.createElement('button', { onClick: function() { remover(end.id); }, className: 'p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded' }, '✕')
+                                            React.createElement('div', { className: 'flex gap-1' },
+                                                idx > 0 && React.createElement('button', { onClick: function() { mover(idx, -1); }, className: 'text-gray-400 hover:text-purple-600' }, '▲'),
+                                                idx < enderecosSelecionados.length - 1 && React.createElement('button', { onClick: function() { mover(idx, 1); }, className: 'text-gray-400 hover:text-purple-600' }, '▼'),
+                                                React.createElement('button', { onClick: function() { remover(end.id); }, className: 'text-gray-400 hover:text-red-600' }, '✕')
                                             )
                                         )
-                                    ); 
+                                    );
                                 })
                             )
                     ),
-                    
                     // Footer
-                    React.createElement('div', { className: 'p-5 border-t bg-gray-50 space-y-4' },
-                        React.createElement('label', { className: 'flex items-center gap-3 cursor-pointer p-3 bg-white rounded-xl border hover:border-purple-300' },
-                            React.createElement('input', { type: 'checkbox', checked: retornarInicio, onChange: function(e) { setRetornarInicio(e.target.checked); }, className: 'w-5 h-5 text-purple-600 rounded' }),
-                            React.createElement('span', { className: 'text-gray-700 font-medium' }, '↩️ Retornar ao ponto de partida')
+                    React.createElement('div', { className: 'p-3 border-t bg-gray-50' },
+                        React.createElement('label', { className: 'flex items-center gap-2 mb-2 cursor-pointer text-sm' },
+                            React.createElement('input', { type: 'checkbox', checked: retornarInicio, onChange: function(e) { setRetornarInicio(e.target.checked); }, className: 'w-4 h-4' }),
+                            React.createElement('span', null, '↩️ Retornar ao início')
                         ),
-                        React.createElement('button', { 
-                            onClick: roteirizar, disabled: loading || enderecosSelecionados.length < 2, 
-                            className: 'w-full py-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl font-bold text-lg hover:from-purple-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg' 
-                        }, loading ? '⏳ Calculando...' : '🚀 Otimizar Rota')
+                        React.createElement('button', { onClick: roteirizar, disabled: loading || enderecosSelecionados.length < 2, className: 'w-full py-2 bg-purple-600 text-white rounded-lg font-bold text-sm hover:bg-purple-700 disabled:opacity-50' }, loading ? '⏳ Calculando...' : '🚀 Otimizar Rota')
                     )
                 ),
-
                 // Mapa
-                React.createElement('div', { className: 'flex-1 flex flex-col bg-gray-100' },
-                    React.createElement('div', { id: 'mapa-roteirizador', className: 'flex-1', style: { minHeight: '100%' } }),
-                    resultado && React.createElement('div', { className: 'bg-white border-t-2 border-purple-200 p-5' },
-                        React.createElement('div', { className: 'flex items-center gap-3 mb-3' },
-                            React.createElement('span', { className: 'text-lg' }, '✅'),
-                            React.createElement('span', { className: 'font-bold text-gray-700' }, 'Ordem otimizada:')
-                        ),
-                        React.createElement('div', { className: 'flex flex-wrap gap-2' }, 
-                            resultado.ordemOtimizada.map(function(ponto, idx) { 
-                                return React.createElement('div', { 
-                                    key: idx, 
-                                    className: 'inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium shadow-sm ' + (idx === 0 ? 'bg-green-100 text-green-800 border border-green-300' : ponto.isRetorno ? 'bg-green-100 text-green-800 border border-green-300' : 'bg-purple-100 text-purple-800 border border-purple-300')
-                                },
-                                    React.createElement('span', { className: 'font-bold' }, idx === 0 ? '🚩' : ponto.isRetorno ? '↩️' : idx),
-                                    ((ponto.endereco || '') + '').substring(0, 30) + (((ponto.endereco || '') + '').length > 30 ? '...' : '')
-                                ); 
+                React.createElement('div', { className: 'flex-1 flex flex-col' },
+                    React.createElement('div', { id: 'mapa-roteirizador', className: 'flex-1' }),
+                    resultado && React.createElement('div', { className: 'bg-white border-t p-3' },
+                        React.createElement('div', { className: 'text-xs font-bold text-gray-600 mb-2' }, '✅ Ordem otimizada:'),
+                        React.createElement('div', { className: 'flex flex-wrap gap-1' },
+                            resultado.ordemOtimizada.map(function(p, idx) {
+                                return React.createElement('span', { key: idx, className: 'px-2 py-1 rounded text-xs font-medium ' + (idx === 0 || p.isRetorno ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700') },
+                                    (idx === 0 ? '🚩' : p.isRetorno ? '↩️' : idx) + ' ' + (p.endereco || '').substring(0, 20)
+                                );
                             })
                         )
                     )
