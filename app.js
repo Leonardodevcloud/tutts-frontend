@@ -899,7 +899,20 @@ const hideLoadingScreen = () => {
             validacao: [],
             loja: [],
             gratuidades: []
-        }), [j, C] = useState([]), [A, S] = useState([]), [k, P] = useState(!1), [T, D] = useState(null), [L, I] = useState([]), [F, $] = useState(!1), [M, O] = useState([]), [q, U] = useState([]), [z, B] = useState([]), [V, J] = useState(null), [Q, H] = useState([]), [G, W] = useState([]), [Z, Y] = useState([]), [K, X] = useState({}), [ee, te] = useState([]), [ae, le] = useState([]), [re, oe] = useState([]), [ce, se] = useState([]), [ne, me] = useState([]), [ie, de] = useState([]), [pe, xe] = useState([]), [ue, ge] = useState(!1), [be, Re] = useState(null), [Ee, he] = useState("home"), [mensagemGentileza, setMensagemGentileza] = useState(() => getMensagemGentileza()), [elegibilidadeNovatos, setElegibilidadeNovatos] = useState({ elegivel: false, motivo: '', promocoes: [], carregando: true }), [regioesNovatos, setRegioesNovatos] = useState([]), [solicitacoesPagina, setSolicitacoesPagina] = useState(1), [acertoRealizado, setAcertoRealizado] = useState(() => { try { const saved = localStorage.getItem("tutts_acerto_realizado"); return saved !== null ? JSON.parse(saved) : true; } catch(e) { return true; } }), [solicitacoesPorPagina] = useState(120), [conciliacaoPagina, setConciliacaoPagina] = useState(1), [conciliacaoPorPagina] = useState(120), [fe, Ne] = useState({
+        }), [j, C] = useState([]), [A, S] = useState([]), [k, P] = useState(!1), [T, D] = useState(null), [L, I] = useState([]), [F, $] = useState(!1), [M, O] = useState([]), [q, U] = useState([]), [z, B] = useState([]), [V, J] = useState(null), [Q, H] = useState([]), [G, W] = useState([]), [Z, Y] = useState([]), [K, X] = useState({}), [ee, te] = useState([]), [ae, le] = useState([]), [re, oe] = useState([]), [ce, se] = useState([]), [ne, me] = useState([]), [ie, de] = useState([]), [pe, xe] = useState([]), [ue, ge] = useState(!1), [be, Re] = useState(null), [Ee, he] = useState("home"), [mensagemGentileza, setMensagemGentileza] = useState(() => getMensagemGentileza()), [elegibilidadeNovatos, setElegibilidadeNovatos] = useState({ elegivel: false, motivo: '', promocoes: [], carregando: true }), [regioesNovatos, setRegioesNovatos] = useState([]), [solicitacoesPagina, setSolicitacoesPagina] = useState(1), [acertoRealizado, setAcertoRealizado] = useState(() => { try { const saved = localStorage.getItem("tutts_acerto_realizado"); return saved !== null ? JSON.parse(saved) : true; } catch(e) { return true; } }), [solicitacoesPorPagina] = useState(120), [conciliacaoPagina, setConciliacaoPagina] = useState(1), [conciliacaoPorPagina] = useState(120), 
+        
+        // Helper para parse de saldo (aceita número ou string brasileira)
+        parseSaldoBR = (valor) => {
+            if (typeof valor === "number") return valor;
+            if (!valor) return 0;
+            const str = String(valor);
+            if (str.includes(",")) {
+                return parseFloat(str.replace(/\./g, "").replace(",", ".")) || 0;
+            }
+            return parseFloat(str) || 0;
+        },
+        
+        [fe, Ne] = useState({
             titulo: "Acerte os procedimentos e ganhe saque gratuito de R$ 500,00",
             imagens: [null, null, null, null],
             perguntas: [{
@@ -2404,7 +2417,7 @@ const hideLoadingScreen = () => {
             const dados = plificState.consultaLote.filter(r => !r.erro);
             const csv = [
                 "ID;Nome;CPF;Celular;Saldo",
-                ...dados.map(p => `${p.idProf || p.id || ""};${p.nome || ""};${p.cpf || ""};${p.celular || ""};${parseFloat(String(p.saldo || 0).replace(/\./g, "").replace(",", ".")).toFixed(2).replace(".", ",")}`)
+                ...dados.map(p => `${p.idProf || p.id || ""};${p.nome || ""};${p.cpf || ""};${p.celular || ""};${parseSaldoBR(p.saldo).toFixed(2).replace(".", ",")}`)
             ].join("\n");
             
             const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
@@ -2435,7 +2448,7 @@ const hideLoadingScreen = () => {
                     return;
                 }
                 
-                const saldoReal = data.profissional ? parseFloat(String(data.profissional.saldo || 0).replace(/\./g, "").replace(",", ".")) : 0;
+                const saldoReal = data.profissional ? parseSaldoBR(data.profissional.saldo) : 0;
                 
                 // Guarda o saldo real - o cálculo com pendentes é feito no render
                 setSaldoPlificUser({ saldo: saldoReal, loading: false, erro: null });
@@ -2445,6 +2458,7 @@ const hideLoadingScreen = () => {
         };
         
         // Calcular saldo disponível (saldo real - saques pendentes)
+        
         const calcularSaldoDisponivel = () => {
             if (saldoPlificUser.saldo === null) return null;
             const saquesPendentes = M.filter(s => s.status === "pending" || s.status === "aguardando_aprovacao");
@@ -14034,7 +14048,7 @@ const hideLoadingScreen = () => {
                 ),
                 React.createElement("div", null,
                     React.createElement("p", {className: "text-sm text-gray-500"}, "Saldo"),
-                    React.createElement("p", {className: "text-2xl font-bold " + (parseFloat(String(plificState.consultaIndividual.profissional.saldo || 0).replace(/\./g, "").replace(",", ".")) >= 0 ? "text-green-600" : "text-red-600")}, "R$ " + parseFloat(String(plificState.consultaIndividual.profissional.saldo || 0).replace(/\./g, "").replace(",", ".")).toFixed(2).replace(".", ","))
+                    React.createElement("p", {className: "text-2xl font-bold " + (parseSaldoBR(plificState.consultaIndividual.profissional.saldo) >= 0 ? "text-green-600" : "text-red-600")}, "R$ " + parseSaldoBR(plificState.consultaIndividual.profissional.saldo).toFixed(2).replace(".", ","))
                 ),
                 React.createElement("div", {className: "flex items-end"},
                     React.createElement("button", {
@@ -14139,7 +14153,7 @@ const hideLoadingScreen = () => {
             React.createElement("div", {className: "bg-gray-50 rounded-lg p-3 mb-4"},
                 React.createElement("p", {className: "text-sm text-gray-600"}, "Profissional:"),
                 React.createElement("p", {className: "font-semibold text-lg"}, modalDebitoPlific.nome || "ID " + (modalDebitoPlific.idProf || modalDebitoPlific.id || modalDebitoPlific.codigo)),
-                React.createElement("p", {className: "text-sm text-gray-500"}, "Saldo atual: R$ " + parseFloat(String(modalDebitoPlific.saldo || 0).replace(/\./g, "").replace(",", ".")).toFixed(2).replace(".", ","))
+                React.createElement("p", {className: "text-sm text-gray-500"}, "Saldo atual: R$ " + parseSaldoBR(modalDebitoPlific.saldo).toFixed(2).replace(".", ","))
             ),
             React.createElement("div", {className: "space-y-4"},
                 React.createElement("div", null,
