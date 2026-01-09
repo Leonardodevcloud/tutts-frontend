@@ -883,13 +883,11 @@ const hideLoadingScreen = () => {
         const [pontoPartidaPadrao, setPontoPartidaPadrao] = useState(null);
         const [mostrarConfigPartida, setMostrarConfigPartida] = useState(false);
 
-        // Limpar "Ponto X -" do endereço
         const limparPonto = function(end) {
             if (!end) return '';
             return end.replace(/^Ponto\s*\d+\s*[-–]\s*/i, '').trim();
         };
 
-        // Carregar ponto de partida padrão
         useEffect(() => {
             try {
                 var salvo = localStorage.getItem('roteirizador_partida_padrao');
@@ -901,7 +899,7 @@ const hideLoadingScreen = () => {
             } catch(e) {}
         }, []);
 
-        // Carregar endereços do BI
+        // Carregar TODOS os endereços do BI - sem agrupamento agressivo
         useEffect(() => {
             const carregarEnderecosBI = async () => {
                 try {
@@ -909,14 +907,16 @@ const hideLoadingScreen = () => {
                     const response = await fetch(`${API_URL}/bi/entregas-lista?`);
                     const data = await response.json();
                     if (Array.isArray(data)) {
+                        // Agrupar apenas endereços IDÊNTICOS (mesmo endereço + cidade)
                         const map = new Map();
                         data.forEach(e => {
                             if (!e.endereco) return;
                             var endLimpo = limparPonto(e.endereco);
-                            const chave = endLimpo.substring(0, 50).toLowerCase().replace(/\s+/g, ' ');
+                            // Chave: endereço limpo + cidade (para não misturar cidades)
+                            const chave = (endLimpo + '|' + (e.cidade || '')).toLowerCase();
+                            
                             if (!map.has(chave)) {
                                 map.set(chave, { 
-                                    enderecoOriginal: e.endereco,
                                     endereco: endLimpo, 
                                     bairro: e.bairro, 
                                     cidade: e.cidade, 
@@ -928,17 +928,17 @@ const hideLoadingScreen = () => {
                             } else {
                                 const x = map.get(chave); 
                                 x.contagem++;
-                                // Priorizar coordenadas existentes
                                 if (!x.latitude && e.latitude) { 
                                     x.latitude = e.latitude; 
                                     x.longitude = e.longitude; 
                                 }
-                                // Priorizar cidade/estado se não tiver
-                                if (!x.cidade && e.cidade) x.cidade = e.cidade;
+                                if (!x.bairro && e.bairro) x.bairro = e.bairro;
                                 if (!x.estado && e.estado) x.estado = e.estado;
                             }
                         });
-                        setEnderecosBI(Array.from(map.values()));
+                        var enderecosUnicos = Array.from(map.values());
+                        console.log('🗺️ Endereços carregados:', data.length, '-> únicos:', enderecosUnicos.length);
+                        setEnderecosBI(enderecosUnicos);
                     }
                 } catch (err) { console.error(err); }
                 setCarregandoBI(false);
@@ -946,7 +946,6 @@ const hideLoadingScreen = () => {
             carregarEnderecosBI();
         }, []);
 
-        // Inicializar mapa
         useEffect(() => {
             let mapInstance = null;
             const initMap = () => {
@@ -966,7 +965,6 @@ const hideLoadingScreen = () => {
             return function() { if (mapInstance) try { mapInstance.remove(); } catch(e) {} };
         }, []);
 
-        // Atualizar marcadores quando endereços mudam
         useEffect(() => {
             if (!mapaRoteirizador || !markersLayer) return;
             markersLayer.clearLayers();
@@ -984,36 +982,29 @@ const hideLoadingScreen = () => {
             }
         }, [enderecosSelecionados, mapaRoteirizador, markersLayer]);
 
-        const similaridade = function(a, b) {
-            if (!a || !b) return 0; 
-            var s1 = a.toUpperCase(), s2 = b.toUpperCase(); 
-            if (s1 === s2) return 1;
-            if (s1.includes(s2) || s2.includes(s1)) return 0.8;
-            var bg1 = new Set(), bg2 = new Set();
-            for (var i = 0; i < s1.length - 1; i++) bg1.add(s1.slice(i, i+2));
-            for (var i = 0; i < s2.length - 1; i++) bg2.add(s2.slice(i, i+2));
-            var inter = 0; bg1.forEach(function(x) { if (bg2.has(x)) inter++; });
-            return (2 * inter) / (bg1.size + bg2.size);
-        };
-
-        // Buscar sugestões
+        // Buscar sugestões - busca mais abrangente
         useEffect(() => {
             const buscar = async () => {
                 if (!termoBusca || termoBusca.length < 2) { setSugestoes([]); return; }
                 setBuscando(true);
-                var termo = termoBusca.toLowerCase();
+                var termo = termoBusca.toLowerCase().trim();
+                var termos = termo.split(/\s+/); // Dividir em palavras
                 
                 var resultadosBI = enderecosBI.filter(function(e) {
                     var endLower = (e.endereco || '').toLowerCase();
                     var bairroLower = (e.bairro || '').toLowerCase();
                     var cidadeLower = (e.cidade || '').toLowerCase();
-                    return endLower.includes(termo) || bairroLower.includes(termo) || cidadeLower.includes(termo) || similaridade(termo, endLower) > 0.4;
+                    var textoCompleto = endLower + ' ' + bairroLower + ' ' + cidadeLower;
+                    
+                    // Todas as palavras devem estar presentes
+                    return termos.every(function(t) { return textoCompleto.includes(t); });
                 }).sort(function(a, b) { 
                     // Priorizar os que têm coordenadas
                     if (a.latitude && !b.latitude) return -1;
                     if (!a.latitude && b.latitude) return 1;
-                    return similaridade(termo, (b.endereco || '').toLowerCase()) - similaridade(termo, (a.endereco || '').toLowerCase()); 
-                }).slice(0, 10).map(function(e) { 
+                    // Depois por contagem (mais usados primeiro)
+                    return (b.contagem || 0) - (a.contagem || 0);
+                }).slice(0, 15).map(function(e) { 
                     return { 
                         endereco: e.endereco, 
                         bairro: e.bairro, 
@@ -1021,6 +1012,7 @@ const hideLoadingScreen = () => {
                         estado: e.estado, 
                         latitude: e.latitude, 
                         longitude: e.longitude,
+                        contagem: e.contagem,
                         fonte: 'bi'
                     }; 
                 });
@@ -1043,46 +1035,31 @@ const hideLoadingScreen = () => {
                         });
                     } catch(e) {}
                 }
-                setSugestoes([].concat(resultadosBI, resultadosCEP).slice(0, 10));
+                setSugestoes([].concat(resultadosBI, resultadosCEP));
                 setBuscando(false);
             };
-            var timer = setTimeout(buscar, 250);
+            var timer = setTimeout(buscar, 200);
             return function() { clearTimeout(timer); };
         }, [termoBusca, enderecosBI]);
 
-        // Geocodificação PRECISA - usa cidade/estado para melhorar resultado
         const geocodificarPreciso = async function(sug) {
             if (sug.latitude && sug.longitude) return sug;
             
-            // Montar query precisa com cidade e estado
             var cidade = sug.cidade || '';
             var estado = sug.estado || '';
             var bairro = sug.bairro || '';
             var endereco = sug.endereco || '';
             
-            // Extrair número do endereço se houver
-            var numMatch = endereco.match(/,\s*(\d+)/);
-            var numero = numMatch ? numMatch[1] : '';
-            
-            // Query 1: Endereço completo com cidade e estado
             var queries = [];
-            if (endereco && cidade) {
-                queries.push(endereco + ', ' + cidade + (estado ? ' - ' + estado : '') + ', Brasil');
-            }
-            if (bairro && cidade) {
-                queries.push(bairro + ', ' + cidade + (estado ? ' - ' + estado : '') + ', Brasil');
-            }
-            if (cidade && estado) {
-                queries.push(cidade + ', ' + estado + ', Brasil');
-            }
+            if (endereco && cidade) queries.push(endereco + ', ' + cidade + (estado ? ' - ' + estado : '') + ', Brasil');
+            if (bairro && cidade) queries.push(bairro + ', ' + cidade + (estado ? ' - ' + estado : '') + ', Brasil');
+            if (cidade && estado) queries.push(cidade + ', ' + estado + ', Brasil');
             
-            // Tentar Nominatim com queries precisas
             for (var i = 0; i < queries.length; i++) {
                 try {
                     var resp = await fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(queries[i]) + '&limit=1&countrycodes=br', { headers: { 'User-Agent': 'TuttsRoteirizador/1.0' } });
                     var data = await resp.json();
                     if (data[0]) {
-                        // Verificar se a cidade bate (evitar erros grosseiros)
                         var resultado = data[0].display_name.toLowerCase();
                         if (!cidade || resultado.includes(cidade.toLowerCase())) {
                             return Object.assign({}, sug, { latitude: parseFloat(data[0].lat), longitude: parseFloat(data[0].lon) });
@@ -1091,75 +1068,44 @@ const hideLoadingScreen = () => {
                 } catch(e) {}
             }
             
-            // Fallback: ORS com mesma lógica
             for (var i = 0; i < queries.length; i++) {
                 try {
                     var resp = await fetch('https://api.openrouteservice.org/geocode/search?api_key=' + ORS_API_KEY + '&text=' + encodeURIComponent(queries[i]) + '&boundary.country=BR&size=1');
                     var data = await resp.json();
                     if (data.features && data.features[0]) {
-                        var props = data.features[0].properties;
-                        // Verificar cidade
-                        if (!cidade || (props.locality && props.locality.toLowerCase().includes(cidade.toLowerCase())) || (props.region && props.region.toLowerCase().includes(cidade.toLowerCase()))) {
-                            return Object.assign({}, sug, { latitude: data.features[0].geometry.coordinates[1], longitude: data.features[0].geometry.coordinates[0] });
-                        }
+                        return Object.assign({}, sug, { latitude: data.features[0].geometry.coordinates[1], longitude: data.features[0].geometry.coordinates[0] });
                     }
                 } catch(e) {}
             }
-            
             return null;
         };
 
-        // Adicionar endereço - SEM DELAY
         const adicionar = function(sug) {
             if (enderecosSelecionados.length >= 15) { showToast && showToast('Máximo 15', 'error'); return; }
             
             var endLimpo = limparPonto(sug.endereco);
-            if (enderecosSelecionados.some(function(e) { return similaridade(e.endereco, endLimpo) > 0.85; })) { 
+            var chaveNova = (endLimpo + '|' + (sug.cidade || '')).toLowerCase();
+            if (enderecosSelecionados.some(function(e) { return (e.endereco + '|' + (e.cidade || '')).toLowerCase() === chaveNova; })) { 
                 showToast && showToast('Já adicionado', 'error'); 
                 return; 
             }
             
-            // Se já tem coordenadas, adiciona direto
             if (sug.latitude && sug.longitude) {
                 setEnderecosSelecionados(function(prev) { 
-                    return prev.concat([{ 
-                        id: Date.now(), 
-                        endereco: endLimpo, 
-                        bairro: sug.bairro, 
-                        cidade: sug.cidade, 
-                        estado: sug.estado,
-                        latitude: sug.latitude, 
-                        longitude: sug.longitude,
-                        fonte: sug.fonte 
-                    }]); 
+                    return prev.concat([{ id: Date.now(), endereco: endLimpo, bairro: sug.bairro, cidade: sug.cidade, estado: sug.estado, latitude: sug.latitude, longitude: sug.longitude, fonte: sug.fonte }]); 
                 });
-                setTermoBusca(''); 
-                setSugestoes([]);
+                setTermoBusca(''); setSugestoes([]);
                 return;
             }
             
-            // Se não tem coordenadas, geocodificar em background
             showToast && showToast('Localizando...', 'info');
             geocodificarPreciso(sug).then(function(end) {
-                if (!end) { 
-                    showToast && showToast('Não localizado - verifique cidade/estado', 'error'); 
-                    return; 
-                }
+                if (!end) { showToast && showToast('Não localizado', 'error'); return; }
                 setEnderecosSelecionados(function(prev) { 
-                    return prev.concat([{ 
-                        id: Date.now(), 
-                        endereco: limparPonto(end.endereco), 
-                        bairro: end.bairro, 
-                        cidade: end.cidade, 
-                        estado: end.estado,
-                        latitude: end.latitude, 
-                        longitude: end.longitude,
-                        fonte: end.fonte 
-                    }]); 
+                    return prev.concat([{ id: Date.now(), endereco: limparPonto(end.endereco), bairro: end.bairro, cidade: end.cidade, estado: end.estado, latitude: end.latitude, longitude: end.longitude, fonte: end.fonte }]); 
                 });
             });
-            setTermoBusca(''); 
-            setSugestoes([]);
+            setTermoBusca(''); setSugestoes([]);
         };
 
         const remover = function(id) { setEnderecosSelecionados(function(prev) { return prev.filter(function(e) { return e.id !== id; }); }); };
@@ -1169,14 +1115,14 @@ const hideLoadingScreen = () => {
             var partida = { endereco: end.endereco, bairro: end.bairro, cidade: end.cidade, estado: end.estado, latitude: end.latitude, longitude: end.longitude };
             localStorage.setItem('roteirizador_partida_padrao', JSON.stringify(partida));
             setPontoPartidaPadrao(partida);
-            showToast && showToast('Partida padrão salva!', 'success');
+            showToast && showToast('Partida salva!', 'success');
             setMostrarConfigPartida(false);
         };
 
         const removerPartidaPadrao = function() {
             localStorage.removeItem('roteirizador_partida_padrao');
             setPontoPartidaPadrao(null);
-            showToast && showToast('Partida padrão removida', 'info');
+            showToast && showToast('Removida', 'info');
             setMostrarConfigPartida(false);
         };
 
@@ -1238,7 +1184,6 @@ const hideLoadingScreen = () => {
         };
 
         return React.createElement('div', { className: 'fixed inset-0 z-[9999] flex flex-col', style: { background: '#1e1b4b' } },
-            // Header
             React.createElement('div', { className: 'bg-purple-900 text-white px-4 py-2 flex items-center justify-between' },
                 React.createElement('div', { className: 'flex items-center gap-3' },
                     React.createElement('button', { onClick: onClose, className: 'px-3 py-1 bg-white/10 hover:bg-white/20 rounded text-sm' }, '← Voltar'),
@@ -1253,28 +1198,25 @@ const hideLoadingScreen = () => {
                     resultado && React.createElement('button', { onClick: abrirMaps, className: 'px-3 py-1 bg-blue-500 rounded text-sm font-medium' }, 'Maps')
                 )
             ),
-            // Content
             React.createElement('div', { className: 'flex-1 flex overflow-hidden' },
-                // Sidebar
                 React.createElement('div', { className: 'w-[360px] bg-white flex flex-col' },
-                    // Busca
                     React.createElement('div', { className: 'p-3 border-b bg-purple-50' },
                         React.createElement('div', { className: 'relative' },
-                            React.createElement('input', { type: 'text', value: termoBusca, onChange: function(e) { setTermoBusca(e.target.value); }, placeholder: '🔍 Buscar endereço, CEP...', className: 'w-full px-3 py-2 border border-purple-200 rounded-lg text-sm focus:border-purple-500 focus:outline-none', autoComplete: 'off' }),
+                            React.createElement('input', { type: 'text', value: termoBusca, onChange: function(e) { setTermoBusca(e.target.value); }, placeholder: '🔍 Buscar endereço, bairro, cidade...', className: 'w-full px-3 py-2 border border-purple-200 rounded-lg text-sm focus:border-purple-500 focus:outline-none', autoComplete: 'off' }),
                             buscando && React.createElement('div', { className: 'absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full animate-spin' })
                         ),
                         React.createElement('div', { className: 'flex items-center justify-between mt-1' },
-                            React.createElement('p', { className: 'text-xs text-purple-600' }, carregandoBI ? '⏳ Carregando...' : '✅ ' + enderecosBI.length + ' endereços'),
+                            React.createElement('p', { className: 'text-xs text-purple-600' }, carregandoBI ? '⏳ Carregando...' : '✅ ' + enderecosBI.length + ' endereços únicos'),
                             pontoPartidaPadrao && React.createElement('span', { className: 'text-xs text-green-600' }, '🚩 Partida salva')
                         ),
-                        sugestoes.length > 0 && React.createElement('div', { className: 'mt-2 bg-white border border-purple-200 rounded-lg shadow-lg max-h-[200px] overflow-y-auto' },
+                        sugestoes.length > 0 && React.createElement('div', { className: 'mt-2 bg-white border border-purple-200 rounded-lg shadow-lg max-h-[250px] overflow-y-auto' },
                             sugestoes.map(function(sug, idx) {
                                 var temCoord = sug.latitude && sug.longitude;
-                                return React.createElement('div', { key: idx, onClick: function() { adicionar(sug); }, className: 'px-3 py-2 hover:bg-purple-50 cursor-pointer border-b last:border-b-0 text-sm' },
+                                return React.createElement('div', { key: idx, onClick: function() { adicionar(sug); }, className: 'px-3 py-2 hover:bg-purple-50 cursor-pointer border-b last:border-b-0' },
                                     React.createElement('div', { className: 'flex items-center gap-2' },
-                                        React.createElement('span', null, sug.fonte === 'bi' ? (temCoord ? '📦' : '📦❓') : '📮'),
+                                        React.createElement('span', { className: 'text-sm' }, sug.fonte === 'bi' ? (temCoord ? '📦' : '📦❓') : '📮'),
                                         React.createElement('div', { className: 'flex-1 min-w-0' },
-                                            React.createElement('div', { className: 'font-medium text-gray-800 truncate text-xs' }, limparPonto(sug.endereco)),
+                                            React.createElement('div', { className: 'font-medium text-gray-800 truncate text-xs' }, sug.endereco),
                                             React.createElement('div', { className: 'text-xs text-gray-500 truncate' }, [sug.bairro, sug.cidade, sug.estado].filter(Boolean).join(' - '))
                                         ),
                                         temCoord && React.createElement('span', { className: 'text-green-500 text-xs' }, '✓')
@@ -1283,7 +1225,6 @@ const hideLoadingScreen = () => {
                             })
                         )
                     ),
-                    // Lista
                     React.createElement('div', { className: 'flex-1 overflow-y-auto p-2' },
                         React.createElement('div', { className: 'flex items-center justify-between mb-2' },
                             React.createElement('span', { className: 'text-xs font-bold text-gray-600' }, 'Rota (' + enderecosSelecionados.length + '/15)'),
@@ -1301,7 +1242,7 @@ const hideLoadingScreen = () => {
                                                 React.createElement('div', { className: 'text-gray-500 truncate' }, [end.bairro, end.cidade].filter(Boolean).join(' - '))
                                             ),
                                             React.createElement('div', { className: 'flex gap-1' },
-                                                idx === 0 && React.createElement('button', { onClick: function() { setMostrarConfigPartida(!mostrarConfigPartida); }, className: 'text-gray-400 hover:text-green-600', title: 'Config. partida' }, '⚙️'),
+                                                idx === 0 && React.createElement('button', { onClick: function() { setMostrarConfigPartida(!mostrarConfigPartida); }, className: 'text-gray-400 hover:text-green-600' }, '⚙️'),
                                                 idx > 0 && React.createElement('button', { onClick: function() { mover(idx, -1); }, className: 'text-gray-400 hover:text-purple-600' }, '▲'),
                                                 idx < enderecosSelecionados.length - 1 && React.createElement('button', { onClick: function() { mover(idx, 1); }, className: 'text-gray-400 hover:text-purple-600' }, '▼'),
                                                 React.createElement('button', { onClick: function() { remover(end.id); }, className: 'text-gray-400 hover:text-red-600' }, '✕')
@@ -1315,7 +1256,6 @@ const hideLoadingScreen = () => {
                                 })
                             )
                     ),
-                    // Footer
                     React.createElement('div', { className: 'p-3 border-t bg-gray-50' },
                         React.createElement('label', { className: 'flex items-center gap-2 mb-2 cursor-pointer text-sm' },
                             React.createElement('input', { type: 'checkbox', checked: retornarInicio, onChange: function(e) { setRetornarInicio(e.target.checked); }, className: 'w-4 h-4' }),
@@ -1324,7 +1264,6 @@ const hideLoadingScreen = () => {
                         React.createElement('button', { onClick: roteirizar, disabled: loading || enderecosSelecionados.length < 2, className: 'w-full py-2 bg-purple-600 text-white rounded-lg font-bold text-sm hover:bg-purple-700 disabled:opacity-50' }, loading ? '⏳ Calculando...' : '🚀 Otimizar Rota')
                     )
                 ),
-                // Mapa
                 React.createElement('div', { className: 'flex-1 flex flex-col' },
                     React.createElement('div', { id: 'mapa-roteirizador', className: 'flex-1' }),
                     resultado && React.createElement('div', { className: 'bg-white border-t p-3' },
