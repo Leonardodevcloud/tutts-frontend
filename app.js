@@ -1416,38 +1416,6 @@ const hideLoadingScreen = () => {
         [localizacaoSubTab, setLocalizacaoSubTab] = useState('lista'), // 'lista' ou 'mapa'
         // Estados para Roteirizador
         [mostrarRoteirizador, setMostrarRoteirizador] = useState(false),
-        
-        // useEffect para renderizar o modal do Roteirizador via portal
-        useEffect(() => {
-            if (mostrarRoteirizador) {
-                console.log("🗺️ useEffect - Criando modal portal");
-                // Criar container se não existir
-                let portalDiv = document.getElementById('roteirizador-portal');
-                if (!portalDiv) {
-                    portalDiv = document.createElement('div');
-                    portalDiv.id = 'roteirizador-portal';
-                    document.body.appendChild(portalDiv);
-                }
-                // Renderizar o modal
-                ReactDOM.render(
-                    React.createElement(RoteirizadorModule, {
-                        enderecosBi: localizacaoClientes,
-                        onClose: () => { 
-                            console.log("🗺️ Fechando modal via portal"); 
-                            setMostrarRoteirizador(false); 
-                        },
-                        showToast: ja
-                    }),
-                    portalDiv
-                );
-            } else {
-                // Limpar o portal quando fechar
-                const portalDiv = document.getElementById('roteirizador-portal');
-                if (portalDiv) {
-                    ReactDOM.unmountComponentAtNode(portalDiv);
-                }
-            }
-        }, [mostrarRoteirizador, localizacaoClientes]),
         // Estados para Relatório Diário
         [relatoriosDiarios, setRelatoriosDiarios] = useState([]),
         [relatoriosLoading, setRelatoriosLoading] = useState(false),
@@ -17952,13 +17920,47 @@ const hideLoadingScreen = () => {
                                 onClick: async () => {
                                     console.log("🗺️ Botão Roteirizador clicado!");
                                     console.log("🗺️ localizacaoClientes:", localizacaoClientes?.length || 0);
-                                    if (!localizacaoClientes || localizacaoClientes.length === 0) {
+                                    
+                                    let dadosClientes = localizacaoClientes;
+                                    if (!dadosClientes || dadosClientes.length === 0) {
                                         console.log("🗺️ Carregando clientes...");
                                         await carregarLocalizacaoClientes();
+                                        // Aguarda um pouco para os dados carregarem
+                                        await new Promise(r => setTimeout(r, 500));
+                                        dadosClientes = localizacaoClientes;
                                     }
-                                    console.log("🗺️ Abrindo modal...");
-                                    setMostrarRoteirizador(true);
-                                    console.log("🗺️ mostrarRoteirizador setado para true");
+                                    
+                                    console.log("🗺️ Abrindo modal via DOM...");
+                                    
+                                    // Criar container se não existir
+                                    let portalDiv = document.getElementById('roteirizador-portal');
+                                    if (!portalDiv) {
+                                        portalDiv = document.createElement('div');
+                                        portalDiv.id = 'roteirizador-portal';
+                                        document.body.appendChild(portalDiv);
+                                    }
+                                    
+                                    // Função para fechar o modal
+                                    const fecharModal = () => {
+                                        console.log("🗺️ Fechando modal");
+                                        const portal = document.getElementById('roteirizador-portal');
+                                        if (portal) {
+                                            ReactDOM.unmountComponentAtNode(portal);
+                                            portal.remove();
+                                        }
+                                    };
+                                    
+                                    // Renderizar o modal
+                                    ReactDOM.render(
+                                        React.createElement(RoteirizadorModule, {
+                                            enderecosBi: dadosClientes,
+                                            onClose: fecharModal,
+                                            showToast: ja
+                                        }),
+                                        portalDiv
+                                    );
+                                    
+                                    console.log("🗺️ Modal renderizado!");
                                 },
                                 className: "px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-xl font-semibold hover:from-purple-700 hover:to-purple-800 flex items-center gap-2 shadow-lg hover:shadow-xl transition-all"
                             }, "🗺️ Roteirizador"),
