@@ -1416,6 +1416,38 @@ const hideLoadingScreen = () => {
         [localizacaoSubTab, setLocalizacaoSubTab] = useState('lista'), // 'lista' ou 'mapa'
         // Estados para Roteirizador
         [mostrarRoteirizador, setMostrarRoteirizador] = useState(false),
+        
+        // useEffect para renderizar o modal do Roteirizador via portal
+        useEffect(() => {
+            if (mostrarRoteirizador) {
+                console.log("🗺️ useEffect - Criando modal portal");
+                // Criar container se não existir
+                let portalDiv = document.getElementById('roteirizador-portal');
+                if (!portalDiv) {
+                    portalDiv = document.createElement('div');
+                    portalDiv.id = 'roteirizador-portal';
+                    document.body.appendChild(portalDiv);
+                }
+                // Renderizar o modal
+                ReactDOM.render(
+                    React.createElement(RoteirizadorModule, {
+                        enderecosBi: localizacaoClientes,
+                        onClose: () => { 
+                            console.log("🗺️ Fechando modal via portal"); 
+                            setMostrarRoteirizador(false); 
+                        },
+                        showToast: ja
+                    }),
+                    portalDiv
+                );
+            } else {
+                // Limpar o portal quando fechar
+                const portalDiv = document.getElementById('roteirizador-portal');
+                if (portalDiv) {
+                    ReactDOM.unmountComponentAtNode(portalDiv);
+                }
+            }
+        }, [mostrarRoteirizador, localizacaoClientes]),
         // Estados para Relatório Diário
         [relatoriosDiarios, setRelatoriosDiarios] = useState([]),
         [relatoriosLoading, setRelatoriosLoading] = useState(false),
@@ -29131,15 +29163,8 @@ function AuditLogs({ apiUrl, showToast }) {
               )
             )
           )
-    ),
-
-    // ==================== MODAL ROTEIRIZADOR ====================
-    // Renderiza diretamente
-    mostrarRoteirizador ? React.createElement(RoteirizadorModule, {
-      enderecosBi: localizacaoClientes,
-      onClose: () => { console.log("🗺️ Fechando modal"); setMostrarRoteirizador(false); },
-      showToast: ja
-    }) : null
+    )
+    // Modal do Roteirizador é renderizado via useEffect/portal
   );
 }
 
