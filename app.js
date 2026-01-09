@@ -9712,6 +9712,8 @@ const hideLoadingScreen = () => {
             }, "PIX"), React.createElement("th", {
                 className: "px-2 py-3 text-center w-[160px]"
             }, "Status"), React.createElement("th", {
+                className: "px-2 py-3 text-center w-[100px]"
+            }, "Débito"), React.createElement("th", {
                 className: "px-2 py-3 text-center w-[50px]"
             }, "Ações"))), React.createElement("tbody", null, (() => {
                 // Filtra por status
@@ -9841,7 +9843,15 @@ const hideLoadingScreen = () => {
                     className: "text-[10px] text-red-600 mt-1 truncate"
                 }, "Motivo: ", e.reject_reason), e.admin_name && "aguardando_aprovacao" !== e.status && React.createElement("p", {
                     className: "text-[10px] text-purple-600 mt-1 font-medium"
-                }, "👤 ", e.admin_name)), React.createElement("td", {
+                }, "👤 ", e.admin_name)), 
+                // Célula de Data do Débito
+                React.createElement("td", {
+                    className: "px-2 py-3 text-center text-xs"
+                }, e.debito_plific_at ? React.createElement("div", {className: "flex flex-col"},
+                    React.createElement("span", {className: "font-medium text-green-600"}, new Date(e.debito_plific_at).toLocaleDateString("pt-BR")),
+                    React.createElement("span", {className: "text-[10px] text-gray-500"}, new Date(e.debito_plific_at).toLocaleTimeString("pt-BR", {hour: "2-digit", minute: "2-digit"}))
+                ) : (e.status === "aprovado" || e.status === "aprovado_gratuidade") ? React.createElement("span", {className: "text-orange-500"}, "Pendente") : React.createElement("span", {className: "text-gray-400"}, "-")),
+                React.createElement("td", {
                     className: "px-2 py-3 text-center"
                 }, React.createElement("button", {
                     onClick: () => x({
