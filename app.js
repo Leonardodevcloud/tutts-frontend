@@ -880,7 +880,23 @@ const hideLoadingScreen = () => {
         const [routeLayer, setRouteLayer] = useState(null);
         const [enderecosBI, setEnderecosBI] = useState([]);
         const [carregandoBI, setCarregandoBI] = useState(true);
+        const [pontoPartidaPadrao, setPontoPartidaPadrao] = useState(null);
+        const [mostrarConfigPartida, setMostrarConfigPartida] = useState(false);
 
+        // Carregar ponto de partida padrão do localStorage
+        useEffect(() => {
+            try {
+                var salvo = localStorage.getItem('roteirizador_partida_padrao');
+                if (salvo) {
+                    var partida = JSON.parse(salvo);
+                    setPontoPartidaPadrao(partida);
+                    // Adicionar automaticamente como primeiro ponto
+                    setEnderecosSelecionados([Object.assign({}, partida, { id: Date.now() })]);
+                }
+            } catch(e) { console.error(e); }
+        }, []);
+
+        // Carregar endereços do BI
         useEffect(() => {
             const carregarEnderecosBI = async () => {
                 try {
@@ -907,6 +923,7 @@ const hideLoadingScreen = () => {
             carregarEnderecosBI();
         }, []);
 
+        // Inicializar mapa
         useEffect(() => {
             let mapInstance = null;
             const initMap = () => {
@@ -926,6 +943,24 @@ const hideLoadingScreen = () => {
             return function() { if (mapInstance) try { mapInstance.remove(); } catch(e) {} };
         }, []);
 
+        // Atualizar marcadores quando endereços mudam (ANTES de calcular rota)
+        useEffect(() => {
+            if (!mapaRoteirizador || !markersLayer) return;
+            markersLayer.clearLayers();
+            if (routeLayer) { mapaRoteirizador.removeLayer(routeLayer); setRouteLayer(null); }
+            
+            var pontosValidos = enderecosSelecionados.filter(function(e) { return e.latitude && e.longitude; });
+            pontosValidos.forEach(function(p, i) {
+                var icon = L.divIcon({ className: '', html: '<div style="background:' + (i === 0 ? '#10b981' : '#7c3aed') + ';color:#fff;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:12px;border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,0.3)">' + (i === 0 ? '🚩' : i) + '</div>', iconSize: [28, 28], iconAnchor: [14, 14] });
+                L.marker([p.latitude, p.longitude], { icon: icon }).addTo(markersLayer).bindPopup('<b>' + (i === 0 ? 'PARTIDA' : 'Parada ' + i) + '</b><br>' + (p.endereco || '').substring(0, 40));
+            });
+            
+            if (pontosValidos.length > 0) {
+                var bounds = L.latLngBounds(pontosValidos.map(function(p) { return [p.latitude, p.longitude]; }));
+                mapaRoteirizador.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
+            }
+        }, [enderecosSelecionados, mapaRoteirizador, markersLayer]);
+
         const normalizarEndereco = function(end) { return end ? end.replace(/^Ponto\s*\d+\s*[-–]\s*/i, '').replace(/\s+/g, ' ').trim().toUpperCase() : ''; };
         const similaridade = function(a, b) {
             if (!a || !b) return 0; var s1 = a.toUpperCase(), s2 = b.toUpperCase(); if (s1 === s2) return 1;
@@ -936,6 +971,7 @@ const hideLoadingScreen = () => {
             return (2 * inter) / (bg1.size + bg2.size);
         };
 
+        // Buscar sugestões
         useEffect(() => {
             const buscar = async () => {
                 if (!termoBusca || termoBusca.length < 2) { setSugestoes([]); return; }
@@ -991,6 +1027,22 @@ const hideLoadingScreen = () => {
         const remover = function(id) { setEnderecosSelecionados(function(prev) { return prev.filter(function(e) { return e.id !== id; }); }); };
         const mover = function(idx, dir) { var l = enderecosSelecionados.slice(), n = idx + dir; if (n < 0 || n >= l.length) return; var t = l[idx]; l[idx] = l[n]; l[n] = t; setEnderecosSelecionados(l); };
 
+        // Definir como partida padrão
+        const definirPartidaPadrao = function(end) {
+            var partida = { endereco: end.endereco, bairro: end.bairro, cidade: end.cidade, latitude: end.latitude, longitude: end.longitude, lat: end.latitude, lon: end.longitude };
+            localStorage.setItem('roteirizador_partida_padrao', JSON.stringify(partida));
+            setPontoPartidaPadrao(partida);
+            showToast && showToast('Partida padrão salva!', 'success');
+            setMostrarConfigPartida(false);
+        };
+
+        const removerPartidaPadrao = function() {
+            localStorage.removeItem('roteirizador_partida_padrao');
+            setPontoPartidaPadrao(null);
+            showToast && showToast('Partida padrão removida', 'info');
+            setMostrarConfigPartida(false);
+        };
+
         const otimizarRota = async function(pontos) {
             var vehicle = { id: 1, profile: 'driving-car', start: [pontos[0].lon, pontos[0].lat] };
             if (retornarInicio) vehicle.end = [pontos[0].lon, pontos[0].lat];
@@ -1004,7 +1056,7 @@ const hideLoadingScreen = () => {
             return resp.ok ? resp.json() : null;
         };
 
-        const atualizarMapa = function(pontos, geo) {
+        const atualizarMapaComRota = function(pontos, geo) {
             if (!mapaRoteirizador || !markersLayer) return;
             markersLayer.clearLayers();
             if (routeLayer) { mapaRoteirizador.removeLayer(routeLayer); setRouteLayer(null); }
@@ -1030,7 +1082,7 @@ const hideLoadingScreen = () => {
                 var km = 0, min = 0;
                 if (geo && geo.features && geo.features[0] && geo.features[0].properties.segments) geo.features[0].properties.segments.forEach(function(s) { km += s.distance || 0; min += s.duration || 0; });
                 setResultado({ ordemOtimizada: ordem, distanciaKm: (km / 1000).toFixed(1), tempoMin: Math.round(min / 60), geometria: geo });
-                atualizarMapa(ordem, geo);
+                atualizarMapaComRota(ordem, geo);
                 showToast && showToast('Rota calculada!', 'success');
             } catch (err) { showToast && showToast(err.message, 'error'); }
             setLoading(false);
@@ -1038,7 +1090,16 @@ const hideLoadingScreen = () => {
 
         const abrirWaze = function() { if (resultado) { var p = resultado.ordemOtimizada.filter(function(x) { return !x.isRetorno; }); if (p.length) window.open('https://waze.com/ul?ll=' + p[p.length-1].lat + ',' + p[p.length-1].lon + '&navigate=yes', '_blank'); } };
         const abrirMaps = function() { if (resultado) { var p = resultado.ordemOtimizada.filter(function(x) { return !x.isRetorno; }); if (p.length) window.open('https://www.google.com/maps/dir/' + p.map(function(x) { return x.lat + ',' + x.lon; }).join('/'), '_blank'); } };
-        const limpar = function() { setEnderecosSelecionados([]); setResultado(null); setTermoBusca(''); setSugestoes([]); markersLayer && markersLayer.clearLayers(); routeLayer && mapaRoteirizador && mapaRoteirizador.removeLayer(routeLayer); setRouteLayer(null); };
+        const limpar = function() { 
+            // Manter partida padrão se existir
+            if (pontoPartidaPadrao) {
+                setEnderecosSelecionados([Object.assign({}, pontoPartidaPadrao, { id: Date.now() })]);
+            } else {
+                setEnderecosSelecionados([]);
+            }
+            setResultado(null); setTermoBusca(''); setSugestoes([]);
+            if (routeLayer && mapaRoteirizador) { mapaRoteirizador.removeLayer(routeLayer); setRouteLayer(null); }
+        };
 
         return React.createElement('div', { className: 'fixed inset-0 z-[9999] flex flex-col', style: { background: '#1e1b4b' } },
             // Header compacto
@@ -1066,7 +1127,10 @@ const hideLoadingScreen = () => {
                             React.createElement('input', { type: 'text', value: termoBusca, onChange: function(e) { setTermoBusca(e.target.value); }, placeholder: '🔍 Buscar endereço, CEP...', className: 'w-full px-3 py-2 border border-purple-200 rounded-lg text-sm focus:border-purple-500 focus:outline-none', autoComplete: 'off' }),
                             buscando && React.createElement('div', { className: 'absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full animate-spin' })
                         ),
-                        React.createElement('p', { className: 'text-xs text-purple-600 mt-1' }, carregandoBI ? '⏳ Carregando...' : '✅ ' + enderecosBI.length + ' endereços'),
+                        React.createElement('div', { className: 'flex items-center justify-between mt-1' },
+                            React.createElement('p', { className: 'text-xs text-purple-600' }, carregandoBI ? '⏳ Carregando...' : '✅ ' + enderecosBI.length + ' endereços'),
+                            pontoPartidaPadrao && React.createElement('span', { className: 'text-xs text-green-600' }, '🚩 Partida salva')
+                        ),
                         sugestoes.length > 0 && React.createElement('div', { className: 'mt-2 bg-white border border-purple-200 rounded-lg shadow-lg max-h-[200px] overflow-y-auto' },
                             sugestoes.map(function(sug, idx) {
                                 return React.createElement('div', { key: idx, onClick: function() { adicionar(sug); }, className: 'px-3 py-2 hover:bg-purple-50 cursor-pointer border-b last:border-b-0 text-sm' },
@@ -1099,10 +1163,16 @@ const hideLoadingScreen = () => {
                                                 React.createElement('div', { className: 'text-gray-500 truncate' }, [end.bairro, end.cidade].filter(Boolean).join(' - '))
                                             ),
                                             React.createElement('div', { className: 'flex gap-1' },
+                                                idx === 0 && React.createElement('button', { onClick: function() { setMostrarConfigPartida(!mostrarConfigPartida); }, className: 'text-gray-400 hover:text-green-600', title: 'Config. partida' }, '⚙️'),
                                                 idx > 0 && React.createElement('button', { onClick: function() { mover(idx, -1); }, className: 'text-gray-400 hover:text-purple-600' }, '▲'),
                                                 idx < enderecosSelecionados.length - 1 && React.createElement('button', { onClick: function() { mover(idx, 1); }, className: 'text-gray-400 hover:text-purple-600' }, '▼'),
                                                 React.createElement('button', { onClick: function() { remover(end.id); }, className: 'text-gray-400 hover:text-red-600' }, '✕')
                                             )
+                                        ),
+                                        // Config partida padrão
+                                        idx === 0 && mostrarConfigPartida && React.createElement('div', { className: 'mt-2 pt-2 border-t border-green-200 flex gap-2' },
+                                            React.createElement('button', { onClick: function() { definirPartidaPadrao(end); }, className: 'flex-1 px-2 py-1 bg-green-500 text-white rounded text-xs font-medium' }, '✓ Salvar como padrão'),
+                                            pontoPartidaPadrao && React.createElement('button', { onClick: removerPartidaPadrao, className: 'px-2 py-1 bg-red-100 text-red-600 rounded text-xs' }, 'Remover')
                                         )
                                     );
                                 })
