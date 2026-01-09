@@ -916,12 +916,12 @@ const hideLoadingScreen = () => {
             const id = `${cliente.cod_cliente}-${endereco.endereco}`;
             const existe = enderecosSelecionados.find(e => e.id === id);
             if (existe) { setEnderecosSelecionados(prev => prev.filter(e => e.id !== id)); }
-            else if (enderecosSelecionados.length < 6) {
+            else if (enderecosSelecionados.length < 10) {
                 setEnderecosSelecionados(prev => [...prev, { id, cliente: cliente.nome_cliente, cod_cliente: cliente.cod_cliente, endereco: endereco.endereco, bairro: endereco.bairro, cidade: endereco.cidade, estado: endereco.estado, cep: endereco.cep, latitude: endereco.latitude, longitude: endereco.longitude }]);
-            } else { showToast && showToast('Máximo de 6 endereços por rota', 'error'); }
+            } else { showToast && showToast('Máximo de 10 endereços por rota', 'error'); }
         };
 
-        const adicionarEnderecoManual = () => { if (enderecosManuais.length < 6) setEnderecosManuais(prev => [...prev, '']); };
+        const adicionarEnderecoManual = () => { if (enderecosManuais.length < 10) setEnderecosManuais(prev => [...prev, '']); };
         const removerEnderecoManual = (index) => { if (enderecosManuais.length > 2) setEnderecosManuais(prev => prev.filter((_, i) => i !== index)); };
         const atualizarEnderecoManual = (index, valor) => { setEnderecosManuais(prev => { const novos = [...prev]; novos[index] = valor; return novos; }); };
 
@@ -987,11 +987,11 @@ const hideLoadingScreen = () => {
             const pontosParaMarcadores = pontos.filter(p => !p.isRetorno);
             pontosParaMarcadores.forEach((ponto, index) => {
                 const isInicio = index === 0;
-                const icon = L.divIcon({ className: 'custom-marker', html: `<div style="background:${isInicio ? '#10b981' : '#7c3aed'};color:white;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:14px;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.4);">${isInicio ? 'I' : index}</div>`, iconSize: [32, 32], iconAnchor: [16, 16] });
-                L.marker([ponto.lat, ponto.lon], { icon }).addTo(markersLayer).bindPopup(`<b>${isInicio ? 'INÍCIO' : `Parada ${index}`}</b><br>${ponto.endereco || ponto.cliente || ''}`);
+                const icon = L.divIcon({ className: 'custom-marker', html: `<div style="background:${isInicio ? '#10b981' : '#7c3aed'};color:white;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:16px;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.4);">${isInicio ? 'I' : index}</div>`, iconSize: [36, 36], iconAnchor: [18, 18] });
+                L.marker([ponto.lat, ponto.lon], { icon }).addTo(markersLayer).bindPopup(`<div style="min-width:200px"><b style="color:${isInicio ? '#10b981' : '#7c3aed'}">${isInicio ? '🚩 INÍCIO' : `📍 Parada ${index}`}</b><br><span style="color:#333">${ponto.endereco || ponto.cliente || ''}</span></div>`);
             });
-            if (geometria && geometria.features) { const layer = L.geoJSON(geometria, { style: { color: '#7c3aed', weight: 5, opacity: 0.8 } }).addTo(mapaRoteirizador); setRouteLayer(layer); }
-            if (pontosParaMarcadores.length > 0) { const bounds = L.latLngBounds(pontosParaMarcadores.map(p => [p.lat, p.lon])); mapaRoteirizador.fitBounds(bounds, { padding: [50, 50] }); }
+            if (geometria && geometria.features) { const layer = L.geoJSON(geometria, { style: { color: '#7c3aed', weight: 6, opacity: 0.8 } }).addTo(mapaRoteirizador); setRouteLayer(layer); }
+            if (pontosParaMarcadores.length > 0) { const bounds = L.latLngBounds(pontosParaMarcadores.map(p => [p.lat, p.lon])); mapaRoteirizador.fitBounds(bounds, { padding: [80, 80] }); }
         };
 
         const roteirizar = async () => {
@@ -1024,79 +1024,130 @@ const hideLoadingScreen = () => {
 
         const abrirNoWaze = () => { if (!resultado?.ordemOtimizada) return; const pontos = resultado.ordemOtimizada.filter(p => !p.isRetorno); if (pontos.length > 0) { const destino = pontos[pontos.length - 1]; window.open(`https://waze.com/ul?ll=${destino.lat},${destino.lon}&navigate=yes`, '_blank'); } };
         const abrirNoGoogleMaps = () => { if (!resultado?.ordemOtimizada) return; const pontos = resultado.ordemOtimizada.filter(p => !p.isRetorno); if (pontos.length > 0) { const waypoints = pontos.map(p => `${p.lat},${p.lon}`).join('/'); window.open(`https://www.google.com/maps/dir/${waypoints}`, '_blank'); } };
+        
+        const limparRota = () => {
+            setEnderecosSelecionados([]);
+            setEnderecosManuais(['', '']);
+            setResultado(null);
+            if (markersLayer) markersLayer.clearLayers();
+            if (routeLayer && mapaRoteirizador) { mapaRoteirizador.removeLayer(routeLayer); setRouteLayer(null); }
+        };
 
-        return React.createElement('div', { className: 'fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-4' },
-            React.createElement('div', { className: 'bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col' },
-                React.createElement('div', { className: 'bg-gradient-to-r from-purple-600 to-purple-700 text-white px-6 py-4 flex items-center justify-between' },
-                    React.createElement('div', null, React.createElement('h2', { className: 'text-xl font-bold flex items-center gap-2' }, '🗺️ Roteirizador'), React.createElement('p', { className: 'text-purple-200 text-sm' }, 'Otimize rotas de entrega')),
-                    React.createElement('button', { onClick: onClose, className: 'p-2 hover:bg-white/20 rounded-lg transition text-2xl' }, '✕')
+        // TELA COMPLETA
+        return React.createElement('div', { 
+            className: 'fixed inset-0 z-[9999] flex flex-col',
+            style: { background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 100%)' }
+        },
+            // Header
+            React.createElement('div', { className: 'bg-gradient-to-r from-purple-900 to-indigo-900 text-white px-6 py-4 flex items-center justify-between shadow-xl' },
+                React.createElement('div', { className: 'flex items-center gap-4' },
+                    React.createElement('button', { 
+                        onClick: onClose, 
+                        className: 'p-2 hover:bg-white/10 rounded-lg transition flex items-center gap-2 text-purple-200 hover:text-white'
+                    }, '← Voltar'),
+                    React.createElement('div', null,
+                        React.createElement('h1', { className: 'text-2xl font-bold flex items-center gap-3' }, '🗺️ Roteirizador de Entregas'),
+                        React.createElement('p', { className: 'text-purple-300 text-sm' }, 'Otimize suas rotas de entrega')
+                    )
                 ),
-                React.createElement('div', { className: 'flex-1 flex overflow-hidden' },
-                    React.createElement('div', { className: 'w-96 border-r bg-gray-50 overflow-y-auto p-4 flex flex-col gap-4' },
-                        React.createElement('div', { className: 'flex bg-gray-200 rounded-lg p-1' },
-                            React.createElement('button', { onClick: () => setModoEntrada('bi'), className: `flex-1 py-2 px-4 rounded-md text-sm font-medium transition ${modoEntrada === 'bi' ? 'bg-white text-purple-700 shadow' : 'text-gray-600'}` }, '📊 Do BI'),
-                            React.createElement('button', { onClick: () => setModoEntrada('manual'), className: `flex-1 py-2 px-4 rounded-md text-sm font-medium transition ${modoEntrada === 'manual' ? 'bg-white text-purple-700 shadow' : 'text-gray-600'}` }, '✏️ Manual')
+                React.createElement('div', { className: 'flex items-center gap-3' },
+                    resultado && React.createElement('div', { className: 'flex items-center gap-4 bg-white/10 rounded-xl px-4 py-2' },
+                        React.createElement('div', { className: 'text-center' },
+                            React.createElement('div', { className: 'text-2xl font-bold text-green-400' }, resultado.distanciaKm || '0'),
+                            React.createElement('div', { className: 'text-xs text-purple-300' }, 'km')
                         ),
-                        modoEntrada === 'bi'
-                            ? React.createElement('div', { className: 'flex-1 flex flex-col gap-3' },
-                                React.createElement('input', { type: 'text', placeholder: '🔍 Filtrar por cliente...', value: filtroCliente, onChange: (e) => setFiltroCliente(e.target.value), className: 'w-full px-3 py-2 border rounded-lg text-sm' }),
-                                enderecosSelecionados.length > 0 && React.createElement('div', { className: 'bg-purple-50 rounded-lg p-3' },
-                                    React.createElement('div', { className: 'text-sm font-medium text-purple-700 mb-2' }, `${enderecosSelecionados.length}/6 selecionados`),
-                                    React.createElement('div', { className: 'flex flex-wrap gap-1' }, enderecosSelecionados.map((e, i) => React.createElement('span', { key: e.id, className: 'inline-flex items-center gap-1 bg-purple-100 text-purple-700 px-2 py-1 rounded text-xs' }, i === 0 ? '🚩' : `${i}`, ' ', (e.cliente || '').substring(0, 15), React.createElement('button', { onClick: () => setEnderecosSelecionados(prev => prev.filter(x => x.id !== e.id)), className: 'ml-1 hover:text-red-600' }, '×'))))
-                                ),
-                                React.createElement('div', { className: 'flex-1 overflow-y-auto space-y-2 max-h-[40vh]' },
-                                    enderecosFiltrados.length === 0 ? React.createElement('p', { className: 'text-gray-500 text-sm text-center py-4' }, 'Nenhum endereço encontrado')
-                                    : enderecosFiltrados.map(cliente => (cliente.enderecos || []).map((endereco) => {
-                                        const id = `${cliente.cod_cliente}-${endereco.endereco}`;
-                                        const selecionado = enderecosSelecionados.find(e => e.id === id);
-                                        const temCoord = endereco.latitude && endereco.longitude;
-                                        return React.createElement('div', { key: id, onClick: () => temCoord && toggleEndereco(cliente, endereco), className: `p-3 rounded-lg border transition cursor-pointer ${selecionado ? 'bg-purple-100 border-purple-400' : temCoord ? 'bg-white hover:bg-gray-50 border-gray-200' : 'bg-gray-100 border-gray-200 opacity-50 cursor-not-allowed'}` },
-                                            React.createElement('div', { className: 'flex items-start gap-2' },
-                                                React.createElement('div', { className: `w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${selecionado ? 'bg-purple-600 border-purple-600 text-white' : 'border-gray-300'}` }, selecionado && '✓'),
-                                                React.createElement('div', { className: 'flex-1 min-w-0' },
-                                                    React.createElement('div', { className: 'font-medium text-sm text-gray-800 truncate' }, cliente.cod_cliente, ' - ', cliente.nome_cliente),
-                                                    React.createElement('div', { className: 'text-xs text-gray-500 truncate' }, endereco.endereco),
-                                                    React.createElement('div', { className: 'text-xs text-gray-400' }, endereco.bairro, ' - ', endereco.cidade, !temCoord && React.createElement('span', { className: 'text-red-500 ml-1' }, '(sem coordenadas)'))
-                                                )
-                                            )
-                                        );
-                                    }))
-                                )
-                            )
-                            : React.createElement('div', { className: 'flex-1 flex flex-col gap-3' },
-                                React.createElement('p', { className: 'text-sm text-gray-600' }, 'Digite CEP ou Bairro, Cidade:'),
-                                enderecosManuais.map((endereco, index) => React.createElement('div', { key: index, className: 'flex gap-2' },
-                                    React.createElement('div', { className: 'flex-1' },
-                                        React.createElement('label', { className: 'text-xs text-gray-500' }, index === 0 ? '📍 Partida' : `Parada ${index}`),
-                                        React.createElement('input', { type: 'text', value: endereco, onChange: (e) => atualizarEnderecoManual(index, e.target.value), placeholder: 'Ex: 40280120 ou Centro, Salvador', className: 'w-full px-3 py-2 border rounded-lg text-sm' })
-                                    ),
-                                    enderecosManuais.length > 2 && React.createElement('button', { onClick: () => removerEnderecoManual(index), className: 'self-end p-2 text-red-500 hover:bg-red-50 rounded' }, '×')
-                                )),
-                                enderecosManuais.length < 6 && React.createElement('button', { onClick: adicionarEnderecoManual, className: 'w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-purple-400 hover:text-purple-600 text-sm' }, '+ Adicionar Parada')
-                            ),
-                        React.createElement('div', { className: 'border-t pt-4 space-y-3' },
-                            React.createElement('label', { className: 'flex items-center gap-2 cursor-pointer' },
-                                React.createElement('input', { type: 'checkbox', checked: retornarInicio, onChange: (e) => setRetornarInicio(e.target.checked), className: 'w-4 h-4 text-purple-600 rounded' }),
-                                React.createElement('span', { className: 'text-sm text-gray-700' }, 'Retornar ao ponto de partida')
-                            ),
-                            React.createElement('button', { onClick: roteirizar, disabled: loading, className: 'w-full py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg font-semibold hover:from-purple-700 hover:to-purple-800 disabled:opacity-50 transition' }, loading ? '⏳ Calculando...' : '🚀 Roteirizar')
+                        React.createElement('div', { className: 'w-px h-8 bg-purple-500' }),
+                        React.createElement('div', { className: 'text-center' },
+                            React.createElement('div', { className: 'text-2xl font-bold text-cyan-400' }, resultado.tempoMin || '0'),
+                            React.createElement('div', { className: 'text-xs text-purple-300' }, 'min')
                         )
                     ),
-                    React.createElement('div', { className: 'flex-1 flex flex-col' },
-                        React.createElement('div', { id: 'mapa-roteirizador', className: 'flex-1 min-h-[300px]', style: { zIndex: 100 } }),
-                        resultado && React.createElement('div', { className: 'border-t bg-white p-4' },
-                            React.createElement('div', { className: 'flex items-center justify-between mb-3' },
-                                React.createElement('div', { className: 'flex gap-4' },
-                                    React.createElement('div', { className: 'text-center' }, React.createElement('div', { className: 'text-2xl font-bold text-purple-600' }, resultado.distanciaKm || '0'), React.createElement('div', { className: 'text-xs text-gray-500' }, 'km total')),
-                                    React.createElement('div', { className: 'text-center' }, React.createElement('div', { className: 'text-2xl font-bold text-green-600' }, resultado.tempoMin || '0'), React.createElement('div', { className: 'text-xs text-gray-500' }, 'min estimado'))
-                                ),
-                                React.createElement('div', { className: 'flex gap-2' },
-                                    React.createElement('button', { onClick: abrirNoWaze, className: 'px-4 py-2 bg-cyan-500 text-white rounded-lg text-sm font-medium hover:bg-cyan-600' }, '🚗 Waze'),
-                                    React.createElement('button', { onClick: abrirNoGoogleMaps, className: 'px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600' }, '📍 Maps')
+                    resultado && React.createElement('button', { onClick: abrirNoWaze, className: 'px-4 py-2 bg-cyan-500 text-white rounded-lg font-semibold hover:bg-cyan-600 flex items-center gap-2' }, '🚗 Waze'),
+                    resultado && React.createElement('button', { onClick: abrirNoGoogleMaps, className: 'px-4 py-2 bg-blue-500 text-white rounded-lg font-semibold hover:bg-blue-600 flex items-center gap-2' }, '📍 Maps')
+                )
+            ),
+
+            // Content
+            React.createElement('div', { className: 'flex-1 flex overflow-hidden' },
+                // Sidebar
+                React.createElement('div', { className: 'w-[420px] bg-white flex flex-col shadow-2xl' },
+                    // Tabs
+                    React.createElement('div', { className: 'flex border-b' },
+                        React.createElement('button', { onClick: () => setModoEntrada('bi'), className: `flex-1 py-4 px-6 font-semibold transition ${modoEntrada === 'bi' ? 'bg-purple-50 text-purple-700 border-b-2 border-purple-600' : 'text-gray-500 hover:bg-gray-50'}` }, '📊 Endereços do BI'),
+                        React.createElement('button', { onClick: () => setModoEntrada('manual'), className: `flex-1 py-4 px-6 font-semibold transition ${modoEntrada === 'manual' ? 'bg-purple-50 text-purple-700 border-b-2 border-purple-600' : 'text-gray-500 hover:bg-gray-50'}` }, '✏️ Manual')
+                    ),
+
+                    // Conteúdo modo BI
+                    modoEntrada === 'bi'
+                        ? React.createElement('div', { className: 'flex-1 flex flex-col overflow-hidden' },
+                            React.createElement('div', { className: 'p-4 border-b bg-gray-50' },
+                                React.createElement('input', { type: 'text', placeholder: '🔍 Buscar cliente, código ou centro de custo...', value: filtroCliente, onChange: (e) => setFiltroCliente(e.target.value), className: 'w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-sm focus:border-purple-500 focus:outline-none' }),
+                                enderecosSelecionados.length > 0 && React.createElement('div', { className: 'mt-3 p-3 bg-purple-100 rounded-xl' },
+                                    React.createElement('div', { className: 'flex items-center justify-between mb-2' },
+                                        React.createElement('span', { className: 'text-sm font-bold text-purple-700' }, `${enderecosSelecionados.length}/10 selecionados`),
+                                        React.createElement('button', { onClick: limparRota, className: 'text-xs text-red-600 hover:text-red-800' }, '✕ Limpar')
+                                    ),
+                                    React.createElement('div', { className: 'flex flex-wrap gap-1' }, enderecosSelecionados.map((e, i) => React.createElement('span', { key: e.id, className: 'inline-flex items-center gap-1 bg-purple-600 text-white px-2 py-1 rounded-lg text-xs font-medium' }, i === 0 ? '🚩' : `${i}`, ' ', (e.cliente || '').substring(0, 12), React.createElement('button', { onClick: (ev) => { ev.stopPropagation(); setEnderecosSelecionados(prev => prev.filter(x => x.id !== e.id)); }, className: 'ml-1 hover:text-red-300' }, '×'))))
                                 )
                             ),
-                            React.createElement('div', { className: 'flex flex-wrap gap-2' }, resultado.ordemOtimizada.map((ponto, idx) => React.createElement('div', { key: idx, className: `inline-flex items-center gap-1 px-2 py-1 rounded text-xs ${idx === 0 ? 'bg-green-100 text-green-700' : ponto.isRetorno ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700'}` }, idx === 0 ? '🚩' : ponto.isRetorno ? '↩' : idx, ' ', ((ponto.cliente || ponto.endereco || '') + '').substring(0, 20))))
+                            React.createElement('div', { className: 'flex-1 overflow-y-auto p-4 space-y-2' },
+                                enderecosFiltrados.length === 0 ? React.createElement('div', { className: 'text-center py-12 text-gray-400' }, React.createElement('div', { className: 'text-4xl mb-2' }, '📭'), 'Nenhum endereço encontrado')
+                                : enderecosFiltrados.map(cliente => (cliente.enderecos || []).map((endereco) => {
+                                    const id = `${cliente.cod_cliente}-${endereco.endereco}`;
+                                    const selecionado = enderecosSelecionados.find(e => e.id === id);
+                                    const ordem = selecionado ? enderecosSelecionados.findIndex(e => e.id === id) : -1;
+                                    const temCoord = endereco.latitude && endereco.longitude;
+                                    return React.createElement('div', { key: id, onClick: () => temCoord && toggleEndereco(cliente, endereco), className: `p-4 rounded-xl border-2 transition cursor-pointer ${selecionado ? 'bg-purple-50 border-purple-400 shadow-md' : temCoord ? 'bg-white hover:bg-gray-50 border-gray-200 hover:border-purple-300' : 'bg-gray-100 border-gray-200 opacity-50 cursor-not-allowed'}` },
+                                        React.createElement('div', { className: 'flex items-start gap-3' },
+                                            React.createElement('div', { className: `w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 font-bold ${selecionado ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-500'}` }, selecionado ? (ordem === 0 ? '🚩' : ordem) : ''),
+                                            React.createElement('div', { className: 'flex-1 min-w-0' },
+                                                React.createElement('div', { className: 'font-bold text-gray-800' }, cliente.cod_cliente, ' - ', cliente.nome_cliente),
+                                                React.createElement('div', { className: 'text-sm text-gray-600 mt-1' }, endereco.endereco),
+                                                React.createElement('div', { className: 'text-xs text-gray-400 mt-1' }, endereco.bairro, ' - ', endereco.cidade, !temCoord && React.createElement('span', { className: 'text-red-500 ml-2 font-medium' }, '⚠ Sem coordenadas'))
+                                            )
+                                        )
+                                    );
+                                }))
+                            )
                         )
+                        : React.createElement('div', { className: 'flex-1 flex flex-col p-4 overflow-y-auto' },
+                            React.createElement('p', { className: 'text-gray-600 mb-4' }, 'Digite CEP (ex: 40280120) ou Bairro, Cidade para cada parada:'),
+                            React.createElement('div', { className: 'space-y-3 flex-1' },
+                                enderecosManuais.map((endereco, index) => React.createElement('div', { key: index, className: 'flex gap-2 items-end' },
+                                    React.createElement('div', { className: 'flex-1' },
+                                        React.createElement('label', { className: 'text-xs font-medium text-gray-500 mb-1 block' }, index === 0 ? '🚩 Ponto de Partida' : `📍 Parada ${index}`),
+                                        React.createElement('input', { type: 'text', value: endereco, onChange: (e) => atualizarEnderecoManual(index, e.target.value), placeholder: 'CEP ou Bairro, Cidade', className: 'w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none' })
+                                    ),
+                                    enderecosManuais.length > 2 && React.createElement('button', { onClick: () => removerEnderecoManual(index), className: 'p-3 text-red-500 hover:bg-red-50 rounded-xl' }, '✕')
+                                ))
+                            ),
+                            enderecosManuais.length < 10 && React.createElement('button', { onClick: adicionarEnderecoManual, className: 'mt-4 w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-gray-500 hover:border-purple-400 hover:text-purple-600 font-medium' }, '+ Adicionar Parada')
+                        ),
+
+                    // Footer com botões
+                    React.createElement('div', { className: 'p-4 border-t bg-gray-50 space-y-3' },
+                        React.createElement('label', { className: 'flex items-center gap-3 cursor-pointer p-2 hover:bg-gray-100 rounded-lg' },
+                            React.createElement('input', { type: 'checkbox', checked: retornarInicio, onChange: (e) => setRetornarInicio(e.target.checked), className: 'w-5 h-5 text-purple-600 rounded' }),
+                            React.createElement('span', { className: 'text-gray-700' }, '↩️ Retornar ao ponto de partida')
+                        ),
+                        React.createElement('button', { onClick: roteirizar, disabled: loading, className: 'w-full py-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl font-bold text-lg hover:from-purple-700 hover:to-indigo-700 disabled:opacity-50 transition shadow-lg' }, loading ? '⏳ Calculando rota...' : '🚀 Calcular Rota Otimizada')
+                    )
+                ),
+
+                // Mapa (área principal)
+                React.createElement('div', { className: 'flex-1 flex flex-col' },
+                    React.createElement('div', { id: 'mapa-roteirizador', className: 'flex-1', style: { minHeight: '100%' } }),
+                    // Resultado da rota
+                    resultado && React.createElement('div', { className: 'bg-white border-t shadow-lg p-4' },
+                        React.createElement('div', { className: 'flex items-center gap-2 mb-3' },
+                            React.createElement('span', { className: 'font-bold text-gray-700' }, '📋 Ordem otimizada:')
+                        ),
+                        React.createElement('div', { className: 'flex flex-wrap gap-2' }, resultado.ordemOtimizada.map((ponto, idx) =>
+                            React.createElement('div', { key: idx, className: `inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium ${idx === 0 ? 'bg-green-100 text-green-700 border border-green-300' : ponto.isRetorno ? 'bg-green-100 text-green-700 border border-green-300' : 'bg-purple-100 text-purple-700 border border-purple-300'}` },
+                                React.createElement('span', { className: 'font-bold' }, idx === 0 ? '🚩' : ponto.isRetorno ? '↩️' : idx),
+                                ((ponto.cliente || ponto.endereco || '') + '').substring(0, 25)
+                            )
+                        ))
                     )
                 )
             )
@@ -1458,6 +1509,35 @@ const hideLoadingScreen = () => {
                 type: t
             }), setTimeout(() => d(null), 3e3)
         };
+        
+        // ==================== PORTAL DO ROTEIRIZADOR ====================
+        useEffect(() => {
+            if (mostrarRoteirizador) {
+                console.log("🗺️ useEffect - Criando modal portal");
+                let portalDiv = document.getElementById('roteirizador-portal');
+                if (!portalDiv) {
+                    portalDiv = document.createElement('div');
+                    portalDiv.id = 'roteirizador-portal';
+                    document.body.appendChild(portalDiv);
+                }
+                ReactDOM.render(
+                    React.createElement(RoteirizadorModule, {
+                        enderecosBi: localizacaoClientes,
+                        onClose: () => { 
+                            console.log("🗺️ Fechando modal via portal"); 
+                            setMostrarRoteirizador(false); 
+                        },
+                        showToast: ja
+                    }),
+                    portalDiv
+                );
+            } else {
+                const portalDiv = document.getElementById('roteirizador-portal');
+                if (portalDiv) {
+                    ReactDOM.unmountComponentAtNode(portalDiv);
+                }
+            }
+        }, [mostrarRoteirizador, localizacaoClientes]);
         
         // ==================== TUTORIAL DO USUÁRIO ====================
         const TUTORIAL_PASSOS = [
