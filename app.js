@@ -2404,7 +2404,7 @@ const hideLoadingScreen = () => {
             const dados = plificState.consultaLote.filter(r => !r.erro);
             const csv = [
                 "ID;Nome;CPF;Celular;Saldo",
-                ...dados.map(p => `${p.idProf || p.id || ""};${p.nome || ""};${p.cpf || ""};${p.celular || ""};${parseFloat(String(p.saldo || 0).replace(",", ".")).toFixed(2).replace(".", ",")}`)
+                ...dados.map(p => `${p.idProf || p.id || ""};${p.nome || ""};${p.cpf || ""};${p.celular || ""};${parseFloat(String(p.saldo || 0).replace(/\./g, "").replace(",", ".")).toFixed(2).replace(".", ",")}`)
             ].join("\n");
             
             const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
@@ -14034,7 +14034,7 @@ const hideLoadingScreen = () => {
                 ),
                 React.createElement("div", null,
                     React.createElement("p", {className: "text-sm text-gray-500"}, "Saldo"),
-                    React.createElement("p", {className: "text-2xl font-bold " + (parseFloat(String(plificState.consultaIndividual.profissional.saldo || 0).replace(",", ".")) >= 0 ? "text-green-600" : "text-red-600")}, "R$ " + parseFloat(String(plificState.consultaIndividual.profissional.saldo || 0).replace(",", ".")).toFixed(2).replace(".", ","))
+                    React.createElement("p", {className: "text-2xl font-bold " + (parseFloat(String(plificState.consultaIndividual.profissional.saldo || 0).replace(/\./g, "").replace(",", ".")) >= 0 ? "text-green-600" : "text-red-600")}, "R$ " + parseFloat(String(plificState.consultaIndividual.profissional.saldo || 0).replace(/\./g, "").replace(",", ".")).toFixed(2).replace(".", ","))
                 ),
                 React.createElement("div", {className: "flex items-end"},
                     React.createElement("button", {
@@ -14085,7 +14085,7 @@ const hideLoadingScreen = () => {
                     ),
                     React.createElement("tbody", null,
                         plificState.consultaLote.map(function(prof, idx) {
-                            var saldoNum = parseFloat(prof.saldo || 0);
+                            var saldoNum = typeof prof.saldo === "string" ? parseFloat(prof.saldo.replace(/\./g, "").replace(",", ".")) : parseFloat(prof.saldo || 0);
                             var posicao = ((plificState.pagina - 1) * 15) + idx + 1;
                             return React.createElement("tr", {key: prof.codigo || idx, className: idx % 2 === 0 ? "bg-white hover:bg-gray-50" : "bg-gray-50 hover:bg-gray-100"},
                                 React.createElement("td", {className: "px-4 py-3 text-sm text-gray-400"}, posicao),
@@ -14139,7 +14139,7 @@ const hideLoadingScreen = () => {
             React.createElement("div", {className: "bg-gray-50 rounded-lg p-3 mb-4"},
                 React.createElement("p", {className: "text-sm text-gray-600"}, "Profissional:"),
                 React.createElement("p", {className: "font-semibold text-lg"}, modalDebitoPlific.nome || "ID " + (modalDebitoPlific.idProf || modalDebitoPlific.id || modalDebitoPlific.codigo)),
-                React.createElement("p", {className: "text-sm text-gray-500"}, "Saldo atual: R$ " + parseFloat(String(modalDebitoPlific.saldo || 0).replace(",", ".")).toFixed(2).replace(".", ","))
+                React.createElement("p", {className: "text-sm text-gray-500"}, "Saldo atual: R$ " + parseFloat(String(modalDebitoPlific.saldo || 0).replace(/\./g, "").replace(",", ".")).toFixed(2).replace(".", ","))
             ),
             React.createElement("div", {className: "space-y-4"},
                 React.createElement("div", null,
