@@ -928,6 +928,7 @@ const hideLoadingScreen = () => {
         const [paradasPorRota, setParadasPorRota] = useState(3);
         const [rotasGeradas, setRotasGeradas] = useState([]);
         const [loadingMultiplas, setLoadingMultiplas] = useState(false);
+        const [modoAgrupamento, setModoAgrupamento] = useState('hibrido'); // 'direcao', 'proximidade', 'hibrido'
         
         // Cores para as rotas
         const coresRotas = ['#e11d48', '#2563eb', '#16a34a', '#d97706', '#7c3aed', '#0891b2', '#be185d', '#65a30d', '#dc2626', '#4f46e5'];
@@ -949,8 +950,96 @@ const hideLoadingScreen = () => {
             return R * c;
         };
         
-        // Função para agrupar endereços por proximidade (K-means simplificado)
-        const agruparPorProximidade = function(pontos, numGrupos) {
+        // Função para calcular ângulo de um ponto em relação à partida (0-360°)
+        // 0° = Norte, 90° = Leste, 180° = Sul, 270° = Oeste
+        const calcularAngulo = function(partida, ponto) {
+            var dLat = ponto.latitude - partida.latitude;
+            var dLon = ponto.longitude - partida.longitude;
+            
+            // atan2 retorna em radianos, convertemos para graus
+            var angulo = Math.atan2(dLon, dLat) * 180 / Math.PI;
+            
+            // Normalizar para 0-360
+            if (angulo < 0) angulo += 360;
+            
+            return angulo;
+        };
+        
+        // Função para agrupar endereços por SETOR ANGULAR (direção a partir da partida)
+        const agruparPorSetorAngular = function(partida, pontos, numGrupos) {
+            if (pontos.length <= numGrupos) {
+                return pontos.map(function(p) { return [p]; });
+            }
+            
+            // Calcular ângulo de cada ponto em relação à partida
+            var pontosComAngulo = pontos.map(function(p) {
+                return {
+                    ponto: p,
+                    angulo: calcularAngulo(partida, p),
+                    distancia: calcularDistancia(partida.latitude, partida.longitude, p.latitude, p.longitude)
+                };
+            });
+            
+            // Ordenar por ângulo (sentido horário a partir do Norte)
+            pontosComAngulo.sort(function(a, b) { return a.angulo - b.angulo; });
+            
+            // Calcular tamanho ideal de cada grupo
+            var tamanhoBase = Math.floor(pontos.length / numGrupos);
+            var extras = pontos.length % numGrupos;
+            
+            // Distribuir pontos em grupos mantendo a sequência angular
+            var grupos = [];
+            var indice = 0;
+            
+            for (var i = 0; i < numGrupos; i++) {
+                var tamanhoGrupo = tamanhoBase + (i < extras ? 1 : 0);
+                var grupo = [];
+                
+                for (var j = 0; j < tamanhoGrupo && indice < pontosComAngulo.length; j++) {
+                    grupo.push(pontosComAngulo[indice].ponto);
+                    indice++;
+                }
+                
+                if (grupo.length > 0) {
+                    grupos.push(grupo);
+                }
+            }
+            
+            // Log para debug
+            console.log('📐 Agrupamento por setor angular:');
+            grupos.forEach(function(g, idx) {
+                var angulos = g.map(function(p) { return Math.round(calcularAngulo(partida, p)); });
+                var direcao = obterDirecaoCardeal(angulos.reduce(function(a,b) { return a+b; }, 0) / angulos.length);
+                console.log('  Rota ' + (idx+1) + ': ' + g.length + ' pontos, direção ' + direcao + ' (' + Math.min.apply(null, angulos) + '°-' + Math.max.apply(null, angulos) + '°)');
+            });
+            
+            return grupos;
+        };
+        
+        // Função para obter direção cardeal a partir do ângulo
+        const obterDirecaoCardeal = function(angulo) {
+            var direcoes = [
+                { min: 0, max: 22.5, nome: 'Norte' },
+                { min: 22.5, max: 67.5, nome: 'Nordeste' },
+                { min: 67.5, max: 112.5, nome: 'Leste' },
+                { min: 112.5, max: 157.5, nome: 'Sudeste' },
+                { min: 157.5, max: 202.5, nome: 'Sul' },
+                { min: 202.5, max: 247.5, nome: 'Sudoeste' },
+                { min: 247.5, max: 292.5, nome: 'Oeste' },
+                { min: 292.5, max: 337.5, nome: 'Noroeste' },
+                { min: 337.5, max: 360, nome: 'Norte' }
+            ];
+            
+            for (var i = 0; i < direcoes.length; i++) {
+                if (angulo >= direcoes[i].min && angulo < direcoes[i].max) {
+                    return direcoes[i].nome;
+                }
+            }
+            return 'Norte';
+        };
+        
+        // ==================== ALGORITMO POR PROXIMIDADE (K-MEANS) ====================
+        const agruparPorProximidade = function(partida, pontos, numGrupos) {
             if (pontos.length <= numGrupos) {
                 return pontos.map(function(p) { return [p]; });
             }
@@ -959,12 +1048,15 @@ const hideLoadingScreen = () => {
             var centroides = [];
             var pontosRestantes = pontos.slice();
             
-            // Primeiro centroide: ponto mais ao norte
-            pontosRestantes.sort(function(a, b) { return b.latitude - a.latitude; });
+            // Primeiro centroide: ponto mais distante da partida
+            pontosRestantes.sort(function(a, b) { 
+                return calcularDistancia(partida.latitude, partida.longitude, b.latitude, b.longitude) -
+                       calcularDistancia(partida.latitude, partida.longitude, a.latitude, a.longitude);
+            });
             centroides.push({ lat: pontosRestantes[0].latitude, lng: pontosRestantes[0].longitude });
             
-            // Escolher outros centroides maximizando distância
-            while (centroides.length < numGrupos && pontosRestantes.length > 0) {
+            // Escolher outros centroides maximizando distância entre eles
+            while (centroides.length < numGrupos && pontosRestantes.length > centroides.length) {
                 var maxMinDist = -1;
                 var melhorPonto = null;
                 
@@ -982,12 +1074,14 @@ const hideLoadingScreen = () => {
                 
                 if (melhorPonto) {
                     centroides.push({ lat: melhorPonto.latitude, lng: melhorPonto.longitude });
+                } else {
+                    break;
                 }
             }
             
-            // Atribuir pontos aos clusters (3 iterações de K-means)
+            // Atribuir pontos aos clusters (5 iterações de K-means)
             var grupos = [];
-            for (var iter = 0; iter < 3; iter++) {
+            for (var iter = 0; iter < 5; iter++) {
                 grupos = [];
                 for (var k = 0; k < numGrupos; k++) grupos.push([]);
                 
@@ -1020,8 +1114,131 @@ const hideLoadingScreen = () => {
                 }
             }
             
+            console.log('📍 Agrupamento por PROXIMIDADE (K-means):');
+            grupos.forEach(function(g, idx) {
+                if (g.length > 0) {
+                    var centroLat = g.reduce(function(a, p) { return a + p.latitude; }, 0) / g.length;
+                    var centroLng = g.reduce(function(a, p) { return a + p.longitude; }, 0) / g.length;
+                    var direcao = obterDirecaoCardeal(calcularAngulo(partida, { latitude: centroLat, longitude: centroLng }));
+                    console.log('  Grupo ' + (idx+1) + ': ' + g.length + ' pontos, região ' + direcao);
+                }
+            });
+            
             // Remover grupos vazios
             return grupos.filter(function(g) { return g.length > 0; });
+        };
+        
+        // ==================== ALGORITMO HÍBRIDO ====================
+        // Primeiro agrupa por direção, depois ajusta por proximidade (respeitando limite)
+        const agruparHibrido = function(partida, pontos, numGrupos) {
+            if (pontos.length <= numGrupos) {
+                return pontos.map(function(p) { return [p]; });
+            }
+            
+            // PASSO 1: Agrupar por setor angular
+            var grupos = agruparPorSetorAngular(partida, pontos, numGrupos);
+            
+            console.log('🔀 Agrupamento HÍBRIDO - Passo 1 (angular):', grupos.map(function(g) { return g.length; }));
+            
+            // PASSO 2: Ajustar pontos nas bordas dos setores (respeitando limite!)
+            var ajustes = 0;
+            var limiteAjuste = 0.3; // Se distância para outro grupo for 30% menor, mover
+            var maxPorGrupo = paradasPorRota; // RESPEITAR O LIMITE!
+            
+            for (var tentativa = 0; tentativa < 3; tentativa++) { // Até 3 rodadas de ajuste
+                var houveMudanca = false;
+                
+                for (var i = 0; i < grupos.length; i++) {
+                    var grupo = grupos[i];
+                    var pontosParaRemover = [];
+                    
+                    for (var j = 0; j < grupo.length; j++) {
+                        var ponto = grupo[j];
+                        
+                        // Calcular distância média para os outros pontos do mesmo grupo
+                        var distMediaGrupoAtual = 0;
+                        if (grupo.length > 1) {
+                            var somaDistAtual = 0;
+                            var contAtual = 0;
+                            for (var k = 0; k < grupo.length; k++) {
+                                if (k !== j) {
+                                    somaDistAtual += calcularDistancia(ponto.latitude, ponto.longitude, grupo[k].latitude, grupo[k].longitude);
+                                    contAtual++;
+                                }
+                            }
+                            distMediaGrupoAtual = contAtual > 0 ? somaDistAtual / contAtual : 999;
+                        } else {
+                            // Grupo com 1 ponto - usar distância até a partida
+                            distMediaGrupoAtual = calcularDistancia(ponto.latitude, ponto.longitude, partida.latitude, partida.longitude);
+                        }
+                        
+                        // Verificar distância para outros grupos
+                        var melhorOutroGrupo = -1;
+                        var melhorDistOutro = distMediaGrupoAtual;
+                        
+                        for (var g = 0; g < grupos.length; g++) {
+                            if (g === i || grupos[g].length === 0) continue;
+                            
+                            // ⚠️ VERIFICAR SE O OUTRO GRUPO TEM ESPAÇO!
+                            if (grupos[g].length >= maxPorGrupo) {
+                                continue; // Grupo cheio, não pode receber
+                            }
+                            
+                            // Calcular distância média para pontos deste outro grupo
+                            var somaDistOutro = 0;
+                            for (var k = 0; k < grupos[g].length; k++) {
+                                somaDistOutro += calcularDistancia(ponto.latitude, ponto.longitude, grupos[g][k].latitude, grupos[g][k].longitude);
+                            }
+                            var distMediaOutro = somaDistOutro / grupos[g].length;
+                            
+                            // Se for significativamente mais perto (30% menor)
+                            if (distMediaOutro < melhorDistOutro * (1 - limiteAjuste)) {
+                                melhorDistOutro = distMediaOutro;
+                                melhorOutroGrupo = g;
+                            }
+                        }
+                        
+                        // Mover ponto se encontrou grupo melhor E o grupo tem espaço
+                        if (melhorOutroGrupo >= 0 && grupos[melhorOutroGrupo].length < maxPorGrupo) {
+                            pontosParaRemover.push({ idx: j, novoGrupo: melhorOutroGrupo, ponto: ponto });
+                            houveMudanca = true;
+                        }
+                    }
+                    
+                    // Aplicar movimentos (em ordem reversa para não bagunçar índices)
+                    pontosParaRemover.sort(function(a, b) { return b.idx - a.idx; });
+                    for (var m = 0; m < pontosParaRemover.length; m++) {
+                        var mov = pontosParaRemover[m];
+                        // Verificar novamente se tem espaço (pode ter mudado)
+                        if (grupos[mov.novoGrupo].length < maxPorGrupo) {
+                            grupos[i].splice(mov.idx, 1);
+                            grupos[mov.novoGrupo].push(mov.ponto);
+                            ajustes++;
+                        }
+                    }
+                }
+                
+                if (!houveMudanca) break;
+            }
+            
+            console.log('🔀 Agrupamento HÍBRIDO - Passo 2 (ajustes):', ajustes, 'pontos movidos (limite: ' + maxPorGrupo + '/rota)');
+            console.log('🔀 Resultado final:', grupos.map(function(g) { return g.length; }));
+            
+            // Remover grupos vazios
+            return grupos.filter(function(g) { return g.length > 0; });
+        };
+        
+        // ==================== FUNÇÃO PRINCIPAL DE AGRUPAMENTO ====================
+        const agruparEnderecos = function(partida, pontos, numGrupos) {
+            console.log('📊 Modo de agrupamento:', modoAgrupamento);
+            
+            if (modoAgrupamento === 'direcao') {
+                return agruparPorSetorAngular(partida, pontos, numGrupos);
+            } else if (modoAgrupamento === 'proximidade') {
+                return agruparPorProximidade(partida, pontos, numGrupos);
+            } else {
+                return agruparHibrido(partida, pontos, numGrupos);
+            }
         };
         
         // Função para gerar múltiplas rotas
@@ -1043,8 +1260,8 @@ const hideLoadingScreen = () => {
                 var numGrupos = Math.ceil(pontosEntrega.length / paradasPorRota);
                 console.log('📊 Gerando', numGrupos, 'rotas com ~' + paradasPorRota + ' paradas cada');
                 
-                // Agrupar por proximidade
-                var grupos = agruparPorProximidade(pontosEntrega, numGrupos);
+                // Agrupar usando o modo selecionado
+                var grupos = agruparEnderecos(pontoPartida, pontosEntrega, numGrupos);
                 console.log('📍 Grupos formados:', grupos.map(function(g) { return g.length; }));
                 
                 var rotas = [];
@@ -1084,6 +1301,12 @@ const hideLoadingScreen = () => {
                             });
                         }
                         
+                        // Calcular direção média do grupo
+                        var anguloMedio = grupo.reduce(function(acc, p) { 
+                            return acc + calcularAngulo(pontoPartida, p); 
+                        }, 0) / grupo.length;
+                        var direcao = obterDirecaoCardeal(anguloMedio);
+                        
                         rotas.push({
                             id: i + 1,
                             cor: coresRotas[i % coresRotas.length],
@@ -1091,11 +1314,19 @@ const hideLoadingScreen = () => {
                             distanciaKm: (km / 1000).toFixed(1),
                             tempoMin: Math.round(min / 60),
                             geometria: geo,
-                            numParadas: grupo.length
+                            numParadas: grupo.length,
+                            direcao: direcao
                         });
                         
                     } catch (err) {
                         console.error('Erro na rota', i + 1, ':', err);
+                        
+                        // Calcular direção mesmo com erro
+                        var anguloMedio = grupo.reduce(function(acc, p) { 
+                            return acc + calcularAngulo(pontoPartida, p); 
+                        }, 0) / grupo.length;
+                        var direcao = obterDirecaoCardeal(anguloMedio);
+                        
                         // Adicionar rota sem otimização
                         rotas.push({
                             id: i + 1,
@@ -1105,6 +1336,7 @@ const hideLoadingScreen = () => {
                             tempoMin: '?',
                             geometria: null,
                             numParadas: grupo.length,
+                            direcao: direcao,
                             erro: true
                         });
                     }
@@ -1540,6 +1772,34 @@ const hideLoadingScreen = () => {
                                     }, num);
                                 })
                             ),
+                            
+                            // Seletor de modo de agrupamento
+                            React.createElement('div', { className: 'mt-3 pt-2 border-t border-purple-200' },
+                                React.createElement('div', { className: 'text-xs font-bold text-purple-700 mb-2' }, '🎯 Modo de agrupamento:'),
+                                React.createElement('div', { className: 'flex gap-1 flex-wrap' },
+                                    [
+                                        { id: 'hibrido', label: '🔀 Híbrido', desc: 'Melhor dos dois' },
+                                        { id: 'direcao', label: '🧭 Direção', desc: 'Por setor angular' },
+                                        { id: 'proximidade', label: '📍 Proximidade', desc: 'Por distância' }
+                                    ].map(function(modo) {
+                                        return React.createElement('button', { 
+                                            key: modo.id,
+                                            onClick: function() { setModoAgrupamento(modo.id); },
+                                            className: 'px-2 py-1 rounded text-xs font-medium transition-all ' + 
+                                                (modoAgrupamento === modo.id 
+                                                    ? 'bg-purple-600 text-white' 
+                                                    : 'bg-white text-purple-600 border border-purple-300 hover:bg-purple-100'),
+                                            title: modo.desc
+                                        }, modo.label);
+                                    })
+                                ),
+                                React.createElement('div', { className: 'text-xs text-gray-500 mt-1' },
+                                    modoAgrupamento === 'hibrido' ? '💡 Agrupa por direção e ajusta por proximidade' :
+                                    modoAgrupamento === 'direcao' ? '💡 Agrupa pontos na mesma direção (N, NE, L...)' :
+                                    '💡 Agrupa pontos próximos independente da direção'
+                                )
+                            ),
+                            
                             enderecosSelecionados.length > 1 && React.createElement('div', { className: 'text-xs text-purple-600 mt-2' },
                                 '📊 ' + Math.ceil((enderecosSelecionados.length - 1) / paradasPorRota) + ' rota(s) com ~' + paradasPorRota + ' paradas'
                             )
@@ -1584,6 +1844,12 @@ const hideLoadingScreen = () => {
                         ),
                         React.createElement('div', { className: 'space-y-2' },
                             rotasGeradas.map(function(rota) {
+                                // Emoji da direção
+                                var emojiDirecao = {
+                                    'Norte': '⬆️', 'Nordeste': '↗️', 'Leste': '➡️', 'Sudeste': '↘️',
+                                    'Sul': '⬇️', 'Sudoeste': '↙️', 'Oeste': '⬅️', 'Noroeste': '↖️'
+                                }[rota.direcao] || '📍';
+                                
                                 return React.createElement('div', { 
                                     key: rota.id, 
                                     className: 'p-2 rounded-lg border-2',
@@ -1596,7 +1862,8 @@ const hideLoadingScreen = () => {
                                                 style: { background: rota.cor }
                                             }, rota.id),
                                             React.createElement('span', { className: 'text-sm font-bold' }, 'Rota ' + rota.id),
-                                            React.createElement('span', { className: 'text-xs text-gray-500' }, '(' + rota.numParadas + ' paradas)')
+                                            React.createElement('span', { className: 'text-xs text-gray-500' }, '(' + rota.numParadas + ' paradas)'),
+                                            React.createElement('span', { className: 'text-xs bg-gray-100 px-1.5 py-0.5 rounded' }, emojiDirecao + ' ' + (rota.direcao || ''))
                                         ),
                                         React.createElement('div', { className: 'flex items-center gap-2' },
                                             React.createElement('span', { className: 'text-xs font-medium text-green-600' }, rota.distanciaKm + ' km'),
