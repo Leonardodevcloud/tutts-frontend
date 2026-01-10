@@ -11119,8 +11119,32 @@ const hideLoadingScreen = () => {
                         let r;
                         if ("solicitacao" === e) r = new Date(l.created_at).toISOString().split("T")[0];
                         else {
-                            if (!l.debito_at) return !1;
-                            r = new Date(l.debito_at).toISOString().split("T")[0]
+                            // A partir de 09/01/2026, usar debito_plific_at (nova coluna da aba Solicitações)
+                            // Antes disso, usar debito_at (coluna antiga)
+                            const dataCorte = "2026-01-09";
+                            const dataDebitoNova = l.debito_plific_at ? new Date(l.debito_plific_at).toISOString().split("T")[0] : null;
+                            const dataDebitoAntiga = l.debito_at ? new Date(l.debito_at).toISOString().split("T")[0] : null;
+                            
+                            // Se tem data nova e é >= corte, usa a nova
+                            if (dataDebitoNova && dataDebitoNova >= dataCorte) {
+                                r = dataDebitoNova;
+                            } 
+                            // Se tem data antiga e é < corte, usa a antiga
+                            else if (dataDebitoAntiga && dataDebitoAntiga < dataCorte) {
+                                r = dataDebitoAntiga;
+                            }
+                            // Se tem data nova (mesmo antes do corte), usa ela
+                            else if (dataDebitoNova) {
+                                r = dataDebitoNova;
+                            }
+                            // Fallback para data antiga
+                            else if (dataDebitoAntiga) {
+                                r = dataDebitoAntiga;
+                            }
+                            // Sem data de débito
+                            else {
+                                return !1;
+                            }
                         }
                         return t && a ? r >= t && r <= a : t ? r >= t : !a || r <= a
                     }),
