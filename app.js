@@ -1059,47 +1059,29 @@ const hideLoadingScreen = () => {
                     }; 
                 });
                 
-                // CEP - Busca melhorada com BrasilAPI (inclui coordenadas!)
+                // CEP - Busca via backend (evita CORS)
                 var resultadosCEP = [];
                 var cepMatch = termoBusca.match(/(\d{5})-?(\d{3})/);
                 if (cepMatch) {
                     var cepLimpo = cepMatch[1] + cepMatch[2];
                     try {
-                        // Tentar BrasilAPI primeiro (tem coordenadas!)
-                        var resp = await fetch('https://brasilapi.com.br/api/cep/v2/' + cepLimpo);
+                        var resp = await fetch(API_URL + '/geocode/cep/' + cepLimpo);
                         if (resp.ok) {
                             var data = await resp.json();
-                            var lat = data.location && data.location.coordinates && data.location.coordinates.latitude ? parseFloat(data.location.coordinates.latitude) : null;
-                            var lng = data.location && data.location.coordinates && data.location.coordinates.longitude ? parseFloat(data.location.coordinates.longitude) : null;
                             resultadosCEP.push({ 
-                                endereco: (data.street || '') + ', ' + (data.neighborhood || '') + ', ' + data.city + ' - ' + data.state,
-                                bairro: data.neighborhood, 
-                                cidade: data.city, 
-                                estado: data.state, 
-                                cep: cepLimpo,
-                                latitude: lat,
-                                longitude: lng,
-                                fonte: lat ? 'brasilapi-cep' : 'brasilapi-cep-sem-coord',
-                                precisaGeo: !lat
+                                endereco: data.endereco,
+                                bairro: data.bairro, 
+                                cidade: data.cidade, 
+                                estado: data.estado, 
+                                cep: data.cep,
+                                latitude: data.latitude,
+                                longitude: data.longitude,
+                                fonte: data.fonte,
+                                precisaGeo: !data.latitude
                             });
-                        } else {
-                            throw new Error('BrasilAPI falhou');
                         }
                     } catch(e) {
-                        // Fallback para ViaCEP
-                        try {
-                            var resp2 = await fetch('https://viacep.com.br/ws/' + cepLimpo + '/json/');
-                            var data2 = await resp2.json();
-                            if (!data2.erro) resultadosCEP.push({ 
-                                endereco: data2.logradouro + ', ' + data2.bairro + ', ' + data2.localidade + ' - ' + data2.uf, 
-                                bairro: data2.bairro, 
-                                cidade: data2.localidade, 
-                                estado: data2.uf, 
-                                cep: data2.cep,
-                                fonte: 'viacep',
-                                precisaGeo: true 
-                            });
-                        } catch(e2) {}
+                        console.log('⚠️ Geocode CEP falhou:', e.message);
                     }
                 }
                 setSugestoes([].concat(resultadosBI, resultadosCEP));
@@ -1127,30 +1109,29 @@ const hideLoadingScreen = () => {
             console.log('🔍 Geocodificando em cascata:', { endereco, bairro, cidade, estado });
             
             // ========================================
-            // ETAPA 1: Tentar por CEP (BrasilAPI)
+            // ETAPA 1: Tentar por CEP (via backend)
             // ========================================
             var cep = extrairCEP(endereco) || sug.cep;
             if (cep) {
                 console.log('📮 CEP detectado:', cep);
                 try {
-                    var resp = await fetch('https://brasilapi.com.br/api/cep/v2/' + cep);
+                    var resp = await fetch(API_URL + '/geocode/cep/' + cep.replace(/\D/g, ''));
                     if (resp.ok) {
                         var data = await resp.json();
-                        if (data.location && data.location.coordinates && 
-                            data.location.coordinates.latitude && data.location.coordinates.longitude) {
-                            console.log('✅ BrasilAPI sucesso:', data.location.coordinates);
+                        if (data.latitude && data.longitude) {
+                            console.log('✅ Backend CEP sucesso:', data.latitude, data.longitude);
                             return Object.assign({}, sug, {
-                                latitude: parseFloat(data.location.coordinates.latitude),
-                                longitude: parseFloat(data.location.coordinates.longitude),
-                                bairro: sug.bairro || data.neighborhood,
-                                cidade: sug.cidade || data.city,
-                                estado: sug.estado || data.state,
-                                fonte: 'brasilapi-cep'
+                                latitude: data.latitude,
+                                longitude: data.longitude,
+                                bairro: sug.bairro || data.bairro,
+                                cidade: sug.cidade || data.cidade,
+                                estado: sug.estado || data.estado,
+                                fonte: data.fonte
                             });
                         }
                     }
                 } catch (e) {
-                    console.log('⚠️ BrasilAPI falhou:', e.message);
+                    console.log('⚠️ Backend CEP falhou:', e.message);
                 }
             }
             
@@ -1173,6 +1154,36 @@ const hideLoadingScreen = () => {
                 queries.push(bairro + ', ' + cidade + ', ' + estado + ', Brasil');
             }
             
+            // ========================================
+            // ETAPA 2A: Tentar via Backend (evita CORS)
+            // ========================================
+            try {
+                console.log('🔌 Backend geocode tentando...');
+                var params = new URLSearchParams({
+                    endereco: ruaLimpa || '',
+                    bairro: bairro || '',
+                    cidade: cidade || '',
+                    estado: estado || 'GO'
+                });
+                var resp = await fetch(API_URL + '/geocode/endereco?' + params.toString());
+                if (resp.ok) {
+                    var data = await resp.json();
+                    if (data.latitude && data.longitude) {
+                        console.log('✅ Backend geocode sucesso:', data.latitude, data.longitude);
+                        return Object.assign({}, sug, {
+                            latitude: data.latitude,
+                            longitude: data.longitude,
+                            fonte: data.fonte
+                        });
+                    }
+                }
+            } catch (e) {
+                console.log('⚠️ Backend geocode falhou, tentando APIs diretas:', e.message);
+            }
+            
+            // ========================================
+            // ETAPA 2B: Nominatim direto (fallback)
+            // ========================================
             for (var i = 0; i < queries.length; i++) {
                 try {
                     console.log('🌍 Nominatim tentando:', queries[i]);
