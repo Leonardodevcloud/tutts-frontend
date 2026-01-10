@@ -3395,7 +3395,7 @@ const hideLoadingScreen = () => {
         // ==================== FUNÇÕES DO ROTEIRIZADOR ====================
         const carregarUsuariosRoteirizador = async () => {
             try {
-                const res = await fetchAuth(`${API_URL}/api/admin/roteirizador/usuarios`);
+                const res = await fetchAuth(`${API_URL.replace('/api', '')}/api/admin/roteirizador/usuarios`);
                 const data = await res.json();
                 x(prev => ({ ...prev, roteirizadorUsuarios: Array.isArray(data) ? data : [] }));
             } catch (err) { 
@@ -3406,7 +3406,7 @@ const hideLoadingScreen = () => {
 
         const criarUsuarioRoteirizador = async (dados) => {
             try {
-                const res = await fetchAuth(`${API_URL}/api/admin/roteirizador/usuarios`, {
+                const res = await fetchAuth(`${API_URL.replace('/api', '')}/api/admin/roteirizador/usuarios`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(dados)
@@ -3429,7 +3429,7 @@ const hideLoadingScreen = () => {
 
         const alternarAtivoRoteirizador = async (id, ativo) => {
             try {
-                const res = await fetchAuth(`${API_URL}/api/admin/roteirizador/usuarios/${id}/ativo`, {
+                const res = await fetchAuth(`${API_URL.replace('/api', '')}/api/admin/roteirizador/usuarios/${id}/ativo`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ ativo })
@@ -3450,7 +3450,7 @@ const hideLoadingScreen = () => {
                 return;
             }
             try {
-                const res = await fetchAuth(`${API_URL}/api/admin/roteirizador/usuarios/${id}/senha`, {
+                const res = await fetchAuth(`${API_URL.replace('/api', '')}/api/admin/roteirizador/usuarios/${id}/senha`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ nova_senha: novaSenha })
