@@ -232,7 +232,7 @@
                     });
                     if (resp.ok) {
                         const data = await resp.json();
-                        setHistorico(data.rotas);
+                        setHistorico(data.rotas || []);
                     }
                 } catch (err) {
                     console.error('Erro ao carregar histórico:', err);
@@ -246,14 +246,14 @@
                     });
                     if (resp.ok) {
                         const data = await resp.json();
-                        setFavoritos(data);
+                        setFavoritos(data || []);
                     }
                 } catch (err) {
                     console.error('Erro ao carregar favoritos:', err);
                 }
             };
             
-            // Buscar endereço via Google
+            // Buscar endereço via Google (usando proxy do backend)
             const buscarEndereco = async () => {
                 if (!termoBusca || termoBusca.length < 3) {
                     showToast('Digite pelo menos 3 caracteres', 'warning');
@@ -270,6 +270,8 @@
                         } else {
                             showToast('Nenhum endereço encontrado', 'warning');
                         }
+                    } else {
+                        showToast('Erro ao buscar endereço', 'error');
                     }
                 } catch (err) {
                     showToast('Erro ao buscar endereço', 'error');
@@ -384,7 +386,7 @@
                 return 'Noroeste';
             };
             
-            // Otimizar rota via ORS
+            // Otimizar rota via backend (proxy para ORS - evita CORS)
             const otimizarRota = async (pontos) => {
                 const vehicle = { 
                     id: 1, 
@@ -395,11 +397,11 @@
                     vehicle.end = [pontos[0].longitude, pontos[0].latitude];
                 }
                 
-                const resp = await fetch('https://api.openrouteservice.org/optimization', {
+                const resp = await fetch(`${API_URL}/api/roteirizador/otimizar`, {
                     method: 'POST',
                     headers: { 
-                        'Content-Type': 'application/json', 
-                        'Authorization': ORS_API_KEY 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
                     },
                     body: JSON.stringify({
                         jobs: pontos.slice(1).map((p, i) => ({ 
@@ -415,11 +417,11 @@
             };
             
             const obterGeometria = async (pontos) => {
-                const resp = await fetch('https://api.openrouteservice.org/v2/directions/driving-car/geojson', {
+                const resp = await fetch(`${API_URL}/api/roteirizador/direcoes`, {
                     method: 'POST',
                     headers: { 
-                        'Content-Type': 'application/json', 
-                        'Authorization': ORS_API_KEY 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
                     },
                     body: JSON.stringify({
                         coordinates: pontos.map(p => [p.longitude, p.latitude])
