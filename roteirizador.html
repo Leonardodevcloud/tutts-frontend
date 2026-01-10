@@ -158,8 +158,45 @@
             const [historico, setHistorico] = useState([]);
             const [mostrarHistorico, setMostrarHistorico] = useState(false);
             const [favoritos, setFavoritos] = useState([]);
+            const [partidaPadrao, setPartidaPadrao] = useState(null);
+            const [mostrarConfigPartida, setMostrarConfigPartida] = useState(false);
             
             const coresRotas = ['#e11d48', '#2563eb', '#16a34a', '#d97706', '#7c3aed', '#0891b2', '#be185d', '#65a30d'];
+            
+            // Carregar partida padrão do localStorage ao iniciar
+            useEffect(() => {
+                try {
+                    const salvo = localStorage.getItem(`roteirizador_partida_${usuario.id}`);
+                    if (salvo) {
+                        const partida = JSON.parse(salvo);
+                        setPartidaPadrao(partida);
+                        setEnderecos([{ ...partida, id: Date.now() }]);
+                    }
+                } catch(e) {
+                    console.error('Erro ao carregar partida padrão:', e);
+                }
+            }, [usuario.id]);
+            
+            // Salvar partida padrão
+            const salvarPartidaPadrao = (endereco) => {
+                const partida = {
+                    endereco: endereco.endereco,
+                    latitude: endereco.latitude,
+                    longitude: endereco.longitude
+                };
+                localStorage.setItem(`roteirizador_partida_${usuario.id}`, JSON.stringify(partida));
+                setPartidaPadrao(partida);
+                showToast('✅ Partida padrão salva!', 'success');
+                setMostrarConfigPartida(false);
+            };
+            
+            // Remover partida padrão
+            const removerPartidaPadrao = () => {
+                localStorage.removeItem(`roteirizador_partida_${usuario.id}`);
+                setPartidaPadrao(null);
+                showToast('Partida padrão removida', 'info');
+                setMostrarConfigPartida(false);
+            };
             
             // Inicializar mapa
             useEffect(() => {
@@ -657,7 +694,11 @@
             };
             
             const limpar = () => {
-                setEnderecos([]);
+                if (partidaPadrao) {
+                    setEnderecos([{ ...partidaPadrao, id: Date.now() }]);
+                } else {
+                    setEnderecos([]);
+                }
                 setResultado(null);
                 setRotasGeradas([]);
                 setSugestoes([]);
@@ -747,6 +788,14 @@
                                         )}
                                     </div>
                                     
+                                    {/* Indicador de partida padrão */}
+                                    {partidaPadrao && (
+                                        <div className="mb-2 px-2 py-1 bg-green-50 border border-green-200 rounded text-xs text-green-700 flex items-center justify-between">
+                                            <span>🏠 Partida padrão configurada</span>
+                                            <button onClick={removerPartidaPadrao} className="text-red-500 hover:text-red-700">✕</button>
+                                        </div>
+                                    )}
+                                    
                                     {enderecos.length === 0 ? (
                                         <div className="text-center py-8 text-gray-400">
                                             📍 Adicione endereços para criar a rota
@@ -763,11 +812,33 @@
                                                             <div className="text-xs font-medium text-gray-800 truncate">{end.endereco}</div>
                                                         </div>
                                                         <div className="flex gap-1">
+                                                            {idx === 0 && (
+                                                                <button 
+                                                                    onClick={() => setMostrarConfigPartida(!mostrarConfigPartida)} 
+                                                                    className="text-gray-400 hover:text-green-600"
+                                                                    title="Configurar partida padrão"
+                                                                >⚙️</button>
+                                                            )}
                                                             {idx > 0 && <button onClick={() => moverEndereco(idx, -1)} className="text-gray-400 hover:text-purple-600">▲</button>}
                                                             {idx < enderecos.length - 1 && <button onClick={() => moverEndereco(idx, 1)} className="text-gray-400 hover:text-purple-600">▼</button>}
                                                             <button onClick={() => removerEndereco(end.id)} className="text-gray-400 hover:text-red-600">✕</button>
                                                         </div>
                                                     </div>
+                                                    {/* Menu de config da partida */}
+                                                    {idx === 0 && mostrarConfigPartida && (
+                                                        <div className="mt-2 pt-2 border-t border-green-200 flex gap-2">
+                                                            <button 
+                                                                onClick={() => salvarPartidaPadrao(end)}
+                                                                className="flex-1 px-2 py-1 bg-green-500 text-white rounded text-xs font-medium hover:bg-green-600"
+                                                            >✓ Salvar como padrão</button>
+                                                            {partidaPadrao && (
+                                                                <button 
+                                                                    onClick={removerPartidaPadrao}
+                                                                    className="px-2 py-1 bg-red-100 text-red-600 rounded text-xs hover:bg-red-200"
+                                                                >Remover</button>
+                                                            )}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             ))}
                                         </div>
@@ -824,47 +895,62 @@
                                 
                                 {/* Resultado rota única */}
                                 {resultado && !modoMultiplas && (
-                                    <div className="bg-white rounded-xl shadow-lg p-4">
-                                        <div className="flex items-center justify-between mb-3">
-                                            <div className="flex items-center gap-4">
-                                                <span className="text-lg font-bold text-green-600">{resultado.km} km</span>
-                                                <span className="text-lg font-bold text-blue-600">{resultado.min} min</span>
+                                    <div className="bg-white rounded-lg shadow-lg p-2">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-sm font-bold text-green-600">{resultado.km} km</span>
+                                                <span className="text-sm font-bold text-blue-600">{resultado.min} min</span>
                                             </div>
-                                            <div className="flex gap-2">
-                                                <button onClick={() => abrirWaze(resultado.ordem)} className="px-4 py-2 bg-cyan-500 text-white rounded-lg text-sm font-medium hover:bg-cyan-600">🗺️ Waze</button>
-                                                <button onClick={() => abrirMaps(resultado.ordem)} className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600">📍 Maps</button>
-                                            </div>
+                                            <button onClick={() => abrirMaps(resultado.ordem)} className="px-3 py-1.5 bg-blue-500 text-white rounded text-xs font-medium hover:bg-blue-600">📍 Maps</button>
                                         </div>
                                     </div>
                                 )}
                                 
                                 {/* Resultado múltiplas rotas */}
                                 {rotasGeradas.length > 0 && (
-                                    <div className="bg-white rounded-xl shadow-lg p-4 max-h-64 overflow-y-auto">
-                                        <div className="flex items-center justify-between mb-3">
-                                            <span className="font-bold text-gray-700">🚚 {rotasGeradas.length} Rotas</span>
-                                            <span className="text-sm text-gray-500">
-                                                Total: {rotasGeradas.reduce((acc, r) => acc + parseFloat(r.km || 0), 0).toFixed(1)} km
+                                    <div className="bg-white rounded-lg shadow-lg p-2 max-h-48 overflow-y-auto">
+                                        <div className="flex items-center justify-between mb-2 px-1">
+                                            <span className="text-sm font-bold text-gray-700">🚚 {rotasGeradas.length} Rotas</span>
+                                            <span className="text-xs text-gray-500">
+                                                {rotasGeradas.reduce((acc, r) => acc + parseFloat(r.km || 0), 0).toFixed(1)} km total
                                             </span>
                                         </div>
-                                        <div className="space-y-2">
+                                        <div className="space-y-1">
                                             {rotasGeradas.map(rota => (
-                                                <div key={rota.id} className="p-3 rounded-lg border-2" style={{ borderColor: rota.cor, background: rota.cor + '10' }}>
-                                                    <div className="flex items-center justify-between mb-2">
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{ background: rota.cor }}>{rota.id}</span>
-                                                            <span className="font-bold">Rota {rota.id}</span>
-                                                            <span className="text-xs text-gray-500">({rota.numParadas} paradas)</span>
-                                                            <span className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">{emojiDirecao[rota.direcao]} {rota.direcao}</span>
+                                                <div key={rota.id} className="p-2 rounded-lg border" style={{ borderColor: rota.cor, background: rota.cor + '08' }}>
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-1.5">
+                                                            <span className="w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{ background: rota.cor }}>{rota.id}</span>
+                                                            <span className="text-xs font-bold">{rota.numParadas} paradas</span>
+                                                            <span className="text-xs text-gray-400">{emojiDirecao[rota.direcao]}</span>
+                                                            <span className="text-xs text-green-600">{rota.km}km</span>
+                                                            <span className="text-xs text-blue-600">{rota.min}min</span>
                                                         </div>
-                                                        <div className="flex items-center gap-2 text-sm">
-                                                            <span className="text-green-600 font-medium">{rota.km} km</span>
-                                                            <span className="text-blue-600 font-medium">{rota.min} min</span>
+                                                        <div className="flex gap-1">
+                                                            <button onClick={() => abrirMaps(rota.pontos)} className="px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600">📍 Maps</button>
+                                                            <button 
+                                                                onClick={() => {
+                                                                    const pontosRota = rota.pontos.filter(p => !p.isRetorno).slice(1);
+                                                                    const enderecosRestantes = enderecos.filter(e => 
+                                                                        !pontosRota.some(p => p.latitude === e.latitude && p.longitude === e.longitude)
+                                                                    );
+                                                                    setEnderecos(enderecosRestantes);
+                                                                    const novasRotas = rotasGeradas.filter(r => r.id !== rota.id);
+                                                                    setRotasGeradas(novasRotas);
+                                                                    if (novasRotas.length > 0) {
+                                                                        atualizarMapaMultiplasRotas(novasRotas);
+                                                                    } else {
+                                                                        if (markersLayer) markersLayer.clearLayers();
+                                                                        if (routeLayer && mapa) {
+                                                                            mapa.removeLayer(routeLayer);
+                                                                            setRouteLayer(null);
+                                                                        }
+                                                                    }
+                                                                    showToast(`🚀 Rota ${rota.id} disparada!`, 'success');
+                                                                }}
+                                                                className="px-2 py-1 bg-green-500 text-white rounded text-xs hover:bg-green-600"
+                                                            >🚀 Disparar</button>
                                                         </div>
-                                                    </div>
-                                                    <div className="flex gap-2">
-                                                        <button onClick={() => abrirWaze(rota.pontos)} className="flex-1 px-3 py-1.5 bg-cyan-500 text-white rounded text-xs font-medium hover:bg-cyan-600">🗺️ Waze</button>
-                                                        <button onClick={() => abrirMaps(rota.pontos)} className="flex-1 px-3 py-1.5 bg-blue-500 text-white rounded text-xs font-medium hover:bg-blue-600">📍 Maps</button>
                                                     </div>
                                                 </div>
                                             ))}
