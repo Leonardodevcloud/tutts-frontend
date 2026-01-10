@@ -1,180 +1,599 @@
--- =====================================================
--- SISTEMA DE SOLICITAÇÃO DE CORRIDAS - TUTTS
--- Integração com API Tutts para solicitar serviços
--- =====================================================
-
--- Tabela de clientes (cada cliente tem suas credenciais Tutts)
-CREATE TABLE IF NOT EXISTS clientes_solicitacao (
-    id SERIAL PRIMARY KEY,
-    nome VARCHAR(255) NOT NULL,
-    email VARCHAR(255) UNIQUE NOT NULL,
-    senha_hash VARCHAR(255) NOT NULL,
-    telefone VARCHAR(20),
-    empresa VARCHAR(255),
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tutts - Solicitar Corrida</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏍️</text></svg>">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        .gradient-bg { background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 50%, #3b82f6 100%); }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .fade-in { animation: fadeIn 0.3s ease-out; }
+        #mapa { z-index: 1; }
+        .leaflet-container { width: 100% !important; height: 100% !important; background: #e5e7eb; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb { background: #93c5fd; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #60a5fa; }
+        @media (max-width: 768px) {
+            #mapa { min-height: calc(100vh - 200px) !important; height: calc(100vh - 200px) !important; }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div id="root"></div>
     
-    -- Credenciais da API Tutts
-    tutts_token VARCHAR(255) NOT NULL,
-    tutts_cod_cliente VARCHAR(100) NOT NULL,
-    
-    -- Configurações padrão
-    centro_custo_padrao VARCHAR(255),
-    forma_pagamento_padrao VARCHAR(1) DEFAULT 'F', -- D=Dinheiro, C=Cartão, F=Faturar
-    endereco_partida_padrao JSONB, -- {rua, numero, bairro, cidade, uf, cep, lat, lng}
-    
-    -- Controle
-    ativo BOOLEAN DEFAULT TRUE,
-    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    ultimo_acesso TIMESTAMP,
-    criado_por INTEGER, -- ID do admin que criou
-    observacoes TEXT
-);
-
-CREATE INDEX IF NOT EXISTS idx_clientes_solicitacao_email ON clientes_solicitacao(email);
-CREATE INDEX IF NOT EXISTS idx_clientes_solicitacao_ativo ON clientes_solicitacao(ativo);
-
--- Tabela de solicitações (histórico de corridas)
-CREATE TABLE IF NOT EXISTS solicitacoes_corrida (
-    id SERIAL PRIMARY KEY,
-    cliente_id INTEGER NOT NULL REFERENCES clientes_solicitacao(id) ON DELETE CASCADE,
-    
-    -- Dados da solicitação
-    numero_pedido VARCHAR(100),
-    centro_custo VARCHAR(255),
-    usuario_solicitante VARCHAR(255),
-    data_retirada TIMESTAMP,
-    forma_pagamento VARCHAR(1), -- D, C, F
-    ponto_receber INTEGER,
-    retorno BOOLEAN DEFAULT FALSE,
-    obs_retorno TEXT,
-    ordenar BOOLEAN DEFAULT FALSE,
-    codigo_profissional VARCHAR(100),
-    
-    -- Valores
-    valor_rota_profissional DECIMAL(10,2),
-    valor_rota_servico DECIMAL(10,2),
-    
-    -- Resposta da API Tutts
-    tutts_os_numero VARCHAR(50), -- Número da OS retornado
-    tutts_distancia DECIMAL(10,2),
-    tutts_duracao VARCHAR(20),
-    tutts_valor DECIMAL(10,2),
-    tutts_url_rastreamento TEXT,
-    
-    -- Status
-    status VARCHAR(50) DEFAULT 'enviado', -- enviado, aceito, em_andamento, finalizado, cancelado, erro
-    status_codigo DECIMAL(3,2), -- 0, 0.5, 0.75, 1, 2
-    status_atualizado_em TIMESTAMP,
-    
-    -- Dados do profissional (preenchido via webhook)
-    profissional_nome VARCHAR(255),
-    profissional_email VARCHAR(255),
-    profissional_telefone VARCHAR(20),
-    profissional_foto TEXT,
-    profissional_placa VARCHAR(20),
-    profissional_veiculo VARCHAR(100),
-    profissional_cor_veiculo VARCHAR(50),
-    
-    -- Controle
-    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    erro_mensagem TEXT
-);
-
-CREATE INDEX IF NOT EXISTS idx_solicitacoes_corrida_cliente ON solicitacoes_corrida(cliente_id);
-CREATE INDEX IF NOT EXISTS idx_solicitacoes_corrida_status ON solicitacoes_corrida(status);
-CREATE INDEX IF NOT EXISTS idx_solicitacoes_corrida_criado ON solicitacoes_corrida(criado_em DESC);
-CREATE INDEX IF NOT EXISTS idx_solicitacoes_corrida_os ON solicitacoes_corrida(tutts_os_numero);
-
--- Tabela de pontos de cada solicitação
-CREATE TABLE IF NOT EXISTS solicitacoes_pontos (
-    id SERIAL PRIMARY KEY,
-    solicitacao_id INTEGER NOT NULL REFERENCES solicitacoes_corrida(id) ON DELETE CASCADE,
-    ordem INTEGER NOT NULL, -- 1, 2, 3...
-    
-    -- Endereço
-    rua VARCHAR(255) NOT NULL,
-    numero VARCHAR(20),
-    complemento VARCHAR(255),
-    bairro VARCHAR(255),
-    cidade VARCHAR(255) NOT NULL,
-    uf VARCHAR(2) NOT NULL,
-    cep VARCHAR(10),
-    latitude DECIMAL(10,7),
-    longitude DECIMAL(10,7),
-    
-    -- Informações adicionais
-    observacao TEXT,
-    telefone VARCHAR(20),
-    procurar_por VARCHAR(255),
-    numero_nota VARCHAR(100),
-    codigo_finalizar VARCHAR(100),
-    
-    -- Status do ponto (atualizado via webhook)
-    status VARCHAR(50), -- pendente, chegou, coletado, finalizado
-    status_atualizado_em TIMESTAMP,
-    data_chegada TIMESTAMP,
-    data_coletado TIMESTAMP,
-    data_finalizado TIMESTAMP,
-    motivo_finalizacao VARCHAR(255),
-    motivo_descricao TEXT,
-    tempo_espera DECIMAL(10,2),
-    
-    -- Fotos/Assinatura
-    fotos JSONB, -- Array de URLs
-    assinatura JSONB -- {link, nome, documento}
-);
-
-CREATE INDEX IF NOT EXISTS idx_solicitacoes_pontos_solicitacao ON solicitacoes_pontos(solicitacao_id);
-CREATE INDEX IF NOT EXISTS idx_solicitacoes_pontos_ordem ON solicitacoes_pontos(solicitacao_id, ordem);
-
--- Tabela de endereços favoritos dos clientes
-CREATE TABLE IF NOT EXISTS solicitacao_favoritos (
-    id SERIAL PRIMARY KEY,
-    cliente_id INTEGER NOT NULL REFERENCES clientes_solicitacao(id) ON DELETE CASCADE,
-    
-    -- Endereço
-    apelido VARCHAR(100),
-    rua VARCHAR(255) NOT NULL,
-    numero VARCHAR(20),
-    complemento VARCHAR(255),
-    bairro VARCHAR(255),
-    cidade VARCHAR(255),
-    uf VARCHAR(2),
-    cep VARCHAR(10),
-    latitude DECIMAL(10,7),
-    longitude DECIMAL(10,7),
-    
-    -- Informações padrão
-    telefone_padrao VARCHAR(20),
-    procurar_por_padrao VARCHAR(255),
-    observacao_padrao TEXT,
-    
-    -- Controle
-    vezes_usado INTEGER DEFAULT 1,
-    ultimo_uso TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX IF NOT EXISTS idx_solicitacao_favoritos_cliente ON solicitacao_favoritos(cliente_id);
-
--- Tabela de log de webhooks recebidos
-CREATE TABLE IF NOT EXISTS solicitacao_webhooks_log (
-    id SERIAL PRIMARY KEY,
-    tutts_os_numero VARCHAR(50),
-    payload JSONB NOT NULL,
-    processado BOOLEAN DEFAULT FALSE,
-    erro TEXT,
-    recebido_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX IF NOT EXISTS idx_webhooks_log_os ON solicitacao_webhooks_log(tutts_os_numero);
-CREATE INDEX IF NOT EXISTS idx_webhooks_log_recebido ON solicitacao_webhooks_log(recebido_em DESC);
-
--- =====================================================
--- COMENTÁRIOS
--- =====================================================
-COMMENT ON TABLE clientes_solicitacao IS 'Clientes que podem solicitar corridas via integração Tutts';
-COMMENT ON TABLE solicitacoes_corrida IS 'Histórico de todas as corridas solicitadas';
-COMMENT ON TABLE solicitacoes_pontos IS 'Pontos/endereços de cada corrida';
-COMMENT ON TABLE solicitacao_favoritos IS 'Endereços favoritos salvos pelos clientes';
-COMMENT ON TABLE solicitacao_webhooks_log IS 'Log de todos os webhooks recebidos da API Tutts';
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+        
+        const API_URL = 'https://tutts-backend-production.up.railway.app';
+        
+        // Toast Component
+        const Toast = ({ mensagem, tipo, onClose }) => {
+            useEffect(() => {
+                const timer = setTimeout(onClose, 4000);
+                return () => clearTimeout(timer);
+            }, []);
+            
+            const cores = { success: 'bg-green-500', error: 'bg-red-500', warning: 'bg-yellow-500', info: 'bg-blue-500' };
+            
+            return (
+                <div className={`fixed top-4 right-4 ${cores[tipo]} text-white px-4 py-3 rounded-lg shadow-lg z-50 fade-in max-w-sm`}>
+                    {mensagem}
+                </div>
+            );
+        };
+        
+        // Tela de Login
+        const TelaLogin = ({ onLogin, showToast }) => {
+            const [email, setEmail] = useState('');
+            const [senha, setSenha] = useState('');
+            const [loading, setLoading] = useState(false);
+            
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                if (!email || !senha) { showToast('Preencha email e senha', 'error'); return; }
+                
+                setLoading(true);
+                try {
+                    const resp = await fetch(`${API_URL}/api/solicitacao/login`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email, senha })
+                    });
+                    const data = await resp.json();
+                    
+                    if (resp.ok) {
+                        localStorage.setItem('solicitacao_token', data.token);
+                        localStorage.setItem('solicitacao_cliente', JSON.stringify(data.cliente));
+                        showToast('Bem-vindo, ' + data.cliente.nome + '!', 'success');
+                        onLogin(data.cliente, data.token);
+                    } else {
+                        showToast(data.error || 'Erro ao fazer login', 'error');
+                    }
+                } catch (err) {
+                    showToast('Erro de conexão', 'error');
+                }
+                setLoading(false);
+            };
+            
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+                        <div className="text-center mb-6">
+                            <div className="text-6xl mb-4">🏍️</div>
+                            <h1 className="text-2xl font-bold text-gray-800">Solicitar Corrida</h1>
+                            <p className="text-gray-500 text-sm">Sistema de entregas Tutts</p>
+                        </div>
+                        
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1">Email</label>
+                                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="seu@email.com" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1">Senha</label>
+                                <input type="password" value={senha} onChange={(e) => setSenha(e.target.value)}
+                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="••••••••" />
+                            </div>
+                            <button type="submit" disabled={loading}
+                                className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg disabled:opacity-50">
+                                {loading ? 'Entrando...' : 'Entrar'}
+                            </button>
+                        </form>
+                        
+                        <p className="mt-6 text-center text-gray-500 text-sm border-t pt-4">
+                            Não tem acesso? Entre em contato com o administrador.
+                        </p>
+                    </div>
+                </div>
+            );
+        };
+        
+        // Componente Principal
+        const Solicitacao = ({ cliente, token, onLogout, showToast }) => {
+            const [pontos, setPontos] = useState([]);
+            const [termoBusca, setTermoBusca] = useState('');
+            const [sugestoes, setSugestoes] = useState([]);
+            const [buscando, setBuscando] = useState(false);
+            const [loading, setLoading] = useState(false);
+            const [mapa, setMapa] = useState(null);
+            const [markersLayer, setMarkersLayer] = useState(null);
+            const [historico, setHistorico] = useState([]);
+            const [mostrarHistorico, setMostrarHistorico] = useState(false);
+            const [abaMobile, setAbaMobile] = useState('form');
+            const [pontoEditando, setPontoEditando] = useState(null);
+            const [dadosPonto, setDadosPonto] = useState({ observacao: '', telefone: '', procurar_por: '', numero_nota: '', codigo_finalizar: '' });
+            
+            const [config, setConfig] = useState({
+                numero_pedido: '', centro_custo: cliente.centro_custo_padrao || '', usuario_solicitante: cliente.nome,
+                data_retirada: '', hora_retirada: '', forma_pagamento: cliente.forma_pagamento_padrao || 'F',
+                ponto_receber: '', retorno: false, obs_retorno: '', ordenar: true, codigo_profissional: ''
+            });
+            
+            // Inicializar mapa
+            useEffect(() => {
+                if (typeof L !== 'undefined' && !mapa) {
+                    const container = document.getElementById('mapa');
+                    if (container) {
+                        const mapInstance = L.map('mapa', { zoomControl: true }).setView([-16.6869, -49.2648], 12);
+                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap', maxZoom: 19 }).addTo(mapInstance);
+                        setMapa(mapInstance);
+                        setMarkersLayer(L.layerGroup().addTo(mapInstance));
+                        setTimeout(() => mapInstance.invalidateSize(), 100);
+                        window.addEventListener('resize', () => mapInstance.invalidateSize());
+                    }
+                }
+            }, []);
+            
+            useEffect(() => {
+                if (cliente.endereco_partida_padrao) {
+                    setPontos([{ id: Date.now(), ...cliente.endereco_partida_padrao, isPartida: true }]);
+                }
+                carregarHistorico();
+            }, []);
+            
+            useEffect(() => {
+                if (mapa && markersLayer) {
+                    markersLayer.clearLayers();
+                    pontos.forEach((p, idx) => {
+                        if (p.latitude && p.longitude) {
+                            const icon = L.divIcon({
+                                className: '',
+                                html: `<div style="background:${idx === 0 ? '#10b981' : '#3b82f6'};color:#fff;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:12px;border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,0.3)">${idx === 0 ? '🚩' : idx}</div>`,
+                                iconSize: [28, 28], iconAnchor: [14, 14]
+                            });
+                            L.marker([p.latitude, p.longitude], { icon }).addTo(markersLayer);
+                        }
+                    });
+                    if (pontos.length > 0 && pontos.some(p => p.latitude)) {
+                        const bounds = L.latLngBounds(pontos.filter(p => p.latitude).map(p => [p.latitude, p.longitude]));
+                        mapa.fitBounds(bounds, { padding: [50, 50] });
+                    }
+                }
+            }, [pontos, mapa, markersLayer]);
+            
+            const carregarHistorico = async () => {
+                try {
+                    const resp = await fetch(`${API_URL}/api/solicitacao/historico?limite=20`, { headers: { 'Authorization': `Bearer ${token}` } });
+                    if (resp.ok) { const data = await resp.json(); setHistorico(data.solicitacoes || []); }
+                } catch (err) { console.error('Erro ao carregar histórico:', err); }
+            };
+            
+            const buscarEndereco = async () => {
+                if (!termoBusca || termoBusca.length < 3) { showToast('Digite pelo menos 3 caracteres', 'warning'); return; }
+                setBuscando(true);
+                try {
+                    const resp = await fetch(`${API_URL}/api/geocode/google?endereco=${encodeURIComponent(termoBusca)}`);
+                    if (resp.ok) {
+                        const data = await resp.json();
+                        if (data.results && data.results.length > 0) { setSugestoes(data.results); }
+                        else { showToast('Nenhum endereço encontrado', 'warning'); }
+                    }
+                } catch (err) { showToast('Erro ao buscar endereço', 'error'); }
+                setBuscando(false);
+            };
+            
+            const adicionarPonto = (sug) => {
+                if (pontos.length >= 80) { showToast('Máximo 80 pontos', 'error'); return; }
+                const endereco = sug.endereco || '';
+                const partes = endereco.split(',').map(p => p.trim());
+                
+                const novoPonto = {
+                    id: Date.now(), endereco_completo: endereco,
+                    rua: partes[0] || '', numero: partes[1]?.match(/\d+/)?.[0] || '',
+                    bairro: partes.length > 2 ? partes[partes.length - 3] : '',
+                    cidade: partes.length > 1 ? partes[partes.length - 2]?.split('-')[0]?.trim() : '',
+                    uf: partes.length > 1 ? partes[partes.length - 2]?.split('-')[1]?.trim() : '',
+                    cep: '', latitude: sug.latitude, longitude: sug.longitude,
+                    observacao: '', telefone: '', procurar_por: '', numero_nota: '', codigo_finalizar: ''
+                };
+                
+                setPontos([...pontos, novoPonto]);
+                setTermoBusca(''); setSugestoes([]);
+                showToast('✅ Ponto adicionado', 'success');
+            };
+            
+            const removerPonto = (id) => setPontos(pontos.filter(p => p.id !== id));
+            
+            const moverPonto = (idx, dir) => {
+                const lista = [...pontos];
+                const novoIdx = idx + dir;
+                if (novoIdx < 0 || novoIdx >= lista.length) return;
+                [lista[idx], lista[novoIdx]] = [lista[novoIdx], lista[idx]];
+                setPontos(lista);
+            };
+            
+            const abrirEdicaoPonto = (idx) => {
+                const p = pontos[idx];
+                setDadosPonto({ observacao: p.observacao || '', telefone: p.telefone || '', procurar_por: p.procurar_por || '', numero_nota: p.numero_nota || '', codigo_finalizar: p.codigo_finalizar || '' });
+                setPontoEditando(idx);
+            };
+            
+            const salvarEdicaoPonto = () => {
+                const novosPontos = [...pontos];
+                novosPontos[pontoEditando] = { ...novosPontos[pontoEditando], ...dadosPonto };
+                setPontos(novosPontos);
+                setPontoEditando(null);
+                showToast('✅ Ponto atualizado', 'success');
+            };
+            
+            const salvarPartidaPadrao = async () => {
+                if (pontos.length === 0) { showToast('Adicione um ponto de partida primeiro', 'warning'); return; }
+                try {
+                    const partida = pontos[0];
+                    await fetch(`${API_URL}/api/solicitacao/configuracoes`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        body: JSON.stringify({ endereco_partida_padrao: { rua: partida.rua, numero: partida.numero, bairro: partida.bairro, cidade: partida.cidade, uf: partida.uf, cep: partida.cep, latitude: partida.latitude, longitude: partida.longitude, endereco_completo: partida.endereco_completo } })
+                    });
+                    showToast('✅ Partida padrão salva!', 'success');
+                } catch (err) { showToast('Erro ao salvar', 'error'); }
+            };
+            
+            const enviarSolicitacao = async () => {
+                if (pontos.length < 2) { showToast('Adicione pelo menos 2 pontos (partida + entrega)', 'error'); return; }
+                setLoading(true);
+                try {
+                    const dataRetirada = config.data_retirada && config.hora_retirada ? `${config.data_retirada} ${config.hora_retirada}:00` : '';
+                    const payload = {
+                        numero_pedido: config.numero_pedido, centro_custo: config.centro_custo, usuario_solicitante: config.usuario_solicitante,
+                        data_retirada: dataRetirada, forma_pagamento: config.forma_pagamento, ponto_receber: config.ponto_receber ? parseInt(config.ponto_receber) : null,
+                        retorno: config.retorno, obs_retorno: config.obs_retorno, ordenar: config.ordenar, codigo_profissional: config.codigo_profissional,
+                        pontos: pontos.map(p => ({ rua: p.rua, numero: p.numero, complemento: p.complemento || '', bairro: p.bairro, cidade: p.cidade, uf: p.uf, cep: p.cep || '', latitude: p.latitude, longitude: p.longitude, observacao: p.observacao || '', telefone: p.telefone || '', procurar_por: p.procurar_por || '', numero_nota: p.numero_nota || '', codigo_finalizar: p.codigo_finalizar || '' }))
+                    };
+                    
+                    const resp = await fetch(`${API_URL}/api/solicitacao/corrida`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        body: JSON.stringify(payload)
+                    });
+                    const data = await resp.json();
+                    
+                    if (resp.ok) {
+                        showToast(`✅ Corrida solicitada! OS: ${data.os_numero}`, 'success');
+                        if (cliente.endereco_partida_padrao) { setPontos([{ id: Date.now(), ...cliente.endereco_partida_padrao, isPartida: true }]); }
+                        else { setPontos([]); }
+                        setConfig(prev => ({ ...prev, numero_pedido: '', obs_retorno: '' }));
+                        carregarHistorico();
+                    } else { showToast(data.error || 'Erro ao solicitar corrida', 'error'); }
+                } catch (err) { showToast('Erro ao enviar solicitação', 'error'); }
+                setLoading(false);
+            };
+            
+            const limpar = () => {
+                if (cliente.endereco_partida_padrao) { setPontos([{ id: Date.now(), ...cliente.endereco_partida_padrao, isPartida: true }]); }
+                else { setPontos([]); }
+                setSugestoes([]); setTermoBusca('');
+            };
+            
+            const statusCores = { 'enviado': 'bg-yellow-100 text-yellow-800', 'aceito': 'bg-blue-100 text-blue-800', 'em_andamento': 'bg-purple-100 text-purple-800', 'finalizado': 'bg-green-100 text-green-800', 'cancelado': 'bg-red-100 text-red-800', 'erro': 'bg-red-100 text-red-800' };
+            const statusNomes = { 'enviado': '📤 Enviado', 'aceito': '✅ Aceito', 'em_andamento': '🏍️ Em andamento', 'finalizado': '🏁 Finalizado', 'cancelado': '❌ Cancelado', 'erro': '⚠️ Erro' };
+            
+            return (
+                <div className="min-h-screen bg-gray-100">
+                    {/* Header */}
+                    <header className="bg-blue-900 text-white px-3 md:px-4 py-2 md:py-3 shadow-lg">
+                        <div className="max-w-7xl mx-auto flex items-center justify-between">
+                            <div className="flex items-center gap-2 md:gap-3">
+                                <span className="text-xl md:text-2xl">🏍️</span>
+                                <div>
+                                    <h1 className="font-bold text-sm md:text-lg">Solicitar Corrida</h1>
+                                    <p className="text-blue-300 text-xs hidden md:block">Olá, {cliente.nome}</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button onClick={() => setMostrarHistorico(true)} className="px-2 md:px-3 py-1 md:py-1.5 bg-white/10 hover:bg-white/20 rounded text-xs md:text-sm">
+                                    📋 <span className="hidden md:inline">Histórico</span>
+                                </button>
+                                <button onClick={onLogout} className="px-2 md:px-3 py-1 md:py-1.5 bg-red-500/20 hover:bg-red-500/30 rounded text-xs md:text-sm">🚪</button>
+                            </div>
+                        </div>
+                    </header>
+                    
+                    {/* Abas Mobile */}
+                    <div className="md:hidden flex border-b bg-white">
+                        <button onClick={() => setAbaMobile('form')} className={`flex-1 py-3 text-sm font-medium ${abaMobile === 'form' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50' : 'text-gray-500'}`}>📝 Formulário</button>
+                        <button onClick={() => { setAbaMobile('mapa'); setTimeout(() => mapa?.invalidateSize(), 100); }} className={`flex-1 py-3 text-sm font-medium ${abaMobile === 'mapa' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50' : 'text-gray-500'}`}>🗺️ Mapa ({pontos.length})</button>
+                    </div>
+                    
+                    <div className="max-w-7xl mx-auto p-2 md:p-4">
+                        <div className="flex flex-col md:flex-row gap-4">
+                            {/* Painel Formulário */}
+                            <div className={`${abaMobile === 'form' ? 'block' : 'hidden'} md:block w-full md:w-[450px] space-y-3`}>
+                                
+                                {/* Busca de Endereço */}
+                                <div className="bg-white rounded-xl shadow p-3">
+                                    <div className="text-sm font-bold text-gray-700 mb-2">📍 Adicionar Ponto</div>
+                                    <div className="flex gap-2">
+                                        <input type="text" value={termoBusca} onChange={(e) => setTermoBusca(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && buscarEndereco()}
+                                            placeholder="Digite o endereço..." className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500" />
+                                        <button onClick={buscarEndereco} disabled={buscando} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50">
+                                            {buscando ? '...' : '🔍'}
+                                        </button>
+                                    </div>
+                                    {sugestoes.length > 0 && (
+                                        <div className="mt-2 bg-white border rounded-lg shadow max-h-40 overflow-y-auto">
+                                            {sugestoes.map((sug, idx) => (
+                                                <div key={idx} onClick={() => adicionarPonto(sug)} className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm border-b last:border-b-0">
+                                                    📍 {sug.endereco}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                                
+                                {/* Lista de Pontos */}
+                                <div className="bg-white rounded-xl shadow p-3">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-sm font-bold text-gray-700">🚚 Pontos ({pontos.length}/80)</span>
+                                        <div className="flex gap-2">
+                                            {pontos.length > 0 && (
+                                                <>
+                                                    <button onClick={salvarPartidaPadrao} className="text-xs text-green-600 hover:text-green-800">💾 Salvar partida</button>
+                                                    <button onClick={limpar} className="text-xs text-red-500 hover:text-red-700">Limpar</button>
+                                                </>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2 max-h-48 overflow-y-auto">
+                                        {pontos.length === 0 ? (
+                                            <div className="text-center py-4 text-gray-400 text-sm">Adicione pontos para a corrida</div>
+                                        ) : pontos.map((p, idx) => (
+                                            <div key={p.id} className={`p-2 rounded-lg border ${idx === 0 ? 'bg-green-50 border-green-200' : 'bg-white border-gray-200'}`}>
+                                                <div className="flex items-center gap-2">
+                                                    <span className={`w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold ${idx === 0 ? 'bg-green-500' : 'bg-blue-600'}`}>{idx === 0 ? '🚩' : idx}</span>
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="text-xs font-medium text-gray-800 truncate">{p.endereco_completo || `${p.rua}, ${p.numero}`}</div>
+                                                        {p.observacao && <div className="text-xs text-gray-500 truncate">📝 {p.observacao}</div>}
+                                                    </div>
+                                                    <div className="flex gap-1">
+                                                        <button onClick={() => abrirEdicaoPonto(idx)} className="text-gray-400 hover:text-blue-600 text-sm">✏️</button>
+                                                        {idx > 0 && <button onClick={() => moverPonto(idx, -1)} className="text-gray-400 hover:text-blue-600">▲</button>}
+                                                        {idx < pontos.length - 1 && <button onClick={() => moverPonto(idx, 1)} className="text-gray-400 hover:text-blue-600">▼</button>}
+                                                        <button onClick={() => removerPonto(p.id)} className="text-gray-400 hover:text-red-600">✕</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                                
+                                {/* Configurações */}
+                                <div className="bg-white rounded-xl shadow p-3">
+                                    <div className="text-sm font-bold text-gray-700 mb-3">⚙️ Configurações</div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div>
+                                            <label className="text-xs text-gray-600">Nº Pedido</label>
+                                            <input type="text" value={config.numero_pedido} onChange={(e) => setConfig({...config, numero_pedido: e.target.value})} className="w-full px-2 py-1.5 border rounded text-sm" placeholder="Opcional" />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs text-gray-600">Centro de Custo</label>
+                                            <input type="text" value={config.centro_custo} onChange={(e) => setConfig({...config, centro_custo: e.target.value})} className="w-full px-2 py-1.5 border rounded text-sm" placeholder="Opcional" />
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2 mt-2">
+                                        <div>
+                                            <label className="text-xs text-gray-600">Data Retirada</label>
+                                            <input type="date" value={config.data_retirada} onChange={(e) => setConfig({...config, data_retirada: e.target.value})} className="w-full px-2 py-1.5 border rounded text-sm" />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs text-gray-600">Hora</label>
+                                            <input type="time" value={config.hora_retirada} onChange={(e) => setConfig({...config, hora_retirada: e.target.value})} className="w-full px-2 py-1.5 border rounded text-sm" />
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2 mt-2">
+                                        <div>
+                                            <label className="text-xs text-gray-600">Pagamento</label>
+                                            <select value={config.forma_pagamento} onChange={(e) => setConfig({...config, forma_pagamento: e.target.value})} className="w-full px-2 py-1.5 border rounded text-sm">
+                                                <option value="F">A Faturar</option>
+                                                <option value="D">Dinheiro</option>
+                                                <option value="C">Cartão</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="text-xs text-gray-600">Receber no ponto</label>
+                                            <input type="number" value={config.ponto_receber} onChange={(e) => setConfig({...config, ponto_receber: e.target.value})} className="w-full px-2 py-1.5 border rounded text-sm" placeholder="Ex: 2" min="1" />
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-wrap gap-4 mt-3">
+                                        <label className="flex items-center gap-2 text-sm cursor-pointer">
+                                            <input type="checkbox" checked={config.ordenar} onChange={(e) => setConfig({...config, ordenar: e.target.checked})} className="w-4 h-4" />
+                                            <span>🔀 Ordenar automaticamente</span>
+                                        </label>
+                                        <label className="flex items-center gap-2 text-sm cursor-pointer">
+                                            <input type="checkbox" checked={config.retorno} onChange={(e) => setConfig({...config, retorno: e.target.checked})} className="w-4 h-4" />
+                                            <span>↩️ Retornar ao início</span>
+                                        </label>
+                                    </div>
+                                    {config.retorno && (
+                                        <div className="mt-2">
+                                            <input type="text" value={config.obs_retorno} onChange={(e) => setConfig({...config, obs_retorno: e.target.value})} className="w-full px-2 py-1.5 border rounded text-sm" placeholder="Observação do retorno..." />
+                                        </div>
+                                    )}
+                                </div>
+                                
+                                {/* Botão Enviar */}
+                                <button onClick={enviarSolicitacao} disabled={loading || pontos.length < 2}
+                                    className="w-full py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-bold text-sm hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 shadow-lg">
+                                    {loading ? '⏳ Enviando...' : `🚀 Solicitar Corrida (${pontos.length} pontos)`}
+                                </button>
+                            </div>
+                            
+                            {/* Mapa */}
+                            <div className={`${abaMobile === 'mapa' ? 'block' : 'hidden'} md:block flex-1`}>
+                                <div id="mapa" className="rounded-xl shadow-lg" style={{ height: 'calc(100vh - 160px)', minHeight: '400px' }}></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {/* Modal Editar Ponto */}
+                    {pontoEditando !== null && (
+                        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setPontoEditando(null)}>
+                            <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-4" onClick={e => e.stopPropagation()}>
+                                <div className="flex items-center justify-between mb-4">
+                                    <span className="font-bold text-gray-800">✏️ Editar Ponto {pontoEditando + 1}</span>
+                                    <button onClick={() => setPontoEditando(null)} className="text-gray-400 hover:text-gray-600">✕</button>
+                                </div>
+                                <div className="space-y-3">
+                                    <div>
+                                        <label className="text-xs text-gray-600">Observação</label>
+                                        <textarea value={dadosPonto.observacao} onChange={(e) => setDadosPonto({...dadosPonto, observacao: e.target.value})} className="w-full px-3 py-2 border rounded text-sm" rows="2" placeholder="Ex: Apartamento 304" />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="text-xs text-gray-600">Telefone</label>
+                                            <input type="text" value={dadosPonto.telefone} onChange={(e) => setDadosPonto({...dadosPonto, telefone: e.target.value})} className="w-full px-3 py-2 border rounded text-sm" placeholder="(00) 00000-0000" />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs text-gray-600">Procurar por</label>
+                                            <input type="text" value={dadosPonto.procurar_por} onChange={(e) => setDadosPonto({...dadosPonto, procurar_por: e.target.value})} className="w-full px-3 py-2 border rounded text-sm" placeholder="Nome do contato" />
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="text-xs text-gray-600">Nº Nota</label>
+                                            <input type="text" value={dadosPonto.numero_nota} onChange={(e) => setDadosPonto({...dadosPonto, numero_nota: e.target.value})} className="w-full px-3 py-2 border rounded text-sm" />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs text-gray-600">Código Finalizar</label>
+                                            <input type="text" value={dadosPonto.codigo_finalizar} onChange={(e) => setDadosPonto({...dadosPonto, codigo_finalizar: e.target.value})} className="w-full px-3 py-2 border rounded text-sm" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="flex gap-2 mt-4">
+                                    <button onClick={() => setPontoEditando(null)} className="flex-1 py-2 border rounded-lg text-sm">Cancelar</button>
+                                    <button onClick={salvarEdicaoPonto} className="flex-1 py-2 bg-blue-600 text-white rounded-lg text-sm">Salvar</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    
+                    {/* Modal Histórico */}
+                    {mostrarHistorico && (
+                        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setMostrarHistorico(false)}>
+                            <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[80vh] overflow-hidden" onClick={e => e.stopPropagation()}>
+                                <div className="bg-blue-900 text-white px-4 py-3 flex items-center justify-between">
+                                    <span className="font-bold">📋 Histórico de Solicitações</span>
+                                    <button onClick={() => setMostrarHistorico(false)} className="text-white/70 hover:text-white">✕</button>
+                                </div>
+                                <div className="p-4 overflow-y-auto max-h-[65vh]">
+                                    {historico.length === 0 ? (
+                                        <p className="text-center text-gray-500 py-8">Nenhuma solicitação ainda</p>
+                                    ) : (
+                                        <div className="space-y-2">
+                                            {historico.map(h => (
+                                                <div key={h.id} className="p-3 border rounded-lg hover:bg-gray-50">
+                                                    <div className="flex items-center justify-between">
+                                                        <div>
+                                                            <div className="flex items-center gap-2">
+                                                                <span className={`px-2 py-0.5 rounded text-xs font-medium ${statusCores[h.status]}`}>{statusNomes[h.status]}</span>
+                                                                {h.tutts_os_numero && <span className="text-sm font-medium text-gray-700">OS #{h.tutts_os_numero}</span>}
+                                                            </div>
+                                                            <div className="text-xs text-gray-500 mt-1">
+                                                                {new Date(h.criado_em).toLocaleString('pt-BR')} • {h.total_pontos} pontos
+                                                                {h.numero_pedido && ` • Pedido: ${h.numero_pedido}`}
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            {h.tutts_valor && <div className="text-sm font-bold text-green-600">R$ {parseFloat(h.tutts_valor).toFixed(2)}</div>}
+                                                            {h.tutts_distancia && <div className="text-xs text-gray-500">{h.tutts_distancia} km</div>}
+                                                            {h.tutts_url_rastreamento && <a href={h.tutts_url_rastreamento} target="_blank" className="text-xs text-blue-600 hover:underline">🔗 Rastrear</a>}
+                                                        </div>
+                                                    </div>
+                                                    {h.profissional_nome && <div className="mt-2 pt-2 border-t text-xs text-gray-600">🏍️ {h.profissional_nome} {h.profissional_placa && `• ${h.profissional_placa}`}</div>}
+                                                    {h.erro_mensagem && <div className="mt-2 pt-2 border-t text-xs text-red-600">⚠️ {h.erro_mensagem}</div>}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+        
+        // App Principal
+        const App = () => {
+            const [cliente, setCliente] = useState(null);
+            const [token, setToken] = useState(null);
+            const [toast, setToast] = useState(null);
+            const [verificando, setVerificando] = useState(true);
+            
+            const showToast = (mensagem, tipo = 'info') => setToast({ mensagem, tipo });
+            
+            useEffect(() => {
+                const verificarSessao = async () => {
+                    const tokenSalvo = localStorage.getItem('solicitacao_token');
+                    const clienteSalvo = localStorage.getItem('solicitacao_cliente');
+                    
+                    if (tokenSalvo && clienteSalvo) {
+                        try {
+                            const resp = await fetch(`${API_URL}/api/solicitacao/verificar`, { headers: { 'Authorization': `Bearer ${tokenSalvo}` } });
+                            if (resp.ok) { const data = await resp.json(); setToken(tokenSalvo); setCliente(data.cliente); }
+                            else { localStorage.removeItem('solicitacao_token'); localStorage.removeItem('solicitacao_cliente'); }
+                        } catch (err) { console.error('Erro ao verificar sessão:', err); }
+                    }
+                    setVerificando(false);
+                };
+                verificarSessao();
+            }, []);
+            
+            const handleLogin = (clienteData, tokenData) => { setCliente(clienteData); setToken(tokenData); };
+            const handleLogout = () => { localStorage.removeItem('solicitacao_token'); localStorage.removeItem('solicitacao_cliente'); setCliente(null); setToken(null); };
+            
+            if (verificando) {
+                return (
+                    <div className="min-h-screen bg-blue-100 flex items-center justify-center">
+                        <div className="text-center">
+                            <div className="text-4xl mb-4">🏍️</div>
+                            <p className="text-gray-600">Carregando...</p>
+                        </div>
+                    </div>
+                );
+            }
+            
+            return (
+                <>
+                    {toast && <Toast mensagem={toast.mensagem} tipo={toast.tipo} onClose={() => setToast(null)} />}
+                    {cliente && token ? (
+                        <Solicitacao cliente={cliente} token={token} onLogout={handleLogout} showToast={showToast} />
+                    ) : (
+                        <TelaLogin onLogin={handleLogin} showToast={showToast} />
+                    )}
+                </>
+            );
+        };
+        
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>
