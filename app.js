@@ -195,7 +195,7 @@ const SISTEMA_MODULOS_CONFIG = [
       abas: [{id: "perfil", label: "Meu Perfil"}, {id: "comunidade", label: "Comunidade"}, {id: "mensagens", label: "Mensagens"}]
     },
     { id: "config", label: "Configurações", icon: "🔧",
-      abas: [{id: "usuarios", label: "Usuários"}, {id: "permissoes", label: "Permissões ADM"}, {id: "auditoria", label: "Auditoria"}, {id: "sistema", label: "Sistema"}]
+      abas: [{id: "usuarios", label: "Usuários"}, {id: "roteirizador", label: "🗺️ Roteirizador"}, {id: "permissoes", label: "Permissões ADM"}, {id: "auditoria", label: "Auditoria"}, {id: "sistema", label: "Sistema"}]
     }
 ];
 
@@ -3389,6 +3389,77 @@ const hideLoadingScreen = () => {
             } catch (err) { 
                 console.error(err); 
                 setAvisosRegioes([]);
+            }
+        };
+
+        // ==================== FUNÇÕES DO ROTEIRIZADOR ====================
+        const carregarUsuariosRoteirizador = async () => {
+            try {
+                const res = await fetchAuth(`${API_URL}/api/admin/roteirizador/usuarios`);
+                const data = await res.json();
+                x(prev => ({ ...prev, roteirizadorUsuarios: Array.isArray(data) ? data : [] }));
+            } catch (err) { 
+                console.error('Erro ao carregar usuários do roteirizador:', err);
+                x(prev => ({ ...prev, roteirizadorUsuarios: [] }));
+            }
+        };
+
+        const criarUsuarioRoteirizador = async (dados) => {
+            try {
+                const res = await fetchAuth(`${API_URL}/api/admin/roteirizador/usuarios`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(dados)
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    ja('Usuário criado com sucesso!', 'success');
+                    carregarUsuariosRoteirizador();
+                    x(prev => ({ ...prev, roteirizadorNovoUsuario: {} }));
+                    return true;
+                } else {
+                    ja(data.error || 'Erro ao criar usuário', 'error');
+                    return false;
+                }
+            } catch (err) {
+                ja('Erro de conexão', 'error');
+                return false;
+            }
+        };
+
+        const alternarAtivoRoteirizador = async (id, ativo) => {
+            try {
+                const res = await fetchAuth(`${API_URL}/api/admin/roteirizador/usuarios/${id}/ativo`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ativo })
+                });
+                if (res.ok) {
+                    ja(ativo ? 'Usuário ativado!' : 'Usuário desativado!', 'success');
+                    carregarUsuariosRoteirizador();
+                }
+            } catch (err) {
+                ja('Erro ao atualizar', 'error');
+            }
+        };
+
+        const resetarSenhaRoteirizador = async (id) => {
+            const novaSenha = prompt('Digite a nova senha (mínimo 6 caracteres):');
+            if (!novaSenha || novaSenha.length < 6) {
+                ja('Senha deve ter no mínimo 6 caracteres', 'error');
+                return;
+            }
+            try {
+                const res = await fetchAuth(`${API_URL}/api/admin/roteirizador/usuarios/${id}/senha`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nova_senha: novaSenha })
+                });
+                if (res.ok) {
+                    ja('Senha alterada com sucesso!', 'success');
+                }
+            } catch (err) {
+                ja('Erro ao resetar senha', 'error');
             }
         };
 
@@ -19396,6 +19467,11 @@ const hideLoadingScreen = () => {
                         onClick: function() { x({...p, configTab: "usuarios"}); },
                         className: "px-4 py-2.5 text-sm font-semibold whitespace-nowrap " + ((!p.configTab || p.configTab === "usuarios") ? "text-gray-700 border-b-2 border-gray-600 bg-gray-50" : "text-gray-500 hover:bg-gray-100")
                     }, "👥 Gerenciar Usuários"),
+                    // Aba Roteirizador - apenas admin_master
+                    ("admin_master" === l.role) && React.createElement("button", {
+                        onClick: function() { x({...p, configTab: "roteirizador", roteirizadorUsuarios: null}); carregarUsuariosRoteirizador(); },
+                        className: "px-4 py-2.5 text-sm font-semibold whitespace-nowrap " + (p.configTab === "roteirizador" ? "text-gray-700 border-b-2 border-gray-600 bg-gray-50" : "text-gray-500 hover:bg-gray-100")
+                    }, "🗺️ Roteirizador"),
                     // Aba Permissões - verifica permissão
                     (function() {
                         if ("admin_master" === l.role) return true;
@@ -19807,6 +19883,179 @@ const hideLoadingScreen = () => {
                                     )
                                 );
                             })
+                        )
+                    )
+                ),
+                // TAB ROTEIRIZADOR - apenas admin_master
+                p.configTab === "roteirizador" && ("admin_master" === l.role) && React.createElement("div", null,
+                    // Criar novo usuário
+                    React.createElement("div", {className: "bg-white rounded-xl shadow-sm border p-6 mb-6"},
+                        React.createElement("h2", {className: "text-lg font-bold mb-4 flex items-center gap-2"},
+                            React.createElement("span", null, "➕"),
+                            "Criar Usuário do Roteirizador"
+                        ),
+                        React.createElement("div", {className: "grid md:grid-cols-2 gap-4 mb-4"},
+                            React.createElement("div", null,
+                                React.createElement("label", {className: "block text-sm font-semibold mb-1 text-gray-700"}, "Nome Completo *"),
+                                React.createElement("input", {
+                                    type: "text",
+                                    value: (p.roteirizadorNovoUsuario && p.roteirizadorNovoUsuario.nome) || "",
+                                    onChange: function(e) { x({...p, roteirizadorNovoUsuario: {...(p.roteirizadorNovoUsuario || {}), nome: e.target.value}}); },
+                                    className: "w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500",
+                                    placeholder: "Ex: João Silva"
+                                })
+                            ),
+                            React.createElement("div", null,
+                                React.createElement("label", {className: "block text-sm font-semibold mb-1 text-gray-700"}, "Email *"),
+                                React.createElement("input", {
+                                    type: "email",
+                                    value: (p.roteirizadorNovoUsuario && p.roteirizadorNovoUsuario.email) || "",
+                                    onChange: function(e) { x({...p, roteirizadorNovoUsuario: {...(p.roteirizadorNovoUsuario || {}), email: e.target.value}}); },
+                                    className: "w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500",
+                                    placeholder: "email@exemplo.com"
+                                })
+                            ),
+                            React.createElement("div", null,
+                                React.createElement("label", {className: "block text-sm font-semibold mb-1 text-gray-700"}, "Senha *"),
+                                React.createElement("input", {
+                                    type: "password",
+                                    value: (p.roteirizadorNovoUsuario && p.roteirizadorNovoUsuario.senha) || "",
+                                    onChange: function(e) { x({...p, roteirizadorNovoUsuario: {...(p.roteirizadorNovoUsuario || {}), senha: e.target.value}}); },
+                                    className: "w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500",
+                                    placeholder: "Mínimo 6 caracteres"
+                                })
+                            ),
+                            React.createElement("div", null,
+                                React.createElement("label", {className: "block text-sm font-semibold mb-1 text-gray-700"}, "Telefone"),
+                                React.createElement("input", {
+                                    type: "text",
+                                    value: (p.roteirizadorNovoUsuario && p.roteirizadorNovoUsuario.telefone) || "",
+                                    onChange: function(e) { x({...p, roteirizadorNovoUsuario: {...(p.roteirizadorNovoUsuario || {}), telefone: e.target.value}}); },
+                                    className: "w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500",
+                                    placeholder: "(62) 99999-9999"
+                                })
+                            ),
+                            React.createElement("div", null,
+                                React.createElement("label", {className: "block text-sm font-semibold mb-1 text-gray-700"}, "Empresa"),
+                                React.createElement("input", {
+                                    type: "text",
+                                    value: (p.roteirizadorNovoUsuario && p.roteirizadorNovoUsuario.empresa) || "",
+                                    onChange: function(e) { x({...p, roteirizadorNovoUsuario: {...(p.roteirizadorNovoUsuario || {}), empresa: e.target.value}}); },
+                                    className: "w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500",
+                                    placeholder: "Nome da empresa"
+                                })
+                            ),
+                            React.createElement("div", null,
+                                React.createElement("label", {className: "block text-sm font-semibold mb-1 text-gray-700"}, "Observações"),
+                                React.createElement("input", {
+                                    type: "text",
+                                    value: (p.roteirizadorNovoUsuario && p.roteirizadorNovoUsuario.observacoes) || "",
+                                    onChange: function(e) { x({...p, roteirizadorNovoUsuario: {...(p.roteirizadorNovoUsuario || {}), observacoes: e.target.value}}); },
+                                    className: "w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500",
+                                    placeholder: "Notas internas"
+                                })
+                            )
+                        ),
+                        React.createElement("button", {
+                            onClick: function() {
+                                var dados = p.roteirizadorNovoUsuario || {};
+                                if (!dados.nome || !dados.email || !dados.senha) {
+                                    ja('Preencha nome, email e senha', 'error');
+                                    return;
+                                }
+                                if (dados.senha.length < 6) {
+                                    ja('Senha deve ter no mínimo 6 caracteres', 'error');
+                                    return;
+                                }
+                                criarUsuarioRoteirizador(dados);
+                            },
+                            className: "px-6 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
+                        }, "➕ Criar Usuário")
+                    ),
+                    // URL do roteirizador
+                    React.createElement("div", {className: "bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-200 p-4 mb-6"},
+                        React.createElement("div", {className: "flex items-center justify-between"},
+                            React.createElement("div", null,
+                                React.createElement("div", {className: "text-sm font-bold text-purple-700 mb-1"}, "🔗 Link do Roteirizador para Clientes"),
+                                React.createElement("div", {className: "text-xs text-purple-600"}, "Compartilhe este link com seus clientes:")
+                            ),
+                            React.createElement("div", {className: "flex items-center gap-2"},
+                                React.createElement("code", {className: "px-3 py-1.5 bg-white rounded-lg text-sm font-mono text-purple-800 border"}, "roteirizador.tutts.com.br"),
+                                React.createElement("button", {
+                                    onClick: function() {
+                                        navigator.clipboard.writeText('https://roteirizador.tutts.com.br');
+                                        ja('Link copiado!', 'success');
+                                    },
+                                    className: "px-3 py-1.5 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700"
+                                }, "📋 Copiar")
+                            )
+                        )
+                    ),
+                    // Lista de usuários
+                    React.createElement("div", {className: "bg-white rounded-xl shadow-sm border p-6"},
+                        React.createElement("div", {className: "flex items-center justify-between mb-4"},
+                            React.createElement("h2", {className: "text-lg font-bold flex items-center gap-2"},
+                                React.createElement("span", null, "👥"),
+                                "Usuários do Roteirizador"
+                            ),
+                            React.createElement("button", {
+                                onClick: carregarUsuariosRoteirizador,
+                                className: "px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm"
+                            }, "🔄 Atualizar")
+                        ),
+                        !p.roteirizadorUsuarios ? React.createElement("div", {className: "text-center py-8 text-gray-500"}, "⏳ Carregando...") :
+                        p.roteirizadorUsuarios.length === 0 ? React.createElement("div", {className: "text-center py-8 text-gray-500"}, "Nenhum usuário cadastrado") :
+                        React.createElement("div", {className: "overflow-x-auto"},
+                            React.createElement("table", {className: "w-full"},
+                                React.createElement("thead", null,
+                                    React.createElement("tr", {className: "bg-gray-50 text-left"},
+                                        React.createElement("th", {className: "px-4 py-3 text-sm font-semibold text-gray-600"}, "Nome"),
+                                        React.createElement("th", {className: "px-4 py-3 text-sm font-semibold text-gray-600"}, "Email"),
+                                        React.createElement("th", {className: "px-4 py-3 text-sm font-semibold text-gray-600"}, "Empresa"),
+                                        React.createElement("th", {className: "px-4 py-3 text-sm font-semibold text-gray-600"}, "Rotas"),
+                                        React.createElement("th", {className: "px-4 py-3 text-sm font-semibold text-gray-600"}, "Último Acesso"),
+                                        React.createElement("th", {className: "px-4 py-3 text-sm font-semibold text-gray-600"}, "Status"),
+                                        React.createElement("th", {className: "px-4 py-3 text-sm font-semibold text-gray-600"}, "Ações")
+                                    )
+                                ),
+                                React.createElement("tbody", null,
+                                    p.roteirizadorUsuarios.map(function(user) {
+                                        return React.createElement("tr", {key: user.id, className: "border-t hover:bg-gray-50"},
+                                            React.createElement("td", {className: "px-4 py-3"},
+                                                React.createElement("div", {className: "font-medium text-gray-800"}, user.nome),
+                                                user.telefone && React.createElement("div", {className: "text-xs text-gray-500"}, user.telefone)
+                                            ),
+                                            React.createElement("td", {className: "px-4 py-3 text-sm text-gray-600"}, user.email),
+                                            React.createElement("td", {className: "px-4 py-3 text-sm text-gray-600"}, user.empresa || "-"),
+                                            React.createElement("td", {className: "px-4 py-3"},
+                                                React.createElement("span", {className: "px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium"}, user.total_rotas || 0)
+                                            ),
+                                            React.createElement("td", {className: "px-4 py-3 text-xs text-gray-500"},
+                                                user.ultimo_acesso ? new Date(user.ultimo_acesso).toLocaleString('pt-BR') : "Nunca"
+                                            ),
+                                            React.createElement("td", {className: "px-4 py-3"},
+                                                React.createElement("span", {
+                                                    className: "px-2 py-1 rounded-full text-xs font-medium " + (user.ativo ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700")
+                                                }, user.ativo ? "✅ Ativo" : "❌ Inativo")
+                                            ),
+                                            React.createElement("td", {className: "px-4 py-3"},
+                                                React.createElement("div", {className: "flex gap-1"},
+                                                    React.createElement("button", {
+                                                        onClick: function() { alternarAtivoRoteirizador(user.id, !user.ativo); },
+                                                        className: "px-2 py-1 text-xs rounded " + (user.ativo ? "bg-red-100 text-red-600 hover:bg-red-200" : "bg-green-100 text-green-600 hover:bg-green-200"),
+                                                        title: user.ativo ? "Desativar" : "Ativar"
+                                                    }, user.ativo ? "🔒" : "🔓"),
+                                                    React.createElement("button", {
+                                                        onClick: function() { resetarSenhaRoteirizador(user.id); },
+                                                        className: "px-2 py-1 text-xs rounded bg-yellow-100 text-yellow-600 hover:bg-yellow-200",
+                                                        title: "Resetar senha"
+                                                    }, "🔑")
+                                                )
+                                            )
+                                        );
+                                    })
+                                )
+                            )
                         )
                     )
                 ),
