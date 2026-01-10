@@ -922,10 +922,272 @@ const hideLoadingScreen = () => {
         const [routeLayer, setRouteLayer] = useState(null);
         const [pontoPartidaPadrao, setPontoPartidaPadrao] = useState(null);
         const [mostrarConfigPartida, setMostrarConfigPartida] = useState(false);
+        
+        // Estados para múltiplas rotas
+        const [modoMultiplasRotas, setModoMultiplasRotas] = useState(false);
+        const [paradasPorRota, setParadasPorRota] = useState(3);
+        const [rotasGeradas, setRotasGeradas] = useState([]);
+        const [loadingMultiplas, setLoadingMultiplas] = useState(false);
+        
+        // Cores para as rotas
+        const coresRotas = ['#e11d48', '#2563eb', '#16a34a', '#d97706', '#7c3aed', '#0891b2', '#be185d', '#65a30d', '#dc2626', '#4f46e5'];
 
         const limparPonto = function(end) {
             if (!end) return '';
             return end.replace(/^Ponto\s*\d+\s*[-–]\s*/i, '').trim();
+        };
+        
+        // Função para calcular distância entre dois pontos (Haversine)
+        const calcularDistancia = function(lat1, lon1, lat2, lon2) {
+            var R = 6371; // km
+            var dLat = (lat2 - lat1) * Math.PI / 180;
+            var dLon = (lon2 - lon1) * Math.PI / 180;
+            var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                    Math.sin(dLon/2) * Math.sin(dLon/2);
+            var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        };
+        
+        // Função para agrupar endereços por proximidade (K-means simplificado)
+        const agruparPorProximidade = function(pontos, numGrupos) {
+            if (pontos.length <= numGrupos) {
+                return pontos.map(function(p) { return [p]; });
+            }
+            
+            // Inicializar centroides escolhendo pontos mais distantes entre si
+            var centroides = [];
+            var pontosRestantes = pontos.slice();
+            
+            // Primeiro centroide: ponto mais ao norte
+            pontosRestantes.sort(function(a, b) { return b.latitude - a.latitude; });
+            centroides.push({ lat: pontosRestantes[0].latitude, lng: pontosRestantes[0].longitude });
+            
+            // Escolher outros centroides maximizando distância
+            while (centroides.length < numGrupos && pontosRestantes.length > 0) {
+                var maxMinDist = -1;
+                var melhorPonto = null;
+                
+                for (var i = 0; i < pontosRestantes.length; i++) {
+                    var minDist = Infinity;
+                    for (var j = 0; j < centroides.length; j++) {
+                        var d = calcularDistancia(pontosRestantes[i].latitude, pontosRestantes[i].longitude, centroides[j].lat, centroides[j].lng);
+                        if (d < minDist) minDist = d;
+                    }
+                    if (minDist > maxMinDist) {
+                        maxMinDist = minDist;
+                        melhorPonto = pontosRestantes[i];
+                    }
+                }
+                
+                if (melhorPonto) {
+                    centroides.push({ lat: melhorPonto.latitude, lng: melhorPonto.longitude });
+                }
+            }
+            
+            // Atribuir pontos aos clusters (3 iterações de K-means)
+            var grupos = [];
+            for (var iter = 0; iter < 3; iter++) {
+                grupos = [];
+                for (var k = 0; k < numGrupos; k++) grupos.push([]);
+                
+                // Atribuir cada ponto ao centroide mais próximo
+                for (var i = 0; i < pontos.length; i++) {
+                    var minDist = Infinity;
+                    var melhorGrupo = 0;
+                    
+                    for (var j = 0; j < centroides.length; j++) {
+                        var d = calcularDistancia(pontos[i].latitude, pontos[i].longitude, centroides[j].lat, centroides[j].lng);
+                        if (d < minDist) {
+                            minDist = d;
+                            melhorGrupo = j;
+                        }
+                    }
+                    
+                    grupos[melhorGrupo].push(pontos[i]);
+                }
+                
+                // Recalcular centroides
+                for (var k = 0; k < numGrupos; k++) {
+                    if (grupos[k].length > 0) {
+                        var sumLat = 0, sumLng = 0;
+                        for (var i = 0; i < grupos[k].length; i++) {
+                            sumLat += grupos[k][i].latitude;
+                            sumLng += grupos[k][i].longitude;
+                        }
+                        centroides[k] = { lat: sumLat / grupos[k].length, lng: sumLng / grupos[k].length };
+                    }
+                }
+            }
+            
+            // Remover grupos vazios
+            return grupos.filter(function(g) { return g.length > 0; });
+        };
+        
+        // Função para gerar múltiplas rotas
+        const gerarMultiplasRotas = async function() {
+            var pontosEntrega = enderecosSelecionados.slice(1); // Excluir ponto de partida
+            var pontoPartida = enderecosSelecionados[0];
+            
+            if (pontosEntrega.length < 2) {
+                showToast && showToast('Adicione mais endereços', 'error');
+                return;
+            }
+            
+            setLoadingMultiplas(true);
+            setRotasGeradas([]);
+            setResultado(null);
+            
+            try {
+                // Calcular número de grupos
+                var numGrupos = Math.ceil(pontosEntrega.length / paradasPorRota);
+                console.log('📊 Gerando', numGrupos, 'rotas com ~' + paradasPorRota + ' paradas cada');
+                
+                // Agrupar por proximidade
+                var grupos = agruparPorProximidade(pontosEntrega, numGrupos);
+                console.log('📍 Grupos formados:', grupos.map(function(g) { return g.length; }));
+                
+                var rotas = [];
+                
+                for (var i = 0; i < grupos.length; i++) {
+                    var grupo = grupos[i];
+                    if (grupo.length === 0) continue;
+                    
+                    showToast && showToast('Otimizando rota ' + (i + 1) + '/' + grupos.length + '...', 'info');
+                    
+                    // Montar pontos da rota (partida + grupo)
+                    var pontosRota = [pontoPartida].concat(grupo);
+                    
+                    try {
+                        // Otimizar rota
+                        var otimizacao = await otimizarRota(pontosRota);
+                        var ordem = [pontosRota[0]];
+                        
+                        if (otimizacao.routes && otimizacao.routes[0]) {
+                            otimizacao.routes[0].steps.filter(function(s) { return s.type === 'job'; }).forEach(function(s) { 
+                                ordem.push(pontosRota[s.job]); 
+                            });
+                        }
+                        
+                        if (retornarInicio) {
+                            ordem.push(Object.assign({}, pontosRota[0], { isRetorno: true }));
+                        }
+                        
+                        // Obter geometria
+                        var geo = await obterGeometria(ordem);
+                        var km = 0, min = 0;
+                        
+                        if (geo && geo.features && geo.features[0] && geo.features[0].properties.segments) {
+                            geo.features[0].properties.segments.forEach(function(s) { 
+                                km += s.distance || 0; 
+                                min += s.duration || 0; 
+                            });
+                        }
+                        
+                        rotas.push({
+                            id: i + 1,
+                            cor: coresRotas[i % coresRotas.length],
+                            pontos: ordem,
+                            distanciaKm: (km / 1000).toFixed(1),
+                            tempoMin: Math.round(min / 60),
+                            geometria: geo,
+                            numParadas: grupo.length
+                        });
+                        
+                    } catch (err) {
+                        console.error('Erro na rota', i + 1, ':', err);
+                        // Adicionar rota sem otimização
+                        rotas.push({
+                            id: i + 1,
+                            cor: coresRotas[i % coresRotas.length],
+                            pontos: [pontoPartida].concat(grupo),
+                            distanciaKm: '?',
+                            tempoMin: '?',
+                            geometria: null,
+                            numParadas: grupo.length,
+                            erro: true
+                        });
+                    }
+                    
+                    // Delay para não sobrecarregar API
+                    await new Promise(function(r) { setTimeout(r, 500); });
+                }
+                
+                setRotasGeradas(rotas);
+                atualizarMapaMultiplasRotas(rotas);
+                showToast && showToast(rotas.length + ' rotas geradas!', 'success');
+                
+            } catch (err) {
+                console.error('Erro ao gerar rotas:', err);
+                showToast && showToast('Erro: ' + err.message, 'error');
+            }
+            
+            setLoadingMultiplas(false);
+        };
+        
+        // Função para atualizar mapa com múltiplas rotas
+        const atualizarMapaMultiplasRotas = function(rotas) {
+            if (!mapaRoteirizador || !markersLayer) return;
+            
+            markersLayer.clearLayers();
+            if (routeLayer) { 
+                mapaRoteirizador.removeLayer(routeLayer); 
+                setRouteLayer(null); 
+            }
+            
+            var layerGroup = L.layerGroup();
+            var todosPontos = [];
+            
+            rotas.forEach(function(rota, rotaIdx) {
+                var cor = rota.cor;
+                
+                // Adicionar marcadores
+                rota.pontos.filter(function(p) { return !p.isRetorno; }).forEach(function(p, idx) {
+                    todosPontos.push([p.latitude, p.longitude]);
+                    
+                    var isPartida = idx === 0;
+                    var icon = L.divIcon({ 
+                        className: '', 
+                        html: '<div style="background:' + (isPartida ? '#10b981' : cor) + ';color:#fff;width:' + (isPartida ? '32px' : '26px') + ';height:' + (isPartida ? '32px' : '26px') + ';border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:' + (isPartida ? '14px' : '11px') + ';border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,0.3)">' + (isPartida ? '🚩' : (rotaIdx + 1) + '.' + idx) + '</div>', 
+                        iconSize: [isPartida ? 32 : 26, isPartida ? 32 : 26], 
+                        iconAnchor: [isPartida ? 16 : 13, isPartida ? 16 : 13] 
+                    });
+                    
+                    L.marker([p.latitude, p.longitude], { icon: icon })
+                        .addTo(layerGroup)
+                        .bindPopup('<b style="color:' + cor + '">Rota ' + (rotaIdx + 1) + ' - ' + (isPartida ? 'PARTIDA' : 'Parada ' + idx) + '</b><br>' + (p.endereco || '').substring(0, 50));
+                });
+                
+                // Adicionar linha da rota
+                if (rota.geometria && rota.geometria.features) {
+                    L.geoJSON(rota.geometria, { 
+                        style: { color: cor, weight: 4, opacity: 0.8 } 
+                    }).addTo(layerGroup);
+                }
+            });
+            
+            layerGroup.addTo(mapaRoteirizador);
+            setRouteLayer(layerGroup);
+            
+            if (todosPontos.length > 0) {
+                mapaRoteirizador.fitBounds(L.latLngBounds(todosPontos), { padding: [50, 50] });
+            }
+        };
+        
+        // Funções para abrir Waze/Maps de uma rota específica
+        const abrirWazeRota = function(rota) {
+            var p = rota.pontos.filter(function(x) { return !x.isRetorno; });
+            if (p.length > 1) {
+                // Waze só aceita destino final, então abrimos para o último ponto
+                window.open('https://waze.com/ul?ll=' + p[p.length-1].latitude + ',' + p[p.length-1].longitude + '&navigate=yes', '_blank');
+            }
+        };
+        
+        const abrirMapsRota = function(rota) {
+            var p = rota.pontos.filter(function(x) { return !x.isRetorno; });
+            if (p.length > 0) {
+                window.open('https://www.google.com/maps/dir/' + p.map(function(x) { return x.latitude + ',' + x.longitude; }).join('/'), '_blank');
+            }
         };
 
         useEffect(() => {
@@ -1247,17 +1509,119 @@ const hideLoadingScreen = () => {
                             React.createElement('input', { type: 'checkbox', checked: retornarInicio, onChange: function(e) { setRetornarInicio(e.target.checked); }, className: 'w-4 h-4' }),
                             React.createElement('span', null, '↩️ Retornar ao início')
                         ),
-                        React.createElement('button', { onClick: roteirizar, disabled: loading || enderecosSelecionados.length < 2, className: 'w-full py-2 bg-purple-600 text-white rounded-lg font-bold text-sm hover:bg-purple-700 disabled:opacity-50' }, loading ? '⏳ Calculando...' : '🚀 Otimizar Rota')
+                        
+                        // Toggle modo múltiplas rotas
+                        React.createElement('label', { className: 'flex items-center gap-2 mb-3 cursor-pointer text-sm' },
+                            React.createElement('input', { 
+                                type: 'checkbox', 
+                                checked: modoMultiplasRotas, 
+                                onChange: function(e) { 
+                                    setModoMultiplasRotas(e.target.checked); 
+                                    setRotasGeradas([]);
+                                    setResultado(null);
+                                }, 
+                                className: 'w-4 h-4' 
+                            }),
+                            React.createElement('span', null, '🚚 Dividir em múltiplas rotas')
+                        ),
+                        
+                        // Seletor de paradas por rota (só aparece se modo múltiplas ativo)
+                        modoMultiplasRotas && React.createElement('div', { className: 'mb-3 p-2 bg-purple-50 rounded-lg' },
+                            React.createElement('div', { className: 'text-xs font-bold text-purple-700 mb-2' }, '📦 Paradas por rota:'),
+                            React.createElement('div', { className: 'flex gap-1 flex-wrap' },
+                                [2, 3, 4, 5, 6, 8, 10].map(function(num) {
+                                    return React.createElement('button', { 
+                                        key: num,
+                                        onClick: function() { setParadasPorRota(num); },
+                                        className: 'px-3 py-1 rounded text-xs font-medium transition-all ' + 
+                                            (paradasPorRota === num 
+                                                ? 'bg-purple-600 text-white' 
+                                                : 'bg-white text-purple-600 border border-purple-300 hover:bg-purple-100')
+                                    }, num);
+                                })
+                            ),
+                            enderecosSelecionados.length > 1 && React.createElement('div', { className: 'text-xs text-purple-600 mt-2' },
+                                '📊 ' + Math.ceil((enderecosSelecionados.length - 1) / paradasPorRota) + ' rota(s) com ~' + paradasPorRota + ' paradas'
+                            )
+                        ),
+                        
+                        // Botão de ação
+                        modoMultiplasRotas 
+                            ? React.createElement('button', { 
+                                onClick: gerarMultiplasRotas, 
+                                disabled: loadingMultiplas || enderecosSelecionados.length < 3, 
+                                className: 'w-full py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-bold text-sm hover:from-purple-700 hover:to-pink-700 disabled:opacity-50' 
+                            }, loadingMultiplas ? '⏳ Gerando rotas...' : '🚚 Gerar ' + Math.ceil((enderecosSelecionados.length - 1) / paradasPorRota) + ' Rotas')
+                            : React.createElement('button', { 
+                                onClick: roteirizar, 
+                                disabled: loading || enderecosSelecionados.length < 2, 
+                                className: 'w-full py-2 bg-purple-600 text-white rounded-lg font-bold text-sm hover:bg-purple-700 disabled:opacity-50' 
+                            }, loading ? '⏳ Calculando...' : '🚀 Otimizar Rota')
                     )
                 ),
                 React.createElement('div', { className: 'flex-1 flex flex-col' },
                     React.createElement('div', { id: 'mapa-roteirizador', className: 'flex-1' }),
-                    resultado && React.createElement('div', { className: 'bg-white border-t p-3' },
+                    
+                    // Resultado rota única
+                    resultado && !modoMultiplasRotas && React.createElement('div', { className: 'bg-white border-t p-3' },
                         React.createElement('div', { className: 'text-xs font-bold text-gray-600 mb-2' }, '✅ Ordem otimizada:'),
                         React.createElement('div', { className: 'flex flex-wrap gap-1' },
                             resultado.ordemOtimizada.map(function(p, idx) {
                                 return React.createElement('span', { key: idx, className: 'px-2 py-1 rounded text-xs font-medium ' + (idx === 0 || p.isRetorno ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700') },
                                     (idx === 0 ? '🚩' : p.isRetorno ? '↩️' : idx) + ' ' + (p.endereco || '').substring(0, 20)
+                                );
+                            })
+                        )
+                    ),
+                    
+                    // Resultado múltiplas rotas
+                    rotasGeradas.length > 0 && React.createElement('div', { className: 'bg-white border-t p-3 max-h-[300px] overflow-y-auto' },
+                        React.createElement('div', { className: 'flex items-center justify-between mb-3' },
+                            React.createElement('span', { className: 'text-sm font-bold text-gray-700' }, '🚚 ' + rotasGeradas.length + ' Rotas Geradas'),
+                            React.createElement('div', { className: 'text-xs text-gray-500' },
+                                'Total: ' + rotasGeradas.reduce(function(acc, r) { return acc + parseFloat(r.distanciaKm || 0); }, 0).toFixed(1) + ' km'
+                            )
+                        ),
+                        React.createElement('div', { className: 'space-y-2' },
+                            rotasGeradas.map(function(rota) {
+                                return React.createElement('div', { 
+                                    key: rota.id, 
+                                    className: 'p-2 rounded-lg border-2',
+                                    style: { borderColor: rota.cor, background: rota.cor + '10' }
+                                },
+                                    React.createElement('div', { className: 'flex items-center justify-between mb-1' },
+                                        React.createElement('div', { className: 'flex items-center gap-2' },
+                                            React.createElement('span', { 
+                                                className: 'w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold',
+                                                style: { background: rota.cor }
+                                            }, rota.id),
+                                            React.createElement('span', { className: 'text-sm font-bold' }, 'Rota ' + rota.id),
+                                            React.createElement('span', { className: 'text-xs text-gray-500' }, '(' + rota.numParadas + ' paradas)')
+                                        ),
+                                        React.createElement('div', { className: 'flex items-center gap-2' },
+                                            React.createElement('span', { className: 'text-xs font-medium text-green-600' }, rota.distanciaKm + ' km'),
+                                            React.createElement('span', { className: 'text-xs font-medium text-blue-600' }, rota.tempoMin + ' min')
+                                        )
+                                    ),
+                                    React.createElement('div', { className: 'flex flex-wrap gap-1 mb-2' },
+                                        rota.pontos.filter(function(p) { return !p.isRetorno; }).slice(1).map(function(p, idx) {
+                                            return React.createElement('span', { 
+                                                key: idx, 
+                                                className: 'px-1.5 py-0.5 rounded text-xs',
+                                                style: { background: rota.cor + '20', color: rota.cor }
+                                            }, (idx + 1) + '. ' + (p.endereco || '').substring(0, 15) + '...');
+                                        })
+                                    ),
+                                    React.createElement('div', { className: 'flex gap-2' },
+                                        React.createElement('button', { 
+                                            onClick: function() { abrirWazeRota(rota); },
+                                            className: 'flex-1 px-2 py-1 bg-cyan-500 text-white rounded text-xs font-medium hover:bg-cyan-600'
+                                        }, '🗺️ Waze'),
+                                        React.createElement('button', { 
+                                            onClick: function() { abrirMapsRota(rota); },
+                                            className: 'flex-1 px-2 py-1 bg-blue-500 text-white rounded text-xs font-medium hover:bg-blue-600'
+                                        }, '📍 Maps')
+                                    )
                                 );
                             })
                         )
