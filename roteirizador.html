@@ -16,6 +16,34 @@
         .glass { background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
         .fade-in { animation: fadeIn 0.3s ease-out; }
+        
+        /* Garante que o mapa carregue completamente */
+        #mapa { 
+            z-index: 1; 
+        }
+        .leaflet-container {
+            width: 100% !important;
+            height: 100% !important;
+            background: #e5e7eb;
+        }
+        
+        /* Ajustes mobile */
+        @media (max-width: 768px) {
+            .leaflet-control-zoom {
+                margin-top: 10px !important;
+                margin-left: 10px !important;
+            }
+            #mapa {
+                min-height: calc(100vh - 200px) !important;
+                height: calc(100vh - 200px) !important;
+            }
+        }
+        
+        /* Scrollbar customizada */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb { background: #c4b5fd; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a78bfa; }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
@@ -167,6 +195,7 @@
             const [favoritos, setFavoritos] = useState([]);
             const [partidaPadrao, setPartidaPadrao] = useState(null);
             const [mostrarConfigPartida, setMostrarConfigPartida] = useState(false);
+            const [abaMobile, setAbaMobile] = useState('lista'); // 'lista' ou 'mapa'
             
             const coresRotas = ['#e11d48', '#2563eb', '#16a34a', '#d97706', '#7c3aed', '#0891b2', '#be185d', '#65a30d'];
             
@@ -210,14 +239,37 @@
                 if (typeof L !== 'undefined' && !mapa) {
                     const container = document.getElementById('mapa');
                     if (container) {
-                        const mapInstance = L.map('mapa').setView([-16.6869, -49.2648], 12);
+                        const mapInstance = L.map('mapa', {
+                            zoomControl: true,
+                            scrollWheelZoom: true
+                        }).setView([-16.6869, -49.2648], 12);
+                        
                         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
-                            attribution: '© OpenStreetMap' 
+                            attribution: '© OpenStreetMap',
+                            maxZoom: 19,
+                            updateWhenIdle: false,
+                            updateWhenZooming: false,
+                            keepBuffer: 4
                         }).addTo(mapInstance);
+                        
                         setMapa(mapInstance);
                         setMarkersLayer(L.layerGroup().addTo(mapInstance));
+                        
+                        // Forçar renderização completa após carregar
+                        setTimeout(() => {
+                            mapInstance.invalidateSize();
+                        }, 100);
+                        
+                        // Também quando a janela redimensionar
+                        window.addEventListener('resize', () => {
+                            mapInstance.invalidateSize();
+                        });
                     }
                 }
+                
+                return () => {
+                    window.removeEventListener('resize', () => {});
+                };
             }, []);
             
             // Carregar histórico e favoritos
@@ -722,36 +774,55 @@
             return (
                 <div className="min-h-screen bg-gray-100">
                     {/* Header */}
-                    <header className="bg-purple-900 text-white px-4 py-3 shadow-lg">
+                    <header className="bg-purple-900 text-white px-3 md:px-4 py-2 md:py-3 shadow-lg">
                         <div className="max-w-7xl mx-auto flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <span className="text-2xl">🗺️</span>
+                            <div className="flex items-center gap-2 md:gap-3">
+                                <span className="text-xl md:text-2xl">🗺️</span>
                                 <div>
-                                    <h1 className="font-bold text-lg">Tutts Roteirizador</h1>
-                                    <p className="text-purple-300 text-xs">Olá, {usuario.nome}</p>
+                                    <h1 className="font-bold text-sm md:text-lg">Tutts Roteirizador</h1>
+                                    <p className="text-purple-300 text-xs hidden md:block">Olá, {usuario.nome}</p>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2 md:gap-3">
                                 <button 
                                     onClick={() => setMostrarHistorico(!mostrarHistorico)}
-                                    className="px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded text-sm"
+                                    className="px-2 md:px-3 py-1 md:py-1.5 bg-white/10 hover:bg-white/20 rounded text-xs md:text-sm"
                                 >
-                                    📋 Histórico
+                                    📋 <span className="hidden md:inline">Histórico</span>
                                 </button>
                                 <button 
                                     onClick={onLogout}
-                                    className="px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 rounded text-sm"
+                                    className="px-2 md:px-3 py-1 md:py-1.5 bg-red-500/20 hover:bg-red-500/30 rounded text-xs md:text-sm"
                                 >
-                                    🚪 Sair
+                                    🚪 <span className="hidden md:inline">Sair</span>
                                 </button>
                             </div>
                         </div>
                     </header>
                     
-                    <div className="max-w-7xl mx-auto p-4">
-                        <div className="flex gap-4">
+                    {/* Abas Mobile */}
+                    <div className="md:hidden flex border-b bg-white">
+                        <button
+                            onClick={() => setAbaMobile('lista')}
+                            className={`flex-1 py-3 text-sm font-medium ${abaMobile === 'lista' ? 'text-purple-600 border-b-2 border-purple-600 bg-purple-50' : 'text-gray-500'}`}
+                        >
+                            📝 Endereços ({enderecos.length})
+                        </button>
+                        <button
+                            onClick={() => {
+                                setAbaMobile('mapa');
+                                setTimeout(() => mapa?.invalidateSize(), 100);
+                            }}
+                            className={`flex-1 py-3 text-sm font-medium ${abaMobile === 'mapa' ? 'text-purple-600 border-b-2 border-purple-600 bg-purple-50' : 'text-gray-500'}`}
+                        >
+                            🗺️ Mapa
+                        </button>
+                    </div>
+                    
+                    <div className="max-w-7xl mx-auto p-2 md:p-4">
+                        <div className="flex flex-col md:flex-row gap-4">
                             {/* Painel lateral */}
-                            <div className="w-96 bg-white rounded-xl shadow-lg overflow-hidden flex flex-col" style={{ height: 'calc(100vh - 120px)' }}>
+                            <div className={`${abaMobile === 'lista' ? 'block' : 'hidden'} md:block w-full md:w-96 bg-white rounded-xl shadow-lg overflow-hidden flex flex-col`} style={{ height: 'calc(100vh - 160px)', maxHeight: 'calc(100vh - 160px)' }}>
                                 {/* Busca */}
                                 <div className="p-4 border-b bg-purple-50">
                                     <div className="flex gap-2">
@@ -918,8 +989,8 @@
                             </div>
                             
                             {/* Mapa e resultados */}
-                            <div className="flex-1 flex flex-col gap-4">
-                                <div id="mapa" className="flex-1 rounded-xl shadow-lg" style={{ minHeight: '400px' }}></div>
+                            <div className={`${abaMobile === 'mapa' ? 'block' : 'hidden'} md:block flex-1 flex flex-col gap-2 md:gap-4`}>
+                                <div id="mapa" className="flex-1 rounded-xl shadow-lg" style={{ minHeight: '300px', height: 'calc(100vh - 280px)' }}></div>
                                 
                                 {/* Resultado rota única */}
                                 {resultado && !modoMultiplas && (
@@ -1050,9 +1121,22 @@
                         </div>
                     </div>
                     
+                    {/* Botão flutuante mobile para ver mapa quando tiver rotas */}
+                    {(resultado || rotasGeradas.length > 0) && (
+                        <button
+                            onClick={() => {
+                                setAbaMobile(abaMobile === 'lista' ? 'mapa' : 'lista');
+                                setTimeout(() => mapa?.invalidateSize(), 100);
+                            }}
+                            className="md:hidden fixed bottom-4 right-4 w-14 h-14 bg-purple-600 text-white rounded-full shadow-lg flex items-center justify-center text-2xl z-40 hover:bg-purple-700 active:scale-95 transition-transform"
+                        >
+                            {abaMobile === 'lista' ? '🗺️' : '📝'}
+                        </button>
+                    )}
+                    
                     {/* Modal Histórico */}
                     {mostrarHistorico && (
-                        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setMostrarHistorico(false)}>
+                        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setMostrarHistorico(false)}>
                             <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden" onClick={e => e.stopPropagation()}>
                                 <div className="bg-purple-900 text-white px-4 py-3 flex items-center justify-between">
                                     <span className="font-bold">📋 Histórico de Rotas</span>
