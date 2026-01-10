@@ -866,6 +866,48 @@ const hideLoadingScreen = () => {
         }, "Ao enviar, você concorda em ser contatado sobre oportunidades de trabalho."))))
     },
 
+    // ==================== FUNÇÕES AUXILIARES DE GEOCODIFICAÇÃO ====================
+    // Extrair CEP de um texto
+    extrairCEP = function(texto) {
+        if (!texto) return null;
+        var match = texto.match(/(?:CEP[:\s]*)?(\d{5})-?(\d{3})/i);
+        if (match) return match[1] + match[2];
+        return null;
+    },
+    
+    // Extrair número do endereço
+    extrairNumero = function(endereco) {
+        if (!endereco) return null;
+        var patterns = [
+            /,\s*n[º°]?\s*(\d+)/i,
+            /,\s*(\d+)(?:\s|$|-|,)/,
+            /\s+n[º°]?\s*(\d+)/i,
+            /\s+(\d{2,5})(?:\s|$|-|,)/
+        ];
+        for (var i = 0; i < patterns.length; i++) {
+            var match = endereco.match(patterns[i]);
+            if (match) return match[1];
+        }
+        return null;
+    },
+    
+    // Limpar rua (remover número para busca)
+    limparRuaGeo = function(endereco) {
+        if (!endereco) return '';
+        return endereco
+            .replace(/,\s*n[º°]?\s*\d+/gi, '')
+            .replace(/,\s*\d+(?:\s|$|-|,)/g, ' ')
+            .replace(/\s+n[º°]?\s*\d+/gi, '')
+            .replace(/\s+\d{2,5}(?:\s|$|-|,)/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+    },
+    
+    // Normalizar texto (remover acentos)
+    normalizarTexto = function(texto) {
+        return (texto || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    },
+
     // ==================== COMPONENTE ROTEIRIZADOR ====================
     RoteirizadorModule = ({ enderecosBi, onClose, showToast }) => {
         const [enderecosSelecionados, setEnderecosSelecionados] = useState([]);
@@ -1017,23 +1059,48 @@ const hideLoadingScreen = () => {
                     }; 
                 });
                 
-                // CEP
+                // CEP - Busca melhorada com BrasilAPI (inclui coordenadas!)
                 var resultadosCEP = [];
                 var cepMatch = termoBusca.match(/(\d{5})-?(\d{3})/);
                 if (cepMatch) {
+                    var cepLimpo = cepMatch[1] + cepMatch[2];
                     try {
-                        var resp = await fetch('https://viacep.com.br/ws/' + cepMatch[1] + cepMatch[2] + '/json/');
-                        var data = await resp.json();
-                        if (!data.erro) resultadosCEP.push({ 
-                            endereco: data.logradouro + ', ' + data.bairro + ', ' + data.localidade + ' - ' + data.uf, 
-                            bairro: data.bairro, 
-                            cidade: data.localidade, 
-                            estado: data.uf, 
-                            cep: data.cep,
-                            fonte: 'cep',
-                            precisaGeo: true 
-                        });
-                    } catch(e) {}
+                        // Tentar BrasilAPI primeiro (tem coordenadas!)
+                        var resp = await fetch('https://brasilapi.com.br/api/cep/v2/' + cepLimpo);
+                        if (resp.ok) {
+                            var data = await resp.json();
+                            var lat = data.location && data.location.coordinates && data.location.coordinates.latitude ? parseFloat(data.location.coordinates.latitude) : null;
+                            var lng = data.location && data.location.coordinates && data.location.coordinates.longitude ? parseFloat(data.location.coordinates.longitude) : null;
+                            resultadosCEP.push({ 
+                                endereco: (data.street || '') + ', ' + (data.neighborhood || '') + ', ' + data.city + ' - ' + data.state,
+                                bairro: data.neighborhood, 
+                                cidade: data.city, 
+                                estado: data.state, 
+                                cep: cepLimpo,
+                                latitude: lat,
+                                longitude: lng,
+                                fonte: lat ? 'brasilapi-cep' : 'brasilapi-cep-sem-coord',
+                                precisaGeo: !lat
+                            });
+                        } else {
+                            throw new Error('BrasilAPI falhou');
+                        }
+                    } catch(e) {
+                        // Fallback para ViaCEP
+                        try {
+                            var resp2 = await fetch('https://viacep.com.br/ws/' + cepLimpo + '/json/');
+                            var data2 = await resp2.json();
+                            if (!data2.erro) resultadosCEP.push({ 
+                                endereco: data2.logradouro + ', ' + data2.bairro + ', ' + data2.localidade + ' - ' + data2.uf, 
+                                bairro: data2.bairro, 
+                                cidade: data2.localidade, 
+                                estado: data2.uf, 
+                                cep: data2.cep,
+                                fonte: 'viacep',
+                                precisaGeo: true 
+                            });
+                        } catch(e2) {}
+                    }
                 }
                 setSugestoes([].concat(resultadosBI, resultadosCEP));
                 setBuscando(false);
@@ -1042,41 +1109,196 @@ const hideLoadingScreen = () => {
             return function() { clearTimeout(timer); };
         }, [termoBusca, enderecosBI]);
 
+        // ==================== GEOCODIFICAÇÃO EM CASCATA ====================
+        // Ordem: CEP (BrasilAPI) → Nominatim → OpenRouteService → Photon → Centro da cidade
         const geocodificarPreciso = async function(sug) {
-            if (sug.latitude && sug.longitude) return sug;
+            // Se já tem coordenadas válidas, retorna direto
+            if (sug.latitude && sug.longitude && 
+                Math.abs(sug.latitude) > 0.1 && Math.abs(sug.longitude) > 0.1) {
+                console.log('📍 Coordenadas já existentes:', sug.latitude, sug.longitude);
+                return sug;
+            }
             
-            var cidade = sug.cidade || '';
-            var estado = sug.estado || '';
-            var bairro = sug.bairro || '';
             var endereco = sug.endereco || '';
+            var bairro = sug.bairro || '';
+            var cidade = sug.cidade || '';
+            var estado = sug.estado || 'GO';
             
-            var queries = [];
-            if (endereco && cidade) queries.push(endereco + ', ' + cidade + (estado ? ' - ' + estado : '') + ', Brasil');
-            if (bairro && cidade) queries.push(bairro + ', ' + cidade + (estado ? ' - ' + estado : '') + ', Brasil');
-            if (cidade && estado) queries.push(cidade + ', ' + estado + ', Brasil');
+            console.log('🔍 Geocodificando em cascata:', { endereco, bairro, cidade, estado });
             
-            for (var i = 0; i < queries.length; i++) {
+            // ========================================
+            // ETAPA 1: Tentar por CEP (BrasilAPI)
+            // ========================================
+            var cep = extrairCEP(endereco) || sug.cep;
+            if (cep) {
+                console.log('📮 CEP detectado:', cep);
                 try {
-                    var resp = await fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(queries[i]) + '&limit=1&countrycodes=br', { headers: { 'User-Agent': 'TuttsRoteirizador/1.0' } });
-                    var data = await resp.json();
-                    if (data[0]) {
-                        var resultado = data[0].display_name.toLowerCase();
-                        if (!cidade || resultado.includes(cidade.toLowerCase())) {
-                            return Object.assign({}, sug, { latitude: parseFloat(data[0].lat), longitude: parseFloat(data[0].lon) });
+                    var resp = await fetch('https://brasilapi.com.br/api/cep/v2/' + cep);
+                    if (resp.ok) {
+                        var data = await resp.json();
+                        if (data.location && data.location.coordinates && 
+                            data.location.coordinates.latitude && data.location.coordinates.longitude) {
+                            console.log('✅ BrasilAPI sucesso:', data.location.coordinates);
+                            return Object.assign({}, sug, {
+                                latitude: parseFloat(data.location.coordinates.latitude),
+                                longitude: parseFloat(data.location.coordinates.longitude),
+                                bairro: sug.bairro || data.neighborhood,
+                                cidade: sug.cidade || data.city,
+                                estado: sug.estado || data.state,
+                                fonte: 'brasilapi-cep'
+                            });
                         }
                     }
-                } catch(e) {}
+                } catch (e) {
+                    console.log('⚠️ BrasilAPI falhou:', e.message);
+                }
+            }
+            
+            // ========================================
+            // ETAPA 2: Nominatim (OpenStreetMap) - Estruturado
+            // ========================================
+            var queries = [];
+            var numero = extrairNumero(endereco);
+            var ruaLimpa = limparRuaGeo(endereco);
+            var cidadeLower = normalizarTexto(cidade);
+            
+            // Query mais específica primeiro
+            if (ruaLimpa && cidade) {
+                if (numero) {
+                    queries.push(ruaLimpa + ', ' + numero + ', ' + (bairro ? bairro + ', ' : '') + cidade + ', ' + estado + ', Brasil');
+                }
+                queries.push(ruaLimpa + ', ' + (bairro ? bairro + ', ' : '') + cidade + ', ' + estado + ', Brasil');
+            }
+            if (bairro && cidade) {
+                queries.push(bairro + ', ' + cidade + ', ' + estado + ', Brasil');
             }
             
             for (var i = 0; i < queries.length; i++) {
                 try {
-                    var resp = await fetch('https://api.openrouteservice.org/geocode/search?api_key=' + ORS_API_KEY + '&text=' + encodeURIComponent(queries[i]) + '&boundary.country=BR&size=1');
+                    console.log('🌍 Nominatim tentando:', queries[i]);
+                    var resp = await fetch(
+                        'https://nominatim.openstreetmap.org/search?format=json&q=' + 
+                        encodeURIComponent(queries[i]) + 
+                        '&limit=3&countrycodes=br&addressdetails=1',
+                        { headers: { 'User-Agent': 'TuttsRoteirizador/2.0' } }
+                    );
                     var data = await resp.json();
-                    if (data.features && data.features[0]) {
-                        return Object.assign({}, sug, { latitude: data.features[0].geometry.coordinates[1], longitude: data.features[0].geometry.coordinates[0] });
+                    
+                    if (data && data.length > 0) {
+                        for (var j = 0; j < data.length; j++) {
+                            var displayName = normalizarTexto(data[j].display_name);
+                            if (displayName.includes(cidadeLower) || !cidade) {
+                                console.log('✅ Nominatim sucesso:', data[j].lat, data[j].lon);
+                                return Object.assign({}, sug, {
+                                    latitude: parseFloat(data[j].lat),
+                                    longitude: parseFloat(data[j].lon),
+                                    fonte: 'nominatim'
+                                });
+                            }
+                        }
                     }
-                } catch(e) {}
+                } catch (e) {
+                    console.log('⚠️ Nominatim falhou:', e.message);
+                }
+                // Rate limit Nominatim
+                await new Promise(function(r) { setTimeout(r, 1100); });
             }
+            
+            // ========================================
+            // ETAPA 3: OpenRouteService (fallback)
+            // ========================================
+            for (var i = 0; i < Math.min(queries.length, 2); i++) {
+                try {
+                    console.log('🗺️ ORS tentando:', queries[i]);
+                    var resp = await fetch(
+                        'https://api.openrouteservice.org/geocode/search?api_key=' + ORS_API_KEY + 
+                        '&text=' + encodeURIComponent(queries[i]) + 
+                        '&boundary.country=BR&size=3'
+                    );
+                    var data = await resp.json();
+                    
+                    if (data.features && data.features.length > 0) {
+                        for (var j = 0; j < data.features.length; j++) {
+                            var props = data.features[j].properties || {};
+                            var featureCidade = normalizarTexto(props.locality || props.county || '');
+                            
+                            if (featureCidade.includes(cidadeLower) || cidadeLower.includes(featureCidade) || !cidade) {
+                                var coords = data.features[j].geometry.coordinates;
+                                console.log('✅ ORS sucesso:', coords[1], coords[0]);
+                                return Object.assign({}, sug, {
+                                    latitude: coords[1],
+                                    longitude: coords[0],
+                                    fonte: 'openrouteservice'
+                                });
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.log('⚠️ ORS falhou:', e.message);
+                }
+            }
+            
+            // ========================================
+            // ETAPA 4: Photon (último recurso OSM)
+            // ========================================
+            var queryPhoton = (ruaLimpa || bairro) + ', ' + cidade + ', ' + estado;
+            try {
+                console.log('💡 Photon tentando:', queryPhoton);
+                var resp = await fetch(
+                    'https://photon.komoot.io/api/?q=' + 
+                    encodeURIComponent(queryPhoton) + 
+                    '&limit=3&lang=pt'
+                );
+                var data = await resp.json();
+                
+                if (data.features && data.features.length > 0) {
+                    for (var j = 0; j < data.features.length; j++) {
+                        var props = data.features[j].properties || {};
+                        var featureCidade = normalizarTexto(props.city || props.county || props.name || '');
+                        
+                        if (featureCidade.includes(cidadeLower) || cidadeLower.includes(featureCidade) || !cidade) {
+                            var coords = data.features[j].geometry.coordinates;
+                            console.log('✅ Photon sucesso:', coords[1], coords[0]);
+                            return Object.assign({}, sug, {
+                                latitude: coords[1],
+                                longitude: coords[0],
+                                fonte: 'photon'
+                            });
+                        }
+                    }
+                }
+            } catch (e) {
+                console.log('⚠️ Photon falhou:', e.message);
+            }
+            
+            // ========================================
+            // FALLBACK: Centralizar na cidade
+            // ========================================
+            if (cidade) {
+                try {
+                    console.log('🏙️ Fallback: centro da cidade');
+                    var resp = await fetch(
+                        'https://nominatim.openstreetmap.org/search?format=json&q=' + 
+                        encodeURIComponent(cidade + ', ' + estado + ', Brasil') + 
+                        '&limit=1&countrycodes=br',
+                        { headers: { 'User-Agent': 'TuttsRoteirizador/2.0' } }
+                    );
+                    var data = await resp.json();
+                    
+                    if (data[0]) {
+                        console.log('⚠️ Usando centro da cidade:', data[0].lat, data[0].lon);
+                        showToast && showToast('📍 Localização aproximada', 'warning');
+                        return Object.assign({}, sug, {
+                            latitude: parseFloat(data[0].lat),
+                            longitude: parseFloat(data[0].lon),
+                            fonte: 'cidade-centro',
+                            precisaoAproximada: true
+                        });
+                    }
+                } catch (e) {}
+            }
+            
+            console.log('❌ Geocodificação falhou para:', endereco);
             return null;
         };
 
