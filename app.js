@@ -920,8 +920,6 @@ const hideLoadingScreen = () => {
         const [mapaRoteirizador, setMapaRoteirizador] = useState(null);
         const [markersLayer, setMarkersLayer] = useState(null);
         const [routeLayer, setRouteLayer] = useState(null);
-        const [enderecosBI, setEnderecosBI] = useState([]);
-        const [carregandoBI, setCarregandoBI] = useState(true);
         const [pontoPartidaPadrao, setPontoPartidaPadrao] = useState(null);
         const [mostrarConfigPartida, setMostrarConfigPartida] = useState(false);
 
@@ -939,53 +937,6 @@ const hideLoadingScreen = () => {
                     setEnderecosSelecionados([Object.assign({}, partida, { id: Date.now() })]);
                 }
             } catch(e) {}
-        }, []);
-
-        // Carregar TODOS os endereços do BI - sem agrupamento agressivo
-        useEffect(() => {
-            const carregarEnderecosBI = async () => {
-                try {
-                    setCarregandoBI(true);
-                    const response = await fetch(`${API_URL}/bi/entregas-lista?`);
-                    const data = await response.json();
-                    if (Array.isArray(data)) {
-                        // Agrupar apenas endereços IDÊNTICOS (mesmo endereço + cidade)
-                        const map = new Map();
-                        data.forEach(e => {
-                            if (!e.endereco) return;
-                            var endLimpo = limparPonto(e.endereco);
-                            // Chave: endereço limpo + cidade (para não misturar cidades)
-                            const chave = (endLimpo + '|' + (e.cidade || '')).toLowerCase();
-                            
-                            if (!map.has(chave)) {
-                                map.set(chave, { 
-                                    endereco: endLimpo, 
-                                    bairro: e.bairro, 
-                                    cidade: e.cidade, 
-                                    estado: e.estado, 
-                                    latitude: e.latitude, 
-                                    longitude: e.longitude, 
-                                    contagem: 1 
-                                });
-                            } else {
-                                const x = map.get(chave); 
-                                x.contagem++;
-                                if (!x.latitude && e.latitude) { 
-                                    x.latitude = e.latitude; 
-                                    x.longitude = e.longitude; 
-                                }
-                                if (!x.bairro && e.bairro) x.bairro = e.bairro;
-                                if (!x.estado && e.estado) x.estado = e.estado;
-                            }
-                        });
-                        var enderecosUnicos = Array.from(map.values());
-                        console.log('🗺️ Endereços carregados:', data.length, '-> únicos:', enderecosUnicos.length);
-                        setEnderecosBI(enderecosUnicos);
-                    }
-                } catch (err) { console.error(err); }
-                setCarregandoBI(false);
-            };
-            carregarEnderecosBI();
         }, []);
 
         useEffect(() => {
@@ -1024,292 +975,81 @@ const hideLoadingScreen = () => {
             }
         }, [enderecosSelecionados, mapaRoteirizador, markersLayer]);
 
-        // Buscar sugestões - busca mais abrangente
-        useEffect(() => {
-            const buscar = async () => {
-                if (!termoBusca || termoBusca.length < 2) { setSugestoes([]); return; }
-                setBuscando(true);
-                var termo = termoBusca.toLowerCase().trim();
-                var termos = termo.split(/\s+/); // Dividir em palavras
+        // ==================== BUSCA DE ENDEREÇOS VIA GOOGLE ====================
+        // Busca só acontece quando usuário aperta Enter ou clica no botão
+        const buscarEndereco = async function() {
+            if (!termoBusca || termoBusca.length < 3) { 
+                showToast && showToast('Digite pelo menos 3 caracteres', 'error'); 
+                return; 
+            }
+            
+            setBuscando(true);
+            setSugestoes([]);
+            
+            try {
+                console.log('🔍 Buscando:', termoBusca);
+                var resp = await fetch(API_URL + '/geocode/google?endereco=' + encodeURIComponent(termoBusca));
                 
-                var resultadosBI = enderecosBI.filter(function(e) {
-                    var endLower = (e.endereco || '').toLowerCase();
-                    var bairroLower = (e.bairro || '').toLowerCase();
-                    var cidadeLower = (e.cidade || '').toLowerCase();
-                    var textoCompleto = endLower + ' ' + bairroLower + ' ' + cidadeLower;
-                    
-                    // Todas as palavras devem estar presentes
-                    return termos.every(function(t) { return textoCompleto.includes(t); });
-                }).sort(function(a, b) { 
-                    // Priorizar os que têm coordenadas
-                    if (a.latitude && !b.latitude) return -1;
-                    if (!a.latitude && b.latitude) return 1;
-                    // Depois por contagem (mais usados primeiro)
-                    return (b.contagem || 0) - (a.contagem || 0);
-                }).slice(0, 15).map(function(e) { 
-                    return { 
-                        endereco: e.endereco, 
-                        bairro: e.bairro, 
-                        cidade: e.cidade, 
-                        estado: e.estado, 
-                        latitude: e.latitude, 
-                        longitude: e.longitude,
-                        contagem: e.contagem,
-                        fonte: 'bi'
-                    }; 
-                });
-                
-                // CEP - Busca via backend (evita CORS)
-                var resultadosCEP = [];
-                var cepMatch = termoBusca.match(/(\d{5})-?(\d{3})/);
-                if (cepMatch) {
-                    var cepLimpo = cepMatch[1] + cepMatch[2];
-                    try {
-                        var resp = await fetch(API_URL + '/geocode/cep/' + cepLimpo);
-                        if (resp.ok) {
-                            var data = await resp.json();
-                            resultadosCEP.push({ 
-                                endereco: data.endereco,
-                                bairro: data.bairro, 
-                                cidade: data.cidade, 
-                                estado: data.estado, 
-                                cep: data.cep,
-                                latitude: data.latitude,
-                                longitude: data.longitude,
-                                fonte: data.fonte,
-                                precisaGeo: !data.latitude
-                            });
-                        }
-                    } catch(e) {
-                        console.log('⚠️ Geocode CEP falhou:', e.message);
+                if (resp.ok) {
+                    var data = await resp.json();
+                    if (data.results && data.results.length > 0) {
+                        var resultados = data.results.map(function(r) {
+                            return {
+                                endereco: r.endereco,
+                                latitude: r.latitude,
+                                longitude: r.longitude,
+                                fonte: r.fonte || 'google'
+                            };
+                        });
+                        console.log('✅ Encontrados:', resultados.length, 'resultados');
+                        setSugestoes(resultados);
+                    } else {
+                        showToast && showToast('Nenhum endereço encontrado', 'warning');
                     }
+                } else {
+                    var erro = await resp.json();
+                    showToast && showToast(erro.error || 'Erro na busca', 'error');
                 }
-                setSugestoes([].concat(resultadosBI, resultadosCEP));
-                setBuscando(false);
-            };
-            var timer = setTimeout(buscar, 200);
-            return function() { clearTimeout(timer); };
-        }, [termoBusca, enderecosBI]);
+            } catch (e) {
+                console.log('⚠️ Erro na busca:', e.message);
+                showToast && showToast('Erro ao buscar endereço', 'error');
+            }
+            
+            setBuscando(false);
+        };
 
-        // ==================== GEOCODIFICAÇÃO EM CASCATA ====================
-        // Ordem: CEP (BrasilAPI) → Nominatim → OpenRouteService → Photon → Centro da cidade
+        // Handler para tecla Enter
+        const handleKeyDown = function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                buscarEndereco();
+            }
+        };
+
+        // Função para geocodificar (caso não tenha coordenadas)
         const geocodificarPreciso = async function(sug) {
             // Se já tem coordenadas válidas, retorna direto
-            if (sug.latitude && sug.longitude && 
-                Math.abs(sug.latitude) > 0.1 && Math.abs(sug.longitude) > 0.1) {
-                console.log('📍 Coordenadas já existentes:', sug.latitude, sug.longitude);
+            if (sug.latitude && sug.longitude) {
                 return sug;
             }
             
-            var endereco = sug.endereco || '';
-            var bairro = sug.bairro || '';
-            var cidade = sug.cidade || '';
-            var estado = sug.estado || 'GO';
-            
-            console.log('🔍 Geocodificando em cascata:', { endereco, bairro, cidade, estado });
-            
-            // ========================================
-            // ETAPA 1: Tentar por CEP (via backend)
-            // ========================================
-            var cep = extrairCEP(endereco) || sug.cep;
-            if (cep) {
-                console.log('📮 CEP detectado:', cep);
-                try {
-                    var resp = await fetch(API_URL + '/geocode/cep/' + cep.replace(/\D/g, ''));
-                    if (resp.ok) {
-                        var data = await resp.json();
-                        if (data.latitude && data.longitude) {
-                            console.log('✅ Backend CEP sucesso:', data.latitude, data.longitude);
-                            return Object.assign({}, sug, {
-                                latitude: data.latitude,
-                                longitude: data.longitude,
-                                bairro: sug.bairro || data.bairro,
-                                cidade: sug.cidade || data.cidade,
-                                estado: sug.estado || data.estado,
-                                fonte: data.fonte
-                            });
-                        }
-                    }
-                } catch (e) {
-                    console.log('⚠️ Backend CEP falhou:', e.message);
-                }
-            }
-            
-            // ========================================
-            // ETAPA 2: Nominatim (OpenStreetMap) - Estruturado
-            // ========================================
-            var queries = [];
-            var numero = extrairNumero(endereco);
-            var ruaLimpa = limparRuaGeo(endereco);
-            var cidadeLower = normalizarTexto(cidade);
-            
-            // Query mais específica primeiro
-            if (ruaLimpa && cidade) {
-                if (numero) {
-                    queries.push(ruaLimpa + ', ' + numero + ', ' + (bairro ? bairro + ', ' : '') + cidade + ', ' + estado + ', Brasil');
-                }
-                queries.push(ruaLimpa + ', ' + (bairro ? bairro + ', ' : '') + cidade + ', ' + estado + ', Brasil');
-            }
-            if (bairro && cidade) {
-                queries.push(bairro + ', ' + cidade + ', ' + estado + ', Brasil');
-            }
-            
-            // ========================================
-            // ETAPA 2A: Tentar via Backend (evita CORS)
-            // ========================================
+            // Tentar via Google/Backend
             try {
-                console.log('🔌 Backend geocode tentando...');
-                var params = new URLSearchParams({
-                    endereco: ruaLimpa || '',
-                    bairro: bairro || '',
-                    cidade: cidade || '',
-                    estado: estado || 'GO'
-                });
-                var resp = await fetch(API_URL + '/geocode/endereco?' + params.toString());
+                var resp = await fetch(API_URL + '/geocode/google?endereco=' + encodeURIComponent(sug.endereco));
                 if (resp.ok) {
                     var data = await resp.json();
-                    if (data.latitude && data.longitude) {
-                        console.log('✅ Backend geocode sucesso:', data.latitude, data.longitude);
+                    if (data.results && data.results[0]) {
                         return Object.assign({}, sug, {
-                            latitude: data.latitude,
-                            longitude: data.longitude,
-                            fonte: data.fonte
+                            latitude: data.results[0].latitude,
+                            longitude: data.results[0].longitude,
+                            fonte: data.results[0].fonte
                         });
                     }
                 }
             } catch (e) {
-                console.log('⚠️ Backend geocode falhou, tentando APIs diretas:', e.message);
+                console.log('⚠️ Geocodificação falhou:', e.message);
             }
             
-            // ========================================
-            // ETAPA 2B: Nominatim direto (fallback)
-            // ========================================
-            for (var i = 0; i < queries.length; i++) {
-                try {
-                    console.log('🌍 Nominatim tentando:', queries[i]);
-                    var resp = await fetch(
-                        'https://nominatim.openstreetmap.org/search?format=json&q=' + 
-                        encodeURIComponent(queries[i]) + 
-                        '&limit=3&countrycodes=br&addressdetails=1',
-                        { headers: { 'User-Agent': 'TuttsRoteirizador/2.0' } }
-                    );
-                    var data = await resp.json();
-                    
-                    if (data && data.length > 0) {
-                        for (var j = 0; j < data.length; j++) {
-                            var displayName = normalizarTexto(data[j].display_name);
-                            if (displayName.includes(cidadeLower) || !cidade) {
-                                console.log('✅ Nominatim sucesso:', data[j].lat, data[j].lon);
-                                return Object.assign({}, sug, {
-                                    latitude: parseFloat(data[j].lat),
-                                    longitude: parseFloat(data[j].lon),
-                                    fonte: 'nominatim'
-                                });
-                            }
-                        }
-                    }
-                } catch (e) {
-                    console.log('⚠️ Nominatim falhou:', e.message);
-                }
-                // Rate limit Nominatim
-                await new Promise(function(r) { setTimeout(r, 1100); });
-            }
-            
-            // ========================================
-            // ETAPA 3: OpenRouteService (fallback)
-            // ========================================
-            for (var i = 0; i < Math.min(queries.length, 2); i++) {
-                try {
-                    console.log('🗺️ ORS tentando:', queries[i]);
-                    var resp = await fetch(
-                        'https://api.openrouteservice.org/geocode/search?api_key=' + ORS_API_KEY + 
-                        '&text=' + encodeURIComponent(queries[i]) + 
-                        '&boundary.country=BR&size=3'
-                    );
-                    var data = await resp.json();
-                    
-                    if (data.features && data.features.length > 0) {
-                        for (var j = 0; j < data.features.length; j++) {
-                            var props = data.features[j].properties || {};
-                            var featureCidade = normalizarTexto(props.locality || props.county || '');
-                            
-                            if (featureCidade.includes(cidadeLower) || cidadeLower.includes(featureCidade) || !cidade) {
-                                var coords = data.features[j].geometry.coordinates;
-                                console.log('✅ ORS sucesso:', coords[1], coords[0]);
-                                return Object.assign({}, sug, {
-                                    latitude: coords[1],
-                                    longitude: coords[0],
-                                    fonte: 'openrouteservice'
-                                });
-                            }
-                        }
-                    }
-                } catch (e) {
-                    console.log('⚠️ ORS falhou:', e.message);
-                }
-            }
-            
-            // ========================================
-            // ETAPA 4: Photon (último recurso OSM)
-            // ========================================
-            var queryPhoton = (ruaLimpa || bairro) + ', ' + cidade + ', ' + estado;
-            try {
-                console.log('💡 Photon tentando:', queryPhoton);
-                var resp = await fetch(
-                    'https://photon.komoot.io/api/?q=' + 
-                    encodeURIComponent(queryPhoton) + 
-                    '&limit=3&lang=pt'
-                );
-                var data = await resp.json();
-                
-                if (data.features && data.features.length > 0) {
-                    for (var j = 0; j < data.features.length; j++) {
-                        var props = data.features[j].properties || {};
-                        var featureCidade = normalizarTexto(props.city || props.county || props.name || '');
-                        
-                        if (featureCidade.includes(cidadeLower) || cidadeLower.includes(featureCidade) || !cidade) {
-                            var coords = data.features[j].geometry.coordinates;
-                            console.log('✅ Photon sucesso:', coords[1], coords[0]);
-                            return Object.assign({}, sug, {
-                                latitude: coords[1],
-                                longitude: coords[0],
-                                fonte: 'photon'
-                            });
-                        }
-                    }
-                }
-            } catch (e) {
-                console.log('⚠️ Photon falhou:', e.message);
-            }
-            
-            // ========================================
-            // FALLBACK: Centralizar na cidade
-            // ========================================
-            if (cidade) {
-                try {
-                    console.log('🏙️ Fallback: centro da cidade');
-                    var resp = await fetch(
-                        'https://nominatim.openstreetmap.org/search?format=json&q=' + 
-                        encodeURIComponent(cidade + ', ' + estado + ', Brasil') + 
-                        '&limit=1&countrycodes=br',
-                        { headers: { 'User-Agent': 'TuttsRoteirizador/2.0' } }
-                    );
-                    var data = await resp.json();
-                    
-                    if (data[0]) {
-                        console.log('⚠️ Usando centro da cidade:', data[0].lat, data[0].lon);
-                        showToast && showToast('📍 Localização aproximada', 'warning');
-                        return Object.assign({}, sug, {
-                            latitude: parseFloat(data[0].lat),
-                            longitude: parseFloat(data[0].lon),
-                            fonte: 'cidade-centro',
-                            precisaoAproximada: true
-                        });
-                    }
-                } catch (e) {}
-            }
-            
-            console.log('❌ Geocodificação falhou para:', endereco);
             return null;
         };
 
@@ -1317,28 +1057,30 @@ const hideLoadingScreen = () => {
             if (enderecosSelecionados.length >= 15) { showToast && showToast('Máximo 15', 'error'); return; }
             
             var endLimpo = limparPonto(sug.endereco);
-            var chaveNova = (endLimpo + '|' + (sug.cidade || '')).toLowerCase();
-            if (enderecosSelecionados.some(function(e) { return (e.endereco + '|' + (e.cidade || '')).toLowerCase() === chaveNova; })) { 
+            
+            // Verificar duplicado
+            if (enderecosSelecionados.some(function(e) { return e.endereco.toLowerCase() === endLimpo.toLowerCase(); })) { 
                 showToast && showToast('Já adicionado', 'error'); 
                 return; 
             }
             
+            // Google já retorna com coordenadas
             if (sug.latitude && sug.longitude) {
                 setEnderecosSelecionados(function(prev) { 
-                    return prev.concat([{ id: Date.now(), endereco: endLimpo, bairro: sug.bairro, cidade: sug.cidade, estado: sug.estado, latitude: sug.latitude, longitude: sug.longitude, fonte: sug.fonte }]); 
+                    return prev.concat([{ 
+                        id: Date.now(), 
+                        endereco: endLimpo, 
+                        latitude: sug.latitude, 
+                        longitude: sug.longitude, 
+                        fonte: sug.fonte 
+                    }]); 
                 });
-                setTermoBusca(''); setSugestoes([]);
-                return;
+                setTermoBusca(''); 
+                setSugestoes([]);
+                showToast && showToast('✅ Adicionado', 'success');
+            } else {
+                showToast && showToast('Endereço sem coordenadas', 'error');
             }
-            
-            showToast && showToast('Localizando...', 'info');
-            geocodificarPreciso(sug).then(function(end) {
-                if (!end) { showToast && showToast('Não localizado', 'error'); return; }
-                setEnderecosSelecionados(function(prev) { 
-                    return prev.concat([{ id: Date.now(), endereco: limparPonto(end.endereco), bairro: end.bairro, cidade: end.cidade, estado: end.estado, latitude: end.latitude, longitude: end.longitude, fonte: end.fonte }]); 
-                });
-            });
-            setTermoBusca(''); setSugestoes([]);
         };
 
         const remover = function(id) { setEnderecosSelecionados(function(prev) { return prev.filter(function(e) { return e.id !== id; }); }); };
@@ -1434,12 +1176,24 @@ const hideLoadingScreen = () => {
             React.createElement('div', { className: 'flex-1 flex overflow-hidden' },
                 React.createElement('div', { className: 'w-[360px] bg-white flex flex-col' },
                     React.createElement('div', { className: 'p-3 border-b bg-purple-50' },
-                        React.createElement('div', { className: 'relative' },
-                            React.createElement('input', { type: 'text', value: termoBusca, onChange: function(e) { setTermoBusca(e.target.value); }, placeholder: '🔍 Buscar endereço, bairro, cidade...', className: 'w-full px-3 py-2 border border-purple-200 rounded-lg text-sm focus:border-purple-500 focus:outline-none', autoComplete: 'off' }),
-                            buscando && React.createElement('div', { className: 'absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full animate-spin' })
+                        React.createElement('div', { className: 'flex gap-2' },
+                            React.createElement('input', { 
+                                type: 'text', 
+                                value: termoBusca, 
+                                onChange: function(e) { setTermoBusca(e.target.value); }, 
+                                onKeyDown: handleKeyDown,
+                                placeholder: '🔍 Digite o endereço e pressione Enter', 
+                                className: 'flex-1 px-3 py-2 border border-purple-200 rounded-lg text-sm focus:border-purple-500 focus:outline-none', 
+                                autoComplete: 'off' 
+                            }),
+                            React.createElement('button', { 
+                                onClick: buscarEndereco, 
+                                disabled: buscando || termoBusca.length < 3,
+                                className: 'px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed'
+                            }, buscando ? '...' : '🔍')
                         ),
                         React.createElement('div', { className: 'flex items-center justify-between mt-1' },
-                            React.createElement('p', { className: 'text-xs text-purple-600' }, carregandoBI ? '⏳ Carregando...' : '✅ ' + enderecosBI.length + ' endereços únicos'),
+                            React.createElement('p', { className: 'text-xs text-purple-600' }, '💡 Digite e pressione Enter para buscar'),
                             pontoPartidaPadrao && React.createElement('span', { className: 'text-xs text-green-600' }, '🚩 Partida salva')
                         ),
                         sugestoes.length > 0 && React.createElement('div', { className: 'mt-2 bg-white border border-purple-200 rounded-lg shadow-lg max-h-[250px] overflow-y-auto' },
@@ -1447,10 +1201,9 @@ const hideLoadingScreen = () => {
                                 var temCoord = sug.latitude && sug.longitude;
                                 return React.createElement('div', { key: idx, onClick: function() { adicionar(sug); }, className: 'px-3 py-2 hover:bg-purple-50 cursor-pointer border-b last:border-b-0' },
                                     React.createElement('div', { className: 'flex items-center gap-2' },
-                                        React.createElement('span', { className: 'text-sm' }, sug.fonte === 'bi' ? (temCoord ? '📦' : '📦❓') : '📮'),
+                                        React.createElement('span', { className: 'text-sm' }, temCoord ? '📍' : '❓'),
                                         React.createElement('div', { className: 'flex-1 min-w-0' },
-                                            React.createElement('div', { className: 'font-medium text-gray-800 truncate text-xs' }, sug.endereco),
-                                            React.createElement('div', { className: 'text-xs text-gray-500 truncate' }, [sug.bairro, sug.cidade, sug.estado].filter(Boolean).join(' - '))
+                                            React.createElement('div', { className: 'font-medium text-gray-800 truncate text-xs' }, sug.endereco)
                                         ),
                                         temCoord && React.createElement('span', { className: 'text-green-500 text-xs' }, '✓')
                                     )
