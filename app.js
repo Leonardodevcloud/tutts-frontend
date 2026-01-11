@@ -173,12 +173,14 @@ function getFirstAllowedTab(user, moduleId, defaultTab) {
 
 // CONFIGURAÇÃO GLOBAL DE MÓDULOS E ABAS - Edite aqui para adicionar novos módulos/abas
 const SISTEMA_MODULOS_CONFIG = [
-    { id: "home", label: "Início", icon: "🏠", abas: [] },
     { id: "solicitacoes", label: "Solicitações", icon: "📋",
       abas: [{id: "dashboard", label: "Dashboard"}, {id: "search", label: "Busca"}, {id: "ranking", label: "Ranking"}, {id: "relatorios", label: "Relatórios"}]
     },
     { id: "financeiro", label: "Financeiro", icon: "💰",
-      abas: [{id: "solicitacoes", label: "Solicitações"}, {id: "validacao", label: "Validação"}, {id: "conciliacao", label: "Conciliação"}, {id: "saldo-plific", label: "Saldo Plific"}, {id: "resumo", label: "Resumo"}, {id: "gratuidades", label: "Gratuidades"}, {id: "restritos", label: "Restritos"}, {id: "indicacoes", label: "Indicações"}, {id: "promo-novatos", label: "Promo Novatos"}, {id: "loja", label: "Loja"}, {id: "relatorios", label: "Relatórios"}, {id: "horarios", label: "Horários"}, {id: "avisos", label: "Avisos"}, {id: "backup", label: "Backup"}]
+      abas: [{id: "solicitacoes", label: "Solicitações"}, {id: "validacao", label: "Validação"}, {id: "conciliacao", label: "Conciliação"}, {id: "resumo", label: "Resumo"}, {id: "gratuidades", label: "Gratuidades"}, {id: "restritos", label: "Restritos"}, {id: "indicacoes", label: "Indicações"}, {id: "promo-novatos", label: "Promo Novatos"}, {id: "loja", label: "Loja"}, {id: "relatorios", label: "Relatórios"}, {id: "horarios", label: "Horários"}, {id: "avisos", label: "Avisos"}, {id: "backup", label: "Backup"}, {id: "saldo-plific", label: "Saldo Plific"}]
+    },
+    { id: "operacional", label: "Operacional", icon: "⚙️",
+      abas: [{id: "indicacoes", label: "Indicações"}, {id: "promo-novatos", label: "Promo Novatos"}, {id: "avisos", label: "Avisos"}, {id: "novas-operacoes", label: "Novas Operações"}, {id: "recrutamento", label: "Recrutamento"}, {id: "localizacao-clientes", label: "Localização Clientes"}, {id: "relatorio-diario", label: "Relatório Diário"}, {id: "score-prof", label: "Score Prof"}]
     },
     { id: "disponibilidade", label: "Disponibilidade", icon: "📅",
       abas: [{id: "panorama", label: "Panorama"}, {id: "principal", label: "Principal"}, {id: "faltosos", label: "Faltosos"}, {id: "espelho", label: "Espelho"}, {id: "relatorios", label: "Relatórios"}, {id: "motoboys", label: "Motoboys"}, {id: "restricoes", label: "Restrições"}, {id: "config", label: "Configurações"}]
@@ -192,11 +194,8 @@ const SISTEMA_MODULOS_CONFIG = [
     { id: "social", label: "Social", icon: "💜",
       abas: [{id: "perfil", label: "Meu Perfil"}, {id: "comunidade", label: "Comunidade"}, {id: "mensagens", label: "Mensagens"}]
     },
-    { id: "operacional", label: "Operacional", icon: "⚙️",
-      abas: [{id: "indicacoes", label: "Indicações"}, {id: "promo-novatos", label: "Promo Novatos"}, {id: "avisos", label: "Avisos"}, {id: "novas-operacoes", label: "Novas Operações"}, {id: "recrutamento", label: "Recrutamento"}, {id: "localizacao-clientes", label: "Localização Clientes"}, {id: "relatorio-diario", label: "Relatório Diário"}, {id: "score-prof", label: "Score Prof"}]
-    },
-    { id: "config", label: "Config", icon: "🔧",
-      abas: [{id: "usuarios", label: "Usuários"}, {id: "roteirizador", label: "Roteirizador"}, {id: "solicitacao", label: "Solicitação"}, {id: "permissoes", label: "Permissões ADM"}, {id: "auditoria", label: "Auditoria"}, {id: "sistema", label: "Sistema"}]
+    { id: "config", label: "Configurações", icon: "🔧",
+      abas: [{id: "usuarios", label: "Usuários"}, {id: "permissoes", label: "Permissões ADM"}, {id: "auditoria", label: "Auditoria"}, {id: "sistema", label: "Sistema"}]
     }
 ];
 
@@ -218,6 +217,9 @@ const Sidebar = ({ usuario, moduloAtivo, setModulo, menuAberto, setMenuAberto, s
         if (!sidebarFixo) setSidebarAberto(false);
     };
     
+    // Adiciona "home" no início para o sidebar
+    const modulosComHome = [{ id: "home", label: "Início", icon: "🏠", abas: [] }, ...SISTEMA_MODULOS_CONFIG];
+    
     return React.createElement("div", {
         className: "fixed left-0 top-0 h-full z-40 flex",
         onMouseLeave: () => !sidebarFixo && setSidebarAberto(false)
@@ -228,9 +230,7 @@ const Sidebar = ({ usuario, moduloAtivo, setModulo, menuAberto, setMenuAberto, s
             onMouseEnter: () => setSidebarAberto(true),
             onClick: () => setSidebarFixo(!sidebarFixo)
         },
-            React.createElement("div", {
-                className: "w-1 h-20 bg-white/30 rounded-full"
-            })
+            React.createElement("div", { className: "w-1 h-20 bg-white/30 rounded-full" })
         ),
         // Sidebar expandido
         React.createElement("div", {
@@ -239,9 +239,7 @@ const Sidebar = ({ usuario, moduloAtivo, setModulo, menuAberto, setMenuAberto, s
             style: { transitionProperty: 'width, opacity' }
         },
             // Header do sidebar
-            React.createElement("div", {
-                className: "p-4 border-b border-white/10 flex items-center justify-between"
-            },
+            React.createElement("div", { className: "p-4 border-b border-white/10 flex items-center justify-between" },
                 React.createElement("div", {className: "flex items-center gap-3"},
                     socialProfile?.profile_photo ? React.createElement("img", {
                         src: socialProfile.profile_photo,
@@ -258,7 +256,6 @@ const Sidebar = ({ usuario, moduloAtivo, setModulo, menuAberto, setMenuAberto, s
                         )
                     )
                 ),
-                // Botão de fixar
                 React.createElement("button", {
                     onClick: () => setSidebarFixo(!sidebarFixo),
                     className: "p-2 rounded-lg hover:bg-white/10 transition-colors " + (sidebarFixo ? "text-yellow-400" : "text-white/50"),
@@ -267,9 +264,8 @@ const Sidebar = ({ usuario, moduloAtivo, setModulo, menuAberto, setMenuAberto, s
             ),
             // Menu items
             React.createElement("div", {className: "flex-1 overflow-y-auto py-2"},
-                SISTEMA_MODULOS_CONFIG.filter(m => m.id === "home" || hasModuleAccess(usuario, m.id)).map(modulo => 
+                modulosComHome.filter(m => m.id === "home" || hasModuleAccess(usuario, m.id)).map(modulo => 
                     React.createElement("div", {key: modulo.id},
-                        // Item do módulo
                         React.createElement("button", {
                             onClick: () => handleModuloClick(modulo),
                             className: "w-full px-4 py-3 flex items-center justify-between text-left transition-all " + 
@@ -283,24 +279,18 @@ const Sidebar = ({ usuario, moduloAtivo, setModulo, menuAberto, setMenuAberto, s
                                 className: "text-white/50 transition-transform " + (menuAberto === modulo.id ? "rotate-180" : "")
                             }, "▼")
                         ),
-                        // Sub-abas (expandível)
-                        menuAberto === modulo.id && modulo.abas && modulo.abas.length > 0 && React.createElement("div", {
-                            className: "bg-black/20 py-1"
-                        },
+                        menuAberto === modulo.id && modulo.abas && modulo.abas.length > 0 && React.createElement("div", { className: "bg-black/20 py-1" },
                             modulo.abas.map(aba => 
                                 React.createElement("button", {
                                     key: aba.id,
                                     onClick: () => handleAbaClick(modulo.id, aba.id),
                                     className: "w-full px-4 py-2 pl-12 text-left text-sm text-white/70 hover:bg-white/10 hover:text-white transition-colors"
-                                },
-                                    React.createElement("span", null, aba.label)
-                                )
+                                }, aba.label)
                             )
                         )
                     )
                 )
             ),
-            // Footer
             React.createElement("div", {className: "p-3 border-t border-white/10"},
                 React.createElement("p", {className: "text-center text-white/30 text-xs"}, "🏍️ Tutts v2.1")
             )
@@ -309,21 +299,34 @@ const Sidebar = ({ usuario, moduloAtivo, setModulo, menuAberto, setMenuAberto, s
 };
 
 // ==================== HEADER COMPACTO GLOBAL ====================
-const HeaderCompacto = ({ usuario, moduloAtivo, socialProfile, isLoading, lastUpdate, onRefresh, onLogout }) => {
+const HeaderCompacto = ({ usuario, moduloAtivo, socialProfile, isLoading, lastUpdate, onRefresh, onLogout, onGoHome }) => {
     return React.createElement("header", {
         className: "bg-gradient-to-r from-indigo-900 to-purple-900 shadow-lg sticky top-0 z-30"
     },
-        React.createElement("div", {
-            className: "max-w-7xl mx-auto px-4 py-3 flex justify-between items-center"
-        },
-            // Lado esquerdo - Logo e módulo atual
-            React.createElement("div", {className: "flex items-center gap-4"},
-                React.createElement("div", {className: "flex items-center gap-2"},
+        React.createElement("div", { className: "max-w-7xl mx-auto px-4 py-3 flex justify-between items-center" },
+            // Lado esquerdo
+            React.createElement("div", {className: "flex items-center gap-3"},
+                // Logo clicável
+                React.createElement("button", {
+                    onClick: onGoHome,
+                    className: "flex items-center gap-2 hover:opacity-80 transition-opacity",
+                    title: "Ir para Início"
+                },
                     React.createElement("span", {className: "text-2xl"}, "🏍️"),
                     React.createElement("span", {className: "text-white font-bold text-lg hidden sm:block"}, "Tutts")
                 ),
                 React.createElement("div", {className: "h-6 w-px bg-white/20 hidden sm:block"}),
-                React.createElement("div", {className: "flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-lg"},
+                // Botão Home
+                moduloAtivo !== "home" && React.createElement("button", {
+                    onClick: onGoHome,
+                    className: "flex items-center gap-1.5 px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg transition-colors",
+                    title: "Voltar ao Início"
+                },
+                    React.createElement("span", {className: "text-lg"}, "🏠"),
+                    React.createElement("span", {className: "text-white text-sm font-medium hidden sm:block"}, "Início")
+                ),
+                // Módulo atual
+                moduloAtivo !== "home" && React.createElement("div", {className: "flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-lg"},
                     React.createElement("span", {className: "text-lg"}, 
                         SISTEMA_MODULOS_CONFIG.find(m => m.id === moduloAtivo)?.icon || "🏠"
                     ),
@@ -332,26 +335,19 @@ const HeaderCompacto = ({ usuario, moduloAtivo, socialProfile, isLoading, lastUp
                     )
                 )
             ),
-            // Lado direito - Status e ações
+            // Lado direito
             React.createElement("div", {className: "flex items-center gap-3"},
-                // Status tempo real
-                React.createElement("div", {
-                    className: "flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full"
-                },
-                    React.createElement("span", {
-                        className: "w-2 h-2 rounded-full " + (isLoading ? "bg-yellow-400 animate-pulse" : "bg-green-400")
-                    }),
+                React.createElement("div", { className: "flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full" },
+                    React.createElement("span", { className: "w-2 h-2 rounded-full " + (isLoading ? "bg-yellow-400 animate-pulse" : "bg-green-400") }),
                     React.createElement("span", {className: "text-xs text-indigo-200 hidden sm:block"},
                         isLoading ? "Atualizando..." : lastUpdate ? lastUpdate.toLocaleTimeString("pt-BR", {hour: "2-digit", minute: "2-digit"}) : "⚡ 10s"
                     )
                 ),
-                // Botão atualizar
                 React.createElement("button", {
                     onClick: onRefresh,
                     className: "p-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-colors",
                     title: "Atualizar dados"
                 }, "🔄"),
-                // Info usuário
                 React.createElement("div", {className: "flex items-center gap-2"},
                     socialProfile?.profile_photo ? React.createElement("img", {
                         src: socialProfile.profile_photo,
@@ -368,7 +364,6 @@ const HeaderCompacto = ({ usuario, moduloAtivo, socialProfile, isLoading, lastUp
                         )
                     )
                 ),
-                // Botão sair
                 React.createElement("button", {
                     onClick: onLogout,
                     className: "p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors",
@@ -1046,48 +1041,6 @@ const hideLoadingScreen = () => {
         }, "Ao enviar, você concorda em ser contatado sobre oportunidades de trabalho."))))
     },
 
-    // ==================== FUNÇÕES AUXILIARES DE GEOCODIFICAÇÃO ====================
-    // Extrair CEP de um texto
-    extrairCEP = function(texto) {
-        if (!texto) return null;
-        var match = texto.match(/(?:CEP[:\s]*)?(\d{5})-?(\d{3})/i);
-        if (match) return match[1] + match[2];
-        return null;
-    },
-    
-    // Extrair número do endereço
-    extrairNumero = function(endereco) {
-        if (!endereco) return null;
-        var patterns = [
-            /,\s*n[º°]?\s*(\d+)/i,
-            /,\s*(\d+)(?:\s|$|-|,)/,
-            /\s+n[º°]?\s*(\d+)/i,
-            /\s+(\d{2,5})(?:\s|$|-|,)/
-        ];
-        for (var i = 0; i < patterns.length; i++) {
-            var match = endereco.match(patterns[i]);
-            if (match) return match[1];
-        }
-        return null;
-    },
-    
-    // Limpar rua (remover número para busca)
-    limparRuaGeo = function(endereco) {
-        if (!endereco) return '';
-        return endereco
-            .replace(/,\s*n[º°]?\s*\d+/gi, '')
-            .replace(/,\s*\d+(?:\s|$|-|,)/g, ' ')
-            .replace(/\s+n[º°]?\s*\d+/gi, '')
-            .replace(/\s+\d{2,5}(?:\s|$|-|,)/g, ' ')
-            .replace(/\s+/g, ' ')
-            .trim();
-    },
-    
-    // Normalizar texto (remover acentos)
-    normalizarTexto = function(texto) {
-        return (texto || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-    },
-
     // ==================== COMPONENTE ROTEIRIZADOR ====================
     RoteirizadorModule = ({ enderecosBi, onClose, showToast }) => {
         const [enderecosSelecionados, setEnderecosSelecionados] = useState([]);
@@ -1100,506 +1053,14 @@ const hideLoadingScreen = () => {
         const [mapaRoteirizador, setMapaRoteirizador] = useState(null);
         const [markersLayer, setMarkersLayer] = useState(null);
         const [routeLayer, setRouteLayer] = useState(null);
+        const [enderecosBI, setEnderecosBI] = useState([]);
+        const [carregandoBI, setCarregandoBI] = useState(true);
         const [pontoPartidaPadrao, setPontoPartidaPadrao] = useState(null);
         const [mostrarConfigPartida, setMostrarConfigPartida] = useState(false);
-        
-        // Estados para múltiplas rotas
-        const [modoMultiplasRotas, setModoMultiplasRotas] = useState(false);
-        const [paradasPorRota, setParadasPorRota] = useState(3);
-        const [rotasGeradas, setRotasGeradas] = useState([]);
-        const [loadingMultiplas, setLoadingMultiplas] = useState(false);
-        const [modoAgrupamento, setModoAgrupamento] = useState('hibrido'); // 'direcao', 'proximidade', 'hibrido'
-        
-        // Cores para as rotas
-        const coresRotas = ['#e11d48', '#2563eb', '#16a34a', '#d97706', '#7c3aed', '#0891b2', '#be185d', '#65a30d', '#dc2626', '#4f46e5'];
 
         const limparPonto = function(end) {
             if (!end) return '';
             return end.replace(/^Ponto\s*\d+\s*[-–]\s*/i, '').trim();
-        };
-        
-        // Função para calcular distância entre dois pontos (Haversine)
-        const calcularDistancia = function(lat1, lon1, lat2, lon2) {
-            var R = 6371; // km
-            var dLat = (lat2 - lat1) * Math.PI / 180;
-            var dLon = (lon2 - lon1) * Math.PI / 180;
-            var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                    Math.sin(dLon/2) * Math.sin(dLon/2);
-            var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-            return R * c;
-        };
-        
-        // Função para calcular ângulo de um ponto em relação à partida (0-360°)
-        // 0° = Norte, 90° = Leste, 180° = Sul, 270° = Oeste
-        const calcularAngulo = function(partida, ponto) {
-            var dLat = ponto.latitude - partida.latitude;
-            var dLon = ponto.longitude - partida.longitude;
-            
-            // atan2 retorna em radianos, convertemos para graus
-            var angulo = Math.atan2(dLon, dLat) * 180 / Math.PI;
-            
-            // Normalizar para 0-360
-            if (angulo < 0) angulo += 360;
-            
-            return angulo;
-        };
-        
-        // Função para agrupar endereços por SETOR ANGULAR (direção a partir da partida)
-        const agruparPorSetorAngular = function(partida, pontos, numGrupos) {
-            if (pontos.length <= numGrupos) {
-                return pontos.map(function(p) { return [p]; });
-            }
-            
-            // Calcular ângulo de cada ponto em relação à partida
-            var pontosComAngulo = pontos.map(function(p) {
-                return {
-                    ponto: p,
-                    angulo: calcularAngulo(partida, p),
-                    distancia: calcularDistancia(partida.latitude, partida.longitude, p.latitude, p.longitude)
-                };
-            });
-            
-            // Ordenar por ângulo (sentido horário a partir do Norte)
-            pontosComAngulo.sort(function(a, b) { return a.angulo - b.angulo; });
-            
-            // Calcular tamanho ideal de cada grupo
-            var tamanhoBase = Math.floor(pontos.length / numGrupos);
-            var extras = pontos.length % numGrupos;
-            
-            // Distribuir pontos em grupos mantendo a sequência angular
-            var grupos = [];
-            var indice = 0;
-            
-            for (var i = 0; i < numGrupos; i++) {
-                var tamanhoGrupo = tamanhoBase + (i < extras ? 1 : 0);
-                var grupo = [];
-                
-                for (var j = 0; j < tamanhoGrupo && indice < pontosComAngulo.length; j++) {
-                    grupo.push(pontosComAngulo[indice].ponto);
-                    indice++;
-                }
-                
-                if (grupo.length > 0) {
-                    grupos.push(grupo);
-                }
-            }
-            
-            // Log para debug
-            console.log('📐 Agrupamento por setor angular:');
-            grupos.forEach(function(g, idx) {
-                var angulos = g.map(function(p) { return Math.round(calcularAngulo(partida, p)); });
-                var direcao = obterDirecaoCardeal(angulos.reduce(function(a,b) { return a+b; }, 0) / angulos.length);
-                console.log('  Rota ' + (idx+1) + ': ' + g.length + ' pontos, direção ' + direcao + ' (' + Math.min.apply(null, angulos) + '°-' + Math.max.apply(null, angulos) + '°)');
-            });
-            
-            return grupos;
-        };
-        
-        // Função para obter direção cardeal a partir do ângulo
-        const obterDirecaoCardeal = function(angulo) {
-            var direcoes = [
-                { min: 0, max: 22.5, nome: 'Norte' },
-                { min: 22.5, max: 67.5, nome: 'Nordeste' },
-                { min: 67.5, max: 112.5, nome: 'Leste' },
-                { min: 112.5, max: 157.5, nome: 'Sudeste' },
-                { min: 157.5, max: 202.5, nome: 'Sul' },
-                { min: 202.5, max: 247.5, nome: 'Sudoeste' },
-                { min: 247.5, max: 292.5, nome: 'Oeste' },
-                { min: 292.5, max: 337.5, nome: 'Noroeste' },
-                { min: 337.5, max: 360, nome: 'Norte' }
-            ];
-            
-            for (var i = 0; i < direcoes.length; i++) {
-                if (angulo >= direcoes[i].min && angulo < direcoes[i].max) {
-                    return direcoes[i].nome;
-                }
-            }
-            return 'Norte';
-        };
-        
-        // ==================== ALGORITMO POR PROXIMIDADE (K-MEANS) ====================
-        const agruparPorProximidade = function(partida, pontos, numGrupos) {
-            if (pontos.length <= numGrupos) {
-                return pontos.map(function(p) { return [p]; });
-            }
-            
-            // Inicializar centroides escolhendo pontos mais distantes entre si
-            var centroides = [];
-            var pontosRestantes = pontos.slice();
-            
-            // Primeiro centroide: ponto mais distante da partida
-            pontosRestantes.sort(function(a, b) { 
-                return calcularDistancia(partida.latitude, partida.longitude, b.latitude, b.longitude) -
-                       calcularDistancia(partida.latitude, partida.longitude, a.latitude, a.longitude);
-            });
-            centroides.push({ lat: pontosRestantes[0].latitude, lng: pontosRestantes[0].longitude });
-            
-            // Escolher outros centroides maximizando distância entre eles
-            while (centroides.length < numGrupos && pontosRestantes.length > centroides.length) {
-                var maxMinDist = -1;
-                var melhorPonto = null;
-                
-                for (var i = 0; i < pontosRestantes.length; i++) {
-                    var minDist = Infinity;
-                    for (var j = 0; j < centroides.length; j++) {
-                        var d = calcularDistancia(pontosRestantes[i].latitude, pontosRestantes[i].longitude, centroides[j].lat, centroides[j].lng);
-                        if (d < minDist) minDist = d;
-                    }
-                    if (minDist > maxMinDist) {
-                        maxMinDist = minDist;
-                        melhorPonto = pontosRestantes[i];
-                    }
-                }
-                
-                if (melhorPonto) {
-                    centroides.push({ lat: melhorPonto.latitude, lng: melhorPonto.longitude });
-                } else {
-                    break;
-                }
-            }
-            
-            // Atribuir pontos aos clusters (5 iterações de K-means)
-            var grupos = [];
-            for (var iter = 0; iter < 5; iter++) {
-                grupos = [];
-                for (var k = 0; k < numGrupos; k++) grupos.push([]);
-                
-                // Atribuir cada ponto ao centroide mais próximo
-                for (var i = 0; i < pontos.length; i++) {
-                    var minDist = Infinity;
-                    var melhorGrupo = 0;
-                    
-                    for (var j = 0; j < centroides.length; j++) {
-                        var d = calcularDistancia(pontos[i].latitude, pontos[i].longitude, centroides[j].lat, centroides[j].lng);
-                        if (d < minDist) {
-                            minDist = d;
-                            melhorGrupo = j;
-                        }
-                    }
-                    
-                    grupos[melhorGrupo].push(pontos[i]);
-                }
-                
-                // Recalcular centroides
-                for (var k = 0; k < numGrupos; k++) {
-                    if (grupos[k].length > 0) {
-                        var sumLat = 0, sumLng = 0;
-                        for (var i = 0; i < grupos[k].length; i++) {
-                            sumLat += grupos[k][i].latitude;
-                            sumLng += grupos[k][i].longitude;
-                        }
-                        centroides[k] = { lat: sumLat / grupos[k].length, lng: sumLng / grupos[k].length };
-                    }
-                }
-            }
-            
-            console.log('📍 Agrupamento por PROXIMIDADE (K-means):');
-            grupos.forEach(function(g, idx) {
-                if (g.length > 0) {
-                    var centroLat = g.reduce(function(a, p) { return a + p.latitude; }, 0) / g.length;
-                    var centroLng = g.reduce(function(a, p) { return a + p.longitude; }, 0) / g.length;
-                    var direcao = obterDirecaoCardeal(calcularAngulo(partida, { latitude: centroLat, longitude: centroLng }));
-                    console.log('  Grupo ' + (idx+1) + ': ' + g.length + ' pontos, região ' + direcao);
-                }
-            });
-            
-            // Remover grupos vazios
-            return grupos.filter(function(g) { return g.length > 0; });
-        };
-        
-        // ==================== ALGORITMO HÍBRIDO ====================
-        // Primeiro agrupa por direção, depois ajusta por proximidade (respeitando limite)
-        const agruparHibrido = function(partida, pontos, numGrupos) {
-            if (pontos.length <= numGrupos) {
-                return pontos.map(function(p) { return [p]; });
-            }
-            
-            // PASSO 1: Agrupar por setor angular
-            var grupos = agruparPorSetorAngular(partida, pontos, numGrupos);
-            
-            console.log('🔀 Agrupamento HÍBRIDO - Passo 1 (angular):', grupos.map(function(g) { return g.length; }));
-            
-            // PASSO 2: Ajustar pontos nas bordas dos setores (respeitando limite!)
-            var ajustes = 0;
-            var limiteAjuste = 0.3; // Se distância para outro grupo for 30% menor, mover
-            var maxPorGrupo = paradasPorRota; // RESPEITAR O LIMITE!
-            
-            for (var tentativa = 0; tentativa < 3; tentativa++) { // Até 3 rodadas de ajuste
-                var houveMudanca = false;
-                
-                for (var i = 0; i < grupos.length; i++) {
-                    var grupo = grupos[i];
-                    var pontosParaRemover = [];
-                    
-                    for (var j = 0; j < grupo.length; j++) {
-                        var ponto = grupo[j];
-                        
-                        // Calcular distância média para os outros pontos do mesmo grupo
-                        var distMediaGrupoAtual = 0;
-                        if (grupo.length > 1) {
-                            var somaDistAtual = 0;
-                            var contAtual = 0;
-                            for (var k = 0; k < grupo.length; k++) {
-                                if (k !== j) {
-                                    somaDistAtual += calcularDistancia(ponto.latitude, ponto.longitude, grupo[k].latitude, grupo[k].longitude);
-                                    contAtual++;
-                                }
-                            }
-                            distMediaGrupoAtual = contAtual > 0 ? somaDistAtual / contAtual : 999;
-                        } else {
-                            // Grupo com 1 ponto - usar distância até a partida
-                            distMediaGrupoAtual = calcularDistancia(ponto.latitude, ponto.longitude, partida.latitude, partida.longitude);
-                        }
-                        
-                        // Verificar distância para outros grupos
-                        var melhorOutroGrupo = -1;
-                        var melhorDistOutro = distMediaGrupoAtual;
-                        
-                        for (var g = 0; g < grupos.length; g++) {
-                            if (g === i || grupos[g].length === 0) continue;
-                            
-                            // ⚠️ VERIFICAR SE O OUTRO GRUPO TEM ESPAÇO!
-                            if (grupos[g].length >= maxPorGrupo) {
-                                continue; // Grupo cheio, não pode receber
-                            }
-                            
-                            // Calcular distância média para pontos deste outro grupo
-                            var somaDistOutro = 0;
-                            for (var k = 0; k < grupos[g].length; k++) {
-                                somaDistOutro += calcularDistancia(ponto.latitude, ponto.longitude, grupos[g][k].latitude, grupos[g][k].longitude);
-                            }
-                            var distMediaOutro = somaDistOutro / grupos[g].length;
-                            
-                            // Se for significativamente mais perto (30% menor)
-                            if (distMediaOutro < melhorDistOutro * (1 - limiteAjuste)) {
-                                melhorDistOutro = distMediaOutro;
-                                melhorOutroGrupo = g;
-                            }
-                        }
-                        
-                        // Mover ponto se encontrou grupo melhor E o grupo tem espaço
-                        if (melhorOutroGrupo >= 0 && grupos[melhorOutroGrupo].length < maxPorGrupo) {
-                            pontosParaRemover.push({ idx: j, novoGrupo: melhorOutroGrupo, ponto: ponto });
-                            houveMudanca = true;
-                        }
-                    }
-                    
-                    // Aplicar movimentos (em ordem reversa para não bagunçar índices)
-                    pontosParaRemover.sort(function(a, b) { return b.idx - a.idx; });
-                    for (var m = 0; m < pontosParaRemover.length; m++) {
-                        var mov = pontosParaRemover[m];
-                        // Verificar novamente se tem espaço (pode ter mudado)
-                        if (grupos[mov.novoGrupo].length < maxPorGrupo) {
-                            grupos[i].splice(mov.idx, 1);
-                            grupos[mov.novoGrupo].push(mov.ponto);
-                            ajustes++;
-                        }
-                    }
-                }
-                
-                if (!houveMudanca) break;
-            }
-            
-            console.log('🔀 Agrupamento HÍBRIDO - Passo 2 (ajustes):', ajustes, 'pontos movidos (limite: ' + maxPorGrupo + '/rota)');
-            console.log('🔀 Resultado final:', grupos.map(function(g) { return g.length; }));
-            
-            // Remover grupos vazios
-            return grupos.filter(function(g) { return g.length > 0; });
-        };
-        
-        // ==================== FUNÇÃO PRINCIPAL DE AGRUPAMENTO ====================
-        const agruparEnderecos = function(partida, pontos, numGrupos) {
-            console.log('📊 Modo de agrupamento:', modoAgrupamento);
-            
-            if (modoAgrupamento === 'direcao') {
-                return agruparPorSetorAngular(partida, pontos, numGrupos);
-            } else if (modoAgrupamento === 'proximidade') {
-                return agruparPorProximidade(partida, pontos, numGrupos);
-            } else {
-                return agruparHibrido(partida, pontos, numGrupos);
-            }
-        };
-        
-        // Função para gerar múltiplas rotas
-        const gerarMultiplasRotas = async function() {
-            var pontosEntrega = enderecosSelecionados.slice(1); // Excluir ponto de partida
-            var pontoPartida = enderecosSelecionados[0];
-            
-            if (pontosEntrega.length < 2) {
-                showToast && showToast('Adicione mais endereços', 'error');
-                return;
-            }
-            
-            setLoadingMultiplas(true);
-            setRotasGeradas([]);
-            setResultado(null);
-            
-            try {
-                // Calcular número de grupos
-                var numGrupos = Math.ceil(pontosEntrega.length / paradasPorRota);
-                console.log('📊 Gerando', numGrupos, 'rotas com ~' + paradasPorRota + ' paradas cada');
-                
-                // Agrupar usando o modo selecionado
-                var grupos = agruparEnderecos(pontoPartida, pontosEntrega, numGrupos);
-                console.log('📍 Grupos formados:', grupos.map(function(g) { return g.length; }));
-                
-                var rotas = [];
-                
-                for (var i = 0; i < grupos.length; i++) {
-                    var grupo = grupos[i];
-                    if (grupo.length === 0) continue;
-                    
-                    showToast && showToast('Otimizando rota ' + (i + 1) + '/' + grupos.length + '...', 'info');
-                    
-                    // Montar pontos da rota (partida + grupo)
-                    var pontosRota = [pontoPartida].concat(grupo);
-                    
-                    try {
-                        // Otimizar rota
-                        var otimizacao = await otimizarRota(pontosRota);
-                        var ordem = [pontosRota[0]];
-                        
-                        if (otimizacao.routes && otimizacao.routes[0]) {
-                            otimizacao.routes[0].steps.filter(function(s) { return s.type === 'job'; }).forEach(function(s) { 
-                                ordem.push(pontosRota[s.job]); 
-                            });
-                        }
-                        
-                        if (retornarInicio) {
-                            ordem.push(Object.assign({}, pontosRota[0], { isRetorno: true }));
-                        }
-                        
-                        // Obter geometria
-                        var geo = await obterGeometria(ordem);
-                        var km = 0, min = 0;
-                        
-                        if (geo && geo.features && geo.features[0] && geo.features[0].properties.segments) {
-                            geo.features[0].properties.segments.forEach(function(s) { 
-                                km += s.distance || 0; 
-                                min += s.duration || 0; 
-                            });
-                        }
-                        
-                        // Calcular direção média do grupo
-                        var anguloMedio = grupo.reduce(function(acc, p) { 
-                            return acc + calcularAngulo(pontoPartida, p); 
-                        }, 0) / grupo.length;
-                        var direcao = obterDirecaoCardeal(anguloMedio);
-                        
-                        rotas.push({
-                            id: i + 1,
-                            cor: coresRotas[i % coresRotas.length],
-                            pontos: ordem,
-                            distanciaKm: (km / 1000).toFixed(1),
-                            tempoMin: Math.round(min / 60),
-                            geometria: geo,
-                            numParadas: grupo.length,
-                            direcao: direcao
-                        });
-                        
-                    } catch (err) {
-                        console.error('Erro na rota', i + 1, ':', err);
-                        
-                        // Calcular direção mesmo com erro
-                        var anguloMedio = grupo.reduce(function(acc, p) { 
-                            return acc + calcularAngulo(pontoPartida, p); 
-                        }, 0) / grupo.length;
-                        var direcao = obterDirecaoCardeal(anguloMedio);
-                        
-                        // Adicionar rota sem otimização
-                        rotas.push({
-                            id: i + 1,
-                            cor: coresRotas[i % coresRotas.length],
-                            pontos: [pontoPartida].concat(grupo),
-                            distanciaKm: '?',
-                            tempoMin: '?',
-                            geometria: null,
-                            numParadas: grupo.length,
-                            direcao: direcao,
-                            erro: true
-                        });
-                    }
-                    
-                    // Delay para não sobrecarregar API
-                    await new Promise(function(r) { setTimeout(r, 500); });
-                }
-                
-                setRotasGeradas(rotas);
-                atualizarMapaMultiplasRotas(rotas);
-                showToast && showToast(rotas.length + ' rotas geradas!', 'success');
-                
-            } catch (err) {
-                console.error('Erro ao gerar rotas:', err);
-                showToast && showToast('Erro: ' + err.message, 'error');
-            }
-            
-            setLoadingMultiplas(false);
-        };
-        
-        // Função para atualizar mapa com múltiplas rotas
-        const atualizarMapaMultiplasRotas = function(rotas) {
-            if (!mapaRoteirizador || !markersLayer) return;
-            
-            markersLayer.clearLayers();
-            if (routeLayer) { 
-                mapaRoteirizador.removeLayer(routeLayer); 
-                setRouteLayer(null); 
-            }
-            
-            var layerGroup = L.layerGroup();
-            var todosPontos = [];
-            
-            rotas.forEach(function(rota, rotaIdx) {
-                var cor = rota.cor;
-                
-                // Adicionar marcadores
-                rota.pontos.filter(function(p) { return !p.isRetorno; }).forEach(function(p, idx) {
-                    todosPontos.push([p.latitude, p.longitude]);
-                    
-                    var isPartida = idx === 0;
-                    var icon = L.divIcon({ 
-                        className: '', 
-                        html: '<div style="background:' + (isPartida ? '#10b981' : cor) + ';color:#fff;width:' + (isPartida ? '32px' : '26px') + ';height:' + (isPartida ? '32px' : '26px') + ';border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:' + (isPartida ? '14px' : '11px') + ';border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,0.3)">' + (isPartida ? '🚩' : (rotaIdx + 1) + '.' + idx) + '</div>', 
-                        iconSize: [isPartida ? 32 : 26, isPartida ? 32 : 26], 
-                        iconAnchor: [isPartida ? 16 : 13, isPartida ? 16 : 13] 
-                    });
-                    
-                    L.marker([p.latitude, p.longitude], { icon: icon })
-                        .addTo(layerGroup)
-                        .bindPopup('<b style="color:' + cor + '">Rota ' + (rotaIdx + 1) + ' - ' + (isPartida ? 'PARTIDA' : 'Parada ' + idx) + '</b><br>' + (p.endereco || '').substring(0, 50));
-                });
-                
-                // Adicionar linha da rota
-                if (rota.geometria && rota.geometria.features) {
-                    L.geoJSON(rota.geometria, { 
-                        style: { color: cor, weight: 4, opacity: 0.8 } 
-                    }).addTo(layerGroup);
-                }
-            });
-            
-            layerGroup.addTo(mapaRoteirizador);
-            setRouteLayer(layerGroup);
-            
-            if (todosPontos.length > 0) {
-                mapaRoteirizador.fitBounds(L.latLngBounds(todosPontos), { padding: [50, 50] });
-            }
-        };
-        
-        // Funções para abrir Waze/Maps de uma rota específica
-        const abrirWazeRota = function(rota) {
-            var p = rota.pontos.filter(function(x) { return !x.isRetorno; });
-            if (p.length > 1) {
-                // Waze só aceita destino final, então abrimos para o último ponto
-                window.open('https://waze.com/ul?ll=' + p[p.length-1].latitude + ',' + p[p.length-1].longitude + '&navigate=yes', '_blank');
-            }
-        };
-        
-        const abrirMapsRota = function(rota) {
-            var p = rota.pontos.filter(function(x) { return !x.isRetorno; });
-            if (p.length > 0) {
-                window.open('https://www.google.com/maps/dir/' + p.map(function(x) { return x.latitude + ',' + x.longitude; }).join('/'), '_blank');
-            }
         };
 
         useEffect(() => {
@@ -1611,6 +1072,53 @@ const hideLoadingScreen = () => {
                     setEnderecosSelecionados([Object.assign({}, partida, { id: Date.now() })]);
                 }
             } catch(e) {}
+        }, []);
+
+        // Carregar TODOS os endereços do BI - sem agrupamento agressivo
+        useEffect(() => {
+            const carregarEnderecosBI = async () => {
+                try {
+                    setCarregandoBI(true);
+                    const response = await fetch(`${API_URL}/bi/entregas-lista?`);
+                    const data = await response.json();
+                    if (Array.isArray(data)) {
+                        // Agrupar apenas endereços IDÊNTICOS (mesmo endereço + cidade)
+                        const map = new Map();
+                        data.forEach(e => {
+                            if (!e.endereco) return;
+                            var endLimpo = limparPonto(e.endereco);
+                            // Chave: endereço limpo + cidade (para não misturar cidades)
+                            const chave = (endLimpo + '|' + (e.cidade || '')).toLowerCase();
+                            
+                            if (!map.has(chave)) {
+                                map.set(chave, { 
+                                    endereco: endLimpo, 
+                                    bairro: e.bairro, 
+                                    cidade: e.cidade, 
+                                    estado: e.estado, 
+                                    latitude: e.latitude, 
+                                    longitude: e.longitude, 
+                                    contagem: 1 
+                                });
+                            } else {
+                                const x = map.get(chave); 
+                                x.contagem++;
+                                if (!x.latitude && e.latitude) { 
+                                    x.latitude = e.latitude; 
+                                    x.longitude = e.longitude; 
+                                }
+                                if (!x.bairro && e.bairro) x.bairro = e.bairro;
+                                if (!x.estado && e.estado) x.estado = e.estado;
+                            }
+                        });
+                        var enderecosUnicos = Array.from(map.values());
+                        console.log('🗺️ Endereços carregados:', data.length, '-> únicos:', enderecosUnicos.length);
+                        setEnderecosBI(enderecosUnicos);
+                    }
+                } catch (err) { console.error(err); }
+                setCarregandoBI(false);
+            };
+            carregarEnderecosBI();
         }, []);
 
         useEffect(() => {
@@ -1649,81 +1157,101 @@ const hideLoadingScreen = () => {
             }
         }, [enderecosSelecionados, mapaRoteirizador, markersLayer]);
 
-        // ==================== BUSCA DE ENDEREÇOS VIA GOOGLE ====================
-        // Busca só acontece quando usuário aperta Enter ou clica no botão
-        const buscarEndereco = async function() {
-            if (!termoBusca || termoBusca.length < 3) { 
-                showToast && showToast('Digite pelo menos 3 caracteres', 'error'); 
-                return; 
-            }
-            
-            setBuscando(true);
-            setSugestoes([]);
-            
-            try {
-                console.log('🔍 Buscando:', termoBusca);
-                var resp = await fetch(API_URL + '/geocode/google?endereco=' + encodeURIComponent(termoBusca));
+        // Buscar sugestões - busca mais abrangente
+        useEffect(() => {
+            const buscar = async () => {
+                if (!termoBusca || termoBusca.length < 2) { setSugestoes([]); return; }
+                setBuscando(true);
+                var termo = termoBusca.toLowerCase().trim();
+                var termos = termo.split(/\s+/); // Dividir em palavras
                 
-                if (resp.ok) {
-                    var data = await resp.json();
-                    if (data.results && data.results.length > 0) {
-                        var resultados = data.results.map(function(r) {
-                            return {
-                                endereco: r.endereco,
-                                latitude: r.latitude,
-                                longitude: r.longitude,
-                                fonte: r.fonte || 'google'
-                            };
+                var resultadosBI = enderecosBI.filter(function(e) {
+                    var endLower = (e.endereco || '').toLowerCase();
+                    var bairroLower = (e.bairro || '').toLowerCase();
+                    var cidadeLower = (e.cidade || '').toLowerCase();
+                    var textoCompleto = endLower + ' ' + bairroLower + ' ' + cidadeLower;
+                    
+                    // Todas as palavras devem estar presentes
+                    return termos.every(function(t) { return textoCompleto.includes(t); });
+                }).sort(function(a, b) { 
+                    // Priorizar os que têm coordenadas
+                    if (a.latitude && !b.latitude) return -1;
+                    if (!a.latitude && b.latitude) return 1;
+                    // Depois por contagem (mais usados primeiro)
+                    return (b.contagem || 0) - (a.contagem || 0);
+                }).slice(0, 15).map(function(e) { 
+                    return { 
+                        endereco: e.endereco, 
+                        bairro: e.bairro, 
+                        cidade: e.cidade, 
+                        estado: e.estado, 
+                        latitude: e.latitude, 
+                        longitude: e.longitude,
+                        contagem: e.contagem,
+                        fonte: 'bi'
+                    }; 
+                });
+                
+                // CEP
+                var resultadosCEP = [];
+                var cepMatch = termoBusca.match(/(\d{5})-?(\d{3})/);
+                if (cepMatch) {
+                    try {
+                        var resp = await fetch('https://viacep.com.br/ws/' + cepMatch[1] + cepMatch[2] + '/json/');
+                        var data = await resp.json();
+                        if (!data.erro) resultadosCEP.push({ 
+                            endereco: data.logradouro + ', ' + data.bairro + ', ' + data.localidade + ' - ' + data.uf, 
+                            bairro: data.bairro, 
+                            cidade: data.localidade, 
+                            estado: data.uf, 
+                            cep: data.cep,
+                            fonte: 'cep',
+                            precisaGeo: true 
                         });
-                        console.log('✅ Encontrados:', resultados.length, 'resultados');
-                        setSugestoes(resultados);
-                    } else {
-                        showToast && showToast('Nenhum endereço encontrado', 'warning');
-                    }
-                } else {
-                    var erro = await resp.json();
-                    showToast && showToast(erro.error || 'Erro na busca', 'error');
+                    } catch(e) {}
                 }
-            } catch (e) {
-                console.log('⚠️ Erro na busca:', e.message);
-                showToast && showToast('Erro ao buscar endereço', 'error');
-            }
-            
-            setBuscando(false);
-        };
+                setSugestoes([].concat(resultadosBI, resultadosCEP));
+                setBuscando(false);
+            };
+            var timer = setTimeout(buscar, 200);
+            return function() { clearTimeout(timer); };
+        }, [termoBusca, enderecosBI]);
 
-        // Handler para tecla Enter
-        const handleKeyDown = function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                buscarEndereco();
-            }
-        };
-
-        // Função para geocodificar (caso não tenha coordenadas)
         const geocodificarPreciso = async function(sug) {
-            // Se já tem coordenadas válidas, retorna direto
-            if (sug.latitude && sug.longitude) {
-                return sug;
-            }
+            if (sug.latitude && sug.longitude) return sug;
             
-            // Tentar via Google/Backend
-            try {
-                var resp = await fetch(API_URL + '/geocode/google?endereco=' + encodeURIComponent(sug.endereco));
-                if (resp.ok) {
+            var cidade = sug.cidade || '';
+            var estado = sug.estado || '';
+            var bairro = sug.bairro || '';
+            var endereco = sug.endereco || '';
+            
+            var queries = [];
+            if (endereco && cidade) queries.push(endereco + ', ' + cidade + (estado ? ' - ' + estado : '') + ', Brasil');
+            if (bairro && cidade) queries.push(bairro + ', ' + cidade + (estado ? ' - ' + estado : '') + ', Brasil');
+            if (cidade && estado) queries.push(cidade + ', ' + estado + ', Brasil');
+            
+            for (var i = 0; i < queries.length; i++) {
+                try {
+                    var resp = await fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(queries[i]) + '&limit=1&countrycodes=br', { headers: { 'User-Agent': 'TuttsRoteirizador/1.0' } });
                     var data = await resp.json();
-                    if (data.results && data.results[0]) {
-                        return Object.assign({}, sug, {
-                            latitude: data.results[0].latitude,
-                            longitude: data.results[0].longitude,
-                            fonte: data.results[0].fonte
-                        });
+                    if (data[0]) {
+                        var resultado = data[0].display_name.toLowerCase();
+                        if (!cidade || resultado.includes(cidade.toLowerCase())) {
+                            return Object.assign({}, sug, { latitude: parseFloat(data[0].lat), longitude: parseFloat(data[0].lon) });
+                        }
                     }
-                }
-            } catch (e) {
-                console.log('⚠️ Geocodificação falhou:', e.message);
+                } catch(e) {}
             }
             
+            for (var i = 0; i < queries.length; i++) {
+                try {
+                    var resp = await fetch('https://api.openrouteservice.org/geocode/search?api_key=' + ORS_API_KEY + '&text=' + encodeURIComponent(queries[i]) + '&boundary.country=BR&size=1');
+                    var data = await resp.json();
+                    if (data.features && data.features[0]) {
+                        return Object.assign({}, sug, { latitude: data.features[0].geometry.coordinates[1], longitude: data.features[0].geometry.coordinates[0] });
+                    }
+                } catch(e) {}
+            }
             return null;
         };
 
@@ -1731,30 +1259,28 @@ const hideLoadingScreen = () => {
             if (enderecosSelecionados.length >= 15) { showToast && showToast('Máximo 15', 'error'); return; }
             
             var endLimpo = limparPonto(sug.endereco);
-            
-            // Verificar duplicado
-            if (enderecosSelecionados.some(function(e) { return e.endereco.toLowerCase() === endLimpo.toLowerCase(); })) { 
+            var chaveNova = (endLimpo + '|' + (sug.cidade || '')).toLowerCase();
+            if (enderecosSelecionados.some(function(e) { return (e.endereco + '|' + (e.cidade || '')).toLowerCase() === chaveNova; })) { 
                 showToast && showToast('Já adicionado', 'error'); 
                 return; 
             }
             
-            // Google já retorna com coordenadas
             if (sug.latitude && sug.longitude) {
                 setEnderecosSelecionados(function(prev) { 
-                    return prev.concat([{ 
-                        id: Date.now(), 
-                        endereco: endLimpo, 
-                        latitude: sug.latitude, 
-                        longitude: sug.longitude, 
-                        fonte: sug.fonte 
-                    }]); 
+                    return prev.concat([{ id: Date.now(), endereco: endLimpo, bairro: sug.bairro, cidade: sug.cidade, estado: sug.estado, latitude: sug.latitude, longitude: sug.longitude, fonte: sug.fonte }]); 
                 });
-                setTermoBusca(''); 
-                setSugestoes([]);
-                showToast && showToast('✅ Adicionado', 'success');
-            } else {
-                showToast && showToast('Endereço sem coordenadas', 'error');
+                setTermoBusca(''); setSugestoes([]);
+                return;
             }
+            
+            showToast && showToast('Localizando...', 'info');
+            geocodificarPreciso(sug).then(function(end) {
+                if (!end) { showToast && showToast('Não localizado', 'error'); return; }
+                setEnderecosSelecionados(function(prev) { 
+                    return prev.concat([{ id: Date.now(), endereco: limparPonto(end.endereco), bairro: end.bairro, cidade: end.cidade, estado: end.estado, latitude: end.latitude, longitude: end.longitude, fonte: end.fonte }]); 
+                });
+            });
+            setTermoBusca(''); setSugestoes([]);
         };
 
         const remover = function(id) { setEnderecosSelecionados(function(prev) { return prev.filter(function(e) { return e.id !== id; }); }); };
@@ -1850,24 +1376,12 @@ const hideLoadingScreen = () => {
             React.createElement('div', { className: 'flex-1 flex overflow-hidden' },
                 React.createElement('div', { className: 'w-[360px] bg-white flex flex-col' },
                     React.createElement('div', { className: 'p-3 border-b bg-purple-50' },
-                        React.createElement('div', { className: 'flex gap-2' },
-                            React.createElement('input', { 
-                                type: 'text', 
-                                value: termoBusca, 
-                                onChange: function(e) { setTermoBusca(e.target.value); }, 
-                                onKeyDown: handleKeyDown,
-                                placeholder: '🔍 Digite o endereço e pressione Enter', 
-                                className: 'flex-1 px-3 py-2 border border-purple-200 rounded-lg text-sm focus:border-purple-500 focus:outline-none', 
-                                autoComplete: 'off' 
-                            }),
-                            React.createElement('button', { 
-                                onClick: buscarEndereco, 
-                                disabled: buscando || termoBusca.length < 3,
-                                className: 'px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed'
-                            }, buscando ? '...' : '🔍')
+                        React.createElement('div', { className: 'relative' },
+                            React.createElement('input', { type: 'text', value: termoBusca, onChange: function(e) { setTermoBusca(e.target.value); }, placeholder: '🔍 Buscar endereço, bairro, cidade...', className: 'w-full px-3 py-2 border border-purple-200 rounded-lg text-sm focus:border-purple-500 focus:outline-none', autoComplete: 'off' }),
+                            buscando && React.createElement('div', { className: 'absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full animate-spin' })
                         ),
                         React.createElement('div', { className: 'flex items-center justify-between mt-1' },
-                            React.createElement('p', { className: 'text-xs text-purple-600' }, '💡 Digite e pressione Enter para buscar'),
+                            React.createElement('p', { className: 'text-xs text-purple-600' }, carregandoBI ? '⏳ Carregando...' : '✅ ' + enderecosBI.length + ' endereços únicos'),
                             pontoPartidaPadrao && React.createElement('span', { className: 'text-xs text-green-600' }, '🚩 Partida salva')
                         ),
                         sugestoes.length > 0 && React.createElement('div', { className: 'mt-2 bg-white border border-purple-200 rounded-lg shadow-lg max-h-[250px] overflow-y-auto' },
@@ -1875,9 +1389,10 @@ const hideLoadingScreen = () => {
                                 var temCoord = sug.latitude && sug.longitude;
                                 return React.createElement('div', { key: idx, onClick: function() { adicionar(sug); }, className: 'px-3 py-2 hover:bg-purple-50 cursor-pointer border-b last:border-b-0' },
                                     React.createElement('div', { className: 'flex items-center gap-2' },
-                                        React.createElement('span', { className: 'text-sm' }, temCoord ? '📍' : '❓'),
+                                        React.createElement('span', { className: 'text-sm' }, sug.fonte === 'bi' ? (temCoord ? '📦' : '📦❓') : '📮'),
                                         React.createElement('div', { className: 'flex-1 min-w-0' },
-                                            React.createElement('div', { className: 'font-medium text-gray-800 truncate text-xs' }, sug.endereco)
+                                            React.createElement('div', { className: 'font-medium text-gray-800 truncate text-xs' }, sug.endereco),
+                                            React.createElement('div', { className: 'text-xs text-gray-500 truncate' }, [sug.bairro, sug.cidade, sug.estado].filter(Boolean).join(' - '))
                                         ),
                                         temCoord && React.createElement('span', { className: 'text-green-500 text-xs' }, '✓')
                                     )
@@ -1921,154 +1436,17 @@ const hideLoadingScreen = () => {
                             React.createElement('input', { type: 'checkbox', checked: retornarInicio, onChange: function(e) { setRetornarInicio(e.target.checked); }, className: 'w-4 h-4' }),
                             React.createElement('span', null, '↩️ Retornar ao início')
                         ),
-                        
-                        // Toggle modo múltiplas rotas
-                        React.createElement('label', { className: 'flex items-center gap-2 mb-3 cursor-pointer text-sm' },
-                            React.createElement('input', { 
-                                type: 'checkbox', 
-                                checked: modoMultiplasRotas, 
-                                onChange: function(e) { 
-                                    setModoMultiplasRotas(e.target.checked); 
-                                    setRotasGeradas([]);
-                                    setResultado(null);
-                                }, 
-                                className: 'w-4 h-4' 
-                            }),
-                            React.createElement('span', null, '🚚 Dividir em múltiplas rotas')
-                        ),
-                        
-                        // Seletor de paradas por rota (só aparece se modo múltiplas ativo)
-                        modoMultiplasRotas && React.createElement('div', { className: 'mb-3 p-2 bg-purple-50 rounded-lg' },
-                            React.createElement('div', { className: 'text-xs font-bold text-purple-700 mb-2' }, '📦 Paradas por rota:'),
-                            React.createElement('div', { className: 'flex gap-1 flex-wrap' },
-                                [2, 3, 4, 5, 6, 8, 10].map(function(num) {
-                                    return React.createElement('button', { 
-                                        key: num,
-                                        onClick: function() { setParadasPorRota(num); },
-                                        className: 'px-3 py-1 rounded text-xs font-medium transition-all ' + 
-                                            (paradasPorRota === num 
-                                                ? 'bg-purple-600 text-white' 
-                                                : 'bg-white text-purple-600 border border-purple-300 hover:bg-purple-100')
-                                    }, num);
-                                })
-                            ),
-                            
-                            // Seletor de modo de agrupamento
-                            React.createElement('div', { className: 'mt-3 pt-2 border-t border-purple-200' },
-                                React.createElement('div', { className: 'text-xs font-bold text-purple-700 mb-2' }, '🎯 Modo de agrupamento:'),
-                                React.createElement('div', { className: 'flex gap-1 flex-wrap' },
-                                    [
-                                        { id: 'hibrido', label: '🔀 Híbrido', desc: 'Melhor dos dois' },
-                                        { id: 'direcao', label: '🧭 Direção', desc: 'Por setor angular' },
-                                        { id: 'proximidade', label: '📍 Proximidade', desc: 'Por distância' }
-                                    ].map(function(modo) {
-                                        return React.createElement('button', { 
-                                            key: modo.id,
-                                            onClick: function() { setModoAgrupamento(modo.id); },
-                                            className: 'px-2 py-1 rounded text-xs font-medium transition-all ' + 
-                                                (modoAgrupamento === modo.id 
-                                                    ? 'bg-purple-600 text-white' 
-                                                    : 'bg-white text-purple-600 border border-purple-300 hover:bg-purple-100'),
-                                            title: modo.desc
-                                        }, modo.label);
-                                    })
-                                ),
-                                React.createElement('div', { className: 'text-xs text-gray-500 mt-1' },
-                                    modoAgrupamento === 'hibrido' ? '💡 Agrupa por direção e ajusta por proximidade' :
-                                    modoAgrupamento === 'direcao' ? '💡 Agrupa pontos na mesma direção (N, NE, L...)' :
-                                    '💡 Agrupa pontos próximos independente da direção'
-                                )
-                            ),
-                            
-                            enderecosSelecionados.length > 1 && React.createElement('div', { className: 'text-xs text-purple-600 mt-2' },
-                                '📊 ' + Math.ceil((enderecosSelecionados.length - 1) / paradasPorRota) + ' rota(s) com ~' + paradasPorRota + ' paradas'
-                            )
-                        ),
-                        
-                        // Botão de ação
-                        modoMultiplasRotas 
-                            ? React.createElement('button', { 
-                                onClick: gerarMultiplasRotas, 
-                                disabled: loadingMultiplas || enderecosSelecionados.length < 3, 
-                                className: 'w-full py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-bold text-sm hover:from-purple-700 hover:to-pink-700 disabled:opacity-50' 
-                            }, loadingMultiplas ? '⏳ Gerando rotas...' : '🚚 Gerar ' + Math.ceil((enderecosSelecionados.length - 1) / paradasPorRota) + ' Rotas')
-                            : React.createElement('button', { 
-                                onClick: roteirizar, 
-                                disabled: loading || enderecosSelecionados.length < 2, 
-                                className: 'w-full py-2 bg-purple-600 text-white rounded-lg font-bold text-sm hover:bg-purple-700 disabled:opacity-50' 
-                            }, loading ? '⏳ Calculando...' : '🚀 Otimizar Rota')
+                        React.createElement('button', { onClick: roteirizar, disabled: loading || enderecosSelecionados.length < 2, className: 'w-full py-2 bg-purple-600 text-white rounded-lg font-bold text-sm hover:bg-purple-700 disabled:opacity-50' }, loading ? '⏳ Calculando...' : '🚀 Otimizar Rota')
                     )
                 ),
                 React.createElement('div', { className: 'flex-1 flex flex-col' },
                     React.createElement('div', { id: 'mapa-roteirizador', className: 'flex-1' }),
-                    
-                    // Resultado rota única
-                    resultado && !modoMultiplasRotas && React.createElement('div', { className: 'bg-white border-t p-3' },
+                    resultado && React.createElement('div', { className: 'bg-white border-t p-3' },
                         React.createElement('div', { className: 'text-xs font-bold text-gray-600 mb-2' }, '✅ Ordem otimizada:'),
                         React.createElement('div', { className: 'flex flex-wrap gap-1' },
                             resultado.ordemOtimizada.map(function(p, idx) {
                                 return React.createElement('span', { key: idx, className: 'px-2 py-1 rounded text-xs font-medium ' + (idx === 0 || p.isRetorno ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700') },
                                     (idx === 0 ? '🚩' : p.isRetorno ? '↩️' : idx) + ' ' + (p.endereco || '').substring(0, 20)
-                                );
-                            })
-                        )
-                    ),
-                    
-                    // Resultado múltiplas rotas
-                    rotasGeradas.length > 0 && React.createElement('div', { className: 'bg-white border-t p-3 max-h-[300px] overflow-y-auto' },
-                        React.createElement('div', { className: 'flex items-center justify-between mb-3' },
-                            React.createElement('span', { className: 'text-sm font-bold text-gray-700' }, '🚚 ' + rotasGeradas.length + ' Rotas Geradas'),
-                            React.createElement('div', { className: 'text-xs text-gray-500' },
-                                'Total: ' + rotasGeradas.reduce(function(acc, r) { return acc + parseFloat(r.distanciaKm || 0); }, 0).toFixed(1) + ' km'
-                            )
-                        ),
-                        React.createElement('div', { className: 'space-y-2' },
-                            rotasGeradas.map(function(rota) {
-                                // Emoji da direção
-                                var emojiDirecao = {
-                                    'Norte': '⬆️', 'Nordeste': '↗️', 'Leste': '➡️', 'Sudeste': '↘️',
-                                    'Sul': '⬇️', 'Sudoeste': '↙️', 'Oeste': '⬅️', 'Noroeste': '↖️'
-                                }[rota.direcao] || '📍';
-                                
-                                return React.createElement('div', { 
-                                    key: rota.id, 
-                                    className: 'p-2 rounded-lg border-2',
-                                    style: { borderColor: rota.cor, background: rota.cor + '10' }
-                                },
-                                    React.createElement('div', { className: 'flex items-center justify-between mb-1' },
-                                        React.createElement('div', { className: 'flex items-center gap-2' },
-                                            React.createElement('span', { 
-                                                className: 'w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold',
-                                                style: { background: rota.cor }
-                                            }, rota.id),
-                                            React.createElement('span', { className: 'text-sm font-bold' }, 'Rota ' + rota.id),
-                                            React.createElement('span', { className: 'text-xs text-gray-500' }, '(' + rota.numParadas + ' paradas)'),
-                                            React.createElement('span', { className: 'text-xs bg-gray-100 px-1.5 py-0.5 rounded' }, emojiDirecao + ' ' + (rota.direcao || ''))
-                                        ),
-                                        React.createElement('div', { className: 'flex items-center gap-2' },
-                                            React.createElement('span', { className: 'text-xs font-medium text-green-600' }, rota.distanciaKm + ' km'),
-                                            React.createElement('span', { className: 'text-xs font-medium text-blue-600' }, rota.tempoMin + ' min')
-                                        )
-                                    ),
-                                    React.createElement('div', { className: 'flex flex-wrap gap-1 mb-2' },
-                                        rota.pontos.filter(function(p) { return !p.isRetorno; }).slice(1).map(function(p, idx) {
-                                            return React.createElement('span', { 
-                                                key: idx, 
-                                                className: 'px-1.5 py-0.5 rounded text-xs',
-                                                style: { background: rota.cor + '20', color: rota.cor }
-                                            }, (idx + 1) + '. ' + (p.endereco || '').substring(0, 15) + '...');
-                                        })
-                                    ),
-                                    React.createElement('div', { className: 'flex gap-2' },
-                                        React.createElement('button', { 
-                                            onClick: function() { abrirWazeRota(rota); },
-                                            className: 'flex-1 px-2 py-1 bg-cyan-500 text-white rounded text-xs font-medium hover:bg-cyan-600'
-                                        }, '🗺️ Waze'),
-                                        React.createElement('button', { 
-                                            onClick: function() { abrirMapsRota(rota); },
-                                            className: 'flex-1 px-2 py-1 bg-blue-500 text-white rounded text-xs font-medium hover:bg-blue-600'
-                                        }, '📍 Maps')
-                                    )
                                 );
                             })
                         )
@@ -2428,14 +1806,36 @@ const hideLoadingScreen = () => {
         // Estados para dropdowns da aba Config
         [configSecaoAberta, setConfigSecaoAberta] = useState(""), // "" = todas fechadas
         // ==================== SIDEBAR STATES ====================
-        [sidebarAberto, setSidebarAberto] = useState(false), // hover detectado
-        [sidebarFixo, setSidebarFixo] = useState(false), // fixado pelo usuário (pin)
-        [sidebarMenuAberto, setSidebarMenuAberto] = useState(null), // qual menu está expandido
+        [sidebarAberto, setSidebarAberto] = useState(false),
+        [sidebarFixo, setSidebarFixo] = useState(false),
+        [sidebarMenuAberto, setSidebarMenuAberto] = useState(null),
         ja = (e, t = "success") => {
             d({
                 message: e,
                 type: t
             }), setTimeout(() => d(null), 3e3)
+        };
+        
+        // ==================== FUNÇÃO DE NAVEGAÇÃO DO SIDEBAR ====================
+        const navegarSidebar = (moduloId, abaId) => {
+            he(moduloId);
+            if (moduloId === "financeiro") {
+                x(prev => ({...prev, finTab: abaId || "home-fin"}));
+            } else if (moduloId === "solicitacoes") {
+                x(prev => ({...prev, adminTab: abaId || "dashboard"}));
+            } else if (moduloId === "disponibilidade") {
+                he("solicitacoes");
+                x(prev => ({...prev, adminTab: "disponibilidade"}));
+            } else if (moduloId === "bi") {
+                ll(); tl(); al(); pl(); carregarPrazosProf();
+                if (abaId) ht(abaId);
+            } else if (moduloId === "config") {
+                x(prev => ({...prev, configTab: abaId || "usuarios"}));
+            } else if (moduloId === "operacional") {
+                x(prev => ({...prev, opTab: abaId || "indicacoes"}));
+            } else if (moduloId === "todo") {
+                if (abaId) setTodoTab(abaId);
+            }
         };
         
         // ==================== PORTAL DO ROTEIRIZADOR ====================
@@ -3573,184 +2973,6 @@ const hideLoadingScreen = () => {
             } catch (err) { 
                 console.error(err); 
                 setAvisosRegioes([]);
-            }
-        };
-
-        // ==================== FUNÇÕES DO ROTEIRIZADOR ====================
-        const carregarUsuariosRoteirizador = async () => {
-            try {
-                const res = await fetchAuth(`${API_URL.replace('/api', '')}/api/admin/roteirizador/usuarios`);
-                const data = await res.json();
-                x(prev => ({ ...prev, roteirizadorUsuarios: Array.isArray(data) ? data : [] }));
-            } catch (err) { 
-                console.error('Erro ao carregar usuários do roteirizador:', err);
-                x(prev => ({ ...prev, roteirizadorUsuarios: [] }));
-            }
-        };
-
-        const criarUsuarioRoteirizador = async (dados) => {
-            try {
-                const res = await fetchAuth(`${API_URL.replace('/api', '')}/api/admin/roteirizador/usuarios`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(dados)
-                });
-                const data = await res.json();
-                if (res.ok) {
-                    ja('Usuário criado com sucesso!', 'success');
-                    carregarUsuariosRoteirizador();
-                    x(prev => ({ ...prev, roteirizadorNovoUsuario: {} }));
-                    return true;
-                } else {
-                    ja(data.error || 'Erro ao criar usuário', 'error');
-                    return false;
-                }
-            } catch (err) {
-                ja('Erro de conexão', 'error');
-                return false;
-            }
-        };
-
-        const alternarAtivoRoteirizador = async (id, ativo) => {
-            try {
-                const res = await fetchAuth(`${API_URL.replace('/api', '')}/api/admin/roteirizador/usuarios/${id}/ativo`, {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ ativo })
-                });
-                if (res.ok) {
-                    ja(ativo ? 'Usuário ativado!' : 'Usuário desativado!', 'success');
-                    carregarUsuariosRoteirizador();
-                }
-            } catch (err) {
-                ja('Erro ao atualizar', 'error');
-            }
-        };
-
-        const resetarSenhaRoteirizador = async (id) => {
-            const novaSenha = prompt('Digite a nova senha (mínimo 6 caracteres):');
-            if (!novaSenha || novaSenha.length < 6) {
-                ja('Senha deve ter no mínimo 6 caracteres', 'error');
-                return;
-            }
-            try {
-                const res = await fetchAuth(`${API_URL.replace('/api', '')}/api/admin/roteirizador/usuarios/${id}/senha`, {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ nova_senha: novaSenha })
-                });
-                if (res.ok) {
-                    ja('Senha alterada com sucesso!', 'success');
-                }
-            } catch (err) {
-                ja('Erro ao resetar senha', 'error');
-            }
-        };
-
-        // ==================== FUNÇÕES SOLICITAÇÃO DE CORRIDAS ====================
-        const carregarClientesSolicitacao = async () => {
-            try {
-                const res = await fetchAuth(`${API_URL.replace('/api', '')}/api/admin/solicitacao/clientes`);
-                const data = await res.json();
-                x(prev => ({ ...prev, solicitacaoClientes: Array.isArray(data) ? data : [] }));
-            } catch (err) { 
-                console.error('Erro ao carregar clientes de solicitação:', err);
-                x(prev => ({ ...prev, solicitacaoClientes: [] }));
-            }
-        };
-
-        const criarClienteSolicitacao = async (dados) => {
-            try {
-                const res = await fetchAuth(`${API_URL.replace('/api', '')}/api/admin/solicitacao/clientes`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(dados)
-                });
-                const data = await res.json();
-                if (res.ok) {
-                    ja('Cliente criado com sucesso!', 'success');
-                    carregarClientesSolicitacao();
-                    x(prev => ({ ...prev, solicitacaoNovoCliente: {} }));
-                    return true;
-                } else {
-                    ja(data.error || 'Erro ao criar cliente', 'error');
-                    return false;
-                }
-            } catch (err) {
-                ja('Erro de conexão', 'error');
-                return false;
-            }
-        };
-
-        const alternarAtivoSolicitacao = async (id, ativo) => {
-            try {
-                const res = await fetchAuth(`${API_URL.replace('/api', '')}/api/admin/solicitacao/clientes/${id}/ativo`, {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ ativo })
-                });
-                if (res.ok) {
-                    ja(ativo ? 'Cliente ativado!' : 'Cliente desativado!', 'success');
-                    carregarClientesSolicitacao();
-                }
-            } catch (err) {
-                ja('Erro ao atualizar', 'error');
-            }
-        };
-
-        const resetarSenhaSolicitacao = async (id) => {
-            const novaSenha = prompt('Digite a nova senha (mínimo 4 caracteres):');
-            if (!novaSenha || novaSenha.length < 4) {
-                ja('Senha deve ter no mínimo 4 caracteres', 'error');
-                return;
-            }
-            try {
-                const res = await fetchAuth(`${API_URL.replace('/api', '')}/api/admin/solicitacao/clientes/${id}/senha`, {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ nova_senha: novaSenha })
-                });
-                if (res.ok) {
-                    ja('Senha alterada com sucesso!', 'success');
-                }
-            } catch (err) {
-                ja('Erro ao resetar senha', 'error');
-            }
-        };
-
-        const atualizarCredenciaisSolicitacao = async (id, tutts_token, tutts_cod_cliente) => {
-            try {
-                const res = await fetchAuth(`${API_URL.replace('/api', '')}/api/admin/solicitacao/clientes/${id}/credenciais`, {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ tutts_token, tutts_cod_cliente })
-                });
-                if (res.ok) {
-                    ja('Credenciais atualizadas!', 'success');
-                    carregarClientesSolicitacao();
-                }
-            } catch (err) {
-                ja('Erro ao atualizar credenciais', 'error');
-            }
-        };
-
-        const excluirClienteSolicitacao = async (id, nome) => {
-            if (!confirm(`⚠️ Tem certeza que deseja EXCLUIR o cliente "${nome}"?\n\nEsta ação é irreversível e excluirá também todo o histórico de corridas.`)) {
-                return;
-            }
-            try {
-                const res = await fetchAuth(`${API_URL.replace('/api', '')}/api/admin/solicitacao/clientes/${id}`, {
-                    method: 'DELETE'
-                });
-                if (res.ok) {
-                    ja('Cliente excluído com sucesso!', 'success');
-                    carregarClientesSolicitacao();
-                } else {
-                    const data = await res.json();
-                    ja(data.error || 'Erro ao excluir', 'error');
-                }
-            } catch (err) {
-                ja('Erro ao excluir cliente', 'error');
             }
         };
 
@@ -10397,8 +9619,8 @@ const hideLoadingScreen = () => {
                     className: "flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
                 }, "📋 Ir para Tarefas")
             ))),
-            // ==================== SIDEBAR AUTO-HIDE ====================
-            e && React.createElement(Sidebar, {
+            // ========== SIDEBAR E HEADER COMPACTO - FINANCEIRO ==========
+            React.createElement(Sidebar, {
                 usuario: l,
                 moduloAtivo: Ee,
                 setModulo: he,
@@ -10410,126 +9632,17 @@ const hideLoadingScreen = () => {
                 setSidebarFixo: setSidebarFixo,
                 hasModuleAccess: hasModuleAccess,
                 socialProfile: socialProfile,
-                onNavigate: (moduloId, abaId) => {
-                    he(moduloId);
-                    if (moduloId === "financeiro") {
-                        x(prev => ({...prev, finTab: abaId || "home-fin"}));
-                    } else if (moduloId === "solicitacoes") {
-                        x(prev => ({...prev, adminTab: abaId || "dashboard"}));
-                    } else if (moduloId === "disponibilidade") {
-                        he("solicitacoes");
-                        x(prev => ({...prev, adminTab: "disponibilidade"}));
-                    } else if (moduloId === "bi") {
-                        ll(); tl(); al(); pl(); carregarPrazosProf();
-                        if (abaId) ht(abaId);
-                    } else if (moduloId === "config") {
-                        x(prev => ({...prev, configTab: abaId || "usuarios"}));
-                    } else if (moduloId === "operacional") {
-                        x(prev => ({...prev, opTab: abaId || "indicacoes"}));
-                    } else if (moduloId === "todo") {
-                        if (abaId) setTodoTab(abaId);
-                    }
-                }
+                onNavigate: navegarSidebar
             }),
-            // ==================== HEADER COMPACTO (sem menu horizontal) ====================
-            (e || "admin" === l.role) && React.createElement("header", {
-                className: "bg-gradient-to-r from-indigo-900 to-purple-900 shadow-lg"
-            },
-                React.createElement("div", {
-                    className: "max-w-7xl mx-auto px-4 py-3 flex justify-between items-center"
-                },
-                    // Lado esquerdo - Logo e módulo atual
-                    React.createElement("div", {className: "flex items-center gap-4"},
-                        React.createElement("div", {className: "flex items-center gap-2"},
-                            React.createElement("span", {className: "text-2xl"}, "🏍️"),
-                            React.createElement("span", {className: "text-white font-bold text-lg hidden sm:block"}, "Tutts")
-                        ),
-                        React.createElement("div", {className: "h-6 w-px bg-white/20 hidden sm:block"}),
-                        React.createElement("div", {className: "flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-lg"},
-                            React.createElement("span", {className: "text-lg"}, 
-                                SISTEMA_MODULOS_CONFIG.find(m => m.id === Ee)?.icon || "🏠"
-                            ),
-                            React.createElement("span", {className: "text-white font-medium text-sm"},
-                                SISTEMA_MODULOS_CONFIG.find(m => m.id === Ee)?.label || "Início"
-                            )
-                        )
-                    ),
-                    // Lado direito - Status e ações
-                    React.createElement("div", {className: "flex items-center gap-3"},
-                        // Status tempo real
-                        React.createElement("div", {
-                            className: "flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full"
-                        },
-                            React.createElement("span", {
-                                className: "w-2 h-2 rounded-full " + (f ? "bg-yellow-400 animate-pulse" : "bg-green-400")
-                            }),
-                            React.createElement("span", {className: "text-xs text-indigo-200 hidden sm:block"},
-                                f ? "Atualizando..." : E ? E.toLocaleTimeString("pt-BR", {hour: "2-digit", minute: "2-digit"}) : "⚡ 10s"
-                            )
-                        ),
-                        // Botão atualizar
-                        React.createElement("button", {
-                            onClick: ul,
-                            className: "p-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-colors",
-                            title: "Atualizar dados"
-                        }, "🔄"),
-                        // Info usuário
-                        React.createElement("div", {className: "flex items-center gap-2"},
-                            socialProfile?.profile_photo ? React.createElement("img", {
-                                src: socialProfile.profile_photo,
-                                className: "w-8 h-8 rounded-full object-cover border-2 border-white/30"
-                            }) : React.createElement("div", {
-                                className: "w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold text-sm"
-                            }, l.fullName?.charAt(0)?.toUpperCase() || "?"),
-                            React.createElement("div", {className: "hidden md:block"},
-                                React.createElement("p", {className: "text-white text-sm font-medium leading-tight"}, l.fullName?.split(" ")[0] || "Usuário"),
-                                React.createElement("p", {className: "text-indigo-300 text-xs leading-tight"},
-                                    l.role === "admin_master" ? "👑 Master" : "👑 Admin"
-                                )
-                            )
-                        ),
-                        // Botão sair
-                        React.createElement("button", {
-                            onClick: () => o(null),
-                            className: "p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors",
-                            title: "Sair"
-                        }, "🚪")
-                    )
-                )
-            ),
-            // Sidebar para admin também
-            "admin" === l.role && !e && React.createElement(Sidebar, {
+            React.createElement(HeaderCompacto, {
                 usuario: l,
                 moduloAtivo: Ee,
-                setModulo: he,
-                menuAberto: sidebarMenuAberto,
-                setMenuAberto: setSidebarMenuAberto,
-                sidebarAberto: sidebarAberto,
-                setSidebarAberto: setSidebarAberto,
-                sidebarFixo: sidebarFixo,
-                setSidebarFixo: setSidebarFixo,
-                hasModuleAccess: hasModuleAccess,
                 socialProfile: socialProfile,
-                onNavigate: (moduloId, abaId) => {
-                    he(moduloId);
-                    if (moduloId === "financeiro") {
-                        x(prev => ({...prev, finTab: abaId || "home-fin"}));
-                    } else if (moduloId === "solicitacoes") {
-                        x(prev => ({...prev, adminTab: abaId || "dashboard"}));
-                    } else if (moduloId === "disponibilidade") {
-                        he("solicitacoes");
-                        x(prev => ({...prev, adminTab: "disponibilidade"}));
-                    } else if (moduloId === "bi") {
-                        ll(); tl(); al(); pl(); carregarPrazosProf();
-                        if (abaId) ht(abaId);
-                    } else if (moduloId === "config") {
-                        x(prev => ({...prev, configTab: abaId || "usuarios"}));
-                    } else if (moduloId === "operacional") {
-                        x(prev => ({...prev, opTab: abaId || "indicacoes"}));
-                    } else if (moduloId === "todo") {
-                        if (abaId) setTodoTab(abaId);
-                    }
-                }
+                isLoading: f,
+                lastUpdate: E,
+                onRefresh: ul,
+                onLogout: () => o(null),
+                onGoHome: () => he("home")
             }),
             p.deleteConfirm && React.createElement("div", {
                 className: "fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
@@ -10574,46 +9687,6 @@ const hideLoadingScreen = () => {
                 })(p.deleteConfirm.id),
                 className: "flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700"
             }, "🗑️ Excluir")))), 
-            
-            // Barra de abas - oculta na Home
-            p.finTab !== "home-fin" && React.createElement("div", {
-                className: "bg-white border-b sticky top-0 z-10"
-            }, React.createElement("div", {
-                className: "max-w-7xl mx-auto px-2 flex gap-0.5 overflow-x-auto"
-            }, 
-            // Botão Home
-            React.createElement("button", {
-                onClick: () => { x({...p, finTab: "home-fin"}); },
-                className: "relative px-2 py-1.5 text-xs font-semibold whitespace-nowrap rounded-t-lg " + ("home-fin" === p.finTab ? "text-green-700 border-b-2 border-green-600 bg-green-50" : "text-gray-600 hover:bg-gray-100")
-            }, "🏠 Home"),
-            ["solicitacoes", "validacao", "conciliacao", "saldo-plific", "resumo", "gratuidades", "restritos", "indicacoes", "promo-novatos", "loja", "relatorios", "horarios", "avisos", "backup"].filter(function(tabId) {
-                // Admin master tem acesso a tudo
-                if ("admin_master" === l.role) return true;
-                // Verificar permissão da aba
-                const abaKey = "financeiro_" + tabId.replace("-", "");
-                const abas = l.permissions && l.permissions.abas ? l.permissions.abas : {};
-                // Se não há permissões de abas definidas, mostrar todas
-                if (Object.keys(abas).length === 0) return true;
-                // Verificar se a aba específica está permitida (default: true se não definido)
-                return abas[abaKey] !== false;
-            }).map(e => React.createElement("button", {
-                key: e,
-                onClick: () => {
-                    x({
-                        ...p,
-                        finTab: e
-                    }), Pa(e)
-                },
-                className: "relative px-2 py-1.5 text-xs font-semibold whitespace-nowrap rounded-t-lg " + ((p.finTab || "home-fin") === e ? "text-green-700 border-b-2 border-green-600 bg-green-50" : "text-gray-600 hover:bg-gray-100")
-            }, "solicitacoes" === e && React.createElement(React.Fragment, null, "📋 Solicitações", y.solicitacoes > 0 && "solicitacoes" !== p.finTab && React.createElement("span", {
-                className: "absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-pulse"
-            }, y.solicitacoes > 9 ? "9+" : y.solicitacoes)), "validacao" === e && React.createElement(React.Fragment, null, "📊 Validação", y.validacao > 0 && "validacao" !== p.finTab && React.createElement("span", {
-                className: "absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-pulse"
-            }, y.validacao > 9 ? "9+" : y.validacao)), "conciliacao" === e && "✅ Conciliação", "resumo" === e && "🔍 Resumo", "gratuidades" === e && React.createElement(React.Fragment, null, "🎁 Gratuidades", y.gratuidades > 0 && "gratuidades" !== p.finTab && React.createElement("span", {
-                className: "absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-pulse"
-            }, y.gratuidades > 9 ? "9+" : y.gratuidades)), "restritos" === e && "🚫 Restritos", "indicacoes" === e && "👥 Indicações", "promo-novatos" === e && "🚀 Promo Novatos", "loja" === e && React.createElement(React.Fragment, null, "🛒 Loja", y.loja > 0 && "loja" !== p.finTab && React.createElement("span", {
-                className: "absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-pulse"
-            }, y.loja > 9 ? "9+" : y.loja)), "relatorios" === e && "📈 Relatórios", "horarios" === e && "🕐 Horários", "avisos" === e && "📢 Avisos", "backup" === e && "💾 Backup", "saldo-plific" === e && "💳 Saldo Plific")))),
             
             // =============================================
             // HOME FINANCEIRO - Página Inicial do Módulo
@@ -11401,32 +10474,8 @@ const hideLoadingScreen = () => {
                         let r;
                         if ("solicitacao" === e) r = new Date(l.created_at).toISOString().split("T")[0];
                         else {
-                            // A partir de 09/01/2026, usar debito_plific_at (nova coluna da aba Solicitações)
-                            // Antes disso, usar debito_at (coluna antiga)
-                            const dataCorte = "2026-01-09";
-                            const dataDebitoNova = l.debito_plific_at ? new Date(l.debito_plific_at).toISOString().split("T")[0] : null;
-                            const dataDebitoAntiga = l.debito_at ? new Date(l.debito_at).toISOString().split("T")[0] : null;
-                            
-                            // Se tem data nova e é >= corte, usa a nova
-                            if (dataDebitoNova && dataDebitoNova >= dataCorte) {
-                                r = dataDebitoNova;
-                            } 
-                            // Se tem data antiga e é < corte, usa a antiga
-                            else if (dataDebitoAntiga && dataDebitoAntiga < dataCorte) {
-                                r = dataDebitoAntiga;
-                            }
-                            // Se tem data nova (mesmo antes do corte), usa ela
-                            else if (dataDebitoNova) {
-                                r = dataDebitoNova;
-                            }
-                            // Fallback para data antiga
-                            else if (dataDebitoAntiga) {
-                                r = dataDebitoAntiga;
-                            }
-                            // Sem data de débito
-                            else {
-                                return !1;
-                            }
+                            if (!l.debito_at) return !1;
+                            r = new Date(l.debito_at).toISOString().split("T")[0]
                         }
                         return t && a ? r >= t && r <= a : t ? r >= t : !a || r <= a
                     }),
@@ -17723,7 +16772,7 @@ const hideLoadingScreen = () => {
             return React.createElement("div", {
                 className: "min-h-screen bg-gray-50"
             }, i && React.createElement(Toast, i), n && React.createElement(LoadingOverlay, null),
-            // Sidebar
+            // ========== SIDEBAR E HEADER COMPACTO - OPERACIONAL ==========
             React.createElement(Sidebar, {
                 usuario: l,
                 moduloAtivo: Ee,
@@ -17736,18 +16785,8 @@ const hideLoadingScreen = () => {
                 setSidebarFixo: setSidebarFixo,
                 hasModuleAccess: hasModuleAccess,
                 socialProfile: socialProfile,
-                onNavigate: (moduloId, abaId) => {
-                    he(moduloId);
-                    if (moduloId === "financeiro") x(prev => ({...prev, finTab: abaId || "home-fin"}));
-                    else if (moduloId === "solicitacoes") x(prev => ({...prev, adminTab: abaId || "dashboard"}));
-                    else if (moduloId === "disponibilidade") { he("solicitacoes"); x(prev => ({...prev, adminTab: "disponibilidade"})); }
-                    else if (moduloId === "bi") { ll(); tl(); al(); pl(); carregarPrazosProf(); if (abaId) ht(abaId); }
-                    else if (moduloId === "config") x(prev => ({...prev, configTab: abaId || "usuarios"}));
-                    else if (moduloId === "operacional") x(prev => ({...prev, opTab: abaId || "indicacoes"}));
-                    else if (moduloId === "todo") { if (abaId) setTodoTab(abaId); }
-                }
+                onNavigate: navegarSidebar
             }),
-            // Header Compacto
             React.createElement(HeaderCompacto, {
                 usuario: l,
                 moduloAtivo: Ee,
@@ -17755,93 +16794,9 @@ const hideLoadingScreen = () => {
                 isLoading: f,
                 lastUpdate: E,
                 onRefresh: ul,
-                onLogout: () => o(null)
+                onLogout: () => o(null),
+                onGoHome: () => he("home")
             }),
-            // Abas do Operacional
-            React.createElement("div", {className: "bg-white border-b sticky top-0 z-10"},
-                React.createElement("div", {className: "max-w-7xl mx-auto px-4 flex gap-1 overflow-x-auto"},
-                    // Aba Indicação
-                    (function() {
-                        if ("admin_master" === l.role) return true;
-                        const abas = l.permissions && l.permissions.abas ? l.permissions.abas : {};
-                        if (Object.keys(abas).length === 0) return true;
-                        return abas["operacional_indicacoes"] !== false;
-                    })() && React.createElement("button", {
-                        onClick: function() { x(e => ({...e, opTab: "indicacoes"})); },
-                        className: "px-4 py-2.5 text-sm font-semibold whitespace-nowrap " + ((p.opTab || "indicacoes") === "indicacoes" ? "text-teal-700 border-b-2 border-teal-600 bg-teal-50" : "text-gray-600 hover:bg-gray-100")
-                    }, "👥 Indicação"),
-                    // Aba Promo Novatos
-                    (function() {
-                        if ("admin_master" === l.role) return true;
-                        const abas = l.permissions && l.permissions.abas ? l.permissions.abas : {};
-                        if (Object.keys(abas).length === 0) return true;
-                        return abas["operacional_promo-novatos"] !== false;
-                    })() && React.createElement("button", {
-                        onClick: function() { x(e => ({...e, opTab: "promo-novatos"})); },
-                        className: "px-4 py-2.5 text-sm font-semibold whitespace-nowrap " + (p.opTab === "promo-novatos" ? "text-teal-700 border-b-2 border-teal-600 bg-teal-50" : "text-gray-600 hover:bg-gray-100")
-                    }, "🚀 Promo Novato"),
-                    // Aba Avisos - verifica permissão
-                    (function() {
-                        if ("admin_master" === l.role) return true;
-                        const abas = l.permissions && l.permissions.abas ? l.permissions.abas : {};
-                        if (Object.keys(abas).length === 0) return true;
-                        return abas["operacional_avisos"] !== false;
-                    })() && React.createElement("button", {
-                        onClick: function() { x(e => ({...e, opTab: "avisos"})); },
-                        className: "px-4 py-2.5 text-sm font-semibold whitespace-nowrap " + (p.opTab === "avisos" ? "text-teal-700 border-b-2 border-teal-600 bg-teal-50" : "text-gray-600 hover:bg-gray-100")
-                    }, "📢 Avisos"),
-                    // Aba Novas Operações - verifica permissão
-                    (function() {
-                        if ("admin_master" === l.role) return true;
-                        const abas = l.permissions && l.permissions.abas ? l.permissions.abas : {};
-                        if (Object.keys(abas).length === 0) return true;
-                        return abas["operacional_novas-operacoes"] !== false;
-                    })() && React.createElement("button", {
-                        onClick: function() { x(e => ({...e, opTab: "novas-operacoes"})); carregarOperacoes(); },
-                        className: "px-4 py-2.5 text-sm font-semibold whitespace-nowrap " + (p.opTab === "novas-operacoes" ? "text-teal-700 border-b-2 border-teal-600 bg-teal-50" : "text-gray-600 hover:bg-gray-100")
-                    }, "🏢 Novas Operações"),
-                    // Aba Recrutamento - verifica permissão
-                    (function() {
-                        if ("admin_master" === l.role) return true;
-                        const abas = l.permissions && l.permissions.abas ? l.permissions.abas : {};
-                        if (Object.keys(abas).length === 0) return true;
-                        return abas["operacional_recrutamento"] !== false;
-                    })() && React.createElement("button", {
-                        onClick: function() { x(e => ({...e, opTab: "recrutamento"})); carregarRecrutamento(); },
-                        className: "px-4 py-2.5 text-sm font-semibold whitespace-nowrap " + (p.opTab === "recrutamento" ? "text-teal-700 border-b-2 border-teal-600 bg-teal-50" : "text-gray-600 hover:bg-gray-100")
-                    }, "🏍️ Recrutamento"),
-                    // Aba Localização Clientes - verifica permissão
-                    (function() {
-                        if ("admin_master" === l.role) return true;
-                        const abas = l.permissions && l.permissions.abas ? l.permissions.abas : {};
-                        if (Object.keys(abas).length === 0) return true;
-                        return abas["operacional_localizacao-clientes"] !== false;
-                    })() && React.createElement("button", {
-                        onClick: function() { x(e => ({...e, opTab: "localizacao-clientes"})); carregarLocalizacaoClientes(); },
-                        className: "px-4 py-2.5 text-sm font-semibold whitespace-nowrap " + (p.opTab === "localizacao-clientes" ? "text-teal-700 border-b-2 border-teal-600 bg-teal-50" : "text-gray-600 hover:bg-gray-100")
-                    }, "📍 Localização Clientes"),
-                    // Aba Relatório Diário - verifica permissão
-                    (function() {
-                        if ("admin_master" === l.role) return true;
-                        const abas = l.permissions && l.permissions.abas ? l.permissions.abas : {};
-                        if (Object.keys(abas).length === 0) return true;
-                        return abas["operacional_relatorio-diario"] !== false;
-                    })() && React.createElement("button", {
-                        onClick: function() { x(e => ({...e, opTab: "relatorio-diario"})); carregarRelatoriosDiarios(); },
-                        className: "px-4 py-2.5 text-sm font-semibold whitespace-nowrap " + (p.opTab === "relatorio-diario" ? "text-teal-700 border-b-2 border-teal-600 bg-teal-50" : "text-gray-600 hover:bg-gray-100")
-                    }, "📝 Relatório Diário"),
-                    // Botão Score Prof
-                    (() => {
-                        if ("admin_master" === l.role) return true;
-                        const abas = l.permissions && l.permissions.abas ? l.permissions.abas : {};
-                        if (Object.keys(abas).length === 0) return true;
-                        return abas["operacional_scoreprof"] !== false;
-                    })() && React.createElement("button", {
-                        onClick: function() { x(e => ({...e, opTab: "score-prof"})); },
-                        className: "px-4 py-2.5 text-sm font-semibold whitespace-nowrap " + (p.opTab === "score-prof" ? "text-teal-700 border-b-2 border-teal-600 bg-teal-50" : "text-gray-600 hover:bg-gray-100")
-                    }, "⭐ Score Prof")
-                )
-            ),
             // Conteúdo das abas
             React.createElement("div", {className: "max-w-7xl mx-auto p-6"},
                 // Conteúdo Indicação
@@ -19661,7 +18616,7 @@ const hideLoadingScreen = () => {
             return React.createElement("div", {
                 className: "min-h-screen bg-gray-100"
             }, i && React.createElement(Toast, i), n && React.createElement(LoadingOverlay, null),
-            // Sidebar
+            // ========== SIDEBAR E HEADER COMPACTO - CONFIG ==========
             React.createElement(Sidebar, {
                 usuario: l,
                 moduloAtivo: Ee,
@@ -19674,18 +18629,8 @@ const hideLoadingScreen = () => {
                 setSidebarFixo: setSidebarFixo,
                 hasModuleAccess: hasModuleAccess,
                 socialProfile: socialProfile,
-                onNavigate: (moduloId, abaId) => {
-                    he(moduloId);
-                    if (moduloId === "financeiro") x(prev => ({...prev, finTab: abaId || "home-fin"}));
-                    else if (moduloId === "solicitacoes") x(prev => ({...prev, adminTab: abaId || "dashboard"}));
-                    else if (moduloId === "disponibilidade") { he("solicitacoes"); x(prev => ({...prev, adminTab: "disponibilidade"})); }
-                    else if (moduloId === "bi") { ll(); tl(); al(); pl(); carregarPrazosProf(); if (abaId) ht(abaId); }
-                    else if (moduloId === "config") x(prev => ({...prev, configTab: abaId || "usuarios"}));
-                    else if (moduloId === "operacional") x(prev => ({...prev, opTab: abaId || "indicacoes"}));
-                    else if (moduloId === "todo") { if (abaId) setTodoTab(abaId); }
-                }
+                onNavigate: navegarSidebar
             }),
-            // Header Compacto
             React.createElement(HeaderCompacto, {
                 usuario: l,
                 moduloAtivo: Ee,
@@ -19693,58 +18638,9 @@ const hideLoadingScreen = () => {
                 isLoading: f,
                 lastUpdate: E,
                 onRefresh: ul,
-                onLogout: () => o(null)
+                onLogout: () => o(null),
+                onGoHome: () => he("home")
             }),
-            // TABS DO CONFIG
-            React.createElement("div", {className: "bg-white border-b sticky top-0 z-10"},
-                React.createElement("div", {className: "max-w-7xl mx-auto px-4 flex gap-1 overflow-x-auto"},
-                    // Aba Usuários - verifica permissão
-                    (function() {
-                        if ("admin_master" === l.role) return true;
-                        const abas = l.permissions && l.permissions.abas ? l.permissions.abas : {};
-                        if (Object.keys(abas).length === 0) return true;
-                        return abas["config_usuarios"] !== false;
-                    })() && React.createElement("button", {
-                        onClick: function() { x({...p, configTab: "usuarios"}); },
-                        className: "px-4 py-2.5 text-sm font-semibold whitespace-nowrap " + ((!p.configTab || p.configTab === "usuarios") ? "text-gray-700 border-b-2 border-gray-600 bg-gray-50" : "text-gray-500 hover:bg-gray-100")
-                    }, "👥 Gerenciar Usuários"),
-                    // Aba Roteirizador - apenas admin_master
-                    ("admin_master" === l.role) && React.createElement("button", {
-                        onClick: function() { x({...p, configTab: "roteirizador", roteirizadorUsuarios: null}); carregarUsuariosRoteirizador(); },
-                        className: "px-4 py-2.5 text-sm font-semibold whitespace-nowrap " + (p.configTab === "roteirizador" ? "text-gray-700 border-b-2 border-gray-600 bg-gray-50" : "text-gray-500 hover:bg-gray-100")
-                    }, "🗺️ Roteirizador"),
-                    // Aba Solicitação - apenas admin_master
-                    ("admin_master" === l.role) && React.createElement("button", {
-                        onClick: function() { x({...p, configTab: "solicitacao", solicitacaoClientes: null}); carregarClientesSolicitacao(); },
-                        className: "px-4 py-2.5 text-sm font-semibold whitespace-nowrap " + (p.configTab === "solicitacao" ? "text-gray-700 border-b-2 border-gray-600 bg-gray-50" : "text-gray-500 hover:bg-gray-100")
-                    }, "🏍️ Solicitação"),
-                    // Aba Permissões - verifica permissão
-                    (function() {
-                        if ("admin_master" === l.role) return true;
-                        const abas = l.permissions && l.permissions.abas ? l.permissions.abas : {};
-                        if (Object.keys(abas).length === 0) return true;
-                        return abas["config_permissoes"] !== false;
-                    })() && React.createElement("button", {
-                        onClick: function() { x({...p, configTab: "permissoes", permsLoaded: false}); },
-                        className: "px-4 py-2.5 text-sm font-semibold whitespace-nowrap " + (p.configTab === "permissoes" ? "text-gray-700 border-b-2 border-gray-600 bg-gray-50" : "text-gray-500 hover:bg-gray-100")
-                    }, "🔐 Permissões ADM"),
-                    // Aba Auditoria - apenas admin_master
-                    ("admin_master" === l.role || "admin" === l.role) && React.createElement("button", {
-                        onClick: function() { x({...p, configTab: "auditoria"}); },
-                        className: "px-4 py-2.5 text-sm font-semibold whitespace-nowrap " + (p.configTab === "auditoria" ? "text-gray-700 border-b-2 border-gray-600 bg-gray-50" : "text-gray-500 hover:bg-gray-100")
-                    }, "📋 Auditoria"),
-                    // Aba Sistema - verifica permissão
-                    (function() {
-                        if ("admin_master" === l.role) return true;
-                        const abas = l.permissions && l.permissions.abas ? l.permissions.abas : {};
-                        if (Object.keys(abas).length === 0) return true;
-                        return abas["config_sistema"] !== false;
-                    })() && React.createElement("button", {
-                        onClick: function() { x({...p, configTab: "sistema"}); },
-                        className: "px-4 py-2.5 text-sm font-semibold whitespace-nowrap " + (p.configTab === "sistema" ? "text-gray-700 border-b-2 border-gray-600 bg-gray-50" : "text-gray-500 hover:bg-gray-100")
-                    }, "⚡ Sistema")
-                )
-            ),
             // CONTEÚDO DO CONFIG
             React.createElement("div", {className: "max-w-7xl mx-auto p-6"},
                 // TAB USUÁRIOS - verifica permissão
@@ -20020,74 +18916,99 @@ const hideLoadingScreen = () => {
                     
                     // Lista de usuários
                     React.createElement("div", {className: "bg-white rounded-xl shadow-sm border p-6"},
-                        React.createElement("div", {className: "flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4"},
-                            React.createElement("h2", {className: "text-lg font-bold flex items-center gap-2"},
-                                React.createElement("span", null, "📋"),
-                                "Usuários Cadastrados (",
-                                A.length,
-                                ")"
-                            ),
-                            // Campo de busca
-                            React.createElement("div", {className: "relative flex-1 max-w-md"},
-                                React.createElement("input", {
-                                    type: "text",
-                                    value: p.buscaUsuario || "",
-                                    onChange: function(e) { x({...p, buscaUsuario: e.target.value}); },
-                                    placeholder: "Buscar por nome ou código...",
-                                    className: "w-full px-4 py-2 pl-10 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                                }),
-                                React.createElement("span", {className: "absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"}, "🔍")
-                            )
+                        React.createElement("h2", {className: "text-lg font-bold mb-4 flex items-center gap-2"},
+                            React.createElement("span", null, "📋"),
+                            "Usuários Cadastrados (",
+                            A.length,
+                            ")"
                         ),
-                        // Cards em grid 4x4
-                        React.createElement("div", {className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"},
-                            A.filter(function(user) {
-                                if (!p.buscaUsuario || p.buscaUsuario.trim() === "") return true;
-                                const termo = p.buscaUsuario.toLowerCase().trim();
-                                const nome = (user.fullName || "").toLowerCase();
-                                const cod = (user.codProfissional || "").toString().toLowerCase();
-                                return nome.includes(termo) || cod.includes(termo);
-                            }).map(function(user) {
+                        React.createElement("div", {className: "space-y-3"},
+                            A.map(function(user) {
                                 return React.createElement("div", {
                                     key: user.codProfissional,
-                                    className: "border rounded-xl p-4 hover:shadow-lg transition-all bg-gradient-to-br from-white to-gray-50 flex flex-col"
+                                    className: "border rounded-lg p-4 hover:bg-gray-50 transition-colors"
                                 },
-                                    // Avatar e info principal
-                                    React.createElement("div", {className: "flex items-center gap-3 mb-3"},
-                                        React.createElement("div", {
-                                            className: "w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg " +
-                                                (user.role === "admin_master" ? "bg-gradient-to-br from-purple-500 to-purple-700" :
-                                                 user.role === "admin" ? "bg-gradient-to-br from-blue-500 to-blue-700" :
-                                                 user.role === "admin_financeiro" ? "bg-gradient-to-br from-green-500 to-green-700" : "bg-gradient-to-br from-gray-400 to-gray-600")
-                                        }, user.fullName ? user.fullName.charAt(0).toUpperCase() : "?"),
-                                        React.createElement("div", {className: "flex-1 min-w-0"},
-                                            React.createElement("p", {className: "font-semibold text-gray-800 truncate"}, user.fullName),
-                                            React.createElement("p", {className: "text-xs text-gray-500"}, "COD: ", user.codProfissional)
+                                    React.createElement("div", {className: "flex items-center justify-between"},
+                                        React.createElement("div", {className: "flex items-center gap-3"},
+                                            React.createElement("div", {
+                                                className: "w-10 h-10 rounded-full flex items-center justify-center text-white font-bold " +
+                                                    (user.role === "admin_master" ? "bg-purple-600" :
+                                                     user.role === "admin" ? "bg-blue-600" :
+                                                     user.role === "admin_financeiro" ? "bg-green-600" : "bg-gray-500")
+                                            }, user.fullName ? user.fullName.charAt(0).toUpperCase() : "?"),
+                                            React.createElement("div", null,
+                                                React.createElement("p", {className: "font-semibold"}, user.fullName),
+                                                React.createElement("p", {className: "text-sm text-gray-500"},
+                                                    "COD: ", user.codProfissional, " • ",
+                                                    user.role === "admin_master" ? "👑 Master" :
+                                                    user.role === "admin" ? "👑 Admin" :
+                                                    user.role === "admin_financeiro" ? "💰 Financeiro" : "👤 Usuário"
+                                                )
+                                            )
+                                        ),
+                                        React.createElement("div", {className: "flex gap-2"},
+                                            React.createElement("button", {
+                                                onClick: async function() {
+                                                    const newPass = prompt("Nova senha para " + user.fullName + ":");
+                                                    if (newPass && newPass.length >= 6) {
+                                                        try {
+                                                            await fetchAuth(API_URL + "/users/reset-password", {
+                                                                method: "POST",
+                                                                headers: {"Content-Type": "application/json"},
+                                                                body: JSON.stringify({codProfissional: user.codProfissional, newPassword: newPass})
+                                                            });
+                                                            ja("✅ Senha alterada!", "success");
+                                                        } catch (err) {
+                                                            ja("❌ Erro ao alterar senha", "error");
+                                                        }
+                                                    } else if (newPass) {
+                                                        ja("Senha muito curta (mín. 6)", "error");
+                                                    }
+                                                },
+                                                className: "px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors"
+                                            }, "🔑 Senha"),
+                                            user.role !== "admin_master" && React.createElement("button", {
+                                                onClick: async function() {
+                                                    let userCod = user.codProfissional || user.cod_profissional;
+                                                    // Remove # se existir no código
+                                                    if (userCod && typeof userCod === 'string') {
+                                                        userCod = userCod.replace('#', '');
+                                                    }
+                                                    console.log("🗑️ Tentando deletar usuário:", user.fullName || user.full_name, "Código:", userCod);
+                                                    if (!userCod) {
+                                                        ja("❌ Código do usuário não encontrado", "error");
+                                                        return;
+                                                    }
+                                                    if (confirm("⚠️ Excluir " + (user.fullName || user.full_name) + "?\\n\\nEsta ação não pode ser desfeita!")) {
+                                                        try {
+                                                            const response = await fetchAuth(API_URL + "/users/" + userCod, {method: "DELETE"});
+                                                            if (response.ok) {
+                                                                ja("🗑️ Usuário excluído!", "success");
+                                                                Ia();
+                                                            } else {
+                                                                const errData = await response.json().catch(() => ({}));
+                                                                ja("❌ Erro: " + (errData.error || response.statusText), "error");
+                                                            }
+                                                        } catch (err) {
+                                                            console.error("❌ Erro ao excluir:", err);
+                                                            ja("❌ Erro ao excluir", "error");
+                                                        }
+                                                    }
+                                                },
+                                                className: "px-3 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 transition-colors"
+                                            }, "🗑️")
                                         )
                                     ),
-                                    // Badge de role
-                                    React.createElement("div", {className: "mb-3"},
-                                        React.createElement("span", {
-                                            className: "px-2 py-1 rounded-full text-xs font-medium " +
-                                                (user.role === "admin_master" ? "bg-purple-100 text-purple-700" :
-                                                 user.role === "admin" ? "bg-blue-100 text-blue-700" :
-                                                 user.role === "admin_financeiro" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700")
-                                        }, 
-                                            user.role === "admin_master" ? "👑 Master" :
-                                            user.role === "admin" ? "👑 Admin" :
-                                            user.role === "admin_financeiro" ? "💰 Financeiro" : "👤 Usuário"
-                                        )
-                                    ),
-                                    // Setor
-                                    React.createElement("div", {className: "mb-3 flex-1"},
-                                        React.createElement("label", {className: "text-xs text-gray-500 block mb-1"}, "🏢 Setor"),
+                                    // Linha do Setor
+                                    React.createElement("div", {className: "mt-3 pt-3 border-t flex items-center gap-2"},
+                                        React.createElement("span", {className: "text-sm text-gray-600"}, "🏢 Setor:"),
                                         React.createElement("select", {
                                             value: user.setor_id || '',
                                             onChange: async (e) => {
                                                 const novoSetorId = e.target.value ? parseInt(e.target.value) : null;
                                                 await atualizarSetorUsuario(user.codProfissional || user.cod_profissional, novoSetorId);
                                             },
-                                            className: "w-full px-2 py-1.5 border rounded-lg text-sm bg-white focus:ring-2 focus:ring-indigo-500"
+                                            className: "px-3 py-1.5 border rounded-lg text-sm bg-white focus:ring-2 focus:ring-indigo-500"
                                         },
                                             React.createElement("option", {value: ""}, "-- Sem setor --"),
                                             setores.filter(s => s.ativo).map(setor =>
@@ -20096,430 +19017,14 @@ const hideLoadingScreen = () => {
                                                     value: setor.id
                                                 }, setor.nome)
                                             )
-                                        )
-                                    ),
-                                    // Botões de ação
-                                    React.createElement("div", {className: "flex gap-2 mt-auto pt-3 border-t"},
-                                        React.createElement("button", {
-                                            onClick: async function() {
-                                                const newPass = prompt("Nova senha para " + user.fullName + ":");
-                                                if (newPass && newPass.length >= 6) {
-                                                    try {
-                                                        await fetchAuth(API_URL + "/users/reset-password", {
-                                                            method: "POST",
-                                                            headers: {"Content-Type": "application/json"},
-                                                            body: JSON.stringify({codProfissional: user.codProfissional, newPassword: newPass})
-                                                        });
-                                                        ja("✅ Senha alterada!", "success");
-                                                    } catch (err) {
-                                                        ja("❌ Erro ao alterar senha", "error");
-                                                    }
-                                                } else if (newPass) {
-                                                    ja("Senha muito curta (mín. 6)", "error");
-                                                }
-                                            },
-                                            className: "flex-1 px-2 py-2 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-700 transition-colors",
-                                            title: "Alterar senha"
-                                        }, "🔑 Senha"),
-                                        user.role !== "admin_master" && React.createElement("button", {
-                                            onClick: async function() {
-                                                let userCod = user.codProfissional || user.cod_profissional;
-                                                if (userCod && typeof userCod === 'string') {
-                                                    userCod = userCod.replace('#', '');
-                                                }
-                                                if (!userCod) {
-                                                    ja("❌ Código do usuário não encontrado", "error");
-                                                    return;
-                                                }
-                                                if (confirm("⚠️ Excluir " + (user.fullName || user.full_name) + "?\\n\\nEsta ação não pode ser desfeita!")) {
-                                                    try {
-                                                        const response = await fetchAuth(API_URL + "/users/" + userCod, {method: "DELETE"});
-                                                        if (response.ok) {
-                                                            ja("🗑️ Usuário excluído!", "success");
-                                                            Ia();
-                                                        } else {
-                                                            const errData = await response.json().catch(() => ({}));
-                                                            ja("❌ Erro: " + (errData.error || response.statusText), "error");
-                                                        }
-                                                    } catch (err) {
-                                                        ja("❌ Erro ao excluir", "error");
-                                                    }
-                                                }
-                                            },
-                                            className: "px-3 py-2 bg-red-600 text-white rounded-lg text-xs font-medium hover:bg-red-700 transition-colors",
-                                            title: "Excluir usuário"
-                                        }, "🗑️")
+                                        ),
+                                        user.setor_nome && React.createElement("span", {
+                                            className: "ml-2 px-2 py-0.5 rounded text-xs font-medium text-white",
+                                            style: { backgroundColor: user.setor_cor || '#6366f1' }
+                                        }, user.setor_nome)
                                     )
                                 );
                             })
-                        ),
-                        // Mensagem se não encontrar
-                        A.filter(function(user) {
-                            if (!p.buscaUsuario || p.buscaUsuario.trim() === "") return true;
-                            const termo = p.buscaUsuario.toLowerCase().trim();
-                            const nome = (user.fullName || "").toLowerCase();
-                            const cod = (user.codProfissional || "").toString().toLowerCase();
-                            return nome.includes(termo) || cod.includes(termo);
-                        }).length === 0 && React.createElement("div", {className: "text-center py-8 text-gray-500"},
-                            React.createElement("p", {className: "text-4xl mb-2"}, "🔍"),
-                            React.createElement("p", null, "Nenhum usuário encontrado para \"", p.buscaUsuario, "\"")
-                        )
-                    )
-                ),
-                // TAB ROTEIRIZADOR - apenas admin_master
-                p.configTab === "roteirizador" && ("admin_master" === l.role) && React.createElement("div", null,
-                    // Criar novo usuário
-                    React.createElement("div", {className: "bg-white rounded-xl shadow-sm border p-6 mb-6"},
-                        React.createElement("h2", {className: "text-lg font-bold mb-4 flex items-center gap-2"},
-                            React.createElement("span", null, "➕"),
-                            "Criar Usuário do Roteirizador"
-                        ),
-                        React.createElement("div", {className: "grid md:grid-cols-2 gap-4 mb-4"},
-                            React.createElement("div", null,
-                                React.createElement("label", {className: "block text-sm font-semibold mb-1 text-gray-700"}, "Nome Completo *"),
-                                React.createElement("input", {
-                                    type: "text",
-                                    value: (p.roteirizadorNovoUsuario && p.roteirizadorNovoUsuario.nome) || "",
-                                    onChange: function(e) { x({...p, roteirizadorNovoUsuario: {...(p.roteirizadorNovoUsuario || {}), nome: e.target.value}}); },
-                                    className: "w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500",
-                                    placeholder: "Ex: João Silva"
-                                })
-                            ),
-                            React.createElement("div", null,
-                                React.createElement("label", {className: "block text-sm font-semibold mb-1 text-gray-700"}, "Email *"),
-                                React.createElement("input", {
-                                    type: "email",
-                                    value: (p.roteirizadorNovoUsuario && p.roteirizadorNovoUsuario.email) || "",
-                                    onChange: function(e) { x({...p, roteirizadorNovoUsuario: {...(p.roteirizadorNovoUsuario || {}), email: e.target.value}}); },
-                                    className: "w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500",
-                                    placeholder: "email@exemplo.com"
-                                })
-                            ),
-                            React.createElement("div", null,
-                                React.createElement("label", {className: "block text-sm font-semibold mb-1 text-gray-700"}, "Senha *"),
-                                React.createElement("input", {
-                                    type: "password",
-                                    value: (p.roteirizadorNovoUsuario && p.roteirizadorNovoUsuario.senha) || "",
-                                    onChange: function(e) { x({...p, roteirizadorNovoUsuario: {...(p.roteirizadorNovoUsuario || {}), senha: e.target.value}}); },
-                                    className: "w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500",
-                                    placeholder: "Mínimo 6 caracteres"
-                                })
-                            ),
-                            React.createElement("div", null,
-                                React.createElement("label", {className: "block text-sm font-semibold mb-1 text-gray-700"}, "Telefone"),
-                                React.createElement("input", {
-                                    type: "text",
-                                    value: (p.roteirizadorNovoUsuario && p.roteirizadorNovoUsuario.telefone) || "",
-                                    onChange: function(e) { x({...p, roteirizadorNovoUsuario: {...(p.roteirizadorNovoUsuario || {}), telefone: e.target.value}}); },
-                                    className: "w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500",
-                                    placeholder: "(62) 99999-9999"
-                                })
-                            ),
-                            React.createElement("div", null,
-                                React.createElement("label", {className: "block text-sm font-semibold mb-1 text-gray-700"}, "Empresa"),
-                                React.createElement("input", {
-                                    type: "text",
-                                    value: (p.roteirizadorNovoUsuario && p.roteirizadorNovoUsuario.empresa) || "",
-                                    onChange: function(e) { x({...p, roteirizadorNovoUsuario: {...(p.roteirizadorNovoUsuario || {}), empresa: e.target.value}}); },
-                                    className: "w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500",
-                                    placeholder: "Nome da empresa"
-                                })
-                            ),
-                            React.createElement("div", null,
-                                React.createElement("label", {className: "block text-sm font-semibold mb-1 text-gray-700"}, "Observações"),
-                                React.createElement("input", {
-                                    type: "text",
-                                    value: (p.roteirizadorNovoUsuario && p.roteirizadorNovoUsuario.observacoes) || "",
-                                    onChange: function(e) { x({...p, roteirizadorNovoUsuario: {...(p.roteirizadorNovoUsuario || {}), observacoes: e.target.value}}); },
-                                    className: "w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500",
-                                    placeholder: "Notas internas"
-                                })
-                            )
-                        ),
-                        React.createElement("button", {
-                            onClick: function() {
-                                var dados = p.roteirizadorNovoUsuario || {};
-                                if (!dados.nome || !dados.email || !dados.senha) {
-                                    ja('Preencha nome, email e senha', 'error');
-                                    return;
-                                }
-                                if (dados.senha.length < 6) {
-                                    ja('Senha deve ter no mínimo 6 caracteres', 'error');
-                                    return;
-                                }
-                                criarUsuarioRoteirizador(dados);
-                            },
-                            className: "px-6 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
-                        }, "➕ Criar Usuário")
-                    ),
-                    // URL do roteirizador
-                    React.createElement("div", {className: "bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-200 p-4 mb-6"},
-                        React.createElement("div", {className: "flex items-center justify-between"},
-                            React.createElement("div", null,
-                                React.createElement("div", {className: "text-sm font-bold text-purple-700 mb-1"}, "🔗 Link do Roteirizador para Clientes"),
-                                React.createElement("div", {className: "text-xs text-purple-600"}, "Compartilhe este link com seus clientes:")
-                            ),
-                            React.createElement("div", {className: "flex items-center gap-2"},
-                                React.createElement("code", {className: "px-3 py-1.5 bg-white rounded-lg text-sm font-mono text-purple-800 border"}, "roteirizador.tutts.com.br"),
-                                React.createElement("button", {
-                                    onClick: function() {
-                                        navigator.clipboard.writeText('https://roteirizador.tutts.com.br');
-                                        ja('Link copiado!', 'success');
-                                    },
-                                    className: "px-3 py-1.5 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700"
-                                }, "📋 Copiar")
-                            )
-                        )
-                    ),
-                    // Lista de usuários
-                    React.createElement("div", {className: "bg-white rounded-xl shadow-sm border p-6"},
-                        React.createElement("div", {className: "flex items-center justify-between mb-4"},
-                            React.createElement("h2", {className: "text-lg font-bold flex items-center gap-2"},
-                                React.createElement("span", null, "👥"),
-                                "Usuários do Roteirizador"
-                            ),
-                            React.createElement("button", {
-                                onClick: carregarUsuariosRoteirizador,
-                                className: "px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm"
-                            }, "🔄 Atualizar")
-                        ),
-                        !p.roteirizadorUsuarios ? React.createElement("div", {className: "text-center py-8 text-gray-500"}, "⏳ Carregando...") :
-                        p.roteirizadorUsuarios.length === 0 ? React.createElement("div", {className: "text-center py-8 text-gray-500"}, "Nenhum usuário cadastrado") :
-                        React.createElement("div", {className: "overflow-x-auto"},
-                            React.createElement("table", {className: "w-full"},
-                                React.createElement("thead", null,
-                                    React.createElement("tr", {className: "bg-gray-50 text-left"},
-                                        React.createElement("th", {className: "px-4 py-3 text-sm font-semibold text-gray-600"}, "Nome"),
-                                        React.createElement("th", {className: "px-4 py-3 text-sm font-semibold text-gray-600"}, "Email"),
-                                        React.createElement("th", {className: "px-4 py-3 text-sm font-semibold text-gray-600"}, "Empresa"),
-                                        React.createElement("th", {className: "px-4 py-3 text-sm font-semibold text-gray-600"}, "Rotas"),
-                                        React.createElement("th", {className: "px-4 py-3 text-sm font-semibold text-gray-600"}, "Último Acesso"),
-                                        React.createElement("th", {className: "px-4 py-3 text-sm font-semibold text-gray-600"}, "Status"),
-                                        React.createElement("th", {className: "px-4 py-3 text-sm font-semibold text-gray-600"}, "Ações")
-                                    )
-                                ),
-                                React.createElement("tbody", null,
-                                    p.roteirizadorUsuarios.map(function(user) {
-                                        return React.createElement("tr", {key: user.id, className: "border-t hover:bg-gray-50"},
-                                            React.createElement("td", {className: "px-4 py-3"},
-                                                React.createElement("div", {className: "font-medium text-gray-800"}, user.nome),
-                                                user.telefone && React.createElement("div", {className: "text-xs text-gray-500"}, user.telefone)
-                                            ),
-                                            React.createElement("td", {className: "px-4 py-3 text-sm text-gray-600"}, user.email),
-                                            React.createElement("td", {className: "px-4 py-3 text-sm text-gray-600"}, user.empresa || "-"),
-                                            React.createElement("td", {className: "px-4 py-3"},
-                                                React.createElement("span", {className: "px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium"}, user.total_rotas || 0)
-                                            ),
-                                            React.createElement("td", {className: "px-4 py-3 text-xs text-gray-500"},
-                                                user.ultimo_acesso ? new Date(user.ultimo_acesso).toLocaleString('pt-BR') : "Nunca"
-                                            ),
-                                            React.createElement("td", {className: "px-4 py-3"},
-                                                React.createElement("span", {
-                                                    className: "px-2 py-1 rounded-full text-xs font-medium " + (user.ativo ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700")
-                                                }, user.ativo ? "✅ Ativo" : "❌ Inativo")
-                                            ),
-                                            React.createElement("td", {className: "px-4 py-3"},
-                                                React.createElement("div", {className: "flex gap-1"},
-                                                    React.createElement("button", {
-                                                        onClick: function() { alternarAtivoRoteirizador(user.id, !user.ativo); },
-                                                        className: "px-2 py-1 text-xs rounded " + (user.ativo ? "bg-red-100 text-red-600 hover:bg-red-200" : "bg-green-100 text-green-600 hover:bg-green-200"),
-                                                        title: user.ativo ? "Desativar" : "Ativar"
-                                                    }, user.ativo ? "🔒" : "🔓"),
-                                                    React.createElement("button", {
-                                                        onClick: function() { resetarSenhaRoteirizador(user.id); },
-                                                        className: "px-2 py-1 text-xs rounded bg-yellow-100 text-yellow-600 hover:bg-yellow-200",
-                                                        title: "Resetar senha"
-                                                    }, "🔑")
-                                                )
-                                            )
-                                        );
-                                    })
-                                )
-                            )
-                        )
-                    )
-                ),
-                // TAB SOLICITAÇÃO DE CORRIDAS
-                p.configTab === "solicitacao" && ("admin_master" === l.role) && React.createElement("div", null,
-                    // Card para criar novo cliente
-                    React.createElement("div", {className: "bg-white rounded-xl shadow-sm border p-6 mb-6"},
-                        React.createElement("h2", {className: "text-lg font-bold mb-4 flex items-center gap-2"},
-                            React.createElement("span", null, "➕"),
-                            "Cadastrar Cliente de Solicitação"
-                        ),
-                        React.createElement("div", {className: "grid md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4"},
-                            React.createElement("div", null,
-                                React.createElement("label", {className: "block text-sm font-semibold mb-1 text-gray-700"}, "Nome/Empresa *"),
-                                React.createElement("input", {
-                                    type: "text",
-                                    value: (p.solicitacaoNovoCliente && p.solicitacaoNovoCliente.nome) || "",
-                                    onChange: function(e) { x({...p, solicitacaoNovoCliente: {...(p.solicitacaoNovoCliente || {}), nome: e.target.value}}); },
-                                    className: "w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500",
-                                    placeholder: "Ex: Auto Peças XYZ"
-                                })
-                            ),
-                            React.createElement("div", null,
-                                React.createElement("label", {className: "block text-sm font-semibold mb-1 text-gray-700"}, "Email *"),
-                                React.createElement("input", {
-                                    type: "email",
-                                    value: (p.solicitacaoNovoCliente && p.solicitacaoNovoCliente.email) || "",
-                                    onChange: function(e) { x({...p, solicitacaoNovoCliente: {...(p.solicitacaoNovoCliente || {}), email: e.target.value}}); },
-                                    className: "w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500",
-                                    placeholder: "email@empresa.com"
-                                })
-                            ),
-                            React.createElement("div", null,
-                                React.createElement("label", {className: "block text-sm font-semibold mb-1 text-gray-700"}, "Senha *"),
-                                React.createElement("input", {
-                                    type: "password",
-                                    value: (p.solicitacaoNovoCliente && p.solicitacaoNovoCliente.senha) || "",
-                                    onChange: function(e) { x({...p, solicitacaoNovoCliente: {...(p.solicitacaoNovoCliente || {}), senha: e.target.value}}); },
-                                    className: "w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500",
-                                    placeholder: "Mínimo 4 caracteres"
-                                })
-                            ),
-                            React.createElement("div", null,
-                                React.createElement("label", {className: "block text-sm font-semibold mb-1 text-gray-700"}, "Telefone"),
-                                React.createElement("input", {
-                                    type: "text",
-                                    value: (p.solicitacaoNovoCliente && p.solicitacaoNovoCliente.telefone) || "",
-                                    onChange: function(e) { x({...p, solicitacaoNovoCliente: {...(p.solicitacaoNovoCliente || {}), telefone: e.target.value}}); },
-                                    className: "w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500",
-                                    placeholder: "(00) 00000-0000"
-                                })
-                            ),
-                            React.createElement("div", null,
-                                React.createElement("label", {className: "block text-sm font-semibold mb-1 text-gray-700"}, "Token Tutts *"),
-                                React.createElement("input", {
-                                    type: "text",
-                                    value: (p.solicitacaoNovoCliente && p.solicitacaoNovoCliente.tutts_token) || "",
-                                    onChange: function(e) { x({...p, solicitacaoNovoCliente: {...(p.solicitacaoNovoCliente || {}), tutts_token: e.target.value}}); },
-                                    className: "w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500",
-                                    placeholder: "Token da API Tutts"
-                                })
-                            ),
-                            React.createElement("div", null,
-                                React.createElement("label", {className: "block text-sm font-semibold mb-1 text-gray-700"}, "Código Cliente Tutts *"),
-                                React.createElement("input", {
-                                    type: "text",
-                                    value: (p.solicitacaoNovoCliente && p.solicitacaoNovoCliente.tutts_cod_cliente) || "",
-                                    onChange: function(e) { x({...p, solicitacaoNovoCliente: {...(p.solicitacaoNovoCliente || {}), tutts_cod_cliente: e.target.value}}); },
-                                    className: "w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500",
-                                    placeholder: "Código do cliente na Tutts"
-                                })
-                            )
-                        ),
-                        React.createElement("div", {className: "mb-4"},
-                            React.createElement("label", {className: "block text-sm font-semibold mb-1 text-gray-700"}, "Observações"),
-                            React.createElement("textarea", {
-                                value: (p.solicitacaoNovoCliente && p.solicitacaoNovoCliente.observacoes) || "",
-                                onChange: function(e) { x({...p, solicitacaoNovoCliente: {...(p.solicitacaoNovoCliente || {}), observacoes: e.target.value}}); },
-                                className: "w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500",
-                                rows: "2",
-                                placeholder: "Observações sobre o cliente..."
-                            })
-                        ),
-                        React.createElement("button", {
-                            onClick: function() {
-                                const dados = p.solicitacaoNovoCliente || {};
-                                if (!dados.nome || !dados.email || !dados.senha || !dados.tutts_token || !dados.tutts_cod_cliente) {
-                                    ja('Preencha todos os campos obrigatórios', 'error');
-                                    return;
-                                }
-                                criarClienteSolicitacao(dados);
-                            },
-                            className: "px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold"
-                        }, "✅ Cadastrar Cliente")
-                    ),
-                    // Lista de clientes
-                    React.createElement("div", {className: "bg-white rounded-xl shadow-sm border overflow-hidden"},
-                        React.createElement("div", {className: "p-4 bg-gray-50 border-b flex items-center justify-between"},
-                            React.createElement("h3", {className: "font-bold text-gray-800"}, "🏍️ Clientes Cadastrados"),
-                            React.createElement("button", {
-                                onClick: carregarClientesSolicitacao,
-                                className: "px-3 py-1 text-sm bg-blue-100 text-blue-600 rounded hover:bg-blue-200"
-                            }, "🔄 Atualizar")
-                        ),
-                        !p.solicitacaoClientes ? React.createElement("div", {className: "text-center py-8 text-gray-500"}, "⏳ Carregando...") :
-                        p.solicitacaoClientes.length === 0 ? React.createElement("div", {className: "text-center py-8 text-gray-500"}, "Nenhum cliente cadastrado") :
-                        React.createElement("div", {className: "overflow-x-auto"},
-                            React.createElement("table", {className: "w-full"},
-                                React.createElement("thead", {className: "bg-gray-100"},
-                                    React.createElement("tr", null,
-                                        React.createElement("th", {className: "px-4 py-3 text-left text-sm font-semibold"}, "Cliente"),
-                                        React.createElement("th", {className: "px-4 py-3 text-left text-sm font-semibold"}, "Email"),
-                                        React.createElement("th", {className: "px-4 py-3 text-center text-sm font-semibold"}, "Corridas"),
-                                        React.createElement("th", {className: "px-4 py-3 text-center text-sm font-semibold"}, "Status"),
-                                        React.createElement("th", {className: "px-4 py-3 text-center text-sm font-semibold"}, "Último Acesso"),
-                                        React.createElement("th", {className: "px-4 py-3 text-center text-sm font-semibold"}, "Ações")
-                                    )
-                                ),
-                                React.createElement("tbody", {className: "divide-y"},
-                                    p.solicitacaoClientes.map(function(cliente) {
-                                        return React.createElement("tr", {key: cliente.id, className: "hover:bg-gray-50"},
-                                            React.createElement("td", {className: "px-4 py-3"},
-                                                React.createElement("div", {className: "font-medium text-gray-800"}, cliente.nome),
-                                                cliente.empresa && React.createElement("div", {className: "text-xs text-gray-500"}, cliente.empresa),
-                                                React.createElement("div", {className: "text-xs text-gray-400"}, "Cód: ", cliente.tutts_cod_cliente)
-                                            ),
-                                            React.createElement("td", {className: "px-4 py-3 text-sm text-gray-600"}, cliente.email),
-                                            React.createElement("td", {className: "px-4 py-3 text-center"},
-                                                React.createElement("span", {className: "px-2 py-1 bg-blue-100 text-blue-600 rounded text-sm font-medium"}, cliente.total_solicitacoes || 0)
-                                            ),
-                                            React.createElement("td", {className: "px-4 py-3 text-center"},
-                                                React.createElement("span", {
-                                                    className: "px-2 py-1 rounded text-xs font-medium " + (cliente.ativo ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600")
-                                                }, cliente.ativo ? "✅ Ativo" : "❌ Inativo")
-                                            ),
-                                            React.createElement("td", {className: "px-4 py-3 text-center text-xs text-gray-500"},
-                                                cliente.ultimo_acesso ? new Date(cliente.ultimo_acesso).toLocaleString('pt-BR') : "Nunca"
-                                            ),
-                                            React.createElement("td", {className: "px-4 py-3 text-center"},
-                                                React.createElement("div", {className: "flex gap-1 justify-center flex-wrap"},
-                                                    React.createElement("button", {
-                                                        onClick: function() { alternarAtivoSolicitacao(cliente.id, !cliente.ativo); },
-                                                        className: "px-2 py-1 text-xs rounded " + (cliente.ativo ? "bg-red-100 text-red-600 hover:bg-red-200" : "bg-green-100 text-green-600 hover:bg-green-200"),
-                                                        title: cliente.ativo ? "Desativar" : "Ativar"
-                                                    }, cliente.ativo ? "🚫" : "✅"),
-                                                    React.createElement("button", {
-                                                        onClick: function() { resetarSenhaSolicitacao(cliente.id); },
-                                                        className: "px-2 py-1 text-xs rounded bg-yellow-100 text-yellow-600 hover:bg-yellow-200",
-                                                        title: "Resetar senha"
-                                                    }, "🔑"),
-                                                    React.createElement("button", {
-                                                        onClick: function() {
-                                                            const novoToken = prompt('Token Tutts:', cliente.tutts_token || '');
-                                                            if (novoToken !== null) {
-                                                                const novoCod = prompt('Código Cliente Tutts:', cliente.tutts_cod_cliente || '');
-                                                                if (novoCod !== null) {
-                                                                    atualizarCredenciaisSolicitacao(cliente.id, novoToken, novoCod);
-                                                                }
-                                                            }
-                                                        },
-                                                        className: "px-2 py-1 text-xs rounded bg-purple-100 text-purple-600 hover:bg-purple-200",
-                                                        title: "Editar credenciais Tutts"
-                                                    }, "⚙️"),
-                                                    React.createElement("button", {
-                                                        onClick: function() { excluirClienteSolicitacao(cliente.id, cliente.nome); },
-                                                        className: "px-2 py-1 text-xs rounded bg-red-100 text-red-600 hover:bg-red-200",
-                                                        title: "Excluir cliente"
-                                                    }, "🗑️")
-                                                )
-                                            )
-                                        );
-                                    })
-                                )
-                            )
-                        )
-                    ),
-                    // Info box
-                    React.createElement("div", {className: "mt-6 bg-blue-50 border border-blue-200 rounded-xl p-4"},
-                        React.createElement("h4", {className: "font-bold text-blue-800 mb-2"}, "ℹ️ Informações"),
-                        React.createElement("ul", {className: "text-sm text-blue-700 space-y-1"},
-                            React.createElement("li", null, "• Cada cliente precisa de um Token e Código de Cliente válidos da API Tutts"),
-                            React.createElement("li", null, "• Os clientes acessam o sistema pelo link: /solicitacao.html"),
-                            React.createElement("li", null, "• O webhook de status deve ser configurado na Tutts para: /api/solicitacao/webhook/tutts"),
-                            React.createElement("li", null, "• Clientes inativos não conseguem fazer login")
                         )
                     )
                 ),
@@ -20828,7 +19333,7 @@ const hideLoadingScreen = () => {
             return React.createElement("div", {
                 className: "min-h-screen bg-gray-100"
             }, i && React.createElement(Toast, i), n && React.createElement(LoadingOverlay, null),
-            // Sidebar
+            // ========== SIDEBAR E HEADER COMPACTO - BI ==========
             React.createElement(Sidebar, {
                 usuario: l,
                 moduloAtivo: Ee,
@@ -20841,18 +19346,8 @@ const hideLoadingScreen = () => {
                 setSidebarFixo: setSidebarFixo,
                 hasModuleAccess: hasModuleAccess,
                 socialProfile: socialProfile,
-                onNavigate: (moduloId, abaId) => {
-                    he(moduloId);
-                    if (moduloId === "financeiro") x(prev => ({...prev, finTab: abaId || "home-fin"}));
-                    else if (moduloId === "solicitacoes") x(prev => ({...prev, adminTab: abaId || "dashboard"}));
-                    else if (moduloId === "disponibilidade") { he("solicitacoes"); x(prev => ({...prev, adminTab: "disponibilidade"})); }
-                    else if (moduloId === "bi") { ll(); tl(); al(); pl(); carregarPrazosProf(); if (abaId) ht(abaId); }
-                    else if (moduloId === "config") x(prev => ({...prev, configTab: abaId || "usuarios"}));
-                    else if (moduloId === "operacional") x(prev => ({...prev, opTab: abaId || "indicacoes"}));
-                    else if (moduloId === "todo") { if (abaId) setTodoTab(abaId); }
-                }
+                onNavigate: navegarSidebar
             }),
-            // Header Compacto
             React.createElement(HeaderCompacto, {
                 usuario: l,
                 moduloAtivo: Ee,
@@ -20860,88 +19355,22 @@ const hideLoadingScreen = () => {
                 isLoading: f,
                 lastUpdate: E,
                 onRefresh: ul,
-                onLogout: () => o(null)
+                onLogout: () => o(null),
+                onGoHome: () => he("home")
             }),
+            // Barra de info do BI
             React.createElement("div", {
-                className: "bg-white border-b px-4 py-2 text-xs text-gray-500"
-            }, React.createElement("span", null, "Últ. Leitura: ", (new Date).toLocaleString("pt-BR")), React.createElement("span", {
-                className: "ml-4"
-            }, "Dados atualizados: ", ua.data_fim ? new Date(ua.data_fim).toLocaleDateString("pt-BR") : "-")), 
-            
-            // Barra de abas - oculta na Home
-            Et !== "home-bi" && React.createElement("div", {
-                className: "bg-white border-b sticky top-0 z-10 shadow-sm"
-            }, React.createElement("div", {
-                className: "max-w-full mx-auto px-4 flex gap-1 overflow-x-auto"
+                className: "bg-white border-b px-4 py-2 text-xs text-gray-500 flex justify-between items-center"
             }, 
-            // 1. Home
-            React.createElement("button", {
-                onClick: () => { ht("home-bi"); },
-                className: "px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-all " + ("home-bi" === Et ? "border-purple-600 text-purple-600 bg-purple-50" : "border-transparent text-gray-600 hover:text-gray-800")
-            }, "🏠 Home"), 
-            // 2. Dashboard
-            React.createElement("button", {
-                onClick: () => { ht("dashboard"); el(); },
-                className: "px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-all " + ("dashboard" === Et ? "border-purple-600 text-purple-600 bg-purple-50" : "border-transparent text-gray-600 hover:text-gray-800")
-            }, "📊 Dashboard"), 
-            // 3. Acompanhamento
-            React.createElement("button", {
-                onClick: () => { ht("acompanhamento"); carregarAcompanhamento(); },
-                className: "px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-all " + ("acompanhamento" === Et ? "border-purple-600 text-purple-600 bg-purple-50" : "border-transparent text-gray-600 hover:text-gray-800")
-            }, "📈 Acompanhamento"), 
-            // 4. Por Profissional
-            React.createElement("button", {
-                onClick: () => { ht("profissionais"); el(); },
-                className: "px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-all " + ("profissionais" === Et ? "border-purple-600 text-purple-600 bg-purple-50" : "border-transparent text-gray-600 hover:text-gray-800")
-            }, "👤 Por Profissional"), 
-            // 5. Análise por OS
-            React.createElement("button", {
-                onClick: () => { ht("os"); (async () => {
-                        try {
-                            Ra(!0);
-                            const e = Xa(),
-                                t = await fetch(`${API_URL}/bi/entregas-lista?${e}`),
-                                data = await t.json();
-                            Ut(Array.isArray(data) ? data : []);
-                        } catch (e) {
-                            console.error("Erro ao carregar entregas:", e)
-                        }
-                        Ra(!1)
-                    })(); 
-                },
-                className: "px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-all " + ("os" === Et ? "border-purple-600 text-purple-600 bg-purple-50" : "border-transparent text-gray-600 hover:text-gray-800")
-            }, "📋 Análise por OS"), 
-            // 6. Cliente 767
-            React.createElement("button", {
-                onClick: () => {
-                    ht("cliente767"), carregarCliente767()
-                },
-                className: "px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-all " + ("cliente767" === Et ? "border-orange-600 text-orange-600 bg-orange-50" : "border-transparent text-gray-600 hover:text-gray-800")
-            }, "🏢 Cliente 767"), 
-            // 7. Garantido
-            React.createElement("button", {
-                onClick: () => { console.log('🔘 Botão Garantido clicado!'); ht("garantido"); carregarGarantido(); },
-                className: "px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-all " + ("garantido" === Et ? "border-green-600 text-green-600 bg-green-50" : "border-transparent text-gray-600 hover:text-gray-800")
-            }, "💰 Garantido"), 
-            // 8. Relatório IA
-            React.createElement("button", {
-                onClick: () => {
-                    ht("relatorio-ia")
-                },
-                className: "px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-all flex items-center gap-2 " + ("relatorio-ia" === Et ? "border-violet-600 text-violet-600 bg-violet-50" : "border-transparent text-gray-600 hover:text-gray-800")
-            }, React.createElement("img", {src: "https://raw.githubusercontent.com/Leonardodevcloud/tutts-frontend/main/gemini-app-icon-hd.png", alt: "", className: "w-5 h-5 rounded"}), "Relatório IA"), 
-            // 9. Upload
-            React.createElement("button", {
-                onClick: () => { ht("upload"); },
-                className: "px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-all " + ("upload" === Et ? "border-purple-600 text-purple-600 bg-purple-50" : "border-transparent text-gray-600 hover:text-gray-800")
-            }, "📤 Upload"), 
-            // 10. Config
-            React.createElement("button", {
-                onClick: () => {
-                    ht("config"), tl(), al(), carregarPrazosProf()
-                },
-                className: "px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-all " + ("config" === Et ? "border-purple-600 text-purple-600 bg-purple-50" : "border-transparent text-gray-600 hover:text-gray-800")
-            }, "⚙️ Config"))), 
+                React.createElement("div", null,
+                    React.createElement("span", null, "Últ. Leitura: ", (new Date).toLocaleString("pt-BR")), 
+                    React.createElement("span", { className: "ml-4" }, "Dados atualizados: ", ua.data_fim ? new Date(ua.data_fim).toLocaleDateString("pt-BR") : "-")
+                ),
+                React.createElement("button", {
+                    onClick: () => _a(!0),
+                    className: "px-3 py-1 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 text-xs font-semibold"
+                }, "🔍 Filtros")
+            ), 
             
             // ===== BARRA DE FILTROS ATIVOS =====
             (Et === "dashboard" || Et === "acompanhamento" || Et === "profissionais" || Et === "os") && (
@@ -26172,7 +24601,7 @@ const hideLoadingScreen = () => {
                 className: "flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
             }, "📋 Ir para Tarefas")
         ))),
-        // ========== SIDEBAR E HEADER PARA MÓDULO SOLICITAÇÕES ==========
+        // ========== SIDEBAR E HEADER COMPACTO ==========
         React.createElement(Sidebar, {
             usuario: l,
             moduloAtivo: Ee,
@@ -26185,16 +24614,7 @@ const hideLoadingScreen = () => {
             setSidebarFixo: setSidebarFixo,
             hasModuleAccess: hasModuleAccess,
             socialProfile: socialProfile,
-            onNavigate: (moduloId, abaId) => {
-                he(moduloId);
-                if (moduloId === "financeiro") x(prev => ({...prev, finTab: abaId || "home-fin"}));
-                else if (moduloId === "solicitacoes") x(prev => ({...prev, adminTab: abaId || "dashboard"}));
-                else if (moduloId === "disponibilidade") { he("solicitacoes"); x(prev => ({...prev, adminTab: "disponibilidade"})); }
-                else if (moduloId === "bi") { ll(); tl(); al(); pl(); carregarPrazosProf(); if (abaId) ht(abaId); }
-                else if (moduloId === "config") x(prev => ({...prev, configTab: abaId || "usuarios"}));
-                else if (moduloId === "operacional") x(prev => ({...prev, opTab: abaId || "indicacoes"}));
-                else if (moduloId === "todo") { if (abaId) setTodoTab(abaId); }
-            }
+            onNavigate: navegarSidebar
         }),
         React.createElement(HeaderCompacto, {
             usuario: l,
@@ -26203,29 +24623,11 @@ const hideLoadingScreen = () => {
             isLoading: f,
             lastUpdate: E,
             onRefresh: ul,
-            onLogout: () => o(null)
+            onLogout: () => o(null),
+            onGoHome: () => he("home")
         }),
-        "disponibilidade" !== p.adminTab && React.createElement("div", {
-            className: "bg-white border-b sticky top-0 z-10"
-        }, React.createElement("div", {
-            className: "max-w-7xl mx-auto px-4 flex gap-1 overflow-x-auto"
-        }, ["dashboard", "search", "ranking", "relatorios"].filter(function(tabId) {
-            // Admin master tem acesso a tudo
-            if ("admin_master" === l.role) return true;
-            // Verificar permissão da aba
-            const abaKey = "solicitacoes_" + tabId;
-            const abas = l.permissions && l.permissions.abas ? l.permissions.abas : {};
-            // Se não há permissões de abas definidas, mostrar todas
-            if (Object.keys(abas).length === 0) return true;
-            return abas[abaKey] !== false;
-        }).map(e => React.createElement("button", {
-            key: e,
-            onClick: () => x({
-                ...p,
-                adminTab: e
-            }),
-            className: "px-4 py-2.5 text-sm font-semibold whitespace-nowrap " + (!p.adminTab && "dashboard" === e || p.adminTab === e ? "text-purple-900 border-b-2 border-purple-900" : "text-gray-600")
-        }, "dashboard" === e && "📊 Dashboard", "search" === e && "🔍 Busca Detalhada", "ranking" === e && "🏆 Ranking", "relatorios" === e && "📈 Relatórios", "users" === e && "👥 Usuários")))), React.createElement("div", {
+        // Conteúdo principal (sub-abas removidas - navegação via sidebar)
+        React.createElement("div", {
             className: "max-w-7xl mx-auto p-6"
         }, (!p.adminTab || "dashboard" === p.adminTab) && React.createElement(React.Fragment, null, (() => {
             const e = e => {
