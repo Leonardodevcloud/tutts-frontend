@@ -173,14 +173,12 @@ function getFirstAllowedTab(user, moduleId, defaultTab) {
 
 // CONFIGURAÇÃO GLOBAL DE MÓDULOS E ABAS - Edite aqui para adicionar novos módulos/abas
 const SISTEMA_MODULOS_CONFIG = [
+    { id: "home", label: "Início", icon: "🏠", abas: [] },
     { id: "solicitacoes", label: "Solicitações", icon: "📋",
       abas: [{id: "dashboard", label: "Dashboard"}, {id: "search", label: "Busca"}, {id: "ranking", label: "Ranking"}, {id: "relatorios", label: "Relatórios"}]
     },
     { id: "financeiro", label: "Financeiro", icon: "💰",
-      abas: [{id: "solicitacoes", label: "Solicitações"}, {id: "validacao", label: "Validação"}, {id: "conciliacao", label: "Conciliação"}, {id: "resumo", label: "Resumo"}, {id: "gratuidades", label: "Gratuidades"}, {id: "restritos", label: "Restritos"}, {id: "indicacoes", label: "Indicações"}, {id: "promo-novatos", label: "Promo Novatos"}, {id: "loja", label: "Loja"}, {id: "relatorios", label: "Relatórios"}, {id: "horarios", label: "Horários"}, {id: "avisos", label: "Avisos"}, {id: "backup", label: "Backup"}, {id: "saldo-plific", label: "Saldo Plific"}]
-    },
-    { id: "operacional", label: "Operacional", icon: "⚙️",
-      abas: [{id: "indicacoes", label: "Indicações"}, {id: "promo-novatos", label: "Promo Novatos"}, {id: "avisos", label: "Avisos"}, {id: "novas-operacoes", label: "Novas Operações"}, {id: "recrutamento", label: "Recrutamento"}, {id: "localizacao-clientes", label: "Localização Clientes"}, {id: "relatorio-diario", label: "Relatório Diário"}, {id: "score-prof", label: "Score Prof"}]
+      abas: [{id: "solicitacoes", label: "Solicitações"}, {id: "validacao", label: "Validação"}, {id: "conciliacao", label: "Conciliação"}, {id: "saldo-plific", label: "Saldo Plific"}, {id: "resumo", label: "Resumo"}, {id: "gratuidades", label: "Gratuidades"}, {id: "restritos", label: "Restritos"}, {id: "indicacoes", label: "Indicações"}, {id: "promo-novatos", label: "Promo Novatos"}, {id: "loja", label: "Loja"}, {id: "relatorios", label: "Relatórios"}, {id: "horarios", label: "Horários"}, {id: "avisos", label: "Avisos"}, {id: "backup", label: "Backup"}]
     },
     { id: "disponibilidade", label: "Disponibilidade", icon: "📅",
       abas: [{id: "panorama", label: "Panorama"}, {id: "principal", label: "Principal"}, {id: "faltosos", label: "Faltosos"}, {id: "espelho", label: "Espelho"}, {id: "relatorios", label: "Relatórios"}, {id: "motoboys", label: "Motoboys"}, {id: "restricoes", label: "Restrições"}, {id: "config", label: "Configurações"}]
@@ -194,10 +192,121 @@ const SISTEMA_MODULOS_CONFIG = [
     { id: "social", label: "Social", icon: "💜",
       abas: [{id: "perfil", label: "Meu Perfil"}, {id: "comunidade", label: "Comunidade"}, {id: "mensagens", label: "Mensagens"}]
     },
-    { id: "config", label: "Configurações", icon: "🔧",
-      abas: [{id: "usuarios", label: "Usuários"}, {id: "roteirizador", label: "🗺️ Roteirizador"}, {id: "permissoes", label: "Permissões ADM"}, {id: "auditoria", label: "Auditoria"}, {id: "sistema", label: "Sistema"}]
+    { id: "operacional", label: "Operacional", icon: "⚙️",
+      abas: [{id: "indicacoes", label: "Indicações"}, {id: "promo-novatos", label: "Promo Novatos"}, {id: "avisos", label: "Avisos"}, {id: "novas-operacoes", label: "Novas Operações"}, {id: "recrutamento", label: "Recrutamento"}, {id: "localizacao-clientes", label: "Localização Clientes"}, {id: "relatorio-diario", label: "Relatório Diário"}, {id: "score-prof", label: "Score Prof"}]
+    },
+    { id: "config", label: "Config", icon: "🔧",
+      abas: [{id: "usuarios", label: "Usuários"}, {id: "roteirizador", label: "Roteirizador"}, {id: "solicitacao", label: "Solicitação"}, {id: "permissoes", label: "Permissões ADM"}, {id: "auditoria", label: "Auditoria"}, {id: "sistema", label: "Sistema"}]
     }
 ];
+
+// ==================== COMPONENTE SIDEBAR AUTO-HIDE ====================
+const Sidebar = ({ usuario, moduloAtivo, setModulo, menuAberto, setMenuAberto, sidebarAberto, setSidebarAberto, sidebarFixo, setSidebarFixo, hasModuleAccess, onNavigate, socialProfile }) => {
+    const sidebarVisivel = sidebarAberto || sidebarFixo;
+    
+    const handleModuloClick = (modulo) => {
+        if (modulo.abas && modulo.abas.length > 0) {
+            setMenuAberto(menuAberto === modulo.id ? null : modulo.id);
+        } else {
+            onNavigate(modulo.id, null);
+            if (!sidebarFixo) setSidebarAberto(false);
+        }
+    };
+    
+    const handleAbaClick = (moduloId, abaId) => {
+        onNavigate(moduloId, abaId);
+        if (!sidebarFixo) setSidebarAberto(false);
+    };
+    
+    return React.createElement("div", {
+        className: "fixed left-0 top-0 h-full z-40 flex",
+        onMouseLeave: () => !sidebarFixo && setSidebarAberto(false)
+    },
+        // Barra de trigger (sempre visível)
+        React.createElement("div", {
+            className: "w-2 h-full bg-gradient-to-b from-purple-900 to-indigo-900 hover:w-3 transition-all cursor-pointer flex items-center justify-center",
+            onMouseEnter: () => setSidebarAberto(true),
+            onClick: () => setSidebarFixo(!sidebarFixo)
+        },
+            React.createElement("div", {
+                className: "w-1 h-20 bg-white/30 rounded-full"
+            })
+        ),
+        // Sidebar expandido
+        React.createElement("div", {
+            className: "h-full bg-gradient-to-b from-purple-900 via-indigo-900 to-purple-950 shadow-2xl transition-all duration-300 overflow-hidden flex flex-col " + 
+                (sidebarVisivel ? "w-64 opacity-100" : "w-0 opacity-0"),
+            style: { transitionProperty: 'width, opacity' }
+        },
+            // Header do sidebar
+            React.createElement("div", {
+                className: "p-4 border-b border-white/10 flex items-center justify-between"
+            },
+                React.createElement("div", {className: "flex items-center gap-3"},
+                    socialProfile?.profile_photo ? React.createElement("img", {
+                        src: socialProfile.profile_photo,
+                        className: "w-10 h-10 rounded-full object-cover border-2 border-white/30"
+                    }) : React.createElement("div", {
+                        className: "w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold text-lg"
+                    }, usuario?.fullName?.charAt(0)?.toUpperCase() || "?"),
+                    React.createElement("div", {className: "overflow-hidden"},
+                        React.createElement("p", {className: "text-white font-semibold text-sm truncate"}, usuario?.fullName || "Usuário"),
+                        React.createElement("p", {className: "text-purple-300 text-xs truncate"}, 
+                            usuario?.role === "admin_master" ? "👑 Master" :
+                            usuario?.role === "admin" ? "👑 Admin" :
+                            usuario?.role === "admin_financeiro" ? "💰 Financeiro" : "👤 Usuário"
+                        )
+                    )
+                ),
+                // Botão de fixar
+                React.createElement("button", {
+                    onClick: () => setSidebarFixo(!sidebarFixo),
+                    className: "p-2 rounded-lg hover:bg-white/10 transition-colors " + (sidebarFixo ? "text-yellow-400" : "text-white/50"),
+                    title: sidebarFixo ? "Desafixar menu" : "Fixar menu"
+                }, sidebarFixo ? "📌" : "📍")
+            ),
+            // Menu items
+            React.createElement("div", {className: "flex-1 overflow-y-auto py-2"},
+                SISTEMA_MODULOS_CONFIG.filter(m => m.id === "home" || hasModuleAccess(usuario, m.id)).map(modulo => 
+                    React.createElement("div", {key: modulo.id},
+                        // Item do módulo
+                        React.createElement("button", {
+                            onClick: () => handleModuloClick(modulo),
+                            className: "w-full px-4 py-3 flex items-center justify-between text-left transition-all " + 
+                                (moduloAtivo === modulo.id ? "bg-white/20 text-white border-l-4 border-yellow-400" : "text-white/80 hover:bg-white/10 hover:text-white border-l-4 border-transparent")
+                        },
+                            React.createElement("div", {className: "flex items-center gap-3"},
+                                React.createElement("span", {className: "text-xl"}, modulo.icon),
+                                React.createElement("span", {className: "font-medium"}, modulo.label)
+                            ),
+                            modulo.abas && modulo.abas.length > 0 && React.createElement("span", {
+                                className: "text-white/50 transition-transform " + (menuAberto === modulo.id ? "rotate-180" : "")
+                            }, "▼")
+                        ),
+                        // Sub-abas (expandível)
+                        menuAberto === modulo.id && modulo.abas && modulo.abas.length > 0 && React.createElement("div", {
+                            className: "bg-black/20 py-1"
+                        },
+                            modulo.abas.map(aba => 
+                                React.createElement("button", {
+                                    key: aba.id,
+                                    onClick: () => handleAbaClick(modulo.id, aba.id),
+                                    className: "w-full px-4 py-2 pl-12 text-left text-sm text-white/70 hover:bg-white/10 hover:text-white transition-colors"
+                                },
+                                    React.createElement("span", null, aba.label)
+                                )
+                            )
+                        )
+                    )
+                )
+            ),
+            // Footer
+            React.createElement("div", {className: "p-3 border-t border-white/10"},
+                React.createElement("p", {className: "text-center text-white/30 text-xs"}, "🏍️ Tutts v2.1")
+            )
+        )
+    );
+};
 
 // MENSAGENS DE GENTILEZA - Uma será exibida aleatoriamente a cada acesso
 const MENSAGENS_GENTILEZA = [
@@ -2247,6 +2356,10 @@ const hideLoadingScreen = () => {
         [regiaoEditando, setRegiaoEditando] = useState(null), [plificState, setPlificState] = useState({ loading: false, loadingLote: false, consultaIndividual: null, consultaLote: [], idBusca: "", loadingDebito: false, pagina: 1, totalPaginas: 0, total: 0, somaTotal: 0 }), [modalDebitoPlific, setModalDebitoPlific] = useState(null), [debitoFormPlific, setDebitoFormPlific] = useState({ valor: "", descricao: "" }), [saldoPlificUser, setSaldoPlificUser] = useState({ saldo: null, loading: false, erro: null }),
         // Estados para dropdowns da aba Config
         [configSecaoAberta, setConfigSecaoAberta] = useState(""), // "" = todas fechadas
+        // ==================== SIDEBAR STATES ====================
+        [sidebarAberto, setSidebarAberto] = useState(false), // hover detectado
+        [sidebarFixo, setSidebarFixo] = useState(false), // fixado pelo usuário (pin)
+        [sidebarMenuAberto, setSidebarMenuAberto] = useState(null), // qual menu está expandido
         ja = (e, t = "success") => {
             d({
                 message: e,
@@ -10213,150 +10326,141 @@ const hideLoadingScreen = () => {
                     className: "flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
                 }, "📋 Ir para Tarefas")
             ))),
-            e ? React.createElement("nav", {
+            // ==================== SIDEBAR AUTO-HIDE ====================
+            e && React.createElement(Sidebar, {
+                usuario: l,
+                moduloAtivo: Ee,
+                setModulo: he,
+                menuAberto: sidebarMenuAberto,
+                setMenuAberto: setSidebarMenuAberto,
+                sidebarAberto: sidebarAberto,
+                setSidebarAberto: setSidebarAberto,
+                sidebarFixo: sidebarFixo,
+                setSidebarFixo: setSidebarFixo,
+                hasModuleAccess: hasModuleAccess,
+                socialProfile: socialProfile,
+                onNavigate: (moduloId, abaId) => {
+                    he(moduloId);
+                    if (moduloId === "financeiro") {
+                        x(prev => ({...prev, finTab: abaId || "home-fin"}));
+                    } else if (moduloId === "solicitacoes") {
+                        x(prev => ({...prev, adminTab: abaId || "dashboard"}));
+                    } else if (moduloId === "disponibilidade") {
+                        he("solicitacoes");
+                        x(prev => ({...prev, adminTab: "disponibilidade"}));
+                    } else if (moduloId === "bi") {
+                        ll(); tl(); al(); pl(); carregarPrazosProf();
+                        if (abaId) ht(abaId);
+                    } else if (moduloId === "config") {
+                        x(prev => ({...prev, configTab: abaId || "usuarios"}));
+                    } else if (moduloId === "operacional") {
+                        x(prev => ({...prev, opTab: abaId || "indicacoes"}));
+                    } else if (moduloId === "todo") {
+                        if (abaId) setTodoTab(abaId);
+                    }
+                }
+            }),
+            // ==================== HEADER COMPACTO (sem menu horizontal) ====================
+            (e || "admin" === l.role) && React.createElement("header", {
                 className: "bg-gradient-to-r from-indigo-900 to-purple-900 shadow-lg"
-            }, 
-            // Primeira linha - Logo e usuário
-            React.createElement("div", {
-                className: "max-w-7xl mx-auto px-4 pt-3 pb-2 flex justify-between items-center border-b border-white/10"
-            }, React.createElement("div", {
-                className: "flex items-center gap-3"
-            }, 
-            socialProfile?.profile_photo ? React.createElement("img", {
-                src: socialProfile.profile_photo,
-                className: "w-10 h-10 rounded-full object-cover border-2 border-white/50"
-            }) : React.createElement("div", {
-                className: "w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold border-2 border-white/50"
-            }, l.fullName?.charAt(0)?.toUpperCase() || "?"),
-            React.createElement("div", null, React.createElement("h1", {
-                className: "text-lg font-bold text-white"
-            }, "👑 Admin Master"), React.createElement("p", {
-                className: "text-xs text-indigo-200"
-            }, socialProfile?.display_name || l.fullName))), 
-            React.createElement("div", {
-                className: "flex items-center gap-3"
-            }, React.createElement("div", {
-                className: "flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full"
-            }, React.createElement("span", {
-                className: "w-2 h-2 rounded-full " + (f ? "bg-yellow-400 animate-pulse" : "bg-green-400")
-            }), React.createElement("span", {
-                className: "text-xs text-indigo-200"
-            }, f ? "Atualizando..." : E ? `${E.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}` : "⚡ 10s")), React.createElement("button", {
-                onClick: ul,
-                className: "px-3 py-1.5 bg-white/20 text-white rounded-lg hover:bg-white/30 text-sm font-semibold"
-            }, "🔄"), React.createElement("button", {
-                onClick: () => o(null),
-                className: "px-3 py-1.5 text-white hover:bg-white/20 rounded-lg text-sm"
-            }, "Sair"))),
-            // Segunda linha - Navegação
-            React.createElement("div", {
-                className: "max-w-7xl mx-auto px-4 py-2"
-            }, React.createElement("div", {
-                className: "flex flex-wrap gap-1"
-            }, React.createElement("button", {
-                onClick: () => he("home"),
-                className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("home" === Ee ? "bg-white text-purple-900" : "text-white hover:bg-white/10")
-            }, "🏠 Início"), 
-            hasModuleAccess(l, "solicitacoes") && React.createElement("button", {
-                onClick: () => { he("solicitacoes"); x(e => ({...e, adminTab: "dashboard"})); },
-                className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("solicitacoes" === Ee && "disponibilidade" !== p.adminTab ? "bg-white text-purple-900" : "text-white hover:bg-white/10")
-            }, "📋 Solicitações"), 
-            hasModuleAccess(l, "financeiro") && React.createElement("button", {
-                onClick: () => { he("financeiro"); x(e => ({...e, finTab: getFirstAllowedTab(l, "financeiro", "home-fin")})); },
-                className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("financeiro" === Ee ? "bg-white text-green-800" : "text-white hover:bg-white/10")
-            }, "💰 Financeiro"), 
-            hasModuleAccess(l, "disponibilidade") && React.createElement("button", {
-                onClick: () => { he("solicitacoes"); x(e => ({...e, adminTab: "disponibilidade"})); },
-                className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("solicitacoes" === Ee && "disponibilidade" === p.adminTab ? "bg-white text-blue-800" : "text-white hover:bg-white/10")
-            }, "📅 Disponibilidade"), 
-            hasModuleAccess(l, "bi") && React.createElement("button", {
-                onClick: () => {
-                    he("bi"), ll(), tl(), al(), pl(), carregarPrazosProf()
-                },
-                className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("bi" === Ee ? "bg-white text-orange-800" : "text-white hover:bg-white/10")
-            }, "📊 BI"), 
-            hasModuleAccess(l, "todo") && React.createElement("button", {
-                onClick: () => he("todo"),
-                className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("todo" === Ee ? "bg-white text-indigo-800" : "text-white hover:bg-white/10")
-            }, "📝 TO-DO"), 
-            React.createElement("button", {
-                onClick: () => he("social"),
-                className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("social" === Ee ? "bg-white text-pink-800" : "text-white hover:bg-white/10")
-            }, "💜 Social"), 
-            hasModuleAccess(l, "operacional") && React.createElement("button", {
-                onClick: () => he("operacional"),
-                className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("operacional" === Ee ? "bg-white text-teal-800" : "text-white hover:bg-white/10")
-            }, "⚙️ Operacional"), 
-            hasModuleAccess(l, "config") && React.createElement("button", {
-                onClick: () => { he("config"); x(e => ({...e, configTab: getFirstAllowedTab(l, "config", "usuarios")})); },
-                className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("config" === Ee ? "bg-white text-gray-800" : "text-white hover:bg-white/10")
-            }, "🔧 Config")))) : React.createElement("nav", {
-                className: "bg-green-800 shadow-lg"
-            }, React.createElement("div", {
-                className: "max-w-7xl mx-auto px-4 py-4 flex justify-between items-center"
-            }, React.createElement("div", {
-                className: "flex items-center gap-3"
-            }, 
-            // Foto de perfil
-            socialProfile?.profile_photo ? React.createElement("img", {
-                src: socialProfile.profile_photo,
-                className: "w-10 h-10 rounded-full object-cover border-2 border-white/50"
-            }) : React.createElement("div", {
-                className: "w-10 h-10 rounded-full bg-green-600 flex items-center justify-center text-white font-bold border-2 border-white/50"
-            }, l.fullName?.charAt(0)?.toUpperCase() || "?"),
-            React.createElement("h1", {
-                className: "text-xl font-bold text-white"
-            }, "💰 Painel Financeiro"), 
-            // Botões de navegação para admin comum
-            "admin" === l.role && React.createElement("div", {
-                className: "flex bg-green-900/50 rounded-lg p-1 ml-3"
             },
-                hasModuleAccess(l, "solicitacoes") && React.createElement("button", {
-                    onClick: () => he("home"),
-                    className: "px-3 py-1.5 rounded-lg text-xs font-semibold text-white hover:bg-white/10"
-                }, "📋 Solicitações"),
-                React.createElement("button", {
-                    onClick: () => { he("financeiro"); x(e => ({...e, finTab: getFirstAllowedTab(l, "financeiro", "home-fin")})); },
-                    className: "px-3 py-1.5 rounded-lg text-xs font-semibold bg-white text-green-800"
-                }, "💰 Financeiro"),
-                hasModuleAccess(l, "operacional") && React.createElement("button", {
-                    onClick: () => he("operacional"),
-                    className: "px-3 py-1.5 rounded-lg text-xs font-semibold text-white hover:bg-white/10"
-                }, "⚙️ Operacional"),
-                hasModuleAccess(l, "bi") && React.createElement("button", {
-                    onClick: () => { he("bi"); ll(); tl(); al(); pl(); carregarPrazosProf(); },
-                    className: "px-3 py-1.5 rounded-lg text-xs font-semibold text-white hover:bg-white/10"
-                }, "📊 BI"),
-                hasModuleAccess(l, "todo") && React.createElement("button", {
-                    onClick: () => he("todo"),
-                    className: "px-3 py-1.5 rounded-lg text-xs font-semibold text-white hover:bg-white/10"
-                }, "📋 TO-DO"),
-                React.createElement("button", {
-                    onClick: () => he("social"),
-                    className: "px-3 py-1.5 rounded-lg text-xs font-semibold text-white hover:bg-white/10"
-                }, "💜 Social")
+                React.createElement("div", {
+                    className: "max-w-7xl mx-auto px-4 py-3 flex justify-between items-center"
+                },
+                    // Lado esquerdo - Logo e módulo atual
+                    React.createElement("div", {className: "flex items-center gap-4"},
+                        React.createElement("div", {className: "flex items-center gap-2"},
+                            React.createElement("span", {className: "text-2xl"}, "🏍️"),
+                            React.createElement("span", {className: "text-white font-bold text-lg hidden sm:block"}, "Tutts")
+                        ),
+                        React.createElement("div", {className: "h-6 w-px bg-white/20 hidden sm:block"}),
+                        React.createElement("div", {className: "flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-lg"},
+                            React.createElement("span", {className: "text-lg"}, 
+                                SISTEMA_MODULOS_CONFIG.find(m => m.id === Ee)?.icon || "🏠"
+                            ),
+                            React.createElement("span", {className: "text-white font-medium text-sm"},
+                                SISTEMA_MODULOS_CONFIG.find(m => m.id === Ee)?.label || "Início"
+                            )
+                        )
+                    ),
+                    // Lado direito - Status e ações
+                    React.createElement("div", {className: "flex items-center gap-3"},
+                        // Status tempo real
+                        React.createElement("div", {
+                            className: "flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full"
+                        },
+                            React.createElement("span", {
+                                className: "w-2 h-2 rounded-full " + (f ? "bg-yellow-400 animate-pulse" : "bg-green-400")
+                            }),
+                            React.createElement("span", {className: "text-xs text-indigo-200 hidden sm:block"},
+                                f ? "Atualizando..." : E ? E.toLocaleTimeString("pt-BR", {hour: "2-digit", minute: "2-digit"}) : "⚡ 10s"
+                            )
+                        ),
+                        // Botão atualizar
+                        React.createElement("button", {
+                            onClick: ul,
+                            className: "p-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-colors",
+                            title: "Atualizar dados"
+                        }, "🔄"),
+                        // Info usuário
+                        React.createElement("div", {className: "flex items-center gap-2"},
+                            socialProfile?.profile_photo ? React.createElement("img", {
+                                src: socialProfile.profile_photo,
+                                className: "w-8 h-8 rounded-full object-cover border-2 border-white/30"
+                            }) : React.createElement("div", {
+                                className: "w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold text-sm"
+                            }, l.fullName?.charAt(0)?.toUpperCase() || "?"),
+                            React.createElement("div", {className: "hidden md:block"},
+                                React.createElement("p", {className: "text-white text-sm font-medium leading-tight"}, l.fullName?.split(" ")[0] || "Usuário"),
+                                React.createElement("p", {className: "text-indigo-300 text-xs leading-tight"},
+                                    l.role === "admin_master" ? "👑 Master" : "👑 Admin"
+                                )
+                            )
+                        ),
+                        // Botão sair
+                        React.createElement("button", {
+                            onClick: () => o(null),
+                            className: "p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors",
+                            title: "Sair"
+                        }, "🚪")
+                    )
+                )
             ),
-            React.createElement("div", {
-                className: "flex items-center gap-2 bg-green-900/50 px-3 py-1 rounded-full"
-            }, React.createElement("span", {
-                className: "w-2 h-2 rounded-full " + (f ? "bg-yellow-400 animate-pulse" : "bg-green-400 animate-pulse")
-            }), React.createElement("span", {
-                className: "text-xs text-green-200"
-            }, f ? "🔄 Atualizando..." : "⚡ Tempo Real (10s)")), E && React.createElement("span", {
-                className: "text-xs text-green-300"
-            }, "Última: ", E.toLocaleTimeString("pt-BR", {
-                hour: "2-digit",
-                minute: "2-digit",
-                second: "2-digit"
-            }))), React.createElement("div", {
-                className: "flex gap-2"
-            }, React.createElement("button", {
-                onClick: ul,
-                className: "px-4 py-2 bg-green-700 text-white rounded-lg hover:bg-green-600 text-sm font-semibold"
-            }, "🔄"), React.createElement("button", {
-                onClick: () => o(null),
-                className: "px-4 py-2 text-white hover:bg-green-700 rounded-lg"
-            }, "Sair")))), p.deleteConfirm && React.createElement("div", {
+            // Sidebar para admin também
+            "admin" === l.role && !e && React.createElement(Sidebar, {
+                usuario: l,
+                moduloAtivo: Ee,
+                setModulo: he,
+                menuAberto: sidebarMenuAberto,
+                setMenuAberto: setSidebarMenuAberto,
+                sidebarAberto: sidebarAberto,
+                setSidebarAberto: setSidebarAberto,
+                sidebarFixo: sidebarFixo,
+                setSidebarFixo: setSidebarFixo,
+                hasModuleAccess: hasModuleAccess,
+                socialProfile: socialProfile,
+                onNavigate: (moduloId, abaId) => {
+                    he(moduloId);
+                    if (moduloId === "financeiro") {
+                        x(prev => ({...prev, finTab: abaId || "home-fin"}));
+                    } else if (moduloId === "solicitacoes") {
+                        x(prev => ({...prev, adminTab: abaId || "dashboard"}));
+                    } else if (moduloId === "disponibilidade") {
+                        he("solicitacoes");
+                        x(prev => ({...prev, adminTab: "disponibilidade"}));
+                    } else if (moduloId === "bi") {
+                        ll(); tl(); al(); pl(); carregarPrazosProf();
+                        if (abaId) ht(abaId);
+                    } else if (moduloId === "config") {
+                        x(prev => ({...prev, configTab: abaId || "usuarios"}));
+                    } else if (moduloId === "operacional") {
+                        x(prev => ({...prev, opTab: abaId || "indicacoes"}));
+                    } else if (moduloId === "todo") {
+                        if (abaId) setTodoTab(abaId);
+                    }
+                }
+            }),
+            p.deleteConfirm && React.createElement("div", {
                 className: "fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
             }, React.createElement("div", {
                 className: "bg-white rounded-xl shadow-2xl p-6 max-w-md w-full"
@@ -19923,7 +20027,7 @@ const hideLoadingScreen = () => {
                                     type: "text",
                                     value: p.buscaUsuario || "",
                                     onChange: function(e) { x({...p, buscaUsuario: e.target.value}); },
-                                    placeholder: "🔍 Buscar por nome ou código...",
+                                    placeholder: "Buscar por nome ou código...",
                                     className: "w-full px-4 py-2 pl-10 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                                 }),
                                 React.createElement("span", {className: "absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"}, "🔍")
