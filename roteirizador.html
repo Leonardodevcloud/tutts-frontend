@@ -590,7 +590,17 @@
                 try {
                     const partida = enderecos[0];
                     const pontosEntrega = enderecos.slice(1);
-                    const numGrupos = Math.ceil(pontosEntrega.length / paradasPorRota);
+                    
+                    // Calcular número de grupos baseado no modo selecionado
+                    let numGrupos;
+                    if (modoDivisao === 'rotas') {
+                        // Modo: quantidade de rotas desejada
+                        numGrupos = Math.min(quantidadeRotas, pontosEntrega.length);
+                    } else {
+                        // Modo: paradas por rota
+                        numGrupos = Math.ceil(pontosEntrega.length / paradasPorRota);
+                    }
+                    
                     const grupos = agruparEnderecos(partida, pontosEntrega, numGrupos);
                     
                     const rotas = [];
@@ -827,10 +837,10 @@
                     
                     <div className="max-w-7xl mx-auto p-2 md:p-4">
                         <div className="flex flex-col md:flex-row gap-4">
-                            {/* Painel lateral */}
-                            <div className={`${abaMobile === 'lista' ? 'block' : 'hidden'} md:block w-full md:w-96 bg-white rounded-xl shadow-lg overflow-hidden flex flex-col`} style={{ height: 'calc(100vh - 160px)', maxHeight: 'calc(100vh - 160px)' }}>
+                            {/* Painel lateral - todo scrollável */}
+                            <div className={`${abaMobile === 'lista' ? 'block' : 'hidden'} md:block w-full md:w-96 bg-white rounded-xl shadow-lg overflow-y-auto`} style={{ height: 'calc(100vh - 160px)', maxHeight: 'calc(100vh - 160px)' }}>
                                 {/* Busca */}
-                                <div className="p-4 border-b bg-purple-50">
+                                <div className="p-4 border-b bg-purple-50 sticky top-0 z-10">
                                     <div className="flex gap-2">
                                         <input
                                             type="text"
@@ -874,8 +884,8 @@
                                     )}
                                 </div>
                                 
-                                {/* Lista de endereços - com scroll */}
-                                <div className="flex-1 overflow-y-auto p-3" style={{ minHeight: '100px', maxHeight: 'calc(100vh - 450px)' }}>
+                                {/* Lista de endereços */}
+                                <div className="p-3">
                                     <div className="flex items-center justify-between mb-2">
                                         <span className="text-sm font-bold text-gray-600">Rota ({enderecos.length}/20)</span>
                                         {enderecos.length > 0 && (
@@ -941,8 +951,8 @@
                                     )}
                                 </div>
                                 
-                                {/* Controles - sempre visíveis no fundo */}
-                                <div className="p-3 border-t bg-gray-50 flex-shrink-0">
+                                {/* Controles */}
+                                <div className="p-3 border-t bg-gray-50">
                                     <label className="flex items-center gap-2 mb-2 cursor-pointer text-sm">
                                         <input type="checkbox" checked={retornarInicio} onChange={(e) => setRetornarInicio(e.target.checked)} className="w-4 h-4" />
                                         <span>↩️ Retornar ao início</span>
@@ -1039,7 +1049,7 @@
                                         disabled={loading || enderecos.length < 2}
                                         className="w-full py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-bold text-sm hover:from-purple-700 hover:to-pink-700 disabled:opacity-50"
                                     >
-                                        {loading ? '⏳ Calculando...' : modoMultiplas ? `🚚 Gerar ${Math.ceil((enderecos.length - 1) / paradasPorRota)} Rotas` : '🚀 Otimizar Rota'}
+                                        {loading ? '⏳ Calculando...' : modoMultiplas ? `🚚 Gerar ${modoDivisao === 'rotas' ? quantidadeRotas : Math.ceil((enderecos.length - 1) / paradasPorRota)} Rotas` : '🚀 Otimizar Rota'}
                                     </button>
                                 </div>
                             </div>
