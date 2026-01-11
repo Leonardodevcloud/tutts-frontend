@@ -215,17 +215,63 @@
                     return comp ? comp.short_name : '';
                 };
                 
-                // Extrair cada parte do endereço
-                const rua = getComponente('route') || '';
-                const numero = getComponente('street_number') || '';
-                const bairro = getComponente('sublocality_level_1') || getComponente('sublocality') || getComponente('neighborhood') || '';
-                const cidade = getComponente('administrative_area_level_2') || getComponente('locality') || '';
-                const uf = getComponenteShort('administrative_area_level_1') || '';
-                const cep = getComponente('postal_code') || '';
+                // Extrair cada parte do endereço dos componentes
+                let rua = getComponente('route') || '';
+                let numero = getComponente('street_number') || '';
+                let bairro = getComponente('sublocality_level_1') || getComponente('sublocality') || getComponente('neighborhood') || '';
+                let cidade = getComponente('administrative_area_level_2') || getComponente('locality') || '';
+                let uf = getComponenteShort('administrative_area_level_1') || '';
+                let cep = getComponente('postal_code') || '';
+                
+                // Se não tem componentes (cache antigo), tenta parsear do endereço formatado
+                const enderecoCompleto = sug.endereco || '';
+                if (!rua && enderecoCompleto) {
+                    const partes = enderecoCompleto.split(',').map(p => p.trim());
+                    // Formato típico: "Rua X, 123 - Bairro, Cidade - UF, CEP, Brasil"
+                    if (partes.length >= 1) {
+                        // Primeira parte: rua (pode ter número junto)
+                        const ruaNumero = partes[0].split(',')[0];
+                        const matchNumero = ruaNumero.match(/(\d+)/);
+                        rua = ruaNumero.replace(/,?\s*\d+.*$/, '').trim();
+                        if (matchNumero && !numero) numero = matchNumero[1];
+                    }
+                    if (partes.length >= 2 && !bairro) {
+                        // Segunda parte pode ser "Número - Bairro" ou só "Bairro"
+                        const parte2 = partes[1];
+                        if (parte2.includes('-')) {
+                            const subpartes = parte2.split('-').map(p => p.trim());
+                            if (!numero && /^\d+/.test(subpartes[0])) numero = subpartes[0].match(/\d+/)?.[0] || '';
+                            bairro = subpartes[subpartes.length - 1] || '';
+                        } else {
+                            if (!numero && /^\d+/.test(parte2)) numero = parte2.match(/\d+/)?.[0] || '';
+                            else bairro = parte2;
+                        }
+                    }
+                    if (partes.length >= 3 && !cidade) {
+                        // Terceira parte: "Cidade - UF"
+                        const cidadeUf = partes[2];
+                        if (cidadeUf.includes('-')) {
+                            const [c, u] = cidadeUf.split('-').map(p => p.trim());
+                            cidade = c || '';
+                            if (!uf) uf = u || '';
+                        } else {
+                            cidade = cidadeUf;
+                        }
+                    }
+                    if (partes.length >= 4 && !cep) {
+                        // Quarta parte pode ser CEP
+                        const possibleCep = partes[3].replace(/\D/g, '');
+                        if (possibleCep.length === 8) cep = possibleCep;
+                    }
+                    // Garantir UF = GO se cidade contém Goiânia
+                    if (!uf && cidade.toLowerCase().includes('goiânia')) uf = 'GO';
+                    if (!uf && enderecoCompleto.includes('GO')) uf = 'GO';
+                    if (!cidade && enderecoCompleto.toLowerCase().includes('goiânia')) cidade = 'Goiânia';
+                }
                 
                 const novoPonto = {
                     id: Date.now(), 
-                    endereco_completo: sug.endereco || '',
+                    endereco_completo: enderecoCompleto,
                     rua: rua,
                     numero: numero,
                     bairro: bairro,
@@ -236,6 +282,8 @@
                     longitude: sug.longitude,
                     observacao: '', telefone: '', procurar_por: '', numero_nota: '', codigo_finalizar: ''
                 };
+                
+                console.log('📍 Ponto adicionado:', novoPonto);
                 
                 setPontos([...pontos, novoPonto]);
                 setTermoBusca(''); setSugestoes([]);
