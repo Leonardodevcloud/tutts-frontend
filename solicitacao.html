@@ -135,7 +135,8 @@
             const [config, setConfig] = useState({
                 numero_pedido: '', centro_custo: cliente.centro_custo_padrao || '', usuario_solicitante: cliente.nome,
                 data_retirada: '', hora_retirada: '', forma_pagamento: cliente.forma_pagamento_padrao || 'F',
-                ponto_receber: '', retorno: false, obs_retorno: '', ordenar: true, codigo_profissional: ''
+                ponto_receber: '', retorno: false, obs_retorno: '', ordenar: true, codigo_profissional: '',
+                sem_profissional: false  // NOVO - Modo teste
             });
             
             // Inicializar mapa
@@ -329,14 +330,44 @@
             
             const enviarSolicitacao = async () => {
                 if (pontos.length < 2) { showToast('Adicione pelo menos 2 pontos (partida + entrega)', 'error'); return; }
+                
+                // Validação: ordenar só permite até 20 pontos
+                if (config.ordenar && pontos.length > 20) {
+                    showToast('Ordenação automática permite máximo 20 pontos', 'warning');
+                    return;
+                }
+                
                 setLoading(true);
                 try {
                     const dataRetirada = config.data_retirada && config.hora_retirada ? `${config.data_retirada} ${config.hora_retirada}:00` : '';
                     const payload = {
-                        numero_pedido: config.numero_pedido, centro_custo: config.centro_custo, usuario_solicitante: config.usuario_solicitante,
-                        data_retirada: dataRetirada, forma_pagamento: config.forma_pagamento, ponto_receber: config.ponto_receber ? parseInt(config.ponto_receber) : null,
-                        retorno: config.retorno, obs_retorno: config.obs_retorno, ordenar: config.ordenar, codigo_profissional: config.codigo_profissional,
-                        pontos: pontos.map(p => ({ rua: p.rua || '', numero: p.numero || '', complemento: p.complemento || '', bairro: p.bairro || '', cidade: p.cidade || '', uf: p.uf || '', cep: p.cep || '', latitude: p.latitude, longitude: p.longitude, observacao: p.observacao || '', telefone: p.telefone || '', procurar_por: p.procurar_por || '', numero_nota: p.numero_nota || '', codigo_finalizar: p.codigo_finalizar || '' }))
+                        numero_pedido: config.numero_pedido, 
+                        centro_custo: config.centro_custo, 
+                        usuario_solicitante: config.usuario_solicitante,
+                        data_retirada: dataRetirada, 
+                        forma_pagamento: config.forma_pagamento, 
+                        ponto_receber: config.ponto_receber ? parseInt(config.ponto_receber) : null,
+                        retorno: config.retorno, 
+                        obs_retorno: config.obs_retorno, 
+                        ordenar: config.ordenar, 
+                        codigo_profissional: config.codigo_profissional,
+                        sem_profissional: config.sem_profissional,  // NOVO - Modo teste
+                        pontos: pontos.map(p => ({ 
+                            rua: p.rua || '', 
+                            numero: p.numero || '', 
+                            complemento: p.complemento || '', 
+                            bairro: p.bairro || '', 
+                            cidade: p.cidade || '', 
+                            uf: p.uf || '', 
+                            cep: p.cep || '', 
+                            latitude: p.latitude, 
+                            longitude: p.longitude, 
+                            observacao: p.observacao || '', 
+                            telefone: p.telefone || '', 
+                            procurar_por: p.procurar_por || '', 
+                            numero_nota: p.numero_nota || '', 
+                            codigo_finalizar: p.codigo_finalizar || '' 
+                        }))
                     };
                     
                     console.log('📤 Enviando payload:', JSON.stringify(payload, null, 2));
@@ -350,7 +381,8 @@
                     console.log('📥 Resposta:', data);
                     
                     if (resp.ok) {
-                        showToast(`✅ Corrida solicitada! OS: ${data.os_numero}`, 'success');
+                        const msgTeste = data.modo_teste ? ' (MODO TESTE - não disparou para motoboys)' : '';
+                        showToast(`✅ Corrida solicitada! OS: ${data.os_numero}${msgTeste}`, 'success');
                         if (cliente.endereco_partida_padrao) { setPontos([{ id: Date.now(), ...cliente.endereco_partida_padrao, isPartida: true }]); }
                         else { setPontos([]); }
                         setConfig(prev => ({ ...prev, numero_pedido: '', obs_retorno: '' }));
@@ -378,54 +410,52 @@
                                 <span className="text-xl md:text-2xl">🏍️</span>
                                 <div>
                                     <h1 className="font-bold text-sm md:text-lg">Solicitar Corrida</h1>
-                                    <p className="text-blue-300 text-xs hidden md:block">Olá, {cliente.nome}</p>
+                                    <p className="text-xs text-blue-200 hidden md:block">{cliente.empresa || cliente.nome}</p>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <button onClick={() => setMostrarHistorico(true)} className="px-2 md:px-3 py-1 md:py-1.5 bg-white/10 hover:bg-white/20 rounded text-xs md:text-sm">
-                                    📋 <span className="hidden md:inline">Histórico</span>
-                                </button>
-                                <button onClick={onLogout} className="px-2 md:px-3 py-1 md:py-1.5 bg-red-500/20 hover:bg-red-500/30 rounded text-xs md:text-sm">🚪</button>
+                            <div className="flex items-center gap-2 md:gap-4">
+                                <button onClick={() => setMostrarHistorico(true)} className="text-xs md:text-sm bg-blue-800 hover:bg-blue-700 px-2 md:px-3 py-1 md:py-1.5 rounded">📋 Histórico</button>
+                                <button onClick={onLogout} className="text-xs md:text-sm bg-red-600 hover:bg-red-700 px-2 md:px-3 py-1 md:py-1.5 rounded">Sair</button>
                             </div>
                         </div>
                     </header>
                     
                     {/* Abas Mobile */}
-                    <div className="md:hidden flex border-b bg-white">
-                        <button onClick={() => setAbaMobile('form')} className={`flex-1 py-3 text-sm font-medium ${abaMobile === 'form' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50' : 'text-gray-500'}`}>📝 Formulário</button>
-                        <button onClick={() => { setAbaMobile('mapa'); setTimeout(() => mapa?.invalidateSize(), 100); }} className={`flex-1 py-3 text-sm font-medium ${abaMobile === 'mapa' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50' : 'text-gray-500'}`}>🗺️ Mapa ({pontos.length})</button>
+                    <div className="md:hidden flex bg-white shadow">
+                        <button onClick={() => setAbaMobile('form')} className={`flex-1 py-2 text-sm font-medium ${abaMobile === 'form' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500'}`}>📝 Formulário</button>
+                        <button onClick={() => setAbaMobile('mapa')} className={`flex-1 py-2 text-sm font-medium ${abaMobile === 'mapa' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500'}`}>🗺️ Mapa</button>
                     </div>
                     
+                    {/* Conteúdo */}
                     <div className="max-w-7xl mx-auto p-2 md:p-4">
                         <div className="flex flex-col md:flex-row gap-4">
-                            {/* Painel Formulário */}
-                            <div className={`${abaMobile === 'form' ? 'block' : 'hidden'} md:block w-full md:w-[450px] space-y-3`}>
-                                
-                                {/* Busca de Endereço */}
+                            {/* Formulário */}
+                            <div className={`${abaMobile === 'form' ? 'block' : 'hidden'} md:block w-full md:w-96 space-y-4`}>
+                                {/* Busca */}
                                 <div className="bg-white rounded-xl shadow p-3">
-                                    <div className="text-sm font-bold text-gray-700 mb-2">📍 Adicionar Ponto</div>
+                                    <div className="text-sm font-bold text-gray-700 mb-2">🔍 Buscar Endereço</div>
                                     <div className="flex gap-2">
-                                        <input type="text" value={termoBusca} onChange={(e) => setTermoBusca(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && buscarEndereco()}
-                                            placeholder="Digite o endereço..." className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500" />
+                                        <input type="text" value={termoBusca} onChange={(e) => setTermoBusca(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && buscarEndereco()}
+                                            className="flex-1 px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Digite o endereço..." />
                                         <button onClick={buscarEndereco} disabled={buscando} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50">
                                             {buscando ? '...' : '🔍'}
                                         </button>
                                     </div>
                                     {sugestoes.length > 0 && (
-                                        <div className="mt-2 bg-white border rounded-lg shadow max-h-40 overflow-y-auto">
-                                            {sugestoes.map((sug, idx) => (
-                                                <div key={idx} onClick={() => adicionarPonto(sug)} className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm border-b last:border-b-0">
-                                                    📍 {sug.endereco}
+                                        <div className="mt-2 bg-gray-50 rounded-lg max-h-40 overflow-y-auto">
+                                            {sugestoes.map((s, i) => (
+                                                <div key={i} onClick={() => adicionarPonto(s)} className="p-2 hover:bg-blue-50 cursor-pointer text-xs border-b last:border-0">
+                                                    📍 {s.endereco}
                                                 </div>
                                             ))}
                                         </div>
                                     )}
                                 </div>
                                 
-                                {/* Lista de Pontos */}
+                                {/* Pontos */}
                                 <div className="bg-white rounded-xl shadow p-3">
                                     <div className="flex items-center justify-between mb-2">
-                                        <span className="text-sm font-bold text-gray-700">🚚 Pontos ({pontos.length}/80)</span>
+                                        <span className="text-sm font-bold text-gray-700">📍 Pontos ({pontos.length})</span>
                                         <div className="flex gap-2">
                                             {pontos.length > 0 && (
                                                 <>
@@ -510,12 +540,23 @@
                                             <input type="text" value={config.obs_retorno} onChange={(e) => setConfig({...config, obs_retorno: e.target.value})} className="w-full px-2 py-1.5 border rounded text-sm" placeholder="Observação do retorno..." />
                                         </div>
                                     )}
+                                    
+                                    {/* NOVO - Modo Teste */}
+                                    <div className="mt-3 pt-3 border-t border-orange-200 bg-orange-50 -mx-3 px-3 pb-2 rounded-b-xl">
+                                        <label className="flex items-center gap-2 text-sm cursor-pointer">
+                                            <input type="checkbox" checked={config.sem_profissional} onChange={(e) => setConfig({...config, sem_profissional: e.target.checked})} className="w-4 h-4 accent-orange-500" />
+                                            <span className="text-orange-700 font-medium">🧪 Modo Teste (não dispara para motoboys)</span>
+                                        </label>
+                                        {config.sem_profissional && (
+                                            <p className="text-xs text-orange-600 mt-1 ml-6">A corrida será criada mas nenhum motoboy receberá a solicitação.</p>
+                                        )}
+                                    </div>
                                 </div>
                                 
                                 {/* Botão Enviar */}
                                 <button onClick={enviarSolicitacao} disabled={loading || pontos.length < 2}
-                                    className="w-full py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-bold text-sm hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 shadow-lg">
-                                    {loading ? '⏳ Enviando...' : `🚀 Solicitar Corrida (${pontos.length} pontos)`}
+                                    className={`w-full py-3 text-white rounded-xl font-bold text-sm shadow-lg disabled:opacity-50 ${config.sem_profissional ? 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700' : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800'}`}>
+                                    {loading ? '⏳ Enviando...' : config.sem_profissional ? `🧪 Testar Corrida (${pontos.length} pontos)` : `🚀 Solicitar Corrida (${pontos.length} pontos)`}
                                 </button>
                             </div>
                             
