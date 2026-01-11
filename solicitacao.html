@@ -89,11 +89,40 @@
             const [mapaAcompanhar, setMapaAcompanhar] = useState(null);
             const [markersAcompanhar, setMarkersAcompanhar] = useState(null);
             
+            // NOVO - Estado para profissionais
+            const [profissionais, setProfissionais] = useState([]);
+            const [carregandoProfissionais, setCarregandoProfissionais] = useState(false);
+            
             const [config, setConfig] = useState({
                 numero_pedido: '', centro_custo: cliente.centro_custo_padrao || '', usuario_solicitante: cliente.nome,
                 data_retirada: '', hora_retirada: '', forma_pagamento: cliente.forma_pagamento_padrao || 'F',
-                ponto_receber: '', retorno: false, obs_retorno: '', ordenar: true, codigo_profissional: '', sem_profissional: false
+                ponto_receber: '', retorno: false, obs_retorno: '', ordenar: true, 
+                codigo_profissional: '',  // Código do motoboy selecionado
+                sem_profissional: false
             });
+            
+            // Carregar profissionais ao iniciar
+            useEffect(() => {
+                carregarProfissionais();
+            }, []);
+            
+            const carregarProfissionais = async () => {
+                setCarregandoProfissionais(true);
+                try {
+                    const resp = await fetch(`${API_URL}/api/solicitacao/profissionais`, { 
+                        headers: { 'Authorization': `Bearer ${token}` } 
+                    });
+                    if (resp.ok) {
+                        const data = await resp.json();
+                        setProfissionais(data.profissionais || []);
+                        if (data.aviso) console.log('⚠️ Profissionais:', data.aviso);
+                        if (data.erro) console.log('⚠️ Erro profissionais:', data.erro);
+                    }
+                } catch (err) { 
+                    console.error('Erro ao carregar profissionais:', err); 
+                }
+                setCarregandoProfissionais(false);
+            };
             
             useEffect(() => {
                 if (typeof L !== 'undefined' && !mapa && abaAtiva === 'nova') {
@@ -196,10 +225,37 @@
                 setLoading(true);
                 try {
                     const dataRet = config.data_retirada && config.hora_retirada ? `${config.data_retirada} ${config.hora_retirada}:00` : '';
-                    const payload = { ...config, data_retirada: dataRet, ponto_receber: config.ponto_receber ? parseInt(config.ponto_receber) : null, pontos: pontos.map(p => ({ rua: p.rua || '', numero: p.numero || '', complemento: p.complemento || '', bairro: p.bairro || '', cidade: p.cidade || '', uf: p.uf || '', cep: p.cep || '', latitude: p.latitude, longitude: p.longitude, observacao: p.observacao || '', telefone: p.telefone || '', procurar_por: p.procurar_por || '', numero_nota: p.numero_nota || '', codigo_finalizar: p.codigo_finalizar || '' })) };
+                    const payload = { 
+                        numero_pedido: config.numero_pedido,
+                        centro_custo: config.centro_custo,
+                        usuario_solicitante: config.usuario_solicitante,
+                        data_retirada: dataRet, 
+                        forma_pagamento: config.forma_pagamento,
+                        ponto_receber: config.ponto_receber ? parseInt(config.ponto_receber) : null,
+                        retorno: config.retorno,
+                        obs_retorno: config.obs_retorno,
+                        ordenar: config.ordenar,
+                        codigo_profissional: config.codigo_profissional,  // Motoboy selecionado
+                        sem_profissional: config.sem_profissional,
+                        pontos: pontos.map(p => ({ 
+                            rua: p.rua || '', numero: p.numero || '', complemento: p.complemento || '', 
+                            bairro: p.bairro || '', cidade: p.cidade || '', uf: p.uf || '', cep: p.cep || '', 
+                            latitude: p.latitude, longitude: p.longitude, observacao: p.observacao || '', 
+                            telefone: p.telefone || '', procurar_por: p.procurar_por || '', 
+                            numero_nota: p.numero_nota || '', codigo_finalizar: p.codigo_finalizar || '' 
+                        })) 
+                    };
                     const resp = await fetch(`${API_URL}/api/solicitacao/corrida`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(payload) });
                     const data = await resp.json();
-                    if (resp.ok) { showToast(`✅ OS: ${data.os_numero}${data.modo_teste ? ' (TESTE)' : ''}`, 'success'); limpar(); carregarHistorico(); carregarCorridasAtivas(); }
+                    if (resp.ok) { 
+                        const motoboy = config.codigo_profissional ? profissionais.find(p => p.codigo === config.codigo_profissional)?.nome : null;
+                        const msgMotoboy = motoboy ? ` → ${motoboy}` : '';
+                        showToast(`✅ OS: ${data.os_numero}${msgMotoboy}${data.modo_teste ? ' (TESTE)' : ''}`, 'success'); 
+                        limpar(); 
+                        setConfig(prev => ({ ...prev, codigo_profissional: '' }));
+                        carregarHistorico(); 
+                        carregarCorridasAtivas(); 
+                    }
                     else showToast(data.error || 'Erro', 'error');
                 } catch { showToast('Erro', 'error'); }
                 setLoading(false);
@@ -252,13 +308,54 @@
                                             </div>
                                         </div>
                                         <div className="bg-white rounded-xl shadow p-3">
-                                            <div className="text-sm font-bold text-gray-700 mb-3">⚙️ Config</div>
-                                            <div className="grid grid-cols-2 gap-2"><div><label className="text-xs text-gray-600">Pedido</label><input type="text" value={config.numero_pedido} onChange={(e) => setConfig({...config, numero_pedido: e.target.value})} className="w-full px-2 py-1.5 border rounded text-sm" /></div><div><label className="text-xs text-gray-600">Centro Custo</label><input type="text" value={config.centro_custo} onChange={(e) => setConfig({...config, centro_custo: e.target.value})} className="w-full px-2 py-1.5 border rounded text-sm" /></div></div>
-                                            <div className="grid grid-cols-2 gap-2 mt-2"><div><label className="text-xs text-gray-600">Pagamento</label><select value={config.forma_pagamento} onChange={(e) => setConfig({...config, forma_pagamento: e.target.value})} className="w-full px-2 py-1.5 border rounded text-sm"><option value="F">A Faturar</option><option value="D">Dinheiro</option><option value="C">Cartão</option></select></div><div><label className="text-xs text-gray-600">Receber ponto</label><input type="number" value={config.ponto_receber} onChange={(e) => setConfig({...config, ponto_receber: e.target.value})} className="w-full px-2 py-1.5 border rounded text-sm" min="1" /></div></div>
-                                            <div className="flex flex-wrap gap-4 mt-3"><label className="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" checked={config.ordenar} onChange={(e) => setConfig({...config, ordenar: e.target.checked})} className="w-4 h-4" />🔀 Ordenar</label><label className="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" checked={config.retorno} onChange={(e) => setConfig({...config, retorno: e.target.checked})} className="w-4 h-4" />↩️ Retornar</label></div>
-                                            <div className="mt-3 pt-3 border-t border-orange-200 bg-orange-50 -mx-3 px-3 pb-2 rounded-b-xl"><label className="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" checked={config.sem_profissional} onChange={(e) => setConfig({...config, sem_profissional: e.target.checked})} className="w-4 h-4 accent-orange-500" /><span className="text-orange-700 font-medium">🧪 Modo Teste</span></label></div>
+                                            <div className="text-sm font-bold text-gray-700 mb-3">⚙️ Configurações</div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <div><label className="text-xs text-gray-600">Pedido</label><input type="text" value={config.numero_pedido} onChange={(e) => setConfig({...config, numero_pedido: e.target.value})} className="w-full px-2 py-1.5 border rounded text-sm" /></div>
+                                                <div><label className="text-xs text-gray-600">Centro Custo</label><input type="text" value={config.centro_custo} onChange={(e) => setConfig({...config, centro_custo: e.target.value})} className="w-full px-2 py-1.5 border rounded text-sm" /></div>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-2 mt-2">
+                                                <div><label className="text-xs text-gray-600">Pagamento</label><select value={config.forma_pagamento} onChange={(e) => setConfig({...config, forma_pagamento: e.target.value})} className="w-full px-2 py-1.5 border rounded text-sm"><option value="F">A Faturar</option><option value="D">Dinheiro</option><option value="C">Cartão</option></select></div>
+                                                <div><label className="text-xs text-gray-600">Receber ponto</label><input type="number" value={config.ponto_receber} onChange={(e) => setConfig({...config, ponto_receber: e.target.value})} className="w-full px-2 py-1.5 border rounded text-sm" min="1" /></div>
+                                            </div>
+                                            
+                                            {/* NOVO - Seleção de Motoboy */}
+                                            <div className="mt-2">
+                                                <label className="text-xs text-gray-600">🏍️ Motoboy Específico</label>
+                                                <select 
+                                                    value={config.codigo_profissional} 
+                                                    onChange={(e) => setConfig({...config, codigo_profissional: e.target.value})} 
+                                                    className={`w-full px-2 py-1.5 border rounded text-sm ${config.codigo_profissional ? 'border-green-400 bg-green-50' : ''}`}
+                                                    disabled={carregandoProfissionais || profissionais.length === 0}
+                                                >
+                                                    <option value="">
+                                                        {carregandoProfissionais ? '⏳ Carregando...' : 
+                                                         profissionais.length === 0 ? '❌ Nenhum disponível' : 
+                                                         '🔄 Disparar para todos'}
+                                                    </option>
+                                                    {profissionais.map(p => (
+                                                        <option key={p.codigo} value={p.codigo}>
+                                                            {p.nome}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                                {config.codigo_profissional && (
+                                                    <div className="text-xs text-green-600 mt-1">
+                                                        ✅ Corrida será enviada apenas para: {profissionais.find(p => p.codigo === config.codigo_profissional)?.nome}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            
+                                            <div className="flex flex-wrap gap-4 mt-3">
+                                                <label className="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" checked={config.ordenar} onChange={(e) => setConfig({...config, ordenar: e.target.checked})} className="w-4 h-4" />🔀 Ordenar</label>
+                                                <label className="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" checked={config.retorno} onChange={(e) => setConfig({...config, retorno: e.target.checked})} className="w-4 h-4" />↩️ Retornar</label>
+                                            </div>
+                                            <div className="mt-3 pt-3 border-t border-orange-200 bg-orange-50 -mx-3 px-3 pb-2 rounded-b-xl">
+                                                <label className="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" checked={config.sem_profissional} onChange={(e) => setConfig({...config, sem_profissional: e.target.checked})} className="w-4 h-4 accent-orange-500" /><span className="text-orange-700 font-medium">🧪 Modo Teste</span></label>
+                                            </div>
                                         </div>
-                                        <button onClick={enviarSolicitacao} disabled={loading || pontos.length < 2} className={`w-full py-3 text-white rounded-xl font-bold text-sm shadow-lg disabled:opacity-50 ${config.sem_profissional ? 'bg-orange-500' : 'bg-blue-600'}`}>{loading ? '⏳...' : config.sem_profissional ? `🧪 Testar (${pontos.length})` : `🚀 Solicitar (${pontos.length})`}</button>
+                                        <button onClick={enviarSolicitacao} disabled={loading || pontos.length < 2} className={`w-full py-3 text-white rounded-xl font-bold text-sm shadow-lg disabled:opacity-50 ${config.sem_profissional ? 'bg-orange-500' : config.codigo_profissional ? 'bg-green-600' : 'bg-blue-600'}`}>
+                                            {loading ? '⏳...' : config.sem_profissional ? `🧪 Testar (${pontos.length})` : config.codigo_profissional ? `🏍️ Enviar para ${profissionais.find(p => p.codigo === config.codigo_profissional)?.nome?.split(' ')[0] || 'Motoboy'} (${pontos.length})` : `🚀 Solicitar (${pontos.length})`}
+                                        </button>
                                     </div>
                                     <div className={`${abaMobile === 'mapa' ? 'block' : 'hidden'} md:block flex-1`}><div id="mapa" className="rounded-xl shadow-lg" style={{ height: 'calc(100vh - 200px)', minHeight: '400px' }}></div></div>
                                 </div>
