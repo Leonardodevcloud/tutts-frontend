@@ -288,14 +288,18 @@
                         numero_pedido: config.numero_pedido, centro_custo: config.centro_custo, usuario_solicitante: config.usuario_solicitante,
                         data_retirada: dataRetirada, forma_pagamento: config.forma_pagamento, ponto_receber: config.ponto_receber ? parseInt(config.ponto_receber) : null,
                         retorno: config.retorno, obs_retorno: config.obs_retorno, ordenar: config.ordenar, codigo_profissional: config.codigo_profissional,
-                        pontos: pontos.map(p => ({ rua: p.rua, numero: p.numero, complemento: p.complemento || '', bairro: p.bairro, cidade: p.cidade, uf: p.uf, cep: p.cep || '', latitude: p.latitude, longitude: p.longitude, observacao: p.observacao || '', telefone: p.telefone || '', procurar_por: p.procurar_por || '', numero_nota: p.numero_nota || '', codigo_finalizar: p.codigo_finalizar || '' }))
+                        pontos: pontos.map(p => ({ rua: p.rua || '', numero: p.numero || '', complemento: p.complemento || '', bairro: p.bairro || '', cidade: p.cidade || '', uf: p.uf || '', cep: p.cep || '', latitude: p.latitude, longitude: p.longitude, observacao: p.observacao || '', telefone: p.telefone || '', procurar_por: p.procurar_por || '', numero_nota: p.numero_nota || '', codigo_finalizar: p.codigo_finalizar || '' }))
                     };
+                    
+                    console.log('📤 Enviando payload:', JSON.stringify(payload, null, 2));
                     
                     const resp = await fetch(`${API_URL}/api/solicitacao/corrida`, {
                         method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                         body: JSON.stringify(payload)
                     });
                     const data = await resp.json();
+                    
+                    console.log('📥 Resposta:', data);
                     
                     if (resp.ok) {
                         showToast(`✅ Corrida solicitada! OS: ${data.os_numero}`, 'success');
