@@ -196,6 +196,7 @@
             const [partidaPadrao, setPartidaPadrao] = useState(null);
             const [mostrarConfigPartida, setMostrarConfigPartida] = useState(false);
             const [abaMobile, setAbaMobile] = useState('lista'); // 'lista' ou 'mapa'
+            const [obsEndereco, setObsEndereco] = useState(''); // Observação do endereço
             
             const coresRotas = ['#e11d48', '#2563eb', '#16a34a', '#d97706', '#7c3aed', '#0891b2', '#be185d', '#65a30d'];
             
@@ -347,11 +348,13 @@
                     id: Date.now(),
                     endereco: sug.endereco,
                     latitude: sug.latitude,
-                    longitude: sug.longitude
+                    longitude: sug.longitude,
+                    obs: obsEndereco // Adiciona observação
                 }]);
                 
                 setTermoBusca('');
                 setSugestoes([]);
+                setObsEndereco(''); // Limpa observação
                 showToast('✅ Adicionado', 'success');
                 
                 // Salvar como favorito
@@ -398,9 +401,10 @@
                         iconSize: [28, 28],
                         iconAnchor: [14, 14]
                     });
+                    const obsHtml = e.obs ? `<br><span style="color:#7c3aed;font-weight:bold">📝 ${e.obs}</span>` : '';
                     L.marker([e.latitude, e.longitude], { icon })
                         .addTo(markersLayer)
-                        .bindPopup(`<b>${idx === 0 ? 'PARTIDA' : 'Parada ' + idx}</b><br>${e.endereco.substring(0, 50)}`);
+                        .bindPopup(`<b>${idx === 0 ? 'PARTIDA' : 'Parada ' + idx}</b>${obsHtml}<br><span style="font-size:11px">${e.endereco.substring(0, 60)}</span>`);
                 });
                 
                 if (enderecos.length > 0) {
@@ -843,6 +847,15 @@
                                         </button>
                                     </div>
                                     
+                                    {/* Campo de observação */}
+                                    <input
+                                        type="text"
+                                        value={obsEndereco}
+                                        onChange={(e) => setObsEndereco(e.target.value)}
+                                        placeholder="📝 Observação (ex: Cliente João, Loja 5)"
+                                        className="w-full mt-2 px-3 py-2 border border-purple-200 rounded-lg text-sm focus:outline-none focus:border-purple-500 bg-white"
+                                    />
+                                    
                                     {/* Sugestões */}
                                     {sugestoes.length > 0 && (
                                         <div className="mt-2 bg-white border border-purple-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
@@ -890,6 +903,7 @@
                                                         </span>
                                                         <div className="flex-1 min-w-0">
                                                             <div className="text-xs font-medium text-gray-800 truncate">{end.endereco}</div>
+                                                            {end.obs && <div className="text-xs text-purple-600 truncate">📝 {end.obs}</div>}
                                                         </div>
                                                         <div className="flex gap-1">
                                                             {idx === 0 && (
