@@ -88,8 +88,8 @@
             const [detalheCorrida, setDetalheCorrida] = useState(null);
             const [mapaAcompanhar, setMapaAcompanhar] = useState(null);
             const [markersAcompanhar, setMarkersAcompanhar] = useState(null);
+            const [gruposExpandidos, setGruposExpandidos] = useState({});
             
-            // NOVO - Estado para profissionais
             const [profissionais, setProfissionais] = useState([]);
             const [carregandoProfissionais, setCarregandoProfissionais] = useState(false);
             
@@ -97,30 +97,21 @@
                 numero_pedido: '', centro_custo: cliente.centro_custo_padrao || '', usuario_solicitante: cliente.nome,
                 data_retirada: '', hora_retirada: '', forma_pagamento: cliente.forma_pagamento_padrao || 'F',
                 ponto_receber: '', retorno: false, obs_retorno: '', ordenar: true, 
-                codigo_profissional: '',  // Código do motoboy selecionado
+                codigo_profissional: '',
                 sem_profissional: false
             });
             
-            // Carregar profissionais ao iniciar
-            useEffect(() => {
-                carregarProfissionais();
-            }, []);
+            useEffect(() => { carregarProfissionais(); }, []);
             
             const carregarProfissionais = async () => {
                 setCarregandoProfissionais(true);
                 try {
-                    const resp = await fetch(`${API_URL}/api/solicitacao/profissionais`, { 
-                        headers: { 'Authorization': `Bearer ${token}` } 
-                    });
+                    const resp = await fetch(`${API_URL}/api/solicitacao/profissionais`, { headers: { 'Authorization': `Bearer ${token}` } });
                     if (resp.ok) {
                         const data = await resp.json();
                         setProfissionais(data.profissionais || []);
-                        if (data.aviso) console.log('⚠️ Profissionais:', data.aviso);
-                        if (data.erro) console.log('⚠️ Erro profissionais:', data.erro);
                     }
-                } catch (err) { 
-                    console.error('Erro ao carregar profissionais:', err); 
-                }
+                } catch (err) { console.error('Erro ao carregar profissionais:', err); }
                 setCarregandoProfissionais(false);
             };
             
@@ -195,6 +186,40 @@
             const copiarLinkRastreio = (os) => { navigator.clipboard.writeText(`${SITE_URL}/rastrear.html?os=${os}`).then(() => showToast('✅ Link copiado!', 'success')); };
             const compartilharWhatsApp = (os) => { window.open(`https://wa.me/?text=${encodeURIComponent(`🏍️ Acompanhe sua entrega:\n${SITE_URL}/rastrear.html?os=${os}`)}`, '_blank'); };
             
+            // Agrupar corridas por profissional
+            const agruparCorridasPorProfissional = () => {
+                const grupos = {};
+                
+                corridasAtivas.forEach(corrida => {
+                    const chave = corrida.profissional_nome || '__SEM_PROFISSIONAL__';
+                    if (!grupos[chave]) {
+                        grupos[chave] = {
+                            nome: corrida.profissional_nome || null,
+                            foto: corrida.profissional_foto || null,
+                            placa: corrida.profissional_placa || null,
+                            corridas: []
+                        };
+                    }
+                    grupos[chave].corridas.push(corrida);
+                });
+                
+                // Ordenar: primeiro os com profissional, depois sem
+                const resultado = [];
+                Object.keys(grupos).sort((a, b) => {
+                    if (a === '__SEM_PROFISSIONAL__') return 1;
+                    if (b === '__SEM_PROFISSIONAL__') return -1;
+                    return a.localeCompare(b);
+                }).forEach(chave => {
+                    resultado.push({ chave, ...grupos[chave] });
+                });
+                
+                return resultado;
+            };
+            
+            const toggleGrupo = (chave) => {
+                setGruposExpandidos(prev => ({ ...prev, [chave]: !prev[chave] }));
+            };
+            
             const buscarEndereco = async () => {
                 if (!termoBusca || termoBusca.length < 3) { showToast('Digite pelo menos 3 caracteres', 'warning'); return; }
                 setBuscando(true);
@@ -226,24 +251,12 @@
                 try {
                     const dataRet = config.data_retirada && config.hora_retirada ? `${config.data_retirada} ${config.hora_retirada}:00` : '';
                     const payload = { 
-                        numero_pedido: config.numero_pedido,
-                        centro_custo: config.centro_custo,
-                        usuario_solicitante: config.usuario_solicitante,
-                        data_retirada: dataRet, 
-                        forma_pagamento: config.forma_pagamento,
+                        numero_pedido: config.numero_pedido, centro_custo: config.centro_custo, usuario_solicitante: config.usuario_solicitante,
+                        data_retirada: dataRet, forma_pagamento: config.forma_pagamento,
                         ponto_receber: config.ponto_receber ? parseInt(config.ponto_receber) : null,
-                        retorno: config.retorno,
-                        obs_retorno: config.obs_retorno,
-                        ordenar: config.ordenar,
-                        codigo_profissional: config.codigo_profissional,  // Motoboy selecionado
-                        sem_profissional: config.sem_profissional,
-                        pontos: pontos.map(p => ({ 
-                            rua: p.rua || '', numero: p.numero || '', complemento: p.complemento || '', 
-                            bairro: p.bairro || '', cidade: p.cidade || '', uf: p.uf || '', cep: p.cep || '', 
-                            latitude: p.latitude, longitude: p.longitude, observacao: p.observacao || '', 
-                            telefone: p.telefone || '', procurar_por: p.procurar_por || '', 
-                            numero_nota: p.numero_nota || '', codigo_finalizar: p.codigo_finalizar || '' 
-                        })) 
+                        retorno: config.retorno, obs_retorno: config.obs_retorno, ordenar: config.ordenar,
+                        codigo_profissional: config.codigo_profissional, sem_profissional: config.sem_profissional,
+                        pontos: pontos.map(p => ({ rua: p.rua || '', numero: p.numero || '', complemento: p.complemento || '', bairro: p.bairro || '', cidade: p.cidade || '', uf: p.uf || '', cep: p.cep || '', latitude: p.latitude, longitude: p.longitude, observacao: p.observacao || '', telefone: p.telefone || '', procurar_por: p.procurar_por || '', numero_nota: p.numero_nota || '', codigo_finalizar: p.codigo_finalizar || '' })) 
                     };
                     const resp = await fetch(`${API_URL}/api/solicitacao/corrida`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(payload) });
                     const data = await resp.json();
@@ -251,10 +264,7 @@
                         const motoboy = config.codigo_profissional ? profissionais.find(p => p.codigo === config.codigo_profissional)?.nome : null;
                         const msgMotoboy = motoboy ? ` → ${motoboy}` : '';
                         showToast(`✅ OS: ${data.os_numero}${msgMotoboy}${data.modo_teste ? ' (TESTE)' : ''}`, 'success'); 
-                        limpar(); 
-                        setConfig(prev => ({ ...prev, codigo_profissional: '' }));
-                        carregarHistorico(); 
-                        carregarCorridasAtivas(); 
+                        limpar(); setConfig(prev => ({ ...prev, codigo_profissional: '' })); carregarHistorico(); carregarCorridasAtivas(); 
                     }
                     else showToast(data.error || 'Erro', 'error');
                 } catch { showToast('Erro', 'error'); }
@@ -265,6 +275,8 @@
             const statusNomes = { enviado: '📤 Aguardando', aceito: '✅ Aceito', em_andamento: '🏍️ Em andamento', finalizado: '🏁 Finalizado', cancelado: '❌ Cancelado', erro: '⚠️ Erro' };
             const statusPontoCores = { pendente: 'bg-gray-100 border-gray-300', chegou: 'bg-blue-100 border-blue-300', coletado: 'bg-yellow-100 border-yellow-300', finalizado: 'bg-green-100 border-green-300' };
             const formatarData = (d) => d ? new Date(d).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+            
+            const gruposAgrupados = agruparCorridasPorProfissional();
             
             return (
                 <div className="min-h-screen bg-gray-100">
@@ -317,34 +329,14 @@
                                                 <div><label className="text-xs text-gray-600">Pagamento</label><select value={config.forma_pagamento} onChange={(e) => setConfig({...config, forma_pagamento: e.target.value})} className="w-full px-2 py-1.5 border rounded text-sm"><option value="F">A Faturar</option><option value="D">Dinheiro</option><option value="C">Cartão</option></select></div>
                                                 <div><label className="text-xs text-gray-600">Receber ponto</label><input type="number" value={config.ponto_receber} onChange={(e) => setConfig({...config, ponto_receber: e.target.value})} className="w-full px-2 py-1.5 border rounded text-sm" min="1" /></div>
                                             </div>
-                                            
-                                            {/* NOVO - Seleção de Motoboy */}
                                             <div className="mt-2">
                                                 <label className="text-xs text-gray-600">🏍️ Motoboy Específico</label>
-                                                <select 
-                                                    value={config.codigo_profissional} 
-                                                    onChange={(e) => setConfig({...config, codigo_profissional: e.target.value})} 
-                                                    className={`w-full px-2 py-1.5 border rounded text-sm ${config.codigo_profissional ? 'border-green-400 bg-green-50' : ''}`}
-                                                    disabled={carregandoProfissionais || profissionais.length === 0}
-                                                >
-                                                    <option value="">
-                                                        {carregandoProfissionais ? '⏳ Carregando...' : 
-                                                         profissionais.length === 0 ? '❌ Nenhum disponível' : 
-                                                         '🔄 Disparar para todos'}
-                                                    </option>
-                                                    {profissionais.map(p => (
-                                                        <option key={p.codigo} value={p.codigo}>
-                                                            {p.nome}
-                                                        </option>
-                                                    ))}
+                                                <select value={config.codigo_profissional} onChange={(e) => setConfig({...config, codigo_profissional: e.target.value})} className={`w-full px-2 py-1.5 border rounded text-sm ${config.codigo_profissional ? 'border-green-400 bg-green-50' : ''}`} disabled={carregandoProfissionais || profissionais.length === 0}>
+                                                    <option value="">{carregandoProfissionais ? '⏳ Carregando...' : profissionais.length === 0 ? '❌ Nenhum disponível' : '🔄 Disparar para todos'}</option>
+                                                    {profissionais.map(p => (<option key={p.codigo} value={p.codigo}>{p.nome}</option>))}
                                                 </select>
-                                                {config.codigo_profissional && (
-                                                    <div className="text-xs text-green-600 mt-1">
-                                                        ✅ Corrida será enviada apenas para: {profissionais.find(p => p.codigo === config.codigo_profissional)?.nome}
-                                                    </div>
-                                                )}
+                                                {config.codigo_profissional && <div className="text-xs text-green-600 mt-1">✅ Corrida será enviada apenas para: {profissionais.find(p => p.codigo === config.codigo_profissional)?.nome}</div>}
                                             </div>
-                                            
                                             <div className="flex flex-wrap gap-4 mt-3">
                                                 <label className="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" checked={config.ordenar} onChange={(e) => setConfig({...config, ordenar: e.target.checked})} className="w-4 h-4" />🔀 Ordenar</label>
                                                 <label className="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" checked={config.retorno} onChange={(e) => setConfig({...config, retorno: e.target.checked})} className="w-4 h-4" />↩️ Retornar</label>
@@ -366,43 +358,158 @@
                     {abaAtiva === 'acompanhar' && (
                         <div className="max-w-7xl mx-auto p-2 md:p-4">
                             <div className="flex flex-col md:flex-row gap-4">
+                                {/* Lista agrupada por profissional */}
                                 <div className="w-full md:w-80 space-y-3">
                                     <div className="bg-white rounded-xl shadow p-3">
                                         <div className="text-sm font-bold text-gray-700 mb-3">🏍️ Corridas Ativas ({corridasAtivas.length})</div>
-                                        {corridasAtivas.length === 0 ? <div className="text-center py-8 text-gray-400"><div className="text-4xl mb-2">📭</div><div className="text-sm">Nenhuma ativa</div></div> : (
-                                            <div className="space-y-2 max-h-96 overflow-y-auto">
-                                                {corridasAtivas.map(c => (
-                                                    <div key={c.id} onClick={() => selecionarCorrida(c.id)} className={`p-3 rounded-lg border cursor-pointer ${corridaSelecionada === c.id ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200' : 'border-gray-200 hover:bg-gray-50'}`}>
-                                                        <div className="flex items-center justify-between"><div><div className="font-bold text-gray-800">OS #{c.tutts_os_numero || c.id}</div><div className="text-xs text-gray-500">{c.total_pontos} pts • {formatarData(c.criado_em)}</div></div><span className={`px-2 py-1 rounded text-xs font-medium ${statusCores[c.status]}`}>{statusNomes[c.status]}</span></div>
-                                                        {c.profissional_nome && <div className="text-xs text-gray-600 mt-2">🏍️ {c.profissional_nome}</div>}
+                                        
+                                        {corridasAtivas.length === 0 ? (
+                                            <div className="text-center py-8 text-gray-400">
+                                                <div className="text-4xl mb-2">📭</div>
+                                                <div className="text-sm">Nenhuma corrida ativa</div>
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-3 max-h-[calc(100vh-280px)] overflow-y-auto">
+                                                {gruposAgrupados.map(grupo => (
+                                                    <div key={grupo.chave} className="border rounded-lg overflow-hidden">
+                                                        {/* Header do grupo */}
+                                                        <div 
+                                                            onClick={() => toggleGrupo(grupo.chave)}
+                                                            className={`p-3 cursor-pointer flex items-center gap-3 ${
+                                                                grupo.nome 
+                                                                    ? 'bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-200' 
+                                                                    : 'bg-gradient-to-r from-orange-50 to-orange-100 border-b border-orange-200'
+                                                            }`}
+                                                        >
+                                                            {grupo.nome ? (
+                                                                <>
+                                                                    {grupo.foto ? (
+                                                                        <img src={grupo.foto} className="w-10 h-10 rounded-full object-cover border-2 border-blue-300" />
+                                                                    ) : (
+                                                                        <div className="w-10 h-10 rounded-full bg-blue-200 flex items-center justify-center text-lg">🏍️</div>
+                                                                    )}
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <div className="font-bold text-gray-800 truncate">{grupo.nome}</div>
+                                                                        {grupo.placa && <div className="text-xs text-gray-500">{grupo.placa}</div>}
+                                                                    </div>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <div className="w-10 h-10 rounded-full bg-orange-200 flex items-center justify-center text-lg">⏳</div>
+                                                                    <div className="flex-1">
+                                                                        <div className="font-bold text-orange-700">Sem Profissional</div>
+                                                                        <div className="text-xs text-orange-500">Aguardando atribuição</div>
+                                                                    </div>
+                                                                </>
+                                                            )}
+                                                            <div className="flex items-center gap-2">
+                                                                <span className={`px-2 py-1 rounded-full text-xs font-bold ${grupo.nome ? 'bg-blue-500 text-white' : 'bg-orange-500 text-white'}`}>
+                                                                    {grupo.corridas.length}
+                                                                </span>
+                                                                <span className="text-gray-400 text-sm">
+                                                                    {gruposExpandidos[grupo.chave] !== false ? '▼' : '▶'}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        {/* Lista de corridas do grupo */}
+                                                        {gruposExpandidos[grupo.chave] !== false && (
+                                                            <div className="divide-y divide-gray-100">
+                                                                {grupo.corridas.map(c => (
+                                                                    <div 
+                                                                        key={c.id} 
+                                                                        onClick={() => selecionarCorrida(c.id)} 
+                                                                        className={`p-3 cursor-pointer transition-colors ${
+                                                                            corridaSelecionada === c.id 
+                                                                                ? 'bg-blue-50 border-l-4 border-l-blue-500' 
+                                                                                : 'hover:bg-gray-50'
+                                                                        }`}
+                                                                    >
+                                                                        <div className="flex items-center justify-between">
+                                                                            <div>
+                                                                                <div className="font-bold text-gray-800 text-sm">
+                                                                                    OS #{c.tutts_os_numero || c.id}
+                                                                                </div>
+                                                                                <div className="text-xs text-gray-500">
+                                                                                    {c.total_pontos} pts • {formatarData(c.criado_em)}
+                                                                                </div>
+                                                                            </div>
+                                                                            <span className={`px-2 py-1 rounded text-xs font-medium ${statusCores[c.status]}`}>
+                                                                                {statusNomes[c.status]}
+                                                                            </span>
+                                                                        </div>
+                                                                        {c.tutts_valor && (
+                                                                            <div className="text-xs text-green-600 mt-1 font-medium">
+                                                                                R$ {parseFloat(c.tutts_valor).toFixed(2)}
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 ))}
                                             </div>
                                         )}
                                     </div>
                                 </div>
+                                
+                                {/* Detalhe da corrida selecionada */}
                                 <div className="flex-1">
-                                    {!corridaSelecionada ? <div className="bg-white rounded-xl shadow p-8 text-center text-gray-400"><div className="text-6xl mb-4">👈</div>Selecione uma corrida</div> : !detalheCorrida ? <div className="bg-white rounded-xl shadow p-8 text-center"><div className="text-2xl">⏳</div></div> : (
+                                    {!corridaSelecionada ? (
+                                        <div className="bg-white rounded-xl shadow p-8 text-center text-gray-400">
+                                            <div className="text-6xl mb-4">👈</div>
+                                            <div>Selecione uma corrida para ver detalhes</div>
+                                        </div>
+                                    ) : !detalheCorrida ? (
+                                        <div className="bg-white rounded-xl shadow p-8 text-center">
+                                            <div className="text-2xl">⏳</div>
+                                        </div>
+                                    ) : (
                                         <div className="space-y-4">
                                             <div className={`p-4 rounded-xl border-2 ${statusCores[detalheCorrida.status]}`}>
                                                 <div className="flex items-center justify-between flex-wrap gap-2">
-                                                    <div><div className="text-xl font-bold">OS #{detalheCorrida.tutts_os_numero || detalheCorrida.id}</div><span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${statusCores[detalheCorrida.status]}`}>{statusNomes[detalheCorrida.status]}</span></div>
-                                                    <div className="flex gap-2"><button onClick={() => copiarLinkRastreio(detalheCorrida.tutts_os_numero)} className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium">📋 Copiar</button><button onClick={() => compartilharWhatsApp(detalheCorrida.tutts_os_numero)} className="px-3 py-2 bg-green-500 text-white rounded-lg text-sm font-medium">📱 WhatsApp</button></div>
+                                                    <div>
+                                                        <div className="text-xl font-bold">OS #{detalheCorrida.tutts_os_numero || detalheCorrida.id}</div>
+                                                        <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${statusCores[detalheCorrida.status]}`}>{statusNomes[detalheCorrida.status]}</span>
+                                                    </div>
+                                                    <div className="flex gap-2">
+                                                        <button onClick={() => copiarLinkRastreio(detalheCorrida.tutts_os_numero)} className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium">📋 Copiar</button>
+                                                        <button onClick={() => compartilharWhatsApp(detalheCorrida.tutts_os_numero)} className="px-3 py-2 bg-green-500 text-white rounded-lg text-sm font-medium">📱 WhatsApp</button>
+                                                    </div>
                                                 </div>
-                                                {!['finalizado', 'cancelado'].includes(detalheCorrida.status) && <div className="flex items-center gap-2 mt-2 text-xs text-gray-500"><div className="w-2 h-2 bg-green-500 rounded-full animate-pulse-custom"></div>Atualizando...</div>}
+                                                {!['finalizado', 'cancelado'].includes(detalheCorrida.status) && (
+                                                    <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
+                                                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse-custom"></div>
+                                                        Atualizando automaticamente...
+                                                    </div>
+                                                )}
                                             </div>
+                                            
                                             {detalheCorrida.profissional_nome && (
                                                 <div className="bg-white p-4 rounded-xl shadow">
                                                     <div className="text-sm font-bold text-gray-500 mb-3">🏍️ Motoboy</div>
-                                                    <div className="flex items-center gap-4">{detalheCorrida.profissional_foto ? <img src={detalheCorrida.profissional_foto} className="w-14 h-14 rounded-full object-cover border-2 border-blue-200" /> : <div className="w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center text-2xl">🏍️</div>}<div><div className="font-bold text-gray-800">{detalheCorrida.profissional_nome}</div>{detalheCorrida.profissional_placa && <div className="text-sm text-gray-500">🏍️ {detalheCorrida.profissional_placa}</div>}</div></div>
+                                                    <div className="flex items-center gap-4">
+                                                        {detalheCorrida.profissional_foto ? (
+                                                            <img src={detalheCorrida.profissional_foto} className="w-14 h-14 rounded-full object-cover border-2 border-blue-200" />
+                                                        ) : (
+                                                            <div className="w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center text-2xl">🏍️</div>
+                                                        )}
+                                                        <div>
+                                                            <div className="font-bold text-gray-800">{detalheCorrida.profissional_nome}</div>
+                                                            {detalheCorrida.profissional_placa && <div className="text-sm text-gray-500">🏍️ {detalheCorrida.profissional_placa}</div>}
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             )}
+                                            
                                             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                                                 {detalheCorrida.tutts_distancia && <div className="bg-white p-3 rounded-xl shadow text-center"><div className="text-xl font-bold text-blue-600">{detalheCorrida.tutts_distancia} km</div><div className="text-xs text-gray-500">Distância</div></div>}
                                                 {detalheCorrida.tutts_duracao && <div className="bg-white p-3 rounded-xl shadow text-center"><div className="text-xl font-bold text-blue-600">{detalheCorrida.tutts_duracao}</div><div className="text-xs text-gray-500">Tempo</div></div>}
                                                 {detalheCorrida.tutts_valor && <div className="bg-white p-3 rounded-xl shadow text-center"><div className="text-xl font-bold text-green-600">R$ {parseFloat(detalheCorrida.tutts_valor).toFixed(2)}</div><div className="text-xs text-gray-500">Valor</div></div>}
                                                 <div className="bg-white p-3 rounded-xl shadow text-center"><div className="text-xl font-bold text-purple-600">{detalheCorrida.pontos?.length || 0}</div><div className="text-xs text-gray-500">Pontos</div></div>
                                             </div>
+                                            
                                             <div className="flex flex-col md:flex-row gap-4">
                                                 <div className="w-full md:w-72 bg-white p-4 rounded-xl shadow">
                                                     <div className="text-sm font-bold text-gray-500 mb-3">📍 Pontos</div>
@@ -410,17 +517,29 @@
                                                         {detalheCorrida.pontos?.map((p, idx) => (
                                                             <div key={idx} className={`p-2 rounded-lg border ${statusPontoCores[p.status] || 'bg-gray-50'}`}>
                                                                 <div className="flex items-center gap-2">
-                                                                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold ${p.status === 'finalizado' ? 'bg-green-500' : p.status === 'chegou' ? 'bg-blue-500' : idx === 0 ? 'bg-green-500' : 'bg-gray-400'}`}>{p.status === 'finalizado' ? '✓' : idx === 0 ? '🚩' : idx}</div>
-                                                                    <div className="flex-1 min-w-0"><div className="text-xs font-medium truncate">{idx === 0 ? 'Partida' : `Entrega ${idx}`}</div><div className="text-xs text-gray-500 truncate">{p.bairro}, {p.cidade}</div></div>
+                                                                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold ${p.status === 'finalizado' ? 'bg-green-500' : p.status === 'chegou' ? 'bg-blue-500' : idx === 0 ? 'bg-green-500' : 'bg-gray-400'}`}>
+                                                                        {p.status === 'finalizado' ? '✓' : idx === 0 ? '🚩' : idx}
+                                                                    </div>
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <div className="text-xs font-medium truncate">{idx === 0 ? 'Partida' : `Entrega ${idx}`}</div>
+                                                                        <div className="text-xs text-gray-500 truncate">{p.bairro}, {p.cidade}</div>
+                                                                    </div>
                                                                     {p.status === 'chegou' && <span className="text-xs text-blue-600 animate-pulse-custom">📍</span>}
                                                                 </div>
                                                             </div>
                                                         ))}
                                                     </div>
                                                 </div>
-                                                <div className="flex-1"><div id="mapaAcompanhar" className="rounded-xl shadow-lg" style={{ height: '300px' }}></div></div>
+                                                <div className="flex-1">
+                                                    <div id="mapaAcompanhar" className="rounded-xl shadow-lg" style={{ height: '300px' }}></div>
+                                                </div>
                                             </div>
-                                            {detalheCorrida.tutts_url_rastreamento && <a href={detalheCorrida.tutts_url_rastreamento} target="_blank" className="block w-full py-3 bg-gray-800 text-white rounded-xl font-bold text-center hover:bg-gray-900">🗺️ Abrir Tutts</a>}
+                                            
+                                            {detalheCorrida.tutts_url_rastreamento && (
+                                                <a href={detalheCorrida.tutts_url_rastreamento} target="_blank" className="block w-full py-3 bg-gray-800 text-white rounded-xl font-bold text-center hover:bg-gray-900">
+                                                    🗺️ Abrir Rastreamento Tutts
+                                                </a>
+                                            )}
                                         </div>
                                     )}
                                 </div>
@@ -428,6 +547,7 @@
                         </div>
                     )}
                     
+                    {/* Modal Edição de Ponto */}
                     {pontoEditando !== null && (
                         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setPontoEditando(null)}>
                             <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-4" onClick={e => e.stopPropagation()}>
@@ -441,6 +561,7 @@
                         </div>
                     )}
                     
+                    {/* Modal Histórico */}
                     {mostrarHistorico && (
                         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setMostrarHistorico(false)}>
                             <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[80vh] overflow-hidden" onClick={e => e.stopPropagation()}>
@@ -450,7 +571,7 @@
                                         <div className="space-y-2">{historico.map(h => (
                                             <div key={h.id} className="p-3 border rounded-lg hover:bg-gray-50">
                                                 <div className="flex items-center justify-between">
-                                                    <div><div className="flex items-center gap-2"><span className={`px-2 py-0.5 rounded text-xs font-medium ${statusCores[h.status]}`}>{statusNomes[h.status]}</span>{h.tutts_os_numero && <span className="text-sm font-medium">OS #{h.tutts_os_numero}</span>}</div><div className="text-xs text-gray-500 mt-1">{formatarData(h.criado_em)} • {h.total_pontos} pts</div></div>
+                                                    <div><div className="flex items-center gap-2"><span className={`px-2 py-0.5 rounded text-xs font-medium ${statusCores[h.status]}`}>{statusNomes[h.status]}</span>{h.tutts_os_numero && <span className="text-sm font-medium">OS #{h.tutts_os_numero}</span>}</div><div className="text-xs text-gray-500 mt-1">{formatarData(h.criado_em)} • {h.total_pontos} pts{h.profissional_nome && ` • 🏍️ ${h.profissional_nome}`}</div></div>
                                                     <div className="flex items-center gap-2">{h.tutts_valor && <div className="text-sm font-bold text-green-600">R$ {parseFloat(h.tutts_valor).toFixed(2)}</div>}{h.tutts_os_numero && <button onClick={() => copiarLinkRastreio(h.tutts_os_numero)} className="text-xs text-blue-600">📋</button>}</div>
                                                 </div>
                                             </div>
