@@ -19910,99 +19910,74 @@ const hideLoadingScreen = () => {
                     
                     // Lista de usuários
                     React.createElement("div", {className: "bg-white rounded-xl shadow-sm border p-6"},
-                        React.createElement("h2", {className: "text-lg font-bold mb-4 flex items-center gap-2"},
-                            React.createElement("span", null, "📋"),
-                            "Usuários Cadastrados (",
-                            A.length,
-                            ")"
+                        React.createElement("div", {className: "flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4"},
+                            React.createElement("h2", {className: "text-lg font-bold flex items-center gap-2"},
+                                React.createElement("span", null, "📋"),
+                                "Usuários Cadastrados (",
+                                A.length,
+                                ")"
+                            ),
+                            // Campo de busca
+                            React.createElement("div", {className: "relative flex-1 max-w-md"},
+                                React.createElement("input", {
+                                    type: "text",
+                                    value: p.buscaUsuario || "",
+                                    onChange: function(e) { x({...p, buscaUsuario: e.target.value}); },
+                                    placeholder: "🔍 Buscar por nome ou código...",
+                                    className: "w-full px-4 py-2 pl-10 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                                }),
+                                React.createElement("span", {className: "absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"}, "🔍")
+                            )
                         ),
-                        React.createElement("div", {className: "space-y-3"},
-                            A.map(function(user) {
+                        // Cards em grid 4x4
+                        React.createElement("div", {className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"},
+                            A.filter(function(user) {
+                                if (!p.buscaUsuario || p.buscaUsuario.trim() === "") return true;
+                                const termo = p.buscaUsuario.toLowerCase().trim();
+                                const nome = (user.fullName || "").toLowerCase();
+                                const cod = (user.codProfissional || "").toString().toLowerCase();
+                                return nome.includes(termo) || cod.includes(termo);
+                            }).map(function(user) {
                                 return React.createElement("div", {
                                     key: user.codProfissional,
-                                    className: "border rounded-lg p-4 hover:bg-gray-50 transition-colors"
+                                    className: "border rounded-xl p-4 hover:shadow-lg transition-all bg-gradient-to-br from-white to-gray-50 flex flex-col"
                                 },
-                                    React.createElement("div", {className: "flex items-center justify-between"},
-                                        React.createElement("div", {className: "flex items-center gap-3"},
-                                            React.createElement("div", {
-                                                className: "w-10 h-10 rounded-full flex items-center justify-center text-white font-bold " +
-                                                    (user.role === "admin_master" ? "bg-purple-600" :
-                                                     user.role === "admin" ? "bg-blue-600" :
-                                                     user.role === "admin_financeiro" ? "bg-green-600" : "bg-gray-500")
-                                            }, user.fullName ? user.fullName.charAt(0).toUpperCase() : "?"),
-                                            React.createElement("div", null,
-                                                React.createElement("p", {className: "font-semibold"}, user.fullName),
-                                                React.createElement("p", {className: "text-sm text-gray-500"},
-                                                    "COD: ", user.codProfissional, " • ",
-                                                    user.role === "admin_master" ? "👑 Master" :
-                                                    user.role === "admin" ? "👑 Admin" :
-                                                    user.role === "admin_financeiro" ? "💰 Financeiro" : "👤 Usuário"
-                                                )
-                                            )
-                                        ),
-                                        React.createElement("div", {className: "flex gap-2"},
-                                            React.createElement("button", {
-                                                onClick: async function() {
-                                                    const newPass = prompt("Nova senha para " + user.fullName + ":");
-                                                    if (newPass && newPass.length >= 6) {
-                                                        try {
-                                                            await fetchAuth(API_URL + "/users/reset-password", {
-                                                                method: "POST",
-                                                                headers: {"Content-Type": "application/json"},
-                                                                body: JSON.stringify({codProfissional: user.codProfissional, newPassword: newPass})
-                                                            });
-                                                            ja("✅ Senha alterada!", "success");
-                                                        } catch (err) {
-                                                            ja("❌ Erro ao alterar senha", "error");
-                                                        }
-                                                    } else if (newPass) {
-                                                        ja("Senha muito curta (mín. 6)", "error");
-                                                    }
-                                                },
-                                                className: "px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors"
-                                            }, "🔑 Senha"),
-                                            user.role !== "admin_master" && React.createElement("button", {
-                                                onClick: async function() {
-                                                    let userCod = user.codProfissional || user.cod_profissional;
-                                                    // Remove # se existir no código
-                                                    if (userCod && typeof userCod === 'string') {
-                                                        userCod = userCod.replace('#', '');
-                                                    }
-                                                    console.log("🗑️ Tentando deletar usuário:", user.fullName || user.full_name, "Código:", userCod);
-                                                    if (!userCod) {
-                                                        ja("❌ Código do usuário não encontrado", "error");
-                                                        return;
-                                                    }
-                                                    if (confirm("⚠️ Excluir " + (user.fullName || user.full_name) + "?\\n\\nEsta ação não pode ser desfeita!")) {
-                                                        try {
-                                                            const response = await fetchAuth(API_URL + "/users/" + userCod, {method: "DELETE"});
-                                                            if (response.ok) {
-                                                                ja("🗑️ Usuário excluído!", "success");
-                                                                Ia();
-                                                            } else {
-                                                                const errData = await response.json().catch(() => ({}));
-                                                                ja("❌ Erro: " + (errData.error || response.statusText), "error");
-                                                            }
-                                                        } catch (err) {
-                                                            console.error("❌ Erro ao excluir:", err);
-                                                            ja("❌ Erro ao excluir", "error");
-                                                        }
-                                                    }
-                                                },
-                                                className: "px-3 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 transition-colors"
-                                            }, "🗑️")
+                                    // Avatar e info principal
+                                    React.createElement("div", {className: "flex items-center gap-3 mb-3"},
+                                        React.createElement("div", {
+                                            className: "w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg " +
+                                                (user.role === "admin_master" ? "bg-gradient-to-br from-purple-500 to-purple-700" :
+                                                 user.role === "admin" ? "bg-gradient-to-br from-blue-500 to-blue-700" :
+                                                 user.role === "admin_financeiro" ? "bg-gradient-to-br from-green-500 to-green-700" : "bg-gradient-to-br from-gray-400 to-gray-600")
+                                        }, user.fullName ? user.fullName.charAt(0).toUpperCase() : "?"),
+                                        React.createElement("div", {className: "flex-1 min-w-0"},
+                                            React.createElement("p", {className: "font-semibold text-gray-800 truncate"}, user.fullName),
+                                            React.createElement("p", {className: "text-xs text-gray-500"}, "COD: ", user.codProfissional)
                                         )
                                     ),
-                                    // Linha do Setor
-                                    React.createElement("div", {className: "mt-3 pt-3 border-t flex items-center gap-2"},
-                                        React.createElement("span", {className: "text-sm text-gray-600"}, "🏢 Setor:"),
+                                    // Badge de role
+                                    React.createElement("div", {className: "mb-3"},
+                                        React.createElement("span", {
+                                            className: "px-2 py-1 rounded-full text-xs font-medium " +
+                                                (user.role === "admin_master" ? "bg-purple-100 text-purple-700" :
+                                                 user.role === "admin" ? "bg-blue-100 text-blue-700" :
+                                                 user.role === "admin_financeiro" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700")
+                                        }, 
+                                            user.role === "admin_master" ? "👑 Master" :
+                                            user.role === "admin" ? "👑 Admin" :
+                                            user.role === "admin_financeiro" ? "💰 Financeiro" : "👤 Usuário"
+                                        )
+                                    ),
+                                    // Setor
+                                    React.createElement("div", {className: "mb-3 flex-1"},
+                                        React.createElement("label", {className: "text-xs text-gray-500 block mb-1"}, "🏢 Setor"),
                                         React.createElement("select", {
                                             value: user.setor_id || '',
                                             onChange: async (e) => {
                                                 const novoSetorId = e.target.value ? parseInt(e.target.value) : null;
                                                 await atualizarSetorUsuario(user.codProfissional || user.cod_profissional, novoSetorId);
                                             },
-                                            className: "px-3 py-1.5 border rounded-lg text-sm bg-white focus:ring-2 focus:ring-indigo-500"
+                                            className: "w-full px-2 py-1.5 border rounded-lg text-sm bg-white focus:ring-2 focus:ring-indigo-500"
                                         },
                                             React.createElement("option", {value: ""}, "-- Sem setor --"),
                                             setores.filter(s => s.ativo).map(setor =>
@@ -20011,14 +19986,73 @@ const hideLoadingScreen = () => {
                                                     value: setor.id
                                                 }, setor.nome)
                                             )
-                                        ),
-                                        user.setor_nome && React.createElement("span", {
-                                            className: "ml-2 px-2 py-0.5 rounded text-xs font-medium text-white",
-                                            style: { backgroundColor: user.setor_cor || '#6366f1' }
-                                        }, user.setor_nome)
+                                        )
+                                    ),
+                                    // Botões de ação
+                                    React.createElement("div", {className: "flex gap-2 mt-auto pt-3 border-t"},
+                                        React.createElement("button", {
+                                            onClick: async function() {
+                                                const newPass = prompt("Nova senha para " + user.fullName + ":");
+                                                if (newPass && newPass.length >= 6) {
+                                                    try {
+                                                        await fetchAuth(API_URL + "/users/reset-password", {
+                                                            method: "POST",
+                                                            headers: {"Content-Type": "application/json"},
+                                                            body: JSON.stringify({codProfissional: user.codProfissional, newPassword: newPass})
+                                                        });
+                                                        ja("✅ Senha alterada!", "success");
+                                                    } catch (err) {
+                                                        ja("❌ Erro ao alterar senha", "error");
+                                                    }
+                                                } else if (newPass) {
+                                                    ja("Senha muito curta (mín. 6)", "error");
+                                                }
+                                            },
+                                            className: "flex-1 px-2 py-2 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-700 transition-colors",
+                                            title: "Alterar senha"
+                                        }, "🔑 Senha"),
+                                        user.role !== "admin_master" && React.createElement("button", {
+                                            onClick: async function() {
+                                                let userCod = user.codProfissional || user.cod_profissional;
+                                                if (userCod && typeof userCod === 'string') {
+                                                    userCod = userCod.replace('#', '');
+                                                }
+                                                if (!userCod) {
+                                                    ja("❌ Código do usuário não encontrado", "error");
+                                                    return;
+                                                }
+                                                if (confirm("⚠️ Excluir " + (user.fullName || user.full_name) + "?\\n\\nEsta ação não pode ser desfeita!")) {
+                                                    try {
+                                                        const response = await fetchAuth(API_URL + "/users/" + userCod, {method: "DELETE"});
+                                                        if (response.ok) {
+                                                            ja("🗑️ Usuário excluído!", "success");
+                                                            Ia();
+                                                        } else {
+                                                            const errData = await response.json().catch(() => ({}));
+                                                            ja("❌ Erro: " + (errData.error || response.statusText), "error");
+                                                        }
+                                                    } catch (err) {
+                                                        ja("❌ Erro ao excluir", "error");
+                                                    }
+                                                }
+                                            },
+                                            className: "px-3 py-2 bg-red-600 text-white rounded-lg text-xs font-medium hover:bg-red-700 transition-colors",
+                                            title: "Excluir usuário"
+                                        }, "🗑️")
                                     )
                                 );
                             })
+                        ),
+                        // Mensagem se não encontrar
+                        A.filter(function(user) {
+                            if (!p.buscaUsuario || p.buscaUsuario.trim() === "") return true;
+                            const termo = p.buscaUsuario.toLowerCase().trim();
+                            const nome = (user.fullName || "").toLowerCase();
+                            const cod = (user.codProfissional || "").toString().toLowerCase();
+                            return nome.includes(termo) || cod.includes(termo);
+                        }).length === 0 && React.createElement("div", {className: "text-center py-8 text-gray-500"},
+                            React.createElement("p", {className: "text-4xl mb-2"}, "🔍"),
+                            React.createElement("p", null, "Nenhum usuário encontrado para \"", p.buscaUsuario, "\"")
                         )
                     )
                 ),
