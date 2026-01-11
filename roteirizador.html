@@ -859,8 +859,8 @@
                                     )}
                                 </div>
                                 
-                                {/* Lista de endereços */}
-                                <div className="flex-1 overflow-y-auto p-3">
+                                {/* Lista de endereços - com scroll */}
+                                <div className="flex-1 overflow-y-auto p-3" style={{ minHeight: '100px', maxHeight: 'calc(100vh - 450px)' }}>
                                     <div className="flex items-center justify-between mb-2">
                                         <span className="text-sm font-bold text-gray-600">Rota ({enderecos.length}/20)</span>
                                         {enderecos.length > 0 && (
@@ -925,8 +925,8 @@
                                     )}
                                 </div>
                                 
-                                {/* Controles */}
-                                <div className="p-3 border-t bg-gray-50">
+                                {/* Controles - sempre visíveis no fundo */}
+                                <div className="p-3 border-t bg-gray-50 flex-shrink-0">
                                     <label className="flex items-center gap-2 mb-2 cursor-pointer text-sm">
                                         <input type="checkbox" checked={retornarInicio} onChange={(e) => setRetornarInicio(e.target.checked)} className="w-4 h-4" />
                                         <span>↩️ Retornar ao início</span>
