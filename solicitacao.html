@@ -203,16 +203,37 @@
             
             const adicionarPonto = (sug) => {
                 if (pontos.length >= 80) { showToast('Máximo 80 pontos', 'error'); return; }
-                const endereco = sug.endereco || '';
-                const partes = endereco.split(',').map(p => p.trim());
+                
+                // Extrair componentes do endereço do Google
+                const componentes = sug.componentes || [];
+                const getComponente = (tipo) => {
+                    const comp = componentes.find(c => c.types && c.types.includes(tipo));
+                    return comp ? comp.long_name : '';
+                };
+                const getComponenteShort = (tipo) => {
+                    const comp = componentes.find(c => c.types && c.types.includes(tipo));
+                    return comp ? comp.short_name : '';
+                };
+                
+                // Extrair cada parte do endereço
+                const rua = getComponente('route') || '';
+                const numero = getComponente('street_number') || '';
+                const bairro = getComponente('sublocality_level_1') || getComponente('sublocality') || getComponente('neighborhood') || '';
+                const cidade = getComponente('administrative_area_level_2') || getComponente('locality') || '';
+                const uf = getComponenteShort('administrative_area_level_1') || '';
+                const cep = getComponente('postal_code') || '';
                 
                 const novoPonto = {
-                    id: Date.now(), endereco_completo: endereco,
-                    rua: partes[0] || '', numero: partes[1]?.match(/\d+/)?.[0] || '',
-                    bairro: partes.length > 2 ? partes[partes.length - 3] : '',
-                    cidade: partes.length > 1 ? partes[partes.length - 2]?.split('-')[0]?.trim() : '',
-                    uf: partes.length > 1 ? partes[partes.length - 2]?.split('-')[1]?.trim() : '',
-                    cep: '', latitude: sug.latitude, longitude: sug.longitude,
+                    id: Date.now(), 
+                    endereco_completo: sug.endereco || '',
+                    rua: rua,
+                    numero: numero,
+                    bairro: bairro,
+                    cidade: cidade,
+                    uf: uf,
+                    cep: cep,
+                    latitude: sug.latitude, 
+                    longitude: sug.longitude,
                     observacao: '', telefone: '', procurar_por: '', numero_nota: '', codigo_finalizar: ''
                 };
                 
