@@ -3550,6 +3550,26 @@ const hideLoadingScreen = () => {
             }
         };
 
+        const excluirClienteSolicitacao = async (id, nome) => {
+            if (!confirm(`⚠️ Tem certeza que deseja EXCLUIR o cliente "${nome}"?\n\nEsta ação é irreversível e excluirá também todo o histórico de corridas.`)) {
+                return;
+            }
+            try {
+                const res = await fetchAuth(`${API_URL.replace('/api', '')}/api/admin/solicitacao/clientes/${id}`, {
+                    method: 'DELETE'
+                });
+                if (res.ok) {
+                    ja('Cliente excluído com sucesso!', 'success');
+                    carregarClientesSolicitacao();
+                } else {
+                    const data = await res.json();
+                    ja(data.error || 'Erro ao excluir', 'error');
+                }
+            } catch (err) {
+                ja('Erro ao excluir cliente', 'error');
+            }
+        };
+
         const consultarSaldoPlific = async (idProf) => {
             if (!idProf) { ja("Informe o ID", "error"); return; }
             setPlificState(prev => ({ ...prev, loading: true }));
@@ -20334,7 +20354,12 @@ const hideLoadingScreen = () => {
                                                         },
                                                         className: "px-2 py-1 text-xs rounded bg-purple-100 text-purple-600 hover:bg-purple-200",
                                                         title: "Editar credenciais Tutts"
-                                                    }, "⚙️")
+                                                    }, "⚙️"),
+                                                    React.createElement("button", {
+                                                        onClick: function() { excluirClienteSolicitacao(cliente.id, cliente.nome); },
+                                                        className: "px-2 py-1 text-xs rounded bg-red-100 text-red-600 hover:bg-red-200",
+                                                        title: "Excluir cliente"
+                                                    }, "🗑️")
                                                 )
                                             )
                                         );
