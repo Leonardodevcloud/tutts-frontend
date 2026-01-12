@@ -710,7 +710,37 @@
                                                                             )}
                                                                             {p.motivo_finalizacao && <div className={`mt-2 text-xs px-2 py-1 rounded ${p.motivo_finalizacao === 'sucesso' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{p.motivo_finalizacao === 'sucesso' ? '✅' : '⚠️'} {p.motivo_descricao || p.motivo_finalizacao}</div>}
                                                                             {p.assinatura && <div className="mt-2 text-xs text-gray-600">✍️ Assinado por: {typeof p.assinatura === 'object' ? p.assinatura.nome || 'N/A' : 'Sim'}</div>}
-                                                                            {p.fotos && p.fotos !== '' && p.fotos !== '[]' && <div className="mt-2 text-xs text-blue-600">📸 {(() => { try { const f = JSON.parse(p.fotos); return Array.isArray(f) ? f.length : 0; } catch { return 0; } })()} foto(s)</div>}
+                                                                            {p.fotos && (() => {
+                                                                                // Normalizar fotos para array
+                                                                                let fotosArray = [];
+                                                                                try {
+                                                                                    if (typeof p.fotos === 'string' && p.fotos !== '' && p.fotos !== '[]') {
+                                                                                        fotosArray = JSON.parse(p.fotos);
+                                                                                    } else if (Array.isArray(p.fotos)) {
+                                                                                        fotosArray = p.fotos;
+                                                                                    }
+                                                                                } catch { fotosArray = []; }
+                                                                                
+                                                                                if (!fotosArray || fotosArray.length === 0) return null;
+                                                                                
+                                                                                return (
+                                                                                    <div className="mt-2 text-xs">
+                                                                                        <span className="text-blue-600 font-medium">📸 {fotosArray.length} foto(s):</span>
+                                                                                        <div className="flex flex-wrap gap-1 mt-1">
+                                                                                            {fotosArray.map((foto, fotoIdx) => (
+                                                                                                <a 
+                                                                                                    key={fotoIdx} 
+                                                                                                    href={typeof foto === 'string' ? foto : foto.url || foto.link} 
+                                                                                                    target="_blank" 
+                                                                                                    className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                                                                                                >
+                                                                                                    Ver {fotoIdx + 1}
+                                                                                                </a>
+                                                                                            ))}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                );
+                                                                            })()}
                                                                         </div>
                                                                     </div>
                                                                 </div>
