@@ -192,20 +192,26 @@
             
             // Cancelar corrida manualmente
             const cancelarCorrida = async (id) => {
-                if (!confirm('Tem certeza que deseja marcar esta corrida como CANCELADA?')) return;
+                if (!confirm('Tem certeza que deseja CANCELAR esta corrida?\n\nIsso irá cancelar na Tutts também!')) return;
                 try {
                     const resp = await fetch(`${API_URL}/api/solicitacao/corrida/${id}/cancelar`, {
                         method: 'PATCH',
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
+                    const data = await resp.json();
+                    
                     if (resp.ok) {
-                        showToast('❌ Corrida cancelada', 'success');
+                        if (data.cancelou_tutts) {
+                            showToast('✅ Corrida cancelada na Tutts e no sistema!', 'success');
+                        } else {
+                            showToast('❌ Corrida marcada como cancelada', 'success');
+                        }
                         carregarCorridasAtivas();
                         carregarConcluidas();
                         setCorridaSelecionada(null);
                         setDetalheCorrida(null);
                     } else {
-                        showToast('Erro ao cancelar', 'error');
+                        showToast(data.error || 'Erro ao cancelar', 'error');
                     }
                 } catch (err) { showToast('Erro ao cancelar', 'error'); }
             };
@@ -450,7 +456,7 @@
                                             {/* Botão Cancelar */}
                                             {!['finalizado', 'cancelado'].includes(detalheCorrida.status) && (
                                                 <button onClick={() => cancelarCorrida(detalheCorrida.id)} className="w-full mt-2 py-2 bg-red-100 text-red-600 rounded-xl font-medium text-sm hover:bg-red-200 border border-red-200">
-                                                    ❌ Marcar como Cancelada (se cancelou na Tutts)
+                                                    ❌ Cancelar Corrida
                                                 </button>
                                             )}
                                         </div>
