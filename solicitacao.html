@@ -613,7 +613,7 @@
                                         <div className="bg-white rounded-xl shadow p-8 text-center"><div className="text-2xl animate-pulse">⏳</div><div className="text-gray-500 mt-2">Carregando...</div></div>
                                     ) : (
                                         <div className="space-y-3">
-                                            {/* Card compacto: OS + Profissional + Telefone + Nota */}
+                                            {/* Card compacto: OS + Profissional + Telefone + Nota + Ações */}
                                             <div className={`p-3 rounded-xl border ${statusCores[detalheCorrida.status]}`}>
                                                 <div className="flex items-center gap-3">
                                                     {/* Foto */}
@@ -640,6 +640,20 @@
                                                                 <span className="text-green-600">🏷️ {detalheCorrida.pontos[1].numero_nota}</span>
                                                             )}
                                                         </div>
+                                                    </div>
+                                                    
+                                                    {/* Botões de ação no canto direito */}
+                                                    <div className="flex flex-col gap-1 flex-shrink-0">
+                                                        {detalheCorrida.tutts_url_rastreamento && (
+                                                            <a href={detalheCorrida.tutts_url_rastreamento} target="_blank" className="px-2 py-1 bg-gray-700 text-white rounded text-xs hover:bg-gray-800 text-center">
+                                                                🗺️ Rastrear
+                                                            </a>
+                                                        )}
+                                                        {!['finalizado', 'cancelado'].includes(detalheCorrida.status) && (
+                                                            <button onClick={() => cancelarCorrida(detalheCorrida.id)} className="px-2 py-1 bg-red-100 text-red-600 rounded text-xs hover:bg-red-200">
+                                                                ✕ Cancelar
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </div>
@@ -706,9 +720,6 @@
                                                 </div>
                                                 <div className="flex-1"><MapaLeaflet key={`acompanhar-${mapaKey}-${corridaSelecionada}`} id={`mapa-acompanhar-${corridaSelecionada}`} pontos={detalheCorrida.pontos} height="350px" tipo="acompanhar" /></div>
                                             </div>
-                                            
-                                            {detalheCorrida.tutts_url_rastreamento && <a href={detalheCorrida.tutts_url_rastreamento} target="_blank" className="block w-full py-3 bg-gray-800 text-white rounded-xl font-bold text-center hover:bg-gray-900">🗺️ Abrir Rastreamento Tutts</a>}
-                                            {!['finalizado', 'cancelado'].includes(detalheCorrida.status) && <button onClick={() => cancelarCorrida(detalheCorrida.id)} className="w-full py-2 bg-red-100 text-red-600 rounded-xl font-medium text-sm hover:bg-red-200 border border-red-200">❌ Cancelar Corrida</button>}
                                         </div>
                                     )}
                                 </div>
