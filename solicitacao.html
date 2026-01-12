@@ -612,31 +612,56 @@
                                     ) : !detalheCorrida ? (
                                         <div className="bg-white rounded-xl shadow p-8 text-center"><div className="text-2xl animate-pulse">⏳</div><div className="text-gray-500 mt-2">Carregando...</div></div>
                                     ) : (
-                                        <div className="space-y-4">
-                                            <div className={`p-4 rounded-xl border-2 ${statusCores[detalheCorrida.status]}`}>
-                                                <div className="flex items-center justify-between flex-wrap gap-2">
-                                                    <div>
-                                                        <div className="flex items-center gap-3">
-                                                            <span className="text-xl font-bold">OS #{detalheCorrida.tutts_os_numero || detalheCorrida.id}</span>
-                                                            <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium ${statusCores[detalheCorrida.status]}`}>{statusIcons[detalheCorrida.status]} {statusNomes[detalheCorrida.status]}</span>
+                                        <div className="space-y-3">
+                                            {/* Card compacto: OS + Profissional + Telefone + Nota */}
+                                            <div className={`p-3 rounded-xl border ${statusCores[detalheCorrida.status]}`}>
+                                                <div className="flex items-center gap-3">
+                                                    {/* Foto */}
+                                                    {detalheCorrida.profissional_foto ? (
+                                                        <img src={detalheCorrida.profissional_foto} className="w-12 h-12 rounded-full object-cover border-2 border-white shadow flex-shrink-0" />
+                                                    ) : (
+                                                        <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0 text-lg">🏍️</div>
+                                                    )}
+                                                    
+                                                    {/* Info */}
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center gap-2 flex-wrap">
+                                                            <span className="font-bold text-sm">OS #{detalheCorrida.tutts_os_numero || detalheCorrida.id}</span>
+                                                            <span className={`text-xs px-2 py-0.5 rounded-full ${statusCores[detalheCorrida.status]}`}>{statusIcons[detalheCorrida.status]} {statusNomes[detalheCorrida.status]}</span>
                                                         </div>
-                                                        {detalheCorrida.profissional_nome && (
-                                                            <div className="flex items-center gap-2 mt-2">
-                                                                {detalheCorrida.profissional_foto ? <img src={detalheCorrida.profissional_foto} className="w-10 h-10 rounded-full object-cover border-2 border-white shadow" /> : <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">🏍️</div>}
-                                                                <div><div className="font-medium">{detalheCorrida.profissional_nome}</div>{detalheCorrida.profissional_placa && <div className="text-xs text-gray-600">{detalheCorrida.profissional_placa}</div>}</div>
-                                                            </div>
-                                                        )}
+                                                        <div className="text-sm font-medium text-gray-800 truncate">{detalheCorrida.profissional_nome || 'Aguardando profissional...'}</div>
+                                                        <div className="flex items-center gap-3 text-xs text-gray-600 mt-1">
+                                                            {detalheCorrida.profissional_telefone && (
+                                                                <a href={`tel:${detalheCorrida.profissional_telefone}`} className="flex items-center gap-1 text-blue-600 hover:text-blue-800">
+                                                                    📞 {detalheCorrida.profissional_telefone}
+                                                                </a>
+                                                            )}
+                                                            {detalheCorrida.pontos?.[1]?.numero_nota && (
+                                                                <span className="text-green-600">🏷️ {detalheCorrida.pontos[1].numero_nota}</span>
+                                                            )}
+                                                        </div>
                                                     </div>
-
                                                 </div>
-                                                {!['finalizado', 'cancelado'].includes(detalheCorrida.status) && <div className="flex items-center gap-2 mt-3 text-xs text-gray-600"><div className="w-2 h-2 bg-green-500 rounded-full animate-pulse-custom"></div>Atualizando automaticamente...</div>}
                                             </div>
                                             
-                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                                {detalheCorrida.tutts_distancia && <div className="bg-white p-3 rounded-xl shadow text-center"><div className="text-xl font-bold text-blue-600">{detalheCorrida.tutts_distancia} km</div><div className="text-xs text-gray-500">Distância</div></div>}
-                                                {detalheCorrida.tutts_duracao && <div className="bg-white p-3 rounded-xl shadow text-center"><div className="text-xl font-bold text-blue-600">{detalheCorrida.tutts_duracao}</div><div className="text-xs text-gray-500">Tempo</div></div>}
-                                                {detalheCorrida.tutts_valor && <div className="bg-white p-3 rounded-xl shadow text-center"><div className="text-xl font-bold text-green-600">R$ {parseFloat(detalheCorrida.tutts_valor).toFixed(2)}</div><div className="text-xs text-gray-500">Valor</div></div>}
-                                                <div className="bg-white p-3 rounded-xl shadow text-center"><div className="text-xl font-bold text-purple-600">{detalheCorrida.pontos?.length || 0}</div><div className="text-xs text-gray-500">Pontos</div></div>
+                                            {/* Métricas compactas */}
+                                            <div className="grid grid-cols-4 gap-2">
+                                                <div className="bg-white p-2 rounded-lg shadow text-center">
+                                                    <div className="text-sm font-bold text-blue-600">{detalheCorrida.tutts_distancia || '-'} km</div>
+                                                    <div className="text-xs text-gray-400">Dist.</div>
+                                                </div>
+                                                <div className="bg-white p-2 rounded-lg shadow text-center">
+                                                    <div className="text-sm font-bold text-blue-600">{detalheCorrida.tutts_duracao || '-'}</div>
+                                                    <div className="text-xs text-gray-400">Tempo</div>
+                                                </div>
+                                                <div className="bg-white p-2 rounded-lg shadow text-center">
+                                                    <div className="text-sm font-bold text-green-600">{detalheCorrida.tutts_valor ? `R$ ${parseFloat(detalheCorrida.tutts_valor).toFixed(0)}` : '-'}</div>
+                                                    <div className="text-xs text-gray-400">Valor</div>
+                                                </div>
+                                                <div className="bg-white p-2 rounded-lg shadow text-center">
+                                                    <div className="text-sm font-bold text-purple-600">{detalheCorrida.pontos?.length || 0}</div>
+                                                    <div className="text-xs text-gray-400">Pontos</div>
+                                                </div>
                                             </div>
                                             
                                             <div className="flex flex-col md:flex-row gap-4">
