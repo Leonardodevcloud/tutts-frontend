@@ -333,6 +333,10 @@
                 setLoading(true);
                 try {
                     const dataRet = config.data_retirada && config.hora_retirada ? `${config.data_retirada} ${config.hora_retirada}:00` : '';
+                    
+                    // Buscar dados do profissional selecionado
+                    const profSelecionado = config.codigo_profissional ? profissionais.find(p => p.codigo === config.codigo_profissional) : null;
+                    
                     const payload = { 
                         numero_pedido: config.numero_pedido, 
                         centro_custo: config.centro_custo, 
@@ -343,7 +347,12 @@
                         retorno: config.retorno, 
                         obs_retorno: config.obs_retorno, 
                         ordenar: config.ordenar, 
-                        codigo_profissional: config.codigo_profissional, 
+                        codigo_profissional: config.codigo_profissional,
+                        // Dados do profissional selecionado
+                        profissional_nome: profSelecionado?.nome || null,
+                        profissional_foto: profSelecionado?.foto || null,
+                        profissional_telefone: profSelecionado?.telefone || null,
+                        profissional_placa: profSelecionado?.placa || null,
                         sem_profissional: config.sem_profissional, 
                         pontos: pontos.map(p => ({ 
                             rua: p.rua || '', 
