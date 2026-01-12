@@ -662,7 +662,7 @@
                                                                             )}
                                                                             {p.motivo_finalizacao && <div className={`mt-2 text-xs px-2 py-1 rounded ${p.motivo_finalizacao === 'sucesso' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{p.motivo_finalizacao === 'sucesso' ? '✅' : '⚠️'} {p.motivo_descricao || p.motivo_finalizacao}</div>}
                                                                             {p.assinatura && <div className="mt-2 text-xs text-gray-600">✍️ Assinado por: {typeof p.assinatura === 'object' ? p.assinatura.nome || 'N/A' : 'Sim'}</div>}
-                                                                            {p.fotos && <div className="mt-2 text-xs text-blue-600">📸 {Array.isArray(JSON.parse(p.fotos || '[]')) ? JSON.parse(p.fotos).length : 0} foto(s)</div>}
+                                                                            {p.fotos && p.fotos !== '' && p.fotos !== '[]' && <div className="mt-2 text-xs text-blue-600">📸 {(() => { try { const f = JSON.parse(p.fotos); return Array.isArray(f) ? f.length : 0; } catch { return 0; } })()} foto(s)</div>}
                                                                         </div>
                                                                     </div>
                                                                 </div>
