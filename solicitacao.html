@@ -90,6 +90,8 @@
             const [mapaAcompanhar, setMapaAcompanhar] = useState(null);
             const [markersAcompanhar, setMarkersAcompanhar] = useState(null);
             const [gruposExpandidos, setGruposExpandidos] = useState({});
+            const [corridasConcluidas, setCorridasConcluidas] = useState([]);
+            const [filtroConcluidas, setFiltroConcluidas] = useState('todas'); // todas, finalizadas, canceladas
             
             const [profissionais, setProfissionais] = useState([]);
             const [carregandoProfissionais, setCarregandoProfissionais] = useState(false);
@@ -182,10 +184,31 @@
             
             const carregarHistorico = async () => { try { const resp = await fetch(`${API_URL}/api/solicitacao/historico?limite=20`, { headers: { 'Authorization': `Bearer ${token}` } }); if (resp.ok) { const data = await resp.json(); setHistorico(data.solicitacoes || []); } } catch (err) {} };
             const carregarCorridasAtivas = async () => { try { const resp = await fetch(`${API_URL}/api/solicitacao/historico?limite=50`, { headers: { 'Authorization': `Bearer ${token}` } }); if (resp.ok) { const data = await resp.json(); setCorridasAtivas((data.solicitacoes || []).filter(s => ['enviado', 'aceito', 'em_andamento'].includes(s.status))); } } catch (err) {} };
+            const carregarConcluidas = async () => { try { const resp = await fetch(`${API_URL}/api/solicitacao/historico?limite=100`, { headers: { 'Authorization': `Bearer ${token}` } }); if (resp.ok) { const data = await resp.json(); setCorridasConcluidas((data.solicitacoes || []).filter(s => ['finalizado', 'cancelado'].includes(s.status))); } } catch (err) {} };
             const carregarDetalheCorrida = async (id) => { try { const resp = await fetch(`${API_URL}/api/solicitacao/corrida/${id}`, { headers: { 'Authorization': `Bearer ${token}` } }); if (resp.ok) setDetalheCorrida(await resp.json()); } catch (err) {} };
             const selecionarCorrida = (id) => { setCorridaSelecionada(id); setMapaAcompanhar(null); setMarkersAcompanhar(null); carregarDetalheCorrida(id); };
             const copiarLinkRastreio = (os) => { navigator.clipboard.writeText(`${SITE_URL}/rastrear.html?os=${os}`).then(() => showToast('✅ Link copiado!', 'success')); };
             const compartilharWhatsApp = (os) => { window.open(`https://wa.me/?text=${encodeURIComponent(`🏍️ Acompanhe sua entrega:\n${SITE_URL}/rastrear.html?os=${os}`)}`, '_blank'); };
+            
+            // Cancelar corrida manualmente
+            const cancelarCorrida = async (id) => {
+                if (!confirm('Tem certeza que deseja marcar esta corrida como CANCELADA?')) return;
+                try {
+                    const resp = await fetch(`${API_URL}/api/solicitacao/corrida/${id}/cancelar`, {
+                        method: 'PATCH',
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (resp.ok) {
+                        showToast('❌ Corrida cancelada', 'success');
+                        carregarCorridasAtivas();
+                        carregarConcluidas();
+                        setCorridaSelecionada(null);
+                        setDetalheCorrida(null);
+                    } else {
+                        showToast('Erro ao cancelar', 'error');
+                    }
+                } catch (err) { showToast('Erro ao cancelar', 'error'); }
+            };
             
             const agruparCorridasPorProfissional = () => {
                 const grupos = {};
@@ -258,8 +281,9 @@
                     
                     <div className="bg-white shadow border-b">
                         <div className="max-w-7xl mx-auto flex">
-                            <button onClick={() => { setAbaAtiva('nova'); setCorridaSelecionada(null); }} className={`flex-1 md:flex-none px-4 py-3 text-sm font-medium border-b-2 ${abaAtiva === 'nova' ? 'text-blue-600 border-blue-600 bg-blue-50' : 'text-gray-500 border-transparent'}`}>📝 Nova Corrida</button>
-                            <button onClick={() => { setAbaAtiva('acompanhar'); carregarCorridasAtivas(); }} className={`flex-1 md:flex-none px-4 py-3 text-sm font-medium border-b-2 flex items-center justify-center gap-2 ${abaAtiva === 'acompanhar' ? 'text-blue-600 border-blue-600 bg-blue-50' : 'text-gray-500 border-transparent'}`}>🗺️ Acompanhar {corridasAtivas.length > 0 && <span className="bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">{corridasAtivas.length}</span>}</button>
+                            <button onClick={() => { setAbaAtiva('nova'); setCorridaSelecionada(null); }} className={`flex-1 md:flex-none px-4 py-3 text-sm font-medium border-b-2 ${abaAtiva === 'nova' ? 'text-blue-600 border-blue-600 bg-blue-50' : 'text-gray-500 border-transparent'}`}>📝 Nova</button>
+                            <button onClick={() => { setAbaAtiva('acompanhar'); carregarCorridasAtivas(); }} className={`flex-1 md:flex-none px-4 py-3 text-sm font-medium border-b-2 flex items-center justify-center gap-2 ${abaAtiva === 'acompanhar' ? 'text-blue-600 border-blue-600 bg-blue-50' : 'text-gray-500 border-transparent'}`}>🗺️ Ativas {corridasAtivas.length > 0 && <span className="bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">{corridasAtivas.length}</span>}</button>
+                            <button onClick={() => { setAbaAtiva('concluidas'); carregarConcluidas(); }} className={`flex-1 md:flex-none px-4 py-3 text-sm font-medium border-b-2 flex items-center justify-center gap-2 ${abaAtiva === 'concluidas' ? 'text-green-600 border-green-600 bg-green-50' : 'text-gray-500 border-transparent'}`}>✅ Concluídas</button>
                         </div>
                     </div>
                     
@@ -422,6 +446,13 @@
                                                 <div className="flex-1"><div id="mapaAcompanhar" className="rounded-xl shadow-lg" style={{ height: '300px' }}></div></div>
                                             </div>
                                             {detalheCorrida.tutts_url_rastreamento && (<a href={detalheCorrida.tutts_url_rastreamento} target="_blank" className="block w-full py-3 bg-gray-800 text-white rounded-xl font-bold text-center hover:bg-gray-900">🗺️ Abrir Rastreamento Tutts</a>)}
+                                            
+                                            {/* Botão Cancelar */}
+                                            {!['finalizado', 'cancelado'].includes(detalheCorrida.status) && (
+                                                <button onClick={() => cancelarCorrida(detalheCorrida.id)} className="w-full mt-2 py-2 bg-red-100 text-red-600 rounded-xl font-medium text-sm hover:bg-red-200 border border-red-200">
+                                                    ❌ Marcar como Cancelada (se cancelou na Tutts)
+                                                </button>
+                                            )}
                                         </div>
                                     )}
                                 </div>
@@ -429,7 +460,86 @@
                         </div>
                     )}
                     
-                    {pontoEditando !== null && (
+                    {/* ========== ABA CONCLUÍDAS ========== */}
+                    {abaAtiva === 'concluidas' && (
+                        <div className="max-w-7xl mx-auto p-2 md:p-4">
+                            <div className="bg-white rounded-xl shadow p-4">
+                                <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+                                    <h2 className="text-lg font-bold text-gray-800">✅ Corridas Concluídas</h2>
+                                    <div className="flex gap-2">
+                                        <select value={filtroConcluidas} onChange={(e) => setFiltroConcluidas(e.target.value)} className="px-3 py-1.5 border rounded-lg text-sm">
+                                            <option value="todas">Todas</option>
+                                            <option value="finalizadas">✅ Finalizadas</option>
+                                            <option value="canceladas">❌ Canceladas</option>
+                                        </select>
+                                        <button onClick={carregarConcluidas} className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm">🔄 Atualizar</button>
+                                    </div>
+                                </div>
+                                
+                                {corridasConcluidas.filter(c => filtroConcluidas === 'todas' || (filtroConcluidas === 'finalizadas' && c.status === 'finalizado') || (filtroConcluidas === 'canceladas' && c.status === 'cancelado')).length === 0 ? (
+                                    <div className="text-center py-12 text-gray-400">
+                                        <div className="text-5xl mb-3">📭</div>
+                                        <div>Nenhuma corrida {filtroConcluidas !== 'todas' ? filtroConcluidas : 'concluída'}</div>
+                                    </div>
+                                ) : (
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-sm">
+                                            <thead className="bg-gray-50">
+                                                <tr>
+                                                    <th className="px-3 py-2 text-left font-medium text-gray-600">OS</th>
+                                                    <th className="px-3 py-2 text-left font-medium text-gray-600">Status</th>
+                                                    <th className="px-3 py-2 text-left font-medium text-gray-600">Data</th>
+                                                    <th className="px-3 py-2 text-left font-medium text-gray-600">Profissional</th>
+                                                    <th className="px-3 py-2 text-left font-medium text-gray-600">Pontos</th>
+                                                    <th className="px-3 py-2 text-left font-medium text-gray-600">Distância</th>
+                                                    <th className="px-3 py-2 text-left font-medium text-gray-600">Valor</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y">
+                                                {corridasConcluidas.filter(c => filtroConcluidas === 'todas' || (filtroConcluidas === 'finalizadas' && c.status === 'finalizado') || (filtroConcluidas === 'canceladas' && c.status === 'cancelado')).map(c => (
+                                                    <tr key={c.id} className="hover:bg-gray-50">
+                                                        <td className="px-3 py-3 font-medium">#{c.tutts_os_numero || c.id}</td>
+                                                        <td className="px-3 py-3">
+                                                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${c.status === 'finalizado' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                                                {c.status === 'finalizado' ? '✅ Finalizada' : '❌ Cancelada'}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-3 py-3 text-gray-600">{new Date(c.criado_em).toLocaleDateString('pt-BR')} {new Date(c.criado_em).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}</td>
+                                                        <td className="px-3 py-3">{c.profissional_nome || <span className="text-gray-400">-</span>}</td>
+                                                        <td className="px-3 py-3 text-center">{c.total_pontos || '-'}</td>
+                                                        <td className="px-3 py-3">{c.tutts_distancia ? `${c.tutts_distancia} km` : '-'}</td>
+                                                        <td className="px-3 py-3 font-medium text-green-600">{c.tutts_valor ? `R$ ${parseFloat(c.tutts_valor).toFixed(2)}` : '-'}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
+                                
+                                {/* Resumo */}
+                                {corridasConcluidas.length > 0 && (
+                                    <div className="mt-4 pt-4 border-t grid grid-cols-2 md:grid-cols-4 gap-4">
+                                        <div className="bg-green-50 p-3 rounded-lg text-center">
+                                            <div className="text-2xl font-bold text-green-600">{corridasConcluidas.filter(c => c.status === 'finalizado').length}</div>
+                                            <div className="text-xs text-gray-600">Finalizadas</div>
+                                        </div>
+                                        <div className="bg-red-50 p-3 rounded-lg text-center">
+                                            <div className="text-2xl font-bold text-red-600">{corridasConcluidas.filter(c => c.status === 'cancelado').length}</div>
+                                            <div className="text-xs text-gray-600">Canceladas</div>
+                                        </div>
+                                        <div className="bg-blue-50 p-3 rounded-lg text-center">
+                                            <div className="text-2xl font-bold text-blue-600">{corridasConcluidas.filter(c => c.status === 'finalizado').reduce((acc, c) => acc + parseFloat(c.tutts_distancia || 0), 0).toFixed(1)} km</div>
+                                            <div className="text-xs text-gray-600">Total Distância</div>
+                                        </div>
+                                        <div className="bg-purple-50 p-3 rounded-lg text-center">
+                                            <div className="text-2xl font-bold text-purple-600">R$ {corridasConcluidas.filter(c => c.status === 'finalizado').reduce((acc, c) => acc + parseFloat(c.tutts_valor || 0), 0).toFixed(2)}</div>
+                                            <div className="text-xs text-gray-600">Total Valor</div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
                         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setPontoEditando(null)}>
                             <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-4" onClick={e => e.stopPropagation()}>
                                 <div className="flex items-center justify-between mb-4"><span className="font-bold">✏️ Editar Ponto {pontoEditando + 1}</span><button onClick={() => setPontoEditando(null)} className="text-gray-400">✕</button></div>
