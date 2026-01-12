@@ -92,6 +92,7 @@
             const [gruposExpandidos, setGruposExpandidos] = useState({});
             const [corridasConcluidas, setCorridasConcluidas] = useState([]);
             const [filtroConcluidas, setFiltroConcluidas] = useState('todas'); // todas, finalizadas, canceladas
+            const [sincronizando, setSincronizando] = useState(false);
             
             const [profissionais, setProfissionais] = useState([]);
             const [carregandoProfissionais, setCarregandoProfissionais] = useState(false);
@@ -214,6 +215,32 @@
                         showToast(data.error || 'Erro ao cancelar', 'error');
                     }
                 } catch (err) { showToast('Erro ao cancelar', 'error'); }
+            };
+            
+            // Sincronizar status com Tutts
+            const sincronizarStatus = async () => {
+                setSincronizando(true);
+                try {
+                    const resp = await fetch(`${API_URL}/api/solicitacao/sincronizar`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const data = await resp.json();
+                    
+                    if (resp.ok) {
+                        if (data.atualizadas > 0) {
+                            showToast(`🔄 ${data.mensagem}`, 'success');
+                            carregarCorridasAtivas();
+                            carregarConcluidas();
+                            if (corridaSelecionada) carregarDetalheCorrida(corridaSelecionada);
+                        } else {
+                            showToast('✅ Tudo sincronizado!', 'info');
+                        }
+                    } else {
+                        showToast(data.error || 'Erro ao sincronizar', 'error');
+                    }
+                } catch (err) { showToast('Erro ao sincronizar', 'error'); }
+                setSincronizando(false);
             };
             
             const agruparCorridasPorProfissional = () => {
@@ -392,7 +419,12 @@
                             <div className="flex flex-col md:flex-row gap-4">
                                 <div className="w-full md:w-80 space-y-3">
                                     <div className="bg-white rounded-xl shadow p-3">
-                                        <div className="text-sm font-bold text-gray-700 mb-3">🏍️ Corridas Ativas ({corridasAtivas.length})</div>
+                                        <div className="flex items-center justify-between mb-3">
+                                            <span className="text-sm font-bold text-gray-700">🏍️ Corridas Ativas ({corridasAtivas.length})</span>
+                                            <button onClick={sincronizarStatus} disabled={sincronizando} className="text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 px-2 py-1 rounded font-medium disabled:opacity-50">
+                                                {sincronizando ? '⏳...' : '🔄 Sync'}
+                                            </button>
+                                        </div>
                                         {corridasAtivas.length === 0 ? (<div className="text-center py-8 text-gray-400"><div className="text-4xl mb-2">📭</div><div className="text-sm">Nenhuma corrida ativa</div></div>) : (
                                             <div className="space-y-3 max-h-[calc(100vh-280px)] overflow-y-auto">
                                                 {gruposAgrupados.map(grupo => (
