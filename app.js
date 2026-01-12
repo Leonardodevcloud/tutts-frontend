@@ -195,7 +195,7 @@ const SISTEMA_MODULOS_CONFIG = [
       abas: [{id: "perfil", label: "Meu Perfil"}, {id: "comunidade", label: "Comunidade"}, {id: "mensagens", label: "Mensagens"}]
     },
     { id: "config", label: "Configurações", icon: "🔧",
-      abas: [{id: "usuarios", label: "Usuários"}, {id: "permissoes", label: "Permissões ADM"}, {id: "auditoria", label: "Auditoria"}, {id: "sistema", label: "Sistema"}]
+      abas: [{id: "usuarios", label: "Usuários"}, {id: "permissoes", label: "Permissões ADM"}, {id: "clientes-api", label: "Clientes API"}, {id: "auditoria", label: "Auditoria"}, {id: "sistema", label: "Sistema"}]
     }
 ];
 
@@ -19321,6 +19321,171 @@ const hideLoadingScreen = () => {
                             },
                             className: "text-blue-600 hover:underline"
                         }, "Verificar atualizações")
+                    )
+                ),
+                // TAB CLIENTES API - só admin_master
+                p.configTab === "clientes-api" && "admin_master" === l.role && React.createElement("div", null,
+                    React.createElement("div", {className: "bg-white rounded-xl shadow-sm border p-6 mb-6"},
+                        React.createElement("h2", {className: "text-lg font-bold mb-4 flex items-center gap-2"},
+                            React.createElement("span", null, "🔗"),
+                            "Clientes API - Solicitação de Serviço"
+                        ),
+                        React.createElement("p", {className: "text-gray-600 text-sm mb-4"}, "Cadastre clientes que podem solicitar corridas via página externa."),
+                        // Formulário de cadastro
+                        React.createElement("div", {className: "bg-gray-50 rounded-lg p-4 mb-6"},
+                            React.createElement("h3", {className: "font-bold text-gray-700 mb-3"}, "➕ Novo Cliente"),
+                            React.createElement("div", {className: "grid md:grid-cols-2 gap-4 mb-4"},
+                                React.createElement("div", null,
+                                    React.createElement("label", {className: "block text-sm font-semibold mb-1 text-gray-700"}, "Nome *"),
+                                    React.createElement("input", {
+                                        type: "text",
+                                        value: p.novoClienteApi?.nome || "",
+                                        onChange: function(e) { x({...p, novoClienteApi: {...(p.novoClienteApi || {}), nome: e.target.value}}); },
+                                        className: "w-full px-3 py-2 border rounded-lg text-sm",
+                                        placeholder: "Nome do cliente"
+                                    })
+                                ),
+                                React.createElement("div", null,
+                                    React.createElement("label", {className: "block text-sm font-semibold mb-1 text-gray-700"}, "Email *"),
+                                    React.createElement("input", {
+                                        type: "email",
+                                        value: p.novoClienteApi?.email || "",
+                                        onChange: function(e) { x({...p, novoClienteApi: {...(p.novoClienteApi || {}), email: e.target.value}}); },
+                                        className: "w-full px-3 py-2 border rounded-lg text-sm",
+                                        placeholder: "email@empresa.com"
+                                    })
+                                )
+                            ),
+                            React.createElement("div", {className: "grid md:grid-cols-2 gap-4 mb-4"},
+                                React.createElement("div", null,
+                                    React.createElement("label", {className: "block text-sm font-semibold mb-1 text-gray-700"}, "Senha *"),
+                                    React.createElement("input", {
+                                        type: "password",
+                                        value: p.novoClienteApi?.senha || "",
+                                        onChange: function(e) { x({...p, novoClienteApi: {...(p.novoClienteApi || {}), senha: e.target.value}}); },
+                                        className: "w-full px-3 py-2 border rounded-lg text-sm",
+                                        placeholder: "Senha de acesso"
+                                    })
+                                ),
+                                React.createElement("div", null,
+                                    React.createElement("label", {className: "block text-sm font-semibold mb-1 text-gray-700"}, "Empresa"),
+                                    React.createElement("input", {
+                                        type: "text",
+                                        value: p.novoClienteApi?.empresa || "",
+                                        onChange: function(e) { x({...p, novoClienteApi: {...(p.novoClienteApi || {}), empresa: e.target.value}}); },
+                                        className: "w-full px-3 py-2 border rounded-lg text-sm",
+                                        placeholder: "Nome da empresa"
+                                    })
+                                )
+                            ),
+                            React.createElement("div", {className: "grid md:grid-cols-2 gap-4 mb-4"},
+                                React.createElement("div", null,
+                                    React.createElement("label", {className: "block text-sm font-semibold mb-1 text-gray-700"}, "Token API Tutts *"),
+                                    React.createElement("input", {
+                                        type: "text",
+                                        value: p.novoClienteApi?.tutts_token || "",
+                                        onChange: function(e) { x({...p, novoClienteApi: {...(p.novoClienteApi || {}), tutts_token: e.target.value}}); },
+                                        className: "w-full px-3 py-2 border rounded-lg text-sm font-mono",
+                                        placeholder: "Token fornecido pela Tutts"
+                                    })
+                                ),
+                                React.createElement("div", null,
+                                    React.createElement("label", {className: "block text-sm font-semibold mb-1 text-gray-700"}, "Código Cliente Tutts *"),
+                                    React.createElement("input", {
+                                        type: "text",
+                                        value: p.novoClienteApi?.tutts_cod_cliente || "",
+                                        onChange: function(e) { x({...p, novoClienteApi: {...(p.novoClienteApi || {}), tutts_cod_cliente: e.target.value}}); },
+                                        className: "w-full px-3 py-2 border rounded-lg text-sm font-mono",
+                                        placeholder: "Código do cliente na Tutts"
+                                    })
+                                )
+                            ),
+                            React.createElement("button", {
+                                onClick: async function() {
+                                    const c = p.novoClienteApi || {};
+                                    if (!c.nome || !c.email || !c.senha || !c.tutts_token || !c.tutts_cod_cliente) {
+                                        ja("Preencha todos os campos obrigatórios", "error");
+                                        return;
+                                    }
+                                    try {
+                                        const resp = await fetch(API_URL + "/api/admin/solicitacao/clientes", {
+                                            method: "POST",
+                                            headers: {"Content-Type": "application/json", "Authorization": "Bearer " + getToken()},
+                                            body: JSON.stringify(c)
+                                        });
+                                        const data = await resp.json();
+                                        if (resp.ok) {
+                                            ja("✅ Cliente criado com sucesso!", "success");
+                                            x({...p, novoClienteApi: {}, clientesApiLista: null});
+                                        } else {
+                                            ja(data.error || "Erro ao criar cliente", "error");
+                                        }
+                                    } catch (err) {
+                                        ja("Erro de conexão", "error");
+                                    }
+                                },
+                                className: "px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700"
+                            }, "✅ Cadastrar Cliente")
+                        ),
+                        // Lista de clientes
+                        React.createElement("div", null,
+                            React.createElement("div", {className: "flex items-center justify-between mb-3"},
+                                React.createElement("h3", {className: "font-bold text-gray-700"}, "📋 Clientes Cadastrados"),
+                                React.createElement("button", {
+                                    onClick: async function() {
+                                        try {
+                                            const resp = await fetch(API_URL + "/api/admin/solicitacao/clientes", {
+                                                headers: {"Authorization": "Bearer " + getToken()}
+                                            });
+                                            const data = await resp.json();
+                                            if (resp.ok) {
+                                                x({...p, clientesApiLista: data.clientes || data});
+                                            }
+                                        } catch (err) {
+                                            ja("Erro ao carregar clientes", "error");
+                                        }
+                                    },
+                                    className: "px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                                }, "🔄 Carregar")
+                            ),
+                            p.clientesApiLista && p.clientesApiLista.length === 0 && React.createElement("p", {className: "text-gray-500 text-sm text-center py-4"}, "Nenhum cliente cadastrado"),
+                            p.clientesApiLista && p.clientesApiLista.length > 0 && React.createElement("div", {className: "space-y-2"},
+                                p.clientesApiLista.map(function(cliente) {
+                                    return React.createElement("div", {
+                                        key: cliente.id,
+                                        className: "bg-gray-50 rounded-lg p-3 flex items-center justify-between"
+                                    },
+                                        React.createElement("div", null,
+                                            React.createElement("p", {className: "font-medium text-gray-800"}, cliente.nome),
+                                            React.createElement("p", {className: "text-sm text-gray-500"}, cliente.email, " • ", cliente.empresa || "Sem empresa"),
+                                            React.createElement("p", {className: "text-xs text-gray-400 font-mono"}, "Cód: ", cliente.tutts_cod_cliente || cliente.tutts_codigo_cliente)
+                                        ),
+                                        React.createElement("div", {className: "flex items-center gap-2"},
+                                            React.createElement("span", {
+                                                className: cliente.ativo ? "px-2 py-1 bg-green-100 text-green-700 rounded text-xs" : "px-2 py-1 bg-red-100 text-red-700 rounded text-xs"
+                                            }, cliente.ativo ? "✅ Ativo" : "❌ Inativo"),
+                                            React.createElement("button", {
+                                                onClick: async function() {
+                                                    if (!confirm("Desativar/ativar este cliente?")) return;
+                                                    try {
+                                                        await fetch(API_URL + "/api/admin/solicitacao/clientes/" + cliente.id + "/status", {
+                                                            method: "PATCH",
+                                                            headers: {"Content-Type": "application/json", "Authorization": "Bearer " + getToken()},
+                                                            body: JSON.stringify({ativo: !cliente.ativo})
+                                                        });
+                                                        ja("Status alterado!", "success");
+                                                        x({...p, clientesApiLista: null});
+                                                    } catch (err) {
+                                                        ja("Erro", "error");
+                                                    }
+                                                },
+                                                className: "px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs hover:bg-gray-300"
+                                            }, "🔄")
+                                        )
+                                    );
+                                })
+                            )
+                        )
                     )
                 ),
                 // TAB AUDITORIA
