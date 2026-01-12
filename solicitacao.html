@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tutts - Solicitar Corrida</title>
+    <meta name="theme-color" content="#7c3aed">
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏍️</text></svg>">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -21,10 +22,54 @@
         ::-webkit-scrollbar-thumb { background: #93c5fd; border-radius: 3px; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         .animate-pulse-custom { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        
+        /* ==================== MODO ESCURO ==================== */
+        :root { --bg-primary: #f3f4f6; --bg-card: #ffffff; --text-primary: #111827; --border-primary: #e5e7eb; }
+        .theme-dark { --bg-primary: #0f172a; --bg-card: #1e293b; --text-primary: #f1f5f9; --border-primary: #334155; }
+        .theme-dark body { background-color: #0f172a !important; }
+        .theme-dark .bg-gray-100 { background-color: #0f172a !important; }
+        .theme-dark .bg-white { background-color: #1e293b !important; }
+        .theme-dark .bg-gray-50 { background-color: #1e293b !important; }
+        .theme-dark .text-gray-900, .theme-dark .text-gray-800, .theme-dark .text-gray-700 { color: #f1f5f9 !important; }
+        .theme-dark .text-gray-600, .theme-dark .text-gray-500, .theme-dark .text-gray-400 { color: #94a3b8 !important; }
+        .theme-dark .border-gray-200, .theme-dark .border-gray-300, .theme-dark .border { border-color: #334155 !important; }
+        .theme-dark input, .theme-dark select, .theme-dark textarea { background-color: #1e293b !important; border-color: #334155 !important; color: #f1f5f9 !important; }
+        .theme-dark .shadow, .theme-dark .shadow-lg, .theme-dark .shadow-xl { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3) !important; }
+        .theme-dark .leaflet-container { background: #1e293b !important; }
+        .theme-dark .hover\:bg-gray-50:hover { background-color: #334155 !important; }
+        .theme-dark .hover\:bg-blue-50:hover { background-color: #1e3a5f !important; }
+        .theme-dark ::-webkit-scrollbar-track { background: #1e293b; }
+        .theme-dark ::-webkit-scrollbar-thumb { background: #475569; }
+        .theme-dark .bg-gradient-to-br.from-blue-100 { background: linear-gradient(to bottom right, #1e3a5f, #1e293b) !important; }
+        .theme-dark .bg-gradient-to-r.from-blue-50 { background: linear-gradient(to right, #1e3a5f, #1e293b) !important; }
+        .theme-dark .bg-gradient-to-r.from-orange-50 { background: linear-gradient(to right, #5c3a1e, #1e293b) !important; }
+        
+        /* Toggle do tema */
+        .theme-toggle { position: fixed; bottom: 20px; right: 20px; z-index: 1000; padding: 12px 16px; border-radius: 50px; border: none; cursor: pointer; font-size: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: all 0.3s ease; }
+        .theme-toggle:hover { transform: scale(1.1); }
+        .theme-toggle.light { background: #1e293b; color: white; }
+        .theme-toggle.dark { background: white; color: #1e293b; }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
     <div id="root"></div>
+    <button id="theme-toggle" class="theme-toggle light" onclick="toggleTheme()">🌙</button>
+    
+    <script>
+        // Sistema de tema
+        const THEME_KEY = 'tutts_theme';
+        function getTheme() { return localStorage.getItem(THEME_KEY) || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); }
+        function setTheme(theme) {
+            localStorage.setItem(THEME_KEY, theme);
+            document.documentElement.classList.remove('theme-light', 'theme-dark');
+            document.documentElement.classList.add('theme-' + theme);
+            const btn = document.getElementById('theme-toggle');
+            if (btn) { btn.className = 'theme-toggle ' + theme; btn.textContent = theme === 'dark' ? '☀️' : '🌙'; }
+            document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#0f172a' : '#7c3aed');
+        }
+        function toggleTheme() { setTheme(getTheme() === 'dark' ? 'light' : 'dark'); }
+        setTheme(getTheme());
+    </script>
     
     <script type="text/babel">
         const { useState, useEffect } = React;
@@ -186,39 +231,19 @@
             const copiarLinkRastreio = (os) => { navigator.clipboard.writeText(`${SITE_URL}/rastrear.html?os=${os}`).then(() => showToast('✅ Link copiado!', 'success')); };
             const compartilharWhatsApp = (os) => { window.open(`https://wa.me/?text=${encodeURIComponent(`🏍️ Acompanhe sua entrega:\n${SITE_URL}/rastrear.html?os=${os}`)}`, '_blank'); };
             
-            // Agrupar corridas por profissional
             const agruparCorridasPorProfissional = () => {
                 const grupos = {};
-                
                 corridasAtivas.forEach(corrida => {
                     const chave = corrida.profissional_nome || '__SEM_PROFISSIONAL__';
-                    if (!grupos[chave]) {
-                        grupos[chave] = {
-                            nome: corrida.profissional_nome || null,
-                            foto: corrida.profissional_foto || null,
-                            placa: corrida.profissional_placa || null,
-                            corridas: []
-                        };
-                    }
+                    if (!grupos[chave]) { grupos[chave] = { nome: corrida.profissional_nome || null, foto: corrida.profissional_foto || null, placa: corrida.profissional_placa || null, corridas: [] }; }
                     grupos[chave].corridas.push(corrida);
                 });
-                
-                // Ordenar: primeiro os com profissional, depois sem
                 const resultado = [];
-                Object.keys(grupos).sort((a, b) => {
-                    if (a === '__SEM_PROFISSIONAL__') return 1;
-                    if (b === '__SEM_PROFISSIONAL__') return -1;
-                    return a.localeCompare(b);
-                }).forEach(chave => {
-                    resultado.push({ chave, ...grupos[chave] });
-                });
-                
+                Object.keys(grupos).sort((a, b) => { if (a === '__SEM_PROFISSIONAL__') return 1; if (b === '__SEM_PROFISSIONAL__') return -1; return a.localeCompare(b); }).forEach(chave => { resultado.push({ chave, ...grupos[chave] }); });
                 return resultado;
             };
             
-            const toggleGrupo = (chave) => {
-                setGruposExpandidos(prev => ({ ...prev, [chave]: !prev[chave] }));
-            };
+            const toggleGrupo = (chave) => { setGruposExpandidos(prev => ({ ...prev, [chave]: !prev[chave] })); };
             
             const buscarEndereco = async () => {
                 if (!termoBusca || termoBusca.length < 3) { showToast('Digite pelo menos 3 caracteres', 'warning'); return; }
@@ -250,22 +275,10 @@
                 setLoading(true);
                 try {
                     const dataRet = config.data_retirada && config.hora_retirada ? `${config.data_retirada} ${config.hora_retirada}:00` : '';
-                    const payload = { 
-                        numero_pedido: config.numero_pedido, centro_custo: config.centro_custo, usuario_solicitante: config.usuario_solicitante,
-                        data_retirada: dataRet, forma_pagamento: config.forma_pagamento,
-                        ponto_receber: config.ponto_receber ? parseInt(config.ponto_receber) : null,
-                        retorno: config.retorno, obs_retorno: config.obs_retorno, ordenar: config.ordenar,
-                        codigo_profissional: config.codigo_profissional, sem_profissional: config.sem_profissional,
-                        pontos: pontos.map(p => ({ rua: p.rua || '', numero: p.numero || '', complemento: p.complemento || '', bairro: p.bairro || '', cidade: p.cidade || '', uf: p.uf || '', cep: p.cep || '', latitude: p.latitude, longitude: p.longitude, observacao: p.observacao || '', telefone: p.telefone || '', procurar_por: p.procurar_por || '', numero_nota: p.numero_nota || '', codigo_finalizar: p.codigo_finalizar || '' })) 
-                    };
+                    const payload = { numero_pedido: config.numero_pedido, centro_custo: config.centro_custo, usuario_solicitante: config.usuario_solicitante, data_retirada: dataRet, forma_pagamento: config.forma_pagamento, ponto_receber: config.ponto_receber ? parseInt(config.ponto_receber) : null, retorno: config.retorno, obs_retorno: config.obs_retorno, ordenar: config.ordenar, codigo_profissional: config.codigo_profissional, sem_profissional: config.sem_profissional, pontos: pontos.map(p => ({ rua: p.rua || '', numero: p.numero || '', complemento: p.complemento || '', bairro: p.bairro || '', cidade: p.cidade || '', uf: p.uf || '', cep: p.cep || '', latitude: p.latitude, longitude: p.longitude, observacao: p.observacao || '', telefone: p.telefone || '', procurar_por: p.procurar_por || '', numero_nota: p.numero_nota || '', codigo_finalizar: p.codigo_finalizar || '' })) };
                     const resp = await fetch(`${API_URL}/api/solicitacao/corrida`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(payload) });
                     const data = await resp.json();
-                    if (resp.ok) { 
-                        const motoboy = config.codigo_profissional ? profissionais.find(p => p.codigo === config.codigo_profissional)?.nome : null;
-                        const msgMotoboy = motoboy ? ` → ${motoboy}` : '';
-                        showToast(`✅ OS: ${data.os_numero}${msgMotoboy}${data.modo_teste ? ' (TESTE)' : ''}`, 'success'); 
-                        limpar(); setConfig(prev => ({ ...prev, codigo_profissional: '' })); carregarHistorico(); carregarCorridasAtivas(); 
-                    }
+                    if (resp.ok) { const motoboy = config.codigo_profissional ? profissionais.find(p => p.codigo === config.codigo_profissional)?.nome : null; const msgMotoboy = motoboy ? ` → ${motoboy}` : ''; showToast(`✅ OS: ${data.os_numero}${msgMotoboy}${data.modo_teste ? ' (TESTE)' : ''}`, 'success'); limpar(); setConfig(prev => ({ ...prev, codigo_profissional: '' })); carregarHistorico(); carregarCorridasAtivas(); }
                     else showToast(data.error || 'Erro', 'error');
                 } catch { showToast('Erro', 'error'); }
                 setLoading(false);
@@ -358,91 +371,23 @@
                     {abaAtiva === 'acompanhar' && (
                         <div className="max-w-7xl mx-auto p-2 md:p-4">
                             <div className="flex flex-col md:flex-row gap-4">
-                                {/* Lista agrupada por profissional */}
                                 <div className="w-full md:w-80 space-y-3">
                                     <div className="bg-white rounded-xl shadow p-3">
                                         <div className="text-sm font-bold text-gray-700 mb-3">🏍️ Corridas Ativas ({corridasAtivas.length})</div>
-                                        
-                                        {corridasAtivas.length === 0 ? (
-                                            <div className="text-center py-8 text-gray-400">
-                                                <div className="text-4xl mb-2">📭</div>
-                                                <div className="text-sm">Nenhuma corrida ativa</div>
-                                            </div>
-                                        ) : (
+                                        {corridasAtivas.length === 0 ? (<div className="text-center py-8 text-gray-400"><div className="text-4xl mb-2">📭</div><div className="text-sm">Nenhuma corrida ativa</div></div>) : (
                                             <div className="space-y-3 max-h-[calc(100vh-280px)] overflow-y-auto">
                                                 {gruposAgrupados.map(grupo => (
                                                     <div key={grupo.chave} className="border rounded-lg overflow-hidden">
-                                                        {/* Header do grupo */}
-                                                        <div 
-                                                            onClick={() => toggleGrupo(grupo.chave)}
-                                                            className={`p-3 cursor-pointer flex items-center gap-3 ${
-                                                                grupo.nome 
-                                                                    ? 'bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-200' 
-                                                                    : 'bg-gradient-to-r from-orange-50 to-orange-100 border-b border-orange-200'
-                                                            }`}
-                                                        >
-                                                            {grupo.nome ? (
-                                                                <>
-                                                                    {grupo.foto ? (
-                                                                        <img src={grupo.foto} className="w-10 h-10 rounded-full object-cover border-2 border-blue-300" />
-                                                                    ) : (
-                                                                        <div className="w-10 h-10 rounded-full bg-blue-200 flex items-center justify-center text-lg">🏍️</div>
-                                                                    )}
-                                                                    <div className="flex-1 min-w-0">
-                                                                        <div className="font-bold text-gray-800 truncate">{grupo.nome}</div>
-                                                                        {grupo.placa && <div className="text-xs text-gray-500">{grupo.placa}</div>}
-                                                                    </div>
-                                                                </>
-                                                            ) : (
-                                                                <>
-                                                                    <div className="w-10 h-10 rounded-full bg-orange-200 flex items-center justify-center text-lg">⏳</div>
-                                                                    <div className="flex-1">
-                                                                        <div className="font-bold text-orange-700">Sem Profissional</div>
-                                                                        <div className="text-xs text-orange-500">Aguardando atribuição</div>
-                                                                    </div>
-                                                                </>
-                                                            )}
-                                                            <div className="flex items-center gap-2">
-                                                                <span className={`px-2 py-1 rounded-full text-xs font-bold ${grupo.nome ? 'bg-blue-500 text-white' : 'bg-orange-500 text-white'}`}>
-                                                                    {grupo.corridas.length}
-                                                                </span>
-                                                                <span className="text-gray-400 text-sm">
-                                                                    {gruposExpandidos[grupo.chave] !== false ? '▼' : '▶'}
-                                                                </span>
-                                                            </div>
+                                                        <div onClick={() => toggleGrupo(grupo.chave)} className={`p-3 cursor-pointer flex items-center gap-3 ${grupo.nome ? 'bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-200' : 'bg-gradient-to-r from-orange-50 to-orange-100 border-b border-orange-200'}`}>
+                                                            {grupo.nome ? (<>{grupo.foto ? (<img src={grupo.foto} className="w-10 h-10 rounded-full object-cover border-2 border-blue-300" />) : (<div className="w-10 h-10 rounded-full bg-blue-200 flex items-center justify-center text-lg">🏍️</div>)}<div className="flex-1 min-w-0"><div className="font-bold text-gray-800 truncate">{grupo.nome}</div>{grupo.placa && <div className="text-xs text-gray-500">{grupo.placa}</div>}</div></>) : (<><div className="w-10 h-10 rounded-full bg-orange-200 flex items-center justify-center text-lg">⏳</div><div className="flex-1"><div className="font-bold text-orange-700">Sem Profissional</div><div className="text-xs text-orange-500">Aguardando atribuição</div></div></>)}
+                                                            <div className="flex items-center gap-2"><span className={`px-2 py-1 rounded-full text-xs font-bold ${grupo.nome ? 'bg-blue-500 text-white' : 'bg-orange-500 text-white'}`}>{grupo.corridas.length}</span><span className="text-gray-400 text-sm">{gruposExpandidos[grupo.chave] !== false ? '▼' : '▶'}</span></div>
                                                         </div>
-                                                        
-                                                        {/* Lista de corridas do grupo */}
                                                         {gruposExpandidos[grupo.chave] !== false && (
                                                             <div className="divide-y divide-gray-100">
                                                                 {grupo.corridas.map(c => (
-                                                                    <div 
-                                                                        key={c.id} 
-                                                                        onClick={() => selecionarCorrida(c.id)} 
-                                                                        className={`p-3 cursor-pointer transition-colors ${
-                                                                            corridaSelecionada === c.id 
-                                                                                ? 'bg-blue-50 border-l-4 border-l-blue-500' 
-                                                                                : 'hover:bg-gray-50'
-                                                                        }`}
-                                                                    >
-                                                                        <div className="flex items-center justify-between">
-                                                                            <div>
-                                                                                <div className="font-bold text-gray-800 text-sm">
-                                                                                    OS #{c.tutts_os_numero || c.id}
-                                                                                </div>
-                                                                                <div className="text-xs text-gray-500">
-                                                                                    {c.total_pontos} pts • {formatarData(c.criado_em)}
-                                                                                </div>
-                                                                            </div>
-                                                                            <span className={`px-2 py-1 rounded text-xs font-medium ${statusCores[c.status]}`}>
-                                                                                {statusNomes[c.status]}
-                                                                            </span>
-                                                                        </div>
-                                                                        {c.tutts_valor && (
-                                                                            <div className="text-xs text-green-600 mt-1 font-medium">
-                                                                                R$ {parseFloat(c.tutts_valor).toFixed(2)}
-                                                                            </div>
-                                                                        )}
+                                                                    <div key={c.id} onClick={() => selecionarCorrida(c.id)} className={`p-3 cursor-pointer transition-colors ${corridaSelecionada === c.id ? 'bg-blue-50 border-l-4 border-l-blue-500' : 'hover:bg-gray-50'}`}>
+                                                                        <div className="flex items-center justify-between"><div><div className="font-bold text-gray-800 text-sm">OS #{c.tutts_os_numero || c.id}</div><div className="text-xs text-gray-500">{c.total_pontos} pts • {formatarData(c.criado_em)}</div></div><span className={`px-2 py-1 rounded text-xs font-medium ${statusCores[c.status]}`}>{statusNomes[c.status]}</span></div>
+                                                                        {c.tutts_valor && (<div className="text-xs text-green-600 mt-1 font-medium">R$ {parseFloat(c.tutts_valor).toFixed(2)}</div>)}
                                                                     </div>
                                                                 ))}
                                                             </div>
@@ -453,63 +398,23 @@
                                         )}
                                     </div>
                                 </div>
-                                
-                                {/* Detalhe da corrida selecionada */}
                                 <div className="flex-1">
-                                    {!corridaSelecionada ? (
-                                        <div className="bg-white rounded-xl shadow p-8 text-center text-gray-400">
-                                            <div className="text-6xl mb-4">👈</div>
-                                            <div>Selecione uma corrida para ver detalhes</div>
-                                        </div>
-                                    ) : !detalheCorrida ? (
-                                        <div className="bg-white rounded-xl shadow p-8 text-center">
-                                            <div className="text-2xl">⏳</div>
-                                        </div>
-                                    ) : (
+                                    {!corridaSelecionada ? (<div className="bg-white rounded-xl shadow p-8 text-center text-gray-400"><div className="text-6xl mb-4">👈</div><div>Selecione uma corrida para ver detalhes</div></div>) : !detalheCorrida ? (<div className="bg-white rounded-xl shadow p-8 text-center"><div className="text-2xl">⏳</div></div>) : (
                                         <div className="space-y-4">
                                             <div className={`p-4 rounded-xl border-2 ${statusCores[detalheCorrida.status]}`}>
                                                 <div className="flex items-center justify-between flex-wrap gap-2">
-                                                    <div>
-                                                        <div className="text-xl font-bold">OS #{detalheCorrida.tutts_os_numero || detalheCorrida.id}</div>
-                                                        <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${statusCores[detalheCorrida.status]}`}>{statusNomes[detalheCorrida.status]}</span>
-                                                    </div>
-                                                    <div className="flex gap-2">
-                                                        <button onClick={() => copiarLinkRastreio(detalheCorrida.tutts_os_numero)} className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium">📋 Copiar</button>
-                                                        <button onClick={() => compartilharWhatsApp(detalheCorrida.tutts_os_numero)} className="px-3 py-2 bg-green-500 text-white rounded-lg text-sm font-medium">📱 WhatsApp</button>
-                                                    </div>
+                                                    <div><div className="text-xl font-bold">OS #{detalheCorrida.tutts_os_numero || detalheCorrida.id}</div><span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${statusCores[detalheCorrida.status]}`}>{statusNomes[detalheCorrida.status]}</span></div>
+                                                    <div className="flex gap-2"><button onClick={() => copiarLinkRastreio(detalheCorrida.tutts_os_numero)} className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium">📋 Copiar</button><button onClick={() => compartilharWhatsApp(detalheCorrida.tutts_os_numero)} className="px-3 py-2 bg-green-500 text-white rounded-lg text-sm font-medium">📱 WhatsApp</button></div>
                                                 </div>
-                                                {!['finalizado', 'cancelado'].includes(detalheCorrida.status) && (
-                                                    <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
-                                                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse-custom"></div>
-                                                        Atualizando automaticamente...
-                                                    </div>
-                                                )}
+                                                {!['finalizado', 'cancelado'].includes(detalheCorrida.status) && (<div className="flex items-center gap-2 mt-2 text-xs text-gray-500"><div className="w-2 h-2 bg-green-500 rounded-full animate-pulse-custom"></div>Atualizando automaticamente...</div>)}
                                             </div>
-                                            
-                                            {detalheCorrida.profissional_nome && (
-                                                <div className="bg-white p-4 rounded-xl shadow">
-                                                    <div className="text-sm font-bold text-gray-500 mb-3">🏍️ Motoboy</div>
-                                                    <div className="flex items-center gap-4">
-                                                        {detalheCorrida.profissional_foto ? (
-                                                            <img src={detalheCorrida.profissional_foto} className="w-14 h-14 rounded-full object-cover border-2 border-blue-200" />
-                                                        ) : (
-                                                            <div className="w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center text-2xl">🏍️</div>
-                                                        )}
-                                                        <div>
-                                                            <div className="font-bold text-gray-800">{detalheCorrida.profissional_nome}</div>
-                                                            {detalheCorrida.profissional_placa && <div className="text-sm text-gray-500">🏍️ {detalheCorrida.profissional_placa}</div>}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            )}
-                                            
+                                            {detalheCorrida.profissional_nome && (<div className="bg-white p-4 rounded-xl shadow"><div className="text-sm font-bold text-gray-500 mb-3">🏍️ Motoboy</div><div className="flex items-center gap-4">{detalheCorrida.profissional_foto ? (<img src={detalheCorrida.profissional_foto} className="w-14 h-14 rounded-full object-cover border-2 border-blue-200" />) : (<div className="w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center text-2xl">🏍️</div>)}<div><div className="font-bold text-gray-800">{detalheCorrida.profissional_nome}</div>{detalheCorrida.profissional_placa && <div className="text-sm text-gray-500">🏍️ {detalheCorrida.profissional_placa}</div>}</div></div></div>)}
                                             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                                                 {detalheCorrida.tutts_distancia && <div className="bg-white p-3 rounded-xl shadow text-center"><div className="text-xl font-bold text-blue-600">{detalheCorrida.tutts_distancia} km</div><div className="text-xs text-gray-500">Distância</div></div>}
                                                 {detalheCorrida.tutts_duracao && <div className="bg-white p-3 rounded-xl shadow text-center"><div className="text-xl font-bold text-blue-600">{detalheCorrida.tutts_duracao}</div><div className="text-xs text-gray-500">Tempo</div></div>}
                                                 {detalheCorrida.tutts_valor && <div className="bg-white p-3 rounded-xl shadow text-center"><div className="text-xl font-bold text-green-600">R$ {parseFloat(detalheCorrida.tutts_valor).toFixed(2)}</div><div className="text-xs text-gray-500">Valor</div></div>}
                                                 <div className="bg-white p-3 rounded-xl shadow text-center"><div className="text-xl font-bold text-purple-600">{detalheCorrida.pontos?.length || 0}</div><div className="text-xs text-gray-500">Pontos</div></div>
                                             </div>
-                                            
                                             <div className="flex flex-col md:flex-row gap-4">
                                                 <div className="w-full md:w-72 bg-white p-4 rounded-xl shadow">
                                                     <div className="text-sm font-bold text-gray-500 mb-3">📍 Pontos</div>
@@ -517,29 +422,17 @@
                                                         {detalheCorrida.pontos?.map((p, idx) => (
                                                             <div key={idx} className={`p-2 rounded-lg border ${statusPontoCores[p.status] || 'bg-gray-50'}`}>
                                                                 <div className="flex items-center gap-2">
-                                                                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold ${p.status === 'finalizado' ? 'bg-green-500' : p.status === 'chegou' ? 'bg-blue-500' : idx === 0 ? 'bg-green-500' : 'bg-gray-400'}`}>
-                                                                        {p.status === 'finalizado' ? '✓' : idx === 0 ? '🚩' : idx}
-                                                                    </div>
-                                                                    <div className="flex-1 min-w-0">
-                                                                        <div className="text-xs font-medium truncate">{idx === 0 ? 'Partida' : `Entrega ${idx}`}</div>
-                                                                        <div className="text-xs text-gray-500 truncate">{p.bairro}, {p.cidade}</div>
-                                                                    </div>
+                                                                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold ${p.status === 'finalizado' ? 'bg-green-500' : p.status === 'chegou' ? 'bg-blue-500' : idx === 0 ? 'bg-green-500' : 'bg-gray-400'}`}>{p.status === 'finalizado' ? '✓' : idx === 0 ? '🚩' : idx}</div>
+                                                                    <div className="flex-1 min-w-0"><div className="text-xs font-medium truncate">{idx === 0 ? 'Partida' : `Entrega ${idx}`}</div><div className="text-xs text-gray-500 truncate">{p.bairro}, {p.cidade}</div></div>
                                                                     {p.status === 'chegou' && <span className="text-xs text-blue-600 animate-pulse-custom">📍</span>}
                                                                 </div>
                                                             </div>
                                                         ))}
                                                     </div>
                                                 </div>
-                                                <div className="flex-1">
-                                                    <div id="mapaAcompanhar" className="rounded-xl shadow-lg" style={{ height: '300px' }}></div>
-                                                </div>
+                                                <div className="flex-1"><div id="mapaAcompanhar" className="rounded-xl shadow-lg" style={{ height: '300px' }}></div></div>
                                             </div>
-                                            
-                                            {detalheCorrida.tutts_url_rastreamento && (
-                                                <a href={detalheCorrida.tutts_url_rastreamento} target="_blank" className="block w-full py-3 bg-gray-800 text-white rounded-xl font-bold text-center hover:bg-gray-900">
-                                                    🗺️ Abrir Rastreamento Tutts
-                                                </a>
-                                            )}
+                                            {detalheCorrida.tutts_url_rastreamento && (<a href={detalheCorrida.tutts_url_rastreamento} target="_blank" className="block w-full py-3 bg-gray-800 text-white rounded-xl font-bold text-center hover:bg-gray-900">🗺️ Abrir Rastreamento Tutts</a>)}
                                         </div>
                                     )}
                                 </div>
@@ -547,7 +440,6 @@
                         </div>
                     )}
                     
-                    {/* Modal Edição de Ponto */}
                     {pontoEditando !== null && (
                         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setPontoEditando(null)}>
                             <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-4" onClick={e => e.stopPropagation()}>
@@ -561,7 +453,6 @@
                         </div>
                     )}
                     
-                    {/* Modal Histórico */}
                     {mostrarHistorico && (
                         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setMostrarHistorico(false)}>
                             <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[80vh] overflow-hidden" onClick={e => e.stopPropagation()}>
