@@ -23,6 +23,9 @@
   <link rel="dns-prefetch" href="https://tutts-backend-production.up.railway.app">
   
   <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Sistema de Tema (Modo Escuro + Feedback Visual) -->
+  <script src="/theme.js" defer></script>
   <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js" defer></script>
   
   <!-- Leaflet para mapas -->
@@ -209,6 +212,51 @@
         min-height: 56px !important;
       }
     }
+    
+    /* ==================== MODO ESCURO - BASE STYLES ==================== */
+    :root {
+      --bg-primary: #f3f4f6;
+      --bg-secondary: #ffffff;
+      --bg-card: #ffffff;
+      --text-primary: #111827;
+      --text-secondary: #4b5563;
+      --border-primary: #e5e7eb;
+    }
+    
+    .theme-dark {
+      --bg-primary: #0f172a;
+      --bg-secondary: #1e293b;
+      --bg-card: #1e293b;
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --border-primary: #334155;
+    }
+    
+    /* Aplicação automática de cores escuras */
+    .theme-dark body { background-color: #0f172a !important; color: #f1f5f9 !important; }
+    .theme-dark .bg-gray-100 { background-color: #0f172a !important; }
+    .theme-dark .bg-gray-50 { background-color: #1e293b !important; }
+    .theme-dark .bg-white { background-color: #1e293b !important; }
+    .theme-dark .text-gray-900, .theme-dark .text-gray-800, .theme-dark .text-gray-700 { color: #f1f5f9 !important; }
+    .theme-dark .text-gray-600, .theme-dark .text-gray-500 { color: #94a3b8 !important; }
+    .theme-dark .border-gray-200, .theme-dark .border-gray-300 { border-color: #334155 !important; }
+    .theme-dark input, .theme-dark select, .theme-dark textarea { background-color: #1e293b !important; border-color: #334155 !important; color: #f1f5f9 !important; }
+    .theme-dark table tbody tr:hover { background-color: #334155 !important; }
+    .theme-dark thead { background-color: #334155 !important; }
+    .theme-dark .shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3) !important; }
+    
+    /* Scrollbar escura */
+    .theme-dark ::-webkit-scrollbar { width: 8px; height: 8px; }
+    .theme-dark ::-webkit-scrollbar-track { background: #1e293b; }
+    .theme-dark ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+    
+    /* Row colors dark mode */
+    .theme-dark .row-green { background-color: rgba(34, 197, 94, 0.15) !important; }
+    .theme-dark .row-blue { background-color: rgba(59, 130, 246, 0.15) !important; }
+    .theme-dark .row-red { background-color: rgba(239, 68, 68, 0.15) !important; }
+    
+    /* Loading screen dark */
+    .theme-dark #loading-screen { background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); }
   </style>
 </head>
 <body>
