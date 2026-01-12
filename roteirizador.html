@@ -437,7 +437,8 @@
                     const obsHtml = e.obs ? `<br><span style="color:#7c3aed;font-weight:bold">📝 ${e.obs}</span>` : '';
                     L.marker([e.latitude, e.longitude], { icon })
                         .addTo(markersLayer)
-                        .bindPopup(`<b>${idx === 0 ? 'PARTIDA' : 'Parada ' + idx}</b>${obsHtml}<br><span style="font-size:11px">${e.endereco.substring(0, 60)}</span>`);
+                        .bindPopup(`<b>${idx === 0 ? 'PARTIDA' : 'Parada ' + idx}</b>${obsHtml}<br><span style="font-size:11px">${e.endereco.substring(0, 60)}</span>`)
+                        .bindTooltip(e.obs ? `📝 ${e.obs}` : (idx === 0 ? 'Partida' : `Parada ${idx}`), { permanent: false, direction: 'top', offset: [0, -10] });
                 });
                 
                 if (enderecos.length > 0) {
@@ -744,7 +745,11 @@
                             iconSize: [isPartida ? 32 : 26, isPartida ? 32 : 26],
                             iconAnchor: [isPartida ? 16 : 13, isPartida ? 16 : 13]
                         });
-                        L.marker([p.latitude, p.longitude], { icon }).addTo(layerGroup);
+                        const obsHtml = p.obs ? `<br><span style="color:${rota.cor};font-weight:bold">📝 ${p.obs}</span>` : '';
+                        L.marker([p.latitude, p.longitude], { icon })
+                            .addTo(layerGroup)
+                            .bindPopup(`<b>${isPartida ? 'PARTIDA' : 'Rota '+(rotaIdx+1)+' - Parada '+idx}</b>${obsHtml}<br><span style="font-size:11px">${(p.endereco || '').substring(0, 60)}</span>`)
+                            .bindTooltip(p.obs ? `📝 ${p.obs}` : (isPartida ? 'Partida' : `R${rotaIdx+1}.${idx}`), { permanent: false, direction: 'top', offset: [0, -10] });
                     });
                     
                     if (rota.geo?.features) {
@@ -1204,7 +1209,10 @@
                                                                     >
                                                                         {idx === 0 ? '🏣' : idx}
                                                                     </span>
-                                                                    <span className="text-gray-600 break-all">{p.endereco}</span>
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <span className="text-gray-600 break-all">{p.endereco}</span>
+                                                                        {p.obs && <span className="ml-1 text-purple-600 font-medium">• 📝 {p.obs}</span>}
+                                                                    </div>
                                                                 </div>
                                                             ))}
                                                         </div>
