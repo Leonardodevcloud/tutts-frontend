@@ -229,7 +229,10 @@
                     
                     if (resp.ok) {
                         if (data.atualizadas > 0) {
-                            showToast(`🔄 ${data.mensagem}`, 'success');
+                            let msg = `🔄 ${data.atualizadas} atualizada(s)`;
+                            if (data.finalizadas > 0) msg += `, ${data.finalizadas} finalizada(s)`;
+                            if (data.canceladas > 0) msg += `, ${data.canceladas} cancelada(s)`;
+                            showToast(msg, 'success');
                             carregarCorridasAtivas();
                             carregarConcluidas();
                             if (corridaSelecionada) carregarDetalheCorrida(corridaSelecionada);
