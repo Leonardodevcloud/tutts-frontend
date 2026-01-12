@@ -19408,7 +19408,7 @@ const hideLoadingScreen = () => {
                                         return;
                                     }
                                     try {
-                                        const resp = await fetch(API_URL + "/api/admin/solicitacao/clientes", {
+                                        const resp = await fetch(API_URL + "/admin/solicitacao/clientes", {
                                             method: "POST",
                                             headers: {"Content-Type": "application/json", "Authorization": "Bearer " + getToken()},
                                             body: JSON.stringify(c)
@@ -19434,7 +19434,7 @@ const hideLoadingScreen = () => {
                                 React.createElement("button", {
                                     onClick: async function() {
                                         try {
-                                            const resp = await fetch(API_URL + "/api/admin/solicitacao/clientes", {
+                                            const resp = await fetch(API_URL + "/admin/solicitacao/clientes", {
                                                 headers: {"Authorization": "Bearer " + getToken()}
                                             });
                                             const data = await resp.json();
@@ -19468,7 +19468,7 @@ const hideLoadingScreen = () => {
                                                 onClick: async function() {
                                                     if (!confirm("Desativar/ativar este cliente?")) return;
                                                     try {
-                                                        await fetch(API_URL + "/api/admin/solicitacao/clientes/" + cliente.id + "/status", {
+                                                        await fetch(API_URL + "/admin/solicitacao/clientes/" + cliente.id + "/status", {
                                                             method: "PATCH",
                                                             headers: {"Content-Type": "application/json", "Authorization": "Bearer " + getToken()},
                                                             body: JSON.stringify({ativo: !cliente.ativo})
