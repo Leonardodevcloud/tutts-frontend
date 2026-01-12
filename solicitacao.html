@@ -155,6 +155,24 @@
             const [notaRapida, setNotaRapida] = useState('');
             const notaInputRef = useRef(null);
             
+            // Estado para modal de fotos
+            const [fotoModal, setFotoModal] = useState({ aberto: false, fotos: [], indice: 0 });
+            
+            const abrirFotoModal = (fotos, indice = 0) => {
+                setFotoModal({ aberto: true, fotos, indice });
+            };
+            
+            const fecharFotoModal = () => {
+                setFotoModal({ aberto: false, fotos: [], indice: 0 });
+            };
+            
+            const navegarFoto = (direcao) => {
+                setFotoModal(prev => ({
+                    ...prev,
+                    indice: Math.max(0, Math.min(prev.fotos.length - 1, prev.indice + direcao))
+                }));
+            };
+            
             const [config, setConfig] = useState({
                 numero_pedido: '', centro_custo: cliente.centro_custo_padrao || '', usuario_solicitante: cliente.nome,
                 data_retirada: '', hora_retirada: '', forma_pagamento: cliente.forma_pagamento_padrao || 'F',
@@ -689,6 +707,17 @@
                                                             const partes = [p.rua, p.numero, p.bairro, p.cidade, p.uf].filter(x => x && x.trim());
                                                             const enderecoMontado = partes.length > 0 ? partes.join(', ') : null;
                                                             const enderecoFinal = p.endereco_completo || enderecoMontado || 'Endereço não informado';
+                                                            
+                                                            // Normalizar fotos para array
+                                                            let fotosArray = [];
+                                                            try {
+                                                                if (typeof p.fotos === 'string' && p.fotos !== '' && p.fotos !== '[]') {
+                                                                    fotosArray = JSON.parse(p.fotos);
+                                                                } else if (Array.isArray(p.fotos)) {
+                                                                    fotosArray = p.fotos;
+                                                                }
+                                                            } catch { fotosArray = []; }
+                                                            
                                                             return (
                                                                 <div key={idx} className={`p-3 rounded-lg border-2 ${statusPontoCores[status]}`}>
                                                                     <div className="flex items-start gap-2">
@@ -699,48 +728,39 @@
                                                                                 <span className={`text-xs px-1.5 py-0.5 rounded ${statusPontoCores[status]}`}>{statusPontoIcons[status]} {statusPontoNomes[status]}</span>
                                                                             </div>
                                                                             <div className="text-xs text-gray-700 leading-relaxed">{enderecoFinal}</div>
-                                                                            {p.numero_nota && <div className="text-xs text-green-600 mt-1 font-medium">🏷️ Nota: {p.numero_nota}</div>}
-                                                                            {(p.data_chegada || p.data_finalizado || p.data_coletado) && (
+                                                                            
+                                                                            {/* Número da nota - só para entregas */}
+                                                                            {!isColeta && p.numero_nota && <div className="text-xs text-green-600 mt-1 font-medium">🏷️ Nota: {p.numero_nota}</div>}
+                                                                            
+                                                                            {/* Horários - só para entregas */}
+                                                                            {!isColeta && (p.data_chegada || p.data_finalizado || p.data_coletado) && (
                                                                                 <div className="mt-2 pt-2 border-t border-gray-200 text-xs space-y-1">
                                                                                     {p.data_chegada && <div className="text-blue-600">🔵 Chegou: {formatarHora(p.data_chegada)}</div>}
                                                                                     {p.data_coletado && <div className="text-yellow-600">🟡 Coletou: {formatarHora(p.data_coletado)}</div>}
                                                                                     {p.data_finalizado && <div className="text-green-600">✅ Finalizado: {formatarHora(p.data_finalizado)}</div>}
-                                                                                    {p.tempo_espera && <div className="text-gray-500">⏱️ Espera: {p.tempo_espera} min</div>}
                                                                                 </div>
                                                                             )}
-                                                                            {p.motivo_finalizacao && <div className={`mt-2 text-xs px-2 py-1 rounded ${p.motivo_finalizacao === 'sucesso' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{p.motivo_finalizacao === 'sucesso' ? '✅' : '⚠️'} {p.motivo_descricao || p.motivo_finalizacao}</div>}
-                                                                            {p.assinatura && <div className="mt-2 text-xs text-gray-600">✍️ Assinado por: {typeof p.assinatura === 'object' ? p.assinatura.nome || 'N/A' : 'Sim'}</div>}
-                                                                            {p.fotos && (() => {
-                                                                                // Normalizar fotos para array
-                                                                                let fotosArray = [];
-                                                                                try {
-                                                                                    if (typeof p.fotos === 'string' && p.fotos !== '' && p.fotos !== '[]') {
-                                                                                        fotosArray = JSON.parse(p.fotos);
-                                                                                    } else if (Array.isArray(p.fotos)) {
-                                                                                        fotosArray = p.fotos;
-                                                                                    }
-                                                                                } catch { fotosArray = []; }
-                                                                                
-                                                                                if (!fotosArray || fotosArray.length === 0) return null;
-                                                                                
-                                                                                return (
-                                                                                    <div className="mt-2 text-xs">
-                                                                                        <span className="text-blue-600 font-medium">📸 {fotosArray.length} foto(s):</span>
-                                                                                        <div className="flex flex-wrap gap-1 mt-1">
-                                                                                            {fotosArray.map((foto, fotoIdx) => (
-                                                                                                <a 
-                                                                                                    key={fotoIdx} 
-                                                                                                    href={typeof foto === 'string' ? foto : foto.url || foto.link} 
-                                                                                                    target="_blank" 
-                                                                                                    className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
-                                                                                                >
-                                                                                                    Ver {fotoIdx + 1}
-                                                                                                </a>
-                                                                                            ))}
-                                                                                        </div>
+                                                                            
+                                                                            {/* Motivo de finalização - só para entregas */}
+                                                                            {!isColeta && p.motivo_finalizacao && <div className={`mt-2 text-xs px-2 py-1 rounded ${p.motivo_finalizacao === 'sucesso' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{p.motivo_finalizacao === 'sucesso' ? '✅' : '⚠️'} {p.motivo_descricao || p.motivo_finalizacao}</div>}
+                                                                            
+                                                                            {/* Fotos de protocolo - só para entregas */}
+                                                                            {!isColeta && fotosArray.length > 0 && (
+                                                                                <div className="mt-2 text-xs">
+                                                                                    <span className="text-blue-600 font-medium">📸 {fotosArray.length} foto(s):</span>
+                                                                                    <div className="flex flex-wrap gap-1 mt-1">
+                                                                                        {fotosArray.map((foto, fotoIdx) => (
+                                                                                            <button 
+                                                                                                key={fotoIdx}
+                                                                                                onClick={() => abrirFotoModal(fotosArray, fotoIdx)}
+                                                                                                className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                                                                                            >
+                                                                                                Ver {fotoIdx + 1}
+                                                                                            </button>
+                                                                                        ))}
                                                                                     </div>
-                                                                                );
-                                                                            })()}
+                                                                                </div>
+                                                                            )}
                                                                         </div>
                                                                     </div>
                                                                 </div>
@@ -878,6 +898,58 @@
                                         </div>
                                     )}
                                 </div>
+                            </div>
+                        </div>
+                    )}
+                    
+                    {/* Modal de fotos com zoom */}
+                    {fotoModal.aberto && (
+                        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50" onClick={fecharFotoModal}>
+                            <div className="relative w-full h-full flex items-center justify-center p-4" onClick={e => e.stopPropagation()}>
+                                {/* Botão fechar */}
+                                <button onClick={fecharFotoModal} className="absolute top-4 right-4 text-white text-3xl hover:text-gray-300 z-10">✕</button>
+                                
+                                {/* Contador */}
+                                <div className="absolute top-4 left-4 text-white text-sm bg-black/50 px-3 py-1 rounded-full">
+                                    {fotoModal.indice + 1} / {fotoModal.fotos.length}
+                                </div>
+                                
+                                {/* Botão anterior */}
+                                {fotoModal.indice > 0 && (
+                                    <button onClick={() => navegarFoto(-1)} className="absolute left-4 text-white text-5xl hover:text-gray-300">‹</button>
+                                )}
+                                
+                                {/* Imagem */}
+                                <img 
+                                    src={typeof fotoModal.fotos[fotoModal.indice] === 'string' ? fotoModal.fotos[fotoModal.indice] : fotoModal.fotos[fotoModal.indice]?.url || fotoModal.fotos[fotoModal.indice]?.link}
+                                    className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+                                    alt={`Foto ${fotoModal.indice + 1}`}
+                                    onClick={e => e.stopPropagation()}
+                                />
+                                
+                                {/* Botão próximo */}
+                                {fotoModal.indice < fotoModal.fotos.length - 1 && (
+                                    <button onClick={() => navegarFoto(1)} className="absolute right-4 text-white text-5xl hover:text-gray-300">›</button>
+                                )}
+                                
+                                {/* Thumbnails */}
+                                {fotoModal.fotos.length > 1 && (
+                                    <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2">
+                                        {fotoModal.fotos.map((foto, idx) => (
+                                            <button 
+                                                key={idx} 
+                                                onClick={() => setFotoModal(prev => ({ ...prev, indice: idx }))}
+                                                className={`w-12 h-12 rounded overflow-hidden border-2 ${idx === fotoModal.indice ? 'border-white' : 'border-transparent opacity-60 hover:opacity-100'}`}
+                                            >
+                                                <img 
+                                                    src={typeof foto === 'string' ? foto : foto?.url || foto?.link} 
+                                                    className="w-full h-full object-cover"
+                                                    alt={`Thumb ${idx + 1}`}
+                                                />
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}
