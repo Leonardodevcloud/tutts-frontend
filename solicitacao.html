@@ -22,54 +22,10 @@
         ::-webkit-scrollbar-thumb { background: #93c5fd; border-radius: 3px; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         .animate-pulse-custom { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
-        
-        /* ==================== MODO ESCURO ==================== */
-        :root { --bg-primary: #f3f4f6; --bg-card: #ffffff; --text-primary: #111827; --border-primary: #e5e7eb; }
-        .theme-dark { --bg-primary: #0f172a; --bg-card: #1e293b; --text-primary: #f1f5f9; --border-primary: #334155; }
-        .theme-dark body { background-color: #0f172a !important; }
-        .theme-dark .bg-gray-100 { background-color: #0f172a !important; }
-        .theme-dark .bg-white { background-color: #1e293b !important; }
-        .theme-dark .bg-gray-50 { background-color: #1e293b !important; }
-        .theme-dark .text-gray-900, .theme-dark .text-gray-800, .theme-dark .text-gray-700 { color: #f1f5f9 !important; }
-        .theme-dark .text-gray-600, .theme-dark .text-gray-500, .theme-dark .text-gray-400 { color: #94a3b8 !important; }
-        .theme-dark .border-gray-200, .theme-dark .border-gray-300, .theme-dark .border { border-color: #334155 !important; }
-        .theme-dark input, .theme-dark select, .theme-dark textarea { background-color: #1e293b !important; border-color: #334155 !important; color: #f1f5f9 !important; }
-        .theme-dark .shadow, .theme-dark .shadow-lg, .theme-dark .shadow-xl { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3) !important; }
-        .theme-dark .leaflet-container { background: #1e293b !important; }
-        .theme-dark .hover\:bg-gray-50:hover { background-color: #334155 !important; }
-        .theme-dark .hover\:bg-blue-50:hover { background-color: #1e3a5f !important; }
-        .theme-dark ::-webkit-scrollbar-track { background: #1e293b; }
-        .theme-dark ::-webkit-scrollbar-thumb { background: #475569; }
-        .theme-dark .bg-gradient-to-br.from-blue-100 { background: linear-gradient(to bottom right, #1e3a5f, #1e293b) !important; }
-        .theme-dark .bg-gradient-to-r.from-blue-50 { background: linear-gradient(to right, #1e3a5f, #1e293b) !important; }
-        .theme-dark .bg-gradient-to-r.from-orange-50 { background: linear-gradient(to right, #5c3a1e, #1e293b) !important; }
-        
-        /* Toggle do tema */
-        .theme-toggle { position: fixed; bottom: 20px; right: 20px; z-index: 1000; padding: 12px 16px; border-radius: 50px; border: none; cursor: pointer; font-size: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: all 0.3s ease; }
-        .theme-toggle:hover { transform: scale(1.1); }
-        .theme-toggle.light { background: #1e293b; color: white; }
-        .theme-toggle.dark { background: white; color: #1e293b; }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
     <div id="root"></div>
-    <button id="theme-toggle" class="theme-toggle light" onclick="toggleTheme()">🌙</button>
-    
-    <script>
-        // Sistema de tema
-        const THEME_KEY = 'tutts_theme';
-        function getTheme() { return localStorage.getItem(THEME_KEY) || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); }
-        function setTheme(theme) {
-            localStorage.setItem(THEME_KEY, theme);
-            document.documentElement.classList.remove('theme-light', 'theme-dark');
-            document.documentElement.classList.add('theme-' + theme);
-            const btn = document.getElementById('theme-toggle');
-            if (btn) { btn.className = 'theme-toggle ' + theme; btn.textContent = theme === 'dark' ? '☀️' : '🌙'; }
-            document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#0f172a' : '#7c3aed');
-        }
-        function toggleTheme() { setTheme(getTheme() === 'dark' ? 'light' : 'dark'); }
-        setTheme(getTheme());
-    </script>
     
     <script type="text/babel">
         const { useState, useEffect } = React;
