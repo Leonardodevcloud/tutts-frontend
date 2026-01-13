@@ -10625,13 +10625,13 @@ const hideLoadingScreen = () => {
                         let r;
                         if ("solicitacao" === e) r = new Date(l.created_at).toISOString().split("T")[0];
                         else if ("lancamento" === e) {
-                            // Usar lancamento_at (data/hora da aprovação)
-                            if (!l.lancamento_at) return !1;
-                            r = new Date(l.lancamento_at).toISOString().split("T")[0]
-                        } else {
-                            // Usar debito_plific_at (nova coluna da Plific)
+                            // Usar debito_plific_at (data que a Plific retorna)
                             if (!l.debito_plific_at) return !1;
                             r = new Date(l.debito_plific_at).toISOString().split("T")[0]
+                        } else {
+                            // Usar lancamento_at (data que o admin aprova/front envia)
+                            if (!l.lancamento_at) return !1;
+                            r = new Date(l.lancamento_at).toISOString().split("T")[0]
                         }
                         return t && a ? r >= t && r <= a : t ? r >= t : !a || r <= a
                     }),
