@@ -163,6 +163,13 @@
             // Estado para modal de fotos
             const [fotoModal, setFotoModal] = useState({ aberto: false, fotos: [], indice: 0 });
             
+            // Estado para endereços salvos
+            const [enderecosSalvos, setEnderecosSalvos] = useState([]);
+            const [mostrarSalvos, setMostrarSalvos] = useState(false);
+            const [modalSalvarEndereco, setModalSalvarEndereco] = useState({ aberto: false, ponto: null });
+            const [apelidoSalvar, setApelidoSalvar] = useState('');
+            const [salvandoEndereco, setSalvandoEndereco] = useState(false);
+            
             const abrirFotoModal = (fotos, indice = 0) => {
                 setFotoModal({ aberto: true, fotos, indice });
             };
@@ -290,6 +297,121 @@
                 try { const resp = await fetch(`${API_URL}/api/geocode/google?endereco=${encodeURIComponent(termoBusca)}`); if (resp.ok) { const data = await resp.json(); if (data.results?.length > 0) setSugestoes(data.results); else showToast('Nenhum endereço', 'warning'); } }
                 catch (err) { showToast('Erro', 'error'); }
                 setBuscando(false);
+            };
+            
+            // Buscar endereços salvos
+            const buscarEnderecosSalvos = async (termo = '') => {
+                try {
+                    const url = termo ? `${API_URL}/api/solicitacao/enderecos-salvos/buscar?q=${encodeURIComponent(termo)}` : `${API_URL}/api/solicitacao/enderecos-salvos/buscar`;
+                    const resp = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+                    if (resp.ok) {
+                        const data = await resp.json();
+                        setEnderecosSalvos(data);
+                        setMostrarSalvos(data.length > 0);
+                    }
+                } catch (err) {
+                    console.error('Erro ao buscar salvos:', err);
+                }
+            };
+            
+            // Buscar salvos quando digita
+            useEffect(() => {
+                if (termoBusca.length >= 2) {
+                    buscarEnderecosSalvos(termoBusca);
+                } else if (termoBusca.length === 0) {
+                    setMostrarSalvos(false);
+                    setEnderecosSalvos([]);
+                }
+            }, [termoBusca]);
+            
+            // Adicionar ponto de endereço salvo
+            const adicionarPontoSalvo = async (endereco) => {
+                if (pontos.length >= 80) { showToast('Máximo 80 pontos', 'error'); return; }
+                
+                const novoId = Date.now();
+                const novoPonto = { 
+                    id: novoId, 
+                    endereco_completo: endereco.endereco_completo || `${endereco.rua}, ${endereco.numero} - ${endereco.bairro}, ${endereco.cidade}`,
+                    rua: endereco.rua, 
+                    numero: endereco.numero, 
+                    bairro: endereco.bairro, 
+                    cidade: endereco.cidade, 
+                    uf: endereco.uf, 
+                    cep: endereco.cep, 
+                    latitude: parseFloat(endereco.latitude), 
+                    longitude: parseFloat(endereco.longitude), 
+                    observacao: '', 
+                    telefone: '', 
+                    procurar_por: '', 
+                    numero_nota: '', 
+                    codigo_finalizar: '',
+                    endereco_salvo_id: endereco.id,
+                    apelido_salvo: endereco.apelido
+                };
+                
+                const novosPontos = [...pontos, novoPonto];
+                setPontos(novosPontos);
+                setTermoBusca(''); 
+                setSugestoes([]);
+                setMostrarSalvos(false);
+                setEnderecosSalvos([]);
+                
+                // Incrementar uso
+                try {
+                    await fetch(`${API_URL}/api/solicitacao/enderecos-salvos/${endereco.id}/usar`, {
+                        method: 'PATCH',
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                } catch (err) {}
+                
+                // Se for ponto de entrega, mostrar input de nota
+                if (novosPontos.length > 1) {
+                    setPontoRecemAdicionado(novoId);
+                    setNotaRapida('');
+                }
+                
+                showToast(`✅ "${endereco.apelido}" adicionado`, 'success');
+            };
+            
+            // Salvar endereço
+            const salvarEndereco = async () => {
+                if (!apelidoSalvar.trim()) { showToast('Digite um apelido', 'warning'); return; }
+                if (!modalSalvarEndereco.ponto) return;
+                
+                setSalvandoEndereco(true);
+                const p = modalSalvarEndereco.ponto;
+                
+                try {
+                    const resp = await fetch(`${API_URL}/api/solicitacao/enderecos-salvos`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        body: JSON.stringify({
+                            apelido: apelidoSalvar.trim(),
+                            rua: p.rua,
+                            numero: p.numero,
+                            complemento: p.complemento,
+                            bairro: p.bairro,
+                            cidade: p.cidade,
+                            uf: p.uf,
+                            cep: p.cep,
+                            latitude: p.latitude,
+                            longitude: p.longitude,
+                            endereco_completo: p.endereco_completo
+                        })
+                    });
+                    
+                    const data = await resp.json();
+                    if (resp.ok) {
+                        showToast(`💾 "${apelidoSalvar}" salvo!`, 'success');
+                        setModalSalvarEndereco({ aberto: false, ponto: null });
+                        setApelidoSalvar('');
+                    } else {
+                        showToast(data.error || 'Erro ao salvar', 'error');
+                    }
+                } catch (err) {
+                    showToast('Erro ao salvar', 'error');
+                }
+                setSalvandoEndereco(false);
             };
             
             const adicionarPonto = (sug) => {
@@ -506,9 +628,22 @@
                                             {pontos.length === 0 || !pontos[0] ? (
                                                 <div>
                                                     <div className="flex gap-2">
-                                                        <input type="text" value={termoBusca} onChange={(e) => setTermoBusca(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && buscarEndereco()} className="flex-1 px-3 py-2 border border-amber-300 rounded-lg text-sm outline-none bg-white" placeholder="Buscar endereço de coleta..." />
-                                                        <button onClick={buscarEndereco} disabled={buscando} className="px-3 py-2 bg-amber-500 text-white rounded-lg text-sm">{buscando ? '...' : '🔍'}</button>
+                                                        <input type="text" value={termoBusca} onChange={(e) => setTermoBusca(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && buscarEndereco()} className="flex-1 px-3 py-2 border border-amber-300 rounded-lg text-sm outline-none bg-white" placeholder="Digite apelido ou endereço..." />
+                                                        <button onClick={buscarEndereco} disabled={buscando} className="px-3 py-2 bg-amber-500 text-white rounded-lg text-sm" title="Buscar no Google">{buscando ? '...' : '🔍'}</button>
                                                     </div>
+                                                    {/* Endereços salvos */}
+                                                    {mostrarSalvos && enderecosSalvos.length > 0 && (
+                                                        <div className="mt-2 bg-amber-50 border border-amber-200 rounded-lg max-h-40 overflow-y-auto">
+                                                            <div className="px-2 py-1 text-xs font-medium text-amber-700 border-b border-amber-200 bg-amber-100">💾 Endereços salvos</div>
+                                                            {enderecosSalvos.map((e, i) => (
+                                                                <div key={i} onClick={() => adicionarPontoSalvo(e)} className="p-2 hover:bg-amber-100 cursor-pointer text-xs border-b border-amber-100">
+                                                                    <div className="font-medium text-amber-800">⭐ {e.apelido}</div>
+                                                                    <div className="text-gray-600 truncate">{e.endereco_completo || `${e.rua}, ${e.numero} - ${e.bairro}, ${e.cidade}`}</div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                    {/* Sugestões do Google */}
                                                     {sugestoes.length > 0 && <div className="mt-2 bg-white border border-amber-200 rounded-lg max-h-40 overflow-y-auto">{sugestoes.map((s, i) => <div key={i} onClick={() => adicionarPonto(s)} className="p-2 hover:bg-amber-50 cursor-pointer text-xs border-b">📍 {s.endereco}</div>)}</div>}
                                                 </div>
                                             ) : (
@@ -516,12 +651,16 @@
                                                     <div className="flex items-center gap-2">
                                                         <span className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center text-white text-sm font-bold">📦</span>
                                                         <div className="flex-1 min-w-0">
+                                                            {pontos[0].apelido_salvo && <div className="text-xs text-amber-600 font-medium">⭐ {pontos[0].apelido_salvo}</div>}
                                                             <div className="text-xs font-medium truncate">{pontos[0].endereco_completo || `${pontos[0].rua}, ${pontos[0].numero}`}</div>
                                                             {pontos[0].bairro && <div className="text-xs text-gray-500">{pontos[0].bairro}, {pontos[0].cidade}</div>}
                                                             {pontos[0].numero_nota && <div className="text-xs text-amber-600">🏷️ {pontos[0].numero_nota}</div>}
                                                             {pontos[0].observacao && <div className="text-xs text-gray-500 truncate">📝 {pontos[0].observacao}</div>}
                                                         </div>
                                                         <div className="flex gap-1">
+                                                            {!pontos[0].endereco_salvo_id && (
+                                                                <button onClick={() => { setModalSalvarEndereco({ aberto: true, ponto: pontos[0] }); setApelidoSalvar(''); }} className="text-gray-400 hover:text-green-600 text-sm" title="Salvar endereço">💾</button>
+                                                            )}
                                                             <button onClick={() => abrirEdicaoPonto(0)} className="text-gray-400 hover:text-amber-600 text-sm">✏️</button>
                                                             <button onClick={() => removerPonto(pontos[0].id)} className="text-gray-400 hover:text-red-600">✕</button>
                                                         </div>
@@ -539,9 +678,22 @@
                                             {pontos.length > 0 && (
                                                 <div className="mb-2">
                                                     <div className="flex gap-2">
-                                                        <input type="text" value={termoBusca} onChange={(e) => setTermoBusca(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && buscarEndereco()} className="flex-1 px-3 py-2 border rounded-lg text-sm outline-none" placeholder="Buscar endereço de entrega..." />
-                                                        <button onClick={buscarEndereco} disabled={buscando} className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm">{buscando ? '...' : '🔍'}</button>
+                                                        <input type="text" value={termoBusca} onChange={(e) => setTermoBusca(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && buscarEndereco()} className="flex-1 px-3 py-2 border rounded-lg text-sm outline-none" placeholder="Digite apelido ou endereço..." />
+                                                        <button onClick={buscarEndereco} disabled={buscando} className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm" title="Buscar no Google">{buscando ? '...' : '🔍'}</button>
                                                     </div>
+                                                    {/* Endereços salvos */}
+                                                    {mostrarSalvos && enderecosSalvos.length > 0 && (
+                                                        <div className="mt-2 bg-blue-50 border border-blue-200 rounded-lg max-h-40 overflow-y-auto">
+                                                            <div className="px-2 py-1 text-xs font-medium text-blue-700 border-b border-blue-200 bg-blue-100">💾 Endereços salvos</div>
+                                                            {enderecosSalvos.map((e, i) => (
+                                                                <div key={i} onClick={() => adicionarPontoSalvo(e)} className="p-2 hover:bg-blue-100 cursor-pointer text-xs border-b border-blue-100">
+                                                                    <div className="font-medium text-blue-800">⭐ {e.apelido}</div>
+                                                                    <div className="text-gray-600 truncate">{e.endereco_completo || `${e.rua}, ${e.numero} - ${e.bairro}, ${e.cidade}`}</div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                    {/* Sugestões do Google */}
                                                     {sugestoes.length > 0 && <div className="mt-2 bg-white border rounded-lg max-h-40 overflow-y-auto">{sugestoes.map((s, i) => <div key={i} onClick={() => adicionarPonto(s)} className="p-2 hover:bg-blue-50 cursor-pointer text-xs border-b">📍 {s.endereco}</div>)}</div>}
                                                 </div>
                                             )}
@@ -554,12 +706,16 @@
                                                             <div className="flex items-center gap-2">
                                                                 <span className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold">{idx + 1}</span>
                                                                 <div className="flex-1 min-w-0">
+                                                                    {p.apelido_salvo && <div className="text-xs text-blue-600 font-medium">⭐ {p.apelido_salvo}</div>}
                                                                     <div className="text-xs font-medium truncate">{p.endereco_completo || `${p.rua}, ${p.numero}`}</div>
                                                                     {p.bairro && <div className="text-xs text-gray-500 truncate">{p.bairro}</div>}
                                                                     {p.numero_nota && <div className="text-xs text-green-600 font-medium">🏷️ Nota: {p.numero_nota}</div>}
                                                                     {p.observacao && <div className="text-xs text-blue-600 truncate">📝 {p.observacao}</div>}
                                                                 </div>
                                                                 <div className="flex gap-1">
+                                                                    {!p.endereco_salvo_id && (
+                                                                        <button onClick={(e) => { e.stopPropagation(); setModalSalvarEndereco({ aberto: true, ponto: p }); setApelidoSalvar(''); }} className="text-gray-400 hover:text-green-600 text-sm" title="Salvar endereço">💾</button>
+                                                                    )}
                                                                     <button onClick={() => abrirEdicaoPonto(idx + 1)} className="text-gray-400 hover:text-blue-600 text-sm">✏️</button>
                                                                     {idx > 0 && <button onClick={() => moverPonto(idx + 1, -1)} className="text-gray-400">▲</button>}
                                                                     {idx < pontos.length - 2 && <button onClick={() => moverPonto(idx + 1, 1)} className="text-gray-400">▼</button>}
@@ -1062,6 +1218,46 @@
                                         <div className="bg-blue-50 p-3 rounded-lg text-center"><div className="text-2xl font-bold text-blue-600">{corridasConcluidas.filter(c => c.status === 'finalizado').reduce((acc, c) => acc + parseFloat(c.tutts_distancia || 0), 0).toFixed(1)} km</div><div className="text-xs text-gray-600">Total Distância</div></div>
                                     </div>
                                 )}
+                            </div>
+                        </div>
+                    )}
+                    
+                    {/* Modal salvar endereço */}
+                    {modalSalvarEndereco.aberto && (
+                        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setModalSalvarEndereco({ aberto: false, ponto: null })}>
+                            <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm p-4" onClick={e => e.stopPropagation()}>
+                                <div className="flex items-center justify-between mb-4">
+                                    <span className="font-bold text-green-700">💾 Salvar Endereço</span>
+                                    <button onClick={() => setModalSalvarEndereco({ aberto: false, ponto: null })} className="text-gray-400 hover:text-gray-600">✕</button>
+                                </div>
+                                
+                                {/* Preview do endereço */}
+                                <div className="bg-gray-50 p-3 rounded-lg mb-4 text-sm">
+                                    <div className="font-medium text-gray-700">{modalSalvarEndereco.ponto?.endereco_completo || `${modalSalvarEndereco.ponto?.rua}, ${modalSalvarEndereco.ponto?.numero}`}</div>
+                                    {modalSalvarEndereco.ponto?.bairro && <div className="text-xs text-gray-500">{modalSalvarEndereco.ponto?.bairro}, {modalSalvarEndereco.ponto?.cidade}</div>}
+                                </div>
+                                
+                                {/* Input do apelido */}
+                                <div className="mb-4">
+                                    <label className="text-xs text-gray-600 font-medium">⭐ Apelido (para buscar depois)</label>
+                                    <input 
+                                        type="text" 
+                                        value={apelidoSalvar} 
+                                        onChange={(e) => setApelidoSalvar(e.target.value)}
+                                        onKeyPress={(e) => { if (e.key === 'Enter') salvarEndereco(); }}
+                                        className="w-full px-3 py-2 border border-green-300 rounded-lg text-sm mt-1 focus:ring-2 focus:ring-green-400 outline-none" 
+                                        placeholder="Ex: Loja Centro, CD Principal, Cliente X..."
+                                        autoFocus
+                                    />
+                                    <div className="text-xs text-gray-400 mt-1">💡 Use um nome fácil de lembrar</div>
+                                </div>
+                                
+                                <div className="flex gap-2">
+                                    <button onClick={() => setModalSalvarEndereco({ aberto: false, ponto: null })} className="flex-1 py-2 border rounded-lg text-sm hover:bg-gray-50">Cancelar</button>
+                                    <button onClick={salvarEndereco} disabled={salvandoEndereco || !apelidoSalvar.trim()} className="flex-1 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 disabled:opacity-50">
+                                        {salvandoEndereco ? '...' : '💾 Salvar'}
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     )}
