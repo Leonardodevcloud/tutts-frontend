@@ -148,6 +148,8 @@
             const [detalheCorrida, setDetalheCorrida] = useState(null);
             const [corridasConcluidas, setCorridasConcluidas] = useState([]);
             const [filtroConcluidas, setFiltroConcluidas] = useState('todas');
+            const [corridaExpandida, setCorridaExpandida] = useState(null);
+            const [detalhesCorridaExpandida, setDetalhesCorridaExpandida] = useState(null);
             const [sincronizando, setSincronizando] = useState(false);
             const [profissionais, setProfissionais] = useState([]);
             const [carregandoProfissionais, setCarregandoProfissionais] = useState(false);
@@ -238,6 +240,26 @@
             const selecionarCorrida = (id) => { setCorridaSelecionada(id); carregarDetalheCorrida(id); };
             const copiarLinkRastreio = (os) => { navigator.clipboard.writeText(`${SITE_URL}/rastrear.html?os=${os}`).then(() => showToast('✅ Link copiado!', 'success')); };
             const compartilharWhatsApp = (os) => { window.open(`https://wa.me/?text=${encodeURIComponent(`🏍️ Acompanhe sua entrega:\n${SITE_URL}/rastrear.html?os=${os}`)}`, '_blank'); };
+            
+            // Função para expandir/colapsar corrida concluída
+            const toggleExpandirCorrida = async (id) => {
+                if (corridaExpandida === id) {
+                    setCorridaExpandida(null);
+                    setDetalhesCorridaExpandida(null);
+                } else {
+                    setCorridaExpandida(id);
+                    setDetalhesCorridaExpandida(null);
+                    try {
+                        const resp = await fetch(`${API_URL}/api/solicitacao/corrida/${id}`, { headers: { 'Authorization': `Bearer ${token}` } });
+                        if (resp.ok) {
+                            const data = await resp.json();
+                            setDetalhesCorridaExpandida(data);
+                        }
+                    } catch (err) {
+                        console.error('Erro ao carregar detalhes:', err);
+                    }
+                }
+            };
             
             const cancelarCorrida = async (id) => {
                 if (!confirm('Tem certeza que deseja CANCELAR esta corrida?')) return;
@@ -876,19 +898,161 @@
                                 ) : (
                                     <div className="overflow-x-auto">
                                         <table className="w-full text-sm">
-                                            <thead className="bg-gray-50"><tr><th className="px-3 py-2 text-left font-medium text-gray-600">OS</th><th className="px-3 py-2 text-left font-medium text-gray-600">Status</th><th className="px-3 py-2 text-left font-medium text-gray-600">Data</th><th className="px-3 py-2 text-left font-medium text-gray-600">Profissional</th><th className="px-3 py-2 text-center font-medium text-gray-600">Pontos</th><th className="px-3 py-2 text-left font-medium text-gray-600">Distância</th><th className="px-3 py-2 text-left font-medium text-gray-600">Valor</th></tr></thead>
+                                            <thead className="bg-gray-50"><tr><th className="px-2 py-2 text-center font-medium text-gray-600 w-10"></th><th className="px-3 py-2 text-left font-medium text-gray-600">OS</th><th className="px-3 py-2 text-left font-medium text-gray-600">Status</th><th className="px-3 py-2 text-left font-medium text-gray-600">Data</th><th className="px-3 py-2 text-left font-medium text-gray-600">Profissional</th><th className="px-3 py-2 text-center font-medium text-gray-600">Pontos</th><th className="px-3 py-2 text-left font-medium text-gray-600">Distância</th></tr></thead>
                                             <tbody className="divide-y">
-                                                {corridasConcluidas.filter(c => filtroConcluidas === 'todas' || (filtroConcluidas === 'finalizadas' && c.status === 'finalizado') || (filtroConcluidas === 'canceladas' && c.status === 'cancelado')).map(c => (
-                                                    <tr key={c.id} className="hover:bg-gray-50">
-                                                        <td className="px-3 py-3 font-medium">#{c.tutts_os_numero || c.id}</td>
-                                                        <td className="px-3 py-3"><span className={`px-2 py-1 rounded-full text-xs font-medium ${c.status === 'finalizado' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{c.status === 'finalizado' ? '✅ Finalizada' : '❌ Cancelada'}</span></td>
-                                                        <td className="px-3 py-3 text-gray-600">{new Date(c.criado_em).toLocaleDateString('pt-BR')} {new Date(c.criado_em).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}</td>
-                                                        <td className="px-3 py-3">{c.profissional_nome || <span className="text-gray-400">-</span>}</td>
-                                                        <td className="px-3 py-3 text-center">{c.total_pontos || '-'}</td>
-                                                        <td className="px-3 py-3">{c.tutts_distancia ? `${c.tutts_distancia} km` : '-'}</td>
-                                                        <td className="px-3 py-3 font-medium text-green-600">{c.tutts_valor ? `R$ ${parseFloat(c.tutts_valor).toFixed(2)}` : '-'}</td>
-                                                    </tr>
-                                                ))}
+                                                {corridasConcluidas.filter(c => filtroConcluidas === 'todas' || (filtroConcluidas === 'finalizadas' && c.status === 'finalizado') || (filtroConcluidas === 'canceladas' && c.status === 'cancelado')).map(c => {
+                                                    // Verificar se tem retorno
+                                                    let temRetorno = false;
+                                                    try {
+                                                        const dadosPontos = c.dados_pontos ? (typeof c.dados_pontos === 'string' ? JSON.parse(c.dados_pontos) : c.dados_pontos) : [];
+                                                        temRetorno = dadosPontos?.some(p => p.is_retorno || p.tipo_ponto === 'retorno');
+                                                    } catch(e) {}
+                                                    
+                                                    return (
+                                                        <React.Fragment key={c.id}>
+                                                            <tr className={`hover:bg-gray-50 cursor-pointer ${temRetorno ? 'bg-orange-50 border-l-4 border-l-orange-400' : ''}`} onClick={() => toggleExpandirCorrida(c.id)}>
+                                                                <td className="px-2 py-3 text-center">
+                                                                    <button className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-all ${corridaExpandida === c.id ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}`}>
+                                                                        {corridaExpandida === c.id ? '−' : '+'}
+                                                                    </button>
+                                                                </td>
+                                                                <td className="px-3 py-3 font-medium">
+                                                                    #{c.tutts_os_numero || c.id}
+                                                                    {temRetorno && <span className="ml-2 text-orange-500" title="Corrida com retorno">⚠️</span>}
+                                                                </td>
+                                                                <td className="px-3 py-3"><span className={`px-2 py-1 rounded-full text-xs font-medium ${c.status === 'finalizado' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{c.status === 'finalizado' ? '✅ Finalizada' : '❌ Cancelada'}</span></td>
+                                                                <td className="px-3 py-3 text-gray-600">{new Date(c.criado_em).toLocaleDateString('pt-BR')} {new Date(c.criado_em).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}</td>
+                                                                <td className="px-3 py-3">{c.profissional_nome || <span className="text-gray-400">-</span>}</td>
+                                                                <td className="px-3 py-3 text-center">{c.total_pontos || '-'}</td>
+                                                                <td className="px-3 py-3">{c.tutts_distancia ? `${c.tutts_distancia} km` : '-'}</td>
+                                                            </tr>
+                                                            {/* Linha expandida com detalhes */}
+                                                            {corridaExpandida === c.id && (
+                                                                <tr>
+                                                                    <td colSpan="7" className="px-4 py-4 bg-gray-50">
+                                                                        {!detalhesCorridaExpandida ? (
+                                                                            <div className="text-center py-4"><span className="animate-pulse">⏳ Carregando detalhes...</span></div>
+                                                                        ) : (
+                                                                            <div className="space-y-4">
+                                                                                {/* Cabeçalho com foto do profissional e info */}
+                                                                                <div className="flex items-start gap-4 p-3 bg-white rounded-lg border">
+                                                                                    {detalhesCorridaExpandida.profissional_foto ? (
+                                                                                        <img src={detalhesCorridaExpandida.profissional_foto} className="w-16 h-16 rounded-full object-cover border-2 border-gray-200" />
+                                                                                    ) : (
+                                                                                        <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center text-2xl">🏍️</div>
+                                                                                    )}
+                                                                                    <div className="flex-1">
+                                                                                        <div className="font-bold text-gray-800">{detalhesCorridaExpandida.profissional_nome || 'Sem profissional'}</div>
+                                                                                        {detalhesCorridaExpandida.profissional_telefone && <div className="text-sm text-gray-600">📞 {detalhesCorridaExpandida.profissional_telefone}</div>}
+                                                                                        {detalhesCorridaExpandida.profissional_placa && <div className="text-sm text-gray-600">🏍️ Placa: {detalhesCorridaExpandida.profissional_placa}</div>}
+                                                                                        <div className="flex gap-4 mt-2 text-xs text-gray-500">
+                                                                                            <span>📏 {detalhesCorridaExpandida.tutts_distancia || '-'} km</span>
+                                                                                            <span>⏱️ {detalhesCorridaExpandida.tutts_duracao || '-'}</span>
+                                                                                            <span className="text-green-600 font-bold">💰 R$ {detalhesCorridaExpandida.tutts_valor ? parseFloat(detalhesCorridaExpandida.tutts_valor).toFixed(2) : '-'}</span>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>
+                                                                                
+                                                                                {/* Alerta de retorno */}
+                                                                                {detalhesCorridaExpandida.pontos?.some(p => p.is_retorno || p.tipo_ponto === 'retorno') && (
+                                                                                    <div className="flex items-center gap-2 px-4 py-3 bg-orange-100 border border-orange-300 rounded-lg text-orange-700">
+                                                                                        <span className="text-xl">⚠️</span>
+                                                                                        <div>
+                                                                                            <div className="font-bold">Atenção: Corrida com retorno</div>
+                                                                                            <div className="text-sm">Caso o retorno seja indevido, solicite o cancelamento ao suporte Tutts.</div>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                )}
+                                                                                
+                                                                                {/* Lista de pontos */}
+                                                                                <div className="space-y-2">
+                                                                                    <div className="font-medium text-gray-700">📍 Pontos da corrida:</div>
+                                                                                    {detalhesCorridaExpandida.pontos?.map((p, idx) => {
+                                                                                        const isColeta = idx === 0;
+                                                                                        const isRetorno = p.is_retorno || p.tipo_ponto === 'retorno';
+                                                                                        
+                                                                                        // Normalizar fotos
+                                                                                        let fotosArray = [];
+                                                                                        try {
+                                                                                            if (typeof p.fotos === 'string' && p.fotos !== '' && p.fotos !== '[]') {
+                                                                                                fotosArray = JSON.parse(p.fotos);
+                                                                                            } else if (Array.isArray(p.fotos)) {
+                                                                                                fotosArray = p.fotos;
+                                                                                            }
+                                                                                        } catch { fotosArray = []; }
+                                                                                        
+                                                                                        const endereco = p.endereco_completo || [p.rua, p.numero, p.bairro, p.cidade].filter(Boolean).join(', ') || 'Endereço não informado';
+                                                                                        
+                                                                                        return (
+                                                                                            <div key={idx} className={`p-3 rounded-lg border-2 ${isRetorno ? 'border-orange-300 bg-orange-50' : isColeta ? 'border-amber-200 bg-amber-50' : 'border-gray-200 bg-white'}`}>
+                                                                                                <div className="flex items-start gap-3">
+                                                                                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0 ${isRetorno ? 'bg-orange-500' : isColeta ? 'bg-amber-500' : 'bg-blue-500'}`}>
+                                                                                                        {isRetorno ? '↩️' : isColeta ? '📦' : idx}
+                                                                                                    </div>
+                                                                                                    <div className="flex-1">
+                                                                                                        <div className="flex items-center gap-2 flex-wrap">
+                                                                                                            <span className={`text-xs font-bold ${isRetorno ? 'text-orange-700' : isColeta ? 'text-amber-700' : 'text-blue-700'}`}>
+                                                                                                                {isRetorno ? '↩️ RETORNO' : isColeta ? '📦 COLETA' : `📍 ENTREGA ${idx}`}
+                                                                                                            </span>
+                                                                                                            {isRetorno && p.ponto_retorno_de && (
+                                                                                                                <span className="text-xs text-orange-600">(do ponto {p.ponto_retorno_de})</span>
+                                                                                                            )}
+                                                                                                            {p.numero_nota && <span className="text-xs text-green-600">🏷️ {p.numero_nota}</span>}
+                                                                                                        </div>
+                                                                                                        <div className="text-sm text-gray-700 mt-1">{endereco}</div>
+                                                                                                        
+                                                                                                        {/* Observação */}
+                                                                                                        {p.observacao && (
+                                                                                                            <div className="mt-2 text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded">
+                                                                                                                💬 {p.observacao}
+                                                                                                            </div>
+                                                                                                        )}
+                                                                                                        
+                                                                                                        {/* Motivo de finalização */}
+                                                                                                        {p.motivo_finalizacao && (
+                                                                                                            <div className={`mt-2 text-xs px-2 py-1 rounded ${p.motivo_finalizacao.toLowerCase() === 'sucesso' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                                                                                                {p.motivo_finalizacao.toLowerCase() === 'sucesso' ? '✅' : '⚠️'} {p.motivo_descricao || p.motivo_finalizacao}
+                                                                                                            </div>
+                                                                                                        )}
+                                                                                                        
+                                                                                                        {/* Fotos de protocolo */}
+                                                                                                        {fotosArray.length > 0 && (
+                                                                                                            <div className="mt-2">
+                                                                                                                <div className="text-xs text-gray-500 mb-1">📸 Fotos de protocolo:</div>
+                                                                                                                <div className="flex gap-2 flex-wrap">
+                                                                                                                    {fotosArray.map((foto, fIdx) => (
+                                                                                                                        <img 
+                                                                                                                            key={fIdx} 
+                                                                                                                            src={foto} 
+                                                                                                                            className="w-16 h-16 object-cover rounded cursor-pointer hover:opacity-80 border"
+                                                                                                                            onClick={(e) => { e.stopPropagation(); abrirFotoModal(fotosArray, fIdx); }}
+                                                                                                                        />
+                                                                                                                    ))}
+                                                                                                                </div>
+                                                                                                            </div>
+                                                                                                        )}
+                                                                                                        
+                                                                                                        {/* Horários */}
+                                                                                                        {(p.data_chegada || p.data_finalizado) && (
+                                                                                                            <div className="mt-2 flex gap-3 text-xs text-gray-500">
+                                                                                                                {p.data_chegada && <span>🔵 Chegou: {new Date(p.data_chegada).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}</span>}
+                                                                                                                {p.data_finalizado && <span>✅ Finalizado: {new Date(p.data_finalizado).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}</span>}
+                                                                                                            </div>
+                                                                                                        )}
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        );
+                                                                                    })}
+                                                                                </div>
+                                                                            </div>
+                                                                        )}
+                                                                    </td>
+                                                                </tr>
+                                                            )}
+                                                        </React.Fragment>
+                                                    );
+                                                })}
                                             </tbody>
                                         </table>
                                     </div>
