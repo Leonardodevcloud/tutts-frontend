@@ -10574,6 +10574,8 @@ const hideLoadingScreen = () => {
             }, React.createElement("option", {
                 value: "solicitacao"
             }, "📅 Data da Solicitação"), React.createElement("option", {
+                value: "lancamento"
+            }, "📝 Data de Lançamento"), React.createElement("option", {
                 value: "debito"
             }, "💳 Data do Débito"))), React.createElement("div", null, React.createElement("label", {
                 className: "block text-sm font-semibold mb-1"
@@ -10620,7 +10622,11 @@ const hideLoadingScreen = () => {
                         if (!t && !a) return !0;
                         let r;
                         if ("solicitacao" === e) r = new Date(l.created_at).toISOString().split("T")[0];
-                        else {
+                        else if ("lancamento" === e) {
+                            // Usar lancamento_at (data/hora da aprovação)
+                            if (!l.lancamento_at) return !1;
+                            r = new Date(l.lancamento_at).toISOString().split("T")[0]
+                        } else {
                             // Usar debito_plific_at (nova coluna da Plific)
                             if (!l.debito_plific_at) return !1;
                             r = new Date(l.debito_plific_at).toISOString().split("T")[0]
@@ -10641,7 +10647,7 @@ const hideLoadingScreen = () => {
                     className: "bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6"
                 }, React.createElement("p", {
                     className: "text-blue-800 font-semibold"
-                }, "solicitacao" === e ? "📅 Filtrando por Data da Solicitação" : "💳 Filtrando por Data do Débito", t && a && t === a && ` - ${new Date(t+"T12:00:00").toLocaleDateString("pt-BR")}`, t && a && t !== a && ` - ${new Date(t+"T12:00:00").toLocaleDateString("pt-BR")} até ${new Date(a+"T12:00:00").toLocaleDateString("pt-BR")}`, !t && !a && " - Todos os períodos")), React.createElement("div", {
+                }, "solicitacao" === e ? "📅 Filtrando por Data da Solicitação" : "lancamento" === e ? "📝 Filtrando por Data de Lançamento" : "💳 Filtrando por Data do Débito", t && a && t === a && ` - ${new Date(t+"T12:00:00").toLocaleDateString("pt-BR")}`, t && a && t !== a && ` - ${new Date(t+"T12:00:00").toLocaleDateString("pt-BR")} até ${new Date(a+"T12:00:00").toLocaleDateString("pt-BR")}`, !t && !a && " - Todos os períodos")), React.createElement("div", {
                     className: "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-4"
                 }, React.createElement("div", {
                     className: "bg-white rounded-xl shadow p-4 border-l-4 border-gray-500"
