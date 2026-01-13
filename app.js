@@ -122,8 +122,10 @@ function hasModuleAccess(user, moduleId) {
         return ["financeiro", "solicitacoes", "disponibilidade"].includes(moduleId);
     }
     
-    // User comum não tem acesso a módulos admin
-    if (user.role === "user") return false;
+    // User comum tem acesso ao módulo de filas (para check-in na fila)
+    if (user.role === "user") {
+        return ["filas"].includes(moduleId);
+    }
     
     // Admin normal - verificar permissões
     if (user.role === "admin") {
@@ -190,6 +192,9 @@ const SISTEMA_MODULOS_CONFIG = [
     },
     { id: "todo", label: "TO-DO", icon: "📝",
       abas: [{id: "tarefas", label: "Tarefas"}, {id: "metricas", label: "Métricas"}]
+    },
+    { id: "filas", label: "Filas", icon: "👥",
+      abas: [{id: "monitoramento", label: "Monitoramento"}, {id: "vinculos", label: "Vínculos"}, {id: "relatorios", label: "Relatórios"}, {id: "config", label: "Configurações"}]
     },
     { id: "social", label: "Social", icon: "💜",
       abas: [{id: "perfil", label: "Meu Perfil"}, {id: "comunidade", label: "Comunidade"}, {id: "mensagens", label: "Mensagens"}]
@@ -1748,6 +1753,8 @@ const hideLoadingScreen = () => {
         [prazosProfissionais, setPrazosProfissionais] = useState([]),
         [prazoProfConfigOS, setPrazoProfConfigOS] = useState([]), // Configurações de prazo prof para aba OS
         [wa, _a] = useState(!1), [todoGrupos, setTodoGrupos] = useState([]), [todoTarefas, setTodoTarefas] = useState([]), [todoGrupoAtivo, setTodoGrupoAtivo] = useState(null), [todoMetricas, setTodoMetricas] = useState(null), [todoTab, setTodoTab] = useState("tarefas"), [todoFiltroStatus, setTodoFiltroStatus] = useState("todas"), [todoModal, setTodoModal] = useState(null), [todoLoading, setTodoLoading] = useState(false), [todoAdmins, setTodoAdmins] = useState([]),
+        // Estado do módulo de Filas
+        [filasTab, setFilasTab] = useState("monitoramento"),
         // Novos estados para TODO melhorado
         [todoMeuDia, setTodoMeuDia] = useState([]),
         [todoViewMode, setTodoViewMode] = useState("meudia"), // "meudia" ou "grupo"
@@ -1993,6 +2000,8 @@ const hideLoadingScreen = () => {
                 x(prev => ({...prev, opTab: abaId || "indicacoes"}));
             } else if (moduloId === "todo") {
                 if (abaId) setTodoTab(abaId);
+            } else if (moduloId === "filas") {
+                if (abaId) setFilasTab(abaId);
             }
         };
         
@@ -16003,6 +16012,44 @@ const hideLoadingScreen = () => {
             )
         }
         
+        // ========== MÓDULO FILAS ==========
+        if ("filas" === Ee) {
+            return React.createElement("div", {
+                className: "min-h-screen bg-gray-50"
+            }, 
+                i && React.createElement(Toast, i),
+                n && React.createElement(LoadingOverlay, null),
+                // Header
+                React.createElement(HeaderCompacto, {
+                    usuario: l,
+                    moduloAtivo: Ee,
+                    abaAtiva: filasTab,
+                    socialProfile: socialProfile,
+                    isLoading: f,
+                    lastUpdate: E,
+                    onRefresh: () => window.location.reload(),
+                    onLogout: () => o(null),
+                    onGoHome: () => he("home"),
+                    onNavigate: navegarSidebar,
+                    onChangeTab: (abaId) => setFilasTab(abaId)
+                }),
+                // Conteúdo
+                React.createElement("div", { className: "max-w-7xl mx-auto p-6" },
+                    typeof window.ModuloFilas !== 'undefined' 
+                        ? React.createElement(window.ModuloFilas, {
+                            usuario: l,
+                            apiUrl: API_URL,
+                            showToast: ja,
+                            abaAtiva: filasTab,
+                            onChangeTab: setFilasTab
+                        })
+                        : React.createElement("div", { className: "text-center py-12" },
+                            React.createElement("p", { className: "text-red-500" }, "⚠️ Módulo de Filas não carregado. Verifique se o arquivo filas.js está presente.")
+                        )
+                )
+            );
+        }
+        
         // ========== MÓDULO SOCIAL ==========
         if ("social" === Ee) {
             return React.createElement("div", {
@@ -24778,6 +24825,22 @@ const hideLoadingScreen = () => {
                             ),
                             React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "TO-DO"),
                             React.createElement("p", {className: "text-sm text-gray-500"}, "Suas tarefas")
+                        )
+                    ),
+                    
+                    // Filas
+                    hasModuleAccess(l, "filas") &&
+                    React.createElement("div", {
+                        onClick: () => he("filas"),
+                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-cyan-300"
+                    },
+                        React.createElement("div", {className: "h-2 bg-gradient-to-r from-cyan-500 to-teal-600"}),
+                        React.createElement("div", {className: "p-6"},
+                            React.createElement("div", {className: "w-14 h-14 bg-cyan-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
+                                React.createElement("span", {className: "text-3xl"}, "👥")
+                            ),
+                            React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Filas"),
+                            React.createElement("p", {className: "text-sm text-gray-500"}, "Gestão de filas")
                         )
                     ),
                     
