@@ -218,7 +218,23 @@
             const carregarHistorico = async () => { try { const resp = await fetch(`${API_URL}/api/solicitacao/historico?limite=20`, { headers: { 'Authorization': `Bearer ${token}` } }); if (resp.ok) { const data = await resp.json(); setHistorico(data.solicitacoes || []); } } catch (err) {} };
             const carregarCorridasAtivas = async () => { try { const resp = await fetch(`${API_URL}/api/solicitacao/historico?limite=50`, { headers: { 'Authorization': `Bearer ${token}` } }); if (resp.ok) { const data = await resp.json(); setCorridasAtivas((data.solicitacoes || []).filter(s => ['enviado', 'aceito', 'em_andamento'].includes(s.status))); } } catch (err) {} };
             const carregarConcluidas = async () => { try { const resp = await fetch(`${API_URL}/api/solicitacao/historico?limite=100`, { headers: { 'Authorization': `Bearer ${token}` } }); if (resp.ok) { const data = await resp.json(); setCorridasConcluidas((data.solicitacoes || []).filter(s => ['finalizado', 'cancelado'].includes(s.status))); } } catch (err) {} };
-            const carregarDetalheCorrida = async (id) => { try { const resp = await fetch(`${API_URL}/api/solicitacao/corrida/${id}`, { headers: { 'Authorization': `Bearer ${token}` } }); if (resp.ok) setDetalheCorrida(await resp.json()); } catch (err) {} };
+            const carregarDetalheCorrida = async (id) => { 
+                try { 
+                    const resp = await fetch(`${API_URL}/api/solicitacao/corrida/${id}`, { headers: { 'Authorization': `Bearer ${token}` } }); 
+                    if (resp.ok) {
+                        const data = await resp.json();
+                        setDetalheCorrida(data);
+                        // Se a corrida foi finalizada ou cancelada, limpar seleção e atualizar listas
+                        if (['finalizado', 'cancelado'].includes(data.status)) {
+                            showToast(data.status === 'finalizado' ? '🏁 Corrida finalizada!' : '❌ Corrida cancelada', 'info');
+                            setCorridaSelecionada(null);
+                            setDetalheCorrida(null);
+                            carregarCorridasAtivas();
+                            carregarConcluidas();
+                        }
+                    }
+                } catch (err) {} 
+            };
             const selecionarCorrida = (id) => { setCorridaSelecionada(id); carregarDetalheCorrida(id); };
             const copiarLinkRastreio = (os) => { navigator.clipboard.writeText(`${SITE_URL}/rastrear.html?os=${os}`).then(() => showToast('✅ Link copiado!', 'success')); };
             const compartilharWhatsApp = (os) => { window.open(`https://wa.me/?text=${encodeURIComponent(`🏍️ Acompanhe sua entrega:\n${SITE_URL}/rastrear.html?os=${os}`)}`, '_blank'); };
@@ -604,8 +620,11 @@
                                                     const { coletas, entregas } = contarPontos(c);
                                                     // Buscar notas dos pontos (se disponível)
                                                     const notas = c.notas_pontos || [];
+                                                    // Verificar se tem ponto de retorno
+                                                    const temRetorno = c.pontos?.some(p => p.is_retorno || p.tipo_ponto === 'retorno') || 
+                                                                       (c.dados_pontos && JSON.parse(typeof c.dados_pontos === 'string' ? c.dados_pontos : JSON.stringify(c.dados_pontos || []))?.some(p => p.is_retorno));
                                                     return (
-                                                        <div key={c.id} onClick={() => selecionarCorrida(c.id)} className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${corridaSelecionada === c.id ? 'border-blue-500 bg-blue-50 shadow-md' : 'border-gray-200 hover:border-gray-300 hover:shadow'}`}>
+                                                        <div key={c.id} onClick={() => selecionarCorrida(c.id)} className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${temRetorno ? 'border-orange-400 bg-orange-50' : corridaSelecionada === c.id ? 'border-blue-500 bg-blue-50 shadow-md' : 'border-gray-200 hover:border-gray-300 hover:shadow'}`}>
                                                             <div className="flex items-center justify-between mb-2">
                                                                 <div className="flex items-center gap-2 min-w-0 flex-1">
                                                                     {c.profissional_foto ? <img src={c.profissional_foto} className="w-8 h-8 rounded-full object-cover border-2 border-gray-200" /> : <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-sm">🏍️</div>}
@@ -614,6 +633,21 @@
                                                                 <span className="text-xs font-bold text-gray-600 whitespace-nowrap">OS #{c.tutts_os_numero || c.id}</span>
                                                             </div>
                                                             <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${statusCores[c.status]}`}><span>{statusIcons[c.status]}</span><span>{statusNomes[c.status]}</span></div>
+                                                            {/* Alerta de retorno */}
+                                                            {temRetorno && (
+                                                                <div className="mt-2 group relative">
+                                                                    <div className="flex items-center gap-1 px-2 py-1 bg-orange-100 border border-orange-300 rounded text-xs text-orange-700 font-medium">
+                                                                        <span>⚠️</span>
+                                                                        <span>Atenção: Corrida com retorno</span>
+                                                                    </div>
+                                                                    <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block z-50">
+                                                                        <div className="bg-gray-900 text-white text-xs rounded py-2 px-3 whitespace-nowrap shadow-lg">
+                                                                            Caso o retorno seja indevido, solicite o<br/>cancelamento ao suporte Tutts.
+                                                                        </div>
+                                                                        <div className="w-2 h-2 bg-gray-900 transform rotate-45 absolute left-4 -bottom-1"></div>
+                                                                    </div>
+                                                                </div>
+                                                            )}
                                                             <div className="flex items-center justify-between mt-2 text-xs text-gray-500">
                                                                 <span>📦 {coletas} → 📍 {entregas}</span>
                                                                 {c.tutts_valor && <span className="font-bold text-green-600">R$ {parseFloat(c.tutts_valor).toFixed(2)}</span>}
@@ -677,6 +711,21 @@
                                                         )}
                                                     </div>
                                                 </div>
+                                                {/* Alerta de retorno no detalhe */}
+                                                {detalheCorrida.pontos?.some(p => p.is_retorno || p.tipo_ponto === 'retorno') && (
+                                                    <div className="mt-2 group relative inline-block">
+                                                        <div className="flex items-center gap-2 px-3 py-2 bg-orange-100 border border-orange-300 rounded-lg text-sm text-orange-700 font-medium cursor-help">
+                                                            <span className="text-lg">⚠️</span>
+                                                            <span>Atenção: Corrida com retorno</span>
+                                                        </div>
+                                                        <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block z-50">
+                                                            <div className="bg-gray-900 text-white text-xs rounded py-2 px-3 whitespace-nowrap shadow-lg">
+                                                                Caso o retorno seja indevido, solicite o<br/>cancelamento ao suporte Tutts.
+                                                            </div>
+                                                            <div className="w-2 h-2 bg-gray-900 transform rotate-45 absolute left-4 -bottom-1"></div>
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                             
                                             {/* Métricas compactas */}
