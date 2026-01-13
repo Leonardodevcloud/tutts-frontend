@@ -241,8 +241,11 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
   
   <!-- App pré-compilado (SEM BABEL!) -->
-  <script src="app.js"></script>
+  <!-- Módulo de Filas (carregar ANTES do app.js) -->
+  <script src="filas.js"></script>
   
+  <!-- App pré-compilado (SEM BABEL!) -->
+  <script src="app.js"></script>
   <!-- PWA Install Banner Component -->
   <div id="pwa-install-banner" style="display: none;" class="fixed bottom-4 left-4 right-4 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-2xl shadow-2xl p-4 z-50 pwa-install-banner">
     <div class="flex items-center gap-4">
