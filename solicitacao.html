@@ -721,14 +721,30 @@
                                                                 }
                                                             } catch { fotosArray = []; }
                                                             
+                                                            // Verificar se é ponto de retorno
+                                                            const isRetorno = p.is_retorno || p.tipo_ponto === 'retorno';
+                                                            
+                                                            // Cores específicas para retorno
+                                                            const corBorda = isRetorno ? 'border-orange-300 bg-orange-50' : statusPontoCores[status];
+                                                            const corIcone = isRetorno ? 'bg-orange-500' : (status === 'finalizado' ? 'bg-green-500' : status === 'chegou' || status === 'coletado' ? 'bg-blue-500' : isColeta ? 'bg-amber-500' : 'bg-gray-400');
+                                                            
                                                             return (
-                                                                <div key={idx} className={`p-3 rounded-lg border-2 ${statusPontoCores[status]}`}>
+                                                                <div key={idx} className={`p-3 rounded-lg border-2 ${corBorda}`}>
                                                                     <div className="flex items-start gap-2">
-                                                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0 ${status === 'finalizado' ? 'bg-green-500' : status === 'chegou' || status === 'coletado' ? 'bg-blue-500' : isColeta ? 'bg-amber-500' : 'bg-gray-400'}`}>{status === 'finalizado' ? '✓' : isColeta ? '📦' : idx}</div>
+                                                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0 ${corIcone}`}>
+                                                                            {isRetorno ? '↩️' : (status === 'finalizado' ? '✓' : isColeta ? '📦' : idx)}
+                                                                        </div>
                                                                         <div className="flex-1 min-w-0">
-                                                                            <div className="flex items-center gap-2 mb-1">
-                                                                                <span className={`text-xs font-bold ${isColeta ? 'text-amber-700' : 'text-blue-700'}`}>{isColeta ? '📦 COLETA' : `📍 ENTREGA ${idx}`}</span>
-                                                                                <span className={`text-xs px-1.5 py-0.5 rounded ${statusPontoCores[status]}`}>{statusPontoIcons[status]} {statusPontoNomes[status]}</span>
+                                                                            <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                                                                <span className={`text-xs font-bold ${isRetorno ? 'text-orange-700' : isColeta ? 'text-amber-700' : 'text-blue-700'}`}>
+                                                                                    {isRetorno ? '↩️ RETORNO' : isColeta ? '📦 COLETA' : `📍 ENTREGA ${idx}`}
+                                                                                </span>
+                                                                                <span className={`text-xs px-1.5 py-0.5 rounded ${isRetorno ? 'bg-orange-100 text-orange-700' : statusPontoCores[status]}`}>
+                                                                                    {statusPontoIcons[status]} {statusPontoNomes[status]}
+                                                                                </span>
+                                                                                {isRetorno && p.ponto_retorno_de && (
+                                                                                    <span className="text-xs text-orange-600">(do ponto {p.ponto_retorno_de})</span>
+                                                                                )}
                                                                             </div>
                                                                             <div className="text-xs text-gray-700 leading-relaxed">{enderecoFinal}</div>
                                                                             
@@ -737,10 +753,10 @@
                                                                                 <div className="mt-1 text-xs text-green-600">✅ Coletado: {formatarHora(p.data_finalizado)}</div>
                                                                             )}
                                                                             
-                                                                            {/* Número da nota - só para entregas */}
-                                                                            {!isColeta && p.numero_nota && <div className="text-xs text-green-600 mt-1 font-medium">🏷️ Nota: {p.numero_nota}</div>}
+                                                                            {/* Número da nota - só para entregas (não retorno) */}
+                                                                            {!isColeta && !isRetorno && p.numero_nota && <div className="text-xs text-green-600 mt-1 font-medium">🏷️ Nota: {p.numero_nota}</div>}
                                                                             
-                                                                            {/* Horários - só para entregas */}
+                                                                            {/* Horários - para entregas e retornos */}
                                                                             {!isColeta && (p.data_chegada || p.data_finalizado || p.data_coletado) && (
                                                                                 <div className="mt-2 pt-2 border-t border-gray-200 text-xs space-y-1">
                                                                                     {p.data_chegada && <div className="text-blue-600">🔵 Chegou: {formatarHora(p.data_chegada)}</div>}
@@ -749,10 +765,16 @@
                                                                                 </div>
                                                                             )}
                                                                             
-                                                                            {/* Motivo de finalização - só para entregas */}
-                                                                            {!isColeta && p.motivo_finalizacao && <div className={`mt-2 text-xs px-2 py-1 rounded ${p.motivo_finalizacao === 'sucesso' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{p.motivo_finalizacao === 'sucesso' ? '✅' : '⚠️'} {p.motivo_descricao || p.motivo_finalizacao}</div>}
+                                                                            {/* Motivo de finalização - para entregas e retornos */}
+                                                                            {!isColeta && p.motivo_finalizacao && (
+                                                                                <div className={`mt-2 text-xs px-2 py-1 rounded ${
+                                                                                    p.motivo_finalizacao.toLowerCase() === 'sucesso' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                                                                                }`}>
+                                                                                    {p.motivo_finalizacao.toLowerCase() === 'sucesso' ? '✅' : '⚠️'} {p.motivo_descricao || p.motivo_finalizacao}
+                                                                                </div>
+                                                                            )}
                                                                             
-                                                                            {/* Fotos de protocolo - só para entregas */}
+                                                                            {/* Fotos de protocolo - para entregas e retornos */}
                                                                             {!isColeta && fotosArray.length > 0 && (
                                                                                 <div className="mt-2 text-xs">
                                                                                     <span className="text-blue-600 font-medium">📸 {fotosArray.length} foto(s):</span>
