@@ -63,52 +63,14 @@
             };
             
             return (
-                <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-3xl shadow-2xl p-6 w-full max-w-sm">
-                        {/* Logo */}
-                        <div className="text-center mb-4">
-                            <img 
-                                src="https://github.com/Leonardodevcloud/tutts-frontend/blob/main/logotuttsoriginal.png?raw=true" 
-                                alt="Tutts Logo" 
-                                className="w-28 h-auto mx-auto mb-3 drop-shadow-lg rounded-2xl"
-                            />
-                            <h1 className="text-lg font-bold text-gray-700">Central de Solicitações</h1>
-                            <p className="text-xs text-gray-500">Faça login para continuar</p>
-                        </div>
-                        
+                <div className="min-h-screen bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+                        <div className="text-center mb-6"><div className="text-6xl mb-4">🏍️</div><h1 className="text-2xl font-bold text-gray-800">Solicitar Corrida</h1></div>
                         <form onSubmit={handleSubmit} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-1">📧 Email</label>
-                                <input 
-                                    type="email" 
-                                    value={email} 
-                                    onChange={(e) => setEmail(e.target.value)} 
-                                    className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all text-sm" 
-                                    placeholder="seu@email.com" 
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-1">🔒 Senha</label>
-                                <input 
-                                    type="password" 
-                                    value={senha} 
-                                    onChange={(e) => setSenha(e.target.value)} 
-                                    className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all text-sm" 
-                                    placeholder="••••••••" 
-                                />
-                            </div>
-                            <button 
-                                type="submit" 
-                                disabled={loading} 
-                                className="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl disabled:opacity-50 transition-all shadow-lg hover:shadow-xl"
-                            >
-                                {loading ? '⏳ Entrando...' : '🚀 Entrar'}
-                            </button>
+                            <div><label className="block text-sm font-semibold text-gray-700 mb-1">Email</label><input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-blue-500 outline-none" placeholder="seu@email.com" /></div>
+                            <div><label className="block text-sm font-semibold text-gray-700 mb-1">Senha</label><input type="password" value={senha} onChange={(e) => setSenha(e.target.value)} className="w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-blue-500 outline-none" placeholder="••••••••" /></div>
+                            <button type="submit" disabled={loading} className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg disabled:opacity-50">{loading ? 'Entrando...' : 'Entrar'}</button>
                         </form>
-                        
-                        <div className="mt-4 text-center text-xs text-gray-400">
-                            © 2026 Tutts - Todos os direitos reservados
-                        </div>
                     </div>
                 </div>
             );
@@ -130,7 +92,7 @@
                 const markersLayer = L.layerGroup().addTo(map);
                 mapInstanceRef.current = map;
                 markersLayerRef.current = markersLayer;
-                setTimeout(() => { if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize(); }, 100);
+                setTimeout(() => { if (mapInstanceRef.current && mapInstanceRef.current._container) mapInstanceRef.current.invalidateSize(); }, 100);
                 return () => { if (mapInstanceRef.current) { mapInstanceRef.current.remove(); mapInstanceRef.current = null; } };
             }, [id]);
             
@@ -157,11 +119,11 @@
                     L.marker([p.latitude, p.longitude], { icon }).bindPopup(`<strong>${tipoLabel}</strong><br/>${enderecoCompleto}`).addTo(markersLayer);
                 });
                 if (pontosValidos.length > 0) { const bounds = L.latLngBounds(pontosValidos.map(p => [p.latitude, p.longitude])); map.fitBounds(bounds, { padding: [50, 50] }); }
-                setTimeout(() => map.invalidateSize(), 50);
+                setTimeout(() => { if (map && map._container) map.invalidateSize(); }, 50);
             }, [pontos, tipo]);
             
             useEffect(() => {
-                const observer = new IntersectionObserver((entries) => { entries.forEach(entry => { if (entry.isIntersecting && mapInstanceRef.current) setTimeout(() => mapInstanceRef.current.invalidateSize(), 100); }); }, { threshold: 0.1 });
+                const observer = new IntersectionObserver((entries) => { entries.forEach(entry => { if (entry.isIntersecting && mapInstanceRef.current && mapInstanceRef.current._container) setTimeout(() => mapInstanceRef.current.invalidateSize(), 100); }); }, { threshold: 0.1 });
                 if (mapRef.current) observer.observe(mapRef.current);
                 return () => observer.disconnect();
             }, []);
@@ -186,8 +148,6 @@
             const [detalheCorrida, setDetalheCorrida] = useState(null);
             const [corridasConcluidas, setCorridasConcluidas] = useState([]);
             const [filtroConcluidas, setFiltroConcluidas] = useState('todas');
-            const [corridaExpandida, setCorridaExpandida] = useState(null);
-            const [detalhesCorridaExpandida, setDetalhesCorridaExpandida] = useState(null);
             const [sincronizando, setSincronizando] = useState(false);
             const [profissionais, setProfissionais] = useState([]);
             const [carregandoProfissionais, setCarregandoProfissionais] = useState(false);
@@ -200,13 +160,6 @@
             
             // Estado para modal de fotos
             const [fotoModal, setFotoModal] = useState({ aberto: false, fotos: [], indice: 0 });
-            
-            // Estado para endereços salvos
-            const [enderecosSalvos, setEnderecosSalvos] = useState([]);
-            const [mostrarSalvos, setMostrarSalvos] = useState(false);
-            const [modalSalvarEndereco, setModalSalvarEndereco] = useState({ aberto: false, ponto: null });
-            const [apelidoSalvar, setApelidoSalvar] = useState('');
-            const [salvandoEndereco, setSalvandoEndereco] = useState(false);
             
             const abrirFotoModal = (fotos, indice = 0) => {
                 setFotoModal({ aberto: true, fotos, indice });
@@ -265,46 +218,10 @@
             const carregarHistorico = async () => { try { const resp = await fetch(`${API_URL}/api/solicitacao/historico?limite=20`, { headers: { 'Authorization': `Bearer ${token}` } }); if (resp.ok) { const data = await resp.json(); setHistorico(data.solicitacoes || []); } } catch (err) {} };
             const carregarCorridasAtivas = async () => { try { const resp = await fetch(`${API_URL}/api/solicitacao/historico?limite=50`, { headers: { 'Authorization': `Bearer ${token}` } }); if (resp.ok) { const data = await resp.json(); setCorridasAtivas((data.solicitacoes || []).filter(s => ['enviado', 'aceito', 'em_andamento'].includes(s.status))); } } catch (err) {} };
             const carregarConcluidas = async () => { try { const resp = await fetch(`${API_URL}/api/solicitacao/historico?limite=100`, { headers: { 'Authorization': `Bearer ${token}` } }); if (resp.ok) { const data = await resp.json(); setCorridasConcluidas((data.solicitacoes || []).filter(s => ['finalizado', 'cancelado'].includes(s.status))); } } catch (err) {} };
-            const carregarDetalheCorrida = async (id) => { 
-                try { 
-                    const resp = await fetch(`${API_URL}/api/solicitacao/corrida/${id}`, { headers: { 'Authorization': `Bearer ${token}` } }); 
-                    if (resp.ok) {
-                        const data = await resp.json();
-                        setDetalheCorrida(data);
-                        // Se a corrida foi finalizada ou cancelada, limpar seleção e atualizar listas
-                        if (['finalizado', 'cancelado'].includes(data.status)) {
-                            showToast(data.status === 'finalizado' ? '🏁 Corrida finalizada!' : '❌ Corrida cancelada', 'info');
-                            setCorridaSelecionada(null);
-                            setDetalheCorrida(null);
-                            carregarCorridasAtivas();
-                            carregarConcluidas();
-                        }
-                    }
-                } catch (err) {} 
-            };
+            const carregarDetalheCorrida = async (id) => { try { const resp = await fetch(`${API_URL}/api/solicitacao/corrida/${id}`, { headers: { 'Authorization': `Bearer ${token}` } }); if (resp.ok) setDetalheCorrida(await resp.json()); } catch (err) {} };
             const selecionarCorrida = (id) => { setCorridaSelecionada(id); carregarDetalheCorrida(id); };
             const copiarLinkRastreio = (os) => { navigator.clipboard.writeText(`${SITE_URL}/rastrear.html?os=${os}`).then(() => showToast('✅ Link copiado!', 'success')); };
             const compartilharWhatsApp = (os) => { window.open(`https://wa.me/?text=${encodeURIComponent(`🏍️ Acompanhe sua entrega:\n${SITE_URL}/rastrear.html?os=${os}`)}`, '_blank'); };
-            
-            // Função para expandir/colapsar corrida concluída
-            const toggleExpandirCorrida = async (id) => {
-                if (corridaExpandida === id) {
-                    setCorridaExpandida(null);
-                    setDetalhesCorridaExpandida(null);
-                } else {
-                    setCorridaExpandida(id);
-                    setDetalhesCorridaExpandida(null);
-                    try {
-                        const resp = await fetch(`${API_URL}/api/solicitacao/corrida/${id}`, { headers: { 'Authorization': `Bearer ${token}` } });
-                        if (resp.ok) {
-                            const data = await resp.json();
-                            setDetalhesCorridaExpandida(data);
-                        }
-                    } catch (err) {
-                        console.error('Erro ao carregar detalhes:', err);
-                    }
-                }
-            };
             
             const cancelarCorrida = async (id) => {
                 if (!confirm('Tem certeza que deseja CANCELAR esta corrida?')) return;
@@ -335,135 +252,6 @@
                 try { const resp = await fetch(`${API_URL}/api/geocode/google?endereco=${encodeURIComponent(termoBusca)}`); if (resp.ok) { const data = await resp.json(); if (data.results?.length > 0) setSugestoes(data.results); else showToast('Nenhum endereço', 'warning'); } }
                 catch (err) { showToast('Erro', 'error'); }
                 setBuscando(false);
-            };
-            
-            // Buscar endereços salvos
-            const buscarEnderecosSalvos = async (termo = '') => {
-                try {
-                    const url = termo ? `${API_URL}/api/solicitacao/enderecos-salvos/buscar?q=${encodeURIComponent(termo)}` : `${API_URL}/api/solicitacao/enderecos-salvos/buscar`;
-                    const resp = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
-                    if (resp.ok) {
-                        const data = await resp.json();
-                        setEnderecosSalvos(data);
-                        setMostrarSalvos(data.length > 0);
-                    }
-                } catch (err) {
-                    console.error('Erro ao buscar salvos:', err);
-                }
-            };
-            
-            // Buscar salvos quando digita
-            useEffect(() => {
-                if (termoBusca.length >= 2) {
-                    buscarEnderecosSalvos(termoBusca);
-                } else if (termoBusca.length === 0) {
-                    setMostrarSalvos(false);
-                    setEnderecosSalvos([]);
-                }
-            }, [termoBusca]);
-            
-            // Adicionar ponto de endereço salvo
-            const adicionarPontoSalvo = async (endereco) => {
-                if (pontos.length >= 80) { showToast('Máximo 80 pontos', 'error'); return; }
-                
-                const novoId = Date.now();
-                const novoPonto = { 
-                    id: novoId, 
-                    endereco_completo: endereco.endereco_completo || `${endereco.rua}, ${endereco.numero} - ${endereco.bairro}, ${endereco.cidade}`,
-                    rua: endereco.rua, 
-                    numero: endereco.numero, 
-                    bairro: endereco.bairro, 
-                    cidade: endereco.cidade, 
-                    uf: endereco.uf, 
-                    cep: endereco.cep, 
-                    latitude: parseFloat(endereco.latitude), 
-                    longitude: parseFloat(endereco.longitude), 
-                    observacao: '', 
-                    telefone: '', 
-                    procurar_por: '', 
-                    numero_nota: '', 
-                    codigo_finalizar: '',
-                    endereco_salvo_id: endereco.id,
-                    apelido_salvo: endereco.apelido
-                };
-                
-                const novosPontos = [...pontos, novoPonto];
-                setPontos(novosPontos);
-                setTermoBusca(''); 
-                setSugestoes([]);
-                setMostrarSalvos(false);
-                setEnderecosSalvos([]);
-                
-                // Incrementar uso
-                try {
-                    await fetch(`${API_URL}/api/solicitacao/enderecos-salvos/${endereco.id}/usar`, {
-                        method: 'PATCH',
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    });
-                } catch (err) {}
-                
-                // Se for ponto de entrega, mostrar input de nota
-                if (novosPontos.length > 1) {
-                    setPontoRecemAdicionado(novoId);
-                    setNotaRapida('');
-                }
-                
-                showToast(`✅ "${endereco.apelido}" adicionado`, 'success');
-            };
-            
-            // Salvar endereço
-            const salvarEndereco = async () => {
-                if (!apelidoSalvar.trim()) { showToast('Digite um apelido', 'warning'); return; }
-                if (!modalSalvarEndereco.ponto) return;
-                
-                setSalvandoEndereco(true);
-                const p = modalSalvarEndereco.ponto;
-                
-                // Tentar extrair cidade do endereço completo se não tiver
-                let cidade = p.cidade;
-                if (!cidade && p.endereco_completo) {
-                    // Formato típico: "Rua X, 123 - Bairro, Cidade - UF, CEP"
-                    const partes = p.endereco_completo.split(',');
-                    if (partes.length >= 3) {
-                        // Tentar pegar a cidade (geralmente após o bairro)
-                        const cidadeUF = partes[partes.length - 2]?.trim();
-                        if (cidadeUF) {
-                            cidade = cidadeUF.split('-')[0]?.trim() || cidadeUF;
-                        }
-                    }
-                }
-                
-                try {
-                    const resp = await fetch(`${API_URL}/api/solicitacao/enderecos-salvos`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                        body: JSON.stringify({
-                            apelido: apelidoSalvar.trim(),
-                            rua: p.rua,
-                            numero: p.numero,
-                            complemento: p.complemento,
-                            bairro: p.bairro,
-                            cidade: cidade || 'Não informada',
-                            uf: p.uf,
-                            cep: p.cep,
-                            latitude: p.latitude,
-                            longitude: p.longitude,
-                            endereco_completo: p.endereco_completo
-                        })
-                    });
-                    
-                    const data = await resp.json();
-                    if (resp.ok) {
-                        showToast(`💾 "${apelidoSalvar}" salvo!`, 'success');
-                        setModalSalvarEndereco({ aberto: false, ponto: null });
-                        setApelidoSalvar('');
-                    } else {
-                        showToast(data.error || 'Erro ao salvar', 'error');
-                    }
-                } catch (err) {
-                    showToast('Erro ao salvar', 'error');
-                }
-                setSalvandoEndereco(false);
             };
             
             const adicionarPonto = (sug) => {
@@ -680,22 +468,9 @@
                                             {pontos.length === 0 || !pontos[0] ? (
                                                 <div>
                                                     <div className="flex gap-2">
-                                                        <input type="text" value={termoBusca} onChange={(e) => setTermoBusca(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && buscarEndereco()} className="flex-1 px-3 py-2 border border-amber-300 rounded-lg text-sm outline-none bg-white" placeholder="Digite apelido ou endereço..." />
-                                                        <button onClick={buscarEndereco} disabled={buscando} className="px-3 py-2 bg-amber-500 text-white rounded-lg text-sm" title="Buscar no Google">{buscando ? '...' : '🔍'}</button>
+                                                        <input type="text" value={termoBusca} onChange={(e) => setTermoBusca(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && buscarEndereco()} className="flex-1 px-3 py-2 border border-amber-300 rounded-lg text-sm outline-none bg-white" placeholder="Buscar endereço de coleta..." />
+                                                        <button onClick={buscarEndereco} disabled={buscando} className="px-3 py-2 bg-amber-500 text-white rounded-lg text-sm">{buscando ? '...' : '🔍'}</button>
                                                     </div>
-                                                    {/* Endereços salvos */}
-                                                    {mostrarSalvos && enderecosSalvos.length > 0 && (
-                                                        <div className="mt-2 bg-amber-50 border border-amber-200 rounded-lg max-h-40 overflow-y-auto">
-                                                            <div className="px-2 py-1 text-xs font-medium text-amber-700 border-b border-amber-200 bg-amber-100">💾 Endereços salvos</div>
-                                                            {enderecosSalvos.map((e, i) => (
-                                                                <div key={i} onClick={() => adicionarPontoSalvo(e)} className="p-2 hover:bg-amber-100 cursor-pointer text-xs border-b border-amber-100">
-                                                                    <div className="font-medium text-amber-800">⭐ {e.apelido}</div>
-                                                                    <div className="text-gray-600 truncate">{e.endereco_completo || `${e.rua}, ${e.numero} - ${e.bairro}, ${e.cidade}`}</div>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    )}
-                                                    {/* Sugestões do Google */}
                                                     {sugestoes.length > 0 && <div className="mt-2 bg-white border border-amber-200 rounded-lg max-h-40 overflow-y-auto">{sugestoes.map((s, i) => <div key={i} onClick={() => adicionarPonto(s)} className="p-2 hover:bg-amber-50 cursor-pointer text-xs border-b">📍 {s.endereco}</div>)}</div>}
                                                 </div>
                                             ) : (
@@ -703,16 +478,12 @@
                                                     <div className="flex items-center gap-2">
                                                         <span className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center text-white text-sm font-bold">📦</span>
                                                         <div className="flex-1 min-w-0">
-                                                            {pontos[0].apelido_salvo && <div className="text-xs text-amber-600 font-medium">⭐ {pontos[0].apelido_salvo}</div>}
                                                             <div className="text-xs font-medium truncate">{pontos[0].endereco_completo || `${pontos[0].rua}, ${pontos[0].numero}`}</div>
                                                             {pontos[0].bairro && <div className="text-xs text-gray-500">{pontos[0].bairro}, {pontos[0].cidade}</div>}
                                                             {pontos[0].numero_nota && <div className="text-xs text-amber-600">🏷️ {pontos[0].numero_nota}</div>}
                                                             {pontos[0].observacao && <div className="text-xs text-gray-500 truncate">📝 {pontos[0].observacao}</div>}
                                                         </div>
                                                         <div className="flex gap-1">
-                                                            {!pontos[0].endereco_salvo_id && (
-                                                                <button onClick={() => { setModalSalvarEndereco({ aberto: true, ponto: pontos[0] }); setApelidoSalvar(''); }} className="text-gray-400 hover:text-green-600 text-sm" title="Salvar endereço">💾</button>
-                                                            )}
                                                             <button onClick={() => abrirEdicaoPonto(0)} className="text-gray-400 hover:text-amber-600 text-sm">✏️</button>
                                                             <button onClick={() => removerPonto(pontos[0].id)} className="text-gray-400 hover:text-red-600">✕</button>
                                                         </div>
@@ -730,22 +501,9 @@
                                             {pontos.length > 0 && (
                                                 <div className="mb-2">
                                                     <div className="flex gap-2">
-                                                        <input type="text" value={termoBusca} onChange={(e) => setTermoBusca(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && buscarEndereco()} className="flex-1 px-3 py-2 border rounded-lg text-sm outline-none" placeholder="Digite apelido ou endereço..." />
-                                                        <button onClick={buscarEndereco} disabled={buscando} className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm" title="Buscar no Google">{buscando ? '...' : '🔍'}</button>
+                                                        <input type="text" value={termoBusca} onChange={(e) => setTermoBusca(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && buscarEndereco()} className="flex-1 px-3 py-2 border rounded-lg text-sm outline-none" placeholder="Buscar endereço de entrega..." />
+                                                        <button onClick={buscarEndereco} disabled={buscando} className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm">{buscando ? '...' : '🔍'}</button>
                                                     </div>
-                                                    {/* Endereços salvos */}
-                                                    {mostrarSalvos && enderecosSalvos.length > 0 && (
-                                                        <div className="mt-2 bg-blue-50 border border-blue-200 rounded-lg max-h-40 overflow-y-auto">
-                                                            <div className="px-2 py-1 text-xs font-medium text-blue-700 border-b border-blue-200 bg-blue-100">💾 Endereços salvos</div>
-                                                            {enderecosSalvos.map((e, i) => (
-                                                                <div key={i} onClick={() => adicionarPontoSalvo(e)} className="p-2 hover:bg-blue-100 cursor-pointer text-xs border-b border-blue-100">
-                                                                    <div className="font-medium text-blue-800">⭐ {e.apelido}</div>
-                                                                    <div className="text-gray-600 truncate">{e.endereco_completo || `${e.rua}, ${e.numero} - ${e.bairro}, ${e.cidade}`}</div>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    )}
-                                                    {/* Sugestões do Google */}
                                                     {sugestoes.length > 0 && <div className="mt-2 bg-white border rounded-lg max-h-40 overflow-y-auto">{sugestoes.map((s, i) => <div key={i} onClick={() => adicionarPonto(s)} className="p-2 hover:bg-blue-50 cursor-pointer text-xs border-b">📍 {s.endereco}</div>)}</div>}
                                                 </div>
                                             )}
@@ -758,16 +516,12 @@
                                                             <div className="flex items-center gap-2">
                                                                 <span className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold">{idx + 1}</span>
                                                                 <div className="flex-1 min-w-0">
-                                                                    {p.apelido_salvo && <div className="text-xs text-blue-600 font-medium">⭐ {p.apelido_salvo}</div>}
                                                                     <div className="text-xs font-medium truncate">{p.endereco_completo || `${p.rua}, ${p.numero}`}</div>
                                                                     {p.bairro && <div className="text-xs text-gray-500 truncate">{p.bairro}</div>}
                                                                     {p.numero_nota && <div className="text-xs text-green-600 font-medium">🏷️ Nota: {p.numero_nota}</div>}
                                                                     {p.observacao && <div className="text-xs text-blue-600 truncate">📝 {p.observacao}</div>}
                                                                 </div>
                                                                 <div className="flex gap-1">
-                                                                    {!p.endereco_salvo_id && (
-                                                                        <button onClick={(e) => { e.stopPropagation(); setModalSalvarEndereco({ aberto: true, ponto: p }); setApelidoSalvar(''); }} className="text-gray-400 hover:text-green-600 text-sm" title="Salvar endereço">💾</button>
-                                                                    )}
                                                                     <button onClick={() => abrirEdicaoPonto(idx + 1)} className="text-gray-400 hover:text-blue-600 text-sm">✏️</button>
                                                                     {idx > 0 && <button onClick={() => moverPonto(idx + 1, -1)} className="text-gray-400">▲</button>}
                                                                     {idx < pontos.length - 2 && <button onClick={() => moverPonto(idx + 1, 1)} className="text-gray-400">▼</button>}
@@ -850,11 +604,8 @@
                                                     const { coletas, entregas } = contarPontos(c);
                                                     // Buscar notas dos pontos (se disponível)
                                                     const notas = c.notas_pontos || [];
-                                                    // Verificar se tem ponto de retorno
-                                                    const temRetorno = c.pontos?.some(p => p.is_retorno || p.tipo_ponto === 'retorno') || 
-                                                                       (c.dados_pontos && JSON.parse(typeof c.dados_pontos === 'string' ? c.dados_pontos : JSON.stringify(c.dados_pontos || []))?.some(p => p.is_retorno));
                                                     return (
-                                                        <div key={c.id} onClick={() => selecionarCorrida(c.id)} className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${temRetorno ? 'border-orange-400 bg-orange-50' : corridaSelecionada === c.id ? 'border-blue-500 bg-blue-50 shadow-md' : 'border-gray-200 hover:border-gray-300 hover:shadow'}`}>
+                                                        <div key={c.id} onClick={() => selecionarCorrida(c.id)} className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${corridaSelecionada === c.id ? 'border-blue-500 bg-blue-50 shadow-md' : 'border-gray-200 hover:border-gray-300 hover:shadow'}`}>
                                                             <div className="flex items-center justify-between mb-2">
                                                                 <div className="flex items-center gap-2 min-w-0 flex-1">
                                                                     {c.profissional_foto ? <img src={c.profissional_foto} className="w-8 h-8 rounded-full object-cover border-2 border-gray-200" /> : <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-sm">🏍️</div>}
@@ -863,21 +614,6 @@
                                                                 <span className="text-xs font-bold text-gray-600 whitespace-nowrap">OS #{c.tutts_os_numero || c.id}</span>
                                                             </div>
                                                             <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${statusCores[c.status]}`}><span>{statusIcons[c.status]}</span><span>{statusNomes[c.status]}</span></div>
-                                                            {/* Alerta de retorno */}
-                                                            {temRetorno && (
-                                                                <div className="mt-2 group relative">
-                                                                    <div className="flex items-center gap-1 px-2 py-1 bg-orange-100 border border-orange-300 rounded text-xs text-orange-700 font-medium">
-                                                                        <span>⚠️</span>
-                                                                        <span>Atenção: Corrida com retorno</span>
-                                                                    </div>
-                                                                    <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block z-50">
-                                                                        <div className="bg-gray-900 text-white text-xs rounded py-2 px-3 whitespace-nowrap shadow-lg">
-                                                                            Caso o retorno seja indevido, solicite o<br/>cancelamento ao suporte Tutts.
-                                                                        </div>
-                                                                        <div className="w-2 h-2 bg-gray-900 transform rotate-45 absolute left-4 -bottom-1"></div>
-                                                                    </div>
-                                                                </div>
-                                                            )}
                                                             <div className="flex items-center justify-between mt-2 text-xs text-gray-500">
                                                                 <span>📦 {coletas} → 📍 {entregas}</span>
                                                                 {c.tutts_valor && <span className="font-bold text-green-600">R$ {parseFloat(c.tutts_valor).toFixed(2)}</span>}
@@ -941,21 +677,6 @@
                                                         )}
                                                     </div>
                                                 </div>
-                                                {/* Alerta de retorno no detalhe */}
-                                                {detalheCorrida.pontos?.some(p => p.is_retorno || p.tipo_ponto === 'retorno') && (
-                                                    <div className="mt-2 group relative inline-block">
-                                                        <div className="flex items-center gap-2 px-3 py-2 bg-orange-100 border border-orange-300 rounded-lg text-sm text-orange-700 font-medium cursor-help">
-                                                            <span className="text-lg">⚠️</span>
-                                                            <span>Atenção: Corrida com retorno</span>
-                                                        </div>
-                                                        <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block z-50">
-                                                            <div className="bg-gray-900 text-white text-xs rounded py-2 px-3 whitespace-nowrap shadow-lg">
-                                                                Caso o retorno seja indevido, solicite o<br/>cancelamento ao suporte Tutts.
-                                                            </div>
-                                                            <div className="w-2 h-2 bg-gray-900 transform rotate-45 absolute left-4 -bottom-1"></div>
-                                                        </div>
-                                                    </div>
-                                                )}
                                             </div>
                                             
                                             {/* Métricas compactas */}
@@ -1106,210 +827,31 @@
                                 ) : (
                                     <div className="overflow-x-auto">
                                         <table className="w-full text-sm">
-                                            <thead className="bg-gray-50"><tr><th className="px-2 py-2 text-center font-medium text-gray-600 w-10"></th><th className="px-3 py-2 text-left font-medium text-gray-600">OS</th><th className="px-3 py-2 text-left font-medium text-gray-600">Status</th><th className="px-3 py-2 text-left font-medium text-gray-600">Data</th><th className="px-3 py-2 text-left font-medium text-gray-600">Profissional</th><th className="px-3 py-2 text-center font-medium text-gray-600">Pontos</th><th className="px-3 py-2 text-left font-medium text-gray-600">Distância</th></tr></thead>
+                                            <thead className="bg-gray-50"><tr><th className="px-3 py-2 text-left font-medium text-gray-600">OS</th><th className="px-3 py-2 text-left font-medium text-gray-600">Status</th><th className="px-3 py-2 text-left font-medium text-gray-600">Data</th><th className="px-3 py-2 text-left font-medium text-gray-600">Profissional</th><th className="px-3 py-2 text-center font-medium text-gray-600">Pontos</th><th className="px-3 py-2 text-left font-medium text-gray-600">Distância</th><th className="px-3 py-2 text-left font-medium text-gray-600">Valor</th></tr></thead>
                                             <tbody className="divide-y">
-                                                {corridasConcluidas.filter(c => filtroConcluidas === 'todas' || (filtroConcluidas === 'finalizadas' && c.status === 'finalizado') || (filtroConcluidas === 'canceladas' && c.status === 'cancelado')).map(c => {
-                                                    // Verificar se tem retorno
-                                                    let temRetorno = false;
-                                                    try {
-                                                        const dadosPontos = c.dados_pontos ? (typeof c.dados_pontos === 'string' ? JSON.parse(c.dados_pontos) : c.dados_pontos) : [];
-                                                        temRetorno = dadosPontos?.some(p => p.is_retorno || p.tipo_ponto === 'retorno');
-                                                    } catch(e) {}
-                                                    
-                                                    return (
-                                                        <React.Fragment key={c.id}>
-                                                            <tr className={`hover:bg-gray-50 cursor-pointer ${temRetorno ? 'bg-orange-50 border-l-4 border-l-orange-400' : ''}`} onClick={() => toggleExpandirCorrida(c.id)}>
-                                                                <td className="px-2 py-3 text-center">
-                                                                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm font-bold transition-all duration-200 ${corridaExpandida === c.id ? 'bg-blue-500 text-white shadow-md rotate-90' : 'bg-gradient-to-br from-gray-100 to-gray-200 text-gray-600 hover:from-blue-100 hover:to-blue-200 hover:text-blue-600 shadow'}`}>
-                                                                        <span className={`transition-transform duration-200 ${corridaExpandida === c.id ? 'rotate-45' : ''}`}>+</span>
-                                                                    </div>
-                                                                </td>
-                                                                <td className="px-3 py-3 font-medium">
-                                                                    #{c.tutts_os_numero || c.id}
-                                                                    {temRetorno && <span className="ml-2 text-orange-500" title="Corrida com retorno">⚠️</span>}
-                                                                </td>
-                                                                <td className="px-3 py-3"><span className={`px-2 py-1 rounded-full text-xs font-medium ${c.status === 'finalizado' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{c.status === 'finalizado' ? '✅ Finalizada' : '❌ Cancelada'}</span></td>
-                                                                <td className="px-3 py-3 text-gray-600">{new Date(c.criado_em).toLocaleDateString('pt-BR')} {new Date(c.criado_em).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}</td>
-                                                                <td className="px-3 py-3">{c.profissional_nome || <span className="text-gray-400">-</span>}</td>
-                                                                <td className="px-3 py-3 text-center">{c.total_pontos || '-'}</td>
-                                                                <td className="px-3 py-3">{c.tutts_distancia ? `${c.tutts_distancia} km` : '-'}</td>
-                                                            </tr>
-                                                            {/* Linha expandida com detalhes */}
-                                                            {corridaExpandida === c.id && (
-                                                                <tr>
-                                                                    <td colSpan="7" className="px-4 py-4 bg-gray-50">
-                                                                        {!detalhesCorridaExpandida ? (
-                                                                            <div className="text-center py-4"><span className="animate-pulse">⏳ Carregando detalhes...</span></div>
-                                                                        ) : (
-                                                                            <div className="space-y-4">
-                                                                                {/* Cabeçalho com foto do profissional e info */}
-                                                                                <div className="flex items-start gap-4 p-3 bg-white rounded-lg border">
-                                                                                    {detalhesCorridaExpandida.profissional_foto ? (
-                                                                                        <img src={detalhesCorridaExpandida.profissional_foto} className="w-16 h-16 rounded-full object-cover border-2 border-gray-200" />
-                                                                                    ) : (
-                                                                                        <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center text-2xl">🏍️</div>
-                                                                                    )}
-                                                                                    <div className="flex-1">
-                                                                                        <div className="font-bold text-gray-800">{detalhesCorridaExpandida.profissional_nome || 'Sem profissional'}</div>
-                                                                                        {detalhesCorridaExpandida.profissional_telefone && <div className="text-sm text-gray-600">📞 {detalhesCorridaExpandida.profissional_telefone}</div>}
-                                                                                        <div className="flex gap-4 mt-2 text-xs text-gray-500">
-                                                                                            <span>📏 {detalhesCorridaExpandida.tutts_distancia || '-'} km</span>
-                                                                                            <span>📍 {detalhesCorridaExpandida.pontos?.length || 0} pontos</span>
-                                                                                        </div>
-                                                                                    </div>
-                                                                                </div>
-                                                                                
-                                                                                {/* Alerta de retorno */}
-                                                                                {detalhesCorridaExpandida.pontos?.some(p => p.is_retorno || p.tipo_ponto === 'retorno') && (
-                                                                                    <div className="flex items-center gap-2 px-4 py-3 bg-orange-100 border border-orange-300 rounded-lg text-orange-700">
-                                                                                        <span className="text-xl">⚠️</span>
-                                                                                        <div>
-                                                                                            <div className="font-bold">Atenção: Corrida com retorno</div>
-                                                                                            <div className="text-sm">Caso o retorno seja indevido, solicite o cancelamento ao suporte Tutts.</div>
-                                                                                        </div>
-                                                                                    </div>
-                                                                                )}
-                                                                                
-                                                                                {/* Lista de pontos */}
-                                                                                <div className="space-y-2">
-                                                                                    <div className="font-medium text-gray-700">📍 Pontos da corrida:</div>
-                                                                                    {detalhesCorridaExpandida.pontos?.map((p, idx) => {
-                                                                                        const isColeta = idx === 0;
-                                                                                        const isRetorno = p.is_retorno || p.tipo_ponto === 'retorno';
-                                                                                        
-                                                                                        // Normalizar fotos
-                                                                                        let fotosArray = [];
-                                                                                        try {
-                                                                                            if (typeof p.fotos === 'string' && p.fotos !== '' && p.fotos !== '[]') {
-                                                                                                fotosArray = JSON.parse(p.fotos);
-                                                                                            } else if (Array.isArray(p.fotos)) {
-                                                                                                fotosArray = p.fotos;
-                                                                                            }
-                                                                                        } catch { fotosArray = []; }
-                                                                                        
-                                                                                        const endereco = p.endereco_completo || [p.rua, p.numero, p.bairro, p.cidade].filter(Boolean).join(', ') || 'Endereço não informado';
-                                                                                        
-                                                                                        return (
-                                                                                            <div key={idx} className={`p-3 rounded-lg border-2 ${isRetorno ? 'border-orange-300 bg-orange-50' : isColeta ? 'border-amber-200 bg-amber-50' : 'border-gray-200 bg-white'}`}>
-                                                                                                <div className="flex items-start gap-3">
-                                                                                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0 ${isRetorno ? 'bg-orange-500' : isColeta ? 'bg-amber-500' : 'bg-blue-500'}`}>
-                                                                                                        {isRetorno ? '↩️' : isColeta ? '📦' : idx}
-                                                                                                    </div>
-                                                                                                    <div className="flex-1">
-                                                                                                        <div className="flex items-center gap-2 flex-wrap">
-                                                                                                            <span className={`text-xs font-bold ${isRetorno ? 'text-orange-700' : isColeta ? 'text-amber-700' : 'text-blue-700'}`}>
-                                                                                                                {isRetorno ? '↩️ RETORNO' : isColeta ? '📦 COLETA' : `📍 ENTREGA ${idx}`}
-                                                                                                            </span>
-                                                                                                            {isRetorno && p.ponto_retorno_de && (
-                                                                                                                <span className="text-xs text-orange-600">(do ponto {p.ponto_retorno_de})</span>
-                                                                                                            )}
-                                                                                                            {p.numero_nota && <span className="text-xs text-green-600">🏷️ {p.numero_nota}</span>}
-                                                                                                        </div>
-                                                                                                        <div className="text-sm text-gray-700 mt-1">{endereco}</div>
-                                                                                                        
-                                                                                                        {/* Observação */}
-                                                                                                        {p.observacao && (
-                                                                                                            <div className="mt-2 text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded">
-                                                                                                                💬 {p.observacao}
-                                                                                                            </div>
-                                                                                                        )}
-                                                                                                        
-                                                                                                        {/* Motivo de finalização */}
-                                                                                                        {p.motivo_finalizacao && (
-                                                                                                            <div className={`mt-2 text-xs px-2 py-1 rounded ${p.motivo_finalizacao.toLowerCase() === 'sucesso' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                                                                                                                {p.motivo_finalizacao.toLowerCase() === 'sucesso' ? '✅' : '⚠️'} {p.motivo_descricao || p.motivo_finalizacao}
-                                                                                                            </div>
-                                                                                                        )}
-                                                                                                        
-                                                                                                        {/* Fotos de protocolo */}
-                                                                                                        {fotosArray.length > 0 && (
-                                                                                                            <div className="mt-2">
-                                                                                                                <div className="text-xs text-gray-500 mb-1">📸 Fotos de protocolo:</div>
-                                                                                                                <div className="flex gap-2 flex-wrap">
-                                                                                                                    {fotosArray.map((foto, fIdx) => (
-                                                                                                                        <img 
-                                                                                                                            key={fIdx} 
-                                                                                                                            src={foto} 
-                                                                                                                            className="w-16 h-16 object-cover rounded cursor-pointer hover:opacity-80 border"
-                                                                                                                            onClick={(e) => { e.stopPropagation(); abrirFotoModal(fotosArray, fIdx); }}
-                                                                                                                        />
-                                                                                                                    ))}
-                                                                                                                </div>
-                                                                                                            </div>
-                                                                                                        )}
-                                                                                                        
-                                                                                                        {/* Horários */}
-                                                                                                        {(p.data_chegada || p.data_finalizado) && (
-                                                                                                            <div className="mt-2 flex gap-3 text-xs text-gray-500">
-                                                                                                                {p.data_chegada && <span>🔵 Chegou: {new Date(p.data_chegada).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}</span>}
-                                                                                                                {p.data_finalizado && <span>✅ Finalizado: {new Date(p.data_finalizado).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}</span>}
-                                                                                                            </div>
-                                                                                                        )}
-                                                                                                    </div>
-                                                                                                </div>
-                                                                                            </div>
-                                                                                        );
-                                                                                    })}
-                                                                                </div>
-                                                                            </div>
-                                                                        )}
-                                                                    </td>
-                                                                </tr>
-                                                            )}
-                                                        </React.Fragment>
-                                                    );
-                                                })}
+                                                {corridasConcluidas.filter(c => filtroConcluidas === 'todas' || (filtroConcluidas === 'finalizadas' && c.status === 'finalizado') || (filtroConcluidas === 'canceladas' && c.status === 'cancelado')).map(c => (
+                                                    <tr key={c.id} className="hover:bg-gray-50">
+                                                        <td className="px-3 py-3 font-medium">#{c.tutts_os_numero || c.id}</td>
+                                                        <td className="px-3 py-3"><span className={`px-2 py-1 rounded-full text-xs font-medium ${c.status === 'finalizado' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{c.status === 'finalizado' ? '✅ Finalizada' : '❌ Cancelada'}</span></td>
+                                                        <td className="px-3 py-3 text-gray-600">{new Date(c.criado_em).toLocaleDateString('pt-BR')} {new Date(c.criado_em).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}</td>
+                                                        <td className="px-3 py-3">{c.profissional_nome || <span className="text-gray-400">-</span>}</td>
+                                                        <td className="px-3 py-3 text-center">{c.total_pontos || '-'}</td>
+                                                        <td className="px-3 py-3">{c.tutts_distancia ? `${c.tutts_distancia} km` : '-'}</td>
+                                                        <td className="px-3 py-3 font-medium text-green-600">{c.tutts_valor ? `R$ ${parseFloat(c.tutts_valor).toFixed(2)}` : '-'}</td>
+                                                    </tr>
+                                                ))}
                                             </tbody>
                                         </table>
                                     </div>
                                 )}
                                 {corridasConcluidas.length > 0 && (
-                                    <div className="mt-4 pt-4 border-t grid grid-cols-3 gap-4">
+                                    <div className="mt-4 pt-4 border-t grid grid-cols-2 md:grid-cols-4 gap-4">
                                         <div className="bg-green-50 p-3 rounded-lg text-center"><div className="text-2xl font-bold text-green-600">{corridasConcluidas.filter(c => c.status === 'finalizado').length}</div><div className="text-xs text-gray-600">Finalizadas</div></div>
                                         <div className="bg-red-50 p-3 rounded-lg text-center"><div className="text-2xl font-bold text-red-600">{corridasConcluidas.filter(c => c.status === 'cancelado').length}</div><div className="text-xs text-gray-600">Canceladas</div></div>
                                         <div className="bg-blue-50 p-3 rounded-lg text-center"><div className="text-2xl font-bold text-blue-600">{corridasConcluidas.filter(c => c.status === 'finalizado').reduce((acc, c) => acc + parseFloat(c.tutts_distancia || 0), 0).toFixed(1)} km</div><div className="text-xs text-gray-600">Total Distância</div></div>
+                                        <div className="bg-purple-50 p-3 rounded-lg text-center"><div className="text-2xl font-bold text-purple-600">R$ {corridasConcluidas.filter(c => c.status === 'finalizado').reduce((acc, c) => acc + parseFloat(c.tutts_valor || 0), 0).toFixed(2)}</div><div className="text-xs text-gray-600">Total Valor</div></div>
                                     </div>
                                 )}
-                            </div>
-                        </div>
-                    )}
-                    
-                    {/* Modal salvar endereço */}
-                    {modalSalvarEndereco.aberto && (
-                        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setModalSalvarEndereco({ aberto: false, ponto: null })}>
-                            <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm p-4" onClick={e => e.stopPropagation()}>
-                                <div className="flex items-center justify-between mb-4">
-                                    <span className="font-bold text-green-700">💾 Salvar Endereço</span>
-                                    <button onClick={() => setModalSalvarEndereco({ aberto: false, ponto: null })} className="text-gray-400 hover:text-gray-600">✕</button>
-                                </div>
-                                
-                                {/* Preview do endereço */}
-                                <div className="bg-gray-50 p-3 rounded-lg mb-4 text-sm">
-                                    <div className="font-medium text-gray-700">{modalSalvarEndereco.ponto?.endereco_completo || `${modalSalvarEndereco.ponto?.rua}, ${modalSalvarEndereco.ponto?.numero}`}</div>
-                                    {modalSalvarEndereco.ponto?.bairro && <div className="text-xs text-gray-500">{modalSalvarEndereco.ponto?.bairro}, {modalSalvarEndereco.ponto?.cidade}</div>}
-                                </div>
-                                
-                                {/* Input do apelido */}
-                                <div className="mb-4">
-                                    <label className="text-xs text-gray-600 font-medium">⭐ Apelido (para buscar depois)</label>
-                                    <input 
-                                        type="text" 
-                                        value={apelidoSalvar} 
-                                        onChange={(e) => setApelidoSalvar(e.target.value)}
-                                        onKeyPress={(e) => { if (e.key === 'Enter') salvarEndereco(); }}
-                                        className="w-full px-3 py-2 border border-green-300 rounded-lg text-sm mt-1 focus:ring-2 focus:ring-green-400 outline-none" 
-                                        placeholder="Ex: Loja Centro, CD Principal, Cliente X..."
-                                        autoFocus
-                                    />
-                                    <div className="text-xs text-gray-400 mt-1">💡 Use um nome fácil de lembrar</div>
-                                </div>
-                                
-                                <div className="flex gap-2">
-                                    <button onClick={() => setModalSalvarEndereco({ aberto: false, ponto: null })} className="flex-1 py-2 border rounded-lg text-sm hover:bg-gray-50">Cancelar</button>
-                                    <button onClick={salvarEndereco} disabled={salvandoEndereco || !apelidoSalvar.trim()} className="flex-1 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 disabled:opacity-50">
-                                        {salvandoEndereco ? '...' : '💾 Salvar'}
-                                    </button>
-                                </div>
                             </div>
                         </div>
                     )}
