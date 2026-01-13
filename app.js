@@ -6521,42 +6521,41 @@ const hideLoadingScreen = () => {
             }
             const t = new Date,
                 a = new Date(t.getTime() - 36e5),
-                r = M.filter(e => new Date(e.created_at) >= a);
-            if (r.length >= 2) {
+                // Filtrar apenas saques não rejeitados na última hora
+                r = M.filter(e => new Date(e.created_at) >= a && e.status !== "rejeitado");
+            if (r.length >= 1) {
                 const e = new Date(new Date(r[0].created_at).getTime() + 36e5),
                     a = Math.ceil((e - t) / 6e4);
-                return void ja(`⚠️ Limite atingido! Você já fez 2 saques na última hora. Aguarde ${a} minutos para solicitar novamente.`, "error")
+                return void ja(`⚠️ Permitido apenas 1 saque por hora! Aguarde ${a} minutos para solicitar novamente.`, "error")
             }
-            if (r.find(t => parseFloat(t.requested_amount) === e)) ja(`⚠️ Valor repetido! Você já solicitou um saque de R$ ${e.toFixed(2)} na última hora. Escolha um valor diferente.`, "error");
-            else {
-                s(!0);
-                try {
-                    await fetch(`${API_URL}/withdrawals`, {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json"
-                        },
-                        body: JSON.stringify({
-                            userCod: l.codProfissional,
-                            userName: T.full_name,
-                            cpf: T.cpf,
-                            pixKey: T.pix_key,
-                            requestedAmount: e
-                        })
-                    }), ja("✅ Saque solicitado!", "success"), 
-                    x({
-                        ...p,
-                        withdrawAmount: ""
-                    }), 
-                    // Recarrega saques e saldo (o cálculo automático subtrai pendentes)
-                    Oa(), 
-                    setTimeout(() => buscarSaldoPlificUsuario(), 500),
-                    qa()
-                } catch (e) {
-                    ja("Erro", "error")
-                }
-                s(!1)
+            // Com 1 saque por hora, não precisa verificar valor repetido
+            s(!0);
+            try {
+                await fetch(`${API_URL}/withdrawals`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        userCod: l.codProfissional,
+                        userName: T.full_name,
+                        cpf: T.cpf,
+                        pixKey: T.pix_key,
+                        requestedAmount: e
+                    })
+                }), ja("✅ Saque solicitado!", "success"), 
+                x({
+                    ...p,
+                    withdrawAmount: ""
+                }), 
+                // Recarrega saques e saldo (o cálculo automático subtrai pendentes)
+                Oa(), 
+                setTimeout(() => buscarSaldoPlificUsuario(), 500),
+                qa()
+            } catch (e) {
+                ja("Erro", "error")
             }
+            s(!1)
         }, Jl = async (e, t, a = null) => {
             try {
                 // Calcular data do débito baseado no toggle de acerto
@@ -8153,8 +8152,10 @@ const hideLoadingScreen = () => {
                 r = t && l > a,
                 o = new Date,
                 s = new Date(o.getTime() - 36e5),
-                n = M.filter(e => new Date(e.created_at) >= s),
-                m = Math.max(0, 2 - n.length),
+                // Filtrar apenas saques pendentes ou aprovados na última hora (excluir rejeitados)
+                n = M.filter(e => new Date(e.created_at) >= s && e.status !== "rejeitado"),
+                // Limite de 1 saque por hora
+                m = Math.max(0, 1 - n.length),
                 i = n.map(e => parseFloat(e.requested_amount)),
                 d = i.includes(l) && l > 0;
             
@@ -8162,12 +8163,22 @@ const hideLoadingScreen = () => {
             const saquesPend = M.filter(sq => sq.status === "pending" || sq.status === "aguardando_aprovacao");
             const totalPend = saquesPend.reduce((acc, sq) => acc + parseFloat(sq.requested_amount || 0), 0);
             const saldoDisp = saldoPlificUser.saldo !== null ? Math.max(0, saldoPlificUser.saldo - totalPend) : null;
-            let u = null;
-            if (n.length >= 2) {
-                const e = new Date(Math.min(...n.map(e => new Date(e.created_at).getTime()))),
-                    t = new Date(e.getTime() + 36e5) - o;
-                t > 0 && (u = Math.ceil(t / 6e4))
+            
+            // Calcular tempo restante para habilitar novamente (em segundos para cronômetro)
+            let tempoRestanteSeg = 0;
+            let tempoRestanteStr = "";
+            if (n.length >= 1) {
+                const saqueMaisRecente = new Date(Math.max(...n.map(e => new Date(e.created_at).getTime())));
+                const tempoLiberacao = new Date(saqueMaisRecente.getTime() + 36e5);
+                const diffMs = tempoLiberacao - o;
+                if (diffMs > 0) {
+                    tempoRestanteSeg = Math.ceil(diffMs / 1000);
+                    const mins = Math.floor(tempoRestanteSeg / 60);
+                    const segs = tempoRestanteSeg % 60;
+                    tempoRestanteStr = `${mins.toString().padStart(2, "0")}:${segs.toString().padStart(2, "0")}`;
+                }
             }
+            
             return React.createElement("div", {
                 className: "space-y-4"
             }, 
@@ -8203,25 +8214,18 @@ const hideLoadingScreen = () => {
                 }, "⚠️ Você não possui saldo suficiente para solicitar saque emergencial.")
             ),
             React.createElement("div", {
-                className: "rounded-lg p-4 border " + (0 === m ? "bg-red-50 border-red-300" : 1 === m ? "bg-orange-50 border-orange-300" : "bg-blue-50 border-blue-300")
+                className: "rounded-lg p-4 border " + (0 === m ? "bg-red-50 border-red-300" : "bg-green-50 border-green-300")
             }, React.createElement("div", {
                 className: "flex items-center justify-between"
             }, React.createElement("div", {
                 className: "flex items-center gap-2"
             }, React.createElement("span", {
                 className: "text-2xl"
-            }, 0 === m ? "🚫" : 1 === m ? "⚠️" : "✅"), React.createElement("div", null, React.createElement("p", {
-                className: "font-semibold " + (0 === m ? "text-red-800" : 1 === m ? "text-orange-800" : "text-blue-800")
-            }, 0 === m ? "Limite atingido" : `${m} saque(s) disponível(is)`), React.createElement("p", {
-                className: "text-xs " + (0 === m ? "text-red-600" : 1 === m ? "text-orange-600" : "text-blue-600")
-            }, 0 === m ? `Aguarde ${u||"?"} min para solicitar novamente` : "Máximo 2 saques por hora com valores diferentes"))), React.createElement("div", {
-                className: "flex gap-1"
-            }, [0, 1].map(e => React.createElement("div", {
-                key: e,
-                className: "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold " + (e < n.length ? "bg-gray-400 text-white" : "bg-green-500 text-white")
-            }, e < n.length ? "✓" : e + 1 - n.length)))), i.length > 0 && React.createElement("p", {
-                className: "text-xs mt-2 text-gray-600"
-            }, "Valores já usados na última hora: ", i.map(e => `R$ ${e.toFixed(2)}`).join(", "))), t && React.createElement("div", {
+            }, 0 === m ? "⏳" : "✅"), React.createElement("div", null, React.createElement("p", {
+                className: "font-semibold " + (0 === m ? "text-red-800" : "text-green-800")
+            }, 0 === m ? "Permitido apenas 1 saque por hora!" : "Saque disponível"), React.createElement("p", {
+                className: "text-sm " + (0 === m ? "text-red-600" : "text-green-600")
+            }, 0 === m ? `Tente novamente em: ${tempoRestanteStr || "calculando..."}` : "Você pode solicitar seu saque emergencial"))))), t && React.createElement("div", {
                 className: "bg-green-50 border border-green-300 rounded-lg p-4"
             }, React.createElement("p", {
                 className: "text-green-800 font-semibold"
@@ -8264,17 +8268,15 @@ const hideLoadingScreen = () => {
                     x({...p, withdrawAmount: val});
                 },
                 placeholder: "Ex: 50,00",
-                className: "w-full px-4 py-3 border rounded-lg text-lg " + (r || d || (p.withdrawAmount && parseFloat(p.withdrawAmount) < 10) ? "border-red-500 bg-red-50" : ""),
+                className: "w-full px-4 py-3 border rounded-lg text-lg " + (r || (p.withdrawAmount && parseFloat(p.withdrawAmount) < 10) ? "border-red-500 bg-red-50" : ""),
                 disabled: 0 === m || (saldoDisp !== null && saldoDisp <= 0)
             }), p.withdrawAmount && parseFloat(p.withdrawAmount) > 0 && parseFloat(p.withdrawAmount) < 10 && React.createElement("p", {
                 className: "text-red-600 text-sm mt-1 font-semibold"
             }, "❌ Valor mínimo é R$ 10,00"), r && React.createElement("p", {
                 className: "text-red-600 text-sm mt-1 font-semibold"
-            }, "❌ Valor excede o limite da gratuidade (", er(a), ")"), d && !r && React.createElement("p", {
+            }, "❌ Valor excede o limite da gratuidade (", er(a), ")")), saldoDisp !== null && parseFloat(p.withdrawAmount || 0) > saldoDisp && React.createElement("p", {
                 className: "text-red-600 text-sm mt-1 font-semibold"
-            }, "❌ Você já solicitou R$ ", l.toFixed(2), " na última hora. Escolha outro valor.")), saldoDisp !== null && parseFloat(p.withdrawAmount || 0) > saldoDisp && React.createElement("p", {
-                className: "text-red-600 text-sm mt-1 font-semibold"
-            }, "❌ Valor excede seu saldo disponível (R$ " + saldoDisp.toFixed(2).replace(".", ",") + ")"), p.withdrawAmount && parseFloat(p.withdrawAmount) >= 10 && !r && !d && (() => {
+            }, "❌ Valor excede seu saldo disponível (R$ " + saldoDisp.toFixed(2).replace(".", ",") + ")"), p.withdrawAmount && parseFloat(p.withdrawAmount) >= 10 && !r && (() => {
                 const e = (e => {
                     const t = G.find(e => "ativa" === e.status && e.remaining > 0),
                         a = !!t,
@@ -8306,7 +8308,7 @@ const hideLoadingScreen = () => {
                 }, er(e.final))))
             })(), React.createElement("button", {
                 onClick: Vl,
-                disabled: c || !p.withdrawAmount || parseFloat(p.withdrawAmount) < 10 || r || d || 0 === m || (saldoDisp !== null && saldoDisp <= 0) || (saldoDisp !== null && parseFloat(p.withdrawAmount || 0) > saldoDisp),
+                disabled: c || !p.withdrawAmount || parseFloat(p.withdrawAmount) < 10 || r || 0 === m || (saldoDisp !== null && saldoDisp <= 0) || (saldoDisp !== null && parseFloat(p.withdrawAmount || 0) > saldoDisp),
                 className: "w-full bg-green-600 text-white py-3 rounded-lg font-bold disabled:opacity-50"
             }, c ? "..." : 0 === m ? "🚫 Limite Atingido" : parseFloat(p.withdrawAmount || 0) < 10 ? "⚠️ Mínimo R$ 10" : "💸 Solicitar"))
         })(), React.createElement("h3", {
