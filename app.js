@@ -177,7 +177,7 @@ const SISTEMA_MODULOS_CONFIG = [
       abas: [{id: "dashboard", label: "Dashboard"}, {id: "search", label: "Busca"}, {id: "ranking", label: "Ranking"}, {id: "relatorios", label: "Relatórios"}]
     },
     { id: "financeiro", label: "Financeiro", icon: "💰",
-      abas: [{id: "solicitacoes", label: "Solicitações"}, {id: "validacao", label: "Validação"}, {id: "conciliacao", label: "Conciliação"}, {id: "resumo", label: "Resumo"}, {id: "gratuidades", label: "Gratuidades"}, {id: "restritos", label: "Restritos"}, {id: "indicacoes", label: "Indicações"}, {id: "promo-novatos", label: "Promo Novatos"}, {id: "loja", label: "Loja"}, {id: "relatorios", label: "Relatórios"}, {id: "horarios", label: "Horários"}, {id: "avisos", label: "Avisos"}, {id: "backup", label: "Backup"}, {id: "saldo-plific", label: "Saldo Plific"}]
+      abas: [{id: "home-fin", label: "🏠 Home"}, {id: "solicitacoes", label: "Solicitações"}, {id: "validacao", label: "Validação"}, {id: "conciliacao", label: "Conciliação"}, {id: "resumo", label: "Resumo"}, {id: "gratuidades", label: "Gratuidades"}, {id: "restritos", label: "Restritos"}, {id: "indicacoes", label: "Indicações"}, {id: "promo-novatos", label: "Promo Novatos"}, {id: "loja", label: "Loja"}, {id: "relatorios", label: "Relatórios"}, {id: "horarios", label: "Horários"}, {id: "avisos", label: "Avisos"}, {id: "backup", label: "Backup"}, {id: "saldo-plific", label: "Saldo Plific"}]
     },
     { id: "operacional", label: "Operacional", icon: "⚙️",
       abas: [{id: "indicacoes", label: "Indicações"}, {id: "promo-novatos", label: "Promo Novatos"}, {id: "avisos", label: "Avisos"}, {id: "novas-operacoes", label: "Novas Operações"}, {id: "recrutamento", label: "Recrutamento"}, {id: "localizacao-clientes", label: "Localização Clientes"}, {id: "relatorio-diario", label: "Relatório Diário"}, {id: "score-prof", label: "Score Prof"}]
@@ -186,7 +186,7 @@ const SISTEMA_MODULOS_CONFIG = [
       abas: [{id: "panorama", label: "Panorama"}, {id: "principal", label: "Principal"}, {id: "faltosos", label: "Faltosos"}, {id: "espelho", label: "Espelho"}, {id: "relatorios", label: "Relatórios"}, {id: "motoboys", label: "Motoboys"}, {id: "restricoes", label: "Restrições"}, {id: "config", label: "Configurações"}]
     },
     { id: "bi", label: "BI", icon: "📊",
-      abas: [{id: "dashboard", label: "Dashboard"}, {id: "acompanhamento", label: "Acompanhamento"}, {id: "profissionais", label: "Por Profissional"}, {id: "garantido", label: "Garantido"}, {id: "os", label: "Análise por OS"}, {id: "upload", label: "Upload"}, {id: "config", label: "Configurações"}]
+      abas: [{id: "home-bi", label: "🏠 Home"}, {id: "dashboard", label: "Dashboard"}, {id: "acompanhamento", label: "Acompanhamento"}, {id: "profissionais", label: "Por Profissional"}, {id: "garantido", label: "Garantido"}, {id: "os", label: "Análise por OS"}, {id: "upload", label: "Upload"}, {id: "config", label: "Configurações"}]
     },
     { id: "todo", label: "TO-DO", icon: "📝",
       abas: [{id: "tarefas", label: "Tarefas"}, {id: "metricas", label: "Métricas"}]
@@ -1982,8 +1982,8 @@ const hideLoadingScreen = () => {
             } else if (moduloId === "solicitacoes") {
                 x(prev => ({...prev, adminTab: abaId || "dashboard"}));
             } else if (moduloId === "disponibilidade") {
-                he("solicitacoes");
-                x(prev => ({...prev, adminTab: "disponibilidade"}));
+                // Disponibilidade é um módulo separado - não misturar com solicitacoes
+                x(prev => ({...prev, dispTab: abaId || "panorama"}));
             } else if (moduloId === "bi") {
                 ll(); tl(); al(); pl(); carregarPrazosProf();
                 if (abaId) ht(abaId);
@@ -24739,7 +24739,7 @@ const hideLoadingScreen = () => {
                     // Disponibilidade
                     hasModuleAccess(l, "disponibilidade") && 
                     React.createElement("div", {
-                        onClick: () => { he("solicitacoes"); x(e => ({...e, adminTab: "disponibilidade"})); },
+                        onClick: () => { he("disponibilidade"); },
                         className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-blue-300"
                     },
                         React.createElement("div", {className: "h-2 bg-gradient-to-r from-blue-500 to-cyan-600"}),
@@ -24842,8 +24842,116 @@ const hideLoadingScreen = () => {
             )
         }
         
-        const rr = "admin_master" === l.role && ("solicitacoes" === Ee || "disponibilidade" === Ee),
+        const rr = "admin_master" === l.role && ("solicitacoes" === Ee),
             or = "admin" === l.role;
+        
+        // Se é módulo DISPONIBILIDADE, renderizar separadamente
+        if ("disponibilidade" === Ee) {
+            return React.createElement("div", {
+                className: "min-h-screen bg-gray-50"
+            }, i && React.createElement(Toast, i), n && React.createElement(LoadingOverlay, null),
+            // ========== HEADER COM NAVEGAÇÃO - DISPONIBILIDADE ==========
+            React.createElement(HeaderCompacto, {
+                usuario: l,
+                moduloAtivo: Ee,
+                abaAtiva: p.dispTab || "panorama",
+                socialProfile: socialProfile,
+                isLoading: f,
+                lastUpdate: E,
+                onRefresh: ul,
+                onLogout: () => o(null),
+                onGoHome: () => he("home"),
+                onNavigate: navegarSidebar,
+                onChangeTab: (abaId) => x({...p, dispTab: abaId})
+            }),
+            // Conteúdo do Disponibilidade
+            React.createElement("div", {className: "max-w-7xl mx-auto p-6"},
+                (() => {
+                    const e = p.dispData || { regioes: [], lojas: [], linhas: [] },
+                        t = p.dispTab || "panorama",
+                        a = p.dispLoading,
+                        r = async () => {
+                            try {
+                                x(e => ({...e, dispLoading: !0}));
+                                const e = await fetch(`${API_URL}/disponibilidade`);
+                                if (!e.ok) throw new Error("Erro ao carregar");
+                                const t = await e.json();
+                                x(e => ({...e, dispData: t, dispLoading: !1, dispLoaded: !0}))
+                            } catch (e) {
+                                console.error("Erro ao carregar disponibilidade:", e);
+                                ja("Erro ao carregar dados", "error");
+                                x(e => ({...e, dispLoading: !1, dispLoaded: !0}))
+                            }
+                        };
+                    p.dispLoaded || a || (r(), 0 === pe.length && Ta());
+                    
+                    if (a) return React.createElement("div", {className: "flex justify-center py-12"},
+                        React.createElement("div", {className: "animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"})
+                    );
+                    
+                    // Panorama
+                    if (t === "panorama") return React.createElement("div", {className: "bg-blue-50 border border-blue-200 rounded-xl p-8 text-center"},
+                        React.createElement("span", {className: "text-5xl mb-4 block"}, "📅"),
+                        React.createElement("h2", {className: "text-xl font-bold text-blue-800 mb-2"}, "Panorama de Disponibilidade"),
+                        React.createElement("p", {className: "text-blue-600"}, "Visão geral das escalas e disponibilidades dos profissionais.")
+                    );
+                    
+                    // Principal
+                    if (t === "principal") return React.createElement("div", {className: "bg-green-50 border border-green-200 rounded-xl p-8 text-center"},
+                        React.createElement("span", {className: "text-5xl mb-4 block"}, "📋"),
+                        React.createElement("h2", {className: "text-xl font-bold text-green-800 mb-2"}, "Disponibilidade Principal"),
+                        React.createElement("p", {className: "text-green-600"}, "Gerenciamento principal de escalas.")
+                    );
+                    
+                    // Faltosos
+                    if (t === "faltosos") return React.createElement("div", {className: "bg-red-50 border border-red-200 rounded-xl p-8 text-center"},
+                        React.createElement("span", {className: "text-5xl mb-4 block"}, "⚠️"),
+                        React.createElement("h2", {className: "text-xl font-bold text-red-800 mb-2"}, "Profissionais Faltosos"),
+                        React.createElement("p", {className: "text-red-600"}, "Lista de profissionais com faltas ou ausências.")
+                    );
+                    
+                    // Espelho
+                    if (t === "espelho") return React.createElement("div", {className: "bg-purple-50 border border-purple-200 rounded-xl p-8 text-center"},
+                        React.createElement("span", {className: "text-5xl mb-4 block"}, "🪞"),
+                        React.createElement("h2", {className: "text-xl font-bold text-purple-800 mb-2"}, "Espelho de Disponibilidade"),
+                        React.createElement("p", {className: "text-purple-600"}, "Visualização espelhada das escalas.")
+                    );
+                    
+                    // Relatórios
+                    if (t === "relatorios") return React.createElement("div", {className: "bg-orange-50 border border-orange-200 rounded-xl p-8 text-center"},
+                        React.createElement("span", {className: "text-5xl mb-4 block"}, "📊"),
+                        React.createElement("h2", {className: "text-xl font-bold text-orange-800 mb-2"}, "Relatórios de Disponibilidade"),
+                        React.createElement("p", {className: "text-orange-600"}, "Relatórios e análises de disponibilidade.")
+                    );
+                    
+                    // Motoboys
+                    if (t === "motoboys") return React.createElement("div", {className: "bg-teal-50 border border-teal-200 rounded-xl p-8 text-center"},
+                        React.createElement("span", {className: "text-5xl mb-4 block"}, "🏍️"),
+                        React.createElement("h2", {className: "text-xl font-bold text-teal-800 mb-2"}, "Lista de Motoboys"),
+                        React.createElement("p", {className: "text-teal-600"}, "Gerenciamento de profissionais motoboys.")
+                    );
+                    
+                    // Restrições
+                    if (t === "restricoes") return React.createElement("div", {className: "bg-yellow-50 border border-yellow-200 rounded-xl p-8 text-center"},
+                        React.createElement("span", {className: "text-5xl mb-4 block"}, "🚫"),
+                        React.createElement("h2", {className: "text-xl font-bold text-yellow-800 mb-2"}, "Restrições"),
+                        React.createElement("p", {className: "text-yellow-600"}, "Gerenciamento de restrições de disponibilidade.")
+                    );
+                    
+                    // Config
+                    if (t === "config") return React.createElement("div", {className: "bg-gray-50 border border-gray-200 rounded-xl p-8 text-center"},
+                        React.createElement("span", {className: "text-5xl mb-4 block"}, "⚙️"),
+                        React.createElement("h2", {className: "text-xl font-bold text-gray-800 mb-2"}, "Configurações"),
+                        React.createElement("p", {className: "text-gray-600"}, "Configurações do módulo de disponibilidade.")
+                    );
+                    
+                    return null;
+                })()
+            ));
+        }
+        
+        // Módulo SOLICITAÇÕES (original)
+        if ("solicitacoes" !== Ee) return null;
         return React.createElement("div", {
             className: "min-h-screen bg-gray-50"
         }, i && React.createElement(Toast, i), n && React.createElement(LoadingOverlay, null), u && React.createElement(ImageModal, {
@@ -24880,17 +24988,19 @@ const hideLoadingScreen = () => {
                 className: "flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
             }, "📋 Ir para Tarefas")
         ))),
-        // ========== HEADER COM NAVEGAÇÃO ==========
+        // ========== HEADER COM NAVEGAÇÃO - SOLICITAÇÕES ==========
         React.createElement(HeaderCompacto, {
             usuario: l,
             moduloAtivo: Ee,
+            abaAtiva: p.adminTab || "dashboard",
             socialProfile: socialProfile,
             isLoading: f,
             lastUpdate: E,
             onRefresh: ul,
             onLogout: () => o(null),
             onGoHome: () => he("home"),
-            onNavigate: navegarSidebar
+            onNavigate: navegarSidebar,
+            onChangeTab: (abaId) => x({...p, adminTab: abaId})
         }),
         // Conteúdo principal (sub-abas removidas - navegação via sidebar)
         React.createElement("div", {
