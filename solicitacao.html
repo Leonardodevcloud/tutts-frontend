@@ -912,9 +912,9 @@
                                                         <React.Fragment key={c.id}>
                                                             <tr className={`hover:bg-gray-50 cursor-pointer ${temRetorno ? 'bg-orange-50 border-l-4 border-l-orange-400' : ''}`} onClick={() => toggleExpandirCorrida(c.id)}>
                                                                 <td className="px-2 py-3 text-center">
-                                                                    <button className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-all ${corridaExpandida === c.id ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}`}>
-                                                                        {corridaExpandida === c.id ? '−' : '+'}
-                                                                    </button>
+                                                                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm font-bold transition-all duration-200 ${corridaExpandida === c.id ? 'bg-blue-500 text-white shadow-md rotate-90' : 'bg-gradient-to-br from-gray-100 to-gray-200 text-gray-600 hover:from-blue-100 hover:to-blue-200 hover:text-blue-600 shadow'}`}>
+                                                                        <span className={`transition-transform duration-200 ${corridaExpandida === c.id ? 'rotate-45' : ''}`}>+</span>
+                                                                    </div>
                                                                 </td>
                                                                 <td className="px-3 py-3 font-medium">
                                                                     #{c.tutts_os_numero || c.id}
@@ -944,11 +944,9 @@
                                                                                     <div className="flex-1">
                                                                                         <div className="font-bold text-gray-800">{detalhesCorridaExpandida.profissional_nome || 'Sem profissional'}</div>
                                                                                         {detalhesCorridaExpandida.profissional_telefone && <div className="text-sm text-gray-600">📞 {detalhesCorridaExpandida.profissional_telefone}</div>}
-                                                                                        {detalhesCorridaExpandida.profissional_placa && <div className="text-sm text-gray-600">🏍️ Placa: {detalhesCorridaExpandida.profissional_placa}</div>}
                                                                                         <div className="flex gap-4 mt-2 text-xs text-gray-500">
                                                                                             <span>📏 {detalhesCorridaExpandida.tutts_distancia || '-'} km</span>
-                                                                                            <span>⏱️ {detalhesCorridaExpandida.tutts_duracao || '-'}</span>
-                                                                                            <span className="text-green-600 font-bold">💰 R$ {detalhesCorridaExpandida.tutts_valor ? parseFloat(detalhesCorridaExpandida.tutts_valor).toFixed(2) : '-'}</span>
+                                                                                            <span>📍 {detalhesCorridaExpandida.pontos?.length || 0} pontos</span>
                                                                                         </div>
                                                                                     </div>
                                                                                 </div>
