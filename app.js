@@ -10621,8 +10621,9 @@ const hideLoadingScreen = () => {
                         let r;
                         if ("solicitacao" === e) r = new Date(l.created_at).toISOString().split("T")[0];
                         else {
-                            if (!l.debito_at) return !1;
-                            r = new Date(l.debito_at).toISOString().split("T")[0]
+                            // Usar debito_plific_at (nova coluna da Plific)
+                            if (!l.debito_plific_at) return !1;
+                            r = new Date(l.debito_plific_at).toISOString().split("T")[0]
                         }
                         return t && a ? r >= t && r <= a : t ? r >= t : !a || r <= a
                     }),
