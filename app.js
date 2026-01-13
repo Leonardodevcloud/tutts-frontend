@@ -10624,18 +10624,16 @@ const hideLoadingScreen = () => {
                         if (!t && !a) return !0;
                         let r;
                         if ("solicitacao" === e) {
-                            // Data da solicitação
-                            const d = new Date(l.created_at);
-                            r = d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+                            // Data da solicitação - extrair só a data sem timezone
+                            if (!l.created_at) return !1;
+                            r = l.created_at.split("T")[0];
                         } else if ("lancamento" === e) {
                             // Data de lançamento (momento da aprovação)
                             if (!l.lancamento_at) return !1;
-                            const d = new Date(l.lancamento_at);
-                            r = d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+                            r = l.lancamento_at.split("T")[0];
                         } else {
-                            // Data do débito (coluna Débito no front) - extrair só a data sem timezone
+                            // Data do débito (coluna Débito no front)
                             if (!l.debito_plific_at) return !1;
-                            // Pegar apenas a parte da data (YYYY-MM-DD) direto da string
                             r = l.debito_plific_at.split("T")[0];
                         }
                         return t && a ? r >= t && r <= a : t ? r >= t : !a || r <= a
