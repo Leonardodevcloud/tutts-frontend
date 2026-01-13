@@ -10623,15 +10623,20 @@ const hideLoadingScreen = () => {
                     l = q.filter(l => {
                         if (!t && !a) return !0;
                         let r;
-                        if ("solicitacao" === e) r = new Date(l.created_at).toISOString().split("T")[0];
-                        else if ("lancamento" === e) {
-                            // Usar lancamento_at (data/hora que o admin aprovou - nova coluna)
+                        if ("solicitacao" === e) {
+                            // Data da solicitação
+                            const d = new Date(l.created_at);
+                            r = d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+                        } else if ("lancamento" === e) {
+                            // Data de lançamento (momento da aprovação)
                             if (!l.lancamento_at) return !1;
-                            r = new Date(l.lancamento_at).toISOString().split("T")[0]
+                            const d = new Date(l.lancamento_at);
+                            r = d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
                         } else {
-                            // Usar debito_plific_at (data que aparece na coluna Débito do front)
+                            // Data do débito (coluna Débito no front) - extrair só a data sem timezone
                             if (!l.debito_plific_at) return !1;
-                            r = new Date(l.debito_plific_at).toISOString().split("T")[0]
+                            // Pegar apenas a parte da data (YYYY-MM-DD) direto da string
+                            r = l.debito_plific_at.split("T")[0];
                         }
                         return t && a ? r >= t && r <= a : t ? r >= t : !a || r <= a
                     }),
