@@ -222,11 +222,23 @@
             }, [pontoRecemAdicionado]);
             
             const carregarProfissionais = async () => {
+                console.log('🔍 Iniciando carregarProfissionais...');
+                console.log('🔍 API_URL:', API_URL);
+                console.log('🔍 Token:', token ? 'presente' : 'ausente');
                 setCarregandoProfissionais(true);
                 try {
-                    const resp = await fetch(`${API_URL}/api/solicitacao/profissionais`, { headers: { 'Authorization': `Bearer ${token}` } });
-                    if (resp.ok) { const data = await resp.json(); setProfissionais(data.profissionais || []); }
-                } catch (err) { console.error('Erro ao carregar profissionais:', err); }
+                    const url = `${API_URL}/api/solicitacao/profissionais`;
+                    console.log('🔍 Fazendo fetch para:', url);
+                    const resp = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+                    console.log('🔍 Resposta status:', resp.status);
+                    if (resp.ok) { 
+                        const data = await resp.json(); 
+                        console.log('🔍 Dados recebidos:', data);
+                        setProfissionais(data.profissionais || []); 
+                    } else {
+                        console.error('❌ Erro na resposta:', resp.status, resp.statusText);
+                    }
+                } catch (err) { console.error('❌ Erro ao carregar profissionais:', err); }
                 setCarregandoProfissionais(false);
             };
             
