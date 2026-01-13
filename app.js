@@ -510,8 +510,8 @@ const HeaderCompacto = ({ usuario, moduloAtivo, abaAtiva, socialProfile, isLoadi
             )
         ),
         
-        // Barra de abas do módulo (se houver abas e não for home)
-        moduloAtivo !== "home" && abas.length > 0 && React.createElement("div", { 
+        // Barra de abas do módulo (se houver abas, não for home, e não for disponibilidade que tem suas próprias abas internas)
+        moduloAtivo !== "home" && moduloAtivo !== "disponibilidade" && abas.length > 0 && onChangeTab && React.createElement("div", { 
             className: "bg-white shadow-sm border-b"
         },
             React.createElement("div", { className: "max-w-full mx-auto px-4" },
