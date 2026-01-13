@@ -82,48 +82,75 @@
             const mapInstanceRef = useRef(null);
             const markersLayerRef = useRef(null);
             
+            // Função auxiliar para verificar se o mapa está válido
+            const isMapValid = (map) => {
+                try {
+                    return map && map._container && map._panes && !map._removed;
+                } catch (e) {
+                    return false;
+                }
+            };
+            
             useEffect(() => {
                 if (typeof L === 'undefined') return;
                 const container = mapRef.current;
                 if (!container) return;
-                if (mapInstanceRef.current) { mapInstanceRef.current.remove(); mapInstanceRef.current = null; }
+                if (mapInstanceRef.current) { 
+                    try { mapInstanceRef.current.remove(); } catch(e) {}
+                    mapInstanceRef.current = null; 
+                }
                 const map = L.map(container, { center: center, zoom: zoom, zoomControl: true });
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);
                 const markersLayer = L.layerGroup().addTo(map);
                 mapInstanceRef.current = map;
                 markersLayerRef.current = markersLayer;
-                setTimeout(() => { if (mapInstanceRef.current && mapInstanceRef.current._container) mapInstanceRef.current.invalidateSize(); }, 100);
-                return () => { if (mapInstanceRef.current) { mapInstanceRef.current.remove(); mapInstanceRef.current = null; } };
+                setTimeout(() => { if (isMapValid(mapInstanceRef.current)) mapInstanceRef.current.invalidateSize(); }, 100);
+                return () => { 
+                    if (mapInstanceRef.current) { 
+                        try { mapInstanceRef.current.remove(); } catch(e) {}
+                        mapInstanceRef.current = null; 
+                    } 
+                };
             }, [id]);
             
             useEffect(() => {
                 const map = mapInstanceRef.current;
                 const markersLayer = markersLayerRef.current;
-                if (!map || !markersLayer || !pontos) return;
-                markersLayer.clearLayers();
-                const pontosValidos = pontos.filter(p => p.latitude && p.longitude);
-                pontosValidos.forEach((p, idx) => {
-                    let cor, icone;
-                    if (tipo === 'acompanhar') {
-                        if (p.status === 'finalizado') { cor = '#10b981'; icone = '✓'; }
-                        else if (p.status === 'chegou' || p.status === 'coletado') { cor = '#3b82f6'; icone = '📍'; }
-                        else if (idx === 0) { cor = '#f59e0b'; icone = '📦'; }
-                        else { cor = '#9ca3af'; icone = idx; }
-                    } else {
-                        if (idx === 0) { cor = '#f59e0b'; icone = '📦'; }
-                        else { cor = '#3b82f6'; icone = idx; }
-                    }
-                    const icon = L.divIcon({ className: '', html: `<div style="background:${cor};color:#fff;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:12px;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3)">${icone}</div>`, iconSize: [32, 32], iconAnchor: [16, 16] });
-                    const enderecoCompleto = p.endereco_completo || `${p.rua || ''}, ${p.numero || ''} - ${p.bairro || ''}`;
-                    const tipoLabel = idx === 0 ? '📦 COLETA' : `📍 ENTREGA ${idx}`;
-                    L.marker([p.latitude, p.longitude], { icon }).bindPopup(`<strong>${tipoLabel}</strong><br/>${enderecoCompleto}`).addTo(markersLayer);
-                });
-                if (pontosValidos.length > 0) { const bounds = L.latLngBounds(pontosValidos.map(p => [p.latitude, p.longitude])); map.fitBounds(bounds, { padding: [50, 50] }); }
-                setTimeout(() => { if (map && map._container) map.invalidateSize(); }, 50);
+                if (!isMapValid(map) || !markersLayer || !pontos) return;
+                try {
+                    markersLayer.clearLayers();
+                    const pontosValidos = pontos.filter(p => p.latitude && p.longitude);
+                    pontosValidos.forEach((p, idx) => {
+                        let cor, icone;
+                        if (tipo === 'acompanhar') {
+                            if (p.status === 'finalizado') { cor = '#10b981'; icone = '✓'; }
+                            else if (p.status === 'chegou' || p.status === 'coletado') { cor = '#3b82f6'; icone = '📍'; }
+                            else if (idx === 0) { cor = '#f59e0b'; icone = '📦'; }
+                            else { cor = '#9ca3af'; icone = idx; }
+                        } else {
+                            if (idx === 0) { cor = '#f59e0b'; icone = '📦'; }
+                            else { cor = '#3b82f6'; icone = idx; }
+                        }
+                        const icon = L.divIcon({ className: '', html: `<div style="background:${cor};color:#fff;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:12px;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3)">${icone}</div>`, iconSize: [32, 32], iconAnchor: [16, 16] });
+                        const enderecoCompleto = p.endereco_completo || `${p.rua || ''}, ${p.numero || ''} - ${p.bairro || ''}`;
+                        const tipoLabel = idx === 0 ? '📦 COLETA' : `📍 ENTREGA ${idx}`;
+                        L.marker([p.latitude, p.longitude], { icon }).bindPopup(`<strong>${tipoLabel}</strong><br/>${enderecoCompleto}`).addTo(markersLayer);
+                    });
+                    if (pontosValidos.length > 0) { const bounds = L.latLngBounds(pontosValidos.map(p => [p.latitude, p.longitude])); map.fitBounds(bounds, { padding: [50, 50] }); }
+                    setTimeout(() => { if (isMapValid(map)) map.invalidateSize(); }, 50);
+                } catch(e) { console.warn('Erro ao atualizar mapa:', e); }
             }, [pontos, tipo]);
             
             useEffect(() => {
-                const observer = new IntersectionObserver((entries) => { entries.forEach(entry => { if (entry.isIntersecting && mapInstanceRef.current && mapInstanceRef.current._container) setTimeout(() => mapInstanceRef.current.invalidateSize(), 100); }); }, { threshold: 0.1 });
+                const observer = new IntersectionObserver((entries) => { 
+                    entries.forEach(entry => { 
+                        if (entry.isIntersecting && isMapValid(mapInstanceRef.current)) {
+                            setTimeout(() => { 
+                                try { mapInstanceRef.current.invalidateSize(); } catch(e) {} 
+                            }, 100); 
+                        }
+                    }); 
+                }, { threshold: 0.1 });
                 if (mapRef.current) observer.observe(mapRef.current);
                 return () => observer.disconnect();
             }, []);
