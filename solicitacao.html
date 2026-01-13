@@ -63,14 +63,52 @@
             };
             
             return (
-                <div className="min-h-screen bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
-                        <div className="text-center mb-6"><div className="text-6xl mb-4">🏍️</div><h1 className="text-2xl font-bold text-gray-800">Solicitar Corrida</h1></div>
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <div><label className="block text-sm font-semibold text-gray-700 mb-1">Email</label><input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-blue-500 outline-none" placeholder="seu@email.com" /></div>
-                            <div><label className="block text-sm font-semibold text-gray-700 mb-1">Senha</label><input type="password" value={senha} onChange={(e) => setSenha(e.target.value)} className="w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-blue-500 outline-none" placeholder="••••••••" /></div>
-                            <button type="submit" disabled={loading} className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg disabled:opacity-50">{loading ? 'Entrando...' : 'Entrar'}</button>
+                <div className="min-h-screen bg-gradient-to-br from-red-600 via-red-500 to-orange-400 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md">
+                        {/* Logo */}
+                        <div className="text-center mb-8">
+                            <img 
+                                src="https://github.com/Leonardodevcloud/tutts-frontend/blob/main/logotuttsoriginal.png?raw=true" 
+                                alt="Tutts Logo" 
+                                className="w-40 h-auto mx-auto mb-4 drop-shadow-lg"
+                            />
+                            <h1 className="text-xl font-bold text-gray-700">Central de Solicitações</h1>
+                            <p className="text-sm text-gray-500">Faça login para continuar</p>
+                        </div>
+                        
+                        <form onSubmit={handleSubmit} className="space-y-5">
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">📧 Email</label>
+                                <input 
+                                    type="email" 
+                                    value={email} 
+                                    onChange={(e) => setEmail(e.target.value)} 
+                                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none transition-all" 
+                                    placeholder="seu@email.com" 
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">🔒 Senha</label>
+                                <input 
+                                    type="password" 
+                                    value={senha} 
+                                    onChange={(e) => setSenha(e.target.value)} 
+                                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none transition-all" 
+                                    placeholder="••••••••" 
+                                />
+                            </div>
+                            <button 
+                                type="submit" 
+                                disabled={loading} 
+                                className="w-full py-4 bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-700 hover:to-orange-600 text-white font-bold rounded-xl disabled:opacity-50 transition-all shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
+                            >
+                                {loading ? '⏳ Entrando...' : '🚀 Entrar'}
+                            </button>
                         </form>
+                        
+                        <div className="mt-6 text-center text-xs text-gray-400">
+                            © 2026 Tutts - Todos os direitos reservados
+                        </div>
                     </div>
                 </div>
             );
