@@ -381,6 +381,20 @@
                 setSalvandoEndereco(true);
                 const p = modalSalvarEndereco.ponto;
                 
+                // Tentar extrair cidade do endereço completo se não tiver
+                let cidade = p.cidade;
+                if (!cidade && p.endereco_completo) {
+                    // Formato típico: "Rua X, 123 - Bairro, Cidade - UF, CEP"
+                    const partes = p.endereco_completo.split(',');
+                    if (partes.length >= 3) {
+                        // Tentar pegar a cidade (geralmente após o bairro)
+                        const cidadeUF = partes[partes.length - 2]?.trim();
+                        if (cidadeUF) {
+                            cidade = cidadeUF.split('-')[0]?.trim() || cidadeUF;
+                        }
+                    }
+                }
+                
                 try {
                     const resp = await fetch(`${API_URL}/api/solicitacao/enderecos-salvos`, {
                         method: 'POST',
@@ -391,7 +405,7 @@
                             numero: p.numero,
                             complemento: p.complemento,
                             bairro: p.bairro,
-                            cidade: p.cidade,
+                            cidade: cidade || 'Não informada',
                             uf: p.uf,
                             cep: p.cep,
                             latitude: p.latitude,
