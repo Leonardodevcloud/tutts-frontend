@@ -199,7 +199,123 @@ const SISTEMA_MODULOS_CONFIG = [
     }
 ];
 
-// ==================== COMPONENTE SIDEBAR AUTO-HIDE ====================
+// ==================== COMPONENTE NAVEGAÇÃO HORIZONTAL ====================
+const NavegacaoHorizontal = ({ usuario, moduloAtivo, abaAtiva, onNavigate, hasModuleAccess, socialProfile, onLogout, isLoading, lastUpdate, onRefresh }) => {
+    const moduloConfig = SISTEMA_MODULOS_CONFIG.find(m => m.id === moduloAtivo);
+    const abas = moduloConfig?.abas || [];
+    
+    return React.createElement("div", { className: "sticky top-0 z-40" },
+        // Header principal
+        React.createElement("header", { className: "bg-gradient-to-r from-indigo-900 to-purple-900 shadow-lg" },
+            React.createElement("div", { className: "max-w-full mx-auto px-4 py-2" },
+                // Linha 1: Logo + Módulos + Usuário
+                React.createElement("div", { className: "flex items-center justify-between gap-4" },
+                    // Logo
+                    React.createElement("button", {
+                        onClick: () => onNavigate("home", null),
+                        className: "flex items-center gap-2 hover:opacity-80 transition-opacity flex-shrink-0",
+                        title: "Ir para Início"
+                    },
+                        React.createElement("img", {
+                            src: "https://github.com/Leonardodevcloud/tutts-frontend/blob/main/logotuttsoriginal.png?raw=true",
+                            alt: "Tutts",
+                            className: "w-10 h-10 rounded-lg"
+                        }),
+                        React.createElement("span", { className: "text-white font-bold text-lg hidden lg:block" }, "Tutts")
+                    ),
+                    
+                    // Navegação de Módulos
+                    React.createElement("nav", { className: "flex-1 flex items-center justify-center gap-1 overflow-x-auto px-2 scrollbar-hide" },
+                        // Botão Home
+                        React.createElement("button", {
+                            onClick: () => onNavigate("home", null),
+                            className: "flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap " +
+                                (moduloAtivo === "home" ? "bg-white text-purple-900 shadow-lg" : "text-white/80 hover:bg-white/10 hover:text-white")
+                        },
+                            React.createElement("span", { className: "text-lg" }, "🏠"),
+                            React.createElement("span", { className: "hidden sm:inline" }, "Início")
+                        ),
+                        
+                        // Módulos
+                        SISTEMA_MODULOS_CONFIG.filter(m => hasModuleAccess(usuario, m.id)).map(modulo =>
+                            React.createElement("button", {
+                                key: modulo.id,
+                                onClick: () => onNavigate(modulo.id, modulo.abas?.[0]?.id || null),
+                                className: "flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap " +
+                                    (moduloAtivo === modulo.id ? "bg-white text-purple-900 shadow-lg" : "text-white/80 hover:bg-white/10 hover:text-white")
+                            },
+                                React.createElement("span", { className: "text-lg" }, modulo.icon),
+                                React.createElement("span", { className: "hidden md:inline" }, modulo.label)
+                            )
+                        )
+                    ),
+                    
+                    // Lado direito: Status + Usuário
+                    React.createElement("div", { className: "flex items-center gap-2 flex-shrink-0" },
+                        // Status de conexão
+                        React.createElement("div", { className: "flex items-center gap-1.5 bg-white/10 px-2 py-1 rounded-full" },
+                            React.createElement("span", { className: "w-2 h-2 rounded-full " + (isLoading ? "bg-yellow-400 animate-pulse" : "bg-green-400") }),
+                            React.createElement("span", { className: "text-xs text-white/70 hidden sm:block" },
+                                isLoading ? "..." : lastUpdate ? lastUpdate.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "⚡"
+                            )
+                        ),
+                        // Botão refresh
+                        React.createElement("button", {
+                            onClick: onRefresh,
+                            className: "p-1.5 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-colors",
+                            title: "Atualizar"
+                        }, "🔄"),
+                        // Avatar e nome
+                        React.createElement("div", { className: "flex items-center gap-2" },
+                            socialProfile?.profile_photo ? 
+                                React.createElement("img", {
+                                    src: socialProfile.profile_photo,
+                                    className: "w-8 h-8 rounded-full object-cover border-2 border-white/30"
+                                }) : 
+                                React.createElement("div", {
+                                    className: "w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold text-sm"
+                                }, usuario?.fullName?.charAt(0)?.toUpperCase() || "?"),
+                            React.createElement("div", { className: "hidden lg:block" },
+                                React.createElement("p", { className: "text-white text-sm font-medium leading-tight" }, usuario?.fullName?.split(" ")[0] || "Usuário"),
+                                React.createElement("p", { className: "text-indigo-300 text-xs leading-tight" },
+                                    usuario?.role === "admin_master" ? "👑 Master" :
+                                    usuario?.role === "admin" ? "👑 Admin" :
+                                    usuario?.role === "admin_financeiro" ? "💰 Financeiro" : "👤 Usuário"
+                                )
+                            )
+                        ),
+                        // Logout
+                        React.createElement("button", {
+                            onClick: onLogout,
+                            className: "p-1.5 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors",
+                            title: "Sair"
+                        }, "🚪")
+                    )
+                )
+            )
+        ),
+        
+        // Barra de abas do módulo (se houver abas)
+        abas.length > 0 && React.createElement("div", { className: "bg-white shadow border-b" },
+            React.createElement("div", { className: "max-w-full mx-auto px-4" },
+                React.createElement("nav", { className: "flex items-center gap-1 overflow-x-auto py-1 scrollbar-hide" },
+                    abas.map(aba =>
+                        React.createElement("button", {
+                            key: aba.id,
+                            onClick: () => onNavigate(moduloAtivo, aba.id),
+                            className: "px-4 py-2 text-sm font-medium rounded-lg transition-all whitespace-nowrap " +
+                                (abaAtiva === aba.id ? 
+                                    "bg-purple-100 text-purple-800 shadow-sm" : 
+                                    "text-gray-600 hover:bg-gray-100 hover:text-gray-900")
+                        }, aba.label)
+                    )
+                )
+            )
+        )
+    );
+};
+
+// ==================== COMPONENTE SIDEBAR AUTO-HIDE (MANTIDO PARA COMPATIBILIDADE) ====================
 const Sidebar = ({ usuario, moduloAtivo, setModulo, menuAberto, setMenuAberto, sidebarAberto, setSidebarAberto, sidebarFixo, setSidebarFixo, hasModuleAccess, onNavigate, socialProfile }) => {
     const sidebarVisivel = sidebarAberto || sidebarFixo;
     
@@ -299,76 +415,92 @@ const Sidebar = ({ usuario, moduloAtivo, setModulo, menuAberto, setMenuAberto, s
 };
 
 // ==================== HEADER COMPACTO GLOBAL ====================
-const HeaderCompacto = ({ usuario, moduloAtivo, socialProfile, isLoading, lastUpdate, onRefresh, onLogout, onGoHome }) => {
+const HeaderCompacto = ({ usuario, moduloAtivo, socialProfile, isLoading, lastUpdate, onRefresh, onLogout, onGoHome, onNavigate }) => {
     return React.createElement("header", {
         className: "bg-gradient-to-r from-indigo-900 to-purple-900 shadow-lg sticky top-0 z-30"
     },
-        React.createElement("div", { className: "max-w-7xl mx-auto px-4 py-3 flex justify-between items-center" },
-            // Lado esquerdo
-            React.createElement("div", {className: "flex items-center gap-3"},
-                // Logo clicável
+        React.createElement("div", { className: "max-w-full mx-auto px-3 py-2" },
+            React.createElement("div", { className: "flex items-center justify-between gap-2" },
+                // Logo
                 React.createElement("button", {
                     onClick: onGoHome,
-                    className: "flex items-center gap-2 hover:opacity-80 transition-opacity",
+                    className: "flex items-center gap-2 hover:opacity-80 transition-opacity flex-shrink-0",
                     title: "Ir para Início"
                 },
-                    React.createElement("span", {className: "text-2xl"}, "🏍️"),
-                    React.createElement("span", {className: "text-white font-bold text-lg hidden sm:block"}, "Tutts")
+                    React.createElement("img", {
+                        src: "https://github.com/Leonardodevcloud/tutts-frontend/blob/main/logotuttsoriginal.png?raw=true",
+                        alt: "Tutts",
+                        className: "w-9 h-9 rounded-lg",
+                        onError: (e) => { e.target.onerror = null; e.target.src = ""; e.target.style.display = "none"; }
+                    }),
+                    React.createElement("span", { className: "text-white font-bold text-lg hidden lg:block" }, "Tutts")
                 ),
-                React.createElement("div", {className: "h-6 w-px bg-white/20 hidden sm:block"}),
-                // Botão Home
-                moduloAtivo !== "home" && React.createElement("button", {
-                    onClick: onGoHome,
-                    className: "flex items-center gap-1.5 px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg transition-colors",
-                    title: "Voltar ao Início"
-                },
-                    React.createElement("span", {className: "text-lg"}, "🏠"),
-                    React.createElement("span", {className: "text-white text-sm font-medium hidden sm:block"}, "Início")
-                ),
-                // Módulo atual
-                moduloAtivo !== "home" && React.createElement("div", {className: "flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-lg"},
-                    React.createElement("span", {className: "text-lg"}, 
-                        SISTEMA_MODULOS_CONFIG.find(m => m.id === moduloAtivo)?.icon || "🏠"
+                
+                // Navegação de Módulos - Centro
+                React.createElement("nav", { className: "flex-1 flex items-center justify-center gap-1 overflow-x-auto px-2" },
+                    // Botão Home
+                    React.createElement("button", {
+                        onClick: onGoHome,
+                        className: "flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap " +
+                            (moduloAtivo === "home" ? "bg-white text-purple-900 shadow" : "text-white/80 hover:bg-white/10")
+                    },
+                        React.createElement("span", null, "🏠"),
+                        React.createElement("span", { className: "hidden sm:inline" }, "Início")
                     ),
-                    React.createElement("span", {className: "text-white font-medium text-sm"},
-                        SISTEMA_MODULOS_CONFIG.find(m => m.id === moduloAtivo)?.label || "Início"
-                    )
-                )
-            ),
-            // Lado direito
-            React.createElement("div", {className: "flex items-center gap-3"},
-                React.createElement("div", { className: "flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full" },
-                    React.createElement("span", { className: "w-2 h-2 rounded-full " + (isLoading ? "bg-yellow-400 animate-pulse" : "bg-green-400") }),
-                    React.createElement("span", {className: "text-xs text-indigo-200 hidden sm:block"},
-                        isLoading ? "Atualizando..." : lastUpdate ? lastUpdate.toLocaleTimeString("pt-BR", {hour: "2-digit", minute: "2-digit"}) : "⚡ 10s"
-                    )
-                ),
-                React.createElement("button", {
-                    onClick: onRefresh,
-                    className: "p-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-colors",
-                    title: "Atualizar dados"
-                }, "🔄"),
-                React.createElement("div", {className: "flex items-center gap-2"},
-                    socialProfile?.profile_photo ? React.createElement("img", {
-                        src: socialProfile.profile_photo,
-                        className: "w-8 h-8 rounded-full object-cover border-2 border-white/30"
-                    }) : React.createElement("div", {
-                        className: "w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold text-sm"
-                    }, usuario?.fullName?.charAt(0)?.toUpperCase() || "?"),
-                    React.createElement("div", {className: "hidden md:block"},
-                        React.createElement("p", {className: "text-white text-sm font-medium leading-tight"}, usuario?.fullName?.split(" ")[0] || "Usuário"),
-                        React.createElement("p", {className: "text-indigo-300 text-xs leading-tight"},
-                            usuario?.role === "admin_master" ? "👑 Master" : 
-                            usuario?.role === "admin" ? "👑 Admin" : 
-                            usuario?.role === "admin_financeiro" ? "💰 Financeiro" : "👤 Usuário"
+                    
+                    // Todos os módulos
+                    SISTEMA_MODULOS_CONFIG.filter(m => hasModuleAccess(usuario, m.id)).map(modulo =>
+                        React.createElement("button", {
+                            key: modulo.id,
+                            onClick: () => onNavigate ? onNavigate(modulo.id, modulo.abas?.[0]?.id) : null,
+                            className: "flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap " +
+                                (moduloAtivo === modulo.id ? "bg-white text-purple-900 shadow" : "text-white/80 hover:bg-white/10")
+                        },
+                            React.createElement("span", null, modulo.icon),
+                            React.createElement("span", { className: "hidden md:inline" }, modulo.label)
                         )
                     )
                 ),
-                React.createElement("button", {
-                    onClick: onLogout,
-                    className: "p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors",
-                    title: "Sair"
-                }, "🚪")
+                
+                // Lado direito: Status + Usuário
+                React.createElement("div", { className: "flex items-center gap-2 flex-shrink-0" },
+                    // Status
+                    React.createElement("div", { className: "flex items-center gap-1 bg-white/10 px-2 py-1 rounded-full" },
+                        React.createElement("span", { className: "w-2 h-2 rounded-full " + (isLoading ? "bg-yellow-400 animate-pulse" : "bg-green-400") }),
+                        React.createElement("span", { className: "text-xs text-white/70 hidden sm:block" },
+                            isLoading ? "..." : lastUpdate ? lastUpdate.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : ""
+                        )
+                    ),
+                    // Refresh
+                    React.createElement("button", {
+                        onClick: onRefresh,
+                        className: "p-1.5 bg-white/10 text-white rounded-lg hover:bg-white/20"
+                    }, "🔄"),
+                    // Avatar
+                    React.createElement("div", { className: "flex items-center gap-2" },
+                        socialProfile?.profile_photo ?
+                            React.createElement("img", {
+                                src: socialProfile.profile_photo,
+                                className: "w-8 h-8 rounded-full object-cover border-2 border-white/30"
+                            }) :
+                            React.createElement("div", {
+                                className: "w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold text-sm"
+                            }, usuario?.fullName?.charAt(0)?.toUpperCase() || "?"),
+                        React.createElement("div", { className: "hidden lg:block" },
+                            React.createElement("p", { className: "text-white text-sm font-medium leading-tight" }, usuario?.fullName?.split(" ")[0] || "Usuário"),
+                            React.createElement("p", { className: "text-indigo-300 text-xs leading-tight" },
+                                usuario?.role === "admin_master" ? "👑 Master" :
+                                usuario?.role === "admin" ? "👑 Admin" :
+                                usuario?.role === "admin_financeiro" ? "💰 Financeiro" : "👤 Usuário"
+                            )
+                        )
+                    ),
+                    // Logout
+                    React.createElement("button", {
+                        onClick: onLogout,
+                        className: "p-1.5 text-white/70 hover:text-white hover:bg-white/10 rounded-lg"
+                    }, "🚪")
+                )
             )
         )
     );
@@ -9619,21 +9751,7 @@ const hideLoadingScreen = () => {
                     className: "flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
                 }, "📋 Ir para Tarefas")
             ))),
-            // ========== SIDEBAR E HEADER COMPACTO - FINANCEIRO ==========
-            React.createElement(Sidebar, {
-                usuario: l,
-                moduloAtivo: Ee,
-                setModulo: he,
-                menuAberto: sidebarMenuAberto,
-                setMenuAberto: setSidebarMenuAberto,
-                sidebarAberto: sidebarAberto,
-                setSidebarAberto: setSidebarAberto,
-                sidebarFixo: sidebarFixo,
-                setSidebarFixo: setSidebarFixo,
-                hasModuleAccess: hasModuleAccess,
-                socialProfile: socialProfile,
-                onNavigate: navegarSidebar
-            }),
+            // ========== HEADER COM NAVEGAÇÃO - FINANCEIRO ==========
             React.createElement(HeaderCompacto, {
                 usuario: l,
                 moduloAtivo: Ee,
@@ -9642,7 +9760,8 @@ const hideLoadingScreen = () => {
                 lastUpdate: E,
                 onRefresh: ul,
                 onLogout: () => o(null),
-                onGoHome: () => he("home")
+                onGoHome: () => he("home"),
+                onNavigate: navegarSidebar
             }),
             p.deleteConfirm && React.createElement("div", {
                 className: "fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
@@ -16772,21 +16891,7 @@ const hideLoadingScreen = () => {
             return React.createElement("div", {
                 className: "min-h-screen bg-gray-50"
             }, i && React.createElement(Toast, i), n && React.createElement(LoadingOverlay, null),
-            // ========== SIDEBAR E HEADER COMPACTO - OPERACIONAL ==========
-            React.createElement(Sidebar, {
-                usuario: l,
-                moduloAtivo: Ee,
-                setModulo: he,
-                menuAberto: sidebarMenuAberto,
-                setMenuAberto: setSidebarMenuAberto,
-                sidebarAberto: sidebarAberto,
-                setSidebarAberto: setSidebarAberto,
-                sidebarFixo: sidebarFixo,
-                setSidebarFixo: setSidebarFixo,
-                hasModuleAccess: hasModuleAccess,
-                socialProfile: socialProfile,
-                onNavigate: navegarSidebar
-            }),
+            // ========== HEADER COM NAVEGAÇÃO - OPERACIONAL ==========
             React.createElement(HeaderCompacto, {
                 usuario: l,
                 moduloAtivo: Ee,
@@ -16795,7 +16900,8 @@ const hideLoadingScreen = () => {
                 lastUpdate: E,
                 onRefresh: ul,
                 onLogout: () => o(null),
-                onGoHome: () => he("home")
+                onGoHome: () => he("home"),
+                onNavigate: navegarSidebar
             }),
             // Conteúdo das abas
             React.createElement("div", {className: "max-w-7xl mx-auto p-6"},
@@ -18616,21 +18722,7 @@ const hideLoadingScreen = () => {
             return React.createElement("div", {
                 className: "min-h-screen bg-gray-100"
             }, i && React.createElement(Toast, i), n && React.createElement(LoadingOverlay, null),
-            // ========== SIDEBAR E HEADER COMPACTO - CONFIG ==========
-            React.createElement(Sidebar, {
-                usuario: l,
-                moduloAtivo: Ee,
-                setModulo: he,
-                menuAberto: sidebarMenuAberto,
-                setMenuAberto: setSidebarMenuAberto,
-                sidebarAberto: sidebarAberto,
-                setSidebarAberto: setSidebarAberto,
-                sidebarFixo: sidebarFixo,
-                setSidebarFixo: setSidebarFixo,
-                hasModuleAccess: hasModuleAccess,
-                socialProfile: socialProfile,
-                onNavigate: navegarSidebar
-            }),
+            // ========== HEADER COM NAVEGAÇÃO - CONFIG ==========
             React.createElement(HeaderCompacto, {
                 usuario: l,
                 moduloAtivo: Ee,
@@ -18639,7 +18731,8 @@ const hideLoadingScreen = () => {
                 lastUpdate: E,
                 onRefresh: ul,
                 onLogout: () => o(null),
-                onGoHome: () => he("home")
+                onGoHome: () => he("home"),
+                onNavigate: navegarSidebar
             }),
             // CONTEÚDO DO CONFIG
             React.createElement("div", {className: "max-w-7xl mx-auto p-6"},
@@ -19498,21 +19591,7 @@ const hideLoadingScreen = () => {
             return React.createElement("div", {
                 className: "min-h-screen bg-gray-100"
             }, i && React.createElement(Toast, i), n && React.createElement(LoadingOverlay, null),
-            // ========== SIDEBAR E HEADER COMPACTO - BI ==========
-            React.createElement(Sidebar, {
-                usuario: l,
-                moduloAtivo: Ee,
-                setModulo: he,
-                menuAberto: sidebarMenuAberto,
-                setMenuAberto: setSidebarMenuAberto,
-                sidebarAberto: sidebarAberto,
-                setSidebarAberto: setSidebarAberto,
-                sidebarFixo: sidebarFixo,
-                setSidebarFixo: setSidebarFixo,
-                hasModuleAccess: hasModuleAccess,
-                socialProfile: socialProfile,
-                onNavigate: navegarSidebar
-            }),
+            // ========== HEADER COM NAVEGAÇÃO - BI ==========
             React.createElement(HeaderCompacto, {
                 usuario: l,
                 moduloAtivo: Ee,
@@ -19521,7 +19600,8 @@ const hideLoadingScreen = () => {
                 lastUpdate: E,
                 onRefresh: ul,
                 onLogout: () => o(null),
-                onGoHome: () => he("home")
+                onGoHome: () => he("home"),
+                onNavigate: navegarSidebar
             }),
             // Barra de info do BI
             React.createElement("div", {
@@ -24766,21 +24846,7 @@ const hideLoadingScreen = () => {
                 className: "flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
             }, "📋 Ir para Tarefas")
         ))),
-        // ========== SIDEBAR E HEADER COMPACTO ==========
-        React.createElement(Sidebar, {
-            usuario: l,
-            moduloAtivo: Ee,
-            setModulo: he,
-            menuAberto: sidebarMenuAberto,
-            setMenuAberto: setSidebarMenuAberto,
-            sidebarAberto: sidebarAberto,
-            setSidebarAberto: setSidebarAberto,
-            sidebarFixo: sidebarFixo,
-            setSidebarFixo: setSidebarFixo,
-            hasModuleAccess: hasModuleAccess,
-            socialProfile: socialProfile,
-            onNavigate: navegarSidebar
-        }),
+        // ========== HEADER COM NAVEGAÇÃO ==========
         React.createElement(HeaderCompacto, {
             usuario: l,
             moduloAtivo: Ee,
@@ -24789,7 +24855,8 @@ const hideLoadingScreen = () => {
             lastUpdate: E,
             onRefresh: ul,
             onLogout: () => o(null),
-            onGoHome: () => he("home")
+            onGoHome: () => he("home"),
+            onNavigate: navegarSidebar
         }),
         // Conteúdo principal (sub-abas removidas - navegação via sidebar)
         React.createElement("div", {
