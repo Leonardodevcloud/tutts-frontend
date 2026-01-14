@@ -7838,6 +7838,19 @@ const hideLoadingScreen = () => {
             className: "text-sm text-white/80"
         }, "Ofertas exclusivas com abatimento no saldo!")), React.createElement("span", {
             className: "text-white/60 text-2xl"
+        }, "›")), React.createElement("button", {
+            onClick: () => he("filas"),
+            className: "w-full bg-gradient-to-r from-cyan-500 to-teal-500 rounded-2xl shadow-lg p-6 flex items-center gap-4 hover:shadow-xl transition-all hover:scale-[1.02]"
+        }, React.createElement("div", {
+            className: "w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center text-3xl"
+        }, "👥"), React.createElement("div", {
+            className: "text-left flex-1"
+        }, React.createElement("h3", {
+            className: "text-lg font-bold text-white"
+        }, "Fila de Entregas"), React.createElement("p", {
+            className: "text-sm text-white/80"
+        }, "Entre na fila e aguarde ser chamado")), React.createElement("span", {
+            className: "text-white/60 text-2xl"
         }, "›"))), React.createElement("div", {
             className: "mt-8 grid grid-cols-3 gap-4"
         }, React.createElement("div", {
