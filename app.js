@@ -7008,6 +7008,37 @@ const hideLoadingScreen = () => {
             className: "text-gray-500 hover:underline"
         }, "Esqueci minha senha")))));
         if ("user" === l.role) {
+            // Se está no módulo de Filas, renderizar o módulo
+            if ("filas" === Ee) {
+                return React.createElement("div", {
+                    className: "min-h-screen bg-gray-50"
+                }, 
+                    i && React.createElement(Toast, i),
+                    n && React.createElement(LoadingOverlay, null),
+                    // Header simples
+                    React.createElement("div", { className: "bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4 flex items-center gap-4" },
+                        React.createElement("button", { 
+                            onClick: () => he("home"), 
+                            className: "p-2 bg-white/20 rounded-lg hover:bg-white/30" 
+                        }, "← Voltar"),
+                        React.createElement("h1", { className: "text-xl font-bold" }, "👥 Fila de Entregas")
+                    ),
+                    // Conteúdo
+                    React.createElement("div", { className: "p-4" },
+                        typeof window.ModuloFilas !== 'undefined' 
+                            ? React.createElement(window.ModuloFilas, {
+                                usuario: l,
+                                apiUrl: API_URL,
+                                showToast: ja,
+                                abaAtiva: "monitoramento",
+                                onChangeTab: () => {}
+                            })
+                            : React.createElement("div", { className: "text-center py-12" },
+                                React.createElement("p", { className: "text-red-500" }, "⚠️ Módulo não carregado")
+                            )
+                    )
+                );
+            }
             return React.createElement("div", {
             className: "min-h-screen bg-gray-50"
         }, i && React.createElement(Toast, i), n && React.createElement(LoadingOverlay, null), 
