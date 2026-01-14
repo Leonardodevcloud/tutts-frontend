@@ -32,8 +32,10 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
         try {
             const response = await fetch(`${apiUrl}/geocode/google?endereco=${encodeURIComponent(endereco)}`);
             const data = await response.json();
-            if (data.success && data.latitude && data.longitude) {
-                setCoordenadasEncontradas({ latitude: data.latitude, longitude: data.longitude, enderecoFormatado: data.formatted_address || endereco });
+            // Resposta vem em data.results[0]
+            const resultado = data.results && data.results[0];
+            if (resultado && resultado.latitude && resultado.longitude) {
+                setCoordenadasEncontradas({ latitude: resultado.latitude, longitude: resultado.longitude, enderecoFormatado: resultado.endereco || endereco });
                 setEnderecoValidado(true);
                 showToast('📍 Endereço encontrado!', 'success');
             } else { setEnderecoValidado(false); setCoordenadasEncontradas(null); showToast('Endereço não encontrado', 'error'); }
