@@ -658,21 +658,22 @@ const hideLoadingScreen = () => {
         onClose: t,
         showToast: a
     }) => {
-        const [o, c] = React.useState(""), [s, n] = React.useState(!1), [m, i] = React.useState(!0), [d, p] = React.useState("");
-        const qrContainerRef = React.useRef(null);
+        const [o, c] = React.useState(""), [s, n] = React.useState(!1), [m, i] = React.useState(!0), [qrDataUrl, setQrDataUrl] = React.useState("");
         
         React.useEffect(() => {
-            if (e && qrContainerRef.current) {
+            if (e) {
                 try {
                     const pixCode = generatePixCode(e.pix_key, e.final_amount, e.user_name);
                     c(pixCode);
                     
-                    // Limpar container anterior
-                    qrContainerRef.current.innerHTML = '';
-                    
-                    // Gerar QR Code localmente (instantâneo!)
+                    // Gerar QR Code em elemento temporário fora do React
                     if (typeof QRCode !== 'undefined') {
-                        new QRCode(qrContainerRef.current, {
+                        const tempDiv = document.createElement('div');
+                        tempDiv.style.position = 'absolute';
+                        tempDiv.style.left = '-9999px';
+                        document.body.appendChild(tempDiv);
+                        
+                        new QRCode(tempDiv, {
                             text: pixCode,
                             width: 160,
                             height: 160,
@@ -680,18 +681,26 @@ const hideLoadingScreen = () => {
                             colorLight: "#ffffff",
                             correctLevel: QRCode.CorrectLevel.M
                         });
-                        i(false);
+                        
+                        // Aguardar o canvas ser gerado e extrair como data URL
+                        setTimeout(() => {
+                            const canvas = tempDiv.querySelector('canvas');
+                            const img = tempDiv.querySelector('img');
+                            if (canvas) {
+                                setQrDataUrl(canvas.toDataURL('image/png'));
+                            } else if (img) {
+                                setQrDataUrl(img.src);
+                            }
+                            document.body.removeChild(tempDiv);
+                            i(false);
+                        }, 50);
                     } else {
-                        // Fallback para API externa se biblioteca não carregar
-                        const img = document.createElement('img');
-                        img.src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(pixCode)}`;
-                        img.className = 'w-40 h-40';
-                        img.onload = () => i(false);
-                        qrContainerRef.current.appendChild(img);
+                        // Fallback para API externa
+                        setQrDataUrl(`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(pixCode)}`);
+                        i(false);
                     }
                 } catch (err) {
                     console.error("Erro ao gerar PIX:", err);
-                    p("Erro ao gerar código PIX");
                     i(false);
                 }
             }
@@ -702,7 +711,7 @@ const hideLoadingScreen = () => {
             onClick: t
         }, React.createElement("div", {
             className: "bg-white rounded-2xl shadow-2xl w-full max-w-md",
-            onClick: e => e.stopPropagation()
+            onClick: ev => ev.stopPropagation()
         }, 
         // Header
         React.createElement("div", {
@@ -743,14 +752,17 @@ const hideLoadingScreen = () => {
                     )
                 )
             ),
-            // QR Code centralizado - gerado localmente via canvas
+            // QR Code centralizado
             React.createElement("div", { className: "flex justify-center mb-4" },
-                React.createElement("div", {
-                    ref: qrContainerRef,
-                    className: "w-40 h-40 flex items-center justify-center border-4 border-green-200 rounded-xl shadow-lg bg-white overflow-hidden"
-                }, m && React.createElement("div", {
+                m ? React.createElement("div", {
+                    className: "w-40 h-40 bg-gray-100 rounded-xl flex items-center justify-center border-4 border-green-200"
+                }, React.createElement("div", {
                     className: "w-8 h-8 border-4 border-green-600 border-t-transparent rounded-full animate-spin"
-                }))
+                })) : qrDataUrl ? React.createElement("img", {
+                    src: qrDataUrl,
+                    alt: "QR Code PIX",
+                    className: "w-40 h-40 border-4 border-green-200 rounded-xl shadow-lg"
+                }) : null
             ),
             // Código copia e cola
             React.createElement("div", { className: "mb-4" },
@@ -763,14 +775,14 @@ const hideLoadingScreen = () => {
                     try {
                         await navigator.clipboard.writeText(o), n(!0), a("✅ Código PIX copiado!", "success"), setTimeout(() => n(!1), 3e3)
                     } catch (err) {
-                        const t = document.createElement("textarea");
-                        t.value = o, t.style.position = "fixed", t.style.left = "-9999px", document.body.appendChild(t), t.select();
+                        const textarea = document.createElement("textarea");
+                        textarea.value = o, textarea.style.position = "fixed", textarea.style.left = "-9999px", document.body.appendChild(textarea), textarea.select();
                         try {
                             document.execCommand("copy"), n(!0), a("✅ Código PIX copiado!", "success"), setTimeout(() => n(!1), 3e3)
                         } catch (err2) {
                             a("❌ Erro ao copiar", "error")
                         }
-                        document.body.removeChild(t)
+                        document.body.removeChild(textarea)
                     }
                 },
                 className: "w-full py-3 rounded-xl font-bold text-white text-base transition-all flex items-center justify-center gap-2 " + (s ? "bg-green-500" : "bg-green-600 hover:bg-green-700 active:scale-95")
