@@ -676,36 +676,36 @@ const hideLoadingScreen = () => {
             }
         }, [e]);
         return e ? React.createElement("div", {
-            className: "fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4",
+            className: "fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-2",
             onClick: t
         }, React.createElement("div", {
-            className: "bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden",
+            className: "bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden max-h-[90vh] overflow-y-auto",
             onClick: e => e.stopPropagation()
         }, React.createElement("div", {
-            className: "bg-gradient-to-r from-green-600 to-green-700 text-white p-4"
+            className: "bg-gradient-to-r from-green-600 to-green-700 text-white p-3"
         }, React.createElement("div", {
             className: "flex items-center justify-between"
         }, React.createElement("div", {
-            className: "flex items-center gap-3"
+            className: "flex items-center gap-2"
         }, React.createElement("span", {
-            className: "text-3xl"
+            className: "text-2xl"
         }, "💰"), React.createElement("div", null, React.createElement("h2", {
-            className: "text-lg font-bold"
+            className: "text-base font-bold"
         }, "PIX Copia e Cola"), React.createElement("p", {
-            className: "text-green-200 text-sm"
+            className: "text-green-200 text-xs"
         }, "Escaneie ou copie o código"))), React.createElement("button", {
             onClick: t,
-            className: "text-white/80 hover:text-white text-2xl font-bold"
+            className: "text-white/80 hover:text-white text-xl font-bold"
         }, "✕"))), React.createElement("div", {
-            className: "p-6"
+            className: "p-4"
         }, React.createElement("div", {
-            className: "bg-gray-50 rounded-xl p-4 mb-4"
+            className: "bg-gray-50 rounded-xl p-3 mb-3"
         }, React.createElement("div", {
-            className: "grid grid-cols-2 gap-3 text-sm"
+            className: "grid grid-cols-2 gap-2 text-sm"
         }, React.createElement("div", null, React.createElement("p", {
             className: "text-gray-500 text-xs"
         }, "Beneficiário"), React.createElement("p", {
-            className: "font-semibold text-gray-800 truncate"
+            className: "font-semibold text-gray-800 truncate text-sm"
         }, e.user_name)), React.createElement("div", null, React.createElement("p", {
             className: "text-gray-500 text-xs"
         }, "Código"), React.createElement("p", {
@@ -727,35 +727,35 @@ const hideLoadingScreen = () => {
         }, React.createElement("p", {
             className: "text-gray-500 text-xs"
         }, "Valor a Transferir"), React.createElement("p", {
-            className: "font-bold text-green-600 text-2xl"
+            className: "font-bold text-green-600 text-xl"
         }, "R$ ", parseFloat(e.final_amount).toFixed(2).replace(".", ","))))), React.createElement("div", {
-            className: "flex flex-col items-center mb-4"
+            className: "flex flex-col items-center mb-3"
         }, m ? React.createElement("div", {
-            className: "w-64 h-64 bg-gray-100 rounded-xl flex items-center justify-center"
+            className: "w-48 h-48 bg-gray-100 rounded-xl flex items-center justify-center"
         }, React.createElement("div", {
             className: "text-center"
         }, React.createElement("div", {
-            className: "w-10 h-10 border-4 border-green-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"
+            className: "w-8 h-8 border-4 border-green-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"
         }), React.createElement("p", {
-            className: "text-gray-500 text-sm"
+            className: "text-gray-500 text-xs"
         }, "Gerando QR Code..."))) : d ? React.createElement("div", {
-            className: "w-64 h-64 bg-red-50 rounded-xl flex items-center justify-center"
+            className: "w-48 h-48 bg-red-50 rounded-xl flex items-center justify-center"
         }, React.createElement("p", {
-            className: "text-red-500 text-center p-4"
+            className: "text-red-500 text-center p-4 text-sm"
         }, d)) : l ? React.createElement("img", {
             src: l,
             alt: "QR Code PIX",
-            className: "w-64 h-64 border-4 border-green-200 rounded-xl shadow-lg",
+            className: "w-48 h-48 border-4 border-green-200 rounded-xl shadow-lg",
             onError: () => {
                 const e = `https://chart.googleapis.com/chart?cht=qr&chs=300x300&chl=${encodeURIComponent(o)}`;
                 r(e)
             }
         }) : null), React.createElement("div", {
-            className: "mb-4"
+            className: "mb-3"
         }, React.createElement("p", {
-            className: "text-xs text-gray-500 mb-2 font-semibold"
+            className: "text-xs text-gray-500 mb-1 font-semibold"
         }, "Código Copia e Cola:"), React.createElement("div", {
-            className: "bg-gray-100 rounded-lg p-3 text-[10px] font-mono text-gray-600 break-all max-h-24 overflow-y-auto border"
+            className: "bg-gray-100 rounded-lg p-2 text-[9px] font-mono text-gray-600 break-all max-h-16 overflow-y-auto border"
         }, o)), React.createElement("button", {
             onClick: async () => {
                 try {
@@ -771,9 +771,9 @@ const hideLoadingScreen = () => {
                     document.body.removeChild(t)
                 }
             },
-            className: "w-full py-4 rounded-xl font-bold text-white transition-all flex items-center justify-center gap-2 text-lg " + (s ? "bg-green-500" : "bg-green-600 hover:bg-green-700 active:scale-95")
+            className: "w-full py-3 rounded-xl font-bold text-white transition-all flex items-center justify-center gap-2 text-base " + (s ? "bg-green-500" : "bg-green-600 hover:bg-green-700 active:scale-95")
         }, s ? React.createElement(React.Fragment, null, "✅ Código Copiado!") : React.createElement(React.Fragment, null, "📋 Copiar Código PIX")), React.createElement("p", {
-            className: "text-xs text-gray-400 text-center mt-3"
+            className: "text-xs text-gray-400 text-center mt-2"
         }, "⚠️ Confira os dados antes de efetuar o pagamento")))) : null
     },
     PieChart = ({
