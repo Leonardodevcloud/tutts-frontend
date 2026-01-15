@@ -1078,7 +1078,7 @@ const hideLoadingScreen = () => {
             if (!e || "undefined" === e || "null" === e) return c("Link inválido"), void a(!1);
             (async () => {
                 try {
-                    const t = await fetch(`${API_URL}/indicacao-link/validar/${e}`);
+                    const t = await fetchAuth(`${API_URL}/indicacao-link/validar/${e}`);
                     if (!t.ok) return c("Link inválido ou expirado"), void a(!1);
                     const l = await t.json();
                     r(l.indicador)
@@ -1144,7 +1144,7 @@ const hideLoadingScreen = () => {
                 else {
                     i(!0);
                     try {
-                        const t = await fetch(`${API_URL}/indicacao-link/cadastrar`, {
+                        const t = await fetchAuth(`${API_URL}/indicacao-link/cadastrar`, {
                             method: "POST",
                             headers: {
                                 "Content-Type": "application/json"
@@ -1243,7 +1243,7 @@ const hideLoadingScreen = () => {
             const carregarEnderecosBI = async () => {
                 try {
                     setCarregandoBI(true);
-                    const response = await fetch(`${API_URL}/bi/entregas-lista?`);
+                    const response = await fetchAuth(`${API_URL}/bi/entregas-lista?`);
                     const data = await response.json();
                     if (Array.isArray(data)) {
                         // Agrupar apenas endereços IDÊNTICOS (mesmo endereço + cidade)
@@ -2255,7 +2255,7 @@ const hideLoadingScreen = () => {
         // ==================== FUNÇÕES DO MÓDULO SOCIAL ====================
         const loadSocialProfile = async (userCod) => {
             try {
-                const res = await fetch(`${API_URL}/social/profile/${userCod}`);
+                const res = await fetchAuth(`${API_URL}/social/profile/${userCod}`);
                 if (res.ok) {
                     const profile = await res.json();
                     setSocialProfile(profile);
@@ -2269,7 +2269,7 @@ const hideLoadingScreen = () => {
             try {
                 setSocialLoading(true);
                 console.log("📸 Salvando perfil:", { displayName, temFoto: !!photoBase64, tamanhoFoto: photoBase64?.length });
-                const res = await fetch(`${API_URL}/social/profile/${l.codProfissional}`, {
+                const res = await fetchAuth(`${API_URL}/social/profile/${l.codProfissional}`, {
                     method: "PUT",
                     headers: {"Content-Type": "application/json"},
                     body: JSON.stringify({ 
@@ -2298,7 +2298,7 @@ const hideLoadingScreen = () => {
         const updateOnlineStatus = async (isOnline) => {
             if (!l?.codProfissional) return;
             try {
-                await fetch(`${API_URL}/social/status`, {
+                await fetchAuth(`${API_URL}/social/status`, {
                     method: "POST",
                     headers: {"Content-Type": "application/json"},
                     body: JSON.stringify({ user_cod: l.codProfissional, is_online: isOnline })
@@ -2310,7 +2310,7 @@ const hideLoadingScreen = () => {
         
         const loadSocialUsers = async () => {
             try {
-                const res = await fetch(`${API_URL}/social/users`);
+                const res = await fetchAuth(`${API_URL}/social/users`);
                 if (res.ok) {
                     const users = await res.json();
                     setSocialUsers(users);
@@ -2323,13 +2323,13 @@ const hideLoadingScreen = () => {
         const loadSocialMessages = async () => {
             if (!l?.codProfissional) return;
             try {
-                const res = await fetch(`${API_URL}/social/messages/${l.codProfissional}`);
+                const res = await fetchAuth(`${API_URL}/social/messages/${l.codProfissional}`);
                 if (res.ok) {
                     const msgs = await res.json();
                     setSocialMessages(msgs);
                 }
                 // Carregar contagem de não lidas
-                const unreadRes = await fetch(`${API_URL}/social/messages/unread/${l.codProfissional}`);
+                const unreadRes = await fetchAuth(`${API_URL}/social/messages/unread/${l.codProfissional}`);
                 if (unreadRes.ok) {
                     const data = await unreadRes.json();
                     setSocialUnread(data.count);
@@ -2341,7 +2341,7 @@ const hideLoadingScreen = () => {
         
         const sendSocialMessage = async (toUserCod, type, content) => {
             try {
-                const res = await fetch(`${API_URL}/social/messages`, {
+                const res = await fetchAuth(`${API_URL}/social/messages`, {
                     method: "POST",
                     headers: {"Content-Type": "application/json"},
                     body: JSON.stringify({
@@ -2364,7 +2364,7 @@ const hideLoadingScreen = () => {
         const markMessagesAsRead = async () => {
             if (!l?.codProfissional) return;
             try {
-                await fetch(`${API_URL}/social/messages/read`, {
+                await fetchAuth(`${API_URL}/social/messages/read`, {
                     method: "PATCH",
                     headers: {"Content-Type": "application/json"},
                     body: JSON.stringify({ user_cod: l.codProfissional })
@@ -2381,7 +2381,7 @@ const hideLoadingScreen = () => {
         // Carregar todas as mensagens (para admin_master gerenciar)
         const loadLiderancaMensagens = async () => {
             try {
-                const res = await fetch(`${API_URL}/lideranca/mensagens`);
+                const res = await fetchAuth(`${API_URL}/lideranca/mensagens`);
                 if (res.ok) {
                     const msgs = await res.json();
                     setLiderancaMensagens(msgs);
@@ -2395,7 +2395,7 @@ const hideLoadingScreen = () => {
         const loadLiderancaPendentes = async () => {
             if (!l?.codProfissional) return [];
             try {
-                const res = await fetch(`${API_URL}/lideranca/mensagens/pendentes/${l.codProfissional}`);
+                const res = await fetchAuth(`${API_URL}/lideranca/mensagens/pendentes/${l.codProfissional}`);
                 if (res.ok) {
                     const msgs = await res.json();
                     setLiderancaPendentes(msgs);
@@ -2411,7 +2411,7 @@ const hideLoadingScreen = () => {
         const loadLiderancaHistorico = async () => {
             if (!l?.codProfissional) return;
             try {
-                const res = await fetch(`${API_URL}/lideranca/mensagens/historico/${l.codProfissional}`);
+                const res = await fetchAuth(`${API_URL}/lideranca/mensagens/historico/${l.codProfissional}`);
                 if (res.ok) {
                     const msgs = await res.json();
                     setLiderancaHistorico(msgs);
@@ -2429,7 +2429,7 @@ const hideLoadingScreen = () => {
         // Carregar visualizações de uma mensagem específica (para exibir fotos no rodapé)
         const loadVizPorMensagem = async (msgId) => {
             try {
-                const res = await fetch(`${API_URL}/lideranca/mensagens/${msgId}/visualizacoes`);
+                const res = await fetchAuth(`${API_URL}/lideranca/mensagens/${msgId}/visualizacoes`);
                 if (res.ok) {
                     const viz = await res.json();
                     setLiderancaVizPorMsg(prev => ({...prev, [msgId]: viz}));
@@ -2442,7 +2442,7 @@ const hideLoadingScreen = () => {
         // Carregar reações de uma mensagem
         const loadReacoesPorMensagem = async (msgId) => {
             try {
-                const res = await fetch(`${API_URL}/lideranca/mensagens/${msgId}/reacoes`);
+                const res = await fetchAuth(`${API_URL}/lideranca/mensagens/${msgId}/reacoes`);
                 if (res.ok) {
                     const reacoes = await res.json();
                     setLiderancaReacoes(prev => ({...prev, [msgId]: reacoes}));
@@ -2455,7 +2455,7 @@ const hideLoadingScreen = () => {
         // Enviar reação a uma mensagem
         const enviarReacaoLideranca = async (msgId, emoji) => {
             try {
-                const res = await fetch(`${API_URL}/lideranca/mensagens/${msgId}/reagir`, {
+                const res = await fetchAuth(`${API_URL}/lideranca/mensagens/${msgId}/reagir`, {
                     method: "POST",
                     headers: {"Content-Type": "application/json"},
                     body: JSON.stringify({
@@ -2476,7 +2476,7 @@ const hideLoadingScreen = () => {
         // Criar nova mensagem da liderança
         const criarLiderancaMensagem = async (dados) => {
             try {
-                const res = await fetch(`${API_URL}/lideranca/mensagens`, {
+                const res = await fetchAuth(`${API_URL}/lideranca/mensagens`, {
                     method: "POST",
                     headers: {"Content-Type": "application/json"},
                     body: JSON.stringify({
@@ -2503,7 +2503,7 @@ const hideLoadingScreen = () => {
         // Marcar mensagem como visualizada
         const marcarLiderancaVisualizada = async (mensagemId) => {
             try {
-                await fetch(`${API_URL}/lideranca/mensagens/${mensagemId}/visualizar`, {
+                await fetchAuth(`${API_URL}/lideranca/mensagens/${mensagemId}/visualizar`, {
                     method: "POST",
                     headers: {"Content-Type": "application/json"},
                     body: JSON.stringify({
@@ -2520,7 +2520,7 @@ const hideLoadingScreen = () => {
         // Carregar visualizações de uma mensagem
         const loadVisualizacoes = async (mensagemId) => {
             try {
-                const res = await fetch(`${API_URL}/lideranca/mensagens/${mensagemId}/visualizacoes`);
+                const res = await fetchAuth(`${API_URL}/lideranca/mensagens/${mensagemId}/visualizacoes`);
                 if (res.ok) {
                     const viz = await res.json();
                     setLiderancaVisualizacoes(viz);
@@ -2534,7 +2534,7 @@ const hideLoadingScreen = () => {
         const deletarLiderancaMensagem = async (id) => {
             if (!confirm("Tem certeza que deseja excluir esta mensagem?")) return;
             try {
-                const res = await fetch(`${API_URL}/lideranca/mensagens/${id}`, { method: "DELETE" });
+                const res = await fetchAuth(`${API_URL}/lideranca/mensagens/${id}`, { method: "DELETE" });
                 if (res.ok) {
                     ja("✅ Mensagem excluída!", "success");
                     await loadLiderancaMensagens();
@@ -3116,7 +3116,7 @@ const hideLoadingScreen = () => {
             if ("disponibilidade" !== p.adminTab) return;
             const e = setInterval(async () => {
                 try {
-                    const e = await fetch(`${API_URL}/disponibilidade`);
+                    const e = await fetchAuth(`${API_URL}/disponibilidade`);
                     if (!e.ok) return;
                     const t = await e.json();
                     x(e => ({
@@ -3133,7 +3133,7 @@ const hideLoadingScreen = () => {
             if ("horarios" !== p.finTab) return;
             (async () => {
                 try {
-                    const [e, t] = await Promise.all([fetch(`${API_URL}/horarios`).then(e => e.json()), fetch(`${API_URL}/horarios/especiais`).then(e => e.json())]);
+                    const [e, t] = await Promise.all([fetchAuth(`${API_URL}/horarios`).then(e => e.json()), fetchAuth(`${API_URL}/horarios/especiais`).then(e => e.json())]);
                     console.log("Horários especiais recebidos:", t), Oe({
                         horarios: e,
                         especiais: t,
@@ -3151,7 +3151,7 @@ const hideLoadingScreen = () => {
             if ("avisos" !== p.finTab) return;
             (async () => {
                 try {
-                    const e = await fetch(`${API_URL}/avisos`),
+                    const e = await fetchAuth(`${API_URL}/avisos`),
                         t = await e.json();
                     Ue({
                         avisos: t,
@@ -3170,7 +3170,7 @@ const hideLoadingScreen = () => {
             We(!1), Je(0), Be(null); buscarSaldoPlificUsuario();
             (async () => {
                 try {
-                    const [e, t] = await Promise.all([fetch(`${API_URL}/horarios/verificar`).then(e => e.json()), fetch(`${API_URL}/avisos?ativos=true`).then(e => e.json())]);
+                    const [e, t] = await Promise.all([fetchAuth(`${API_URL}/horarios/verificar`).then(e => e.json()), fetchAuth(`${API_URL}/avisos?ativos=true`).then(e => e.json())]);
                     Be(e);
                     const a = t.filter(t => !t.exibir_fora_horario || t.exibir_fora_horario && !e.dentroHorario);
                     He(a)
@@ -3213,7 +3213,7 @@ const hideLoadingScreen = () => {
         useEffect(() => {
             if (l && l.role === "user" && l.codProfissional && !avisoCarregado) {
                 setAvisoCarregado(true);
-                fetch(`${API_URL}/avisos-op/usuario/${l.codProfissional}`)
+                fetchAuth(`${API_URL}/avisos-op/usuario/${l.codProfissional}`)
                     .then(res => res.json())
                     .then(data => { if (data) setAvisoAtual(data); })
                     .catch(err => console.error(err));
@@ -3223,7 +3223,7 @@ const hideLoadingScreen = () => {
         // Função para fechar aviso
         const fecharAviso = async () => {
             if (avisoAtual && l) {
-                await fetch(`${API_URL}/avisos-op/${avisoAtual.id}/visualizar`, {
+                await fetchAuth(`${API_URL}/avisos-op/${avisoAtual.id}/visualizar`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ user_cod: l.codProfissional })
@@ -3235,7 +3235,7 @@ const hideLoadingScreen = () => {
         // Funções do módulo Avisos (admin)
         const carregarAvisos = async () => {
             try {
-                const res = await fetch(`${API_URL}/avisos-op`);
+                const res = await fetchAuth(`${API_URL}/avisos-op`);
                 const data = await res.json();
                 setAvisosData(Array.isArray(data) ? data : []);
             } catch (err) { 
@@ -3246,7 +3246,7 @@ const hideLoadingScreen = () => {
         
         const carregarRegioes = async () => {
             try {
-                const res = await fetch(`${API_URL}/avisos-op/regioes`);
+                const res = await fetchAuth(`${API_URL}/avisos-op/regioes`);
                 const data = await res.json();
                 setAvisosRegioes(Array.isArray(data) ? data : []);
             } catch (err) { 
@@ -3401,7 +3401,7 @@ const hideLoadingScreen = () => {
         // Função para carregar operações
         const carregarOperacoes = async () => {
             try {
-                const res = await fetch(`${API_URL}/operacoes`);
+                const res = await fetchAuth(`${API_URL}/operacoes`);
                 const data = await res.json();
                 setOperacoesData(Array.isArray(data) ? data : []);
             } catch (err) { 
@@ -3415,12 +3415,12 @@ const hideLoadingScreen = () => {
         const carregarRecrutamento = async () => {
             setRecrutamentoLoading(true);
             try {
-                const res = await fetch(`${API_URL}/recrutamento`);
+                const res = await fetchAuth(`${API_URL}/recrutamento`);
                 const data = await res.json();
                 setRecrutamentoData(Array.isArray(data) ? data : []);
                 
                 // Carregar estatísticas
-                const statsRes = await fetch(`${API_URL}/recrutamento/estatisticas`);
+                const statsRes = await fetchAuth(`${API_URL}/recrutamento/estatisticas`);
                 const stats = await statsRes.json();
                 setRecrutamentoStats(stats);
             } catch (err) { 
@@ -3477,7 +3477,7 @@ const hideLoadingScreen = () => {
             }));
             
             try {
-                const res = await fetch(`${API_URL}/recrutamento/buscar-profissional/${codigo}`);
+                const res = await fetchAuth(`${API_URL}/recrutamento/buscar-profissional/${codigo}`);
                 if (!res.ok) {
                     const err = await res.json();
                     throw new Error(err.error || 'Não encontrado');
@@ -3505,7 +3505,7 @@ const hideLoadingScreen = () => {
             }
             
             try {
-                const res = await fetch(`${API_URL}/recrutamento/${necessidadeId}/atribuir`, {
+                const res = await fetchAuth(`${API_URL}/recrutamento/${necessidadeId}/atribuir`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -3536,7 +3536,7 @@ const hideLoadingScreen = () => {
             if (!confirm('Remover esta atribuição?')) return;
             
             try {
-                const res = await fetch(`${API_URL}/recrutamento/atribuicao/${atribuicaoId}`, {
+                const res = await fetchAuth(`${API_URL}/recrutamento/atribuicao/${atribuicaoId}`, {
                     method: 'DELETE'
                 });
                 
@@ -3557,7 +3557,7 @@ const hideLoadingScreen = () => {
             if (!confirm('Excluir esta necessidade de recrutamento? Todas as atribuições serão removidas.')) return;
             
             try {
-                const res = await fetch(`${API_URL}/recrutamento/${id}`, {
+                const res = await fetchAuth(`${API_URL}/recrutamento/${id}`, {
                     method: 'DELETE'
                 });
                 
@@ -3623,7 +3623,7 @@ const hideLoadingScreen = () => {
         const carregarLocalizacaoClientes = async () => {
             setLocalizacaoLoading(true);
             try {
-                const res = await fetch(`${API_URL}/bi/localizacao-clientes`);
+                const res = await fetchAuth(`${API_URL}/bi/localizacao-clientes`);
                 const data = await res.json();
                 setLocalizacaoClientes(Array.isArray(data) ? data : []);
             } catch (err) { 
@@ -3644,7 +3644,7 @@ const hideLoadingScreen = () => {
                 if (l?.codProfissional) params.append('usuario_id', l.codProfissional);
                 
                 const queryString = params.toString() ? `?${params.toString()}` : '';
-                const res = await fetch(`${API_URL}/relatorios-diarios${queryString}`);
+                const res = await fetchAuth(`${API_URL}/relatorios-diarios${queryString}`);
                 const data = await res.json();
                 setRelatoriosDiarios(Array.isArray(data) ? data : []);
             } catch (err) { 
@@ -3657,7 +3657,7 @@ const hideLoadingScreen = () => {
         // ===== FUNÇÕES DE SETORES =====
         const carregarSetores = async () => {
             try {
-                const res = await fetch(`${API_URL}/setores`);
+                const res = await fetchAuth(`${API_URL}/setores`);
                 const data = await res.json();
                 setSetores(Array.isArray(data) ? data : []);
             } catch (err) {
@@ -3706,7 +3706,7 @@ const hideLoadingScreen = () => {
             if (!confirm(`Excluir o setor "${setor.nome}"?`)) return;
             
             try {
-                const res = await fetch(`${API_URL}/setores/${setor.id}`, { method: 'DELETE' });
+                const res = await fetchAuth(`${API_URL}/setores/${setor.id}`, { method: 'DELETE' });
                 const data = await res.json();
                 
                 if (!res.ok) {
@@ -3722,7 +3722,7 @@ const hideLoadingScreen = () => {
         
         const atualizarSetorUsuario = async (codProfissional, setorId) => {
             try {
-                const res = await fetch(`${API_URL}/users/${codProfissional}/setor`, {
+                const res = await fetchAuth(`${API_URL}/users/${codProfissional}/setor`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ setor_id: setorId || null })
@@ -3756,7 +3756,7 @@ const hideLoadingScreen = () => {
             try {
                 // Passar setor_id como query param para filtrar por setor
                 const setorParam = l?.setor_id ? `?setor_id=${l.setor_id}` : '';
-                const res = await fetch(`${API_URL}/relatorios-diarios/nao-lidos/${l.codProfissional}${setorParam}`);
+                const res = await fetchAuth(`${API_URL}/relatorios-diarios/nao-lidos/${l.codProfissional}${setorParam}`);
                 const data = await res.json();
                 console.log('📢 Resposta do servidor:', data);
                 const naoLidos = Array.isArray(data) ? data : [];
@@ -3777,7 +3777,7 @@ const hideLoadingScreen = () => {
         const marcarRelatorioComoLido = async (relatorioId) => {
             if (!l?.codProfissional) return;
             try {
-                await fetch(`${API_URL}/relatorios-diarios/${relatorioId}/visualizar`, {
+                await fetchAuth(`${API_URL}/relatorios-diarios/${relatorioId}/visualizar`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -4073,7 +4073,7 @@ const hideLoadingScreen = () => {
             if (!confirm('Tem certeza que deseja excluir este relatório?')) return;
             s(true);
             try {
-                const res = await fetch(`${API_URL}/relatorios-diarios/${id}`, { method: 'DELETE' });
+                const res = await fetchAuth(`${API_URL}/relatorios-diarios/${id}`, { method: 'DELETE' });
                 if (!res.ok) throw new Error('Erro ao excluir');
                 ja('✅ Relatório excluído!', 'success');
                 carregarRelatoriosDiarios();
@@ -4405,7 +4405,7 @@ const hideLoadingScreen = () => {
         const deletarAviso = async (id) => {
             if (!confirm('Tem certeza que deseja excluir este aviso?')) return;
             try {
-                await fetch(`${API_URL}/avisos-op/${id}`, { method: 'DELETE' });
+                await fetchAuth(`${API_URL}/avisos-op/${id}`, { method: 'DELETE' });
                 ja('✅ Aviso excluído!', 'success');
                 carregarAvisos();
             } catch (err) {
@@ -4434,7 +4434,7 @@ const hideLoadingScreen = () => {
         
         const loadTodoGrupos = async () => {
             try {
-                const res = await fetch(`${API_URL}/todo/grupos?user_cod=${l.codProfissional}&role=${l.role}`);
+                const res = await fetchAuth(`${API_URL}/todo/grupos?user_cod=${l.codProfissional}&role=${l.role}`);
                 return await res.json()
             } catch (err) {
                 console.error("Erro:", err);
@@ -4455,7 +4455,7 @@ const hideLoadingScreen = () => {
         };
         const loadTodoMetricas = async (periodo = "30") => {
             try {
-                const res = await fetch(`${API_URL}/todo/metricas?periodo=${periodo}`);
+                const res = await fetchAuth(`${API_URL}/todo/metricas?periodo=${periodo}`);
                 return await res.json()
             } catch (err) {
                 console.error("Erro:", err);
@@ -4464,7 +4464,7 @@ const hideLoadingScreen = () => {
         };
         const loadTodoAdmins = async () => {
             try {
-                const res = await fetch(`${API_URL}/todo/admins`);
+                const res = await fetchAuth(`${API_URL}/todo/admins`);
                 return await res.json()
             } catch (err) {
                 return []
@@ -4474,7 +4474,7 @@ const hideLoadingScreen = () => {
         // Função para carregar "Meu Dia" - tarefas do dia ou vencidas atribuídas ao usuário
         const loadTodoMeuDia = async () => {
             try {
-                const res = await fetch(`${API_URL}/todo/tarefas?user_cod=${l.codProfissional}&role=${l.role}`);
+                const res = await fetchAuth(`${API_URL}/todo/tarefas?user_cod=${l.codProfissional}&role=${l.role}`);
                 const todas = await res.json();
                 const hoje = new Date();
                 hoje.setHours(0, 0, 0, 0);
@@ -4558,7 +4558,7 @@ const hideLoadingScreen = () => {
         // Carregar subtarefas de uma tarefa
         const loadTodoSubtarefas = async (tarefaId) => {
             try {
-                const res = await fetch(`${API_URL}/todo/tarefas/${tarefaId}/subtarefas`);
+                const res = await fetchAuth(`${API_URL}/todo/tarefas/${tarefaId}/subtarefas`);
                 const subs = await res.json();
                 setTodoSubtarefas(prev => ({ ...prev, [tarefaId]: subs }));
                 return subs;
@@ -4572,7 +4572,7 @@ const hideLoadingScreen = () => {
         const addTodoSubtarefa = async (tarefaId, titulo) => {
             try {
                 const subs = todoSubtarefas[tarefaId] || [];
-                await fetch(`${API_URL}/todo/tarefas/${tarefaId}/subtarefas`, {
+                await fetchAuth(`${API_URL}/todo/tarefas/${tarefaId}/subtarefas`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ titulo, ordem: subs.length })
@@ -4589,7 +4589,7 @@ const hideLoadingScreen = () => {
         // Toggle subtarefa concluída
         const toggleTodoSubtarefa = async (subId, concluida, tarefaId) => {
             try {
-                await fetch(`${API_URL}/todo/subtarefas/${subId}`, {
+                await fetchAuth(`${API_URL}/todo/subtarefas/${subId}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -4610,7 +4610,7 @@ const hideLoadingScreen = () => {
         // Excluir subtarefa
         const deleteTodoSubtarefa = async (subId, tarefaId) => {
             try {
-                await fetch(`${API_URL}/todo/subtarefas/${subId}`, { method: 'DELETE' });
+                await fetchAuth(`${API_URL}/todo/subtarefas/${subId}`, { method: 'DELETE' });
                 await loadTodoSubtarefas(tarefaId);
                 if (todoViewMode === "meudia") await loadTodoMeuDia();
                 else if (todoGrupoAtivo) await loadTodoTarefas(todoGrupoAtivo.id);
@@ -4622,7 +4622,7 @@ const hideLoadingScreen = () => {
         // Iniciar timer
         const iniciarTodoTimer = async (tarefaId) => {
             try {
-                await fetch(`${API_URL}/todo/tarefas/${tarefaId}/timer/iniciar`, {
+                await fetchAuth(`${API_URL}/todo/tarefas/${tarefaId}/timer/iniciar`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -4645,7 +4645,7 @@ const hideLoadingScreen = () => {
         // Parar timer
         const pararTodoTimer = async (tarefaId) => {
             try {
-                await fetch(`${API_URL}/todo/tarefas/${tarefaId}/timer/parar`, {
+                await fetchAuth(`${API_URL}/todo/tarefas/${tarefaId}/timer/parar`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -4668,7 +4668,7 @@ const hideLoadingScreen = () => {
         // Mover tarefa no Kanban
         const moverTodoKanban = async (tarefaId, colunaDestino) => {
             try {
-                await fetch(`${API_URL}/todo/tarefas/${tarefaId}/kanban`, {
+                await fetchAuth(`${API_URL}/todo/tarefas/${tarefaId}/kanban`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -4716,7 +4716,7 @@ const hideLoadingScreen = () => {
         // Só notifica NOVAS tarefas (que ainda não foram notificadas nesta sessão)
         const checkTodoPendentes = async (isInitialCheck = false) => {
             try {
-                const res = await fetch(`${API_URL}/todo/tarefas?user_cod=${l.codProfissional}&role=${l.role}`);
+                const res = await fetchAuth(`${API_URL}/todo/tarefas?user_cod=${l.codProfissional}&role=${l.role}`);
                 const todas = await res.json();
                 const hoje = new Date();
                 hoje.setHours(0, 0, 0, 0);
@@ -4836,7 +4836,7 @@ const hideLoadingScreen = () => {
         }, La = async () => {
             try {
                 const e = "user" === l.role ? `?userId=${l.id}&userCod=${l.cod_profissional}` : "",
-                    t = await fetch(`${API_URL}/submissions${e}`),
+                    t = await fetchAuth(`${API_URL}/submissions${e}`),
                     a = await t.json();
                 C(a.map(e => ({
                     ...e,
@@ -4852,7 +4852,7 @@ const hideLoadingScreen = () => {
             }
         }, Ia = async () => {
             try {
-                const e = await fetch(`${API_URL}/users`),
+                const e = await fetchAuth(`${API_URL}/users`),
                     t = await e.json();
                 S(t.map(e => ({
                     codProfissional: e.cod_profissional,
@@ -4868,7 +4868,7 @@ const hideLoadingScreen = () => {
             }
         }, Fa = async e => {
             try {
-                const t = await fetch(`${API_URL}/submissions/${e}/imagem`),
+                const t = await fetchAuth(`${API_URL}/submissions/${e}/imagem`),
                     a = await t.json();
                 C(t => t.map(t => t.id === e ? {
                     ...t,
@@ -4879,10 +4879,10 @@ const hideLoadingScreen = () => {
             }
         }, $a = async () => {
             try {
-                const e = await fetch(`${API_URL}/financial/check-terms/${l.cod_profissional}`),
+                const e = await fetchAuth(`${API_URL}/financial/check-terms/${l.cod_profissional}`),
                     t = await e.json();
                 if (P(t.hasAccepted), t.hasAccepted) {
-                    const e = await fetch(`${API_URL}/financial/data/${l.cod_profissional}`),
+                    const e = await fetchAuth(`${API_URL}/financial/data/${l.cod_profissional}`),
                         t = await e.json();
                     D(t.data), Ma()
                 }
@@ -4891,7 +4891,7 @@ const hideLoadingScreen = () => {
             }
         }, Ma = async () => {
             try {
-                const e = await fetch(`${API_URL}/financial/logs/${l.cod_profissional}`),
+                const e = await fetchAuth(`${API_URL}/financial/logs/${l.cod_profissional}`),
                     t = await e.json();
                 I(t)
             } catch (e) {
@@ -4941,56 +4941,56 @@ const hideLoadingScreen = () => {
             }
         }, Ja = async () => {
             try {
-                const e = await fetch(`${API_URL}/loja/estoque`);
+                const e = await fetchAuth(`${API_URL}/loja/estoque`);
                 Ye(await e.json())
             } catch (e) {
                 console.error("Erro ao carregar estoque:", e)
             }
         }, Qa = async () => {
             try {
-                const e = await fetch(`${API_URL}/loja/movimentacoes`);
+                const e = await fetchAuth(`${API_URL}/loja/movimentacoes`);
                 dt(await e.json())
             } catch (e) {
                 console.error("Erro ao carregar movimentações:", e)
             }
         }, Ha = async () => {
             try {
-                const e = await fetch(`${API_URL}/loja/produtos`);
+                const e = await fetchAuth(`${API_URL}/loja/produtos`);
                 Xe(await e.json())
             } catch (e) {
                 console.error("Erro ao carregar produtos:", e)
             }
         }, Ga = async () => {
             try {
-                const e = await fetch(`${API_URL}/loja/produtos/ativos`);
+                const e = await fetchAuth(`${API_URL}/loja/produtos/ativos`);
                 Xe(await e.json())
             } catch (e) {
                 console.error("Erro ao carregar produtos:", e)
             }
         }, Wa = async () => {
             try {
-                const e = await fetch(`${API_URL}/loja/pedidos`);
+                const e = await fetchAuth(`${API_URL}/loja/pedidos`);
                 tt(await e.json())
             } catch (e) {
                 console.error("Erro ao carregar pedidos:", e)
             }
         }, Za = async () => {
             try {
-                const e = await fetch(`${API_URL}/loja/pedidos/user/${l.codProfissional}`);
+                const e = await fetchAuth(`${API_URL}/loja/pedidos/user/${l.codProfissional}`);
                 lt(await e.json())
             } catch (e) {
                 console.error("Erro ao carregar pedidos:", e)
             }
         }, Ya = async () => {
             try {
-                const e = await fetch(`${API_URL}/loja/sugestoes`);
+                const e = await fetchAuth(`${API_URL}/loja/sugestoes`);
                 gt(await e.json())
             } catch (e) {
                 console.error("Erro ao carregar sugestões:", e)
             }
         }, Ka = async () => {
             try {
-                const e = await fetch(`${API_URL}/loja/sugestoes/user/${l.codProfissional}`);
+                const e = await fetchAuth(`${API_URL}/loja/sugestoes/user/${l.codProfissional}`);
                 Rt(await e.json())
             } catch (e) {
                 console.error("Erro ao carregar sugestões:", e)
@@ -5140,7 +5140,7 @@ const hideLoadingScreen = () => {
                 if (!filtrosUsados.data_inicio || !filtrosUsados.data_fim) {
                     // Buscar última data disponível dos dados
                     try {
-                        const metaRes = await fetch(`${API_URL}/bi/garantido/meta`);
+                        const metaRes = await fetchAuth(`${API_URL}/bi/garantido/meta`);
                         const metaData = await metaRes.json();
                         
                         if (metaData.ultima_data) {
@@ -5186,17 +5186,17 @@ const hideLoadingScreen = () => {
                 setGarantidoStats(data.totais || null);
                 
                 // Carregar análise semanal
-                const semanalRes = await fetch(`${API_URL}/bi/garantido/semanal?${params}`);
+                const semanalRes = await fetchAuth(`${API_URL}/bi/garantido/semanal?${params}`);
                 const semanalData = await semanalRes.json();
                 setGarantidoSemanal(Array.isArray(semanalData) ? semanalData : []);
                 
                 // Carregar resumo por cliente
-                const clienteRes = await fetch(`${API_URL}/bi/garantido/por-cliente?${params}`);
+                const clienteRes = await fetchAuth(`${API_URL}/bi/garantido/por-cliente?${params}`);
                 const clienteData = await clienteRes.json();
                 setGarantidoPorCliente(clienteData.dados || []);
                 
                 // Carregar status salvos
-                const statusRes = await fetch(`${API_URL}/bi/garantido/status`);
+                const statusRes = await fetchAuth(`${API_URL}/bi/garantido/status`);
                 const statusData = await statusRes.json();
                 setGarantidoStatusMap(statusData || {});
                 
@@ -5217,7 +5217,7 @@ const hideLoadingScreen = () => {
                     return false;
                 }
                 
-                const response = await fetch(`${API_URL}/bi/garantido/status`, {
+                const response = await fetchAuth(`${API_URL}/bi/garantido/status`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -5311,7 +5311,7 @@ const hideLoadingScreen = () => {
                 params.append("usuario_id", l.id || l.email || "");
                 params.append("usuario_nome", l.fullName || l.email || "Usuário");
                 
-                const response = await fetch(`${API_URL}/bi/relatorio-ia?${params}`);
+                const response = await fetchAuth(`${API_URL}/bi/relatorio-ia?${params}`);
                 const data = await response.json();
                 
                 if (data.error) {
@@ -5335,7 +5335,7 @@ const hideLoadingScreen = () => {
         // Função para carregar histórico de relatórios do banco
         const carregarHistoricoRelatoriosIA = async () => {
             try {
-                const response = await fetch(`${API_URL}/bi/relatorio-ia/historico`);
+                const response = await fetchAuth(`${API_URL}/bi/relatorio-ia/historico`);
                 const data = await response.json();
                 setRelatorioIAHistoricoDB(Array.isArray(data) ? data : []);
             } catch (e) {
@@ -5346,7 +5346,7 @@ const hideLoadingScreen = () => {
         // Função para gerar Word de um relatório do histórico
         const gerarWordHistorico = async (relatorio) => {
             try {
-                const response = await fetch(`${API_URL}/bi/relatorio-ia/word`, {
+                const response = await fetchAuth(`${API_URL}/bi/relatorio-ia/word`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -5383,7 +5383,7 @@ const hideLoadingScreen = () => {
         const deletarRelatorioHistorico = async (id) => {
             if (!confirm('Deseja realmente excluir este relatório?')) return;
             try {
-                await fetch(`${API_URL}/bi/relatorio-ia/historico/${id}`, { method: 'DELETE' });
+                await fetchAuth(`${API_URL}/bi/relatorio-ia/historico/${id}`, { method: 'DELETE' });
                 carregarHistoricoRelatoriosIA();
                 ja('Relatório excluído!', 'success');
             } catch (e) {
@@ -5414,7 +5414,7 @@ const hideLoadingScreen = () => {
             if (!relatorioIAResultado) return;
             
             try {
-                const response = await fetch(`${API_URL}/bi/relatorio-ia/word`, {
+                const response = await fetchAuth(`${API_URL}/bi/relatorio-ia/word`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -5516,7 +5516,7 @@ const hideLoadingScreen = () => {
                 if (ua.status_retorno) params.append("status_retorno", ua.status_retorno);
                 if (ua.cidade) params.append("cidade", ua.cidade);
                 
-                const response = await fetch(`${API_URL}/bi/os-profissional/${codProf}?${params}`);
+                const response = await fetchAuth(`${API_URL}/bi/os-profissional/${codProf}?${params}`);
                 const data = await response.json();
                 
                 setProfOsExpandido(prev => ({
@@ -5552,7 +5552,7 @@ const hideLoadingScreen = () => {
                 const e = Xa();
                 console.log("📊 Carregando dashboard com filtros:", e.toString() || "(sem filtros)");
                 setLoadingMessage("Buscando métricas de desempenho...");
-                const t = await fetch(`${API_URL}/bi/dashboard-completo?${e}`),
+                const t = await fetchAuth(`${API_URL}/bi/dashboard-completo?${e}`),
                     a = await t.json();
                 setLoadingMessage("Processando dados...");
                 console.log("📊 Dados recebidos:", a), Nt(a.metricas || {}), Bt(a.porCliente || []), Jt(a.porProfissional || []);
@@ -5661,14 +5661,14 @@ const hideLoadingScreen = () => {
             Ra(!1)
         }, tl = async () => {
             try {
-                const e = await fetch(`${API_URL}/bi/prazos`);
+                const e = await fetchAuth(`${API_URL}/bi/prazos`);
                 vt(await e.json())
             } catch (e) {
                 console.error("Erro ao carregar prazos:", e)
             }
         }, al = async () => {
             try {
-                const e = await fetch(`${API_URL}/bi/prazo-padrao`),
+                const e = await fetchAuth(`${API_URL}/bi/prazo-padrao`),
                     t = await e.json();
                 t && t.length > 0 && (_t(t), Na(t))
             } catch (e) {
@@ -5679,13 +5679,13 @@ const hideLoadingScreen = () => {
         carregarPrazosProf = async () => {
             try {
                 // Carregar prazo padrão profissional
-                const respPadrao = await fetch(`${API_URL}/bi/prazo-prof-padrao`);
+                const respPadrao = await fetchAuth(`${API_URL}/bi/prazo-prof-padrao`);
                 const dataPadrao = await respPadrao.json();
                 if (dataPadrao && dataPadrao.length > 0) {
                     setPrazoProfPadrao(dataPadrao);
                 }
                 // Carregar lista de prazos profissionais específicos
-                const respLista = await fetch(`${API_URL}/bi/prazos-prof`);
+                const respLista = await fetchAuth(`${API_URL}/bi/prazos-prof`);
                 const dataLista = await respLista.json();
                 if (dataLista.success) {
                     setPrazosProfissionais(dataLista.prazos || []);
@@ -5700,7 +5700,7 @@ const hideLoadingScreen = () => {
                 setLoadingMessage("Carregando dados do sistema...");
                 // Carregar máscaras PRIMEIRO junto com os outros dados
                 setLoadingMessage("Buscando clientes e profissionais...");
-                const [e, t, a, l, r, o, c, s, n, m, mascarasData] = await Promise.all([fetch(`${API_URL}/bi/clientes`).then(e => e.json()), fetch(`${API_URL}/bi/centros-custo`).then(e => e.json()), fetch(`${API_URL}/bi/profissionais`).then(e => e.json()), fetch(`${API_URL}/bi/datas`).then(e => e.json()), fetch(`${API_URL}/bi/uploads`).then(e => e.json()), fetch(`${API_URL}/bi/cidades`).then(e => e.json()).catch(() => []), fetch(`${API_URL}/bi/cliente-centros`).then(e => e.json()).catch(() => ({})), fetch(`${API_URL}/bi/categorias`).then(e => e.json()).catch(() => []), fetch(`${API_URL}/bi/regioes`).then(e => e.json()).catch(() => []), fetch(`${API_URL}/bi/dados-filtro`).then(e => e.json()).catch(() => []), fetch(`${API_URL}/bi/mascaras`).then(e => e.json()).catch(() => [])]), i = (e || []).sort((e, t) => (parseInt(e.cod_cliente) || 0) - (parseInt(t.cod_cliente) || 0));
+                const [e, t, a, l, r, o, c, s, n, m, mascarasData] = await Promise.all([fetchAuth(`${API_URL}/bi/clientes`).then(e => e.json()), fetchAuth(`${API_URL}/bi/centros-custo`).then(e => e.json()), fetchAuth(`${API_URL}/bi/profissionais`).then(e => e.json()), fetchAuth(`${API_URL}/bi/datas`).then(e => e.json()), fetchAuth(`${API_URL}/bi/uploads`).then(e => e.json()), fetchAuth(`${API_URL}/bi/cidades`).then(e => e.json()).catch(() => []), fetchAuth(`${API_URL}/bi/cliente-centros`).then(e => e.json()).catch(() => ({})), fetchAuth(`${API_URL}/bi/categorias`).then(e => e.json()).catch(() => []), fetchAuth(`${API_URL}/bi/regioes`).then(e => e.json()).catch(() => []), fetchAuth(`${API_URL}/bi/dados-filtro`).then(e => e.json()).catch(() => []), fetchAuth(`${API_URL}/bi/mascaras`).then(e => e.json()).catch(() => [])]), i = (e || []).sort((e, t) => (parseInt(e.cod_cliente) || 0) - (parseInt(t.cod_cliente) || 0));
                 // Setar máscaras ANTES de tudo
                 setLoadingMessage("Aplicando configurações...");
                 ta(mascarasData || []);
@@ -5850,7 +5850,7 @@ const hideLoadingScreen = () => {
                 centrosCustoParaEnviar && centrosCustoParaEnviar.length > 0 && centrosCustoParaEnviar.forEach(c => t.append("centro_custo", c));
                 clientesSemFiltroCC && clientesSemFiltroCC.length > 0 && t.append("clientes_sem_filtro_cc", clientesSemFiltroCC.join(","));
                 e.cod_prof && t.append("cod_prof", e.cod_prof), e.categoria && t.append("categoria", e.categoria), e.cidade && t.append("cidade", e.cidade), e.status_prazo && t.append("status_prazo", e.status_prazo), e.status_retorno && t.append("status_retorno", e.status_retorno), console.log("📊 loadBiDashboardComFiltros - params:", t.toString());
-                const a = await fetch(`${API_URL}/bi/dashboard-completo?${t}`),
+                const a = await fetchAuth(`${API_URL}/bi/dashboard-completo?${t}`),
                     l = await a.json();
                 console.log("📊 loadBiDashboardComFiltros - resposta:", l), console.log("📊 metricas:", l.metricas), console.log("📊 porCliente:", l.porCliente?.length, "registros"), console.log("📊 porProfissional:", l.porProfissional?.length, "registros"), Nt(l.metricas || {}), Bt(l.porCliente || []), Jt(l.porProfissional || []);
                 const r = l.dadosGraficos || [],
@@ -5964,7 +5964,7 @@ const hideLoadingScreen = () => {
                 e.cidade && osParams.append("cidade", e.cidade);
                 e.status_prazo && osParams.append("status_prazo", e.status_prazo);
                 e.status_retorno && osParams.append("status_retorno", e.status_retorno);
-                const osResponse = await fetch(`${API_URL}/bi/entregas-lista?${osParams}`);
+                const osResponse = await fetchAuth(`${API_URL}/bi/entregas-lista?${osParams}`);
                 const osData = await osResponse.json();
                 Ut(Array.isArray(osData) ? osData : []);
                 console.log("📋 Lista de OS recarregada com filtros");
@@ -5998,14 +5998,14 @@ const hideLoadingScreen = () => {
             return t ? t.mascara : null
         }, dl = async () => {
             try {
-                const e = await fetch(`${API_URL}/bi/mascaras`);
+                const e = await fetchAuth(`${API_URL}/bi/mascaras`);
                 ta(await e.json())
             } catch (e) {
                 console.error("Erro ao carregar máscaras:", e)
             }
         }, pl = async () => {
             try {
-                const e = await fetch(`${API_URL}/bi/regioes`);
+                const e = await fetchAuth(`${API_URL}/bi/regioes`);
                 la(await e.json())
             } catch (e) {
                 console.error("Erro ao carregar regiões:", e)
@@ -6013,7 +6013,7 @@ const hideLoadingScreen = () => {
         }, xl = async () => {
             try {
                 Ra(!0);
-                const e = await fetch(`${API_URL}/bi/entregas/recalcular`, {
+                const e = await fetchAuth(`${API_URL}/bi/entregas/recalcular`, {
                         method: "POST"
                     }),
                     t = await e.json();
@@ -6032,21 +6032,21 @@ const hideLoadingScreen = () => {
             m(!1)
         }, gl = async () => {
             try {
-                const e = await fetch(`${API_URL}/promocoes`);
+                const e = await fetchAuth(`${API_URL}/promocoes`);
                 te(await e.json())
             } catch (e) {
                 console.error("Erro ao carregar promoções:", e)
             }
         }, bl = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"], Rl = async (e, t) => {
             try {
-                await fetch(`${API_URL}/horarios/${e}`, {
+                await fetchAuth(`${API_URL}/horarios/${e}`, {
                     method: "PUT",
                     headers: {
                         "Content-Type": "application/json"
                     },
                     body: JSON.stringify(t)
                 }), ja("✅ Horário atualizado!", "success");
-                const a = await fetch(`${API_URL}/horarios`),
+                const a = await fetchAuth(`${API_URL}/horarios`),
                     l = await a.json();
                 Oe(e => ({
                     ...e,
@@ -6062,7 +6062,7 @@ const hideLoadingScreen = () => {
                 l = p.novoEspInicio,
                 r = p.novoEspFim;
             if (e) try {
-                await fetch(`${API_URL}/horarios/especiais`, {
+                await fetchAuth(`${API_URL}/horarios/especiais`, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json"
@@ -6082,7 +6082,7 @@ const hideLoadingScreen = () => {
                     novoEspInicio: "09:00",
                     novoEspFim: "18:00"
                 }));
-                const o = await fetch(`${API_URL}/horarios/especiais`),
+                const o = await fetchAuth(`${API_URL}/horarios/especiais`),
                     c = await o.json();
                 Oe(e => ({
                     ...e,
@@ -6097,7 +6097,7 @@ const hideLoadingScreen = () => {
                 a = p.novoAvisoTipo || "info",
                 l = p.novoAvisoExibirFora || !1;
             if (e && t) try {
-                await fetch(`${API_URL}/avisos`, {
+                await fetchAuth(`${API_URL}/avisos`, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json"
@@ -6115,7 +6115,7 @@ const hideLoadingScreen = () => {
                     novoAvisoTipo: "info",
                     novoAvisoExibirFora: !1
                 }));
-                const r = await fetch(`${API_URL}/avisos`);
+                const r = await fetchAuth(`${API_URL}/avisos`);
                 Ue({
                     avisos: await r.json(),
                     loading: !1
@@ -6125,7 +6125,7 @@ const hideLoadingScreen = () => {
             } else ja("Preencha título e mensagem", "error")
         }, fl = async e => {
             try {
-                await fetch(`${API_URL}/avisos/${e.id}`, {
+                await fetchAuth(`${API_URL}/avisos/${e.id}`, {
                     method: "PUT",
                     headers: {
                         "Content-Type": "application/json"
@@ -6135,7 +6135,7 @@ const hideLoadingScreen = () => {
                         ativo: !e.ativo
                     })
                 });
-                const t = await fetch(`${API_URL}/avisos`);
+                const t = await fetchAuth(`${API_URL}/avisos`);
                 Ue({
                     avisos: await t.json(),
                     loading: !1
@@ -6145,10 +6145,10 @@ const hideLoadingScreen = () => {
             }
         }, Nl = async e => {
             if (confirm("Remover este aviso permanentemente?")) try {
-                await fetch(`${API_URL}/avisos/${e}`, {
+                await fetchAuth(`${API_URL}/avisos/${e}`, {
                     method: "DELETE"
                 }), ja("✅ Removido!", "success");
-                const t = await fetch(`${API_URL}/avisos`);
+                const t = await fetchAuth(`${API_URL}/avisos`);
                 Ue({
                     avisos: await t.json(),
                     loading: !1
@@ -6166,30 +6166,30 @@ const hideLoadingScreen = () => {
             return l.getTime() === a.getTime() ? `hoje às ${e.inicio}` : l.getTime() === a.getTime() + 864e5 ? `amanhã às ${e.inicio}` : `${t.toLocaleDateString("pt-BR",{weekday:"long",day:"numeric",month:"short"})} às ${e.inicio}`
         }, vl = async () => {
             try {
-                const e = await fetch(`${API_URL}/promocoes/ativas`);
+                const e = await fetchAuth(`${API_URL}/promocoes/ativas`);
                 te(await e.json())
             } catch (e) {
                 console.error("Erro ao carregar promoções ativas:", e)
             }
         }, wl = async () => {
             try {
-                const e = await fetch(`${API_URL}/indicacoes`);
+                const e = await fetchAuth(`${API_URL}/indicacoes`);
                 le(await e.json())
             } catch (e) {
                 console.error("Erro ao carregar indicações:", e)
             }
         }, _l = async () => {
             try {
-                const e = await fetch(`${API_URL}/indicacoes/usuario/${l.codProfissional}`);
+                const e = await fetchAuth(`${API_URL}/indicacoes/usuario/${l.codProfissional}`);
                 oe(await e.json())
             } catch (e) {
                 console.error("Erro ao carregar minhas indicações:", e)
             }
         }, jl = async () => {
             try {
-                const e = await fetch(`${API_URL}/indicacao-link/usuario/${l.codProfissional}`),
+                const e = await fetchAuth(`${API_URL}/indicacao-link/usuario/${l.codProfissional}`),
                     t = await e.json(),
-                    a = await fetch(`${API_URL}/indicacao-link/estatisticas/${l.codProfissional}`),
+                    a = await fetchAuth(`${API_URL}/indicacao-link/estatisticas/${l.codProfissional}`),
                     r = await a.json();
                 await _l(), x(e => ({
                     ...e,
@@ -6201,7 +6201,7 @@ const hideLoadingScreen = () => {
             }
         }, Cl = async () => {
             try {
-                const e = await fetch(`${API_URL}/promocoes-novatos`);
+                const e = await fetchAuth(`${API_URL}/promocoes-novatos`);
                 se(await e.json())
             } catch (e) {
                 console.error("Erro ao carregar promoções novatos:", e)
@@ -6210,7 +6210,7 @@ const hideLoadingScreen = () => {
         // Função para carregar regiões disponíveis da planilha
         carregarRegioesNovatos = async () => {
             try {
-                const response = await fetch(`${API_URL}/promocoes-novatos/regioes`);
+                const response = await fetchAuth(`${API_URL}/promocoes-novatos/regioes`);
                 const regioes = await response.json();
                 setRegioesNovatos(regioes);
             } catch (e) {
@@ -6225,7 +6225,7 @@ const hideLoadingScreen = () => {
                 return;
             }
             try {
-                const response = await fetch(`${API_URL}/promocoes-novatos/elegibilidade/${l.codProfissional}`);
+                const response = await fetchAuth(`${API_URL}/promocoes-novatos/elegibilidade/${l.codProfissional}`);
                 const data = await response.json();
                 console.log("✅ Resposta elegibilidade novatos:", data);
                 setElegibilidadeNovatos({ ...data, carregando: false });
@@ -6240,17 +6240,17 @@ const hideLoadingScreen = () => {
         },
         Al = async () => {
             try {
-                const e = await fetch(`${API_URL}/promocoes-novatos/ativas`);
+                const e = await fetchAuth(`${API_URL}/promocoes-novatos/ativas`);
                 se(await e.json())
             } catch (e) {
                 console.error("Erro ao carregar promoções novatos ativas:", e)
             }
         }, Sl = async () => {
             try {
-                await fetch(`${API_URL}/inscricoes-novatos/verificar-expiradas`, {
+                await fetchAuth(`${API_URL}/inscricoes-novatos/verificar-expiradas`, {
                     method: "POST"
                 });
-                const e = await fetch(`${API_URL}/inscricoes-novatos`);
+                const e = await fetchAuth(`${API_URL}/inscricoes-novatos`);
                 me(await e.json())
             } catch (e) {
                 console.error("Erro ao carregar inscrições novatos:", e)
@@ -6264,7 +6264,7 @@ const hideLoadingScreen = () => {
             }
             s(!0);
             try {
-                const response = await fetch(`${API_URL}/inscricoes-novatos/${id}/rejeitar`, {
+                const response = await fetchAuth(`${API_URL}/inscricoes-novatos/${id}/rejeitar`, {
                     method: "PATCH",
                     headers: {
                         "Content-Type": "application/json"
@@ -6291,7 +6291,7 @@ const hideLoadingScreen = () => {
         },
         kl = async () => {
             try {
-                const e = await fetch(`${API_URL}/inscricoes-novatos/usuario/${l.codProfissional}`);
+                const e = await fetchAuth(`${API_URL}/inscricoes-novatos/usuario/${l.codProfissional}`);
                 de(await e.json())
             } catch (e) {
                 console.error("Erro ao carregar minhas inscrições novatos:", e)
@@ -6300,7 +6300,7 @@ const hideLoadingScreen = () => {
             if (p.novatosRegiao && p.novatosCliente && p.novatosValor) {
                 s(!0);
                 try {
-                    if (!(await fetch(`${API_URL}/promocoes-novatos`, {
+                    if (!(await fetchAuth(`${API_URL}/promocoes-novatos`, {
                             method: "POST",
                             headers: {
                                 "Content-Type": "application/json"
@@ -6330,7 +6330,7 @@ const hideLoadingScreen = () => {
         }, Tl = async () => {
             s(!0);
             try {
-                if (!(await fetch(`${API_URL}/promocoes-novatos/${p.editPromoNovatos.id}`, {
+                if (!(await fetchAuth(`${API_URL}/promocoes-novatos/${p.editPromoNovatos.id}`, {
                         method: "PATCH",
                         headers: {
                             "Content-Type": "application/json"
@@ -6357,7 +6357,7 @@ const hideLoadingScreen = () => {
             }
         }, Dl = async () => {
             try {
-                const e = await fetch(`${API_URL}/quiz-procedimentos/config`),
+                const e = await fetchAuth(`${API_URL}/quiz-procedimentos/config`),
                     t = await e.json();
                 console.log("🎯 Quiz Config carregado:", t), Ne(t)
             } catch (e) {
@@ -6365,14 +6365,14 @@ const hideLoadingScreen = () => {
             }
         }, Ll = async () => {
             try {
-                const e = await fetch(`${API_URL}/quiz-procedimentos/respostas`);
+                const e = await fetchAuth(`${API_URL}/quiz-procedimentos/respostas`);
                 ve(await e.json())
             } catch (e) {
                 console.error("Erro ao carregar respostas quiz:", e)
             }
         }, Il = async () => {
             try {
-                const e = await fetch(`${API_URL}/quiz-procedimentos/verificar/${l.codProfissional}`),
+                const e = await fetchAuth(`${API_URL}/quiz-procedimentos/verificar/${l.codProfissional}`),
                     t = await e.json();
                 _e(t.ja_respondeu), t.dados && Ce(t.dados)
             } catch (e) {
@@ -6381,7 +6381,7 @@ const hideLoadingScreen = () => {
         }, Fl = async () => {
             s(!0);
             try {
-                if (!(await fetch(`${API_URL}/quiz-procedimentos/config`, {
+                if (!(await fetchAuth(`${API_URL}/quiz-procedimentos/config`, {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json"
@@ -6399,7 +6399,7 @@ const hideLoadingScreen = () => {
             else {
                 s(!0);
                 try {
-                    const e = await fetch(`${API_URL}/quiz-procedimentos/responder`, {
+                    const e = await fetchAuth(`${API_URL}/quiz-procedimentos/responder`, {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json"
@@ -6430,7 +6430,7 @@ const hideLoadingScreen = () => {
             if (p.promoRegiao && p.promoValor) {
                 s(!0);
                 try {
-                    if (!(await fetch(`${API_URL}/promocoes`, {
+                    if (!(await fetchAuth(`${API_URL}/promocoes`, {
                             method: "POST",
                             headers: {
                                 "Content-Type": "application/json"
@@ -6457,7 +6457,7 @@ const hideLoadingScreen = () => {
             if (p.promoRegiao && p.promoValor) {
                 s(!0);
                 try {
-                    if (!(await fetch(`${API_URL}/promocoes/${p.editPromo.id}`, {
+                    if (!(await fetchAuth(`${API_URL}/promocoes/${p.editPromo.id}`, {
                             method: "PATCH",
                             headers: {
                                 "Content-Type": "application/json"
@@ -6483,7 +6483,7 @@ const hideLoadingScreen = () => {
         }, ql = async () => {
             s(!0);
             try {
-                const e = await fetch(`${API_URL}/users/login`, {
+                const e = await fetchAuth(`${API_URL}/users/login`, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json"
@@ -6499,7 +6499,7 @@ const hideLoadingScreen = () => {
                 let perms = null;
                 if (t.role === "admin" || t.role === "admin_financeiro") {
                     try {
-                        const permRes = await fetch(`${API_URL}/admin-permissions/${t.cod_profissional}`);
+                        const permRes = await fetchAuth(`${API_URL}/admin-permissions/${t.cod_profissional}`);
                         if (permRes.ok) {
                             const permData = await permRes.json();
                             const allowedMods = Array.isArray(permData.allowed_modules) ? permData.allowed_modules : [];
@@ -6547,7 +6547,7 @@ const hideLoadingScreen = () => {
         }, Ul = async () => {
             s(!0);
             try {
-                const response = await fetch(`${API_URL}/users/register`, {
+                const response = await fetchAuth(`${API_URL}/users/register`, {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json"
@@ -6577,7 +6577,7 @@ const hideLoadingScreen = () => {
         }, zl = async () => {
             s(!0);
             try {
-                await fetch(`${API_URL}/financial/accept-terms`, {
+                await fetchAuth(`${API_URL}/financial/accept-terms`, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json"
@@ -6597,7 +6597,7 @@ const hideLoadingScreen = () => {
             if (e.valido) {
                 s(!0);
                 try {
-                    await fetch(`${API_URL}/financial/data`, {
+                    await fetchAuth(`${API_URL}/financial/data`, {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json"
@@ -6831,7 +6831,7 @@ const hideLoadingScreen = () => {
             s(!0);
             try {
                 const e = p.imagens?.length > 0 ? p.imagens.join("|||") : null;
-                await fetch(`${API_URL}/submissions`, {
+                await fetchAuth(`${API_URL}/submissions`, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json"
@@ -6856,7 +6856,7 @@ const hideLoadingScreen = () => {
                     ...a,
                     status: t ? "aprovada" : "rejeitada",
                     validated_by_name: l.fullName
-                } : a)), await fetch(`${API_URL}/submissions/${e}`, {
+                } : a)), await fetchAuth(`${API_URL}/submissions/${e}`, {
                     method: "PATCH",
                     headers: {
                         "Content-Type": "application/json"
@@ -8964,7 +8964,7 @@ const hideLoadingScreen = () => {
             onClick: async () => {
                 try {
                     s(!0);
-                    const t = await fetch(`${API_URL}/indicacao-link/gerar`, {
+                    const t = await fetchAuth(`${API_URL}/indicacao-link/gerar`, {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json"
@@ -9244,7 +9244,7 @@ const hideLoadingScreen = () => {
                 onClick: () => (async e => {
                     s(!0);
                     try {
-                        const t = await fetch(`${API_URL}/inscricoes-novatos`, {
+                        const t = await fetchAuth(`${API_URL}/inscricoes-novatos`, {
                             method: "POST",
                             headers: {
                                 "Content-Type": "application/json"
@@ -9555,7 +9555,7 @@ const hideLoadingScreen = () => {
             className: "flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold"
         }, "Cancelar"), React.createElement("button", {
             onClick: async () => {
-                p.lojaSugestaoTexto?.trim() ? (await fetch(`${API_URL}/loja/sugestoes`, {
+                p.lojaSugestaoTexto?.trim() ? (await fetchAuth(`${API_URL}/loja/sugestoes`, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json"
@@ -9810,7 +9810,7 @@ const hideLoadingScreen = () => {
                             parcelas: p.lojaCompraParcelas,
                             valor_parcela: p.lojaCompraValorParcela
                         };
-                        await fetch(`${API_URL}/loja/pedidos`, {
+                        await fetchAuth(`${API_URL}/loja/pedidos`, {
                             method: "POST",
                             headers: {
                                 "Content-Type": "application/json"
@@ -11639,7 +11639,7 @@ const hideLoadingScreen = () => {
                     if (p.motivoRejeicao) {
                         s(!0);
                         try {
-                            if (!(await fetch(`${API_URL}/indicacoes/${e}/rejeitar`, {
+                            if (!(await fetchAuth(`${API_URL}/indicacoes/${e}/rejeitar`, {
                                     method: "PATCH",
                                     headers: {
                                         "Content-Type": "application/json"
@@ -11747,7 +11747,7 @@ const hideLoadingScreen = () => {
                 className: "text-xs text-blue-500 hover:text-blue-700"
             }, "✏️"), React.createElement("button", {
                 onClick: async () => {
-                    await fetch(`${API_URL}/promocoes/${e.id}`, {
+                    await fetchAuth(`${API_URL}/promocoes/${e.id}`, {
                         method: "PATCH",
                         headers: {
                             "Content-Type": "application/json"
@@ -11876,7 +11876,7 @@ const hideLoadingScreen = () => {
                     checked: e.credito_lancado || !1,
                     onChange: async t => {
                         try {
-                            await fetch(`${API_URL}/indicacoes/${e.id}/credito`, {
+                            await fetchAuth(`${API_URL}/indicacoes/${e.id}/credito`, {
                                 method: "PATCH",
                                 headers: {
                                     "Content-Type": "application/json"
@@ -11901,7 +11901,7 @@ const hideLoadingScreen = () => {
                     onClick: () => (async e => {
                         s(!0);
                         try {
-                            if (!(await fetch(`${API_URL}/indicacoes/${e}/aprovar`, {
+                            if (!(await fetchAuth(`${API_URL}/indicacoes/${e}/aprovar`, {
                                     method: "PATCH",
                                     headers: {
                                         "Content-Type": "application/json"
@@ -12306,7 +12306,7 @@ const hideLoadingScreen = () => {
                 title: "Editar"
             }, "✏️"), React.createElement("button", {
                 onClick: async () => {
-                    await fetch(`${API_URL}/promocoes-novatos/${e.id}`, {
+                    await fetchAuth(`${API_URL}/promocoes-novatos/${e.id}`, {
                         method: "PATCH",
                         headers: {
                             "Content-Type": "application/json"
@@ -12323,7 +12323,7 @@ const hideLoadingScreen = () => {
                     if (confirm("Tem certeza que deseja excluir esta promoção?")) {
                         s(!0);
                         try {
-                            const t = await fetch(`${API_URL}/promocoes-novatos/${e}`, {
+                            const t = await fetchAuth(`${API_URL}/promocoes-novatos/${e}`, {
                                 method: "DELETE"
                             });
                             if (!t.ok) {
@@ -12441,7 +12441,7 @@ const hideLoadingScreen = () => {
                     onClick: () => (async e => {
                         s(!0);
                         try {
-                            if (!(await fetch(`${API_URL}/inscricoes-novatos/${e.id}/credito`, {
+                            if (!(await fetchAuth(`${API_URL}/inscricoes-novatos/${e.id}/credito`, {
                                     method: "PATCH",
                                     headers: {
                                         "Content-Type": "application/json"
@@ -12474,7 +12474,7 @@ const hideLoadingScreen = () => {
                     onClick: () => (async e => {
                         s(!0);
                         try {
-                            await fetch(`${API_URL}/inscricoes-novatos/${e}/aprovar`, {
+                            await fetchAuth(`${API_URL}/inscricoes-novatos/${e}/aprovar`, {
                                 method: "PATCH",
                                 headers: {
                                     "Content-Type": "application/json"
@@ -12648,7 +12648,7 @@ const hideLoadingScreen = () => {
                     className: "px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg text-xs font-semibold hover:bg-blue-200"
                 }, "✏️ Editar"), React.createElement("button", {
                     onClick: async () => {
-                        confirm("Excluir este item do estoque?") && (await fetch(`${API_URL}/loja/estoque/${e.id}`, {
+                        confirm("Excluir este item do estoque?") && (await fetchAuth(`${API_URL}/loja/estoque/${e.id}`, {
                             method: "DELETE"
                         }), Ja(), ja("🗑️ Item excluído!", "success"))
                     },
@@ -13034,7 +13034,7 @@ const hideLoadingScreen = () => {
                         imagem_url: p.lojaEstoqueImagem ?? p.lojaEstoqueEdit?.imagem_url ?? "",
                         created_by: l.fullName
                     };
-                    if (!!p.lojaEstoqueEdit) await fetch(`${API_URL}/loja/estoque/${p.lojaEstoqueEdit.id}`, {
+                    if (!!p.lojaEstoqueEdit) await fetchAuth(`${API_URL}/loja/estoque/${p.lojaEstoqueEdit.id}`, {
                         method: "PUT",
                         headers: {
                             "Content-Type": "application/json"
@@ -13042,7 +13042,7 @@ const hideLoadingScreen = () => {
                         body: JSON.stringify(c)
                     }), ja("✅ Item atualizado!", "success");
                     else {
-                        const e = await fetch(`${API_URL}/loja/estoque`, {
+                        const e = await fetchAuth(`${API_URL}/loja/estoque`, {
                                 method: "POST",
                                 headers: {
                                     "Content-Type": "application/json"
@@ -13051,7 +13051,7 @@ const hideLoadingScreen = () => {
                             }),
                             t = await e.json(),
                             r = a ? o.reduce((e, t) => e + t.quantidade, 0) : c.quantidade || 0;
-                        r > 0 && await fetch(`${API_URL}/loja/estoque/${t.id}/entrada`, {
+                        r > 0 && await fetchAuth(`${API_URL}/loja/estoque/${t.id}/entrada`, {
                             method: "POST",
                             headers: {
                                 "Content-Type": "application/json"
@@ -13143,7 +13143,7 @@ const hideLoadingScreen = () => {
                     if (!p.lojaMovQtd || p.lojaMovQtd <= 0) return void ja("Informe a quantidade", "error");
                     if (p.lojaMovItem?.tem_tamanho && !p.lojaMovTamanho) return void ja("Selecione o tamanho", "error");
                     const e = "entrada" === p.lojaMovTipo ? "entrada" : "saida";
-                    await fetch(`${API_URL}/loja/estoque/${p.lojaMovItem.id}/${e}`, {
+                    await fetchAuth(`${API_URL}/loja/estoque/${p.lojaMovItem.id}/${e}`, {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json"
@@ -13221,7 +13221,7 @@ const hideLoadingScreen = () => {
                 className: "flex-1 px-3 py-1 bg-blue-100 text-blue-700 rounded text-xs font-semibold hover:bg-blue-200"
             }, "✏️ Editar"), React.createElement("button", {
                 onClick: async () => {
-                    confirm("Excluir este produto?") && (await fetch(`${API_URL}/loja/produtos/${e.id}`, {
+                    confirm("Excluir este produto?") && (await fetchAuth(`${API_URL}/loja/produtos/${e.id}`, {
                         method: "DELETE"
                     }), Ha(), ja("🗑️ Produto excluído!", "success"))
                 },
@@ -13485,7 +13485,7 @@ const hideLoadingScreen = () => {
                         })),
                         created_by: l.fullName
                     };
-                    p.lojaProdutoEdit ? (await fetch(`${API_URL}/loja/produtos/${p.lojaProdutoEdit.id}`, {
+                    p.lojaProdutoEdit ? (await fetchAuth(`${API_URL}/loja/produtos/${p.lojaProdutoEdit.id}`, {
                         method: "PUT",
                         headers: {
                             "Content-Type": "application/json"
@@ -13494,7 +13494,7 @@ const hideLoadingScreen = () => {
                             ...r,
                             status: p.lojaProdutoEdit.status
                         })
-                    }), ja("✅ Produto atualizado!", "success")) : (await fetch(`${API_URL}/loja/produtos`, {
+                    }), ja("✅ Produto atualizado!", "success")) : (await fetchAuth(`${API_URL}/loja/produtos`, {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json"
@@ -13575,7 +13575,7 @@ const hideLoadingScreen = () => {
                 type: "checkbox",
                 checked: e.debito_lancado || !1,
                 onChange: async t => {
-                    await fetch(`${API_URL}/loja/pedidos/${e.id}`, {
+                    await fetchAuth(`${API_URL}/loja/pedidos/${e.id}`, {
                         method: "PATCH",
                         headers: {
                             "Content-Type": "application/json"
@@ -13601,7 +13601,7 @@ const hideLoadingScreen = () => {
                 className: "flex gap-1 justify-center"
             }, "pendente" === e.status && React.createElement(React.Fragment, null, React.createElement("button", {
                 onClick: async () => {
-                    await fetch(`${API_URL}/loja/pedidos/${e.id}`, {
+                    await fetchAuth(`${API_URL}/loja/pedidos/${e.id}`, {
                         method: "PATCH",
                         headers: {
                             "Content-Type": "application/json"
@@ -13618,7 +13618,7 @@ const hideLoadingScreen = () => {
             }, "✅"), React.createElement("button", {
                 onClick: async () => {
                     const t = prompt("Motivo da rejeição:");
-                    t && (await fetch(`${API_URL}/loja/pedidos/${e.id}`, {
+                    t && (await fetchAuth(`${API_URL}/loja/pedidos/${e.id}`, {
                         method: "PATCH",
                         headers: {
                             "Content-Type": "application/json"
@@ -13670,7 +13670,7 @@ const hideLoadingScreen = () => {
                 className: "flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300"
             }, "Cancelar"), React.createElement("button", {
                 onClick: async () => {
-                    await fetch(`${API_URL}/loja/pedidos/${p.lojaPedidoDeleteConfirm.id}`, {
+                    await fetchAuth(`${API_URL}/loja/pedidos/${p.lojaPedidoDeleteConfirm.id}`, {
                         method: "DELETE"
                     }), x({
                         ...p,
@@ -13740,7 +13740,7 @@ const hideLoadingScreen = () => {
                 className: "px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-semibold hover:bg-red-700"
             }, "❌ Recusar"), React.createElement("button", {
                 onClick: async () => {
-                    confirm("Excluir esta sugestão?") && (await fetch(`${API_URL}/loja/sugestoes/${e.id}`, {
+                    confirm("Excluir esta sugestão?") && (await fetchAuth(`${API_URL}/loja/sugestoes/${e.id}`, {
                         method: "DELETE"
                     }), Ya(), ja("🗑️ Sugestão excluída!", "success"))
                 },
@@ -13780,7 +13780,7 @@ const hideLoadingScreen = () => {
                 className: "flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold"
             }, "Cancelar"), React.createElement("button", {
                 onClick: async () => {
-                    await fetch(`${API_URL}/loja/sugestoes/${p.lojaSugestaoResponder.id}`, {
+                    await fetchAuth(`${API_URL}/loja/sugestoes/${p.lojaSugestaoResponder.id}`, {
                         method: "PATCH",
                         headers: {
                             "Content-Type": "application/json"
@@ -13832,7 +13832,7 @@ const hideLoadingScreen = () => {
                 className: "flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold"
             }, "Cancelar"), React.createElement("button", {
                 onClick: async () => {
-                    await fetch(`${API_URL}/loja/sugestoes/${p.lojaSugestaoRecusar.id}`, {
+                    await fetchAuth(`${API_URL}/loja/sugestoes/${p.lojaSugestaoRecusar.id}`, {
                         method: "PATCH",
                         headers: {
                             "Content-Type": "application/json"
@@ -14410,10 +14410,10 @@ const hideLoadingScreen = () => {
                 }, e.hora_inicio, " às ", e.hora_fim)), React.createElement("button", {
                     onClick: () => (async e => {
                         if (confirm("Remover este horário especial?")) try {
-                            await fetch(`${API_URL}/horarios/especiais/${e}`, {
+                            await fetchAuth(`${API_URL}/horarios/especiais/${e}`, {
                                 method: "DELETE"
                             }), ja("✅ Removido!", "success");
-                            const t = await fetch(`${API_URL}/horarios/especiais`),
+                            const t = await fetchAuth(`${API_URL}/horarios/especiais`),
                                 a = await t.json();
                             Oe(e => ({
                                 ...e,
@@ -15308,7 +15308,7 @@ const hideLoadingScreen = () => {
                     React.createElement("div", {className: "flex gap-2"},
                         todoTarefaDetalhe.status !== "concluida" && React.createElement("button", {
                             onClick: async () => {
-                                await fetch(`${API_URL}/todo/tarefas/${todoTarefaDetalhe.id}`, {
+                                await fetchAuth(`${API_URL}/todo/tarefas/${todoTarefaDetalhe.id}`, {
                                     method: 'PUT',
                                     headers: {'Content-Type': 'application/json'},
                                     body: JSON.stringify({status: 'concluida', user_cod: l.codProfissional, user_name: l.fullName})
@@ -15619,7 +15619,7 @@ const hideLoadingScreen = () => {
                                             onClick: async (e) => {
                                                 e.stopPropagation();
                                                 if (confirm("Excluir esta tarefa?")) {
-                                                    await fetch(`${API_URL}/todo/tarefas/${t.id}`, {method: "DELETE"});
+                                                    await fetchAuth(`${API_URL}/todo/tarefas/${t.id}`, {method: "DELETE"});
                                                     if (todoViewMode === "meudia") await loadTodoMeuDia();
                                                     else {
                                                         const tarefas = await loadTodoTarefas(todoGrupoAtivo.id);
@@ -15707,7 +15707,7 @@ const hideLoadingScreen = () => {
                                     t.status === "concluida" ? 
                                         React.createElement("button", {
                                             onClick: async () => {
-                                                await fetch(`${API_URL}/todo/tarefas/${t.id}`, {
+                                                await fetchAuth(`${API_URL}/todo/tarefas/${t.id}`, {
                                                     method: "PATCH",
                                                     headers: {"Content-Type": "application/json"},
                                                     body: JSON.stringify({status: "pendente"})
@@ -15722,7 +15722,7 @@ const hideLoadingScreen = () => {
                                         }, "↩️ Reabrir") :
                                         React.createElement("button", {
                                             onClick: async () => {
-                                                await fetch(`${API_URL}/todo/tarefas/${t.id}`, {
+                                                await fetchAuth(`${API_URL}/todo/tarefas/${t.id}`, {
                                                     method: "PATCH",
                                                     headers: {"Content-Type": "application/json"},
                                                     body: JSON.stringify({status: "concluida"})
@@ -15817,7 +15817,7 @@ const hideLoadingScreen = () => {
                                 ja("Informe o nome do grupo", "error");
                                 return;
                             }
-                            await fetch(`${API_URL}/todo/grupos`, {
+                            await fetchAuth(`${API_URL}/todo/grupos`, {
                                 method: "POST",
                                 headers: {"Content-Type": "application/json"},
                                 body: JSON.stringify({
@@ -16110,7 +16110,7 @@ const hideLoadingScreen = () => {
                         const responsaveisFinais = todoModal.responsaveisSelecionados || [];
                         
                         if (todoModal.tipo === "novaTarefa") {
-                            const res = await fetch(`${API_URL}/todo/tarefas`, {
+                            const res = await fetchAuth(`${API_URL}/todo/tarefas`, {
                                 method: "POST",
                                 headers: {"Content-Type": "application/json"},
                                 body: JSON.stringify({
@@ -16133,7 +16133,7 @@ const hideLoadingScreen = () => {
                             // Criar subtarefas do checklist
                             if (todoModal.checklist && todoModal.checklist.length > 0) {
                                 for (let i = 0; i < todoModal.checklist.length; i++) {
-                                    await fetch(`${API_URL}/todo/tarefas/${novaTarefa.id}/subtarefas`, {
+                                    await fetchAuth(`${API_URL}/todo/tarefas/${novaTarefa.id}/subtarefas`, {
                                         method: "POST",
                                         headers: {"Content-Type": "application/json"},
                                         body: JSON.stringify({ titulo: todoModal.checklist[i], ordem: i })
@@ -16143,7 +16143,7 @@ const hideLoadingScreen = () => {
                             
                             ja("✅ Tarefa criada!", "success");
                         } else {
-                            await fetch(`${API_URL}/todo/tarefas/${todoModal.tarefa.id}`, {
+                            await fetchAuth(`${API_URL}/todo/tarefas/${todoModal.tarefa.id}`, {
                                 method: "PUT",
                                 headers: {"Content-Type": "application/json"},
                                 body: JSON.stringify({
@@ -16872,7 +16872,7 @@ const hideLoadingScreen = () => {
                                         } else {
                                             // Editar
                                             try {
-                                                const res = await fetch(`${API_URL}/lideranca/mensagens/${liderancaModal.dados.id}`, {
+                                                const res = await fetchAuth(`${API_URL}/lideranca/mensagens/${liderancaModal.dados.id}`, {
                                                     method: "PUT",
                                                     headers: {"Content-Type": "application/json"},
                                                     body: JSON.stringify(liderancaModal.dados)
@@ -20672,7 +20672,7 @@ const hideLoadingScreen = () => {
                             
                             console.log("📤 Enviando upload com usuario:", nomeUsuario, "id:", idUsuario);
                             
-                            const response = await fetch(`${API_URL}/bi/entregas/upload`, {
+                            const response = await fetchAuth(`${API_URL}/bi/entregas/upload`, {
                                 method: "POST",
                                 headers: { "Content-Type": "application/json" },
                                 body: JSON.stringify({
@@ -20749,7 +20749,7 @@ const hideLoadingScreen = () => {
                             
                             ha(`Enviando ${entregas.length} registros para atualização...`);
                             
-                            const response = await fetch(`${API_URL}/bi/entregas/atualizar-alocado`, {
+                            const response = await fetchAuth(`${API_URL}/bi/entregas/atualizar-alocado`, {
                                 method: "POST",
                                 headers: { "Content-Type": "application/json" },
                                 body: JSON.stringify({ entregas })
@@ -20791,7 +20791,7 @@ const hideLoadingScreen = () => {
                     if (!confirm("Isso vai atualizar todos os prazos com as regras do DAX. Continuar?")) return;
                     ha("Inicializando prazos DAX...");
                     try {
-                        const r = await fetch(`${API_URL}/bi/inicializar-prazos-dax`, { method: "POST" });
+                        const r = await fetchAuth(`${API_URL}/bi/inicializar-prazos-dax`, { method: "POST" });
                         const j = await r.json();
                         if (j.success) {
                             ja(`✅ Prazos inicializados! ${j.registrosAtualizados} registros atualizados`, "success");
@@ -21651,7 +21651,7 @@ const hideLoadingScreen = () => {
                     const [a] = e.split(":");
                     (async (e, t) => {
                         try {
-                            const a = await fetch(`${API_URL}/bi/mascaras`, {
+                            const a = await fetchAuth(`${API_URL}/bi/mascaras`, {
                                     method: "POST",
                                     headers: {
                                         "Content-Type": "application/json"
@@ -21685,7 +21685,7 @@ const hideLoadingScreen = () => {
             }, e.mascara)), React.createElement("button", {
                 onClick: () => (async e => {
                     if (confirm("Excluir esta máscara?")) try {
-                        (await fetch(`${API_URL}/bi/mascaras/${e}`, {
+                        (await fetchAuth(`${API_URL}/bi/mascaras/${e}`, {
                             method: "DELETE"
                         })).ok && (ja("✅ Máscara excluída!", "success"), dl())
                     } catch (e) {
@@ -21774,7 +21774,7 @@ const hideLoadingScreen = () => {
             }, "➕ Adicionar Faixa"), React.createElement("button", {
                 onClick: () => (async e => {
                     try {
-                        const t = await fetch(`${API_URL}/bi/prazo-padrao`, {
+                        const t = await fetchAuth(`${API_URL}/bi/prazo-padrao`, {
                                 method: "POST",
                                 headers: {
                                     "Content-Type": "application/json"
@@ -21878,7 +21878,7 @@ const hideLoadingScreen = () => {
                     const [t, a, l] = e.split(":");
                     (async (e, t, a, l) => {
                         try {
-                            const r = await fetch(`${API_URL}/bi/prazos`, {
+                            const r = await fetchAuth(`${API_URL}/bi/prazos`, {
                                     method: "POST",
                                     headers: {
                                         "Content-Type": "application/json"
@@ -21922,7 +21922,7 @@ const hideLoadingScreen = () => {
             }, e.nome || e.codigo)), React.createElement("button", {
                 onClick: () => (async e => {
                     if (confirm("Remover esta configuração de prazo?")) try {
-                        await fetch(`${API_URL}/bi/prazos/${e}`, {
+                        await fetchAuth(`${API_URL}/bi/prazos/${e}`, {
                             method: "DELETE"
                         }), ja("✅ Removido!", "success"), tl()
                     } catch (e) {
@@ -22024,7 +22024,7 @@ const hideLoadingScreen = () => {
                         React.createElement("button", {
                             onClick: async () => {
                                 try {
-                                    const resp = await fetch(`${API_URL}/bi/prazo-prof-padrao`, {
+                                    const resp = await fetchAuth(`${API_URL}/bi/prazo-prof-padrao`, {
                                         method: "POST",
                                         headers: {"Content-Type": "application/json"},
                                         body: JSON.stringify({faixas: prazoProfPadrao})
@@ -22135,7 +22135,7 @@ const hideLoadingScreen = () => {
                                     if (!sel) return ja("Selecione um cliente ou centro", "error");
                                     const [tipo, codigo, nome] = sel.split(":");
                                     try {
-                                        const resp = await fetch(`${API_URL}/bi/prazos-prof`, {
+                                        const resp = await fetchAuth(`${API_URL}/bi/prazos-prof`, {
                                             method: "POST",
                                             headers: {"Content-Type": "application/json"},
                                             body: JSON.stringify({
@@ -22149,7 +22149,7 @@ const hideLoadingScreen = () => {
                                         if (data.success) {
                                             ja("✅ Prazo profissional salvo!", "success");
                                             // Recarregar lista de prazos profissionais
-                                            const reloadResp = await fetch(`${API_URL}/bi/prazos-prof`);
+                                            const reloadResp = await fetchAuth(`${API_URL}/bi/prazos-prof`);
                                             const reloadData = await reloadResp.json();
                                             if (reloadData.success) setPrazosProfissionais(reloadData.prazos || []);
                                         } else {
@@ -22187,10 +22187,10 @@ const hideLoadingScreen = () => {
                                             onClick: async () => {
                                                 if (confirm("Remover esta configuração de prazo profissional?")) {
                                                     try {
-                                                        await fetch(`${API_URL}/bi/prazos-prof/${e.id}`, {method: "DELETE"});
+                                                        await fetchAuth(`${API_URL}/bi/prazos-prof/${e.id}`, {method: "DELETE"});
                                                         ja("✅ Removido!", "success");
                                                         // Recarregar lista
-                                                        const resp = await fetch(`${API_URL}/bi/prazos-prof`);
+                                                        const resp = await fetchAuth(`${API_URL}/bi/prazos-prof`);
                                                         const data = await resp.json();
                                                         if (data.success) setPrazosProfissionais(data.prazos || []);
                                                     } catch (err) {
@@ -22221,7 +22221,7 @@ const hideLoadingScreen = () => {
                                 s(true);
                                 setLoadingMessage("Recalculando prazos profissionais...");
                                 try {
-                                    const resp = await fetch(`${API_URL}/bi/entregas/recalcular-prazo-prof`, {
+                                    const resp = await fetchAuth(`${API_URL}/bi/entregas/recalcular-prazo-prof`, {
                                         method: "POST",
                                         headers: {"Content-Type": "application/json"}
                                     });
@@ -22887,7 +22887,7 @@ const hideLoadingScreen = () => {
             className: "px-2 py-0.5 rounded-full text-xs font-bold " + ("aprovada" === e.status ? "bg-green-600 text-white" : "rejeitada" === e.status ? "bg-red-600 text-white" : "bg-yellow-600 text-white")
         }, e.status?.toUpperCase()), React.createElement("button", {
             onClick: async () => {
-                confirm(`Excluir OS ${e.ordemServico}?`) && (await fetch(`${API_URL}/submissions/${e.id}`, {
+                confirm(`Excluir OS ${e.ordemServico}?`) && (await fetchAuth(`${API_URL}/submissions/${e.id}`, {
                     method: "DELETE"
                 }), ja("🗑️ Excluída!", "success"), La())
             },
@@ -23447,7 +23447,7 @@ const hideLoadingScreen = () => {
                 if (p.newName && p.newCod && p.newPass) {
                     s(!0);
                     try {
-                        await fetch(`${API_URL}/users/register`, {
+                        await fetchAuth(`${API_URL}/users/register`, {
                             method: "POST",
                             headers: {
                                 "Content-Type": "application/json"
