@@ -7,7 +7,7 @@ const {
 const ORS_API_KEY = 'eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjM5MTI2ZjMwMTMxOTQ3OTU5Mjc2YWM5OGNjNGZiZWEwIiwiaCI6Im11cm11cjY0In0=';
 
 // ==================== SISTEMA DE VERSÃO E CACHE ====================
-const APP_VERSION = "2.1.0"; // Incrementar a cada deploy importante
+const APP_VERSION = "2.2.0"; // WebSocket + Performance
 const VERSION_KEY = "tutts_app_version";
 
 // Verificar se precisa limpar cache (versão diferente)
@@ -2885,6 +2885,51 @@ const hideLoadingScreen = () => {
                     console.log("Audio não suportado")
                 }
             },
+            
+            // ==================== WEBSOCKET PARA TEMPO REAL ====================
+            wsRef = React.useRef(null),
+            wsReconnectTimer = React.useRef(null),
+            [wsConnected, setWsConnected] = React.useState(false),
+            
+            connectWebSocket = React.useCallback(() => {
+                if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) return;
+                const wsUrl = API_URL.replace('https://', 'wss://').replace('http://', 'ws://').replace('/api', '') + '/ws/financeiro';
+                console.log('🔌 [WS] Conectando:', wsUrl);
+                try {
+                    wsRef.current = new WebSocket(wsUrl);
+                    wsRef.current.onopen = () => {
+                        console.log('✅ [WS] Conectado!');
+                        setWsConnected(true);
+                        if (l) {
+                            wsRef.current.send(JSON.stringify({ type: 'AUTH', role: l.role, cod_profissional: l.codProfissional }));
+                        }
+                        if (wsReconnectTimer.current) { clearTimeout(wsReconnectTimer.current); wsReconnectTimer.current = null; }
+                    };
+                    wsRef.current.onmessage = (event) => {
+                        try {
+                            const data = JSON.parse(event.data);
+                            console.log('📩 [WS]:', data.event);
+                            if (data.event === 'NEW_WITHDRAWAL') {
+                                U(prev => { if (prev.some(w => w.id === data.data.id)) return prev; return [data.data, ...prev]; });
+                                v(prev => ({ ...prev, solicitacoes: (prev.solicitacoes || 0) + 1, validacao: (prev.validacao || 0) + 1 }));
+                                Ca(); ja(`🔔 Novo saque de ${data.data.user_name || data.data.user_cod}!`, "info");
+                            } else if (data.event === 'WITHDRAWAL_UPDATE') {
+                                U(prev => prev.map(w => w.id === data.data.id ? { ...w, status: data.data.status } : w));
+                                if (['aprovado', 'aprovado_gratuidade', 'rejeitado'].includes(data.data.status)) {
+                                    v(prev => ({ ...prev, solicitacoes: Math.max(0, (prev.solicitacoes || 0) - 1), validacao: Math.max(0, (prev.validacao || 0) - 1) }));
+                                }
+                            } else if (data.event === 'MY_WITHDRAWAL_UPDATE') {
+                                if (data.data.status === 'aprovado' || data.data.status === 'aprovado_gratuidade') { Ca(); ja('✅ Seu saque foi aprovado!', 'success'); }
+                                else if (data.data.status === 'rejeitado') { ja(`❌ Saque rejeitado: ${data.data.reject_reason || 'Sem motivo'}`, 'error'); }
+                            } else if (data.event === 'AUTH_SUCCESS') { console.log('✅ [WS] Autenticado:', data.role); }
+                        } catch (err) { console.error('❌ [WS] Erro:', err); }
+                    };
+                    wsRef.current.onclose = () => { console.log('🔌 [WS] Desconectado'); setWsConnected(false); if (!wsReconnectTimer.current) { wsReconnectTimer.current = setTimeout(connectWebSocket, 5000); } };
+                    wsRef.current.onerror = () => { setWsConnected(false); };
+                } catch (err) { console.error('❌ [WS] Falha:', err); }
+            }, [l]),
+            // ==================== FIM WEBSOCKET ====================
+            
             Aa = React.useRef(0),
             Sa = React.useRef(0),
             ka = React.useRef({
@@ -2914,42 +2959,83 @@ const hideLoadingScreen = () => {
                     }))
                 }
             };
+        
+        // ==================== CONECTAR WEBSOCKET ====================
+        useEffect(() => {
+            if (l && ['admin', 'admin_master', 'admin_financeiro'].includes(l.role)) {
+                connectWebSocket();
+            }
+            return () => {
+                if (wsRef.current) wsRef.current.close();
+                if (wsReconnectTimer.current) clearTimeout(wsReconnectTimer.current);
+            };
+        }, [l, connectWebSocket]);
+        
+        // Ping para manter conexão viva
+        useEffect(() => {
+            if (!wsConnected) return;
+            const pingInterval = setInterval(() => {
+                if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+                    wsRef.current.send(JSON.stringify({ type: 'PING' }));
+                }
+            }, 30000);
+            return () => clearInterval(pingInterval);
+        }, [wsConnected]);
+        // ==================== FIM WEBSOCKET CONNECT ====================
+        
         useEffect(() => {
             const canAccessFinEff = hasModuleAccess(l, "financeiro");
             if (!l || (!canAccessFinEff || ("admin_master" === l.role && "financeiro" !== Ee))) return;
-            const e = async () => {
+            
+            // ==================== CARREGAMENTO OTIMIZADO ====================
+            const carregarPendentes = async () => {
                 N(!0);
-                const e = p.finTab || "home-fin";
                 try {
-                    // Requisições básicas para contadores (sempre necessárias)
-                    const [t, a, l] = await Promise.all([fetch(`${API_URL}/withdrawals`), fetch(`${API_URL}/loja/pedidos`), fetch(`${API_URL}/gratuities`)]), r = await t.json(), o = await a.json(), c = await l.json(), s = r.filter(e => "pending" === e.status && !ka.current.solicitacoes.has(e.id)), n = o.filter(e => "pendente" === e.status && !ka.current.loja.has(e.id)), m = c.filter(e => "pending" === e.status && !ka.current.gratuidades.has(e.id));
-                    v({
-                        solicitacoes: s.length,
-                        validacao: s.length,
-                        loja: n.length,
-                        gratuidades: m.length
-                    });
-                    const i = Aa.current,
-                        d = r.filter(e => "pending" === e.status).length;
-                    d > i && i > 0 && (Ca(), ja("🔔 Novo saque solicitado!", "info")), Aa.current = d;
-                    const p = Sa.current,
-                        x = o.filter(e => "pendente" === e.status).length;
-                    x > p && p > 0 && (Ca(), ja("🛒 Novo pedido na loja!", "info")), Sa.current = x, U(r), tt(o), H(c);
+                    // Usar endpoint otimizado que retorna APENAS pendentes
+                    const [pendentesRes, pedidosRes, gratuidadesRes] = await Promise.all([
+                        fetch(`${API_URL}/withdrawals/pendentes`),
+                        fetch(`${API_URL}/loja/pedidos`),
+                        fetch(`${API_URL}/gratuities`)
+                    ]);
+                    const pendentes = await pendentesRes.json();
+                    const pedidos = await pedidosRes.json();
+                    const gratuidades = await gratuidadesRes.json();
                     
-                    // Requisições extras SOMENTE na primeira vez ou quando mudar de aba
-                    // (não a cada polling para evitar lentidão)
+                    const novosSaques = pendentes.filter(e => !ka.current.solicitacoes.has(e.id));
+                    const novosPedidos = pedidos.filter(e => "pendente" === e.status && !ka.current.loja.has(e.id));
+                    const novasGratuidades = gratuidades.filter(e => "pending" === e.status && !ka.current.gratuidades.has(e.id));
                     
-                    "solicitacoes" === e || "validacao" === e ? Pa("solicitacoes") : "loja" === e ? Pa("loja") : "gratuidades" === e && Pa("gratuidades"), h(new Date)
-                } catch (e) {
-                    console.error("Erro no polling:", e)
-                }
-                N(!1)
+                    v({ solicitacoes: novosSaques.length, validacao: novosSaques.length, loja: novosPedidos.length, gratuidades: novasGratuidades.length });
+                    
+                    // Detectar novos apenas se WebSocket offline
+                    if (!wsConnected) {
+                        const countAtual = pendentes.length;
+                        if (countAtual > Aa.current && Aa.current > 0) { Ca(); ja("🔔 Novo saque solicitado!", "info"); }
+                        Aa.current = countAtual;
+                        const countPedidos = pedidos.filter(e => "pendente" === e.status).length;
+                        if (countPedidos > Sa.current && Sa.current > 0) { Ca(); ja("🛒 Novo pedido na loja!", "info"); }
+                        Sa.current = countPedidos;
+                    }
+                    
+                    U(pendentes); tt(pedidos); H(gratuidades);
+                    
+                    const abaAtiva = p.finTab || "home-fin";
+                    "solicitacoes" === abaAtiva || "validacao" === abaAtiva ? Pa("solicitacoes") : "loja" === abaAtiva ? Pa("loja") : "gratuidades" === abaAtiva && Pa("gratuidades");
+                    h(new Date);
+                    console.log('✅ Dados carregados:', pendentes.length, 'pendentes');
+                } catch (e) { console.error("Erro:", e); }
+                N(!1);
             };
-            e();
-            // Polling a cada 30 segundos (antes era 10s - causava lentidão)
-            const t = setInterval(e, 3e4);
-            return () => clearInterval(t)
-        }, [l, p.finTab, Ee]), 
+            
+            carregarPendentes();
+            
+            // Fallback: polling APENAS se WebSocket offline (60s ao invés de 10s)
+            const fallbackInterval = setInterval(() => {
+                if (!wsConnected) { console.log('⚠️ [Fallback] WebSocket offline'); carregarPendentes(); }
+            }, 60000);
+            
+            return () => clearInterval(fallbackInterval);
+        }, [l, p.finTab, Ee, wsConnected]), 
         
         // useEffect separado para carregar dados específicos da aba (só quando muda de aba)
         useEffect(() => {
