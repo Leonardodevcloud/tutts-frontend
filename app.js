@@ -2889,7 +2889,9 @@ const hideLoadingScreen = () => {
                         console.log('✅ [WS] Conectado!');
                         setWsConnected(true);
                         if (l) {
-                            wsRef.current.send(JSON.stringify({ type: 'AUTH', role: l.role, cod_profissional: l.codProfissional }));
+                            // Enviar token JWT para autenticação segura
+                            const token = sessionStorage.getItem('tutts_token');
+                            wsRef.current.send(JSON.stringify({ type: 'AUTH', token: token, role: l.role, cod_profissional: l.codProfissional }));
                         }
                         if (wsReconnectTimer.current) { clearTimeout(wsReconnectTimer.current); wsReconnectTimer.current = null; }
                     };
@@ -2910,6 +2912,7 @@ const hideLoadingScreen = () => {
                                 if (data.data.status === 'aprovado' || data.data.status === 'aprovado_gratuidade') { Ca(); ja('✅ Seu saque foi aprovado!', 'success'); }
                                 else if (data.data.status === 'rejeitado') { ja(`❌ Saque rejeitado: ${data.data.reject_reason || 'Sem motivo'}`, 'error'); }
                             } else if (data.event === 'AUTH_SUCCESS') { console.log('✅ [WS] Autenticado:', data.role); }
+                            else if (data.event === 'AUTH_ERROR') { console.error('❌ [WS] Erro de autenticação:', data.error); setWsConnected(false); }
                         } catch (err) { console.error('❌ [WS] Erro:', err); }
                     };
                     wsRef.current.onclose = () => { console.log('🔌 [WS] Desconectado'); setWsConnected(false); if (!wsReconnectTimer.current) { wsReconnectTimer.current = setTimeout(connectWebSocket, 5000); } };
