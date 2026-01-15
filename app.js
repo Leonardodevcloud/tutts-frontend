@@ -664,10 +664,13 @@ const hideLoadingScreen = () => {
             if (e) try {
                 const t = generatePixCode(e.pix_key, e.final_amount, e.user_name);
                 c(t);
-                // Usar Google Charts API (mais rápida e confiável)
-                const qrUrl = `https://chart.googleapis.com/chart?cht=qr&chs=300x300&chl=${encodeURIComponent(t)}&choe=UTF-8`;
-                r(qrUrl);
-                i(!1);
+                // Usar QRServer API (funciona e é confiável)
+                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(t)}&format=png`;
+                // Pré-carregar imagem para evitar delay visual
+                const img = new Image();
+                img.onload = () => { r(qrUrl); i(!1); };
+                img.onerror = () => { p("Erro ao carregar QR Code"); i(!1); };
+                img.src = qrUrl;
             } catch (e) {
                 console.error("Erro ao gerar PIX:", e), p("Erro ao gerar código PIX"), i(!1)
             }
