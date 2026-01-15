@@ -2983,14 +2983,30 @@ const hideLoadingScreen = () => {
                 N(!0);
                 try {
                     // Carregar TODOS os saques para visão geral + pedidos + gratuidades
+                    // Usar fetchAuth para enviar token JWT
                     const [saquesRes, pedidosRes, gratuidadesRes] = await Promise.all([
-                        fetch(`${API_URL}/withdrawals`),
-                        fetch(`${API_URL}/loja/pedidos`),
-                        fetch(`${API_URL}/gratuities`)
+                        fetchAuth(`${API_URL}/withdrawals`),
+                        fetchAuth(`${API_URL}/loja/pedidos`),
+                        fetchAuth(`${API_URL}/gratuities`)
                     ]);
+                    
+                    // Verificar se as respostas são válidas
+                    if (!saquesRes.ok || !gratuidadesRes.ok) {
+                        console.error('Erro nas requisições:', saquesRes.status, gratuidadesRes.status);
+                        N(!1);
+                        return;
+                    }
+                    
                     const saques = await saquesRes.json();
                     const pedidos = await pedidosRes.json();
                     const gratuidades = await gratuidadesRes.json();
+                    
+                    // Verificar se são arrays válidos
+                    if (!Array.isArray(saques) || !Array.isArray(gratuidades)) {
+                        console.error('Resposta inválida:', saques, gratuidades);
+                        N(!1);
+                        return;
+                    }
                     
                     // Filtrar pendentes para contadores
                     const pendentes = saques.filter(e => e.status === "pending" || e.status === "aguardando_aprovacao");
@@ -4870,36 +4886,36 @@ const hideLoadingScreen = () => {
             }
         }, Oa = async () => {
             try {
-                const e = await fetch(`${API_URL}/withdrawals/user/${l.cod_profissional}`);
-                O(await e.json())
+                const e = await fetchAuth(`${API_URL}/withdrawals/user/${l.cod_profissional}`);
+                if (e.ok) O(await e.json())
             } catch (e) {
                 console.error(e)
             }
         }, qa = async () => {
             try {
-                const e = await fetch(`${API_URL}/gratuities/user/${l.cod_profissional}`);
-                W(await e.json())
+                const e = await fetchAuth(`${API_URL}/gratuities/user/${l.cod_profissional}`);
+                if (e.ok) W(await e.json())
             } catch (e) {
                 console.error(e)
             }
         }, Ua = async () => {
             try {
-                const e = await fetch(`${API_URL}/withdrawals`);
-                U(await e.json())
+                const e = await fetchAuth(`${API_URL}/withdrawals`);
+                if (e.ok) U(await e.json())
             } catch (e) {
                 console.error(e)
             }
         }, za = async () => {
             try {
-                const e = await fetch(`${API_URL}/gratuities`);
-                H(await e.json())
+                const e = await fetchAuth(`${API_URL}/gratuities`);
+                if (e.ok) H(await e.json())
             } catch (e) {
                 console.error(e)
             }
         }, Ba = async () => {
             try {
-                const e = await fetch(`${API_URL}/restricted`);
-                Y(await e.json())
+                const e = await fetchAuth(`${API_URL}/restricted`);
+                if (e.ok) Y(await e.json())
             } catch (e) {
                 console.error(e)
             }
