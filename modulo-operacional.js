@@ -1,108 +1,55 @@
 // ==================== MÓDULO OPERACIONAL ====================
 // Arquivo: modulo-operacional.js
-// Carregado dinamicamente quando usuário acessa Operacional
+// Renderização do módulo Operacional - Carregado dinamicamente
 
 (function() {
     'use strict';
 
-    // Componente principal do módulo Operacional
     window.ModuloOperacionalComponent = function(props) {
+        // Desestruturar todas as props
         const {
-            usuario,
-            estado,
-            setEstado,
-            showToast,
-            setLoading,
-            API_URL,
-            fetchAuth,
-            getToken,
-            HeaderCompacto,
-            Toast,
-            LoadingOverlay,
-            moduloAtivo,
-            socialProfile,
-            isLoading,
-            lastUpdate,
-            onRefresh,
-            onLogout,
-            onGoHome,
-            onNavigate,
-            toastData,
-            // Estados específicos do operacional
-            avisoModal,
-            setAvisoModal,
-            avisoEdit,
-            setAvisoEdit,
-            avisoForm,
-            setAvisoForm,
-            avisosData,
-            avisosRegioes,
-            carregarAvisos,
-            salvarAviso,
-            deletarAviso,
-            handleAvisoImageUpload,
+            // Básicos
+            l, p, x, ja, s, n, f, i, E,
+            API_URL, getToken,
+            // Componentes
+            HeaderCompacto, Toast, LoadingOverlay,
+            // Navegação
+            Ee, socialProfile, ul, o, he, navegarSidebar,
+            // Avisos
+            avisoModal, setAvisoModal, avisoEdit, setAvisoEdit,
+            avisoForm, setAvisoForm, avisosData, avisosRegioes,
+            carregarAvisos, salvarAviso, deletarAviso, handleAvisoImageUpload,
             // Operações
-            operacaoModal,
-            setOperacaoModal,
-            operacaoEdit,
-            setOperacaoEdit,
-            operacaoForm,
-            setOperacaoForm,
-            operacoesData,
-            operacaoSubTab,
-            setOperacaoSubTab,
-            carregarOperacoes,
-            salvarOperacao,
-            gerarRelatorioOperacao,
-            calcularContadorRegressivo,
-            checklistMotos,
-            setChecklistMotos,
+            operacaoModal, setOperacaoModal, operacaoEdit, setOperacaoEdit,
+            operacaoForm, setOperacaoForm, operacoesData,
+            operacaoSubTab, setOperacaoSubTab, carregarOperacoes,
+            gerarRelatorioOperacao, calcularContadorRegressivo,
+            checklistMotos, setChecklistMotos,
             // Recrutamento
-            recrutamentoModal,
-            setRecrutamentoModal,
-            recrutamentoEdit,
-            setRecrutamentoEdit,
-            recrutamentoForm,
-            setRecrutamentoForm,
-            recrutamentoData,
-            recrutamentoSubTab,
-            setRecrutamentoSubTab,
-            recrutamentoCodBusca,
-            setRecrutamentoCodBusca,
-            carregarRecrutamento,
-            salvarRecrutamento,
+            recrutamentoModal, setRecrutamentoModal,
+            recrutamentoEdit, setRecrutamentoEdit,
+            recrutamentoForm, setRecrutamentoForm,
+            recrutamentoData, recrutamentoSubTab, setRecrutamentoSubTab,
+            recrutamentoCodBusca, setRecrutamentoCodBusca, recrutamentoLoading,
+            carregarRecrutamento, salvarRecrutamento,
+            buscarProfissionalRecrutamento, atribuirProfissionalRecrutamento,
+            removerAtribuicaoRecrutamento, deletarRecrutamento,
             // Localização
-            localizacaoSubTab,
-            setLocalizacaoSubTab,
-            localizacaoFiltro,
-            setLocalizacaoFiltro,
-            localizacaoData,
-            carregarLocalizacao,
-            // Relatório
-            showRelatorioModal,
-            setShowRelatorioModal,
-            relatorioForm,
-            setRelatorioForm,
-            relatorioImagemAmpliada,
-            setRelatorioImagemAmpliada,
-            salvarRelatorio,
-            aa // regiões do BI
+            localizacaoSubTab, setLocalizacaoSubTab,
+            localizacaoFiltro, setLocalizacaoFiltro,
+            localizacaoClientesData, carregarLocalizacaoClientes,
+            // Relatórios
+            showRelatorioModal, setShowRelatorioModal,
+            relatorioForm, setRelatorioForm,
+            relatorioImagemAmpliada, setRelatorioImagemAmpliada,
+            relatoriosDiarios, relatoriosDiariosNaoLidos,
+            abrirNovoRelatorio, abrirEditarRelatorio,
+            salvarRelatorio, excluirRelatorio, gerarLinkWaze,
+            // Regiões
+            aa
         } = props;
 
-        const l = usuario;
-        const p = estado;
-        const x = setEstado;
-        const s = setLoading;
-        const ja = showToast;
-        const Ee = moduloAtivo;
-        const i = toastData;
-        const n = isLoading;
-        const f = isLoading;
-        const E = lastUpdate;
-        const ul = onRefresh;
-        const he = onGoHome;
-
-                    return React.createElement("div", {
+            return React.createElement("div", {
                 className: "min-h-screen bg-gray-50"
             }, i && React.createElement(Toast, i), n && React.createElement(LoadingOverlay, null),
             // ========== HEADER COM NAVEGAÇÃO - OPERACIONAL ==========
@@ -1933,8 +1880,7 @@
         );
     };
 
-    // Marcar que o módulo foi carregado
     window.ModuloOperacionalLoaded = true;
-    console.log("✅ Módulo Operacional carregado com sucesso!");
+    console.log("✅ Módulo Operacional carregado!");
 
 })();
