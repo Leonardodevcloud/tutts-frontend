@@ -31,6 +31,7 @@
             recrutamentoForm, setRecrutamentoForm,
             recrutamentoData, recrutamentoSubTab, setRecrutamentoSubTab,
             recrutamentoCodBusca, setRecrutamentoCodBusca, recrutamentoLoading,
+            recrutamentoStats, setRecrutamentoStats,
             carregarRecrutamento, salvarRecrutamento,
             buscarProfissionalRecrutamento, atribuirProfissionalRecrutamento,
             removerAtribuicaoRecrutamento, deletarRecrutamento,
