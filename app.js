@@ -17137,91 +17137,49 @@ const hideLoadingScreen = () => {
         // ========== MÓDULO OPERACIONAL (CARREGAMENTO EXTERNO) ==========
         const canAccessOperacional = hasModuleAccess(l, "operacional");
         if (canAccessOperacional && "operacional" === Ee) {
-            // Verificar se o módulo foi carregado
             if (typeof window.ModuloOperacionalComponent !== 'undefined') {
                 return React.createElement(window.ModuloOperacionalComponent, {
-                    usuario: l,
-                    estado: p,
-                    setEstado: x,
-                    showToast: ja,
-                    setLoading: s,
-                    API_URL: API_URL,
-                    fetchAuth: fetchAuth,
-                    getToken: getToken,
-                    HeaderCompacto: HeaderCompacto,
-                    Toast: Toast,
-                    LoadingOverlay: LoadingOverlay,
-                    moduloAtivo: Ee,
-                    socialProfile: socialProfile,
-                    isLoading: n,
-                    lastUpdate: E,
-                    onRefresh: ul,
-                    onLogout: () => o(null),
-                    onGoHome: () => he("home"),
-                    onNavigate: navegarSidebar,
-                    toastData: i,
-                    // Estados específicos do operacional
-                    avisoModal: avisoModal,
-                    setAvisoModal: setAvisoModal,
-                    avisoEdit: avisoEdit,
-                    setAvisoEdit: setAvisoEdit,
-                    avisoForm: avisoForm,
-                    setAvisoForm: setAvisoForm,
-                    avisosData: avisosData,
-                    avisosRegioes: avisosRegioes,
-                    carregarAvisos: carregarAvisos,
-                    salvarAviso: salvarAviso,
-                    deletarAviso: deletarAviso,
-                    handleAvisoImageUpload: handleAvisoImageUpload,
+                    // Básicos
+                    l, p, x, ja, s, n, f, i, E,
+                    API_URL, getToken,
+                    // Componentes
+                    HeaderCompacto, Toast, LoadingOverlay,
+                    // Navegação
+                    Ee, socialProfile, ul, o, he, navegarSidebar,
+                    // Avisos
+                    avisoModal, setAvisoModal, avisoEdit, setAvisoEdit,
+                    avisoForm, setAvisoForm, avisosData, avisosRegioes,
+                    carregarAvisos, salvarAviso, deletarAviso, handleAvisoImageUpload,
                     // Operações
-                    operacaoModal: operacaoModal,
-                    setOperacaoModal: setOperacaoModal,
-                    operacaoEdit: operacaoEdit,
-                    setOperacaoEdit: setOperacaoEdit,
-                    operacaoForm: operacaoForm,
-                    setOperacaoForm: setOperacaoForm,
-                    operacoesData: operacoesData,
-                    operacaoSubTab: operacaoSubTab,
-                    setOperacaoSubTab: setOperacaoSubTab,
-                    carregarOperacoes: carregarOperacoes,
-                    salvarOperacao: salvarOperacao,
-                    gerarRelatorioOperacao: gerarRelatorioOperacao,
-                    calcularContadorRegressivo: calcularContadorRegressivo,
-                    checklistMotos: checklistMotos,
-                    setChecklistMotos: setChecklistMotos,
+                    operacaoModal, setOperacaoModal, operacaoEdit, setOperacaoEdit,
+                    operacaoForm, setOperacaoForm, operacoesData,
+                    operacaoSubTab, setOperacaoSubTab, carregarOperacoes,
+                    gerarRelatorioOperacao, calcularContadorRegressivo,
+                    checklistMotos, setChecklistMotos,
                     // Recrutamento
-                    recrutamentoModal: recrutamentoModal,
-                    setRecrutamentoModal: setRecrutamentoModal,
-                    recrutamentoEdit: recrutamentoEdit,
-                    setRecrutamentoEdit: setRecrutamentoEdit,
-                    recrutamentoForm: recrutamentoForm,
-                    setRecrutamentoForm: setRecrutamentoForm,
-                    recrutamentoData: recrutamentoData,
-                    recrutamentoSubTab: recrutamentoSubTab,
-                    setRecrutamentoSubTab: setRecrutamentoSubTab,
-                    recrutamentoCodBusca: recrutamentoCodBusca,
-                    setRecrutamentoCodBusca: setRecrutamentoCodBusca,
-                    carregarRecrutamento: carregarRecrutamento,
-                    salvarRecrutamento: salvarRecrutamento,
+                    recrutamentoModal, setRecrutamentoModal,
+                    recrutamentoEdit, setRecrutamentoEdit,
+                    recrutamentoForm, setRecrutamentoForm,
+                    recrutamentoData, recrutamentoSubTab, setRecrutamentoSubTab,
+                    recrutamentoCodBusca, setRecrutamentoCodBusca, recrutamentoLoading,
+                    carregarRecrutamento, salvarRecrutamento,
+                    buscarProfissionalRecrutamento, atribuirProfissionalRecrutamento,
+                    removerAtribuicaoRecrutamento, deletarRecrutamento,
                     // Localização
-                    localizacaoSubTab: localizacaoSubTab,
-                    setLocalizacaoSubTab: setLocalizacaoSubTab,
-                    localizacaoFiltro: localizacaoFiltro,
-                    setLocalizacaoFiltro: setLocalizacaoFiltro,
-                    localizacaoData: localizacaoData,
-                    carregarLocalizacao: carregarLocalizacao,
-                    // Relatório
-                    showRelatorioModal: showRelatorioModal,
-                    setShowRelatorioModal: setShowRelatorioModal,
-                    relatorioForm: relatorioForm,
-                    setRelatorioForm: setRelatorioForm,
-                    relatorioImagemAmpliada: relatorioImagemAmpliada,
-                    setRelatorioImagemAmpliada: setRelatorioImagemAmpliada,
-                    salvarRelatorio: salvarRelatorio,
-                    aa: aa
+                    localizacaoSubTab, setLocalizacaoSubTab,
+                    localizacaoFiltro, setLocalizacaoFiltro,
+                    localizacaoClientesData, carregarLocalizacaoClientes,
+                    // Relatórios
+                    showRelatorioModal, setShowRelatorioModal,
+                    relatorioForm, setRelatorioForm,
+                    relatorioImagemAmpliada, setRelatorioImagemAmpliada,
+                    relatoriosDiarios, relatoriosDiariosNaoLidos,
+                    abrirNovoRelatorio, abrirEditarRelatorio,
+                    salvarRelatorio, excluirRelatorio, gerarLinkWaze,
+                    // Regiões
+                    aa
                 });
             } else {
-                // Fallback - módulo não carregado
                 return React.createElement("div", {className: "min-h-screen bg-gray-50 flex items-center justify-center"},
                     React.createElement("div", {className: "text-center"},
                         React.createElement("div", {className: "animate-spin w-12 h-12 border-4 border-teal-500 border-t-transparent rounded-full mx-auto mb-4"}),
@@ -17234,7 +17192,6 @@ const hideLoadingScreen = () => {
         // ========== MÓDULO CONFIGURAÇÕES (CARREGAMENTO EXTERNO) ==========
         const canAccessConfig = hasModuleAccess(l, "config");
         if (canAccessConfig && "config" === Ee) {
-            // Verificar se o módulo foi carregado
             if (typeof window.ModuloConfigComponent !== 'undefined') {
                 return React.createElement(window.ModuloConfigComponent, {
                     usuario: l,
@@ -17277,7 +17234,6 @@ const hideLoadingScreen = () => {
                     toastData: i
                 });
             } else {
-                // Fallback - módulo não carregado
                 return React.createElement("div", {className: "min-h-screen bg-gray-100 flex items-center justify-center"},
                     React.createElement("div", {className: "text-center"},
                         React.createElement("div", {className: "animate-spin w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4"}),
