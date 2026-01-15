@@ -674,66 +674,69 @@ const hideLoadingScreen = () => {
             }
         }, [e]);
         return e ? React.createElement("div", {
-            className: "fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-2",
+            className: "fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4",
             onClick: t
         }, React.createElement("div", {
-            className: "bg-white rounded-xl shadow-2xl w-[340px]",
+            className: "bg-white rounded-2xl shadow-2xl w-full max-w-md",
             onClick: e => e.stopPropagation()
         }, 
-        // Header compacto
+        // Header
         React.createElement("div", {
-            className: "bg-gradient-to-r from-green-600 to-green-700 text-white px-3 py-2 rounded-t-xl flex items-center justify-between"
+            className: "bg-gradient-to-r from-green-600 to-green-700 text-white px-4 py-3 rounded-t-2xl flex items-center justify-between"
         }, 
-            React.createElement("div", { className: "flex items-center gap-2" },
-                React.createElement("span", { className: "text-xl" }, "💰"),
-                React.createElement("span", { className: "font-bold text-sm" }, "PIX Copia e Cola")
+            React.createElement("div", { className: "flex items-center gap-3" },
+                React.createElement("span", { className: "text-2xl" }, "💰"),
+                React.createElement("div", null,
+                    React.createElement("h2", { className: "font-bold" }, "PIX Copia e Cola"),
+                    React.createElement("p", { className: "text-green-200 text-xs" }, "Escaneie ou copie o código")
+                )
             ),
             React.createElement("button", {
                 onClick: t,
-                className: "text-white/80 hover:text-white text-lg font-bold w-6 h-6 flex items-center justify-center"
+                className: "text-white/80 hover:text-white text-2xl font-bold"
             }, "✕")
         ),
         // Conteúdo
-        React.createElement("div", { className: "p-3" },
-            // Linha: Info + QR Code lado a lado
-            React.createElement("div", { className: "flex gap-3 mb-2" },
-                // Coluna esquerda: Dados
-                React.createElement("div", { className: "flex-1 text-xs space-y-1" },
-                    React.createElement("div", { className: "flex justify-between" },
-                        React.createElement("span", { className: "text-gray-500" }, "Beneficiário:"),
-                        React.createElement("span", { className: "font-semibold text-gray-800 truncate max-w-[100px]" }, e.user_name?.split(' ')[0] || e.user_name)
-                    ),
-                    React.createElement("div", { className: "flex justify-between" },
-                        React.createElement("span", { className: "text-gray-500" }, "Código:"),
-                        React.createElement("span", { className: "font-semibold text-gray-800" }, e.user_cod)
+        React.createElement("div", { className: "p-4" },
+            // Dados do beneficiário em grid
+            React.createElement("div", { className: "bg-gray-50 rounded-xl p-3 mb-4" },
+                React.createElement("div", { className: "grid grid-cols-2 gap-x-4 gap-y-2 text-sm" },
+                    React.createElement("div", null,
+                        React.createElement("p", { className: "text-gray-500 text-xs" }, "Beneficiário"),
+                        React.createElement("p", { className: "font-semibold text-gray-800" }, e.user_name)
                     ),
                     React.createElement("div", null,
-                        React.createElement("span", { className: "text-gray-500" }, "Chave PIX:"),
-                        React.createElement("p", { className: "font-mono text-[10px] text-blue-600 break-all leading-tight" }, formatarChavePix(e.pix_key))
+                        React.createElement("p", { className: "text-gray-500 text-xs" }, "Código"),
+                        React.createElement("p", { className: "font-semibold text-gray-800" }, e.user_cod)
                     ),
-                    React.createElement("div", { className: "pt-1 border-t border-gray-200 mt-1" },
-                        React.createElement("span", { className: "text-gray-500" }, "Valor:"),
-                        React.createElement("p", { className: "font-bold text-green-600 text-lg" }, "R$ ", parseFloat(e.final_amount).toFixed(2).replace(".", ","))
+                    React.createElement("div", { className: "col-span-2" },
+                        React.createElement("p", { className: "text-gray-500 text-xs" }, "Chave PIX"),
+                        React.createElement("p", { className: "font-semibold text-blue-600 font-mono text-sm break-all" }, formatarChavePix(e.pix_key))
+                    ),
+                    React.createElement("div", { className: "col-span-2 pt-2 border-t border-gray-200" },
+                        React.createElement("p", { className: "text-gray-500 text-xs" }, "Valor a Transferir"),
+                        React.createElement("p", { className: "font-bold text-green-600 text-2xl" }, "R$ ", parseFloat(e.final_amount).toFixed(2).replace(".", ","))
                     )
-                ),
-                // Coluna direita: QR Code
-                React.createElement("div", { className: "flex-shrink-0" },
-                    m ? React.createElement("div", {
-                        className: "w-[120px] h-[120px] bg-gray-100 rounded-lg flex items-center justify-center"
-                    }, React.createElement("div", {
-                        className: "w-6 h-6 border-3 border-green-600 border-t-transparent rounded-full animate-spin"
-                    })) : d ? React.createElement("div", {
-                        className: "w-[120px] h-[120px] bg-red-50 rounded-lg flex items-center justify-center"
-                    }, React.createElement("p", { className: "text-red-500 text-center text-[10px] p-2" }, d)) : l ? React.createElement("img", {
-                        src: l,
-                        alt: "QR Code PIX",
-                        className: "w-[120px] h-[120px] border-2 border-green-300 rounded-lg"
-                    }) : null
                 )
             ),
-            // Código copia e cola - linha única truncada
-            React.createElement("div", { className: "bg-gray-100 rounded-lg px-2 py-1 mb-2" },
-                React.createElement("p", { className: "text-[8px] font-mono text-gray-500 truncate" }, o)
+            // QR Code centralizado
+            React.createElement("div", { className: "flex justify-center mb-4" },
+                m ? React.createElement("div", {
+                    className: "w-40 h-40 bg-gray-100 rounded-xl flex items-center justify-center"
+                }, React.createElement("div", {
+                    className: "w-8 h-8 border-4 border-green-600 border-t-transparent rounded-full animate-spin"
+                })) : d ? React.createElement("div", {
+                    className: "w-40 h-40 bg-red-50 rounded-xl flex items-center justify-center"
+                }, React.createElement("p", { className: "text-red-500 text-center text-sm p-2" }, d)) : l ? React.createElement("img", {
+                    src: l,
+                    alt: "QR Code PIX",
+                    className: "w-40 h-40 border-4 border-green-200 rounded-xl shadow-lg"
+                }) : null
+            ),
+            // Código copia e cola
+            React.createElement("div", { className: "mb-4" },
+                React.createElement("p", { className: "text-xs text-gray-500 mb-1 font-semibold" }, "Código Copia e Cola:"),
+                React.createElement("div", { className: "bg-gray-100 rounded-lg p-2 text-[10px] font-mono text-gray-600 break-all border" }, o)
             ),
             // Botão copiar
             React.createElement("button", {
@@ -751,8 +754,8 @@ const hideLoadingScreen = () => {
                         document.body.removeChild(t)
                     }
                 },
-                className: "w-full py-2 rounded-lg font-bold text-white text-sm transition-all flex items-center justify-center gap-2 " + (s ? "bg-green-500" : "bg-green-600 hover:bg-green-700 active:scale-95")
-            }, s ? "✅ Copiado!" : "📋 Copiar Código PIX")
+                className: "w-full py-3 rounded-xl font-bold text-white text-base transition-all flex items-center justify-center gap-2 " + (s ? "bg-green-500" : "bg-green-600 hover:bg-green-700 active:scale-95")
+            }, s ? "✅ Código Copiado!" : "📋 Copiar Código PIX")
         ))) : null
     },
     PieChart = ({
