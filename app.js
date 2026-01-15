@@ -659,30 +659,15 @@ const hideLoadingScreen = () => {
         showToast: a
     }) => {
         const [l, r] = React.useState(""), [o, c] = React.useState(""), [s, n] = React.useState(!1), [m, i] = React.useState(!0), [d, p] = React.useState("");
-        React.useRef(null);
+        const qrRef = React.useRef(null);
         React.useEffect(() => {
             if (e) try {
                 const t = generatePixCode(e.pix_key, e.final_amount, e.user_name);
-                if (c(t), "undefined" != typeof QRCode && QRCode.toDataURL) QRCode.toDataURL(t, {
-                    errorCorrectionLevel: "M",
-                    type: "image/png",
-                    width: 300,
-                    margin: 2,
-                    color: {
-                        dark: "#000000",
-                        light: "#FFFFFF"
-                    }
-                }).then(e => {
-                    r(e), i(!1)
-                }).catch(e => {
-                    console.error("Erro QRCode.toDataURL:", e);
-                    const a = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(t)}`;
-                    r(a), i(!1)
-                });
-                else {
-                    const e = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(t)}`;
-                    r(e), i(!1)
-                }
+                c(t);
+                // Usar Google Charts API (mais rápida e confiável)
+                const qrUrl = `https://chart.googleapis.com/chart?cht=qr&chs=300x300&chl=${encodeURIComponent(t)}&choe=UTF-8`;
+                r(qrUrl);
+                i(!1);
             } catch (e) {
                 console.error("Erro ao gerar PIX:", e), p("Erro ao gerar código PIX"), i(!1)
             }
@@ -2988,19 +2973,21 @@ const hideLoadingScreen = () => {
             if (!l || (!canAccessFinEff || ("admin_master" === l.role && "financeiro" !== Ee))) return;
             
             // ==================== CARREGAMENTO OTIMIZADO ====================
-            const carregarPendentes = async () => {
+            const carregarDados = async () => {
                 N(!0);
                 try {
-                    // Usar endpoint otimizado que retorna APENAS pendentes
-                    const [pendentesRes, pedidosRes, gratuidadesRes] = await Promise.all([
-                        fetch(`${API_URL}/withdrawals/pendentes`),
+                    // Carregar TODOS os saques para visão geral + pedidos + gratuidades
+                    const [saquesRes, pedidosRes, gratuidadesRes] = await Promise.all([
+                        fetch(`${API_URL}/withdrawals`),
                         fetch(`${API_URL}/loja/pedidos`),
                         fetch(`${API_URL}/gratuities`)
                     ]);
-                    const pendentes = await pendentesRes.json();
+                    const saques = await saquesRes.json();
                     const pedidos = await pedidosRes.json();
                     const gratuidades = await gratuidadesRes.json();
                     
+                    // Filtrar pendentes para contadores
+                    const pendentes = saques.filter(e => e.status === "pending" || e.status === "aguardando_aprovacao");
                     const novosSaques = pendentes.filter(e => !ka.current.solicitacoes.has(e.id));
                     const novosPedidos = pedidos.filter(e => "pendente" === e.status && !ka.current.loja.has(e.id));
                     const novasGratuidades = gratuidades.filter(e => "pending" === e.status && !ka.current.gratuidades.has(e.id));
@@ -3017,21 +3004,22 @@ const hideLoadingScreen = () => {
                         Sa.current = countPedidos;
                     }
                     
-                    U(pendentes); tt(pedidos); H(gratuidades);
+                    // IMPORTANTE: Carregar TODOS os saques para a tabela
+                    U(saques); tt(pedidos); H(gratuidades);
                     
                     const abaAtiva = p.finTab || "home-fin";
                     "solicitacoes" === abaAtiva || "validacao" === abaAtiva ? Pa("solicitacoes") : "loja" === abaAtiva ? Pa("loja") : "gratuidades" === abaAtiva && Pa("gratuidades");
                     h(new Date);
-                    console.log('✅ Dados carregados:', pendentes.length, 'pendentes');
+                    console.log('✅ Dados carregados:', saques.length, 'total,', pendentes.length, 'pendentes');
                 } catch (e) { console.error("Erro:", e); }
                 N(!1);
             };
             
-            carregarPendentes();
+            carregarDados();
             
             // Fallback: polling APENAS se WebSocket offline (60s ao invés de 10s)
             const fallbackInterval = setInterval(() => {
-                if (!wsConnected) { console.log('⚠️ [Fallback] WebSocket offline'); carregarPendentes(); }
+                if (!wsConnected) { console.log('⚠️ [Fallback] WebSocket offline'); carregarDados(); }
             }, 60000);
             
             return () => clearInterval(fallbackInterval);
