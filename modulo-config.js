@@ -476,7 +476,7 @@
                 !p.permsLoaded && (function() {
                     (async function() {
                         try {
-                            const res = await fetch(API_URL + "/admin-permissions");
+                            const res = await fetchAuth(API_URL + "/admin-permissions");
                             if (res.ok) {
                                 const adminsPerms = await res.json();
                                 const permsObj = {};
@@ -513,7 +513,7 @@
                                 onClick: async function() {
                                     s(true);
                                     try {
-                                        const res = await fetch(API_URL + "/admin-permissions");
+                                        const res = await fetchAuth(API_URL + "/admin-permissions");
                                         if (res.ok) {
                                             const adminsPerms = await res.json();
                                             const permsObj = {};
@@ -561,7 +561,7 @@
                                         const allowedTabs = perms.abas || {};
                                         
                                         try {
-                                            const res = await fetch(API_URL + "/admin-permissions/" + encodeURIComponent(cod), {
+                                            const res = await fetchAuth(API_URL + "/admin-permissions/" + encodeURIComponent(cod), {
                                                 method: "PATCH",
                                                 headers: {"Content-Type": "application/json"},
                                                 body: JSON.stringify({ allowed_modules: allowedModules, allowed_tabs: allowedTabs })
