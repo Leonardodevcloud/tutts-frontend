@@ -658,21 +658,45 @@ const hideLoadingScreen = () => {
         onClose: t,
         showToast: a
     }) => {
-        const [l, r] = React.useState(""), [o, c] = React.useState(""), [s, n] = React.useState(!1), [m, i] = React.useState(!0), [d, p] = React.useState("");
-        const qrRef = React.useRef(null);
+        const [o, c] = React.useState(""), [s, n] = React.useState(!1), [m, i] = React.useState(!0), [d, p] = React.useState("");
+        const qrContainerRef = React.useRef(null);
+        
         React.useEffect(() => {
-            if (e) try {
-                const t = generatePixCode(e.pix_key, e.final_amount, e.user_name);
-                c(t);
-                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(t)}&format=png`;
-                const img = new Image();
-                img.onload = () => { r(qrUrl); i(!1); };
-                img.onerror = () => { p("Erro ao carregar QR Code"); i(!1); };
-                img.src = qrUrl;
-            } catch (e) {
-                console.error("Erro ao gerar PIX:", e), p("Erro ao gerar código PIX"), i(!1)
+            if (e && qrContainerRef.current) {
+                try {
+                    const pixCode = generatePixCode(e.pix_key, e.final_amount, e.user_name);
+                    c(pixCode);
+                    
+                    // Limpar container anterior
+                    qrContainerRef.current.innerHTML = '';
+                    
+                    // Gerar QR Code localmente (instantâneo!)
+                    if (typeof QRCode !== 'undefined') {
+                        new QRCode(qrContainerRef.current, {
+                            text: pixCode,
+                            width: 160,
+                            height: 160,
+                            colorDark: "#000000",
+                            colorLight: "#ffffff",
+                            correctLevel: QRCode.CorrectLevel.M
+                        });
+                        i(false);
+                    } else {
+                        // Fallback para API externa se biblioteca não carregar
+                        const img = document.createElement('img');
+                        img.src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(pixCode)}`;
+                        img.className = 'w-40 h-40';
+                        img.onload = () => i(false);
+                        qrContainerRef.current.appendChild(img);
+                    }
+                } catch (err) {
+                    console.error("Erro ao gerar PIX:", err);
+                    p("Erro ao gerar código PIX");
+                    i(false);
+                }
             }
         }, [e]);
+        
         return e ? React.createElement("div", {
             className: "fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4",
             onClick: t
@@ -719,19 +743,14 @@ const hideLoadingScreen = () => {
                     )
                 )
             ),
-            // QR Code centralizado
+            // QR Code centralizado - gerado localmente via canvas
             React.createElement("div", { className: "flex justify-center mb-4" },
-                m ? React.createElement("div", {
-                    className: "w-40 h-40 bg-gray-100 rounded-xl flex items-center justify-center"
-                }, React.createElement("div", {
+                React.createElement("div", {
+                    ref: qrContainerRef,
+                    className: "w-40 h-40 flex items-center justify-center border-4 border-green-200 rounded-xl shadow-lg bg-white overflow-hidden"
+                }, m && React.createElement("div", {
                     className: "w-8 h-8 border-4 border-green-600 border-t-transparent rounded-full animate-spin"
-                })) : d ? React.createElement("div", {
-                    className: "w-40 h-40 bg-red-50 rounded-xl flex items-center justify-center"
-                }, React.createElement("p", { className: "text-red-500 text-center text-sm p-2" }, d)) : l ? React.createElement("img", {
-                    src: l,
-                    alt: "QR Code PIX",
-                    className: "w-40 h-40 border-4 border-green-200 rounded-xl shadow-lg"
-                }) : null
+                }))
             ),
             // Código copia e cola
             React.createElement("div", { className: "mb-4" },
@@ -743,12 +762,12 @@ const hideLoadingScreen = () => {
                 onClick: async () => {
                     try {
                         await navigator.clipboard.writeText(o), n(!0), a("✅ Código PIX copiado!", "success"), setTimeout(() => n(!1), 3e3)
-                    } catch (e) {
+                    } catch (err) {
                         const t = document.createElement("textarea");
                         t.value = o, t.style.position = "fixed", t.style.left = "-9999px", document.body.appendChild(t), t.select();
                         try {
                             document.execCommand("copy"), n(!0), a("✅ Código PIX copiado!", "success"), setTimeout(() => n(!1), 3e3)
-                        } catch (e) {
+                        } catch (err2) {
                             a("❌ Erro ao copiar", "error")
                         }
                         document.body.removeChild(t)
