@@ -6495,6 +6495,10 @@ const hideLoadingScreen = () => {
                 });
                 if (!e.ok) throw new Error("Credenciais inválidas");
                 const t = await e.json();
+                // CORREÇÃO: Salvar token JWT ANTES de fazer outras requisições autenticadas
+                if (t.token) {
+                    setToken(t.token);
+                }
                 // Carregar permissões se for admin
                 let perms = null;
                 if (t.role === "admin" || t.role === "admin_financeiro") {
@@ -6529,10 +6533,6 @@ const hideLoadingScreen = () => {
                     } catch (err) {
                         console.log("Sem permissões definidas, usando padrão");
                     }
-                }
-                // Salvar token JWT se retornado
-                if (t.token) {
-                    setToken(t.token);
                 }
                 o({
                     ...t,
