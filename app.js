@@ -4934,8 +4934,8 @@ const hideLoadingScreen = () => {
             }
         }, Va = async () => {
             try {
-                const e = await fetch(`${API_URL}/withdrawals/dashboard/conciliacao`);
-                X(await e.json())
+                const e = await fetchAuth(`${API_URL}/withdrawals/dashboard/conciliacao`);
+                if (e.ok) X(await e.json())
             } catch (e) {
                 console.error(e)
             }
@@ -6652,7 +6652,7 @@ const hideLoadingScreen = () => {
             // Com 1 saque por hora, não precisa verificar valor repetido
             s(!0);
             try {
-                await fetch(`${API_URL}/withdrawals`, {
+                const response = await fetchAuth(`${API_URL}/withdrawals`, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json"
@@ -6664,7 +6664,14 @@ const hideLoadingScreen = () => {
                         pixKey: T.pix_key,
                         requestedAmount: e
                     })
-                }), ja("✅ Saque solicitado!", "success"), 
+                });
+                if (!response.ok) {
+                    const err = await response.json();
+                    ja("❌ " + (err.error || "Erro ao solicitar saque"), "error");
+                    s(!1);
+                    return;
+                }
+                ja("✅ Saque solicitado!", "success"), 
                 x({
                     ...p,
                     withdrawAmount: ""
@@ -6700,7 +6707,7 @@ const hideLoadingScreen = () => {
                     }
                 }
                 
-                const response = await fetch(`${API_URL}/withdrawals/${e}`, {
+                const response = await fetchAuth(`${API_URL}/withdrawals/${e}`, {
                     method: "PATCH",
                     headers: {
                         "Content-Type": "application/json"
@@ -6731,7 +6738,7 @@ const hideLoadingScreen = () => {
             }
         }, Ql = async (e, t) => {
             try {
-                await fetch(`${API_URL}/withdrawals/${e}/saldo`, {
+                await fetchAuth(`${API_URL}/withdrawals/${e}/saldo`, {
                     method: "PATCH",
                     headers: {
                         "Content-Type": "application/json"
@@ -6747,7 +6754,7 @@ const hideLoadingScreen = () => {
             if (p.gratUserCod && p.gratQty && p.gratValue && p.gratUserName) {
                 s(!0);
                 try {
-                    await fetch(`${API_URL}/gratuities`, {
+                    await fetchAuth(`${API_URL}/gratuities`, {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json"
@@ -6777,7 +6784,7 @@ const hideLoadingScreen = () => {
             if (p.restUserCod && p.restReason && p.restUserName) {
                 s(!0);
                 try {
-                    await fetch(`${API_URL}/restricted`, {
+                    await fetchAuth(`${API_URL}/restricted`, {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json"
@@ -9989,7 +9996,7 @@ const hideLoadingScreen = () => {
             }, "Cancelar"), React.createElement("button", {
                 onClick: () => (async e => {
                     try {
-                        await fetch(`${API_URL}/withdrawals/${e}`, {
+                        await fetchAuth(`${API_URL}/withdrawals/${e}`, {
                             method: "DELETE"
                         }), ja("🗑️ Solicitação excluída!", "success"), x({
                             ...p,
@@ -11080,7 +11087,7 @@ const hideLoadingScreen = () => {
                     checked: e.conciliacao_omie,
                     onChange: t => (async (e, t, a) => {
                         try {
-                            await fetch(`${API_URL}/withdrawals/${e}/conciliacao`, {
+                            await fetchAuth(`${API_URL}/withdrawals/${e}/conciliacao`, {
                                 method: "PATCH",
                                 headers: {
                                     "Content-Type": "application/json"
@@ -11466,7 +11473,7 @@ const hideLoadingScreen = () => {
                     confirm(`⚠️ Excluir gratuidade de ${e.user_name||e.user_cod}?\n\nValor: ${er(e.value)}\nRestante: ${e.remaining}/${e.quantity}\n\nEsta ação não pode ser desfeita!`) && (async e => {
                         s(!0);
                         try {
-                            await fetch(`${API_URL}/gratuities/${e}`, {
+                            await fetchAuth(`${API_URL}/gratuities/${e}`, {
                                 method: "DELETE"
                             }), ja("🗑️ Gratuidade excluída!", "success"), za()
                         } catch (e) {
@@ -11577,7 +11584,7 @@ const hideLoadingScreen = () => {
             }, "ativo" === e.status && React.createElement("button", {
                 onClick: () => (async e => {
                     try {
-                        await fetch(`${API_URL}/restricted/${e}/remove`, {
+                        await fetchAuth(`${API_URL}/restricted/${e}/remove`, {
                             method: "PATCH",
                             headers: {
                                 "Content-Type": "application/json"
