@@ -37,16 +37,18 @@
             // Localização
             localizacaoSubTab, setLocalizacaoSubTab,
             localizacaoFiltro, setLocalizacaoFiltro,
-            localizacaoClientesData, carregarLocalizacaoClientes,
+            localizacaoClientes, carregarLocalizacaoClientes,
+            localizacaoLoading,
             // Relatórios
             showRelatorioModal, setShowRelatorioModal,
             relatorioForm, setRelatorioForm,
+            relatorioEdit, setRelatorioEdit,
             relatorioImagemAmpliada, setRelatorioImagemAmpliada,
-            relatoriosDiarios, relatoriosDiariosNaoLidos,
+            relatoriosDiarios, relatoriosNaoLidos, relatoriosLoading,
             abrirNovoRelatorio, abrirEditarRelatorio,
             salvarRelatorio, excluirRelatorio, gerarLinkWaze,
-            // Regiões
-            aa
+            // Regiões e Setores
+            aa, setores
         } = props;
 
             return React.createElement("div", {
