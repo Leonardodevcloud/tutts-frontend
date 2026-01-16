@@ -6605,11 +6605,14 @@ const hideLoadingScreen = () => {
         }, Bl = async () => {
             if (!p.finName || !p.finCpf || !p.finPix) return void ja("Preencha todos os campos", "error");
             if (!p.pixTipo) return void ja("❌ Selecione o tipo da chave PIX", "error");
+            // Validar CPF antes de enviar
+            const validacaoCpf = validarCPFCompleto(p.finCpf);
+            if (!validacaoCpf.valido) return void ja(`❌ ${validacaoCpf.mensagem}`, "error");
             const e = tr(p.finPix, p.pixTipo);
             if (e.valido) {
                 s(!0);
                 try {
-                    await fetchAuth(`${API_URL}/financial/data`, {
+                    const response = await fetchAuth(`${API_URL}/financial/data`, {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json"
@@ -6621,22 +6624,27 @@ const hideLoadingScreen = () => {
                             pixKey: p.finPix,
                             pixTipo: p.pixTipo
                         })
-                    }), D({
+                    });
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({}));
+                        throw new Error(errorData.error || "Erro ao salvar dados");
+                    }
+                    D({
                         full_name: p.finName,
                         cpf: p.finCpf,
                         pix_key: p.finPix,
                         pix_tipo: p.pixTipo
                     }), $(!1), Ma();
-                    const e = {
+                    const tipoNome = {
                         cpf: "CPF",
                         cnpj: "CNPJ",
                         telefone: "Telefone",
                         email: "Email",
                         aleatoria: "Chave Aleatória"
                     } [p.pixTipo];
-                    ja(`✅ Dados salvos! (PIX: ${e})`, "success")
-                } catch (e) {
-                    ja("Erro ao salvar", "error")
+                    ja(`✅ Dados salvos! (PIX: ${tipoNome})`, "success")
+                } catch (err) {
+                    ja(`❌ ${err.message}`, "error")
                 }
                 s(!1)
             } else ja(`❌ ${e.mensagem}`, "error")
@@ -6894,7 +6902,25 @@ const hideLoadingScreen = () => {
         }, Xl = e => {
             const t = e.replace(/\D/g, "").slice(0, 11);
             return t.length <= 3 ? t : t.length <= 6 ? `${t.slice(0,3)}.${t.slice(3)}` : t.length <= 9 ? `${t.slice(0,3)}.${t.slice(3,6)}.${t.slice(6)}` : `${t.slice(0,3)}.${t.slice(3,6)}.${t.slice(6,9)}-${t.slice(9)}`
-        }, er = e => parseFloat(e || 0).toLocaleString("pt-BR", {
+        }, 
+        // Função para validar CPF completo (com dígito verificador)
+        validarCPFCompleto = (cpf) => {
+            const cpfLimpo = cpf.replace(/\D/g, "");
+            if (cpfLimpo.length !== 11) return { valido: false, mensagem: "CPF deve ter 11 dígitos" };
+            if (/^(\d)\1{10}$/.test(cpfLimpo)) return { valido: false, mensagem: "CPF inválido - dígitos repetidos" };
+            let soma = 0, resto;
+            for (let i = 1; i <= 9; i++) soma += parseInt(cpfLimpo.substring(i-1, i)) * (11 - i);
+            resto = (soma * 10) % 11;
+            if (resto === 10 || resto === 11) resto = 0;
+            if (resto !== parseInt(cpfLimpo.substring(9, 10))) return { valido: false, mensagem: "CPF inválido. Verifique se digitou corretamente." };
+            soma = 0;
+            for (let i = 1; i <= 10; i++) soma += parseInt(cpfLimpo.substring(i-1, i)) * (12 - i);
+            resto = (soma * 10) % 11;
+            if (resto === 10 || resto === 11) resto = 0;
+            if (resto !== parseInt(cpfLimpo.substring(10, 11))) return { valido: false, mensagem: "CPF inválido. Verifique se digitou corretamente." };
+            return { valido: true, mensagem: "✅ CPF válido" };
+        },
+        er = e => parseFloat(e || 0).toLocaleString("pt-BR", {
             style: "currency",
             currency: "BRL"
         }), tr = (e, t) => {
