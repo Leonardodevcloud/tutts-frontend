@@ -2967,7 +2967,19 @@ const hideLoadingScreen = () => {
         // ==================== CONECTAR WEBSOCKET ====================
         useEffect(() => {
             if (l && ['admin', 'admin_master', 'admin_financeiro'].includes(l.role)) {
-                connectWebSocket();
+                // CORREÇÃO: Verificar se o token existe antes de conectar
+                const token = sessionStorage.getItem('tutts_token');
+                if (token) {
+                    connectWebSocket();
+                } else {
+                    // Aguardar um pouco para o token ser salvo
+                    const timeout = setTimeout(() => {
+                        if (sessionStorage.getItem('tutts_token')) {
+                            connectWebSocket();
+                        }
+                    }, 500);
+                    return () => clearTimeout(timeout);
+                }
             }
             return () => {
                 if (wsRef.current) wsRef.current.close();
@@ -6495,10 +6507,6 @@ const hideLoadingScreen = () => {
                 });
                 if (!e.ok) throw new Error("Credenciais inválidas");
                 const t = await e.json();
-                // CORREÇÃO: Salvar token JWT ANTES de fazer outras requisições autenticadas
-                if (t.token) {
-                    setToken(t.token);
-                }
                 // Carregar permissões se for admin
                 let perms = null;
                 if (t.role === "admin" || t.role === "admin_financeiro") {
@@ -6533,6 +6541,10 @@ const hideLoadingScreen = () => {
                     } catch (err) {
                         console.log("Sem permissões definidas, usando padrão");
                     }
+                }
+                // Salvar token JWT se retornado
+                if (t.token) {
+                    setToken(t.token);
                 }
                 o({
                     ...t,
