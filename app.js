@@ -3,11 +3,11 @@ const {
     useEffect: useEffect
 } = React, API_URL = "https://tutts-backend-production.up.railway.app/api";
 
-// ==================== API KEY OPENROUTESERVICE (ROTEIRIZADOR) ====================
-const ORS_API_KEY = 'eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjM5MTI2ZjMwMTMxOTQ3OTU5Mjc2YWM5OGNjNGZiZWEwIiwiaCI6Im11cm11cjY0In0=';
+// ==================== API KEY REMOVIDA - AGORA USA PROXY NO BACKEND ====================
+// SEGURANÇA: A API key foi movida para o backend (variável de ambiente ORS_API_KEY)
 
 // ==================== SISTEMA DE VERSÃO E CACHE ====================
-const APP_VERSION = "2.2.0"; // WebSocket + Performance
+const APP_VERSION = "2.2.1"; // Security Patch - API Key Protected
 const VERSION_KEY = "tutts_app_version";
 
 // Verificar se precisa limpar cache (versão diferente)
@@ -1407,14 +1407,16 @@ const hideLoadingScreen = () => {
                 } catch(e) {}
             }
             
+            // Fallback: usar proxy seguro do backend (API key protegida)
             for (var i = 0; i < queries.length; i++) {
                 try {
-                    var resp = await fetch('https://api.openrouteservice.org/geocode/search?api_key=' + ORS_API_KEY + '&text=' + encodeURIComponent(queries[i]) + '&boundary.country=BR&size=1');
+                    var resp = await fetchAuth(API_URL + '/routing/geocode?text=' + encodeURIComponent(queries[i]));
+                    if (!resp.ok) continue;
                     var data = await resp.json();
                     if (data.features && data.features[0]) {
                         return Object.assign({}, sug, { latitude: data.features[0].geometry.coordinates[1], longitude: data.features[0].geometry.coordinates[0] });
                     }
-                } catch(e) {}
+                } catch(e) { console.log('Erro geocode:', e.message); }
             }
             return null;
         };
@@ -1468,13 +1470,13 @@ const hideLoadingScreen = () => {
         const otimizarRota = async function(pontos) {
             var vehicle = { id: 1, profile: 'driving-car', start: [pontos[0].longitude, pontos[0].latitude] };
             if (retornarInicio) vehicle.end = [pontos[0].longitude, pontos[0].latitude];
-            var resp = await fetch('https://api.openrouteservice.org/optimization', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': ORS_API_KEY }, body: JSON.stringify({ jobs: pontos.slice(1).map(function(p, i) { return { id: i + 1, location: [p.longitude, p.latitude] }; }), vehicles: [vehicle] }) });
-            if (!resp.ok) throw new Error('Erro na otimização');
+            var resp = await fetchAuth(API_URL + '/routing/optimize', { method: 'POST', body: JSON.stringify({ jobs: pontos.slice(1).map(function(p, i) { return { id: i + 1, location: [p.longitude, p.latitude] }; }), vehicles: [vehicle] }) });
+            if (!resp.ok) { var err = await resp.json().catch(function() { return {}; }); throw new Error(err.error || 'Erro na otimização'); }
             return resp.json();
         };
 
         const obterGeometria = async function(pontos) {
-            var resp = await fetch('https://api.openrouteservice.org/v2/directions/driving-car/geojson', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': ORS_API_KEY }, body: JSON.stringify({ coordinates: pontos.map(function(p) { return [p.longitude, p.latitude]; }) }) });
+            var resp = await fetchAuth(API_URL + '/routing/directions', { method: 'POST', body: JSON.stringify({ coordinates: pontos.map(function(p) { return [p.longitude, p.latitude]; }) }) });
             return resp.ok ? resp.json() : null;
         };
 
