@@ -30,7 +30,7 @@ const escapeAttr = (text) => {
 // ==================== FIM FUNÇÕES DE SEGURANÇA ====================
 
 // ==================== SISTEMA DE VERSÃO E CACHE ====================
-const APP_VERSION = "2.2.2"; // Security Patch V2 - Input Sanitization
+const APP_VERSION = "2.2.3"; // Security Patch V3 - Refresh Token + Account Lock
 const VERSION_KEY = "tutts_app_version";
 
 // Verificar se precisa limpar cache (versão diferente)
@@ -86,6 +86,11 @@ const getToken = () => {
     return sessionStorage.getItem("tutts_token");
 };
 
+// Obter refresh token armazenado
+const getRefreshToken = () => {
+    return localStorage.getItem("tutts_refresh_token"); // localStorage para persistir entre sessões
+};
+
 // Salvar token JWT
 const setToken = (token) => {
     if (token) {
@@ -95,9 +100,81 @@ const setToken = (token) => {
     }
 };
 
-// Função para fazer requisições autenticadas
-const fetchAuth = async (url, options = {}) => {
-    const token = getToken();
+// Salvar refresh token
+const setRefreshToken = (refreshToken) => {
+    if (refreshToken) {
+        localStorage.setItem("tutts_refresh_token", refreshToken);
+    } else {
+        localStorage.removeItem("tutts_refresh_token");
+    }
+};
+
+// Variável para controlar se está renovando token (evitar múltiplas chamadas)
+let isRefreshingToken = false;
+let refreshPromise = null;
+
+// Função para renovar token usando refresh token
+const renovarToken = async () => {
+    // Se já está renovando, esperar a promise existente
+    if (isRefreshingToken && refreshPromise) {
+        return refreshPromise;
+    }
+    
+    const refreshToken = getRefreshToken();
+    if (!refreshToken) {
+        return null;
+    }
+    
+    isRefreshingToken = true;
+    
+    refreshPromise = (async () => {
+        try {
+            const response = await fetch(API_URL + '/users/refresh-token', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ refreshToken })
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                setToken(data.token);
+                if (data.refreshToken) {
+                    setRefreshToken(data.refreshToken);
+                }
+                if (data.user) {
+                    sessionStorage.setItem("tutts_user", JSON.stringify(data.user));
+                }
+                console.log('🔄 Token renovado automaticamente');
+                return data.token;
+            } else {
+                // Refresh token inválido ou expirado - fazer logout
+                console.log('❌ Refresh token inválido - fazendo logout');
+                fazerLogoutCompleto();
+                return null;
+            }
+        } catch (error) {
+            console.error('❌ Erro ao renovar token:', error);
+            return null;
+        } finally {
+            isRefreshingToken = false;
+            refreshPromise = null;
+        }
+    })();
+    
+    return refreshPromise;
+};
+
+// Função para fazer logout completo
+const fazerLogoutCompleto = () => {
+    sessionStorage.removeItem("tutts_user");
+    sessionStorage.removeItem("tutts_token");
+    localStorage.removeItem("tutts_refresh_token");
+    window.location.reload();
+};
+
+// Função para fazer requisições autenticadas com auto-refresh
+const fetchAuth = async (url, options = {}, retryCount = 0) => {
+    let token = getToken();
     const headers = {
         'Content-Type': 'application/json',
         ...options.headers
@@ -113,13 +190,20 @@ const fetchAuth = async (url, options = {}) => {
             headers
         });
         
-        // Se token expirou, fazer logout (apenas se tinha token)
-        if (response.status === 401 && token) {
-            const data = await response.json().catch(() => ({}));
+        // Se token expirou, tentar renovar automaticamente
+        if (response.status === 401 && token && retryCount === 0) {
+            const data = await response.clone().json().catch(() => ({}));
+            
             if (data.expired) {
-                sessionStorage.removeItem("tutts_user");
-                sessionStorage.removeItem("tutts_token");
-                window.location.reload();
+                console.log('🔄 Token expirado, tentando renovar...');
+                const novoToken = await renovarToken();
+                
+                if (novoToken) {
+                    // Retry com novo token
+                    return fetchAuth(url, options, retryCount + 1);
+                } else {
+                    fazerLogoutCompleto();
+                }
             }
         }
         
@@ -1669,8 +1753,17 @@ const hideLoadingScreen = () => {
             if (e) {
                 sessionStorage.setItem("tutts_user", JSON.stringify(e));
             } else {
+                // Notificar servidor sobre logout (revogar refresh token)
+                const refreshToken = getRefreshToken();
+                if (refreshToken) {
+                    fetchAuth(`${API_URL}/users/logout`, {
+                        method: 'POST',
+                        body: JSON.stringify({ refreshToken })
+                    }).catch(() => {}); // Ignorar erros no logout
+                }
                 sessionStorage.removeItem("tutts_user");
                 sessionStorage.removeItem("tutts_token"); // Limpar token JWT no logout
+                localStorage.removeItem("tutts_refresh_token"); // Limpar refresh token
             }
             r(e);
         }, [c, s] = useState(!1), [n, m] = useState(!1), [i, d] = useState(null), [p, x] = useState({}), [u, g] = useState(null), [b, R] = useState(Date.now()), [E, h] = useState(null), [f, N] = useState(!1), [y, v] = useState({
@@ -6571,6 +6664,10 @@ const hideLoadingScreen = () => {
                 if (t.token) {
                     setToken(t.token);
                 }
+                // Salvar refresh token se retornado
+                if (t.refreshToken) {
+                    setRefreshToken(t.refreshToken);
+                }
                 o({
                     ...t,
                     codProfissional: t.cod_profissional,
@@ -6603,6 +6700,10 @@ const hideLoadingScreen = () => {
                 // Salvar token se retornado
                 if (data.token) {
                     setToken(data.token);
+                }
+                // Salvar refresh token se retornado
+                if (data.refreshToken) {
+                    setRefreshToken(data.refreshToken);
                 }
                 ja("Cadastro realizado!", "success"), x({
                     view: "login"
