@@ -1,15 +1,34 @@
 // ============================================================================
-// MÓDULO FINANCEIRO - TUTTS (ARQUIVO SEPARADO)
+// MÓDULO FINANCEIRO - TUTTS
 // Versão: 2.0.0
+// 
+// Este arquivo contém o módulo financeiro completo com 15 sub-abas:
+// home-fin, solicitacoes, validacao, conciliacao, resumo, gratuidades,
+// restritos, indicacoes, promo-novatos, loja, relatorios, horarios,
+// avisos, backup, saldo-plific
 // ============================================================================
 
 (function() {
     'use strict';
     
+    // ========================================================================
+    // FUNÇÕES UTILITÁRIAS GLOBAIS
+    // ========================================================================
+    
+    /**
+     * Formata um valor numérico para moeda brasileira (BRL)
+     * @param {number} valor - Valor a ser formatado
+     * @returns {string} Valor formatado (ex: "R$ 1.234,56")
+     */
     window.formatarMoeda = window.formatarMoeda || function(valor) {
         return parseFloat(valor || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
     };
     
+    /**
+     * Converte string no formato brasileiro para número
+     * @param {string|number} valor - Valor no formato "1.234,56" ou número
+     * @returns {number} Valor numérico
+     */
     window.parseSaldoBR = window.parseSaldoBR || function(valor) {
         if (typeof valor === "number") return valor;
         if (!valor) return 0;
@@ -17,36 +36,250 @@
         return str.includes(",") ? parseFloat(str.replace(/\./g, "").replace(",", ".")) || 0 : parseFloat(str) || 0;
     };
     
+    // Alias para compatibilidade com código minificado
     window.er = window.er || window.formatarMoeda;
     
+    // ========================================================================
+    // FUNÇÃO PRINCIPAL DE RENDERIZAÇÃO
+    // ========================================================================
+    
+    /**
+     * Renderiza o módulo financeiro completo
+     * @param {Object} props - Propriedades passadas pelo app.js
+     */
     window.renderModuloFinanceiro = function(props) {
+        
+        // ====================================================================
+        // MAPEAMENTO DE VARIÁVEIS MINIFICADAS
+        // ====================================================================
+        // 
+        // LEGENDA DE VARIÁVEIS:
+        // 
+        // === ESTADOS PRINCIPAIS ===
+        // p  = financeiroState      - Estado geral do módulo (campos, modais, filtros)
+        // x  = setFinanceiroState   - Setter do estado geral
+        // q  = withdrawals          - Lista de solicitações de saque (admin)
+        // U  = setWithdrawals       - Setter
+        // Q  = gratuities           - Lista de gratuidades
+        // H  = setGratuities        - Setter
+        // Z  = restricted           - Lista de profissionais restritos
+        // Y  = setRestricted        - Setter
+        // K  = conciliacao          - Dados de conciliação bancária
+        // X  = setConciliacao       - Setter
+        // z  = selectedIds          - IDs selecionados para ação em lote
+        // B  = setSelectedIds       - Setter
+        // V  = pixQrModal           - Modal de QR Code PIX
+        // J  = setPixQrModal        - Setter
+        //
+        // === PROMOÇÕES E INDICAÇÕES ===
+        // ee = promocoes            - Lista de promoções
+        // te = setPromocoes         - Setter
+        // ae = indicacoes           - Lista de indicações (admin)
+        // le = setIndicacoes        - Setter
+        // re = minhasIndicacoes     - Indicações do usuário logado
+        // oe = setMinhasIndicacoes  - Setter
+        // ce = promocoesNovatos     - Promoções para novatos
+        // se = setPromocoesNovatos  - Setter
+        //
+        // === HORÁRIOS E AVISOS ===
+        // Me = horariosState        - Estado dos horários {horarios, especiais, loading}
+        // Oe = setHorariosState     - Setter
+        // qe = avisosState          - Estado dos avisos {avisos, loading}
+        // Ue = setAvisosState       - Setter
+        // ze = verificacaoHorario   - Resultado da verificação de horário comercial
+        // Be = setVerificacaoHorario - Setter
+        //
+        // === LOJA - DADOS ===
+        // Ke = lojaProdutos         - Lista de produtos
+        // Xe = setLojaProdutos      - Setter
+        // Ze = lojaEstoque          - Lista de estoque
+        // Ye = setLojaEstoque       - Setter
+        // et = lojaPedidos          - Pedidos (admin)
+        // tt = setLojaPedidos       - Setter
+        // at = lojaPedidosUsuario   - Pedidos do usuário
+        // lt = setLojaPedidosUsuario - Setter
+        // it = lojaMovimentacoes    - Movimentações de estoque
+        // dt = setLojaMovimentacoes - Setter
+        // ut = lojaSugestoes        - Sugestões de produtos (admin)
+        // gt = setLojaSugestoes     - Setter
+        // bt = lojaSugestoesUsuario - Sugestões do usuário
+        // Rt = setLojaSugestoesUsuario - Setter
+        //
+        // === LOJA - UI ===
+        // nt = lojaAbaAtiva         - Aba ativa da loja ("produtos"|"estoque"|"pedidos"|"sugestoes")
+        // mt = setLojaAbaAtiva      - Setter
+        // rt = lojaLoading          - Estado de carregamento da loja
+        // ot = setLojaLoading       - Setter
+        // pt = lojaVisualizacao     - Modo de visualização ("lista"|"grid")
+        // xt = setLojaVisualizacao  - Setter
+        // ct = lojaCategoria        - Categoria selecionada
+        // st = setLojaCategoria     - Setter
+        // Qe = carrinho             - Itens no carrinho
+        // He = setCarrinho          - Setter
+        // Ge = showCarrinho         - Mostrar modal do carrinho
+        // We = setShowCarrinho      - Setter
+        //
+        // === PLIFIC (Sistema de Saldo) ===
+        // plificState               - Estado do módulo Plific
+        // setPlificState            - Setter
+        // modalDebitoPlific         - Modal para lançar débito
+        // setModalDebitoPlific      - Setter
+        // debitoFormPlific          - Dados do formulário de débito
+        // setDebitoFormPlific       - Setter
+        // saldoPlificUser           - Saldo do usuário logado
+        // setSaldoPlificUser        - Setter
+        //
+        // === PAGINAÇÃO ===
+        // solicitacoesPagina        - Página atual das solicitações
+        // setSolicitacoesPagina     - Setter
+        // conciliacaoPagina         - Página atual da conciliação
+        // setConciliacaoPagina      - Setter
+        // solicitacoesPorPagina     - Itens por página (solicitações)
+        // conciliacaoPorPagina      - Itens por página (conciliação)
+        // acertoRealizado           - Flag de acerto realizado (localStorage)
+        // setAcertoRealizado        - Setter
+        //
+        // === USUÁRIO E NAVEGAÇÃO ===
+        // l  = usuario              - Usuário logado {codProfissional, fullName, role, etc}
+        // Ee = moduloAtivo          - Módulo ativo ("financeiro"|"bi"|"todo"|etc)
+        // he = setModuloAtivo       - Setter (navegação entre módulos)
+        // o  = setUsuario           - Setter do usuário (usado no logout)
+        // f  = isLoading            - Estado de carregamento global
+        // E  = lastUpdate           - Timestamp da última atualização
+        //
+        // === UTILITÁRIOS ===
+        // er = formatarMoeda        - Função para formatar moeda
+        // ja = showToast            - Função para exibir notificações toast
+        // ul = refreshAll           - Função para atualizar todos os dados
+        // fetchAuth                 - Função fetch com autenticação JWT
+        // API_URL                   - URL base da API
+        // navegarSidebar            - Função de navegação do sidebar
+        //
+        // === COMPONENTES ===
+        // HeaderCompacto            - Componente do header com navegação
+        // Toast                     - Componente de notificação
+        // LoadingOverlay            - Componente de loading
+        // i  = toast                - Estado do toast atual
+        // n  = loading              - Estado de loading atual
+        // e  = isAdminMaster        - Flag se é admin_master
+        //
+        // === ELEGIBILIDADE NOVATOS ===
+        // elegibilidadeNovatos      - Estado de elegibilidade para promoções
+        // setElegibilidadeNovatos   - Setter
+        // regioesNovatos            - Regiões disponíveis para novatos
+        // setRegioesNovatos         - Setter
+        //
+        // === RELATÓRIOS ===
+        // socialProfile             - Perfil social do usuário
+        // relatorioNaoLido          - Relatório não lido atual
+        // setRelatorioNaoLido       - Setter
+        // relatoriosNaoLidos        - Lista de relatórios não lidos
+        // setRelatoriosNaoLidos     - Setter
+        // marcarRelatorioComoLido   - Função para marcar como lido
+        // irParaRelatorio           - Função para navegar ao relatório
+        //
+        // === FUNÇÕES DE CARREGAMENTO ===
+        // Ua = carregarWithdrawals          - Carrega solicitações de saque
+        // za = carregarGratuities           - Carrega gratuidades
+        // Ba = carregarRestricted           - Carrega profissionais restritos
+        // Va = carregarConciliacao          - Carrega dados de conciliação
+        // Ja = carregarLojaEstoque          - Carrega estoque da loja
+        // Qa = carregarLojaMovimentacoes    - Carrega movimentações
+        // Ha = carregarLojaProdutos         - Carrega produtos (admin)
+        // Ga = carregarLojaProdutosAtivos   - Carrega produtos ativos (user)
+        // Wa = carregarLojaPedidos          - Carrega pedidos (admin)
+        // Za = carregarLojaPedidosUsuario   - Carrega pedidos do usuário
+        // Ya = carregarLojaSugestoes        - Carrega sugestões (admin)
+        // Ka = carregarLojaSugestoesUsuario - Carrega sugestões do usuário
+        // gl = carregarPromocoes            - Carrega promoções (admin)
+        // vl = carregarPromocoesAtivas      - Carrega promoções ativas (user)
+        // wl = carregarIndicacoes           - Carrega indicações (admin)
+        // _l = carregarMinhasIndicacoes     - Carrega indicações do usuário
+        // Cl = carregarPromocoesNovatos     - Carrega promoções para novatos
+        //
+        // === FUNÇÕES DE AÇÃO ===
+        // Rl = atualizarHorario             - Atualiza horário de funcionamento
+        // El = criarHorarioEspecial         - Cria horário especial (feriado, etc)
+        // hl = criarAviso                   - Cria novo aviso
+        // fl = toggleAvisoAtivo             - Ativa/desativa aviso
+        // Nl = removerAviso                 - Remove aviso
+        // yl = getProximoHorarioTexto       - Retorna texto do próximo horário
+        // bl = DIAS_SEMANA                  - Array com nomes dos dias
+        // Jl = atualizarStatusSaque         - Atualiza status de saque
+        // lancarDebitoPlific                - Lança débito no Plific
+        //
+        // === QUIZ/ACERTO ===
+        // fe = quizConfig           - Configuração do quiz
+        // Ne = setQuizConfig        - Setter
+        // ye = quizRespostas        - Respostas do usuário
+        // ve = setQuizRespostas     - Setter
+        // we = quizEmAndamento      - Quiz em andamento
+        // _e = setQuizEmAndamento   - Setter
+        // je = quizResultado        - Resultado do quiz
+        // Ce = setQuizResultado     - Setter
+        // Ae = quizPerguntaAtual    - Pergunta atual
+        // Se = setQuizPerguntaAtual - Setter
+        // ke = quizAcertos          - Número de acertos
+        // Pe = setQuizAcertos       - Setter
+        // Te = quizImagens          - Imagens do quiz
+        // De = setQuizImagens       - Setter
+        // Le = quizImagemExpandida  - Imagem expandida
+        // Ie = setQuizImagemExpandida - Setter
+        // Fe = quizLoading          - Loading do quiz
+        // $e = setQuizLoading       - Setter
+        //
+        // === NOTIFICAÇÕES ===
+        // y  = notificacoes         - Contadores de notificações
+        // v  = setNotificacoes      - Setter
+        // w  = notificacoesLista    - Lista de notificações pendentes
+        // _  = setNotificacoesLista - Setter
+        //
+        // ====================================================================
+        
         const {
-            p, x, q, U, Q, H, Z, Y, K, X, z, B, V, J, ee, te, ae, le, re, oe, ce, se,
-            Me, Oe, qe, Ue, ze, Be, Ke, Xe, Ze, Ye, et, tt, at, lt, it, dt, ut, gt, bt, Rt,
+            // Estados principais
+            p, x, q, U, Q, H, Z, Y, K, X, z, B, V, J,
+            // Promoções e indicações
+            ee, te, ae, le, re, oe, ce, se,
+            // Horários e avisos
+            Me, Oe, qe, Ue, ze, Be,
+            // Loja - estados
+            Ke, Xe, Ze, Ye, et, tt, at, lt, it, dt, ut, gt, bt, Rt,
+            nt, mt, rt, ot, pt, xt, ct, st, Qe, He, Ge, We,
+            // Plific
             plificState, setPlificState, modalDebitoPlific, setModalDebitoPlific,
             debitoFormPlific, setDebitoFormPlific, saldoPlificUser, setSaldoPlificUser,
+            // Paginação
             solicitacoesPagina, setSolicitacoesPagina, conciliacaoPagina, setConciliacaoPagina,
             solicitacoesPorPagina, conciliacaoPorPagina,
-            acertoRealizado, setAcertoRealizado, l, Ee, he, er, ja, ul, fetchAuth, API_URL,
-            navegarSidebar, HeaderCompacto, Jl, i, Toast, n, LoadingOverlay, e,
+            acertoRealizado, setAcertoRealizado,
+            // Usuário e navegação
+            l, Ee, he, o, f, E,
+            // Utilitários
+            er, ja, ul, fetchAuth, API_URL, navegarSidebar,
+            // Componentes
+            HeaderCompacto, Toast, LoadingOverlay, i, n, e,
+            // Elegibilidade novatos
             elegibilidadeNovatos, setElegibilidadeNovatos, regioesNovatos, setRegioesNovatos,
-            lojaAbaAtiva, setLojaAbaAtiva, lojaLoading, setLojaLoading,
-            lojaVisualizacao, setLojaVisualizacao, lojaCategoria, setLojaCategoria,
-            carrinho, setCarrinho, showCarrinho, setShowCarrinho,
-            socialProfile, f, E, o,
-            relatorioNaoLido, setRelatorioNaoLido, relatoriosNaoLidos, setRelatoriosNaoLidos,
+            // Social e relatórios
+            socialProfile, relatorioNaoLido, setRelatorioNaoLido,
+            relatoriosNaoLidos, setRelatoriosNaoLidos,
             marcarRelatorioComoLido, irParaRelatorio,
-            gl, vl, wl, _l, Cl, Ua, za, Ba, Va, Ja, Qa, Ha, Ga, Wa, Za, Ya, Ka,
-            Rl, El, hl, fl, Nl, yl, bl, lancarDebitoPlific
+            // Funções de carregamento
+            Ua, za, Ba, Va, Ja, Qa, Ha, Ga, Wa, Za, Ya, Ka,
+            gl, vl, wl, _l, Cl,
+            // Funções de ação
+            Rl, El, hl, fl, Nl, yl, bl, Jl,
+            lancarDebitoPlific,
+            // Quiz
+            fe, Ne, ye, ve, we, _e, je, Ce, Ae, Se, ke, Pe, Te, De, Le, Ie, Fe, $e,
+            // Notificações
+            y, v, w, _
         } = props;
         
-        // Aliases para variáveis minificadas usadas no código UI
-        const nt = lojaAbaAtiva, mt = setLojaAbaAtiva;
-        const rt = lojaLoading, ot = setLojaLoading;
-        const pt = lojaVisualizacao, xt = setLojaVisualizacao;
-        const ct = lojaCategoria, st = setLojaCategoria;
-        const Qe = carrinho, He = setCarrinho;
-        const Ge = showCarrinho, We = setShowCarrinho;
+        // ====================================================================
+        // INÍCIO DO CÓDIGO UI - 15 SUB-ABAS DO MÓDULO FINANCEIRO
+        // ====================================================================
         
         return React.createElement(React.Fragment, null,
             // ========== HEADER COM NAVEGAÇÃO - FINANCEIRO ==========
@@ -5130,8 +5363,14 @@
         )
     )
 )
+        // ====================================================================
+        // FIM DO CÓDIGO UI
+        // ====================================================================
         );
     };
     
-    console.log("✅ ModuloFinanceiro.js carregado");
+    console.log("✅ ModuloFinanceiro.js carregado - v2.0.0");
+    console.log("   15 sub-abas: home-fin, solicitacoes, validacao, conciliacao,");
+    console.log("   resumo, gratuidades, restritos, indicacoes, promo-novatos,");
+    console.log("   loja, relatorios, horarios, avisos, backup, saldo-plific");
 })();
