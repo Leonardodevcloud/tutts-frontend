@@ -54,10 +54,35 @@
             ? getCidadeProfissional(l.cod_profissional || l.codProfissional) 
             : null;
         
+        // Normalizar string para comparação (remove acentos, lowercase, trim)
+        const normalizarTexto = (texto) => {
+            if (!texto) return "";
+            return texto.toString().toLowerCase().trim()
+                .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        };
+        
         // Filtrar promoções para mostrar apenas da região do motoboy (se for user)
+        // Compara de forma flexível: a região da promoção deve conter a cidade do usuário
         const promocoesFiltradas = l && l.role === "user" && cidadeUsuarioLogado
-            ? ee.filter(promo => promo.regiao && promo.regiao.toLowerCase().trim() === cidadeUsuarioLogado.toLowerCase().trim())
+            ? ee.filter(promo => {
+                if (!promo.regiao) return false;
+                const regiaoNorm = normalizarTexto(promo.regiao);
+                const cidadeNorm = normalizarTexto(cidadeUsuarioLogado);
+                // Match exato OU região contém a cidade OU cidade contém a região
+                return regiaoNorm === cidadeNorm || 
+                       regiaoNorm.includes(cidadeNorm) || 
+                       cidadeNorm.includes(regiaoNorm);
+            })
             : ee;
+        
+        // Debug - remover depois
+        if (l && l.role === "user") {
+            console.log("🔍 [DEBUG Indicações] Usuário:", l.cod_profissional || l.codProfissional);
+            console.log("🔍 [DEBUG Indicações] Cidade do usuário:", cidadeUsuarioLogado);
+            console.log("🔍 [DEBUG Indicações] Total promoções:", ee.length);
+            console.log("🔍 [DEBUG Indicações] Promoções filtradas:", promocoesFiltradas.length);
+            console.log("🔍 [DEBUG Indicações] Planilha carregada:", planilhaProfissionais?.length || 0, "profissionais");
+        }
         
             return React.createElement("div", {
                 className: "min-h-screen bg-gray-50"
