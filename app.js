@@ -10013,6 +10013,8 @@ const hideLoadingScreen = () => {
             }, i && React.createElement(Toast, i), n && React.createElement(LoadingOverlay, null),
                 window.renderModuloFinanceiro ? window.renderModuloFinanceiro({
                     // === ESTADOS PRINCIPAIS ===
+                    c,      // loading (botões disabled)
+                    s,      // setLoading
                     p,      // financeiroState - estado geral do módulo
                     x,      // setFinanceiroState
                     q,      // withdrawals - solicitações de saque
