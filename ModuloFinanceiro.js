@@ -207,6 +207,16 @@
         // Jl = atualizarStatusSaque         - Atualiza status de saque
         // lancarDebitoPlific                - Lança débito no Plific
         //
+        // === FUNÇÕES DE GRATUIDADES, RESTRITOS E PROMOÇÕES ===
+        // Hl = cadastrarGratuidade           - Cadastra nova gratuidade
+        // Gl = cadastrarRestrito             - Cadastra profissional restrito
+        // Ml = criarPromocao                 - Cria nova promoção
+        // Ol = editarPromocao                - Edita promoção existente
+        // Sl = verificarInscricoesExpiradas  - Verifica inscrições expiradas (novatos)
+        // Tl = editarPromoNovatos            - Edita promoção de novatos
+        // Fl = salvarQuizConfig              - Salva configuração do quiz
+        // Pl = criarPromoNovatos             - Cria promoção para novatos
+        //
         // === QUIZ/ACERTO ===
         // fe = quizConfig           - Configuração do quiz
         // Ne = setQuizConfig        - Setter
@@ -269,6 +279,7 @@
             gl, vl, wl, _l, Cl,
             // Funções de ação
             Rl, El, hl, fl, Nl, yl, bl, Jl,
+            Hl, Gl, Ml, Ol, Sl, Tl, Fl, Pl,
             lancarDebitoPlific,
             // Quiz
             fe, Ne, ye, ve, we, _e, je, Ce, Ae, Se, ke, Pe, Te, De, Le, Ie, Fe, $e,
