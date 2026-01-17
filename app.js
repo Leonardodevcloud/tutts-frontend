@@ -10031,6 +10031,7 @@ const hideLoadingScreen = () => {
                     socialProfile, relatorioNaoLido, setRelatorioNaoLido,
                     relatorioImagemAmpliada, setRelatorioImagemAmpliada,
                     relatoriosNaoLidos, setRelatoriosNaoLidos, marcarRelatorioComoLido,
+                    todoNotifModal, setTodoNotifModal, todoPendentesNotif,
                     // Funções de carregamento
                     Ua, za, Ba, Va, Ja, Qa, Ha, Ga, Wa, Za, Ya, Ka, gl, vl, wl, _l, Cl,
                     // Funções de ação
