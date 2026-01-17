@@ -250,7 +250,7 @@
             c, s,  // loading e setLoading
             p, x, q, U, Q, H, Z, Y, K, X, z, B, V, J,
             // Promoções e indicações
-            ee, te, ae, le, re, oe, ce, se,
+            ee, te, ae, le, re, oe, ce, se, ne, me,
             // Horários e avisos
             Me, Oe, qe, Ue, ze, Be,
             // Loja - estados
