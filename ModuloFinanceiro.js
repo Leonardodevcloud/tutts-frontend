@@ -2761,7 +2761,29 @@
                 className: "px-3 py-3 text-center"
             }, "Progresso"), React.createElement("th", {
                 className: "px-2 py-3 text-center text-xs"
-            }, "Crédito"))), React.createElement("tbody", null, ne.map(e => {
+            }, "Crédito"), React.createElement("th", {
+                className: "px-2 py-3 text-center text-xs"
+            }, ""))), React.createElement("tbody", null, 
+            // Ordenar inscrições: 1) Contempladas sem crédito no topo, 2) Por progresso desc
+            [...ne].sort((a, b) => {
+                const aTotal = a.total_entregas || 0;
+                const bTotal = b.total_entregas || 0;
+                const aMeta = a.meta_entregas || 50;
+                const bMeta = b.meta_entregas || 50;
+                const aAtingida = aTotal >= aMeta;
+                const bAtingida = bTotal >= bMeta;
+                const aSemCredito = aAtingida && !a.credito_lancado;
+                const bSemCredito = bAtingida && !b.credito_lancado;
+                
+                // Contempladas sem crédito primeiro
+                if (aSemCredito && !bSemCredito) return -1;
+                if (!aSemCredito && bSemCredito) return 1;
+                
+                // Depois por percentual de progresso (maior primeiro)
+                const aPerc = (aTotal / aMeta) * 100;
+                const bPerc = (bTotal / bMeta) * 100;
+                return bPerc - aPerc;
+            }).map(e => {
                 const t = e.expires_at ? new Date(e.expires_at) : null,
                     a = t && new Date > t,
                     totalEntregas = e.total_entregas || 0,
@@ -2778,6 +2800,7 @@
                 } else if (metaAtingida && "pendente" === e.status) {
                     statusTexto = "Completo";
                     statusClasse = "bg-green-100 text-green-700";
+                    statusIcone = "✅";
                     statusIcone = "✅";
                 } else if ("aprovada" === e.status) {
                     statusTexto = "Aprovada";
@@ -2877,7 +2900,32 @@
                     }, "💰 Lançar")
                 ) : React.createElement("span", {
                     className: "text-xs text-gray-400"
-                }, "-")))
+                }, "-")),
+                
+                // Coluna de Ações (deletar)
+                React.createElement("td", {
+                    className: "px-2 py-3 text-center"
+                }, React.createElement("button", {
+                    onClick: async () => {
+                        if (!confirm("Tem certeza que deseja excluir esta inscrição?")) return;
+                        s(!0);
+                        try {
+                            const resp = await fetchAuth(`${API_URL}/inscricoes-novatos/${e.id}`, {
+                                method: "DELETE"
+                            });
+                            if (!resp.ok) throw new Error("Erro ao excluir");
+                            ja("🗑️ Inscrição excluída!", "success");
+                            await Sl();
+                        } catch (err) {
+                            ja("Erro ao excluir inscrição", "error");
+                        } finally {
+                            s(!1);
+                        }
+                    },
+                    className: "p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors",
+                    disabled: c,
+                    title: "Excluir inscrição"
+                }, "🗑️")))
             })))))), "loja" === p.finTab && React.createElement(React.Fragment, null, React.createElement("div", {
                 className: "bg-white rounded-xl shadow mb-6"
             }, React.createElement("div", {
