@@ -3121,6 +3121,11 @@ const hideLoadingScreen = () => {
             const canAccessFinEff = hasModuleAccess(l, "financeiro");
             if (!l || (!canAccessFinEff || ("admin_master" === l.role && "financeiro" !== Ee))) return;
             
+            // Carregar planilha de profissionais se ainda não carregada (para cidades das indicações)
+            if (pe.length === 0) {
+                Ta();
+            }
+            
             // ==================== CARREGAMENTO OTIMIZADO ====================
             const carregarDados = async () => {
                 N(!0);
@@ -3204,6 +3209,8 @@ const hideLoadingScreen = () => {
                             await Ba();
                             break;
                         case "indicacoes":
+                            // Carregar planilha se necessário (para lista de cidades)
+                            if (pe.length === 0) await Ta();
                             await wl(), await vl(), await jl(), await _l();
                             break;
                         case "promo-novatos":
