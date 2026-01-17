@@ -10038,6 +10038,8 @@ const hideLoadingScreen = () => {
                     re,     // minhasIndicacoes
                     oe,     // setMinhasIndicacoes
                     ce,     // promocoesNovatos
+                    ne,     // inscricoesNovatos
+                    me,     // setInscricoesNovatos
                     se,     // setPromocoesNovatos
                     
                     // === HORÁRIOS E AVISOS ===
