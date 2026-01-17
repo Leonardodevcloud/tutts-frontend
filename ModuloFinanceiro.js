@@ -815,7 +815,7 @@
                     className: "text-[10px] truncate flex-1",
                     title: e.pix_key
                 }, e.pix_key), !s && React.createElement("button", {
-                    onClick: () => J(e),
+                    onClick: () => { console.log("🔍 Clicou QR PIX:", e); J(e); },
                     className: "text-lg hover:scale-125 transition-transform",
                     title: "Gerar QR Code PIX"
                 }, "💠")), e.has_gratuity && React.createElement("p", {
