@@ -1,34 +1,11 @@
-// ============================================================================
-// MÓDULO FINANCEIRO - TUTTS
-// Versão: 2.0.0
-// 
-// Este arquivo contém o módulo financeiro completo com 15 sub-abas:
-// home-fin, solicitacoes, validacao, conciliacao, resumo, gratuidades,
-// restritos, indicacoes, promo-novatos, loja, relatorios, horarios,
-// avisos, backup, saldo-plific
-// ============================================================================
-
+// MÓDULO FINANCEIRO - TUTTS v2.0
 (function() {
     'use strict';
     
-    // ========================================================================
-    // FUNÇÕES UTILITÁRIAS GLOBAIS
-    // ========================================================================
-    
-    /**
-     * Formata um valor numérico para moeda brasileira (BRL)
-     * @param {number} valor - Valor a ser formatado
-     * @returns {string} Valor formatado (ex: "R$ 1.234,56")
-     */
     window.formatarMoeda = window.formatarMoeda || function(valor) {
         return parseFloat(valor || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
     };
     
-    /**
-     * Converte string no formato brasileiro para número
-     * @param {string|number} valor - Valor no formato "1.234,56" ou número
-     * @returns {number} Valor numérico
-     */
     window.parseSaldoBR = window.parseSaldoBR || function(valor) {
         if (typeof valor === "number") return valor;
         if (!valor) return 0;
@@ -36,266 +13,147 @@
         return str.includes(",") ? parseFloat(str.replace(/\./g, "").replace(",", ".")) || 0 : parseFloat(str) || 0;
     };
     
-    // Alias para compatibilidade com código minificado
-    window.er = window.er || window.formatarMoeda;
-    
-    // ========================================================================
-    // FUNÇÃO PRINCIPAL DE RENDERIZAÇÃO
-    // ========================================================================
-    
-    /**
-     * Renderiza o módulo financeiro completo
-     * @param {Object} props - Propriedades passadas pelo app.js
-     */
     window.renderModuloFinanceiro = function(props) {
-        
-        // ====================================================================
-        // MAPEAMENTO DE VARIÁVEIS MINIFICADAS
-        // ====================================================================
-        // 
-        // LEGENDA DE VARIÁVEIS:
-        // 
-        // === ESTADOS PRINCIPAIS ===
-        // p  = financeiroState      - Estado geral do módulo (campos, modais, filtros)
-        // x  = setFinanceiroState   - Setter do estado geral
-        // q  = withdrawals          - Lista de solicitações de saque (admin)
-        // U  = setWithdrawals       - Setter
-        // Q  = gratuities           - Lista de gratuidades
-        // H  = setGratuities        - Setter
-        // Z  = restricted           - Lista de profissionais restritos
-        // Y  = setRestricted        - Setter
-        // K  = conciliacao          - Dados de conciliação bancária
-        // X  = setConciliacao       - Setter
-        // z  = selectedIds          - IDs selecionados para ação em lote
-        // B  = setSelectedIds       - Setter
-        // V  = pixQrModal           - Modal de QR Code PIX
-        // J  = setPixQrModal        - Setter
-        //
-        // === PROMOÇÕES E INDICAÇÕES ===
-        // ee = promocoes            - Lista de promoções
-        // te = setPromocoes         - Setter
-        // ae = indicacoes           - Lista de indicações (admin)
-        // le = setIndicacoes        - Setter
-        // re = minhasIndicacoes     - Indicações do usuário logado
-        // oe = setMinhasIndicacoes  - Setter
-        // ce = promocoesNovatos     - Promoções para novatos
-        // se = setPromocoesNovatos  - Setter
-        //
-        // === HORÁRIOS E AVISOS ===
-        // Me = horariosState        - Estado dos horários {horarios, especiais, loading}
-        // Oe = setHorariosState     - Setter
-        // qe = avisosState          - Estado dos avisos {avisos, loading}
-        // Ue = setAvisosState       - Setter
-        // ze = verificacaoHorario   - Resultado da verificação de horário comercial
-        // Be = setVerificacaoHorario - Setter
-        //
-        // === LOJA - DADOS ===
-        // Ke = lojaProdutos         - Lista de produtos
-        // Xe = setLojaProdutos      - Setter
-        // Ze = lojaEstoque          - Lista de estoque
-        // Ye = setLojaEstoque       - Setter
-        // et = lojaPedidos          - Pedidos (admin)
-        // tt = setLojaPedidos       - Setter
-        // at = lojaPedidosUsuario   - Pedidos do usuário
-        // lt = setLojaPedidosUsuario - Setter
-        // it = lojaMovimentacoes    - Movimentações de estoque
-        // dt = setLojaMovimentacoes - Setter
-        // ut = lojaSugestoes        - Sugestões de produtos (admin)
-        // gt = setLojaSugestoes     - Setter
-        // bt = lojaSugestoesUsuario - Sugestões do usuário
-        // Rt = setLojaSugestoesUsuario - Setter
-        //
-        // === LOJA - UI ===
-        // nt = lojaAbaAtiva         - Aba ativa da loja ("produtos"|"estoque"|"pedidos"|"sugestoes")
-        // mt = setLojaAbaAtiva      - Setter
-        // rt = lojaLoading          - Estado de carregamento da loja
-        // ot = setLojaLoading       - Setter
-        // pt = lojaVisualizacao     - Modo de visualização ("lista"|"grid")
-        // xt = setLojaVisualizacao  - Setter
-        // ct = lojaCategoria        - Categoria selecionada
-        // st = setLojaCategoria     - Setter
-        // Qe = carrinho             - Itens no carrinho
-        // He = setCarrinho          - Setter
-        // Ge = showCarrinho         - Mostrar modal do carrinho
-        // We = setShowCarrinho      - Setter
-        //
-        // === PLIFIC (Sistema de Saldo) ===
-        // plificState               - Estado do módulo Plific
-        // setPlificState            - Setter
-        // modalDebitoPlific         - Modal para lançar débito
-        // setModalDebitoPlific      - Setter
-        // debitoFormPlific          - Dados do formulário de débito
-        // setDebitoFormPlific       - Setter
-        // saldoPlificUser           - Saldo do usuário logado
-        // setSaldoPlificUser        - Setter
-        //
-        // === PAGINAÇÃO ===
-        // solicitacoesPagina        - Página atual das solicitações
-        // setSolicitacoesPagina     - Setter
-        // conciliacaoPagina         - Página atual da conciliação
-        // setConciliacaoPagina      - Setter
-        // solicitacoesPorPagina     - Itens por página (solicitações)
-        // conciliacaoPorPagina      - Itens por página (conciliação)
-        // acertoRealizado           - Flag de acerto realizado (localStorage)
-        // setAcertoRealizado        - Setter
-        //
-        // === USUÁRIO E NAVEGAÇÃO ===
-        // l  = usuario              - Usuário logado {codProfissional, fullName, role, etc}
-        // Ee = moduloAtivo          - Módulo ativo ("financeiro"|"bi"|"todo"|etc)
-        // he = setModuloAtivo       - Setter (navegação entre módulos)
-        // o  = setUsuario           - Setter do usuário (usado no logout)
-        // f  = isLoading            - Estado de carregamento global
-        // E  = lastUpdate           - Timestamp da última atualização
-        //
-        // === UTILITÁRIOS ===
-        // er = formatarMoeda        - Função para formatar moeda
-        // ja = showToast            - Função para exibir notificações toast
-        // ul = refreshAll           - Função para atualizar todos os dados
-        // fetchAuth                 - Função fetch com autenticação JWT
-        // API_URL                   - URL base da API
-        // navegarSidebar            - Função de navegação do sidebar
-        //
-        // === COMPONENTES ===
-        // HeaderCompacto            - Componente do header com navegação
-        // Toast                     - Componente de notificação
-        // LoadingOverlay            - Componente de loading
-        // i  = toast                - Estado do toast atual
-        // n  = loading              - Estado de loading atual
-        // e  = isAdminMaster        - Flag se é admin_master
-        //
-        // === ELEGIBILIDADE NOVATOS ===
-        // elegibilidadeNovatos      - Estado de elegibilidade para promoções
-        // setElegibilidadeNovatos   - Setter
-        // regioesNovatos            - Regiões disponíveis para novatos
-        // setRegioesNovatos         - Setter
-        //
-        // === RELATÓRIOS ===
-        // socialProfile             - Perfil social do usuário
-        // relatorioNaoLido          - Relatório não lido atual
-        // setRelatorioNaoLido       - Setter
-        // relatoriosNaoLidos        - Lista de relatórios não lidos
-        // setRelatoriosNaoLidos     - Setter
-        // marcarRelatorioComoLido   - Função para marcar como lido
-        //
-        // === FUNÇÕES DE CARREGAMENTO ===
-        // Ua = carregarWithdrawals          - Carrega solicitações de saque
-        // za = carregarGratuities           - Carrega gratuidades
-        // Ba = carregarRestricted           - Carrega profissionais restritos
-        // Va = carregarConciliacao          - Carrega dados de conciliação
-        // Ja = carregarLojaEstoque          - Carrega estoque da loja
-        // Qa = carregarLojaMovimentacoes    - Carrega movimentações
-        // Ha = carregarLojaProdutos         - Carrega produtos (admin)
-        // Ga = carregarLojaProdutosAtivos   - Carrega produtos ativos (user)
-        // Wa = carregarLojaPedidos          - Carrega pedidos (admin)
-        // Za = carregarLojaPedidosUsuario   - Carrega pedidos do usuário
-        // Ya = carregarLojaSugestoes        - Carrega sugestões (admin)
-        // Ka = carregarLojaSugestoesUsuario - Carrega sugestões do usuário
-        // gl = carregarPromocoes            - Carrega promoções (admin)
-        // vl = carregarPromocoesAtivas      - Carrega promoções ativas (user)
-        // wl = carregarIndicacoes           - Carrega indicações (admin)
-        // _l = carregarMinhasIndicacoes     - Carrega indicações do usuário
-        // Cl = carregarPromocoesNovatos     - Carrega promoções para novatos
-        //
-        // === FUNÇÕES DE AÇÃO ===
-        // Rl = atualizarHorario             - Atualiza horário de funcionamento
-        // El = criarHorarioEspecial         - Cria horário especial (feriado, etc)
-        // hl = criarAviso                   - Cria novo aviso
-        // fl = toggleAvisoAtivo             - Ativa/desativa aviso
-        // Nl = removerAviso                 - Remove aviso
-        // yl = getProximoHorarioTexto       - Retorna texto do próximo horário
-        // bl = DIAS_SEMANA                  - Array com nomes dos dias
-        // Jl = atualizarStatusSaque         - Atualiza status de saque
-        // lancarDebitoPlific                - Lança débito no Plific
-        //
-        // === FUNÇÕES DE GRATUIDADES, RESTRITOS E PROMOÇÕES ===
-        // Hl = cadastrarGratuidade           - Cadastra nova gratuidade
-        // Gl = cadastrarRestrito             - Cadastra profissional restrito
-        // Ml = criarPromocao                 - Cria nova promoção
-        // Ol = editarPromocao                - Edita promoção existente
-        // Sl = verificarInscricoesExpiradas  - Verifica inscrições expiradas (novatos)
-        // Tl = editarPromoNovatos            - Edita promoção de novatos
-        // Fl = salvarQuizConfig              - Salva configuração do quiz
-        // Pl = criarPromoNovatos             - Cria promoção para novatos
-        //
-        // === QUIZ/ACERTO ===
-        // fe = quizConfig           - Configuração do quiz
-        // Ne = setQuizConfig        - Setter
-        // ye = quizRespostas        - Respostas do usuário
-        // ve = setQuizRespostas     - Setter
-        // we = quizEmAndamento      - Quiz em andamento
-        // _e = setQuizEmAndamento   - Setter
-        // je = quizResultado        - Resultado do quiz
-        // Ce = setQuizResultado     - Setter
-        // Ae = quizPerguntaAtual    - Pergunta atual
-        // Se = setQuizPerguntaAtual - Setter
-        // ke = quizAcertos          - Número de acertos
-        // Pe = setQuizAcertos       - Setter
-        // Te = quizImagens          - Imagens do quiz
-        // De = setQuizImagens       - Setter
-        // Le = quizImagemExpandida  - Imagem expandida
-        // Ie = setQuizImagemExpandida - Setter
-        // Fe = quizLoading          - Loading do quiz
-        // $e = setQuizLoading       - Setter
-        //
-        // === NOTIFICAÇÕES ===
-        // y  = notificacoes         - Contadores de notificações
-        // v  = setNotificacoes      - Setter
-        // w  = notificacoesLista    - Lista de notificações pendentes
-        // _  = setNotificacoesLista - Setter
-        //
-        // ====================================================================
-        
         const {
-            // Estados principais
-            c, s,  // loading e setLoading
-            A, S, j, C, k, P, T, D, L, I, F, $, M, O, G, W,  // estados auxiliares
-            p, x, q, U, Q, H, Z, Y, K, X, z, B, V, J,
-            // Promoções e indicações
+            c, s, p, x, q, U, Q, H, Z, Y, K, X, z, B, V, J,
+            A, S, j, C, k, P, T, D, L, I, F, $, M, O, G, W,
             ee, te, ae, le, re, oe, ce, se, ne, me,
-            // Horários e avisos
             Me, Oe, qe, Ue, ze, Be,
-            // Loja - estados
             Ke, Xe, Ze, Ye, et, tt, at, lt, it, dt, ut, gt, bt, Rt,
             nt, mt, rt, ot, pt, xt, ct, st, Qe, He, Ge, We,
-            // Plific
             plificState, setPlificState, modalDebitoPlific, setModalDebitoPlific,
             debitoFormPlific, setDebitoFormPlific, saldoPlificUser, setSaldoPlificUser,
-            // Paginação
             solicitacoesPagina, setSolicitacoesPagina, conciliacaoPagina, setConciliacaoPagina,
-            solicitacoesPorPagina, conciliacaoPorPagina,
-            acertoRealizado, setAcertoRealizado,
-            // Usuário e navegação
-            l, Ee, he, o, f, E,
-            // Utilitários
+            solicitacoesPorPagina, conciliacaoPorPagina, acertoRealizado, setAcertoRealizado,
+            l, Ee, he, o, f, E, e,
             er, ja, ul, fetchAuth, API_URL, navegarSidebar,
-            // Componentes
-            HeaderCompacto, Toast, LoadingOverlay, PixQRCodeModal, i, n, e,
-            relatorioImagemAmpliada, setRelatorioImagemAmpliada,
-            todoNotifModal, setTodoNotifModal, todoPendentesNotif,
-            // Elegibilidade novatos
+            HeaderCompacto, Toast, LoadingOverlay, PixQRCodeModal, i, n,
             elegibilidadeNovatos, setElegibilidadeNovatos, regioesNovatos, setRegioesNovatos,
-            // Social e relatórios
             socialProfile, relatorioNaoLido, setRelatorioNaoLido,
-            relatoriosNaoLidos, setRelatoriosNaoLidos,
-            marcarRelatorioComoLido,
-            // Funções de carregamento
-            Ua, za, Ba, Va, Ja, Qa, Ha, Ga, Wa, Za, Ya, Ka,
-            gl, vl, wl, _l, Cl,
-            // Funções de ação
-            Rl, El, hl, fl, Nl, yl, bl, Jl,
-            Hl, Gl, Ml, Ol, Sl, Tl, Fl, Pl,
+            relatoriosNaoLidos, setRelatoriosNaoLidos, marcarRelatorioComoLido,
+            Ua, za, Ba, Va, Ja, Qa, Ha, Ga, Wa, Za, Ya, Ka, gl, vl, wl, _l, Cl,
+            Rl, El, hl, fl, Nl, yl, bl, Jl, Hl, Gl, Ml, Ol, Sl, Tl, Fl, Pl,
             lancarDebitoPlific,
-            // Quiz
             fe, Ne, ye, ve, we, _e, je, Ce, Ae, Se, ke, Pe, Te, De, Le, Ie, Fe, $e,
-            // Notificações
             y, v, w, _
         } = props;
         
-        // ====================================================================
-        // INÍCIO DO CÓDIGO UI - 15 SUB-ABAS DO MÓDULO FINANCEIRO
-        // ====================================================================
-        
-        return React.createElement(React.Fragment, null,
+            return React.createElement("div", {
+                className: "min-h-screen bg-gray-50"
+            }, i && React.createElement(Toast, i), n && React.createElement(LoadingOverlay, null), 
+            // Modal de Relatório Não Lido (ciência)
+            relatorioNaoLido && React.createElement("div", {
+                className: "fixed inset-0 bg-black/70 flex items-center justify-center z-[100] p-4"
+            },
+                React.createElement("div", {className: "bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col animate-fade-in"},
+                    // Header
+                    React.createElement("div", {className: "bg-gradient-to-r from-teal-600 to-teal-700 text-white p-4 flex items-center gap-3"},
+                        React.createElement("span", {className: "text-3xl"}, "📢"),
+                        React.createElement("div", null,
+                            React.createElement("h3", {className: "text-lg font-bold"}, "Novo Relatório Diário"),
+                            React.createElement("p", {className: "text-teal-100 text-sm"}, 
+                                relatoriosNaoLidos.length > 1 
+                                    ? `${relatoriosNaoLidos.length} relatórios pendentes de leitura`
+                                    : "1 relatório pendente de leitura"
+                            )
+                        )
+                    ),
+                    // Info do autor
+                    React.createElement("div", {className: "p-4 bg-gray-50 border-b flex items-center gap-3"},
+                        relatorioNaoLido.usuario_foto 
+                            ? React.createElement("img", {
+                                src: relatorioNaoLido.usuario_foto,
+                                className: "w-12 h-12 rounded-full object-cover border-2 border-teal-200"
+                            })
+                            : React.createElement("div", {
+                                className: "w-12 h-12 rounded-full bg-teal-100 flex items-center justify-center text-teal-600 font-bold text-lg"
+                            }, (relatorioNaoLido.usuario_nome || "?").charAt(0).toUpperCase()),
+                        React.createElement("div", null,
+                            React.createElement("p", {className: "font-bold text-gray-800"}, relatorioNaoLido.titulo),
+                            React.createElement("p", {className: "text-sm text-gray-500"}, 
+                                relatorioNaoLido.usuario_nome, " • ", 
+                                new Date(relatorioNaoLido.created_at).toLocaleDateString('pt-BR', {
+                                    day: '2-digit', month: '2-digit', year: 'numeric',
+                                    hour: '2-digit', minute: '2-digit'
+                                })
+                            )
+                        )
+                    ),
+                    // Conteúdo
+                    React.createElement("div", {className: "p-4 overflow-y-auto flex-1"},
+                        React.createElement("div", {
+                            className: "text-gray-700 whitespace-pre-wrap",
+                            dangerouslySetInnerHTML: { __html: (relatorioNaoLido.conteudo || '').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/_(.*?)_/g, '<em>$1</em>') }
+                        }),
+                        relatorioNaoLido.imagem_url && React.createElement("div", {className: "mt-4"},
+                            React.createElement("img", {
+                                src: relatorioNaoLido.imagem_url,
+                                className: "max-w-full rounded-lg shadow cursor-pointer hover:opacity-90",
+                                onClick: () => setRelatorioImagemAmpliada(relatorioNaoLido.imagem_url)
+                            })
+                        )
+                    ),
+                    // Footer com botão de ciência
+                    React.createElement("div", {className: "p-4 bg-gray-50 border-t"},
+                        React.createElement("button", {
+                            onClick: () => marcarRelatorioComoLido(relatorioNaoLido.id),
+                            className: "w-full px-6 py-4 bg-teal-600 text-white rounded-xl font-bold text-lg hover:bg-teal-700 flex items-center justify-center gap-2 shadow-lg"
+                        }, "✅ Estou Ciente")
+                    )
+                )
+            ),
+            // Modal de imagem ampliada (relatório)
+            relatorioImagemAmpliada && React.createElement("div", {
+                className: "fixed inset-0 bg-black/90 flex items-center justify-center z-[110] p-4",
+                onClick: () => setRelatorioImagemAmpliada(null)
+            },
+                React.createElement("div", {className: "relative max-w-4xl max-h-[90vh]"},
+                    React.createElement("button", {
+                        onClick: () => setRelatorioImagemAmpliada(null),
+                        className: "absolute -top-10 right-0 text-white text-3xl hover:text-gray-300"
+                    }, "✕"),
+                    React.createElement("img", {
+                        src: relatorioImagemAmpliada,
+                        className: "max-w-full max-h-[85vh] rounded-lg shadow-2xl",
+                        onClick: (e) => e.stopPropagation()
+                    })
+                )
+            ),
+            V && React.createElement(PixQRCodeModal, {
+                withdrawal: V,
+                onClose: () => J(null),
+                showToast: ja
+            }), 
+            // Modal de notificação de tarefas pendentes
+            todoNotifModal && todoPendentesNotif.length > 0 && React.createElement("div", {
+                className: "fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            }, React.createElement("div", {
+                className: "bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+            }, React.createElement("div", {
+                className: "bg-gradient-to-r from-orange-500 to-red-500 p-4 text-white"
+            }, React.createElement("h2", {className: "text-xl font-bold flex items-center gap-2"}, "⚠️ Atenção!"),
+                React.createElement("p", {className: "text-orange-100 text-sm"}, "Você possui tarefas pendentes")
+            ), React.createElement("div", {className: "p-4 max-h-60 overflow-y-auto"},
+                React.createElement("p", {className: "text-gray-600 mb-3"}, "📋 ", todoPendentesNotif.length, " tarefa(s) precisam da sua atenção:"),
+                React.createElement("div", {className: "space-y-2"},
+                    todoPendentesNotif.slice(0, 5).map(t => React.createElement("div", {
+                        key: t.id,
+                        className: "bg-orange-50 border-l-4 border-orange-500 p-3 rounded"
+                    }, React.createElement("p", {className: "font-semibold text-gray-800"}, t.titulo),
+                        t.data_prazo && React.createElement("p", {className: "text-xs text-orange-600"}, "📅 Vence: ", new Date(t.data_prazo).toLocaleDateString("pt-BR"))
+                    ))
+                ),
+                todoPendentesNotif.length > 5 && React.createElement("p", {className: "text-sm text-gray-500 mt-2"}, "... e mais ", todoPendentesNotif.length - 5, " tarefa(s)")
+            ), React.createElement("div", {className: "flex gap-3 p-4 border-t"},
+                React.createElement("button", {
+                    onClick: () => setTodoNotifModal(false),
+                    className: "flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300"
+                }, "Fechar"),
+                React.createElement("button", {
+                    onClick: () => { setTodoNotifModal(false); he("todo"); },
+                    className: "flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
+                }, "📋 Ir para Tarefas")
+            ))),
             // ========== HEADER COM NAVEGAÇÃO - FINANCEIRO ==========
             React.createElement(HeaderCompacto, {
                 usuario: l,
@@ -5376,15 +5234,8 @@
             React.createElement("li", null, "• Consulta em lote: máximo 100 profissionais por vez")
         )
     )
-)
-        // ====================================================================
-        // FIM DO CÓDIGO UI
-        // ====================================================================
-        );
+))
     };
     
-    console.log("✅ ModuloFinanceiro.js carregado - v2.0.0");
-    console.log("   15 sub-abas: home-fin, solicitacoes, validacao, conciliacao,");
-    console.log("   resumo, gratuidades, restritos, indicacoes, promo-novatos,");
-    console.log("   loja, relatorios, horarios, avisos, backup, saldo-plific");
+    console.log("✅ ModuloFinanceiro.js carregado");
 })();
