@@ -10146,8 +10146,15 @@ const hideLoadingScreen = () => {
                     yl,     // getProximoHorarioTexto
                     bl,     // DIAS_SEMANA
                     Jl,     // atualizarStatusSaque
+                    Hl,     // cadastrarGratuidade
+                    Gl,     // cadastrarRestrito
+                    Ml,     // criarPromocao
+                    Ol,     // editarPromocao
+                    Sl,     // verificarInscricoesExpiradas
+                    Tl,     // editarPromoNovatos
+                    Fl,     // salvarQuizConfig
+                    Pl,     // criarPromoNovatos
                     lancarDebitoPlific,
-                    
                     // === QUIZ ===
                     fe,     // quizConfig
                     Ne,     // setQuizConfig
