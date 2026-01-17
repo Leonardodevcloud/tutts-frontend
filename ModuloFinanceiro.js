@@ -32,6 +32,7 @@
             socialProfile, relatorioNaoLido, setRelatorioNaoLido,
             relatorioImagemAmpliada, setRelatorioImagemAmpliada,
             relatoriosNaoLidos, setRelatoriosNaoLidos, marcarRelatorioComoLido,
+            todoNotifModal, setTodoNotifModal, todoPendentesNotif,
             Ua, za, Ba, Va, Ja, Qa, Ha, Ga, Wa, Za, Ya, Ka, gl, vl, wl, _l, Cl,
             Rl, El, hl, fl, Nl, yl, bl, Jl, Hl, Gl, Ml, Ol, Sl, Tl, Fl, Pl,
             lancarDebitoPlific,
