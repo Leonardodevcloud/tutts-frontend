@@ -9460,43 +9460,43 @@ const hideLoadingScreen = () => {
         }, "Esta promoção só pode ser usada uma vez")), React.createElement("hr", {
             className: "my-4 sm:my-6 border-gray-200"
         }), React.createElement("div", {
-            className: "bg-white rounded-xl shadow p-4 sm:p-6 mb-4 sm:mb-6"
+            className: "bg-white rounded-xl shadow p-3 sm:p-6 mb-3 sm:mb-6"
         }, React.createElement("h2", {
-            className: "text-base sm:text-lg font-bold text-orange-700 mb-4"
-        }, "🚀 Promoções Disponíveis para Novatos"), 0 === ce.length ? React.createElement("div", {
-            className: "text-center py-6 sm:py-8"
+            className: "text-sm sm:text-lg font-bold text-orange-700 mb-3 sm:mb-4"
+        }, "🚀 Promoções Disponíveis"), 0 === ce.length ? React.createElement("div", {
+            className: "text-center py-4 sm:py-8"
         }, React.createElement("p", {
-            className: "text-5xl sm:text-6xl mb-4"
+            className: "text-4xl sm:text-6xl mb-3"
         }, "😕"), React.createElement("p", {
-            className: "text-gray-500 font-semibold text-sm sm:text-base"
+            className: "text-gray-500 font-semibold text-xs sm:text-base"
         }, "Nenhuma promoção disponível no momento"), React.createElement("p", {
-            className: "text-gray-400 text-xs sm:text-sm"
-        }, "Volte mais tarde para verificar novas promoções")) : React.createElement("div", {
-            className: "grid gap-3 sm:gap-4"
+            className: "text-gray-400 text-xs"
+        }, "Volte mais tarde")) : React.createElement("div", {
+            className: "space-y-2 sm:space-y-4"
         }, ce.map(e => {
             const t = ie.some(t => t.promocao_id === e.id);
             return React.createElement("div", {
                 key: e.id,
-                className: "border-2 border-orange-200 bg-orange-50 rounded-xl p-3 sm:p-4"
+                className: "border border-orange-200 bg-orange-50 rounded-lg p-2.5 sm:p-4"
             }, React.createElement("div", {
-                className: "flex justify-between items-start gap-2 mb-2"
+                className: "flex justify-between items-start gap-2 mb-1.5 sm:mb-2"
             }, React.createElement("div", {
                 className: "flex-1 min-w-0"
             }, React.createElement("p", {
-                className: "text-xs sm:text-sm text-gray-600"
+                className: "text-[10px] sm:text-sm text-gray-500"
             }, "📍 ", e.regiao), React.createElement("p", {
-                className: "font-bold text-base sm:text-lg text-gray-800 truncate"
+                className: "font-bold text-sm sm:text-lg text-gray-800 leading-tight"
             }, "🏢 ", e.apelido || e.cliente)), React.createElement("span", {
-                className: "px-2 sm:px-3 py-1 bg-green-500 text-white rounded-full text-xs sm:text-sm font-bold flex-shrink-0"
+                className: "px-2 py-0.5 sm:py-1 bg-green-500 text-white rounded-full text-[11px] sm:text-sm font-bold flex-shrink-0"
             }, er(e.valor_bonus))), e.detalhes && React.createElement("p", {
-                className: "text-xs sm:text-sm text-gray-600 mb-3 whitespace-pre-wrap line-clamp-2"
+                className: "text-[11px] sm:text-sm text-gray-600 mb-2 line-clamp-2 leading-snug"
             }, e.detalhes), React.createElement("div", {
-                className: "bg-yellow-100 border border-yellow-300 rounded-lg p-2 mb-3"
+                className: "bg-yellow-100/70 border border-yellow-300 rounded p-1.5 sm:p-2 mb-2 sm:mb-3"
             }, React.createElement("p", {
-                className: "text-xs text-yellow-800"
+                className: "text-[10px] sm:text-xs text-yellow-800"
             }, "⏱️ Você terá ", React.createElement("strong", null, "15 dias"), " para completar ", React.createElement("strong", null, e.quantidade_entregas || 50, " entregas"))), t ? React.createElement("button", {
                 disabled: !0,
-                className: "w-full py-2.5 bg-gray-300 text-gray-600 rounded-lg font-semibold cursor-not-allowed text-sm"
+                className: "w-full py-2 sm:py-2.5 bg-gray-300 text-gray-600 rounded-lg font-semibold cursor-not-allowed text-xs sm:text-sm"
             }, "✅ Já inscrito") : React.createElement("button", {
                 onClick: () => (async e => {
                     s(!0);
@@ -9527,49 +9527,47 @@ const hideLoadingScreen = () => {
                     }
                 })(e),
                 disabled: c,
-                className: "w-full py-2.5 bg-orange-500 text-white rounded-lg font-semibold hover:bg-orange-600 disabled:opacity-50 text-sm sm:text-base active:scale-95 transition-transform"
+                className: "w-full py-2 sm:py-2.5 bg-orange-500 text-white rounded-lg font-semibold hover:bg-orange-600 disabled:opacity-50 text-xs sm:text-base active:scale-[0.98] transition-transform"
             }, c ? "..." : "🚀 Quero me inscrever!"))
         }))), React.createElement("div", {
-            className: "bg-white rounded-xl shadow p-4 sm:p-6"
+            className: "bg-white rounded-xl shadow p-3 sm:p-6"
         }, React.createElement("h2", {
-            className: "text-base sm:text-lg font-bold text-gray-800 mb-4"
-        }, "📋 Minhas Inscrições e Bonificações"), je && React.createElement("div", {
-            className: "border-2 rounded-xl p-3 sm:p-4 mb-4 " + (je.passou ? "border-green-400 bg-green-50" : "border-red-300 bg-red-50")
+            className: "text-sm sm:text-lg font-bold text-gray-800 mb-3 sm:mb-4"
+        }, "📋 Minhas Inscrições"), je && React.createElement("div", {
+            className: "border rounded-lg p-2.5 sm:p-4 mb-3 " + (je.passou ? "border-green-400 bg-green-50" : "border-red-300 bg-red-50")
         }, React.createElement("div", {
-            className: "flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3"
+            className: "flex justify-between items-start gap-2"
         }, React.createElement("div", {
-            className: "flex items-center gap-2 sm:gap-3"
+            className: "flex items-center gap-2"
         }, React.createElement("span", {
-            className: "text-2xl sm:text-3xl"
+            className: "text-xl sm:text-3xl"
         }, je.passou ? "🎉" : "📝"), React.createElement("div", null, React.createElement("p", {
-            className: "font-bold text-gray-800 text-sm sm:text-base"
+            className: "font-bold text-gray-800 text-xs sm:text-base"
         }, "Quiz de Procedimentos"), React.createElement("p", {
-            className: "text-xs sm:text-sm text-gray-600"
-        }, "Respondido em: ", new Date(je.created_at).toLocaleDateString("pt-BR")), React.createElement("p", {
-            className: "text-xs sm:text-sm text-gray-500"
-        }, "Acertos: ", je.acertos, "/5"))), React.createElement("div", {
-            className: "flex items-center justify-between sm:flex-col sm:items-end gap-2"
+            className: "text-[10px] sm:text-sm text-gray-500"
+        }, new Date(je.created_at).toLocaleDateString("pt-BR"), " • ", je.acertos, "/5 acertos"))), React.createElement("div", {
+            className: "text-right flex-shrink-0"
         }, je.passou && React.createElement("p", {
-            className: "font-bold text-green-600 text-base sm:text-lg"
+            className: "font-bold text-green-600 text-sm sm:text-lg"
         }, er(fe.valor_gratuidade)), React.createElement("span", {
-            className: "inline-block px-2 sm:px-3 py-1 rounded-full text-xs font-bold " + (je.passou ? "bg-green-500 text-white" : "bg-red-400 text-white")
-        }, je.passou ? "✅ Aprovado" : "❌ Não passou"))), je.passou && React.createElement("div", {
-            className: "mt-3 bg-green-100 border border-green-300 rounded-lg p-2.5 sm:p-3"
+            className: "inline-block px-1.5 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold " + (je.passou ? "bg-green-500 text-white" : "bg-red-400 text-white")
+        }, je.passou ? "✅" : "❌"))), je.passou && React.createElement("div", {
+            className: "mt-2 bg-green-100 border border-green-300 rounded p-2"
         }, React.createElement("p", {
-            className: "text-green-800 text-xs sm:text-sm"
-        }, "🎉 ", React.createElement("strong", null, "Parabéns!"), " Você acertou todas as perguntas! A gratuidade de ", er(fe.valor_gratuidade), " foi adicionada à sua conta.")), !je.passou && React.createElement("div", {
-            className: "mt-3 bg-red-100 border border-red-300 rounded-lg p-2.5 sm:p-3"
+            className: "text-green-800 text-[10px] sm:text-sm"
+        }, "🎉 Gratuidade de ", er(fe.valor_gratuidade), " adicionada!")), !je.passou && React.createElement("div", {
+            className: "mt-2 bg-red-100 border border-red-300 rounded p-2"
         }, React.createElement("p", {
-            className: "text-red-800 text-xs sm:text-sm"
-        }, "😢 Infelizmente você não acertou todas as perguntas. Era necessário acertar 5/5 para ganhar a gratuidade."))), 0 !== ie.length || je ? React.createElement("div", {
-            className: "space-y-3"
+            className: "text-red-800 text-[10px] sm:text-sm"
+        }, "😢 Necessário acertar 5/5 para ganhar."))), 0 !== ie.length || je ? React.createElement("div", {
+            className: "space-y-2 sm:space-y-3"
         }, ie.map(e => {
             const t = e.expires_at ? new Date(e.expires_at) : null,
                 a = t && new Date > t,
                 progresso = progressoNovatos.find(pg => pg.inscricao_id === e.id);
             return React.createElement("div", {
                 key: e.id,
-                className: "border rounded-xl p-3 sm:p-4 " + ("aprovada" === e.status ? "border-green-300 bg-green-50" : "rejeitada" === e.status ? "border-red-300 bg-red-50" : a ? "border-gray-300 bg-gray-50" : "border-yellow-300 bg-yellow-50")
+                className: "border rounded-lg p-2.5 sm:p-4 " + ("aprovada" === e.status ? "border-green-300 bg-green-50" : "rejeitada" === e.status ? "border-red-300 bg-red-50" : a ? "border-gray-300 bg-gray-50" : "border-yellow-300 bg-yellow-50")
             }, 
             // Header do card
             React.createElement("div", {
@@ -9577,53 +9575,51 @@ const hideLoadingScreen = () => {
             }, React.createElement("div", {
                 className: "flex-1 min-w-0"
             }, React.createElement("p", {
-                className: "font-semibold text-gray-800 text-sm sm:text-base truncate"
+                className: "font-semibold text-gray-800 text-xs sm:text-base leading-tight"
             }, "🏢 ", e.cliente), React.createElement("p", {
-                className: "text-xs sm:text-sm text-gray-600"
-            }, "📍 ", e.regiao), React.createElement("p", {
-                className: "text-xs text-gray-500 mt-1"
-            }, "Inscrito: ", new Date(e.created_at).toLocaleDateString("pt-BR")), t && "pendente" === e.status && !a && React.createElement("p", {
-                className: "text-xs text-orange-600 font-medium"
+                className: "text-[10px] sm:text-sm text-gray-500"
+            }, "📍 ", e.regiao, " • ", new Date(e.created_at).toLocaleDateString("pt-BR")), t && "pendente" === e.status && !a && React.createElement("p", {
+                className: "text-[10px] sm:text-xs text-orange-600 font-medium"
             }, "⏱️ Expira: ", t.toLocaleDateString("pt-BR"))), React.createElement("div", {
                 className: "text-right flex-shrink-0"
             }, React.createElement("p", {
-                className: "font-bold text-green-600 text-base sm:text-lg"
+                className: "font-bold text-green-600 text-sm sm:text-lg"
             }, er(e.valor_bonus)), React.createElement("span", {
-                className: "inline-block mt-1 px-2 py-0.5 sm:py-1 rounded-full text-xs font-bold " + ("pendente" !== e.status || a ? "aprovada" === e.status ? "bg-green-200 text-green-800" : "rejeitada" === e.status ? "bg-red-200 text-red-800" : "bg-gray-200 text-gray-800" : "bg-yellow-200 text-yellow-800")
-            }, "pendente" === e.status && a ? "⏰ Expirada" : "pendente" === e.status ? "⏳ Pendente" : "aprovada" === e.status ? "✅ Aprovada" : "rejeitada" === e.status ? "❌ Rejeitada" : e.status))), 
+                className: "inline-block mt-0.5 px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-bold " + ("pendente" !== e.status || a ? "aprovada" === e.status ? "bg-green-200 text-green-800" : "rejeitada" === e.status ? "bg-red-200 text-red-800" : "bg-gray-200 text-gray-800" : "bg-yellow-200 text-yellow-800")
+            }, "pendente" === e.status && a ? "⏰" : "pendente" === e.status ? "⏳" : "aprovada" === e.status ? "✅" : "❌"))), 
             
             // Barra de progresso de entregas (se inscricao pendente e tem progresso)
             progresso && "pendente" === e.status && !a && React.createElement("div", {
-                className: "mt-3 pt-3 border-t border-gray-200"
+                className: "mt-2 pt-2 border-t border-gray-200"
             }, React.createElement("div", {
-                className: "flex justify-between items-center mb-2"
+                className: "flex justify-between items-center mb-1"
             }, React.createElement("p", {
-                className: "text-xs sm:text-sm font-semibold text-gray-700"
-            }, "📦 Progresso"), React.createElement("p", {
-                className: "text-sm sm:text-base font-bold " + (progresso.meta_atingida ? "text-green-600" : "text-orange-600")
+                className: "text-[10px] sm:text-sm font-semibold text-gray-700"
+            }, "📦 Entregas"), React.createElement("p", {
+                className: "text-xs sm:text-base font-bold " + (progresso.meta_atingida ? "text-green-600" : "text-orange-600")
             }, progresso.total_entregas, "/", progresso.meta_entregas)), React.createElement("div", {
-                className: "w-full bg-gray-200 rounded-full h-3 sm:h-4 mb-2"
+                className: "w-full bg-gray-200 rounded-full h-1.5 sm:h-4 mb-1"
             }, React.createElement("div", {
-                className: "h-3 sm:h-4 rounded-full transition-all duration-500 " + (progresso.meta_atingida ? "bg-green-500" : progresso.percentual >= 50 ? "bg-yellow-500" : "bg-orange-500"),
+                className: "h-1.5 sm:h-4 rounded-full transition-all duration-500 " + (progresso.meta_atingida ? "bg-green-500" : progresso.percentual >= 50 ? "bg-yellow-500" : "bg-orange-500"),
                 style: { width: progresso.percentual + "%" }
             })), React.createElement("div", {
                 className: "flex justify-between items-center"
             }, React.createElement("p", {
-                className: "text-xs text-gray-500"
-            }, progresso.meta_atingida ? "🎉 Meta atingida!" : progresso.percentual + "% concluído"), React.createElement("button", {
+                className: "text-[10px] sm:text-xs text-gray-500"
+            }, progresso.meta_atingida ? "🎉 Meta atingida!" : progresso.percentual + "%"), React.createElement("button", {
                 onClick: () => carregarEntregasInscricao(e.id),
-                className: "text-xs text-blue-600 hover:text-blue-800 font-semibold px-2 py-1 bg-blue-50 rounded-lg active:scale-95 transition-transform"
-            }, "📋 Ver detalhes"))),
+                className: "text-[10px] sm:text-xs text-blue-600 font-semibold px-1.5 sm:px-2 py-0.5 sm:py-1 bg-blue-50 rounded active:scale-95"
+            }, "📋 Detalhes"))),
             
             "aprovada" === e.status && React.createElement("div", {
-                className: "mt-3 bg-green-100 border border-green-300 rounded-lg p-2.5 sm:p-3"
+                className: "mt-2 bg-green-100 border border-green-300 rounded p-2"
             }, React.createElement("p", {
-                className: "text-green-800 text-xs sm:text-sm"
-            }, "🎉 ", React.createElement("strong", null, "Parabéns!"), " Você foi contemplado! O bônus de ", er(e.valor_bonus), " será incluído no seu próximo repasse.")), "rejeitada" === e.status && e.motivo_rejeicao && React.createElement("div", {
-                className: "mt-3 bg-red-100 border border-red-300 rounded-lg p-2.5 sm:p-3"
+                className: "text-green-800 text-[10px] sm:text-sm"
+            }, "🎉 Bônus de ", er(e.valor_bonus), " no próximo repasse!")), "rejeitada" === e.status && e.motivo_rejeicao && React.createElement("div", {
+                className: "mt-2 bg-red-100 border border-red-300 rounded p-2"
             }, React.createElement("p", {
-                className: "text-red-800 text-xs sm:text-sm"
-            }, React.createElement("strong", null, "Motivo:"), " ", e.motivo_rejeicao)))
+                className: "text-red-800 text-[10px] sm:text-sm"
+            }, "❌ ", e.motivo_rejeicao)))
         })) : React.createElement("p", {
             className: "text-gray-500 text-center py-4"
         }, "Você ainda não participou de nenhuma promoção")),
@@ -9632,62 +9628,58 @@ const hideLoadingScreen = () => {
         modalEntregasNovatos && React.createElement("div", {
             className: "fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50"
         }, React.createElement("div", {
-            className: "bg-white rounded-t-2xl sm:rounded-xl shadow-xl w-full sm:max-w-md sm:mx-4 max-h-[90vh] sm:max-h-[80vh] overflow-hidden flex flex-col"
+            className: "bg-white rounded-t-2xl sm:rounded-xl shadow-xl w-full sm:max-w-md sm:mx-4 max-h-[85vh] sm:max-h-[80vh] overflow-hidden flex flex-col"
         }, React.createElement("div", {
-            className: "bg-orange-500 text-white p-4 flex justify-between items-center flex-shrink-0"
+            className: "bg-orange-500 text-white p-3 sm:p-4 flex justify-between items-center flex-shrink-0"
         }, React.createElement("h3", {
-            className: "font-bold text-base sm:text-lg"
-        }, "📦 Detalhes das Entregas"), React.createElement("button", {
+            className: "font-bold text-sm sm:text-lg"
+        }, "📦 Entregas da Promoção"), React.createElement("button", {
             onClick: () => setModalEntregasNovatos(null),
-            className: "text-white hover:text-orange-200 text-2xl font-bold w-8 h-8 flex items-center justify-center"
+            className: "text-white text-xl font-bold w-7 h-7 flex items-center justify-center rounded-full hover:bg-white/20"
         }, "×")), React.createElement("div", {
-            className: "p-3 sm:p-4 flex-1 overflow-y-auto"
+            className: "p-2.5 sm:p-4 flex-1 overflow-y-auto"
         }, React.createElement("div", {
-            className: "bg-orange-50 border border-orange-200 rounded-lg p-3 mb-4"
+            className: "bg-orange-50 border border-orange-200 rounded-lg p-2.5 sm:p-3 mb-3"
         }, React.createElement("div", {
-            className: "flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2"
+            className: "flex justify-between items-center gap-2"
         }, React.createElement("span", {
-            className: "text-xs sm:text-sm text-gray-600"
-        }, "📅 ", modalEntregasNovatos.data_inscricao ? new Date(modalEntregasNovatos.data_inscricao).toLocaleDateString("pt-BR") : "-", " a ", modalEntregasNovatos.data_expiracao ? new Date(modalEntregasNovatos.data_expiracao).toLocaleDateString("pt-BR") : "-"), React.createElement("span", {
-            className: "font-bold text-xl " + (modalEntregasNovatos.meta_atingida ? "text-green-600" : "text-orange-600")
-        }, modalEntregasNovatos.total_entregas, "/", modalEntregasNovatos.meta_entregas, " entregas")), React.createElement("div", {
-            className: "w-full bg-gray-200 rounded-full h-3 mt-3"
+            className: "text-[10px] sm:text-sm text-gray-600"
+        }, "📅 ", modalEntregasNovatos.data_inscricao ? new Date(modalEntregasNovatos.data_inscricao).toLocaleDateString("pt-BR") : "-", " - ", modalEntregasNovatos.data_expiracao ? new Date(modalEntregasNovatos.data_expiracao).toLocaleDateString("pt-BR") : "-"), React.createElement("span", {
+            className: "font-bold text-base sm:text-xl " + (modalEntregasNovatos.meta_atingida ? "text-green-600" : "text-orange-600")
+        }, modalEntregasNovatos.total_entregas, "/", modalEntregasNovatos.meta_entregas)), React.createElement("div", {
+            className: "w-full bg-gray-200 rounded-full h-2 sm:h-3 mt-2"
         }, React.createElement("div", {
-            className: "h-3 rounded-full transition-all " + (modalEntregasNovatos.meta_atingida ? "bg-green-500" : "bg-orange-500"),
+            className: "h-2 sm:h-3 rounded-full transition-all " + (modalEntregasNovatos.meta_atingida ? "bg-green-500" : "bg-orange-500"),
             style: { width: modalEntregasNovatos.percentual + "%" }
         })), React.createElement("p", {
-            className: "text-xs text-center mt-2 font-semibold " + (modalEntregasNovatos.meta_atingida ? "text-green-600" : "text-gray-500")
-        }, modalEntregasNovatos.meta_atingida ? "🎉 Meta atingida! Aguarde aprovação." : modalEntregasNovatos.percentual + "% concluído")), 
+            className: "text-[10px] sm:text-xs text-center mt-1.5 font-semibold " + (modalEntregasNovatos.meta_atingida ? "text-green-600" : "text-gray-500")
+        }, modalEntregasNovatos.meta_atingida ? "🎉 Meta atingida!" : modalEntregasNovatos.percentual + "%")), 
         
         // Lista de entregas em formato de cards (mais mobile-friendly)
         React.createElement("div", {
-            className: "space-y-2"
+            className: "space-y-1.5 sm:space-y-2"
         }, modalEntregasNovatos.entregas && modalEntregasNovatos.entregas.length > 0 ? 
             modalEntregasNovatos.entregas.map((entrega, idx) => React.createElement("div", {
                 key: idx,
-                className: "bg-gray-50 rounded-lg p-3 border border-gray-100"
+                className: "bg-gray-50 rounded p-2 sm:p-3 border border-gray-100"
             }, React.createElement("div", {
-                className: "flex justify-between items-start"
+                className: "flex justify-between items-center"
             }, React.createElement("div", {
                 className: "flex-1 min-w-0"
             }, React.createElement("p", {
-                className: "font-mono text-xs text-gray-500"
-            }, "OS: ", entrega.os), React.createElement("p", {
-                className: "font-semibold text-sm text-gray-800 truncate"
-            }, entrega.nome_cliente || "Cliente")), React.createElement("div", {
-                className: "text-right flex-shrink-0 ml-2"
-            }, React.createElement("p", {
-                className: "text-xs text-gray-500"
-            }, entrega.data_solicitado ? new Date(entrega.data_solicitado).toLocaleDateString("pt-BR") : "-"), React.createElement("p", {
-                className: "font-bold text-green-600 text-sm"
-            }, entrega.valor_prof ? er(entrega.valor_prof) : "-")))))
+                className: "font-semibold text-xs sm:text-sm text-gray-800 truncate"
+            }, entrega.nome_cliente || "Cliente"), React.createElement("p", {
+                className: "text-[10px] sm:text-xs text-gray-400"
+            }, "OS ", entrega.os, " • ", entrega.data_solicitado ? new Date(entrega.data_solicitado).toLocaleDateString("pt-BR") : "-")), React.createElement("p", {
+                className: "font-bold text-green-600 text-xs sm:text-sm ml-2"
+            }, entrega.valor_prof ? er(entrega.valor_prof) : "-"))))
         : React.createElement("div", {
-            className: "text-center py-8 text-gray-500"
+            className: "text-center py-6 text-gray-500"
         }, React.createElement("p", {
-            className: "text-4xl mb-2"
+            className: "text-3xl mb-2"
         }, "📭"), React.createElement("p", {
-            className: "text-sm"
-        }, "Nenhuma entrega registrada no período"))))))),
+            className: "text-xs"
+        }, "Nenhuma entrega registrada"))))))),
         
 "seguro-iza" === p.userTab && React.createElement("div", {
             className: "max-w-lg mx-auto"
