@@ -6,7 +6,6 @@
 (function() {
     'use strict';
     
-    // Funções utilitárias
     window.formatarMoeda = window.formatarMoeda || function(valor) {
         return parseFloat(valor || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
     };
@@ -20,9 +19,6 @@
     
     window.er = window.er || window.formatarMoeda;
     
-    /**
-     * Renderiza o módulo financeiro completo
-     */
     window.renderModuloFinanceiro = function(props) {
         const {
             p, x, q, U, Q, H, Z, Y, K, X, z, B, V, J, ee, te, ae, le, re, oe, ce, se,
@@ -32,16 +28,25 @@
             solicitacoesPagina, setSolicitacoesPagina, conciliacaoPagina, setConciliacaoPagina,
             solicitacoesPorPagina, conciliacaoPorPagina,
             acertoRealizado, setAcertoRealizado, l, Ee, he, er, ja, ul, fetchAuth, API_URL,
-            navegarSidebar, HeaderCompacto, Jl, i, Toast, n, LoadingOverlay,
+            navegarSidebar, HeaderCompacto, Jl, i, Toast, n, LoadingOverlay, e,
             elegibilidadeNovatos, setElegibilidadeNovatos, regioesNovatos, setRegioesNovatos,
             lojaAbaAtiva, setLojaAbaAtiva, lojaLoading, setLojaLoading,
             lojaVisualizacao, setLojaVisualizacao, lojaCategoria, setLojaCategoria,
-            carrinho, setCarrinho, showCarrinho, setShowCarrinho, socialProfile, f, E, o,
+            carrinho, setCarrinho, showCarrinho, setShowCarrinho,
+            socialProfile, f, E, o,
             relatorioNaoLido, setRelatorioNaoLido, relatoriosNaoLidos, setRelatoriosNaoLidos,
-            lancarDebitoPlific
+            marcarRelatorioComoLido, irParaRelatorio,
+            gl, vl, wl, _l, Cl, Ua, za, Ba, Va, Ja, Qa, Ha, Ga, Wa, Za, Ya, Ka,
+            Rl, El, hl, fl, Nl, yl, bl, lancarDebitoPlific
         } = props;
         
-        const formatMoeda = er || window.formatarMoeda;
+        // Aliases para variáveis minificadas usadas no código UI
+        const nt = lojaAbaAtiva, mt = setLojaAbaAtiva;
+        const rt = lojaLoading, ot = setLojaLoading;
+        const pt = lojaVisualizacao, xt = setLojaVisualizacao;
+        const ct = lojaCategoria, st = setLojaCategoria;
+        const Qe = carrinho, He = setCarrinho;
+        const Ge = showCarrinho, We = setShowCarrinho;
         
         return React.createElement(React.Fragment, null,
             // ========== HEADER COM NAVEGAÇÃO - FINANCEIRO ==========
