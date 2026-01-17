@@ -176,7 +176,6 @@
         // relatoriosNaoLidos        - Lista de relatórios não lidos
         // setRelatoriosNaoLidos     - Setter
         // marcarRelatorioComoLido   - Função para marcar como lido
-        // irParaRelatorio           - Função para navegar ao relatório
         //
         // === FUNÇÕES DE CARREGAMENTO ===
         // Ua = carregarWithdrawals          - Carrega solicitações de saque
@@ -264,7 +263,7 @@
             // Social e relatórios
             socialProfile, relatorioNaoLido, setRelatorioNaoLido,
             relatoriosNaoLidos, setRelatoriosNaoLidos,
-            marcarRelatorioComoLido, irParaRelatorio,
+            marcarRelatorioComoLido,
             // Funções de carregamento
             Ua, za, Ba, Va, Ja, Qa, Ha, Ga, Wa, Za, Ya, Ka,
             gl, vl, wl, _l, Cl,
