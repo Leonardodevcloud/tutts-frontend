@@ -31,6 +31,8 @@
             er, ja, ul, fetchAuth, API_URL, navegarSidebar,
             HeaderCompacto, Toast, LoadingOverlay, PixQRCodeModal, i, n,
             elegibilidadeNovatos, setElegibilidadeNovatos, regioesNovatos, setRegioesNovatos,
+            clientesBINovatos, setClientesBINovatos, clientesSelecionados, setClientesSelecionados,
+            carregandoClientes, carregarClientesPorRegiao,
             socialProfile, relatorioNaoLido, setRelatorioNaoLido,
             relatorioImagemAmpliada, setRelatorioImagemAmpliada,
             relatoriosNaoLidos, setRelatoriosNaoLidos, marcarRelatorioComoLido,
@@ -2463,41 +2465,102 @@
             }, React.createElement("h2", {
                 className: "text-xl font-bold text-green-800"
             }, p.editPromoNovatos ? "✏️ Editar Promoção Novatos" : "🚀 Cadastrar Nova Promoção Novatos"), p.editPromoNovatos && React.createElement("button", {
-                onClick: () => x({
-                    ...p,
-                    editPromoNovatos: null,
-                    novatosRegiao: "",
-                    novatosCliente: "",
-                    novatosValor: "",
-                    novatosDetalhes: ""
-                }),
+                onClick: () => {
+                    x({
+                        ...p,
+                        editPromoNovatos: null,
+                        novatosRegiao: "",
+                        novatosApelido: "",
+                        novatosValor: "",
+                        novatosQtdEntregas: "",
+                        novatosDetalhes: ""
+                    });
+                    setClientesSelecionados([]);
+                    setClientesBINovatos([]);
+                },
                 className: "text-sm text-gray-500 hover:text-gray-700"
-            }, "✕ Cancelar edição")), React.createElement("div", {
-                className: "grid md:grid-cols-3 gap-4 mb-4"
+            }, "✕ Cancelar edição")), 
+            
+            // Linha 1: Região e Apelido
+            React.createElement("div", {
+                className: "grid md:grid-cols-2 gap-4 mb-4"
             }, React.createElement("div", null, React.createElement("label", {
                 className: "block text-sm font-semibold mb-1"
             }, "Região *"), React.createElement("select", {
                 value: p.novatosRegiao || "",
-                onChange: e => x({
-                    ...p,
-                    novatosRegiao: e.target.value
-                }),
+                onChange: e => {
+                    const novaRegiao = e.target.value;
+                    x({
+                        ...p,
+                        novatosRegiao: novaRegiao
+                    });
+                    setClientesSelecionados([]);
+                    carregarClientesPorRegiao(novaRegiao);
+                },
                 className: "w-full px-4 py-2 border rounded-lg bg-white"
             }, React.createElement("option", { value: "" }, "Selecione uma região..."),
                React.createElement("option", { value: "Todas" }, "🌍 Todas as Regiões"),
                regioesNovatos.map(regiao => React.createElement("option", { key: regiao, value: regiao }, regiao))
             )), React.createElement("div", null, React.createElement("label", {
                 className: "block text-sm font-semibold mb-1"
-            }, "Cliente *"), React.createElement("input", {
+            }, "Apelido da Promoção *"), React.createElement("input", {
                 type: "text",
-                value: p.novatosCliente || "",
+                value: p.novatosApelido || "",
                 onChange: e => x({
                     ...p,
-                    novatosCliente: e.target.value
+                    novatosApelido: e.target.value
                 }),
                 className: "w-full px-4 py-2 border rounded-lg",
-                placeholder: "Ex: Magazine Luiza"
-            })), React.createElement("div", null, React.createElement("label", {
+                placeholder: "Ex: Porto Seco, Magazine Luiza..."
+            }))),
+            
+            // Linha 2: Multi-select de Clientes
+            p.novatosRegiao && React.createElement("div", {
+                className: "mb-4"
+            }, React.createElement("label", {
+                className: "block text-sm font-semibold mb-1"
+            }, "Clientes * ", carregandoClientes && React.createElement("span", { className: "text-gray-400" }, "(carregando...)")),
+            
+            // Select de clientes disponíveis
+            React.createElement("select", {
+                onChange: e => {
+                    if (!e.target.value) return;
+                    const cliente = clientesBINovatos.find(c => String(c.cod_cliente) === e.target.value);
+                    if (cliente && !clientesSelecionados.some(c => c.cod_cliente === cliente.cod_cliente)) {
+                        setClientesSelecionados([...clientesSelecionados, cliente]);
+                    }
+                    e.target.value = "";
+                },
+                className: "w-full px-4 py-2 border rounded-lg bg-white mb-2",
+                disabled: carregandoClientes || clientesBINovatos.length === 0
+            }, React.createElement("option", { value: "" }, carregandoClientes ? "Carregando clientes..." : clientesBINovatos.length === 0 ? "Nenhum cliente encontrado para esta região" : `Selecione um cliente (${clientesBINovatos.length} disponíveis)...`),
+               clientesBINovatos.filter(c => !clientesSelecionados.some(s => s.cod_cliente === c.cod_cliente)).map(cliente => 
+                   React.createElement("option", { 
+                       key: cliente.cod_cliente, 
+                       value: cliente.cod_cliente 
+                   }, cliente.mascara ? `${cliente.mascara} (${cliente.cod_cliente})` : `${cliente.nome_original} (${cliente.cod_cliente})`)
+               )
+            ),
+            
+            // Chips de clientes selecionados
+            clientesSelecionados.length > 0 && React.createElement("div", {
+                className: "flex flex-wrap gap-2 mt-2"
+            }, clientesSelecionados.map(cliente => React.createElement("span", {
+                key: cliente.cod_cliente,
+                className: "inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
+            }, React.createElement("span", null, cliente.mascara || cliente.nome_display || cliente.nome_original), React.createElement("span", { className: "text-xs text-blue-500" }, "(", cliente.cod_cliente, ")"), React.createElement("button", {
+                onClick: () => setClientesSelecionados(clientesSelecionados.filter(c => c.cod_cliente !== cliente.cod_cliente)),
+                className: "ml-1 text-blue-500 hover:text-red-500 font-bold"
+            }, "×")))),
+            
+            clientesSelecionados.length > 0 && React.createElement("p", {
+                className: "text-xs text-green-600 mt-1"
+            }, "✅ ", clientesSelecionados.length, " cliente(s) selecionado(s)")),
+            
+            // Linha 3: Valor, Meta e Detalhes
+            React.createElement("div", {
+                className: "grid md:grid-cols-2 gap-4 mb-4"
+            }, React.createElement("div", null, React.createElement("label", {
                 className: "block text-sm font-semibold mb-1"
             }, "Valor do Bônus (R$) *"), React.createElement("input", {
                 type: "number",
@@ -2509,6 +2572,17 @@
                 }),
                 className: "w-full px-4 py-2 border rounded-lg",
                 placeholder: "Ex: 150.00"
+            })), React.createElement("div", null, React.createElement("label", {
+                className: "block text-sm font-semibold mb-1"
+            }, "Meta de Entregas *"), React.createElement("input", {
+                type: "number",
+                value: p.novatosQtdEntregas || "",
+                onChange: e => x({
+                    ...p,
+                    novatosQtdEntregas: e.target.value
+                }),
+                className: "w-full px-4 py-2 border rounded-lg",
+                placeholder: "Ex: 50"
             }))), React.createElement("div", {
                 className: "mb-4"
             }, React.createElement("label", {
@@ -2520,17 +2594,17 @@
                     novatosDetalhes: e.target.value
                 }),
                 className: "w-full px-4 py-2 border rounded-lg",
-                rows: "3",
-                placeholder: "Ex: Vaga para motoboy com moto própria. Início imediato..."
+                rows: "2",
+                placeholder: "Ex: Vaga para motoboy com moto própria..."
             })), React.createElement("div", {
                 className: "flex items-center gap-4"
             }, React.createElement("button", {
                 onClick: p.editPromoNovatos ? Tl : Pl,
-                disabled: c,
+                disabled: c || clientesSelecionados.length === 0,
                 className: "px-6 py-2 text-white rounded-lg font-semibold disabled:opacity-50 " + (p.editPromoNovatos ? "bg-blue-600 hover:bg-blue-700" : "bg-green-600 hover:bg-green-700")
             }, c ? "..." : p.editPromoNovatos ? "💾 Salvar Alterações" : "➕ Criar Promoção"), React.createElement("p", {
                 className: "text-xs text-gray-500"
-            }, "⏱️ Inscrições expiram automaticamente em 10 dias"))), React.createElement("div", {
+            }, "⏱️ Inscrições expiram automaticamente em 15 dias"))), React.createElement("div", {
                 className: "bg-white rounded-xl shadow p-6 mb-6"
             }, React.createElement("h3", {
                 className: "font-semibold mb-4"
@@ -2548,14 +2622,26 @@
             }, "ativa" === e.status ? "✅" : "⏸️"), React.createElement("div", {
                 className: "flex gap-1"
             }, React.createElement("button", {
-                onClick: () => x({
-                    ...p,
-                    editPromoNovatos: e,
-                    novatosRegiao: e.regiao,
-                    novatosCliente: e.cliente,
-                    novatosValor: e.valor_bonus,
-                    novatosDetalhes: e.detalhes || ""
-                }),
+                onClick: async () => {
+                    x({
+                        ...p,
+                        editPromoNovatos: e,
+                        novatosRegiao: e.regiao,
+                        novatosApelido: e.apelido || e.cliente,
+                        novatosValor: e.valor_bonus,
+                        novatosQtdEntregas: e.quantidade_entregas || 50,
+                        novatosDetalhes: e.detalhes || ""
+                    });
+                    // Carregar clientes da região e preencher os selecionados
+                    await carregarClientesPorRegiao(e.regiao);
+                    if (e.clientes_vinculados && e.clientes_vinculados.length > 0) {
+                        setClientesSelecionados(e.clientes_vinculados.map(c => ({
+                            cod_cliente: c.cod_cliente,
+                            nome_display: c.nome_cliente,
+                            nome_original: c.nome_cliente
+                        })));
+                    }
+                },
                 className: "text-xs text-blue-500 hover:text-blue-700",
                 title: "Editar"
             }, "✏️"), React.createElement("button", {
@@ -2597,10 +2683,26 @@
             }, "🗑️"))), React.createElement("p", {
                 className: "font-semibold text-sm"
             }, "📍 ", e.regiao), React.createElement("p", {
-                className: "text-sm text-gray-700"
-            }, "🏢 ", e.cliente), React.createElement("p", {
+                className: "text-sm text-gray-700 font-bold"
+            }, "🏷️ ", e.apelido || e.cliente), 
+            // Mostrar clientes vinculados
+            e.clientes_vinculados && e.clientes_vinculados.length > 0 && React.createElement("div", {
+                className: "mt-1"
+            }, React.createElement("p", {
+                className: "text-xs text-gray-500"
+            }, "Clientes (", e.clientes_vinculados.length, "):"), React.createElement("div", {
+                className: "flex flex-wrap gap-1 mt-1"
+            }, e.clientes_vinculados.slice(0, 3).map(c => React.createElement("span", {
+                key: c.cod_cliente,
+                className: "text-xs bg-blue-100 text-blue-700 px-1 rounded"
+            }, c.nome_cliente || c.cod_cliente)), e.clientes_vinculados.length > 3 && React.createElement("span", {
+                className: "text-xs text-gray-400"
+            }, "+", e.clientes_vinculados.length - 3, " mais"))),
+            React.createElement("p", {
                 className: "text-lg font-bold text-green-600"
-            }, er(e.valor_bonus)), e.detalhes && React.createElement("p", {
+            }, er(e.valor_bonus)), React.createElement("p", {
+                className: "text-xs text-blue-600 font-semibold"
+            }, "🎯 Meta: ", e.quantidade_entregas || 50, " entregas"), e.detalhes && React.createElement("p", {
                 className: "text-xs text-gray-600 mt-1 whitespace-pre-wrap line-clamp-2",
                 title: e.detalhes
             }, e.detalhes))))), React.createElement("div", {
