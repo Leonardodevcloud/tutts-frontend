@@ -2980,7 +2980,7 @@ const hideLoadingScreen = () => {
                     console.log("Background load error:", e)
                 }
             }, t = () => {
-                "user" === l.role && (e($a), e(qa), e(vl), e(_l), e(Al), e(kl), e(Dl), e(Il), e(Za), e(Ka)), "admin_financeiro" !== l.role && "admin_master" !== l.role || (e(za), e(Ba), e(gl), e(wl), e(Cl), e(Sl), e(Dl), e(Ll), e(Ia), e(Ja), e(Ha), e(Wa), e(Ya)), "admin" !== l.role && "admin_master" !== l.role || e(Ia), "admin" === l.role && hasModuleAccess(l, "financeiro") && (e(wl), e(gl), e(Cl), e(Sl), e(Ll)), e(La)
+                "user" === l.role && (e($a), e(qa), e(vl), e(_l), e(Al), e(kl), e(Dl), e(Il), e(Za), e(Ka), e(Ta)), "admin_financeiro" !== l.role && "admin_master" !== l.role || (e(za), e(Ba), e(gl), e(wl), e(Cl), e(Sl), e(Dl), e(Ll), e(Ia), e(Ja), e(Ha), e(Wa), e(Ya)), "admin" !== l.role && "admin_master" !== l.role || e(Ia), "admin" === l.role && hasModuleAccess(l, "financeiro") && (e(wl), e(gl), e(Cl), e(Sl), e(Ll)), e(La)
             };
             (async () => {
                 "user" === l.role && await Promise.all([Oa(), Ga()]), "admin_financeiro" !== l.role && "admin_master" !== l.role || await Promise.all([Ua(), Va()])
@@ -4977,7 +4977,34 @@ const hideLoadingScreen = () => {
             if (!e || 0 === pe.length) return null;
             const t = pe.find(t => t.codigo === e.toString());
             return t ? t.nome : null
-        }, La = async () => {
+        },
+        // Helper para obter cidade do profissional pela planilha
+        getCidadeProfissionalApp = (codProfissional) => {
+            if (!pe || pe.length === 0 || !codProfissional) return null;
+            const prof = pe.find(p => p.codigo === String(codProfissional));
+            return prof ? prof.cidade : null;
+        },
+        // Normalizar texto para comparação (remove acentos, lowercase, trim)
+        normalizarTextoApp = (texto) => {
+            if (!texto) return "";
+            return texto.toString().toLowerCase().trim()
+                .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        },
+        // Obter promoções filtradas por região do usuário
+        getPromocoesFiltradas = () => {
+            if (!l || l.role !== "user") return ee;
+            const cidadeUsuario = getCidadeProfissionalApp(l.cod_profissional || l.codProfissional);
+            if (!cidadeUsuario) return ee;
+            return ee.filter(promo => {
+                if (!promo.regiao) return false;
+                const regiaoNorm = normalizarTextoApp(promo.regiao);
+                const cidadeNorm = normalizarTextoApp(cidadeUsuario);
+                return regiaoNorm === cidadeNorm || 
+                       regiaoNorm.includes(cidadeNorm) || 
+                       cidadeNorm.includes(regiaoNorm);
+            });
+        },
+        La = async () => {
             try {
                 const e = "user" === l.role ? `?userId=${l.id}&userCod=${l.cod_profissional}` : "",
                     t = await fetchAuth(`${API_URL}/submissions${e}`),
@@ -9091,7 +9118,7 @@ const hideLoadingScreen = () => {
             className: "bg-white rounded-xl shadow p-6 mb-6"
         }, React.createElement("h2", {
             className: "text-xl font-bold text-purple-800 mb-4"
-        }, "🎯 Promoções de Indicação Disponíveis"), 0 === ee.length ? React.createElement("div", {
+        }, "🎯 Promoções de Indicação Disponíveis"), 0 === getPromocoesFiltradas().length ? React.createElement("div", {
             className: "text-center py-8 text-gray-500"
         }, React.createElement("p", {
             className: "text-4xl mb-2"
@@ -9099,7 +9126,7 @@ const hideLoadingScreen = () => {
             className: "text-sm"
         }, "Fique atento, novas promoções podem aparecer a qualquer momento!")) : React.createElement("div", {
             className: "grid md:grid-cols-2 gap-4"
-        }, ee.map(e => React.createElement("div", {
+        }, getPromocoesFiltradas().map(e => React.createElement("div", {
             key: e.id,
             className: "border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-white rounded-xl p-6"
         }, React.createElement("div", {
