@@ -1776,7 +1776,7 @@ const hideLoadingScreen = () => {
             validacao: [],
             loja: [],
             gratuidades: []
-        }), [j, C] = useState([]), [A, S] = useState([]), [k, P] = useState(!1), [T, D] = useState(null), [L, I] = useState([]), [F, $] = useState(!1), [M, O] = useState([]), [q, U] = useState([]), [z, B] = useState([]), [V, J] = useState(null), [Q, H] = useState([]), [G, W] = useState([]), [Z, Y] = useState([]), [K, X] = useState({}), [ee, te] = useState([]), [ae, le] = useState([]), [re, oe] = useState([]), [ce, se] = useState([]), [ne, me] = useState([]), [ie, de] = useState([]), [pe, xe] = useState([]), [cidadesIndicacao, setCidadesIndicacao] = useState([]), [ue, ge] = useState(!1), [be, Re] = useState(null), [Ee, he] = useState("home"), [mensagemGentileza, setMensagemGentileza] = useState(() => getMensagemGentileza()), [elegibilidadeNovatos, setElegibilidadeNovatos] = useState({ elegivel: false, motivo: '', promocoes: [], carregando: true }), [regioesNovatos, setRegioesNovatos] = useState([]), [solicitacoesPagina, setSolicitacoesPagina] = useState(1), [acertoRealizado, setAcertoRealizado] = useState(() => { try { const saved = localStorage.getItem("tutts_acerto_realizado"); return saved !== null ? JSON.parse(saved) : true; } catch(e) { return true; } }), [solicitacoesPorPagina] = useState(120), [conciliacaoPagina, setConciliacaoPagina] = useState(1), [conciliacaoPorPagina] = useState(120), 
+        }), [j, C] = useState([]), [A, S] = useState([]), [k, P] = useState(!1), [T, D] = useState(null), [L, I] = useState([]), [F, $] = useState(!1), [M, O] = useState([]), [q, U] = useState([]), [z, B] = useState([]), [V, J] = useState(null), [Q, H] = useState([]), [G, W] = useState([]), [Z, Y] = useState([]), [K, X] = useState({}), [ee, te] = useState([]), [ae, le] = useState([]), [re, oe] = useState([]), [ce, se] = useState([]), [ne, me] = useState([]), [ie, de] = useState([]), [progressoNovatos, setProgressoNovatos] = useState([]), [modalEntregasNovatos, setModalEntregasNovatos] = useState(null), [pe, xe] = useState([]), [cidadesIndicacao, setCidadesIndicacao] = useState([]), [ue, ge] = useState(!1), [be, Re] = useState(null), [Ee, he] = useState("home"), [mensagemGentileza, setMensagemGentileza] = useState(() => getMensagemGentileza()), [elegibilidadeNovatos, setElegibilidadeNovatos] = useState({ elegivel: false, motivo: '', promocoes: [], carregando: true }), [regioesNovatos, setRegioesNovatos] = useState([]), [clientesBINovatos, setClientesBINovatos] = useState([]), [clientesSelecionados, setClientesSelecionados] = useState([]), [carregandoClientes, setCarregandoClientes] = useState(false), [solicitacoesPagina, setSolicitacoesPagina] = useState(1), [acertoRealizado, setAcertoRealizado] = useState(() => { try { const saved = localStorage.getItem("tutts_acerto_realizado"); return saved !== null ? JSON.parse(saved) : true; } catch(e) { return true; } }), [solicitacoesPorPagina] = useState(120), [conciliacaoPagina, setConciliacaoPagina] = useState(1), [conciliacaoPorPagina] = useState(120), 
         
         // Helper para parse de saldo (aceita número ou string brasileira)
         parseSaldoBR = (valor) => {
@@ -2980,7 +2980,7 @@ const hideLoadingScreen = () => {
                     console.log("Background load error:", e)
                 }
             }, t = () => {
-                "user" === l.role && (e($a), e(qa), e(vl), e(_l), e(kl), e(Dl), e(Il), e(Za), e(Ka), e(Ta)), "admin_financeiro" !== l.role && "admin_master" !== l.role || (e(za), e(Ba), e(gl), e(wl), e(Cl), e(Sl), e(Dl), e(Ll), e(Ia), e(Ja), e(Ha), e(Wa), e(Ya)), "admin" !== l.role && "admin_master" !== l.role || e(Ia), "admin" === l.role && hasModuleAccess(l, "financeiro") && (e(wl), e(gl), e(Cl), e(Sl), e(Ll)), e(La)
+                "user" === l.role && (e($a), e(qa), e(vl), e(_l), e(kl), e(carregarProgressoNovatos), e(Dl), e(Il), e(Za), e(Ka), e(Ta)), "admin_financeiro" !== l.role && "admin_master" !== l.role || (e(za), e(Ba), e(gl), e(wl), e(Cl), e(Sl), e(Dl), e(Ll), e(Ia), e(Ja), e(Ha), e(Wa), e(Ya)), "admin" !== l.role && "admin_master" !== l.role || e(Ia), "admin" === l.role && hasModuleAccess(l, "financeiro") && (e(wl), e(gl), e(Cl), e(Sl), e(Ll)), e(La)
             };
             (async () => {
                 "user" === l.role && await Promise.all([Oa(), Ga()]), "admin_financeiro" !== l.role && "admin_master" !== l.role || await Promise.all([Ua(), Va()])
@@ -6465,8 +6465,50 @@ const hideLoadingScreen = () => {
             } catch (e) {
                 console.error("Erro ao carregar minhas inscrições novatos:", e)
             }
-        }, Pl = async () => {
-            if (p.novatosRegiao && p.novatosCliente && p.novatosValor) {
+        }, 
+        carregarProgressoNovatos = async () => {
+            try {
+                const e = await fetchAuth(`${API_URL}/inscricoes-novatos/progresso/${l.codProfissional}`);
+                const data = await e.json();
+                setProgressoNovatos(data);
+                console.log("📊 Progresso novatos carregado:", data);
+            } catch (e) {
+                console.error("Erro ao carregar progresso novatos:", e)
+            }
+        },
+        carregarEntregasInscricao = async (inscricaoId) => {
+            try {
+                const e = await fetchAuth(`${API_URL}/inscricoes-novatos/${inscricaoId}/entregas`);
+                const data = await e.json();
+                setModalEntregasNovatos(data);
+            } catch (e) {
+                console.error("Erro ao carregar entregas da inscrição:", e);
+                ja("Erro ao carregar entregas", "error");
+            }
+        },
+        carregarClientesPorRegiao = async (regiao) => {
+            if (!regiao) {
+                setClientesBINovatos([]);
+                return;
+            }
+            setCarregandoClientes(true);
+            try {
+                const url = regiao === 'Todas' 
+                    ? `${API_URL}/bi/clientes-por-regiao`
+                    : `${API_URL}/bi/clientes-por-regiao?regiao=${encodeURIComponent(regiao)}`;
+                const e = await fetchAuth(url);
+                const data = await e.json();
+                setClientesBINovatos(data);
+                console.log("📋 Clientes carregados para região", regiao, ":", data.length);
+            } catch (e) {
+                console.error("Erro ao carregar clientes do BI:", e);
+                setClientesBINovatos([]);
+            } finally {
+                setCarregandoClientes(false);
+            }
+        },
+        Pl = async () => {
+            if (p.novatosRegiao && p.novatosApelido && p.novatosValor && clientesSelecionados.length > 0) {
                 s(!0);
                 try {
                     if (!(await fetchAuth(`${API_URL}/promocoes-novatos`, {
@@ -6476,8 +6518,10 @@ const hideLoadingScreen = () => {
                             },
                             body: JSON.stringify({
                                 regiao: p.novatosRegiao,
-                                cliente: p.novatosCliente,
+                                apelido: p.novatosApelido,
+                                clientes: clientesSelecionados,
                                 valor_bonus: parseFloat(p.novatosValor),
+                                quantidade_entregas: parseInt(p.novatosQtdEntregas) || 50,
                                 detalhes: p.novatosDetalhes || null,
                                 created_by: l.fullName
                             })
@@ -6485,17 +6529,22 @@ const hideLoadingScreen = () => {
                     ja("✅ Promoção Novatos criada!", "success"), x({
                         ...p,
                         novatosRegiao: "",
-                        novatosCliente: "",
+                        novatosApelido: "",
                         novatosValor: "",
+                        novatosQtdEntregas: "",
                         novatosDetalhes: "",
                         editPromoNovatos: null
-                    }), await Cl()
+                    }), setClientesSelecionados([]), setClientesBINovatos([]), await Cl()
                 } catch (e) {
                     ja(e.message, "error")
                 } finally {
                     s(!1)
                 }
-            } else ja("Preencha todos os campos obrigatórios", "error")
+            } else if (clientesSelecionados.length === 0) {
+                ja("Selecione pelo menos um cliente", "error")
+            } else {
+                ja("Preencha todos os campos obrigatórios", "error")
+            }
         }, Tl = async () => {
             s(!0);
             try {
@@ -6506,19 +6555,22 @@ const hideLoadingScreen = () => {
                         },
                         body: JSON.stringify({
                             regiao: p.novatosRegiao,
-                            cliente: p.novatosCliente,
+                            apelido: p.novatosApelido,
+                            clientes: clientesSelecionados,
                             valor_bonus: parseFloat(p.novatosValor),
+                            quantidade_entregas: parseInt(p.novatosQtdEntregas) || 50,
                             detalhes: p.novatosDetalhes || null
                         })
                     })).ok) throw new Error("Erro ao editar promoção");
                 ja("✅ Promoção atualizada!", "success"), x({
                     ...p,
                     novatosRegiao: "",
-                    novatosCliente: "",
+                    novatosApelido: "",
                     novatosValor: "",
+                    novatosQtdEntregas: "",
                     novatosDetalhes: "",
                     editPromoNovatos: null
-                }), await Cl()
+                }), setClientesSelecionados([]), setClientesBINovatos([]), await Cl()
             } catch (e) {
                 ja(e.message, "error")
             } finally {
@@ -9432,7 +9484,7 @@ const hideLoadingScreen = () => {
                 className: "text-sm text-gray-600"
             }, "📍 ", e.regiao), React.createElement("p", {
                 className: "font-bold text-lg text-gray-800"
-            }, "🏢 ", e.cliente)), React.createElement("span", {
+            }, "🏢 ", e.apelido || e.cliente)), React.createElement("span", {
                 className: "px-3 py-1 bg-green-500 text-white rounded-full text-sm font-bold"
             }, er(e.valor_bonus))), e.detalhes && React.createElement("p", {
                 className: "text-sm text-gray-600 mb-3 whitespace-pre-wrap"
@@ -9440,7 +9492,7 @@ const hideLoadingScreen = () => {
                 className: "bg-yellow-100 border border-yellow-300 rounded-lg p-2 mb-3"
             }, React.createElement("p", {
                 className: "text-xs text-yellow-800"
-            }, "⏱️ Ao se inscrever, você terá ", React.createElement("strong", null, "10 dias"), " para ser contemplado")), t ? React.createElement("button", {
+            }, "⏱️ Ao se inscrever, você terá ", React.createElement("strong", null, "15 dias"), " para completar ", React.createElement("strong", null, e.quantidade_entregas || 50, " entregas"))), t ? React.createElement("button", {
                 disabled: !0,
                 className: "w-full py-2 bg-gray-300 text-gray-600 rounded-lg font-semibold cursor-not-allowed"
             }, "✅ Já inscrito") : React.createElement("button", {
@@ -9458,14 +9510,14 @@ const hideLoadingScreen = () => {
                                 user_name: l.fullName,
                                 valor_bonus: e.valor_bonus,
                                 regiao: e.regiao,
-                                cliente: e.cliente
+                                cliente: e.apelido || e.cliente
                             })
                         });
                         if (!t.ok) {
                             const e = await t.json();
                             throw new Error(e.error || "Erro ao se inscrever")
                         }
-                        ja("✅ Inscrição realizada! Válida por 10 dias.", "success"), await kl(), await verificarElegibilidadeNovatos()
+                        ja("✅ Inscrição realizada! Válida por 15 dias.", "success"), await kl(), await carregarProgressoNovatos(), await verificarElegibilidadeNovatos()
                     } catch (e) {
                         ja(e.message, "error")
                     } finally {
@@ -9511,7 +9563,8 @@ const hideLoadingScreen = () => {
             className: "space-y-3"
         }, ie.map(e => {
             const t = e.expires_at ? new Date(e.expires_at) : null,
-                a = t && new Date > t;
+                a = t && new Date > t,
+                progresso = progressoNovatos.find(pg => pg.inscricao_id === e.id);
             return React.createElement("div", {
                 key: e.id,
                 className: "border rounded-lg p-4 " + ("aprovada" === e.status ? "border-green-300 bg-green-50" : "rejeitada" === e.status ? "border-red-300 bg-red-50" : a ? "border-gray-300 bg-gray-50" : "border-yellow-300 bg-yellow-50")
@@ -9531,7 +9584,32 @@ const hideLoadingScreen = () => {
                 className: "font-bold text-green-600"
             }, er(e.valor_bonus)), React.createElement("span", {
                 className: "inline-block mt-1 px-2 py-1 rounded-full text-xs font-bold " + ("pendente" !== e.status || a ? "aprovada" === e.status ? "bg-green-200 text-green-800" : "rejeitada" === e.status ? "bg-red-200 text-red-800" : "bg-gray-200 text-gray-800" : "bg-yellow-200 text-yellow-800")
-            }, "pendente" === e.status && a ? "⏰ Expirada" : "pendente" === e.status ? "⏳ Pendente" : "aprovada" === e.status ? "✅ Aprovada" : "rejeitada" === e.status ? "❌ Rejeitada" : e.status))), "aprovada" === e.status && React.createElement("div", {
+            }, "pendente" === e.status && a ? "⏰ Expirada" : "pendente" === e.status ? "⏳ Pendente" : "aprovada" === e.status ? "✅ Aprovada" : "rejeitada" === e.status ? "❌ Rejeitada" : e.status))), 
+            
+            // Barra de progresso de entregas (se inscricao pendente e tem progresso)
+            progresso && "pendente" === e.status && !a && React.createElement("div", {
+                className: "mt-4 pt-4 border-t border-gray-200"
+            }, React.createElement("div", {
+                className: "flex justify-between items-center mb-2"
+            }, React.createElement("p", {
+                className: "text-sm font-semibold text-gray-700"
+            }, "📦 Progresso de Entregas"), React.createElement("p", {
+                className: "text-sm font-bold " + (progresso.meta_atingida ? "text-green-600" : "text-orange-600")
+            }, progresso.total_entregas, "/", progresso.meta_entregas)), React.createElement("div", {
+                className: "w-full bg-gray-200 rounded-full h-4 mb-2"
+            }, React.createElement("div", {
+                className: "h-4 rounded-full transition-all duration-500 " + (progresso.meta_atingida ? "bg-green-500" : progresso.percentual >= 50 ? "bg-yellow-500" : "bg-orange-500"),
+                style: { width: progresso.percentual + "%" }
+            })), React.createElement("div", {
+                className: "flex justify-between items-center"
+            }, React.createElement("p", {
+                className: "text-xs text-gray-500"
+            }, progresso.meta_atingida ? "🎉 Meta atingida!" : progresso.percentual + "% concluído"), React.createElement("button", {
+                onClick: () => carregarEntregasInscricao(e.id),
+                className: "text-xs text-blue-600 hover:text-blue-800 font-semibold"
+            }, "📋 Ver detalhes"))),
+            
+            "aprovada" === e.status && React.createElement("div", {
                 className: "mt-3 bg-green-100 border border-green-300 rounded-lg p-3"
             }, React.createElement("p", {
                 className: "text-green-800 text-sm"
@@ -9542,7 +9620,69 @@ const hideLoadingScreen = () => {
             }, React.createElement("strong", null, "Motivo:"), " ", e.motivo_rejeicao)))
         })) : React.createElement("p", {
             className: "text-gray-500 text-center py-4"
-        }, "Você ainda não participou de nenhuma promoção"))), "seguro-iza" === p.userTab && React.createElement("div", {
+        }, "Você ainda não participou de nenhuma promoção")),
+        
+        // Modal de detalhes das entregas
+        modalEntregasNovatos && React.createElement("div", {
+            className: "fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+        }, React.createElement("div", {
+            className: "bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[80vh] overflow-hidden"
+        }, React.createElement("div", {
+            className: "bg-orange-500 text-white p-4 flex justify-between items-center"
+        }, React.createElement("h3", {
+            className: "font-bold text-lg"
+        }, "📦 Detalhes das Entregas"), React.createElement("button", {
+            onClick: () => setModalEntregasNovatos(null),
+            className: "text-white hover:text-orange-200 text-2xl font-bold"
+        }, "×")), React.createElement("div", {
+            className: "p-4"
+        }, React.createElement("div", {
+            className: "bg-orange-50 border border-orange-200 rounded-lg p-3 mb-4"
+        }, React.createElement("div", {
+            className: "flex justify-between items-center"
+        }, React.createElement("span", {
+            className: "text-sm text-gray-600"
+        }, "Período: ", modalEntregasNovatos.data_inscricao ? new Date(modalEntregasNovatos.data_inscricao).toLocaleDateString("pt-BR") : "-", " a ", modalEntregasNovatos.data_expiracao ? new Date(modalEntregasNovatos.data_expiracao).toLocaleDateString("pt-BR") : "-"), React.createElement("span", {
+            className: "font-bold text-lg " + (modalEntregasNovatos.meta_atingida ? "text-green-600" : "text-orange-600")
+        }, modalEntregasNovatos.total_entregas, "/", modalEntregasNovatos.meta_entregas)), React.createElement("div", {
+            className: "w-full bg-gray-200 rounded-full h-3 mt-2"
+        }, React.createElement("div", {
+            className: "h-3 rounded-full " + (modalEntregasNovatos.meta_atingida ? "bg-green-500" : "bg-orange-500"),
+            style: { width: modalEntregasNovatos.percentual + "%" }
+        })), React.createElement("p", {
+            className: "text-xs text-center mt-1 " + (modalEntregasNovatos.meta_atingida ? "text-green-600" : "text-gray-500")
+        }, modalEntregasNovatos.meta_atingida ? "🎉 Meta atingida!" : modalEntregasNovatos.percentual + "% concluído")), React.createElement("div", {
+            className: "max-h-[40vh] overflow-y-auto"
+        }, modalEntregasNovatos.entregas && modalEntregasNovatos.entregas.length > 0 ? React.createElement("table", {
+            className: "w-full text-sm"
+        }, React.createElement("thead", {
+            className: "bg-gray-100 sticky top-0"
+        }, React.createElement("tr", null, React.createElement("th", {
+            className: "px-2 py-2 text-left font-semibold"
+        }, "OS"), React.createElement("th", {
+            className: "px-2 py-2 text-left font-semibold"
+        }, "Data"), React.createElement("th", {
+            className: "px-2 py-2 text-left font-semibold"
+        }, "Cliente"), React.createElement("th", {
+            className: "px-2 py-2 text-right font-semibold"
+        }, "Valor"))), React.createElement("tbody", null, modalEntregasNovatos.entregas.map((entrega, idx) => React.createElement("tr", {
+            key: idx,
+            className: "border-b hover:bg-gray-50"
+        }, React.createElement("td", {
+            className: "px-2 py-2 font-mono text-xs"
+        }, entrega.os), React.createElement("td", {
+            className: "px-2 py-2 text-xs"
+        }, entrega.data_solicitado ? new Date(entrega.data_solicitado).toLocaleDateString("pt-BR") : "-"), React.createElement("td", {
+            className: "px-2 py-2 text-xs"
+        }, entrega.nome_cliente || "-"), React.createElement("td", {
+            className: "px-2 py-2 text-right text-xs text-green-600 font-semibold"
+        }, entrega.valor_prof ? er(entrega.valor_prof) : "-"))))) : React.createElement("div", {
+            className: "text-center py-8 text-gray-500"
+        }, React.createElement("p", {
+            className: "text-4xl mb-2"
+        }, "📭"), React.createElement("p", null, "Nenhuma entrega no período")))))),
+        
+), "seguro-iza" === p.userTab && React.createElement("div", {
             className: "max-w-lg mx-auto"
         }, React.createElement("div", {
             className: "bg-gradient-to-b from-sky-100 to-white rounded-2xl shadow-xl overflow-hidden"
@@ -10068,6 +10208,8 @@ const hideLoadingScreen = () => {
                     HeaderCompacto, Toast, LoadingOverlay, PixQRCodeModal, i, n,
                     // Novatos
                     elegibilidadeNovatos, setElegibilidadeNovatos, regioesNovatos, setRegioesNovatos,
+                    clientesBINovatos, setClientesBINovatos, clientesSelecionados, setClientesSelecionados,
+                    carregandoClientes, carregarClientesPorRegiao,
                     // Relatórios
                     socialProfile, relatorioNaoLido, setRelatorioNaoLido,
                     relatorioImagemAmpliada, setRelatorioImagemAmpliada,
