@@ -6350,7 +6350,7 @@ const hideLoadingScreen = () => {
         // Função para verificar elegibilidade do usuário para promoções novatos
         verificarElegibilidadeNovatos = async () => {
             console.log("🔍 Verificando elegibilidade novatos para:", l?.codProfissional);
-            if (!l || !l.codProfissional) {
+            if (!l || !l.codProfissional || isNaN(l.codProfissional) || ['admin', 'admin_master', 'admin_financeiro'].includes(l.role)) {
                 setElegibilidadeNovatos({ elegivel: false, motivo: 'Usuário não logado', promocoes: [], carregando: false });
                 return;
             }
@@ -10123,7 +10123,8 @@ const hideLoadingScreen = () => {
                     fetchAuth, API_URL, navegarSidebar,
                     
                     // === COMPONENTES ===
-                    HeaderCompacto, Toast, LoadingOverlay,
+                    relatorioImagemAmpliada, setRelatorioImagemAmpliada,
+                    todoNotifModal, setTodoNotifModal, todoPendentesNotif,
                     i,      // toast atual
                     n,      // loading atual
                     e,      // isAdminMaster
@@ -12315,7 +12316,9 @@ const hideLoadingScreen = () => {
                     l, p, x, ja, s, n, f, i, E,
                     API_URL, getToken,
                     // Componentes
-                    HeaderCompacto, Toast, LoadingOverlay,
+                    HeaderCompacto, Toast, LoadingOverlay, PixQRCodeModal,
+                    relatorioImagemAmpliada, setRelatorioImagemAmpliada,
+                    todoNotifModal, setTodoNotifModal, todoPendentesNotif,
                     // Navegação
                     Ee, socialProfile, ul, o, he, navegarSidebar,
                     // Avisos
