@@ -10116,7 +10116,7 @@ const hideLoadingScreen = () => {
                     socialProfile,
                     relatorioNaoLido, setRelatorioNaoLido,
                     relatoriosNaoLidos, setRelatoriosNaoLidos,
-                    marcarRelatorioComoLido, irParaRelatorio,
+                    marcarRelatorioComoLido,
                     
                     // === FUNÇÕES DE CARREGAMENTO ===
                     Ua,     // carregarWithdrawals
