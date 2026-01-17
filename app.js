@@ -8168,9 +8168,9 @@ const hideLoadingScreen = () => {
             className: "text-lg font-bold text-gray-800"
         }, "Promoção de Indicação"), React.createElement("p", {
             className: "text-sm text-gray-500"
-        }, "Indique amigos e ganhe bônus"), ee.length > 0 && React.createElement("span", {
+        }, "Indique amigos e ganhe bônus"), getPromocoesFiltradas().length > 0 && React.createElement("span", {
             className: "inline-block mt-1 px-2 py-0.5 bg-blue-500 text-white text-xs rounded-full"
-        }, ee.length, " promoção(ões) ativa(s)")), React.createElement("span", {
+        }, getPromocoesFiltradas().length, " promoção(ões) ativa(s)")), React.createElement("span", {
             className: "text-blue-400 text-2xl"
         }, "›")), React.createElement("button", {
             onClick: () => x({
