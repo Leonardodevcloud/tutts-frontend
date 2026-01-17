@@ -10029,6 +10029,7 @@ const hideLoadingScreen = () => {
                     elegibilidadeNovatos, setElegibilidadeNovatos, regioesNovatos, setRegioesNovatos,
                     // Relatórios
                     socialProfile, relatorioNaoLido, setRelatorioNaoLido,
+                    relatorioImagemAmpliada, setRelatorioImagemAmpliada,
                     relatoriosNaoLidos, setRelatoriosNaoLidos, marcarRelatorioComoLido,
                     // Funções de carregamento
                     Ua, za, Ba, Va, Ja, Qa, Ha, Ga, Wa, Za, Ya, Ka, gl, vl, wl, _l, Cl,
