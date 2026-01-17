@@ -9999,33 +9999,183 @@ const hideLoadingScreen = () => {
         const canAccessFinanceiro = hasModuleAccess(l, "financeiro");
         if ((canAccessFinanceiro && "financeiro" === Ee) || "admin_financeiro" === l.role) {
             const e = "admin_master" === l.role;
-            // MÓDULO FINANCEIRO CARREGADO EXTERNAMENTE
+            // ================================================================
+            // MÓDULO FINANCEIRO - CARREGADO EXTERNAMENTE
+            // ================================================================
+            // O código do módulo financeiro foi extraído para ModuloFinanceiro.js
+            // para facilitar manutenção. Aqui passamos todas as variáveis
+            // necessárias para o módulo funcionar.
+            // 
+            // Ver documentação completa das variáveis em ModuloFinanceiro.js
+            // ================================================================
             return React.createElement("div", {
                 className: "min-h-screen bg-gray-50"
             }, i && React.createElement(Toast, i), n && React.createElement(LoadingOverlay, null),
                 window.renderModuloFinanceiro ? window.renderModuloFinanceiro({
-                    p, x, q, U, Q, H, Z, Y, K, X, z, B, V, J, ee, te, ae, le, re, oe, ce, se,
-                    Me, Oe, qe, Ue, ze, Be, Ke, Xe, Ze, Ye, et, tt, at, lt, it, dt, ut, gt, bt, Rt,
-                    plificState, setPlificState, modalDebitoPlific, setModalDebitoPlific,
-                    debitoFormPlific, setDebitoFormPlific, saldoPlificUser, setSaldoPlificUser,
-                    solicitacoesPagina, setSolicitacoesPagina, conciliacaoPagina, setConciliacaoPagina,
+                    // === ESTADOS PRINCIPAIS ===
+                    p,      // financeiroState - estado geral do módulo
+                    x,      // setFinanceiroState
+                    q,      // withdrawals - solicitações de saque
+                    U,      // setWithdrawals
+                    Q,      // gratuities
+                    H,      // setGratuities
+                    Z,      // restricted - profissionais restritos
+                    Y,      // setRestricted
+                    K,      // conciliacao
+                    X,      // setConciliacao
+                    z,      // selectedIds - IDs selecionados
+                    B,      // setSelectedIds
+                    V,      // pixQrModal
+                    J,      // setPixQrModal
+                    
+                    // === PROMOÇÕES E INDICAÇÕES ===
+                    ee,     // promocoes
+                    te,     // setPromocoes
+                    ae,     // indicacoes
+                    le,     // setIndicacoes
+                    re,     // minhasIndicacoes
+                    oe,     // setMinhasIndicacoes
+                    ce,     // promocoesNovatos
+                    se,     // setPromocoesNovatos
+                    
+                    // === HORÁRIOS E AVISOS ===
+                    Me,     // horariosState
+                    Oe,     // setHorariosState
+                    qe,     // avisosState
+                    Ue,     // setAvisosState
+                    ze,     // verificacaoHorario
+                    Be,     // setVerificacaoHorario
+                    
+                    // === LOJA - DADOS ===
+                    Ke,     // lojaProdutos
+                    Xe,     // setLojaProdutos
+                    Ze,     // lojaEstoque
+                    Ye,     // setLojaEstoque
+                    et,     // lojaPedidos
+                    tt,     // setLojaPedidos
+                    at,     // lojaPedidosUsuario
+                    lt,     // setLojaPedidosUsuario
+                    it,     // lojaMovimentacoes
+                    dt,     // setLojaMovimentacoes
+                    ut,     // lojaSugestoes
+                    gt,     // setLojaSugestoes
+                    bt,     // lojaSugestoesUsuario
+                    Rt,     // setLojaSugestoesUsuario
+                    
+                    // === LOJA - UI ===
+                    nt,     // lojaAbaAtiva ("produtos"|"estoque"|"pedidos"|"sugestoes")
+                    mt,     // setLojaAbaAtiva
+                    rt,     // lojaLoading
+                    ot,     // setLojaLoading
+                    pt,     // lojaVisualizacao ("lista"|"grid")
+                    xt,     // setLojaVisualizacao
+                    ct,     // lojaCategoria
+                    st,     // setLojaCategoria
+                    Qe,     // carrinho
+                    He,     // setCarrinho
+                    Ge,     // showCarrinho
+                    We,     // setShowCarrinho
+                    
+                    // === PLIFIC ===
+                    plificState, setPlificState,
+                    modalDebitoPlific, setModalDebitoPlific,
+                    debitoFormPlific, setDebitoFormPlific,
+                    saldoPlificUser, setSaldoPlificUser,
+                    
+                    // === PAGINAÇÃO ===
+                    solicitacoesPagina, setSolicitacoesPagina,
+                    conciliacaoPagina, setConciliacaoPagina,
                     solicitacoesPorPagina, conciliacaoPorPagina,
-                    acertoRealizado, setAcertoRealizado, l, Ee, he, er, ja, ul, fetchAuth, API_URL,
-                    navegarSidebar, HeaderCompacto, Jl, i, Toast, n, LoadingOverlay, e,
-                    elegibilidadeNovatos, setElegibilidadeNovatos, regioesNovatos, setRegioesNovatos,
-                    // Variáveis da loja com nomes corretos
-                    lojaAbaAtiva: nt, setLojaAbaAtiva: mt,
-                    lojaLoading: rt, setLojaLoading: ot,
-                    lojaVisualizacao: pt, setLojaVisualizacao: xt,
-                    lojaCategoria: ct, setLojaCategoria: st,
-                    carrinho: Qe, setCarrinho: He,
-                    showCarrinho: Ge, setShowCarrinho: We,
-                    socialProfile, f, E, o,
-                    relatorioNaoLido, setRelatorioNaoLido, relatoriosNaoLidos, setRelatoriosNaoLidos,
+                    acertoRealizado, setAcertoRealizado,
+                    
+                    // === USUÁRIO E NAVEGAÇÃO ===
+                    l,      // usuario
+                    Ee,     // moduloAtivo
+                    he,     // setModuloAtivo
+                    o,      // setUsuario (logout)
+                    f,      // isLoading
+                    E,      // lastUpdate
+                    
+                    // === UTILITÁRIOS ===
+                    er,     // formatarMoeda
+                    ja,     // showToast
+                    ul,     // refreshAll
+                    fetchAuth, API_URL, navegarSidebar,
+                    
+                    // === COMPONENTES ===
+                    HeaderCompacto, Toast, LoadingOverlay,
+                    i,      // toast atual
+                    n,      // loading atual
+                    e,      // isAdminMaster
+                    
+                    // === ELEGIBILIDADE NOVATOS ===
+                    elegibilidadeNovatos, setElegibilidadeNovatos,
+                    regioesNovatos, setRegioesNovatos,
+                    
+                    // === RELATÓRIOS ===
+                    socialProfile,
+                    relatorioNaoLido, setRelatorioNaoLido,
+                    relatoriosNaoLidos, setRelatoriosNaoLidos,
                     marcarRelatorioComoLido, irParaRelatorio,
-                    gl, vl, wl, _l, Cl, Ua, za, Ba, Va, Ja, Qa, Ha, Ga, Wa, Za, Ya, Ka,
-                    Rl, El, hl, fl, Nl, yl, bl, lancarDebitoPlific
-                }) : React.createElement("p", {className: "p-8 text-red-600 text-center"}, "Erro: ModuloFinanceiro.js não carregado")
+                    
+                    // === FUNÇÕES DE CARREGAMENTO ===
+                    Ua,     // carregarWithdrawals
+                    za,     // carregarGratuities
+                    Ba,     // carregarRestricted
+                    Va,     // carregarConciliacao
+                    Ja,     // carregarLojaEstoque
+                    Qa,     // carregarLojaMovimentacoes
+                    Ha,     // carregarLojaProdutos
+                    Ga,     // carregarLojaProdutosAtivos
+                    Wa,     // carregarLojaPedidos
+                    Za,     // carregarLojaPedidosUsuario
+                    Ya,     // carregarLojaSugestoes
+                    Ka,     // carregarLojaSugestoesUsuario
+                    gl,     // carregarPromocoes
+                    vl,     // carregarPromocoesAtivas
+                    wl,     // carregarIndicacoes
+                    _l,     // carregarMinhasIndicacoes
+                    Cl,     // carregarPromocoesNovatos
+                    
+                    // === FUNÇÕES DE AÇÃO ===
+                    Rl,     // atualizarHorario
+                    El,     // criarHorarioEspecial
+                    hl,     // criarAviso
+                    fl,     // toggleAvisoAtivo
+                    Nl,     // removerAviso
+                    yl,     // getProximoHorarioTexto
+                    bl,     // DIAS_SEMANA
+                    Jl,     // atualizarStatusSaque
+                    lancarDebitoPlific,
+                    
+                    // === QUIZ ===
+                    fe,     // quizConfig
+                    Ne,     // setQuizConfig
+                    ye,     // quizRespostas
+                    ve,     // setQuizRespostas
+                    we,     // quizEmAndamento
+                    _e,     // setQuizEmAndamento
+                    je,     // quizResultado
+                    Ce,     // setQuizResultado
+                    Ae,     // quizPerguntaAtual
+                    Se,     // setQuizPerguntaAtual
+                    ke,     // quizAcertos
+                    Pe,     // setQuizAcertos
+                    Te,     // quizImagens
+                    De,     // setQuizImagens
+                    Le,     // quizImagemExpandida
+                    Ie,     // setQuizImagemExpandida
+                    Fe,     // quizLoading
+                    $e,     // setQuizLoading
+                    
+                    // === NOTIFICAÇÕES ===
+                    y,      // notificacoes (contadores)
+                    v,      // setNotificacoes
+                    w,      // notificacoesLista
+                    _       // setNotificacoesLista
+                }) : React.createElement("p", {className: "p-8 text-red-600 text-center"}, 
+                    "❌ Erro: ModuloFinanceiro.js não carregado. Verifique se o arquivo está incluído no HTML antes do app.js"
+                )
             );
         }
         // Verificar permissão para TO-DO (admin comum)
