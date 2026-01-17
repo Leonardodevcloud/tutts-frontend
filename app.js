@@ -6,8 +6,31 @@ const {
 // ==================== API KEY REMOVIDA - AGORA USA PROXY NO BACKEND ====================
 // SEGURANÇA: A API key foi movida para o backend (variável de ambiente ORS_API_KEY)
 
+// ==================== FUNÇÕES DE SEGURANÇA ====================
+
+// Sanitizar HTML para prevenir XSS em popups e elementos dinâmicos
+const escapeHtml = (text) => {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = String(text);
+    return div.innerHTML;
+};
+
+// Sanitizar para uso em atributos HTML
+const escapeAttr = (text) => {
+    if (!text) return '';
+    return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+};
+
+// ==================== FIM FUNÇÕES DE SEGURANÇA ====================
+
 // ==================== SISTEMA DE VERSÃO E CACHE ====================
-const APP_VERSION = "2.2.1"; // Security Patch - API Key Protected
+const APP_VERSION = "2.2.2"; // Security Patch V2 - Input Sanitization
 const VERSION_KEY = "tutts_app_version";
 
 // Verificar se precisa limpar cache (versão diferente)
@@ -1312,7 +1335,7 @@ const hideLoadingScreen = () => {
             var pontosValidos = enderecosSelecionados.filter(function(e) { return e.latitude && e.longitude; });
             pontosValidos.forEach(function(p, i) {
                 var icon = L.divIcon({ className: '', html: '<div style="background:' + (i === 0 ? '#10b981' : '#7c3aed') + ';color:#fff;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:12px;border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,0.3)">' + (i === 0 ? '🚩' : i) + '</div>', iconSize: [28, 28], iconAnchor: [14, 14] });
-                L.marker([p.latitude, p.longitude], { icon: icon }).addTo(markersLayer).bindPopup('<b>' + (i === 0 ? 'PARTIDA' : 'Parada ' + i) + '</b><br>' + (p.endereco || '').substring(0, 50));
+                L.marker([p.latitude, p.longitude], { icon: icon }).addTo(markersLayer).bindPopup('<b>' + (i === 0 ? 'PARTIDA' : 'Parada ' + i) + '</b><br>' + escapeHtml((p.endereco || '').substring(0, 50)));
             });
             
             if (pontosValidos.length > 0) {
@@ -1486,7 +1509,7 @@ const hideLoadingScreen = () => {
             if (routeLayer) { mapaRoteirizador.removeLayer(routeLayer); setRouteLayer(null); }
             pontos.filter(function(p) { return !p.isRetorno; }).forEach(function(p, i) {
                 var icon = L.divIcon({ className: '', html: '<div style="background:' + (i === 0 ? '#10b981' : '#7c3aed') + ';color:#fff;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:12px;border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,0.3)">' + (i === 0 ? '🚩' : i) + '</div>', iconSize: [28, 28], iconAnchor: [14, 14] });
-                L.marker([p.latitude, p.longitude], { icon: icon }).addTo(markersLayer).bindPopup('<b>' + (i === 0 ? 'PARTIDA' : 'Parada ' + i) + '</b><br>' + (p.endereco || '').substring(0, 50));
+                L.marker([p.latitude, p.longitude], { icon: icon }).addTo(markersLayer).bindPopup('<b>' + (i === 0 ? 'PARTIDA' : 'Parada ' + i) + '</b><br>' + escapeHtml((p.endereco || '').substring(0, 50)));
             });
             if (geo && geo.features) { var layer = L.geoJSON(geo, { style: { color: '#7c3aed', weight: 5, opacity: 0.8 } }).addTo(mapaRoteirizador); setRouteLayer(layer); }
             if (pontos.length > 0) mapaRoteirizador.fitBounds(L.latLngBounds(pontos.filter(function(p) { return !p.isRetorno; }).map(function(p) { return [p.latitude, p.longitude]; })), { padding: [50, 50] });
