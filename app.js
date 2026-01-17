@@ -10015,6 +10015,22 @@ const hideLoadingScreen = () => {
                     // === ESTADOS PRINCIPAIS ===
                     c,      // loading (botões disabled)
                     s,      // setLoading
+                    A,      // users (lista de usuários)
+                    S,      // setUsers
+                    j,      // regioesDisponiveis
+                    C,      // setRegioesDisponiveis
+                    k,      // loadingUsers
+                    P,      // setLoadingUsers
+                    T,      // selectedUser
+                    D,      // setSelectedUser
+                    L,      // profissionaisLista
+                    I,      // setProfissionaisLista
+                    F,      // modalAberto
+                    $,      // setModalAberto
+                    M,      // dadosModal
+                    O,      // setDadosModal
+                    G,      // historicoLista
+                    W,      // setHistoricoLista
                     p,      // financeiroState - estado geral do módulo
                     x,      // setFinanceiroState
                     q,      // withdrawals - solicitações de saque
