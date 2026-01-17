@@ -2980,7 +2980,7 @@ const hideLoadingScreen = () => {
                     console.log("Background load error:", e)
                 }
             }, t = () => {
-                "user" === l.role && (e($a), e(qa), e(vl), e(_l), e(Al), e(kl), e(Dl), e(Il), e(Za), e(Ka), e(Ta)), "admin_financeiro" !== l.role && "admin_master" !== l.role || (e(za), e(Ba), e(gl), e(wl), e(Cl), e(Sl), e(Dl), e(Ll), e(Ia), e(Ja), e(Ha), e(Wa), e(Ya)), "admin" !== l.role && "admin_master" !== l.role || e(Ia), "admin" === l.role && hasModuleAccess(l, "financeiro") && (e(wl), e(gl), e(Cl), e(Sl), e(Ll)), e(La)
+                "user" === l.role && (e($a), e(qa), e(vl), e(_l), e(kl), e(Dl), e(Il), e(Za), e(Ka), e(Ta)), "admin_financeiro" !== l.role && "admin_master" !== l.role || (e(za), e(Ba), e(gl), e(wl), e(Cl), e(Sl), e(Dl), e(Ll), e(Ia), e(Ja), e(Ha), e(Wa), e(Ya)), "admin" !== l.role && "admin_master" !== l.role || e(Ia), "admin" === l.role && hasModuleAccess(l, "financeiro") && (e(wl), e(gl), e(Cl), e(Sl), e(Ll)), e(La)
             };
             (async () => {
                 "user" === l.role && await Promise.all([Oa(), Ga()]), "admin_financeiro" !== l.role && "admin_master" !== l.role || await Promise.all([Ua(), Va()])
@@ -6400,10 +6400,8 @@ const hideLoadingScreen = () => {
                 const data = await response.json();
                 console.log("✅ Resposta elegibilidade novatos:", data);
                 setElegibilidadeNovatos({ ...data, carregando: false });
-                // Também atualiza a lista de promoções disponíveis
-                if (data.promocoes && data.promocoes.length > 0) {
-                    se(data.promocoes);
-                }
+                // SEMPRE atualiza a lista de promoções (vazia se não elegível)
+                se(data.promocoes || []);
             } catch (e) {
                 console.error("❌ Erro ao verificar elegibilidade novatos:", e);
                 setElegibilidadeNovatos({ elegivel: false, motivo: 'Erro ao verificar elegibilidade', promocoes: [], carregando: false });
@@ -9467,7 +9465,7 @@ const hideLoadingScreen = () => {
                             const e = await t.json();
                             throw new Error(e.error || "Erro ao se inscrever")
                         }
-                        ja("✅ Inscrição realizada! Válida por 10 dias.", "success"), await kl(), await Al()
+                        ja("✅ Inscrição realizada! Válida por 10 dias.", "success"), await kl(), await verificarElegibilidadeNovatos()
                     } catch (e) {
                         ja(e.message, "error")
                     } finally {
