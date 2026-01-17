@@ -269,7 +269,9 @@
             // Utilitários
             er, ja, ul, fetchAuth, API_URL, navegarSidebar,
             // Componentes
-            HeaderCompacto, Toast, LoadingOverlay, i, n, e,
+            HeaderCompacto, Toast, LoadingOverlay, PixQRCodeModal, i, n, e,
+            relatorioImagemAmpliada, setRelatorioImagemAmpliada,
+            todoNotifModal, setTodoNotifModal, todoPendentesNotif,
             // Elegibilidade novatos
             elegibilidadeNovatos, setElegibilidadeNovatos, regioesNovatos, setRegioesNovatos,
             // Social e relatórios
@@ -294,6 +296,86 @@
         // ====================================================================
         
         return React.createElement(React.Fragment, null,
+            // Modal de Relatório Não Lido (ciência)
+            relatorioNaoLido && React.createElement("div", {
+                className: "fixed inset-0 bg-black/70 flex items-center justify-center z-[100] p-4"
+            },
+                React.createElement("div", {className: "bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col animate-fade-in"},
+                    React.createElement("div", {className: "bg-gradient-to-r from-teal-600 to-teal-700 text-white p-4 flex items-center gap-3"},
+                        React.createElement("span", {className: "text-3xl"}, "📢"),
+                        React.createElement("div", null,
+                            React.createElement("h3", {className: "text-lg font-bold"}, "Novo Relatório Diário"),
+                            React.createElement("p", {className: "text-teal-100 text-sm"}, 
+                                relatoriosNaoLidos.length > 1 
+                                    ? `${relatoriosNaoLidos.length} relatórios pendentes de leitura`
+                                    : "1 relatório pendente de leitura"
+                            )
+                        )
+                    ),
+                    React.createElement("div", {className: "p-4 bg-gray-50 border-b flex items-center gap-3"},
+                        relatorioNaoLido.usuario_foto 
+                            ? React.createElement("img", {
+                                src: relatorioNaoLido.usuario_foto,
+                                className: "w-12 h-12 rounded-full object-cover border-2 border-teal-200"
+                            })
+                            : React.createElement("div", {
+                                className: "w-12 h-12 rounded-full bg-teal-100 flex items-center justify-center text-teal-600 font-bold text-lg"
+                            }, (relatorioNaoLido.usuario_nome || "?").charAt(0).toUpperCase()),
+                        React.createElement("div", null,
+                            React.createElement("p", {className: "font-bold text-gray-800"}, relatorioNaoLido.titulo),
+                            React.createElement("p", {className: "text-sm text-gray-500"}, 
+                                relatorioNaoLido.usuario_nome, " • ", 
+                                new Date(relatorioNaoLido.created_at).toLocaleDateString('pt-BR', {
+                                    day: '2-digit', month: '2-digit', year: 'numeric',
+                                    hour: '2-digit', minute: '2-digit'
+                                })
+                            )
+                        )
+                    ),
+                    React.createElement("div", {className: "p-4 overflow-y-auto flex-1"},
+                        React.createElement("div", {
+                            className: "text-gray-700 whitespace-pre-wrap",
+                            dangerouslySetInnerHTML: { __html: (relatorioNaoLido.conteudo || '').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/_(.*?)_/g, '<em>$1</em>') }
+                        }),
+                        relatorioNaoLido.imagem_url && React.createElement("div", {className: "mt-4"},
+                            React.createElement("img", {
+                                src: relatorioNaoLido.imagem_url,
+                                className: "max-w-full rounded-lg shadow cursor-pointer hover:opacity-90",
+                                onClick: () => setRelatorioImagemAmpliada(relatorioNaoLido.imagem_url)
+                            })
+                        )
+                    ),
+                    React.createElement("div", {className: "p-4 bg-gray-50 border-t"},
+                        React.createElement("button", {
+                            onClick: () => marcarRelatorioComoLido(relatorioNaoLido.id),
+                            className: "w-full px-6 py-4 bg-teal-600 text-white rounded-xl font-bold text-lg hover:bg-teal-700 flex items-center justify-center gap-2 shadow-lg"
+                        }, "✅ Estou Ciente")
+                    )
+                )
+            ),
+            // Modal de imagem ampliada (relatório)
+            relatorioImagemAmpliada && React.createElement("div", {
+                className: "fixed inset-0 bg-black/90 flex items-center justify-center z-[110] p-4",
+                onClick: () => setRelatorioImagemAmpliada(null)
+            },
+                React.createElement("div", {className: "relative max-w-4xl max-h-[90vh]"},
+                    React.createElement("button", {
+                        onClick: () => setRelatorioImagemAmpliada(null),
+                        className: "absolute -top-10 right-0 text-white text-3xl hover:text-gray-300"
+                    }, "✕"),
+                    React.createElement("img", {
+                        src: relatorioImagemAmpliada,
+                        className: "max-w-full max-h-[85vh] rounded-lg shadow-2xl",
+                        onClick: (e) => e.stopPropagation()
+                    })
+                )
+            ),
+            // Modal QR Code PIX
+            V && React.createElement(PixQRCodeModal, {
+                withdrawal: V,
+                onClose: () => J(null),
+                showToast: ja
+            }),
             // ========== HEADER COM NAVEGAÇÃO - FINANCEIRO ==========
             React.createElement(HeaderCompacto, {
                 usuario: l,
