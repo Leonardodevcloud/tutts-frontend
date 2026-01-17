@@ -18,6 +18,8 @@
             c, s, p, x, q, U, Q, H, Z, Y, K, X, z, B, V, J,
             A, S, j, C, k, P, T, D, L, I, F, $, M, O, G, W,
             ee, te, ae, le, re, oe, ce, se, ne, me,
+            // Planilha de profissionais com cidades (NOVO)
+            planilhaProfissionais, cidadesIndicacao,
             Me, Oe, qe, Ue, ze, Be,
             Ke, Xe, Ze, Ye, et, tt, at, lt, it, dt, ut, gt, bt, Rt,
             nt, mt, rt, ot, pt, xt, ct, st, Qe, He, Ge, We,
@@ -39,6 +41,23 @@
             fe, Ne, ye, ve, we, _e, je, Ce, Ae, Se, ke, Pe, Te, De, Le, Ie, Fe, $e,
             y, v, w, _
         } = props;
+        
+        // Helper para obter cidade do profissional logado (NOVO)
+        const getCidadeProfissional = (codProfissional) => {
+            if (!planilhaProfissionais || planilhaProfissionais.length === 0 || !codProfissional) return null;
+            const prof = planilhaProfissionais.find(p => p.codigo === String(codProfissional));
+            return prof ? prof.cidade : null;
+        };
+        
+        // Cidade do usuário logado (para motoboys)
+        const cidadeUsuarioLogado = l && l.role === "user" && (l.cod_profissional || l.codProfissional)
+            ? getCidadeProfissional(l.cod_profissional || l.codProfissional) 
+            : null;
+        
+        // Filtrar promoções para mostrar apenas da região do motoboy (se for user)
+        const promocoesFiltradas = l && l.role === "user" && cidadeUsuarioLogado
+            ? ee.filter(promo => promo.regiao && promo.regiao.toLowerCase().trim() === cidadeUsuarioLogado.toLowerCase().trim())
+            : ee;
         
             return React.createElement("div", {
                 className: "min-h-screen bg-gray-50"
@@ -1886,16 +1905,19 @@
                 className: "grid md:grid-cols-2 gap-4 mb-4"
             }, React.createElement("div", null, React.createElement("label", {
                 className: "block text-sm font-semibold mb-1"
-            }, "Região *"), React.createElement("input", {
-                type: "text",
+            }, "Região *"), React.createElement("select", {
                 value: p.promoRegiao || "",
                 onChange: e => x({
                     ...p,
                     promoRegiao: e.target.value
                 }),
-                className: "w-full px-4 py-2 border rounded-lg",
-                placeholder: "Ex: Salvador - BA"
-            })), React.createElement("div", null, React.createElement("label", {
+                className: "w-full px-4 py-2 border rounded-lg bg-white"
+            }, 
+                React.createElement("option", { value: "" }, "Selecione a região..."),
+                (cidadesIndicacao || []).map(cidade => 
+                    React.createElement("option", { key: cidade, value: cidade }, cidade)
+                )
+            )), React.createElement("div", null, React.createElement("label", {
                 className: "block text-sm font-semibold mb-1"
             }, "Valor do Bônus (R$) *"), React.createElement("input", {
                 type: "number",
@@ -1928,11 +1950,13 @@
                 className: "bg-white rounded-xl shadow p-6 mb-6"
             }, React.createElement("h3", {
                 className: "font-semibold mb-4"
-            }, "📋 Promoções Cadastradas"), 0 === ee.length ? React.createElement("p", {
+            }, "📋 Promoções Cadastradas"), 0 === (l.role === "user" ? promocoesFiltradas : ee).length ? React.createElement("p", {
                 className: "text-gray-500 text-center py-4"
-            }, "Nenhuma promoção cadastrada") : React.createElement("div", {
+            }, l.role === "user" && cidadeUsuarioLogado 
+                ? "Nenhuma promoção disponível para " + cidadeUsuarioLogado 
+                : "Nenhuma promoção cadastrada") : React.createElement("div", {
                 className: "grid md:grid-cols-4 gap-3"
-            }, ee.map(e => React.createElement("div", {
+            }, (l.role === "user" ? promocoesFiltradas : ee).map(e => React.createElement("div", {
                 key: e.id,
                 className: "border rounded-lg p-3 " + ("ativa" === e.status ? "border-green-300 bg-green-50" : "border-gray-300 bg-gray-50")
             }, React.createElement("div", {
