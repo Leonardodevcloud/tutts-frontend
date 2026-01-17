@@ -306,7 +306,7 @@
                         React.createElement("div", null,
                             React.createElement("h3", {className: "text-lg font-bold"}, "Novo Relatório Diário"),
                             React.createElement("p", {className: "text-teal-100 text-sm"}, 
-                                relatoriosNaoLidos.length > 1 
+                                (relatoriosNaoLidos && relatoriosNaoLidos.length > 1) 
                                     ? `${relatoriosNaoLidos.length} relatórios pendentes de leitura`
                                     : "1 relatório pendente de leitura"
                             )
