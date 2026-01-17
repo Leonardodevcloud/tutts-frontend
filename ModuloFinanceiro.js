@@ -248,6 +248,7 @@
         const {
             // Estados principais
             c, s,  // loading e setLoading
+            A, S, j, C, k, P, T, D, L, I, F, $, M, O, G, W,  // estados auxiliares
             p, x, q, U, Q, H, Z, Y, K, X, z, B, V, J,
             // Promoções e indicações
             ee, te, ae, le, re, oe, ce, se, ne, me,
