@@ -1776,7 +1776,7 @@ const hideLoadingScreen = () => {
             validacao: [],
             loja: [],
             gratuidades: []
-        }), [j, C] = useState([]), [A, S] = useState([]), [k, P] = useState(!1), [T, D] = useState(null), [L, I] = useState([]), [F, $] = useState(!1), [M, O] = useState([]), [q, U] = useState([]), [z, B] = useState([]), [V, J] = useState(null), [Q, H] = useState([]), [G, W] = useState([]), [Z, Y] = useState([]), [K, X] = useState({}), [ee, te] = useState([]), [ae, le] = useState([]), [re, oe] = useState([]), [ce, se] = useState([]), [ne, me] = useState([]), [ie, de] = useState([]), [pe, xe] = useState([]), [ue, ge] = useState(!1), [be, Re] = useState(null), [Ee, he] = useState("home"), [mensagemGentileza, setMensagemGentileza] = useState(() => getMensagemGentileza()), [elegibilidadeNovatos, setElegibilidadeNovatos] = useState({ elegivel: false, motivo: '', promocoes: [], carregando: true }), [regioesNovatos, setRegioesNovatos] = useState([]), [solicitacoesPagina, setSolicitacoesPagina] = useState(1), [acertoRealizado, setAcertoRealizado] = useState(() => { try { const saved = localStorage.getItem("tutts_acerto_realizado"); return saved !== null ? JSON.parse(saved) : true; } catch(e) { return true; } }), [solicitacoesPorPagina] = useState(120), [conciliacaoPagina, setConciliacaoPagina] = useState(1), [conciliacaoPorPagina] = useState(120), 
+        }), [j, C] = useState([]), [A, S] = useState([]), [k, P] = useState(!1), [T, D] = useState(null), [L, I] = useState([]), [F, $] = useState(!1), [M, O] = useState([]), [q, U] = useState([]), [z, B] = useState([]), [V, J] = useState(null), [Q, H] = useState([]), [G, W] = useState([]), [Z, Y] = useState([]), [K, X] = useState({}), [ee, te] = useState([]), [ae, le] = useState([]), [re, oe] = useState([]), [ce, se] = useState([]), [ne, me] = useState([]), [ie, de] = useState([]), [pe, xe] = useState([]), [cidadesIndicacao, setCidadesIndicacao] = useState([]), [ue, ge] = useState(!1), [be, Re] = useState(null), [Ee, he] = useState("home"), [mensagemGentileza, setMensagemGentileza] = useState(() => getMensagemGentileza()), [elegibilidadeNovatos, setElegibilidadeNovatos] = useState({ elegivel: false, motivo: '', promocoes: [], carregando: true }), [regioesNovatos, setRegioesNovatos] = useState([]), [solicitacoesPagina, setSolicitacoesPagina] = useState(1), [acertoRealizado, setAcertoRealizado] = useState(() => { try { const saved = localStorage.getItem("tutts_acerto_realizado"); return saved !== null ? JSON.parse(saved) : true; } catch(e) { return true; } }), [solicitacoesPorPagina] = useState(120), [conciliacaoPagina, setConciliacaoPagina] = useState(1), [conciliacaoPorPagina] = useState(120), 
         
         // Helper para parse de saldo (aceita número ou string brasileira)
         parseSaldoBR = (valor) => {
@@ -4945,16 +4945,23 @@ const hideLoadingScreen = () => {
                 const e = await fetch("https://docs.google.com/spreadsheets/d/e/2PACX-1vQTbc5J8j85MlYGrjWajG33cTDd6TEpYur5hgNcYUwmtra8jh3Nfsrzm-0GNJO6wCYEZAGEHxw807o7/pub?gid=0&single=true&output=tsv"),
                     t = (await e.text()).split("\n").filter(e => e.trim()),
                     a = [];
+                const cidadesSet = new Set();
                 for (let e = 1; e < t.length; e++) {
                     const l = t[e].split("\t"),
                         r = l[0]?.trim(),
-                        o = l[1]?.trim();
+                        o = l[1]?.trim(),
+                        cidadeProf = l[3]?.trim() || "";
                     r && o && a.push({
                         codigo: r,
-                        nome: o
-                    })
+                        nome: o,
+                        cidade: cidadeProf
+                    });
+                    if (cidadeProf) cidadesSet.add(cidadeProf);
                 }
-                xe(a), console.log(`📊 Planilha carregada: ${a.length} profissionais`)
+                xe(a);
+                const cidadesArray = Array.from(cidadesSet).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+                setCidadesIndicacao(cidadesArray);
+                console.log(`📊 Planilha carregada: ${a.length} profissionais, ${cidadesArray.length} cidades`);
             } catch (e) {
                 console.error("Erro ao carregar planilha:", e), Re("Erro ao carregar lista de profissionais")
             }
@@ -10008,6 +10015,8 @@ const hideLoadingScreen = () => {
                     A, S, j, C, k, P, T, D, L, I, F, $, M, O, G, W,
                     // Promoções
                     ee, te, ae, le, re, oe, ce, se, ne, me,
+                    // Planilha de profissionais com cidades (NOVO)
+                    planilhaProfissionais: pe, cidadesIndicacao,
                     // Horários e avisos
                     Me, Oe, qe, Ue, ze, Be,
                     // Loja
