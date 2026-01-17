@@ -2758,19 +2758,44 @@
             }, "Bônus"), React.createElement("th", {
                 className: "px-2 py-3 text-center text-xs"
             }, "Expira"), React.createElement("th", {
-                className: "px-2 py-3 text-center text-xs"
-            }, "Crédito"), React.createElement("th", {
                 className: "px-3 py-3 text-center"
-            }, "Status"), React.createElement("th", {
+            }, "Progresso"), React.createElement("th", {
                 className: "px-2 py-3 text-center text-xs"
-            }, "Admin"), React.createElement("th", {
-                className: "px-2 py-3 text-center text-xs"
-            }, "Ações"))), React.createElement("tbody", null, ne.map(e => {
+            }, "Crédito"))), React.createElement("tbody", null, ne.map(e => {
                 const t = e.expires_at ? new Date(e.expires_at) : null,
-                    a = t && new Date > t;
+                    a = t && new Date > t,
+                    totalEntregas = e.total_entregas || 0,
+                    metaEntregas = e.meta_entregas || 50,
+                    metaAtingida = e.meta_atingida || totalEntregas >= metaEntregas,
+                    percentual = Math.min(100, Math.round((totalEntregas / metaEntregas) * 100));
+                
+                // Determinar status visual
+                let statusTexto, statusClasse, statusIcone;
+                if (a && "pendente" === e.status) {
+                    statusTexto = "Expirado";
+                    statusClasse = "bg-gray-200 text-gray-700";
+                    statusIcone = "⏰";
+                } else if (metaAtingida && "pendente" === e.status) {
+                    statusTexto = "Completo";
+                    statusClasse = "bg-green-100 text-green-700";
+                    statusIcone = "✅";
+                } else if ("aprovada" === e.status) {
+                    statusTexto = "Aprovada";
+                    statusClasse = "bg-green-100 text-green-700";
+                    statusIcone = "✅";
+                } else if ("rejeitada" === e.status) {
+                    statusTexto = "Rejeitada";
+                    statusClasse = "bg-red-100 text-red-700";
+                    statusIcone = "❌";
+                } else {
+                    statusTexto = "Pendente";
+                    statusClasse = "bg-yellow-100 text-yellow-700";
+                    statusIcone = "⏳";
+                }
+                
                 return React.createElement("tr", {
                     key: e.id,
-                    className: "border-b " + ("aprovada" === e.status ? "bg-green-50" : "rejeitada" === e.status ? "bg-red-50" : a && "pendente" === e.status ? "bg-gray-100" : "")
+                    className: "border-b " + (metaAtingida && "pendente" === e.status ? "bg-green-50" : "aprovada" === e.status ? "bg-green-50" : "rejeitada" === e.status ? "bg-red-50" : a && "pendente" === e.status ? "bg-gray-100" : "")
                 }, React.createElement("td", {
                     className: "px-2 py-3 text-xs"
                 }, new Date(e.created_at).toLocaleDateString("pt-BR")), React.createElement("td", {
@@ -2787,76 +2812,72 @@
                     className: "px-2 py-3 text-center text-xs"
                 }, t ? React.createElement("span", {
                     className: a ? "text-red-500" : "text-gray-600"
-                }, t.toLocaleDateString("pt-BR")) : "-"), React.createElement("td", {
+                }, t.toLocaleDateString("pt-BR")) : "-"), 
+                
+                // Coluna de Progresso com barra e status
+                React.createElement("td", {
+                    className: "px-3 py-3"
+                }, React.createElement("div", {
+                    className: "flex flex-col items-center gap-1"
+                }, 
+                // Barra de progresso
+                React.createElement("div", {
+                    className: "w-full bg-gray-200 rounded-full h-2"
+                }, React.createElement("div", {
+                    className: "h-2 rounded-full transition-all " + (percentual >= 100 ? "bg-green-500" : percentual >= 50 ? "bg-yellow-500" : "bg-orange-500"),
+                    style: { width: percentual + "%" }
+                })),
+                // Texto do progresso
+                React.createElement("span", {
+                    className: "text-xs font-bold " + (percentual >= 100 ? "text-green-600" : "text-gray-600")
+                }, totalEntregas, "/", metaEntregas),
+                // Badge de status
+                React.createElement("span", {
+                    className: "px-2 py-0.5 rounded-full text-xs font-bold " + statusClasse
+                }, statusIcone, " ", statusTexto))),
+                
+                // Coluna de Crédito - botão aparece quando meta atingida OU já aprovada
+                React.createElement("td", {
                     className: "px-2 py-3 text-center"
-                }, "aprovada" === e.status ? e.credito_lancado ? React.createElement("div", null, React.createElement("span", {
-                    className: "text-xs text-green-600 font-bold"
-                }, "✅ Lançado"), e.lancado_por && React.createElement("p", {
+                }, (metaAtingida || "aprovada" === e.status) ? (
+                    e.credito_lancado ? React.createElement("div", null, React.createElement("span", {
+                        className: "text-xs text-green-600 font-bold"
+                    }, "✅ Lançado"), e.lancado_por && React.createElement("p", {
+                        className: "text-xs text-gray-400"
+                    }, e.lancado_por)) : React.createElement("button", {
+                        onClick: async () => {
+                            s(!0);
+                            try {
+                                // Se ainda não está aprovada, aprovar primeiro
+                                if ("pendente" === e.status) {
+                                    await fetchAuth(`${API_URL}/inscricoes-novatos/${e.id}/aprovar`, {
+                                        method: "PATCH",
+                                        headers: { "Content-Type": "application/json" },
+                                        body: JSON.stringify({ resolved_by: l.fullName })
+                                    });
+                                }
+                                // Depois lançar o crédito
+                                if (!(await fetchAuth(`${API_URL}/inscricoes-novatos/${e.id}/credito`, {
+                                        method: "PATCH",
+                                        headers: { "Content-Type": "application/json" },
+                                        body: JSON.stringify({
+                                            credito_lancado: !0,
+                                            lancado_por: l.fullName
+                                        })
+                                    })).ok) throw new Error("Erro ao creditar");
+                                ja("✅ Crédito lançado!", "success"), await Sl()
+                            } catch (err) {
+                                ja("Erro ao creditar", "error")
+                            } finally {
+                                s(!1)
+                            }
+                        },
+                        className: "px-3 py-1.5 bg-blue-500 text-white text-xs rounded-lg hover:bg-blue-600 font-semibold",
+                        disabled: c
+                    }, "💰 Lançar")
+                ) : React.createElement("span", {
                     className: "text-xs text-gray-400"
-                }, e.lancado_por)) : React.createElement("button", {
-                    onClick: () => (async e => {
-                        s(!0);
-                        try {
-                            if (!(await fetchAuth(`${API_URL}/inscricoes-novatos/${e.id}/credito`, {
-                                    method: "PATCH",
-                                    headers: {
-                                        "Content-Type": "application/json"
-                                    },
-                                    body: JSON.stringify({
-                                        credito_lancado: !0,
-                                        lancado_por: l.fullName
-                                    })
-                                })).ok) throw new Error("Erro ao creditar");
-                            ja("✅ Crédito lançado!", "success"), await Sl()
-                        } catch (e) {
-                            ja("Erro ao creditar", "error")
-                        } finally {
-                            s(!1)
-                        }
-                    })(e),
-                    className: "px-2 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600",
-                    disabled: c
-                }, "💰 Lançar") : "-"), React.createElement("td", {
-                    className: "px-3 py-3 text-center"
-                }, React.createElement("span", {
-                    className: "px-2 py-1 rounded-full text-xs font-bold " + ("pendente" === e.status ? a ? "bg-gray-200 text-gray-700" : "bg-yellow-100 text-yellow-700" : "aprovada" === e.status ? "bg-green-100 text-green-700" : "rejeitada" === e.status ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-700")
-                }, "pendente" === e.status && a ? "⏰ Expirada" : "pendente" === e.status ? "⏳ Pendente" : "aprovada" === e.status ? "✅ Aprovada" : "rejeitada" === e.status ? "❌ Rejeitada" : e.status)), React.createElement("td", {
-                    className: "px-2 py-3 text-center text-xs text-gray-500"
-                }, e.resolved_by || "-"), React.createElement("td", {
-                    className: "px-2 py-3 text-center"
-                }, "pendente" === e.status && !a && React.createElement("div", {
-                    className: "flex gap-1 justify-center"
-                }, React.createElement("button", {
-                    onClick: () => (async e => {
-                        s(!0);
-                        try {
-                            await fetchAuth(`${API_URL}/inscricoes-novatos/${e}/aprovar`, {
-                                method: "PATCH",
-                                headers: {
-                                    "Content-Type": "application/json"
-                                },
-                                body: JSON.stringify({
-                                    resolved_by: l.fullName
-                                })
-                            }), ja("✅ Inscrição aprovada!", "success"), await Sl()
-                        } catch (e) {
-                            ja("Erro ao aprovar", "error")
-                        } finally {
-                            s(!1)
-                        }
-                    })(e.id),
-                    className: "p-1 bg-green-500 text-white rounded text-xs hover:bg-green-600",
-                    disabled: c
-                }, "✓"), React.createElement("button", {
-                    onClick: () => x({
-                        ...p,
-                        modalRejeitarNovatos: e
-                    }),
-                    className: "p-1 bg-red-500 text-white rounded text-xs hover:bg-red-600"
-                }, "✗")), "rejeitada" === e.status && e.motivo_rejeicao && React.createElement("span", {
-                    className: "text-xs text-red-500",
-                    title: e.motivo_rejeicao
-                }, "📝")))
+                }, "-")))
             })))))), "loja" === p.finTab && React.createElement(React.Fragment, null, React.createElement("div", {
                 className: "bg-white rounded-xl shadow mb-6"
             }, React.createElement("div", {
