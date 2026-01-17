@@ -9998,37 +9998,31 @@ const hideLoadingScreen = () => {
         // Verificar permissão para Financeiro (admin comum)
         const canAccessFinanceiro = hasModuleAccess(l, "financeiro");
         if ((canAccessFinanceiro && "financeiro" === Ee) || "admin_financeiro" === l.role) {
-            // MÓDULO FINANCEIRO - CARREGADO DE ARQUIVO EXTERNO (ModuloFinanceiro.js)
-            if (window.renderModuloFinanceiro) {
-                return React.createElement("div", {
-                    className: "min-h-screen bg-gray-50"
-                }, i && React.createElement(Toast, i), n && React.createElement(LoadingOverlay, null),
-                    window.renderModuloFinanceiro({
-                        p, x, q, U, Q, H, Z, Y, K, X, z, B, V, J, ee, te, ae, le, re, oe, ce, se,
-                        Me, Oe, qe, Ue, ze, Be, Ke, Xe, Ze, Ye, et, tt, at, lt, it, dt, ut, gt, bt, Rt,
-                        plificState, setPlificState, modalDebitoPlific, setModalDebitoPlific,
-                        debitoFormPlific, setDebitoFormPlific, saldoPlificUser, setSaldoPlificUser,
-                        solicitacoesPagina, setSolicitacoesPagina, conciliacaoPagina, setConciliacaoPagina,
-                        solicitacoesPorPagina, conciliacaoPorPagina,
-                        acertoRealizado, setAcertoRealizado, l, Ee, he, er, ja, ul, fetchAuth, API_URL,
-                        navegarSidebar, HeaderCompacto, Jl, i, Toast, n, LoadingOverlay,
-                        elegibilidadeNovatos, setElegibilidadeNovatos, regioesNovatos, setRegioesNovatos,
-                        lojaAbaAtiva, setLojaAbaAtiva, lojaLoading, setLojaLoading,
-                        lojaVisualizacao, setLojaVisualizacao, lojaCategoria, setLojaCategoria,
-                        carrinho, setCarrinho, showCarrinho, setShowCarrinho,
-                        socialProfile, f, E, o,
-                        relatorioNaoLido, setRelatorioNaoLido, relatoriosNaoLidos, setRelatoriosNaoLidos,
-                        gl, vl, wl, _l, Cl, Ua, za, Ba, Va, Ja, Qa, Ha, Ga, Wa, Za, Ya, Ka,
-                        Rl, El, hl, fl, Nl, yl, bl
-                    })
-                );
-            } else {
-                console.error("ModuloFinanceiro.js não carregado!");
-                return React.createElement("div", {className: "p-8 text-center"},
-                    React.createElement("p", {className: "text-red-600"}, "Erro: Módulo Financeiro não encontrado")
-                );
-            }
-        }
+            const e = "admin_master" === l.role;
+            // MÓDULO FINANCEIRO CARREGADO EXTERNAMENTE
+            return React.createElement("div", {
+                className: "min-h-screen bg-gray-50"
+            }, i && React.createElement(Toast, i), n && React.createElement(LoadingOverlay, null),
+                window.renderModuloFinanceiro ? window.renderModuloFinanceiro({
+                    p, x, q, U, Q, H, Z, Y, K, X, z, B, V, J, ee, te, ae, le, re, oe, ce, se,
+                    Me, Oe, qe, Ue, ze, Be, Ke, Xe, Ze, Ye, et, tt, at, lt, it, dt, ut, gt, bt, Rt,
+                    plificState, setPlificState, modalDebitoPlific, setModalDebitoPlific,
+                    debitoFormPlific, setDebitoFormPlific, saldoPlificUser, setSaldoPlificUser,
+                    solicitacoesPagina, setSolicitacoesPagina, conciliacaoPagina, setConciliacaoPagina,
+                    solicitacoesPorPagina, conciliacaoPorPagina,
+                    acertoRealizado, setAcertoRealizado, l, Ee, he, er, ja, ul, fetchAuth, API_URL,
+                    navegarSidebar, HeaderCompacto, Jl, i, Toast, n, LoadingOverlay, e,
+                    elegibilidadeNovatos, setElegibilidadeNovatos, regioesNovatos, setRegioesNovatos,
+                    lojaAbaAtiva, setLojaAbaAtiva, lojaLoading, setLojaLoading,
+                    lojaVisualizacao, setLojaVisualizacao, lojaCategoria, setLojaCategoria,
+                    carrinho, setCarrinho, showCarrinho, setShowCarrinho,
+                    socialProfile, f, E, o,
+                    relatorioNaoLido, setRelatorioNaoLido, relatoriosNaoLidos, setRelatoriosNaoLidos,
+                    marcarRelatorioComoLido, irParaRelatorio,
+                    gl, vl, wl, _l, Cl, Ua, za, Ba, Va, Ja, Qa, Ha, Ga, Wa, Za, Ya, Ka,
+                    Rl, El, hl, fl, Nl, yl, bl, lancarDebitoPlific
+                }) : React.createElement("p", {className: "p-8 text-red-600 text-center"}, "Erro: ModuloFinanceiro.js não carregado")
+            );
         }
         // Verificar permissão para TO-DO (admin comum)
         const canAccessTodo = hasModuleAccess(l, "todo");
