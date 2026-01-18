@@ -1875,8 +1875,8 @@
                     // Header
                     React.createElement("div", {className: "flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"},
                         React.createElement("div", null,
-                            React.createElement("h2", {className: "text-2xl font-bold text-gray-800"}, "🎯 Incentivos & Promoções"),
-                            React.createElement("p", {className: "text-gray-600"}, "Gerencie promoções e incentivos das operações")
+                            React.createElement("h2", {className: "text-2xl font-bold text-gray-800"}, "🎯 Acompanhamento de Incentivos, Promoções e Novas Operações"),
+                            React.createElement("p", {className: "text-gray-600"}, "Gerencie demandas operacionais e acompanhe custos")
                         ),
                         React.createElement("button", {
                             onClick: () => { 
@@ -1896,7 +1896,7 @@
                                 setIncentivoModal(true); 
                             },
                             className: "px-6 py-3 bg-teal-600 text-white rounded-xl font-semibold hover:bg-teal-700 flex items-center gap-2 shadow-lg"
-                        }, "➕ Novo Incentivo")
+                        }, "➕ Criar Demanda")
                     ),
                     
                     // Cards de estatísticas
@@ -1920,6 +1920,31 @@
                         React.createElement("div", {className: "bg-white rounded-xl p-4 shadow border-l-4 border-teal-500"},
                             React.createElement("p", {className: "text-sm text-gray-500"}, "Total"),
                             React.createElement("p", {className: "text-2xl font-bold text-teal-600"}, incentivosStats?.total || 0)
+                        ),
+                        // Card de Total Investido no Mês
+                        React.createElement("div", {className: "bg-gradient-to-br from-green-50 to-emerald-100 rounded-xl p-4 shadow border-l-4 border-emerald-600 col-span-2 md:col-span-5"},
+                            React.createElement("div", {className: "flex items-center justify-between"},
+                                React.createElement("div", null,
+                                    React.createElement("p", {className: "text-sm text-emerald-700 font-medium"}, "💰 Total Investido no Mês"),
+                                    React.createElement("p", {className: "text-xs text-emerald-600"}, "Soma de todos os incentivos + promoções")
+                                ),
+                                React.createElement("p", {className: "text-3xl font-bold text-emerald-700"}, 
+                                    "R$ ", ((incentivosData || []).reduce((acc, inc) => {
+                                        // Incentivos: usa o cálculo automático
+                                        if (inc.tipo === 'incentivo' && inc.calculo?.valor_total) {
+                                            return acc + inc.calculo.valor_total;
+                                        }
+                                        // Promoções: extrai valor numérico do campo valor
+                                        if (inc.tipo === 'promocao' && inc.valor) {
+                                            const valorNum = parseFloat(inc.valor.replace(/[^\d.,]/g, '').replace(',', '.'));
+                                            if (!isNaN(valorNum)) {
+                                                return acc + valorNum;
+                                            }
+                                        }
+                                        return acc;
+                                    }, 0)).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                                )
+                            )
                         )
                     ),
                     
@@ -2053,13 +2078,13 @@
                     // Lista de incentivos ativos/próximos
                     React.createElement("div", {className: "bg-white rounded-xl shadow-lg overflow-hidden"},
                         React.createElement("div", {className: "p-4 bg-gray-50 border-b"},
-                            React.createElement("h3", {className: "font-bold text-gray-800"}, "📋 Todos os Incentivos")
+                            React.createElement("h3", {className: "font-bold text-gray-800"}, "📋 Todas as Demandas")
                         ),
                         (!incentivosData || incentivosData.length === 0) 
                             ? React.createElement("div", {className: "p-8 text-center"},
                                 React.createElement("span", {className: "text-5xl block mb-4"}, "📭"),
-                                React.createElement("p", {className: "text-gray-500"}, "Nenhum incentivo cadastrado"),
-                                React.createElement("p", {className: "text-sm text-gray-400"}, "Clique em \"Novo Incentivo\" para criar o primeiro")
+                                React.createElement("p", {className: "text-gray-500"}, "Nenhuma demanda cadastrada"),
+                                React.createElement("p", {className: "text-sm text-gray-400"}, "Clique em \"Criar Demanda\" para criar a primeira")
                             )
                             : React.createElement("div", {className: "divide-y max-h-[500px] overflow-y-auto"},
                                 (incentivosData || []).map(inc => {
@@ -2192,8 +2217,8 @@
                 },
                     // Header do modal
                     React.createElement("div", {className: "bg-gradient-to-r from-teal-600 to-teal-700 p-6 text-white"},
-                        React.createElement("h2", {className: "text-xl font-bold"}, incentivoEdit ? "✏️ Editar Incentivo" : "➕ Novo Incentivo"),
-                        React.createElement("p", {className: "text-teal-100 text-sm"}, "Configure os detalhes do incentivo/promoção")
+                        React.createElement("h2", {className: "text-xl font-bold"}, incentivoEdit ? "✏️ Editar Demanda" : "➕ Nova Demanda"),
+                        React.createElement("p", {className: "text-teal-100 text-sm"}, "Configure os detalhes da demanda")
                     ),
                     
                     // Formulário
@@ -2529,7 +2554,7 @@
                                 (incentivoForm.tipo === 'incentivo' && (!incentivoForm.hora_inicio || !incentivoForm.hora_fim || !incentivoForm.valor_incentivo || (incentivoForm.clientes_vinculados || []).length === 0)) ||
                                 (incentivoForm.tipo === 'promocao' && (!incentivoForm.valor || (incentivoForm.clientes_vinculados || []).length === 0)),
                             className: "flex-1 px-6 py-3 bg-teal-600 text-white rounded-xl font-semibold hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                        }, incentivoEdit ? "💾 Salvar Alterações" : "➕ Criar Incentivo")
+                        }, incentivoEdit ? "💾 Salvar Alterações" : "➕ Criar Demanda")
                     )
                 )
             ),
