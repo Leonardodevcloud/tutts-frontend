@@ -2231,18 +2231,6 @@
                             )
                         ),
                         
-                        // Descrição
-                        React.createElement("div", null,
-                            React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-2"}, "Descrição"),
-                            React.createElement("textarea", {
-                                value: incentivoForm.descricao,
-                                onChange: e => setIncentivoForm(f => ({...f, descricao: e.target.value})),
-                                placeholder: "Descreva os detalhes do incentivo...",
-                                rows: 3,
-                                className: "w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-teal-500 resize-none"
-                            })
-                        ),
-                        
                         // Período
                         React.createElement("div", {className: "grid grid-cols-2 gap-4"},
                             React.createElement("div", null,
@@ -2312,18 +2300,60 @@
                                 React.createElement("p", {className: "text-xs text-gray-500 mt-1"}, "Este valor será multiplicado pela quantidade de OS no período")
                             ),
                             
-                            // Clientes Vinculados (Multi-select)
+                            // Clientes Vinculados (Multi-select com busca)
                             React.createElement("div", null,
                                 React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-2"}, "Clientes Vinculados *"),
+                                
+                                // Campo de busca
+                                React.createElement("div", {className: "relative mb-2"},
+                                    React.createElement("input", {
+                                        type: "text",
+                                        placeholder: "🔍 Buscar cliente por nome ou código...",
+                                        className: "w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-yellow-500 text-sm",
+                                        onChange: e => {
+                                            const busca = e.target.value.toLowerCase();
+                                            const container = e.target.closest('.space-y-4').querySelector('[data-clientes-lista]');
+                                            if (container) {
+                                                container.querySelectorAll('[data-cliente-item]').forEach(item => {
+                                                    const nome = item.getAttribute('data-nome').toLowerCase();
+                                                    const cod = item.getAttribute('data-cod');
+                                                    item.style.display = (nome.includes(busca) || cod.includes(busca)) ? '' : 'none';
+                                                });
+                                            }
+                                        }
+                                    })
+                                ),
+                                
+                                // Clientes selecionados (badges)
+                                (incentivoForm.clientes_vinculados || []).length > 0 && React.createElement("div", {className: "flex flex-wrap gap-2 mb-2"},
+                                    (incentivoForm.clientes_vinculados || []).map(codCliente => {
+                                        const cliente = (incentivoClientesBi || []).find(c => c.cod_cliente === codCliente);
+                                        return React.createElement("span", {
+                                            key: codCliente,
+                                            className: "inline-flex items-center gap-1 px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm"
+                                        },
+                                            React.createElement("span", null, cliente?.nome_display || `Cliente ${codCliente}`),
+                                            React.createElement("button", {
+                                                type: "button",
+                                                onClick: () => setIncentivoForm(f => ({...f, clientes_vinculados: (f.clientes_vinculados || []).filter(c => c !== codCliente)})),
+                                                className: "ml-1 text-yellow-600 hover:text-yellow-800 font-bold"
+                                            }, "×")
+                                        );
+                                    })
+                                ),
+                                
                                 incentivoClientesLoading 
                                     ? React.createElement("div", {className: "text-center py-4 text-gray-500"}, "Carregando clientes...")
-                                    : React.createElement("div", {className: "border rounded-xl max-h-48 overflow-y-auto"},
+                                    : React.createElement("div", {"data-clientes-lista": true, className: "border rounded-xl max-h-48 overflow-y-auto"},
                                         (incentivoClientesBi || []).length === 0 
                                             ? React.createElement("div", {className: "p-4 text-center text-gray-500"}, "Nenhum cliente encontrado no BI")
                                             : (incentivoClientesBi || []).map(cliente => {
                                                 const isSelected = (incentivoForm.clientes_vinculados || []).includes(cliente.cod_cliente);
                                                 return React.createElement("label", {
                                                     key: cliente.cod_cliente,
+                                                    "data-cliente-item": true,
+                                                    "data-nome": cliente.nome_display || '',
+                                                    "data-cod": String(cliente.cod_cliente),
                                                     className: "flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0 " + (isSelected ? 'bg-yellow-50' : '')
                                                 },
                                                     React.createElement("input", {
