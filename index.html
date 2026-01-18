@@ -33,6 +33,74 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   
   <style>
+    /* ==================== SPLASH SCREEN ANIMATIONS ==================== */
+    @keyframes logoReveal {
+      0% { opacity: 0; transform: scale(0.5) rotate(-10deg); }
+      50% { opacity: 1; transform: scale(1.1) rotate(5deg); }
+      100% { opacity: 1; transform: scale(1) rotate(0deg); }
+    }
+
+    @keyframes logoPulse {
+      0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.7); }
+      50% { transform: scale(1.05); box-shadow: 0 0 40px 20px rgba(124, 58, 237, 0); }
+    }
+
+    @keyframes textReveal {
+      0% { opacity: 0; transform: translateY(20px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes splashFadeOut {
+      from { opacity: 1; }
+      to { opacity: 0; }
+    }
+
+    @keyframes ringExpand {
+      0% { transform: scale(0.8); opacity: 0.8; }
+      100% { transform: scale(2.5); opacity: 0; }
+    }
+
+    @keyframes loginSlideUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes shimmerBar {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+
+    .splash-logo-reveal {
+      animation: logoReveal 1s ease-out forwards;
+    }
+
+    .splash-logo-pulse {
+      animation: logoPulse 2s ease-in-out infinite;
+    }
+
+    .splash-text-reveal {
+      animation: textReveal 0.8s ease-out forwards;
+    }
+
+    .splash-fade-out {
+      animation: splashFadeOut 0.5s ease-out forwards;
+    }
+
+    .splash-ring-expand {
+      animation: ringExpand 2s ease-out infinite;
+    }
+
+    .login-slide-up {
+      animation: loginSlideUp 0.5s ease-out forwards;
+    }
+
+    .splash-shimmer-bar {
+      background: linear-gradient(90deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.4) 50%, rgba(255,255,255,0.1) 100%);
+      background-size: 200% 100%;
+      animation: shimmerBar 1.5s infinite;
+    }
+    /* ==================== FIM SPLASH SCREEN ==================== */
+
     /* Mapa Leaflet - FORÇAR VISIBILIDADE */
     #mapa-calor-leaflet,
     #mapa-clientes-leaflet {
@@ -223,195 +291,114 @@
   </div>
   
   <!-- Update Available Banner -->
-  <div id="update-banner" style="display: none;" class="fixed top-0 left-0 right-0 bg-gradient-to-r from-green-500 to-green-600 text-white py-3 px-4 z-[10000] update-banner shadow-lg">
-    <div class="flex items-center justify-center gap-4 max-w-lg mx-auto">
-      <span class="text-xl">🔄</span>
-      <span class="font-medium">Nova versão disponível!</span>
-      <button id="update-btn" class="px-4 py-1.5 bg-white text-green-600 rounded-lg font-bold text-sm hover:bg-green-50 transition-all">
-        Atualizar Agora
+  <div id="update-banner" class="hidden update-banner fixed top-0 left-0 right-0 bg-gradient-to-r from-purple-600 to-purple-800 text-white p-4 z-[10000] shadow-lg">
+    <div class="max-w-4xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <span class="text-2xl">🔄</span>
+        <div>
+          <p class="font-semibold">Nova versão disponível!</p>
+          <p class="text-sm opacity-90">Clique para atualizar o aplicativo</p>
+        </div>
+      </div>
+      <button onclick="window.location.reload(true)" class="bg-white text-purple-700 px-4 py-2 rounded-lg font-semibold hover:bg-purple-100 transition-colors">
+        Atualizar
       </button>
+    </div>
+  </div>
+  
+  <!-- PWA Install Banner -->
+  <div id="pwa-install-banner" class="hidden pwa-install-banner fixed bottom-0 left-0 right-0 bg-gradient-to-r from-purple-600 to-purple-800 text-white p-4 z-[10000] shadow-lg">
+    <div class="max-w-4xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <span class="text-2xl">📱</span>
+        <div>
+          <p class="font-semibold">Instale o App Tutts</p>
+          <p class="text-sm opacity-90">Acesse mais rápido direto da sua tela inicial</p>
+        </div>
+      </div>
+      <div class="flex gap-2">
+        <button id="pwa-install-btn" class="bg-white text-purple-700 px-4 py-2 rounded-lg font-semibold hover:bg-purple-100 transition-colors">
+          Instalar
+        </button>
+        <button onclick="document.getElementById('pwa-install-banner').classList.add('hidden'); localStorage.setItem('pwa-dismissed', Date.now());" class="text-white/70 hover:text-white px-2">
+          ✕
+        </button>
+      </div>
     </div>
   </div>
   
   <div id="root"></div>
   
-  <!-- React Production (mais rápido) -->
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
+  <script src="/app.js"></script>
   
-  <!-- App pré-compilado (SEM BABEL!) -->
-  <!-- Módulo de Filas (carregar ANTES do app.js) -->
-  <script src="filas.js"></script>
-  
-  <!-- Módulo Config (carregamento separado) -->
-  <script src="modulo-config.js"></script>
-  
-  <!-- Módulo Operacional (carregamento separado) -->
-  <script src="modulo-operacional.js"></script>
-  
-  <!-- Módulo Disponibilidade (carregamento separado) -->
-  <script src="modulo-disponibilidade.js"></script>
-  
-  <!-- Módulo Financeiro (carregamento separado) -->
-  <script src="ModuloFinanceiro.js"></script>
-  
-  <!-- App pré-compilado (SEM BABEL!) -->
-  <script src="app.js"></script>
-  <!-- PWA Install Banner Component -->
-  <div id="pwa-install-banner" style="display: none;" class="fixed bottom-4 left-4 right-4 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-2xl shadow-2xl p-4 z-50 pwa-install-banner">
-    <div class="flex items-center gap-4">
-      <div class="w-14 h-14 bg-white rounded-xl flex items-center justify-center text-3xl shadow">
-        🚀
-      </div>
-      <div class="flex-1">
-        <h3 class="font-bold text-lg">Instalar Tutts</h3>
-        <p class="text-purple-200 text-sm">Acesse mais rápido pela tela inicial!</p>
-      </div>
-      <div class="flex flex-col gap-2">
-        <button id="pwa-install-btn" class="px-4 py-2 bg-white text-purple-700 rounded-lg font-bold text-sm hover:bg-purple-100 transition-all">
-          Instalar
-        </button>
-        <button id="pwa-dismiss-btn" class="text-purple-300 text-xs hover:text-white">
-          Agora não
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- PWA Service Worker Registration with Update Detection -->
   <script>
-    // Variáveis globais
-    let newWorker = null;
-    const updateBanner = document.getElementById('update-banner');
-    const updateBtn = document.getElementById('update-btn');
-
-    // Função para mostrar banner de atualização
-    function showUpdateBanner() {
-      if (updateBanner) {
-        updateBanner.style.display = 'block';
-      }
-    }
-
-    // Botão de atualizar
-    if (updateBtn) {
-      updateBtn.addEventListener('click', () => {
-        if (newWorker) {
-          // Diz ao novo SW para assumir imediatamente
-          newWorker.postMessage({ type: 'SKIP_WAITING' });
-        }
-        // Recarrega a página
-        window.location.reload(true);
-      });
-    }
-
-    // Registrar Service Worker com detecção de atualização
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', async () => {
-        try {
-          const registration = await navigator.serviceWorker.register('/sw.js');
-          console.log('✅ Service Worker registrado:', registration.scope);
-          
-          // Detecta quando há um novo SW esperando
-          registration.addEventListener('updatefound', () => {
-            newWorker = registration.installing;
-            console.log('🔄 Nova versão do Service Worker encontrada!');
-            
-            newWorker.addEventListener('statechange', () => {
-              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                // Novo SW instalado, mas o antigo ainda controla a página
-                console.log('📦 Nova versão pronta! Mostrando banner...');
-                showUpdateBanner();
-              }
-            });
-          });
-          
-          // Verifica por atualizações a cada 5 minutos (não 60 segundos para evitar muitas verificações)
-          setInterval(() => {
-            registration.update();
-          }, 300000);
-          
-          // Verifica imediatamente por atualizações
-          registration.update();
-          
-        } catch (err) {
-          console.log('❌ Service Worker erro:', err);
-        }
-      });
-      
-      // Escuta mensagens do SW
-      navigator.serviceWorker.addEventListener('message', (event) => {
-        if (event.data && event.data.type === 'SW_UPDATED') {
-          console.log('🔔 SW notificou atualização:', event.data.version);
-          showUpdateBanner();
-        }
-      });
-      
-      // Recarrega quando o novo SW assumir controle - COM PROTEÇÃO CONTRA LOOP
-      let refreshing = false;
-      let lastRefresh = localStorage.getItem('sw_last_refresh');
-      let now = Date.now();
-      
-      // Evita reload se já recarregou nos últimos 10 segundos
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
-        if (!refreshing) {
-          // Verifica se não está em loop de reload
-          if (lastRefresh && (now - parseInt(lastRefresh)) < 10000) {
-            console.log('⚠️ Evitando loop de reload do Service Worker');
-            return;
-          }
-          
-          refreshing = true;
-          localStorage.setItem('sw_last_refresh', now.toString());
-          console.log('🔄 Novo Service Worker assumiu, recarregando...');
-          window.location.reload(true);
-        }
-      });
-    }
-
     // PWA Install Prompt
     let deferredPrompt;
-    const installBanner = document.getElementById('pwa-install-banner');
-    const installBtn = document.getElementById('pwa-install-btn');
-    const dismissBtn = document.getElementById('pwa-dismiss-btn');
-
+    
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       deferredPrompt = e;
       
-      if (localStorage.getItem('pwa-dismissed') !== 'true') {
+      // Verificar se já foi dispensado recentemente (7 dias)
+      const dismissed = localStorage.getItem('pwa-dismissed');
+      if (dismissed && (Date.now() - parseInt(dismissed)) < 7 * 24 * 60 * 60 * 1000) {
+        return;
+      }
+      
+      // Mostrar banner apenas se não estiver instalado
+      if (!window.matchMedia('(display-mode: standalone)').matches) {
         setTimeout(() => {
-          installBanner.style.display = 'block';
+          document.getElementById('pwa-install-banner').classList.remove('hidden');
         }, 3000);
       }
     });
-
-    if (installBtn) {
-      installBtn.addEventListener('click', async () => {
-        if (deferredPrompt) {
-          deferredPrompt.prompt();
-          const { outcome } = await deferredPrompt.userChoice;
-          console.log('PWA install:', outcome);
-          deferredPrompt = null;
-          installBanner.style.display = 'none';
-        }
-      });
-    }
-
-    if (dismissBtn) {
-      dismissBtn.addEventListener('click', () => {
-        installBanner.style.display = 'none';
-        localStorage.setItem('pwa-dismissed', 'true');
-      });
-    }
-
-    window.addEventListener('appinstalled', () => {
-      console.log('✅ PWA instalado!');
-      installBanner.style.display = 'none';
+    
+    document.getElementById('pwa-install-btn')?.addEventListener('click', async () => {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log('PWA install outcome:', outcome);
+        deferredPrompt = null;
+        document.getElementById('pwa-install-banner').classList.add('hidden');
+      }
     });
     
+    // Service Worker Registration with Update Check
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').then(registration => {
+        console.log('SW registered:', registration.scope);
+        
+        // Check for updates
+        registration.addEventListener('updatefound', () => {
+          const newWorker = registration.installing;
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              // New version available
+              document.getElementById('update-banner').classList.remove('hidden');
+            }
+          });
+        });
+      }).catch(err => console.log('SW registration failed:', err));
+    }
+    
+    // Hide loading screen when app is ready
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        const loadingScreen = document.getElementById('loading-screen');
+        if (loadingScreen) {
+          loadingScreen.classList.add('fade-out');
+          setTimeout(() => loadingScreen.remove(), 500);
+        }
+      }, 500);
+    });
+  </script>
+  
+  <!-- Mapa de Calor Script -->
+  <script>
     // ============================================
-    // FUNÇÕES DO MAPA LEAFLET
+    // MAPA DE CALOR (BI)
     // ============================================
     var mapaLeaflet = null;
     var markersLayer = null;
@@ -420,7 +407,7 @@
     window.initMapaCalor = function(pontos, tentativa) {
       tentativa = tentativa || 0;
       
-      console.log('🗺️ [INDEX] initMapaCalor chamado com', pontos ? pontos.length : 0, 'pontos');
+      console.log('🗺️ [INDEX] initMapaCalor chamado com', pontos ? pontos.length : 0, 'pontos, tentativa', tentativa);
       
       if (typeof L === 'undefined') {
         console.log('❌ Leaflet não carregado!');
@@ -441,8 +428,6 @@
       
       console.log('📐 Container:', container.offsetWidth, 'x', container.offsetHeight);
       
-      // SEMPRE destruir e recriar o mapa para evitar problemas
-      console.log('🆕 Criando/recriando mapa...');
       if (mapaLeaflet) {
         try { mapaLeaflet.remove(); } catch(e) {}
         mapaLeaflet = null;
@@ -450,40 +435,45 @@
       }
       container._leaflet_id = null;
       container.innerHTML = '';
-      mapaInicializado = false;
       
       try {
-        mapaLeaflet = L.map('mapa-calor-leaflet', { preferCanvas: true }).setView([-16.6869, -49.2648], 11);
+        mapaLeaflet = L.map('mapa-calor-leaflet').setView([-16.6869, -49.2648], 10);
+        
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           attribution: '© OpenStreetMap',
           maxZoom: 18
         }).addTo(mapaLeaflet);
+        
         markersLayer = L.layerGroup().addTo(mapaLeaflet);
         mapaInicializado = true;
-        console.log('✅ Mapa criado com sucesso!');
+        console.log('✅ Mapa Leaflet criado com sucesso!');
+        
       } catch(e) {
         console.error('❌ Erro ao criar mapa:', e);
         return;
       }
       
       if (!pontos || pontos.length === 0) {
-        console.log('⚠️ Sem pontos para adicionar');
+        console.log('Sem pontos para exibir');
         return;
       }
       
-      console.log('📍 Adicionando', pontos.length, 'pontos...');
-      var maxCount = Math.max.apply(null, pontos.map(function(p) { return p.count || 1; }));
+      markersLayer.clearLayers();
+      var maxCount = Math.max.apply(null, pontos.map(function(p) { return p.count || 0; }));
       var adicionados = 0;
       
       pontos.forEach(function(ponto) {
         if (!ponto.lat || !ponto.lng) return;
         adicionados++;
         
-        var intensity = (ponto.count || 1) / maxCount;
-        var color = '#8b5cf6';
-        if (ponto.taxaPrazo !== undefined) {
-          if (ponto.taxaPrazo >= 80) color = '#22c55e';
-          else if (ponto.taxaPrazo >= 60) color = '#eab308';
+        var intensity = (ponto.count || 0) / (maxCount || 1);
+        var color;
+        
+        if (ponto.color) {
+          color = ponto.color;
+        } else {
+          if (intensity > 0.7) color = '#22c55e';
+          else if (intensity > 0.4) color = '#f59e0b';
           else color = '#ef4444';
         }
         
