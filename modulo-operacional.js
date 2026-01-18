@@ -1869,145 +1869,241 @@
                 })
             ),
             // ==================== CONTEÚDO INCENTIVOS ====================
-            p.opTab === "incentivos" && React.createElement("div", {className: "space-y-6"},
-                // Header
-                React.createElement("div", {className: "flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"},
-                    React.createElement("div", null,
-                        React.createElement("h2", {className: "text-2xl font-bold text-gray-800"}, "🎯 Incentivos & Promoções"),
-                        React.createElement("p", {className: "text-gray-600"}, "Gerencie promoções e incentivos das operações")
-                    ),
-                    React.createElement("button", {
-                        onClick: () => { 
-                            setIncentivoEdit(null); 
-                            setIncentivoForm({
-                                titulo: '',
-                                descricao: '',
-                                tipo: 'promocao',
-                                operacoes: [],
-                                todas_operacoes: false,
-                                data_inicio: '',
-                                data_fim: '',
-                                valor: '',
-                                condicoes: '',
-                                cor: '#0d9488'
-                            }); 
-                            setIncentivoModal(true); 
-                        },
-                        className: "px-6 py-3 bg-teal-600 text-white rounded-xl font-semibold hover:bg-teal-700 flex items-center gap-2 shadow-lg"
-                    }, "➕ Novo Incentivo")
-                ),
-                
-                // Cards de estatísticas
-                React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-5 gap-4"},
-                    React.createElement("div", {className: "bg-white rounded-xl p-4 shadow border-l-4 border-green-500"},
-                        React.createElement("p", {className: "text-sm text-gray-500"}, "Ativos Agora"),
-                        React.createElement("p", {className: "text-2xl font-bold text-green-600"}, incentivosStats?.ativos || 0)
-                    ),
-                    React.createElement("div", {className: "bg-white rounded-xl p-4 shadow border-l-4 border-orange-500"},
-                        React.createElement("p", {className: "text-sm text-gray-500"}, "Vencendo em 7 dias"),
-                        React.createElement("p", {className: "text-2xl font-bold text-orange-600"}, incentivosStats?.vencendo_em_breve || 0)
-                    ),
-                    React.createElement("div", {className: "bg-white rounded-xl p-4 shadow border-l-4 border-yellow-500"},
-                        React.createElement("p", {className: "text-sm text-gray-500"}, "Pausados"),
-                        React.createElement("p", {className: "text-2xl font-bold text-yellow-600"}, incentivosStats?.pausados || 0)
-                    ),
-                    React.createElement("div", {className: "bg-white rounded-xl p-4 shadow border-l-4 border-gray-400"},
-                        React.createElement("p", {className: "text-sm text-gray-500"}, "Encerrados"),
-                        React.createElement("p", {className: "text-2xl font-bold text-gray-600"}, incentivosStats?.encerrados || 0)
-                    ),
-                    React.createElement("div", {className: "bg-white rounded-xl p-4 shadow border-l-4 border-teal-500"},
-                        React.createElement("p", {className: "text-sm text-gray-500"}, "Total"),
-                        React.createElement("p", {className: "text-2xl font-bold text-teal-600"}, incentivosStats?.total || 0)
-                    )
-                ),
-                
-                // Calendário
-                React.createElement("div", {className: "bg-white rounded-xl shadow-lg overflow-hidden"},
-                    // Header do calendário
-                    React.createElement("div", {className: "bg-gradient-to-r from-teal-600 to-teal-700 p-4 flex items-center justify-between"},
-                        React.createElement("button", {
-                            onClick: () => {
-                                const novaData = new Date(incentivosCalendarioMes);
-                                novaData.setMonth(novaData.getMonth() - 1);
-                                setIncentivosCalendarioMes(novaData);
-                            },
-                            className: "p-2 text-white hover:bg-white/20 rounded-lg transition-colors"
-                        }, "◀"),
-                        React.createElement("h3", {className: "text-xl font-bold text-white"},
-                            new Date(incentivosCalendarioMes).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase())
+            p.opTab === "incentivos" && React.createElement("div", {className: "max-w-7xl mx-auto p-6"},
+                React.createElement("div", {className: "space-y-6"},
+                    // Header
+                    React.createElement("div", {className: "flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"},
+                        React.createElement("div", null,
+                            React.createElement("h2", {className: "text-2xl font-bold text-gray-800"}, "🎯 Incentivos & Promoções"),
+                            React.createElement("p", {className: "text-gray-600"}, "Gerencie promoções e incentivos das operações")
                         ),
                         React.createElement("button", {
-                            onClick: () => {
-                                const novaData = new Date(incentivosCalendarioMes);
-                                novaData.setMonth(novaData.getMonth() + 1);
-                                setIncentivosCalendarioMes(novaData);
+                            onClick: () => { 
+                                setIncentivoEdit(null); 
+                                setIncentivoForm({
+                                    titulo: '',
+                                    descricao: '',
+                                    tipo: 'promocao',
+                                    operacoes: [],
+                                    todas_operacoes: false,
+                                    data_inicio: '',
+                                    data_fim: '',
+                                    valor: '',
+                                    condicoes: '',
+                                    cor: '#0d9488'
+                                }); 
+                                setIncentivoModal(true); 
                             },
-                            className: "p-2 text-white hover:bg-white/20 rounded-lg transition-colors"
-                        }, "▶")
+                            className: "px-6 py-3 bg-teal-600 text-white rounded-xl font-semibold hover:bg-teal-700 flex items-center gap-2 shadow-lg"
+                        }, "➕ Novo Incentivo")
                     ),
                     
-                    // Dias da semana
-                    React.createElement("div", {className: "grid grid-cols-7 bg-gray-100 border-b"},
-                        ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(dia => 
-                            React.createElement("div", {key: dia, className: "p-3 text-center font-semibold text-gray-600 text-sm"}, dia)
+                    // Cards de estatísticas
+                    React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-5 gap-4"},
+                        React.createElement("div", {className: "bg-white rounded-xl p-4 shadow border-l-4 border-green-500"},
+                            React.createElement("p", {className: "text-sm text-gray-500"}, "Ativos Agora"),
+                            React.createElement("p", {className: "text-2xl font-bold text-green-600"}, incentivosStats?.ativos || 0)
+                        ),
+                        React.createElement("div", {className: "bg-white rounded-xl p-4 shadow border-l-4 border-orange-500"},
+                            React.createElement("p", {className: "text-sm text-gray-500"}, "Vencendo em 7 dias"),
+                            React.createElement("p", {className: "text-2xl font-bold text-orange-600"}, incentivosStats?.vencendo_em_breve || 0)
+                        ),
+                        React.createElement("div", {className: "bg-white rounded-xl p-4 shadow border-l-4 border-yellow-500"},
+                            React.createElement("p", {className: "text-sm text-gray-500"}, "Pausados"),
+                            React.createElement("p", {className: "text-2xl font-bold text-yellow-600"}, incentivosStats?.pausados || 0)
+                        ),
+                        React.createElement("div", {className: "bg-white rounded-xl p-4 shadow border-l-4 border-gray-400"},
+                            React.createElement("p", {className: "text-sm text-gray-500"}, "Encerrados"),
+                            React.createElement("p", {className: "text-2xl font-bold text-gray-600"}, incentivosStats?.encerrados || 0)
+                        ),
+                        React.createElement("div", {className: "bg-white rounded-xl p-4 shadow border-l-4 border-teal-500"},
+                            React.createElement("p", {className: "text-sm text-gray-500"}, "Total"),
+                            React.createElement("p", {className: "text-2xl font-bold text-teal-600"}, incentivosStats?.total || 0)
                         )
                     ),
                     
-                    // Grid do calendário
-                    React.createElement("div", {className: "grid grid-cols-7"},
-                        (function() {
-                            const mesAtual = new Date(incentivosCalendarioMes);
-                            const ano = mesAtual.getFullYear();
-                            const mes = mesAtual.getMonth();
-                            const primeiroDia = new Date(ano, mes, 1);
-                            const ultimoDia = new Date(ano, mes + 1, 0);
-                            const diasNoMes = ultimoDia.getDate();
-                            const diaSemanaInicio = primeiroDia.getDay();
-                            
-                            const hoje = new Date();
-                            hoje.setHours(0,0,0,0);
-                            
-                            const dias = [];
-                            
-                            // Dias vazios antes do primeiro dia
-                            for (let i = 0; i < diaSemanaInicio; i++) {
-                                dias.push(React.createElement("div", {key: 'empty-' + i, className: "min-h-24 bg-gray-50 border-b border-r"}));
-                            }
-                            
-                            // Dias do mês
-                            for (let dia = 1; dia <= diasNoMes; dia++) {
-                                const dataAtual = new Date(ano, mes, dia);
-                                const isHoje = dataAtual.getTime() === hoje.getTime();
+                    // Calendário
+                    React.createElement("div", {className: "bg-white rounded-xl shadow-lg overflow-hidden"},
+                        // Header do calendário
+                        React.createElement("div", {className: "bg-gradient-to-r from-teal-600 to-teal-700 p-4 flex items-center justify-between"},
+                            React.createElement("button", {
+                                onClick: () => {
+                                    const novaData = new Date(incentivosCalendarioMes);
+                                    novaData.setMonth(novaData.getMonth() - 1);
+                                    setIncentivosCalendarioMes(novaData);
+                                },
+                                className: "p-2 text-white hover:bg-white/20 rounded-lg transition-colors"
+                            }, "◀"),
+                            React.createElement("h3", {className: "text-xl font-bold text-white"},
+                                new Date(incentivosCalendarioMes).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase())
+                            ),
+                            React.createElement("button", {
+                                onClick: () => {
+                                    const novaData = new Date(incentivosCalendarioMes);
+                                    novaData.setMonth(novaData.getMonth() + 1);
+                                    setIncentivosCalendarioMes(novaData);
+                                },
+                                className: "p-2 text-white hover:bg-white/20 rounded-lg transition-colors"
+                            }, "▶")
+                        ),
+                        
+                        // Dias da semana
+                        React.createElement("div", {className: "grid grid-cols-7 bg-gray-100 border-b"},
+                            ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(dia => 
+                                React.createElement("div", {key: dia, className: "p-3 text-center font-semibold text-gray-600 text-sm"}, dia)
+                            )
+                        ),
+                        
+                        // Grid do calendário
+                        React.createElement("div", {className: "grid grid-cols-7"},
+                            (function() {
+                                const mesAtual = new Date(incentivosCalendarioMes);
+                                const ano = mesAtual.getFullYear();
+                                const mes = mesAtual.getMonth();
+                                const primeiroDia = new Date(ano, mes, 1);
+                                const ultimoDia = new Date(ano, mes + 1, 0);
+                                const diasNoMes = ultimoDia.getDate();
+                                const diaSemanaInicio = primeiroDia.getDay();
                                 
-                                // Filtrar incentivos para este dia
-                                const incentivosNoDia = (incentivosData || []).filter(inc => {
+                                const hoje = new Date();
+                                hoje.setHours(0,0,0,0);
+                                
+                                const dias = [];
+                                
+                                // Dias vazios antes do primeiro dia
+                                for (let i = 0; i < diaSemanaInicio; i++) {
+                                    dias.push(React.createElement("div", {key: 'empty-' + i, className: "min-h-24 bg-gray-50 border-b border-r"}));
+                                }
+                                
+                                // Dias do mês
+                                for (let dia = 1; dia <= diasNoMes; dia++) {
+                                    const dataAtual = new Date(ano, mes, dia);
+                                    const isHoje = dataAtual.getTime() === hoje.getTime();
+                                    
+                                    // Filtrar incentivos para este dia
+                                    const incentivosNoDia = (incentivosData || []).filter(inc => {
+                                        const inicio = new Date(inc.data_inicio);
+                                        const fim = new Date(inc.data_fim);
+                                        inicio.setHours(0,0,0,0);
+                                        fim.setHours(23,59,59,999);
+                                        return dataAtual >= inicio && dataAtual <= fim;
+                                    });
+                                    
+                                    dias.push(
+                                        React.createElement("div", {
+                                            key: dia,
+                                            className: "min-h-24 border-b border-r p-1 " + (isHoje ? "bg-teal-50" : "bg-white") + " hover:bg-gray-50 transition-colors"
+                                        },
+                                            // Número do dia
+                                            React.createElement("div", {className: "flex justify-between items-start mb-1"},
+                                                React.createElement("span", {
+                                                    className: "inline-flex items-center justify-center w-7 h-7 rounded-full text-sm font-semibold " + 
+                                                        (isHoje ? "bg-teal-600 text-white" : "text-gray-700")
+                                                }, dia),
+                                                incentivosNoDia.length > 0 && React.createElement("span", {
+                                                    className: "text-xs text-gray-400"
+                                                }, incentivosNoDia.length)
+                                            ),
+                                            // Incentivos do dia
+                                            React.createElement("div", {className: "space-y-1 overflow-hidden max-h-16"},
+                                                incentivosNoDia.slice(0, 3).map(inc => 
+                                                    React.createElement("div", {
+                                                        key: inc.id,
+                                                        onClick: () => {
+                                                            setIncentivoEdit(inc);
+                                                            setIncentivoForm({
+                                                                titulo: inc.titulo,
+                                                                descricao: inc.descricao || '',
+                                                                tipo: inc.tipo,
+                                                                operacoes: inc.operacoes || [],
+                                                                todas_operacoes: inc.todas_operacoes,
+                                                                data_inicio: inc.data_inicio?.slice(0, 10),
+                                                                data_fim: inc.data_fim?.slice(0, 10),
+                                                                valor: inc.valor || '',
+                                                                condicoes: inc.condicoes || '',
+                                                                cor: inc.cor || '#0d9488'
+                                                            });
+                                                            setIncentivoModal(true);
+                                                        },
+                                                        className: "text-xs px-1.5 py-0.5 rounded truncate cursor-pointer hover:opacity-80 transition-opacity",
+                                                        style: { 
+                                                            backgroundColor: inc.cor || '#0d9488', 
+                                                            color: 'white',
+                                                            opacity: inc.status === 'pausado' ? 0.5 : 1
+                                                        },
+                                                        title: inc.titulo + (inc.status === 'pausado' ? ' (Pausado)' : '')
+                                                    }, 
+                                                        (inc.tipo === 'meta' ? '🎯' : inc.tipo === 'bonus' ? '💰' : inc.tipo === 'incentivo' ? '⭐' : '🏷️') + ' ' + inc.titulo
+                                                    )
+                                                ),
+                                                incentivosNoDia.length > 3 && React.createElement("div", {
+                                                    className: "text-xs text-gray-400 text-center"
+                                                }, "+", incentivosNoDia.length - 3, " mais")
+                                            )
+                                        )
+                                    );
+                                }
+                                
+                                return dias;
+                            })()
+                        )
+                    ),
+                    
+                    // Lista de incentivos ativos/próximos
+                    React.createElement("div", {className: "bg-white rounded-xl shadow-lg overflow-hidden"},
+                        React.createElement("div", {className: "p-4 bg-gray-50 border-b"},
+                            React.createElement("h3", {className: "font-bold text-gray-800"}, "📋 Todos os Incentivos")
+                        ),
+                        (!incentivosData || incentivosData.length === 0) 
+                            ? React.createElement("div", {className: "p-8 text-center"},
+                                React.createElement("span", {className: "text-5xl block mb-4"}, "📭"),
+                                React.createElement("p", {className: "text-gray-500"}, "Nenhum incentivo cadastrado"),
+                                React.createElement("p", {className: "text-sm text-gray-400"}, "Clique em \"Novo Incentivo\" para criar o primeiro")
+                            )
+                            : React.createElement("div", {className: "divide-y max-h-96 overflow-y-auto"},
+                                (incentivosData || []).map(inc => {
+                                    const hoje = new Date();
+                                    hoje.setHours(0,0,0,0);
                                     const inicio = new Date(inc.data_inicio);
                                     const fim = new Date(inc.data_fim);
-                                    inicio.setHours(0,0,0,0);
-                                    fim.setHours(23,59,59,999);
-                                    return dataAtual >= inicio && dataAtual <= fim;
-                                });
-                                
-                                dias.push(
-                                    React.createElement("div", {
-                                        key: dia,
-                                        className: "min-h-24 border-b border-r p-1 " + (isHoje ? "bg-teal-50" : "bg-white") + " hover:bg-gray-50 transition-colors"
+                                    const isAtivo = inc.status === 'ativo' && hoje >= inicio && hoje <= fim;
+                                    const isVencendo = inc.status === 'ativo' && fim >= hoje && fim <= new Date(hoje.getTime() + 7*24*60*60*1000);
+                                    const isEncerrado = fim < hoje;
+                                    
+                                    return React.createElement("div", {
+                                        key: inc.id,
+                                        className: "p-4 hover:bg-gray-50 transition-colors " + (inc.status === 'pausado' ? 'opacity-60' : '')
                                     },
-                                        // Número do dia
-                                        React.createElement("div", {className: "flex justify-between items-start mb-1"},
-                                            React.createElement("span", {
-                                                className: "inline-flex items-center justify-center w-7 h-7 rounded-full text-sm font-semibold " + 
-                                                    (isHoje ? "bg-teal-600 text-white" : "text-gray-700")
-                                            }, dia),
-                                            incentivosNoDia.length > 0 && React.createElement("span", {
-                                                className: "text-xs text-gray-400"
-                                            }, incentivosNoDia.length)
-                                        ),
-                                        // Incentivos do dia
-                                        React.createElement("div", {className: "space-y-1 overflow-hidden max-h-16"},
-                                            incentivosNoDia.slice(0, 3).map(inc => 
+                                        React.createElement("div", {className: "flex items-start justify-between gap-4"},
+                                            React.createElement("div", {className: "flex items-start gap-3 flex-1"},
+                                                // Indicador de cor
                                                 React.createElement("div", {
-                                                    key: inc.id,
+                                                    className: "w-3 h-12 rounded-full flex-shrink-0",
+                                                    style: { backgroundColor: inc.cor || '#0d9488' }
+                                                }),
+                                                React.createElement("div", {className: "flex-1"},
+                                                    React.createElement("div", {className: "flex items-center gap-2 flex-wrap"},
+                                                        React.createElement("span", {className: "text-lg"}, 
+                                                            inc.tipo === 'meta' ? '🎯' : inc.tipo === 'bonus' ? '💰' : inc.tipo === 'incentivo' ? '⭐' : '🏷️'
+                                                        ),
+                                                        React.createElement("h4", {className: "font-bold text-gray-800"}, inc.titulo),
+                                                        // Status badges
+                                                        isAtivo && React.createElement("span", {className: "px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-semibold"}, "🟢 Ativo"),
+                                                        isVencendo && React.createElement("span", {className: "px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full text-xs font-semibold"}, "⚠️ Vencendo"),
+                                                        inc.status === 'pausado' && React.createElement("span", {className: "px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full text-xs font-semibold"}, "⏸️ Pausado"),
+                                                        isEncerrado && inc.status !== 'pausado' && React.createElement("span", {className: "px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-xs font-semibold"}, "✓ Encerrado")
+                                                    ),
+                                                    inc.descricao && React.createElement("p", {className: "text-sm text-gray-600 mt-1"}, inc.descricao),
+                                                    React.createElement("div", {className: "flex flex-wrap gap-3 mt-2 text-sm text-gray-500"},
+                                                        React.createElement("span", null, "📅 ", new Date(inc.data_inicio).toLocaleDateString('pt-BR'), " → ", new Date(inc.data_fim).toLocaleDateString('pt-BR')),
+                                                        inc.valor && React.createElement("span", null, "💵 ", inc.valor),
+                                                        React.createElement("span", null, inc.todas_operacoes ? "🌎 Todas operações" : ("🏢 " + (inc.operacoes?.length || 0) + " operação(ões)"))
+                                                    )
+                                                )
+                                            ),
+                                            // Ações
+                                            React.createElement("div", {className: "flex gap-2"},
+                                                React.createElement("button", {
                                                     onClick: () => {
                                                         setIncentivoEdit(inc);
                                                         setIncentivoForm({
@@ -2024,112 +2120,18 @@
                                                         });
                                                         setIncentivoModal(true);
                                                     },
-                                                    className: "text-xs px-1.5 py-0.5 rounded truncate cursor-pointer hover:opacity-80 transition-opacity",
-                                                    style: { 
-                                                        backgroundColor: inc.cor || '#0d9488', 
-                                                        color: 'white',
-                                                        opacity: inc.status === 'pausado' ? 0.5 : 1
-                                                    },
-                                                    title: inc.titulo + (inc.status === 'pausado' ? ' (Pausado)' : '')
-                                                }, 
-                                                    (inc.tipo === 'meta' ? '🎯' : inc.tipo === 'bonus' ? '💰' : inc.tipo === 'incentivo' ? '⭐' : '🏷️') + ' ' + inc.titulo
-                                                )
-                                            ),
-                                            incentivosNoDia.length > 3 && React.createElement("div", {
-                                                className: "text-xs text-gray-400 text-center"
-                                            }, "+", incentivosNoDia.length - 3, " mais")
-                                        )
-                                    )
-                                );
-                            }
-                            
-                            return dias;
-                        })()
-                    )
-                ),
-                
-                // Lista de incentivos ativos/próximos
-                React.createElement("div", {className: "bg-white rounded-xl shadow-lg overflow-hidden"},
-                    React.createElement("div", {className: "p-4 bg-gray-50 border-b"},
-                        React.createElement("h3", {className: "font-bold text-gray-800"}, "📋 Todos os Incentivos")
-                    ),
-                    (!incentivosData || incentivosData.length === 0) 
-                        ? React.createElement("div", {className: "p-8 text-center"},
-                            React.createElement("span", {className: "text-5xl block mb-4"}, "📭"),
-                            React.createElement("p", {className: "text-gray-500"}, "Nenhum incentivo cadastrado"),
-                            React.createElement("p", {className: "text-sm text-gray-400"}, "Clique em \"Novo Incentivo\" para criar o primeiro")
-                        )
-                        : React.createElement("div", {className: "divide-y max-h-96 overflow-y-auto"},
-                            (incentivosData || []).map(inc => {
-                                const hoje = new Date();
-                                hoje.setHours(0,0,0,0);
-                                const inicio = new Date(inc.data_inicio);
-                                const fim = new Date(inc.data_fim);
-                                const isAtivo = inc.status === 'ativo' && hoje >= inicio && hoje <= fim;
-                                const isVencendo = inc.status === 'ativo' && fim >= hoje && fim <= new Date(hoje.getTime() + 7*24*60*60*1000);
-                                const isEncerrado = fim < hoje;
-                                
-                                return React.createElement("div", {
-                                    key: inc.id,
-                                    className: "p-4 hover:bg-gray-50 transition-colors " + (inc.status === 'pausado' ? 'opacity-60' : '')
-                                },
-                                    React.createElement("div", {className: "flex items-start justify-between gap-4"},
-                                        React.createElement("div", {className: "flex items-start gap-3 flex-1"},
-                                            // Indicador de cor
-                                            React.createElement("div", {
-                                                className: "w-3 h-12 rounded-full flex-shrink-0",
-                                                style: { backgroundColor: inc.cor || '#0d9488' }
-                                            }),
-                                            React.createElement("div", {className: "flex-1"},
-                                                React.createElement("div", {className: "flex items-center gap-2 flex-wrap"},
-                                                    React.createElement("span", {className: "text-lg"}, 
-                                                        inc.tipo === 'meta' ? '🎯' : inc.tipo === 'bonus' ? '💰' : inc.tipo === 'incentivo' ? '⭐' : '🏷️'
-                                                    ),
-                                                    React.createElement("h4", {className: "font-bold text-gray-800"}, inc.titulo),
-                                                    // Status badges
-                                                    isAtivo && React.createElement("span", {className: "px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-semibold"}, "🟢 Ativo"),
-                                                    isVencendo && React.createElement("span", {className: "px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full text-xs font-semibold"}, "⚠️ Vencendo"),
-                                                    inc.status === 'pausado' && React.createElement("span", {className: "px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full text-xs font-semibold"}, "⏸️ Pausado"),
-                                                    isEncerrado && inc.status !== 'pausado' && React.createElement("span", {className: "px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-xs font-semibold"}, "✓ Encerrado")
-                                                ),
-                                                inc.descricao && React.createElement("p", {className: "text-sm text-gray-600 mt-1"}, inc.descricao),
-                                                React.createElement("div", {className: "flex flex-wrap gap-3 mt-2 text-sm text-gray-500"},
-                                                    React.createElement("span", null, "📅 ", new Date(inc.data_inicio).toLocaleDateString('pt-BR'), " → ", new Date(inc.data_fim).toLocaleDateString('pt-BR')),
-                                                    inc.valor && React.createElement("span", null, "💵 ", inc.valor),
-                                                    React.createElement("span", null, inc.todas_operacoes ? "🌎 Todas operações" : ("🏢 " + (inc.operacoes?.length || 0) + " operação(ões)"))
-                                                )
+                                                    className: "p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200"
+                                                }, "✏️"),
+                                                React.createElement("button", {
+                                                    onClick: () => deletarIncentivo(inc.id),
+                                                    className: "p-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200"
+                                                }, "🗑️")
                                             )
-                                        ),
-                                        // Ações
-                                        React.createElement("div", {className: "flex gap-2"},
-                                            React.createElement("button", {
-                                                onClick: () => {
-                                                    setIncentivoEdit(inc);
-                                                    setIncentivoForm({
-                                                        titulo: inc.titulo,
-                                                        descricao: inc.descricao || '',
-                                                        tipo: inc.tipo,
-                                                        operacoes: inc.operacoes || [],
-                                                        todas_operacoes: inc.todas_operacoes,
-                                                        data_inicio: inc.data_inicio?.slice(0, 10),
-                                                        data_fim: inc.data_fim?.slice(0, 10),
-                                                        valor: inc.valor || '',
-                                                        condicoes: inc.condicoes || '',
-                                                        cor: inc.cor || '#0d9488'
-                                                    });
-                                                    setIncentivoModal(true);
-                                                },
-                                                className: "p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200"
-                                            }, "✏️"),
-                                            React.createElement("button", {
-                                                onClick: () => deletarIncentivo(inc.id),
-                                                className: "p-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200"
-                                            }, "🗑️")
                                         )
-                                    )
-                                );
-                            })
-                        )
+                                    );
+                                })
+                            )
+                    )
                 )
             ),
             // Modal de criar/editar incentivo
