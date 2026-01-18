@@ -4692,6 +4692,7 @@ const hideLoadingScreen = () => {
             if (p.opTab === 'incentivos' && l && (l.role === 'admin_master' || l.role === 'admin')) {
                 carregarIncentivos();
                 carregarClientesBiIncentivos();
+                carregarOperacoes(); // Carregar operações para exibir no calendário
             }
         }, [p.opTab, l]);
         
