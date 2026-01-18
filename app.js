@@ -7556,6 +7556,7 @@ const hideLoadingScreen = () => {
             }),
             className: "text-gray-500 hover:underline"
         }, "Esqueci minha senha")))));
+        }
         if ("user" === l.role) {
             // Se está no módulo de Filas, renderizar o módulo
             if ("filas" === Ee) {
