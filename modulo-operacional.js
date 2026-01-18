@@ -49,7 +49,12 @@
             abrirNovoRelatorio, abrirEditarRelatorio,
             salvarRelatorio, excluirRelatorio, gerarLinkWaze,
             // Regiões e Setores
-            aa, setores
+            aa, setores,
+            // Incentivos Operacionais
+            incentivosData, setIncentivosData, incentivosStats,
+            incentivoModal, setIncentivoModal, incentivoEdit, setIncentivoEdit,
+            incentivoForm, setIncentivoForm, carregarIncentivos, salvarIncentivo, deletarIncentivo,
+            incentivosCalendarioMes, setIncentivosCalendarioMes
         } = props;
 
             return React.createElement("div", {
@@ -1862,6 +1867,452 @@
                     apiUrl: API_URL,
                     showToast: ja
                 })
+            ),
+            // ==================== CONTEÚDO INCENTIVOS ====================
+            p.opTab === "incentivos" && React.createElement("div", {className: "space-y-6"},
+                // Header
+                React.createElement("div", {className: "flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"},
+                    React.createElement("div", null,
+                        React.createElement("h2", {className: "text-2xl font-bold text-gray-800"}, "🎯 Incentivos & Promoções"),
+                        React.createElement("p", {className: "text-gray-600"}, "Gerencie promoções e incentivos das operações")
+                    ),
+                    React.createElement("button", {
+                        onClick: () => { 
+                            setIncentivoEdit(null); 
+                            setIncentivoForm({
+                                titulo: '',
+                                descricao: '',
+                                tipo: 'promocao',
+                                operacoes: [],
+                                todas_operacoes: false,
+                                data_inicio: '',
+                                data_fim: '',
+                                valor: '',
+                                condicoes: '',
+                                cor: '#0d9488'
+                            }); 
+                            setIncentivoModal(true); 
+                        },
+                        className: "px-6 py-3 bg-teal-600 text-white rounded-xl font-semibold hover:bg-teal-700 flex items-center gap-2 shadow-lg"
+                    }, "➕ Novo Incentivo")
+                ),
+                
+                // Cards de estatísticas
+                React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-5 gap-4"},
+                    React.createElement("div", {className: "bg-white rounded-xl p-4 shadow border-l-4 border-green-500"},
+                        React.createElement("p", {className: "text-sm text-gray-500"}, "Ativos Agora"),
+                        React.createElement("p", {className: "text-2xl font-bold text-green-600"}, incentivosStats?.ativos || 0)
+                    ),
+                    React.createElement("div", {className: "bg-white rounded-xl p-4 shadow border-l-4 border-orange-500"},
+                        React.createElement("p", {className: "text-sm text-gray-500"}, "Vencendo em 7 dias"),
+                        React.createElement("p", {className: "text-2xl font-bold text-orange-600"}, incentivosStats?.vencendo_em_breve || 0)
+                    ),
+                    React.createElement("div", {className: "bg-white rounded-xl p-4 shadow border-l-4 border-yellow-500"},
+                        React.createElement("p", {className: "text-sm text-gray-500"}, "Pausados"),
+                        React.createElement("p", {className: "text-2xl font-bold text-yellow-600"}, incentivosStats?.pausados || 0)
+                    ),
+                    React.createElement("div", {className: "bg-white rounded-xl p-4 shadow border-l-4 border-gray-400"},
+                        React.createElement("p", {className: "text-sm text-gray-500"}, "Encerrados"),
+                        React.createElement("p", {className: "text-2xl font-bold text-gray-600"}, incentivosStats?.encerrados || 0)
+                    ),
+                    React.createElement("div", {className: "bg-white rounded-xl p-4 shadow border-l-4 border-teal-500"},
+                        React.createElement("p", {className: "text-sm text-gray-500"}, "Total"),
+                        React.createElement("p", {className: "text-2xl font-bold text-teal-600"}, incentivosStats?.total || 0)
+                    )
+                ),
+                
+                // Calendário
+                React.createElement("div", {className: "bg-white rounded-xl shadow-lg overflow-hidden"},
+                    // Header do calendário
+                    React.createElement("div", {className: "bg-gradient-to-r from-teal-600 to-teal-700 p-4 flex items-center justify-between"},
+                        React.createElement("button", {
+                            onClick: () => {
+                                const novaData = new Date(incentivosCalendarioMes);
+                                novaData.setMonth(novaData.getMonth() - 1);
+                                setIncentivosCalendarioMes(novaData);
+                            },
+                            className: "p-2 text-white hover:bg-white/20 rounded-lg transition-colors"
+                        }, "◀"),
+                        React.createElement("h3", {className: "text-xl font-bold text-white"},
+                            new Date(incentivosCalendarioMes).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase())
+                        ),
+                        React.createElement("button", {
+                            onClick: () => {
+                                const novaData = new Date(incentivosCalendarioMes);
+                                novaData.setMonth(novaData.getMonth() + 1);
+                                setIncentivosCalendarioMes(novaData);
+                            },
+                            className: "p-2 text-white hover:bg-white/20 rounded-lg transition-colors"
+                        }, "▶")
+                    ),
+                    
+                    // Dias da semana
+                    React.createElement("div", {className: "grid grid-cols-7 bg-gray-100 border-b"},
+                        ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(dia => 
+                            React.createElement("div", {key: dia, className: "p-3 text-center font-semibold text-gray-600 text-sm"}, dia)
+                        )
+                    ),
+                    
+                    // Grid do calendário
+                    React.createElement("div", {className: "grid grid-cols-7"},
+                        (function() {
+                            const mesAtual = new Date(incentivosCalendarioMes);
+                            const ano = mesAtual.getFullYear();
+                            const mes = mesAtual.getMonth();
+                            const primeiroDia = new Date(ano, mes, 1);
+                            const ultimoDia = new Date(ano, mes + 1, 0);
+                            const diasNoMes = ultimoDia.getDate();
+                            const diaSemanaInicio = primeiroDia.getDay();
+                            
+                            const hoje = new Date();
+                            hoje.setHours(0,0,0,0);
+                            
+                            const dias = [];
+                            
+                            // Dias vazios antes do primeiro dia
+                            for (let i = 0; i < diaSemanaInicio; i++) {
+                                dias.push(React.createElement("div", {key: 'empty-' + i, className: "min-h-24 bg-gray-50 border-b border-r"}));
+                            }
+                            
+                            // Dias do mês
+                            for (let dia = 1; dia <= diasNoMes; dia++) {
+                                const dataAtual = new Date(ano, mes, dia);
+                                const isHoje = dataAtual.getTime() === hoje.getTime();
+                                
+                                // Filtrar incentivos para este dia
+                                const incentivosNoDia = (incentivosData || []).filter(inc => {
+                                    const inicio = new Date(inc.data_inicio);
+                                    const fim = new Date(inc.data_fim);
+                                    inicio.setHours(0,0,0,0);
+                                    fim.setHours(23,59,59,999);
+                                    return dataAtual >= inicio && dataAtual <= fim;
+                                });
+                                
+                                dias.push(
+                                    React.createElement("div", {
+                                        key: dia,
+                                        className: "min-h-24 border-b border-r p-1 " + (isHoje ? "bg-teal-50" : "bg-white") + " hover:bg-gray-50 transition-colors"
+                                    },
+                                        // Número do dia
+                                        React.createElement("div", {className: "flex justify-between items-start mb-1"},
+                                            React.createElement("span", {
+                                                className: "inline-flex items-center justify-center w-7 h-7 rounded-full text-sm font-semibold " + 
+                                                    (isHoje ? "bg-teal-600 text-white" : "text-gray-700")
+                                            }, dia),
+                                            incentivosNoDia.length > 0 && React.createElement("span", {
+                                                className: "text-xs text-gray-400"
+                                            }, incentivosNoDia.length)
+                                        ),
+                                        // Incentivos do dia
+                                        React.createElement("div", {className: "space-y-1 overflow-hidden max-h-16"},
+                                            incentivosNoDia.slice(0, 3).map(inc => 
+                                                React.createElement("div", {
+                                                    key: inc.id,
+                                                    onClick: () => {
+                                                        setIncentivoEdit(inc);
+                                                        setIncentivoForm({
+                                                            titulo: inc.titulo,
+                                                            descricao: inc.descricao || '',
+                                                            tipo: inc.tipo,
+                                                            operacoes: inc.operacoes || [],
+                                                            todas_operacoes: inc.todas_operacoes,
+                                                            data_inicio: inc.data_inicio?.slice(0, 10),
+                                                            data_fim: inc.data_fim?.slice(0, 10),
+                                                            valor: inc.valor || '',
+                                                            condicoes: inc.condicoes || '',
+                                                            cor: inc.cor || '#0d9488'
+                                                        });
+                                                        setIncentivoModal(true);
+                                                    },
+                                                    className: "text-xs px-1.5 py-0.5 rounded truncate cursor-pointer hover:opacity-80 transition-opacity",
+                                                    style: { 
+                                                        backgroundColor: inc.cor || '#0d9488', 
+                                                        color: 'white',
+                                                        opacity: inc.status === 'pausado' ? 0.5 : 1
+                                                    },
+                                                    title: inc.titulo + (inc.status === 'pausado' ? ' (Pausado)' : '')
+                                                }, 
+                                                    (inc.tipo === 'meta' ? '🎯' : inc.tipo === 'bonus' ? '💰' : inc.tipo === 'incentivo' ? '⭐' : '🏷️') + ' ' + inc.titulo
+                                                )
+                                            ),
+                                            incentivosNoDia.length > 3 && React.createElement("div", {
+                                                className: "text-xs text-gray-400 text-center"
+                                            }, "+", incentivosNoDia.length - 3, " mais")
+                                        )
+                                    )
+                                );
+                            }
+                            
+                            return dias;
+                        })()
+                    )
+                ),
+                
+                // Lista de incentivos ativos/próximos
+                React.createElement("div", {className: "bg-white rounded-xl shadow-lg overflow-hidden"},
+                    React.createElement("div", {className: "p-4 bg-gray-50 border-b"},
+                        React.createElement("h3", {className: "font-bold text-gray-800"}, "📋 Todos os Incentivos")
+                    ),
+                    (!incentivosData || incentivosData.length === 0) 
+                        ? React.createElement("div", {className: "p-8 text-center"},
+                            React.createElement("span", {className: "text-5xl block mb-4"}, "📭"),
+                            React.createElement("p", {className: "text-gray-500"}, "Nenhum incentivo cadastrado"),
+                            React.createElement("p", {className: "text-sm text-gray-400"}, "Clique em \"Novo Incentivo\" para criar o primeiro")
+                        )
+                        : React.createElement("div", {className: "divide-y max-h-96 overflow-y-auto"},
+                            (incentivosData || []).map(inc => {
+                                const hoje = new Date();
+                                hoje.setHours(0,0,0,0);
+                                const inicio = new Date(inc.data_inicio);
+                                const fim = new Date(inc.data_fim);
+                                const isAtivo = inc.status === 'ativo' && hoje >= inicio && hoje <= fim;
+                                const isVencendo = inc.status === 'ativo' && fim >= hoje && fim <= new Date(hoje.getTime() + 7*24*60*60*1000);
+                                const isEncerrado = fim < hoje;
+                                
+                                return React.createElement("div", {
+                                    key: inc.id,
+                                    className: "p-4 hover:bg-gray-50 transition-colors " + (inc.status === 'pausado' ? 'opacity-60' : '')
+                                },
+                                    React.createElement("div", {className: "flex items-start justify-between gap-4"},
+                                        React.createElement("div", {className: "flex items-start gap-3 flex-1"},
+                                            // Indicador de cor
+                                            React.createElement("div", {
+                                                className: "w-3 h-12 rounded-full flex-shrink-0",
+                                                style: { backgroundColor: inc.cor || '#0d9488' }
+                                            }),
+                                            React.createElement("div", {className: "flex-1"},
+                                                React.createElement("div", {className: "flex items-center gap-2 flex-wrap"},
+                                                    React.createElement("span", {className: "text-lg"}, 
+                                                        inc.tipo === 'meta' ? '🎯' : inc.tipo === 'bonus' ? '💰' : inc.tipo === 'incentivo' ? '⭐' : '🏷️'
+                                                    ),
+                                                    React.createElement("h4", {className: "font-bold text-gray-800"}, inc.titulo),
+                                                    // Status badges
+                                                    isAtivo && React.createElement("span", {className: "px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-semibold"}, "🟢 Ativo"),
+                                                    isVencendo && React.createElement("span", {className: "px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full text-xs font-semibold"}, "⚠️ Vencendo"),
+                                                    inc.status === 'pausado' && React.createElement("span", {className: "px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full text-xs font-semibold"}, "⏸️ Pausado"),
+                                                    isEncerrado && inc.status !== 'pausado' && React.createElement("span", {className: "px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-xs font-semibold"}, "✓ Encerrado")
+                                                ),
+                                                inc.descricao && React.createElement("p", {className: "text-sm text-gray-600 mt-1"}, inc.descricao),
+                                                React.createElement("div", {className: "flex flex-wrap gap-3 mt-2 text-sm text-gray-500"},
+                                                    React.createElement("span", null, "📅 ", new Date(inc.data_inicio).toLocaleDateString('pt-BR'), " → ", new Date(inc.data_fim).toLocaleDateString('pt-BR')),
+                                                    inc.valor && React.createElement("span", null, "💵 ", inc.valor),
+                                                    React.createElement("span", null, inc.todas_operacoes ? "🌎 Todas operações" : ("🏢 " + (inc.operacoes?.length || 0) + " operação(ões)"))
+                                                )
+                                            )
+                                        ),
+                                        // Ações
+                                        React.createElement("div", {className: "flex gap-2"},
+                                            React.createElement("button", {
+                                                onClick: () => {
+                                                    setIncentivoEdit(inc);
+                                                    setIncentivoForm({
+                                                        titulo: inc.titulo,
+                                                        descricao: inc.descricao || '',
+                                                        tipo: inc.tipo,
+                                                        operacoes: inc.operacoes || [],
+                                                        todas_operacoes: inc.todas_operacoes,
+                                                        data_inicio: inc.data_inicio?.slice(0, 10),
+                                                        data_fim: inc.data_fim?.slice(0, 10),
+                                                        valor: inc.valor || '',
+                                                        condicoes: inc.condicoes || '',
+                                                        cor: inc.cor || '#0d9488'
+                                                    });
+                                                    setIncentivoModal(true);
+                                                },
+                                                className: "p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200"
+                                            }, "✏️"),
+                                            React.createElement("button", {
+                                                onClick: () => deletarIncentivo(inc.id),
+                                                className: "p-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200"
+                                            }, "🗑️")
+                                        )
+                                    )
+                                );
+                            })
+                        )
+                )
+            ),
+            // Modal de criar/editar incentivo
+            incentivoModal && React.createElement("div", {
+                className: "fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4",
+                onClick: () => setIncentivoModal(false)
+            },
+                React.createElement("div", {
+                    className: "bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto",
+                    onClick: e => e.stopPropagation()
+                },
+                    // Header do modal
+                    React.createElement("div", {className: "bg-gradient-to-r from-teal-600 to-teal-700 p-6 text-white"},
+                        React.createElement("h2", {className: "text-xl font-bold"}, incentivoEdit ? "✏️ Editar Incentivo" : "➕ Novo Incentivo"),
+                        React.createElement("p", {className: "text-teal-100 text-sm"}, "Configure os detalhes do incentivo/promoção")
+                    ),
+                    
+                    // Formulário
+                    React.createElement("div", {className: "p-6 space-y-5"},
+                        // Título
+                        React.createElement("div", null,
+                            React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-2"}, "Título *"),
+                            React.createElement("input", {
+                                type: "text",
+                                value: incentivoForm.titulo,
+                                onChange: e => setIncentivoForm(f => ({...f, titulo: e.target.value})),
+                                placeholder: "Ex: Bônus de Produtividade - Dezembro",
+                                className: "w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                            })
+                        ),
+                        
+                        // Tipo e Cor
+                        React.createElement("div", {className: "grid grid-cols-2 gap-4"},
+                            React.createElement("div", null,
+                                React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-2"}, "Tipo"),
+                                React.createElement("select", {
+                                    value: incentivoForm.tipo,
+                                    onChange: e => setIncentivoForm(f => ({...f, tipo: e.target.value})),
+                                    className: "w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-teal-500"
+                                },
+                                    React.createElement("option", {value: "promocao"}, "🏷️ Promoção"),
+                                    React.createElement("option", {value: "incentivo"}, "⭐ Incentivo"),
+                                    React.createElement("option", {value: "bonus"}, "💰 Bônus"),
+                                    React.createElement("option", {value: "meta"}, "🎯 Meta")
+                                )
+                            ),
+                            React.createElement("div", null,
+                                React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-2"}, "Cor no calendário"),
+                                React.createElement("div", {className: "flex gap-2 flex-wrap"},
+                                    ['#0d9488', '#2563eb', '#7c3aed', '#db2777', '#ea580c', '#16a34a', '#ca8a04', '#64748b'].map(cor =>
+                                        React.createElement("button", {
+                                            key: cor,
+                                            type: "button",
+                                            onClick: () => setIncentivoForm(f => ({...f, cor: cor})),
+                                            className: "w-8 h-8 rounded-lg border-2 transition-transform hover:scale-110 " + (incentivoForm.cor === cor ? 'ring-2 ring-offset-2 ring-gray-400' : ''),
+                                            style: { backgroundColor: cor }
+                                        })
+                                    )
+                                )
+                            )
+                        ),
+                        
+                        // Descrição
+                        React.createElement("div", null,
+                            React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-2"}, "Descrição"),
+                            React.createElement("textarea", {
+                                value: incentivoForm.descricao,
+                                onChange: e => setIncentivoForm(f => ({...f, descricao: e.target.value})),
+                                placeholder: "Descreva os detalhes do incentivo...",
+                                rows: 3,
+                                className: "w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-teal-500 resize-none"
+                            })
+                        ),
+                        
+                        // Período
+                        React.createElement("div", {className: "grid grid-cols-2 gap-4"},
+                            React.createElement("div", null,
+                                React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-2"}, "Data Início *"),
+                                React.createElement("input", {
+                                    type: "date",
+                                    value: incentivoForm.data_inicio,
+                                    onChange: e => setIncentivoForm(f => ({...f, data_inicio: e.target.value})),
+                                    className: "w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-teal-500"
+                                })
+                            ),
+                            React.createElement("div", null,
+                                React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-2"}, "Data Fim *"),
+                                React.createElement("input", {
+                                    type: "date",
+                                    value: incentivoForm.data_fim,
+                                    onChange: e => setIncentivoForm(f => ({...f, data_fim: e.target.value})),
+                                    className: "w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-teal-500"
+                                })
+                            )
+                        ),
+                        
+                        // Valor
+                        React.createElement("div", null,
+                            React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-2"}, "Valor/Benefício"),
+                            React.createElement("input", {
+                                type: "text",
+                                value: incentivoForm.valor,
+                                onChange: e => setIncentivoForm(f => ({...f, valor: e.target.value})),
+                                placeholder: "Ex: R$ 50,00 por entrega extra, 10% de bônus, etc.",
+                                className: "w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-teal-500"
+                            })
+                        ),
+                        
+                        // Operações
+                        React.createElement("div", null,
+                            React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-2"}, "Operações Vinculadas"),
+                            React.createElement("label", {className: "flex items-center gap-2 mb-3 cursor-pointer"},
+                                React.createElement("input", {
+                                    type: "checkbox",
+                                    checked: incentivoForm.todas_operacoes,
+                                    onChange: e => setIncentivoForm(f => ({...f, todas_operacoes: e.target.checked, operacoes: []})),
+                                    className: "w-5 h-5 rounded text-teal-600"
+                                }),
+                                React.createElement("span", {className: "text-gray-700"}, "🌎 Todas as operações")
+                            ),
+                            !incentivoForm.todas_operacoes && React.createElement("div", null,
+                                React.createElement("input", {
+                                    type: "text",
+                                    value: incentivoForm.operacoes?.join(', ') || '',
+                                    onChange: e => setIncentivoForm(f => ({...f, operacoes: e.target.value.split(',').map(s => s.trim()).filter(Boolean)})),
+                                    placeholder: "Digite os nomes das operações separados por vírgula",
+                                    className: "w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-teal-500"
+                                }),
+                                React.createElement("p", {className: "text-xs text-gray-500 mt-1"}, "Ex: Operação Centro, Operação Norte, Operação Sul")
+                            )
+                        ),
+                        
+                        // Condições
+                        React.createElement("div", null,
+                            React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-2"}, "Condições/Regras"),
+                            React.createElement("textarea", {
+                                value: incentivoForm.condicoes,
+                                onChange: e => setIncentivoForm(f => ({...f, condicoes: e.target.value})),
+                                placeholder: "Descreva as condições para participar, regras, critérios de avaliação...",
+                                rows: 3,
+                                className: "w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-teal-500 resize-none"
+                            })
+                        ),
+                        
+                        // Status (apenas para edição)
+                        incentivoEdit && React.createElement("div", null,
+                            React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-2"}, "Status"),
+                            React.createElement("div", {className: "flex gap-3"},
+                                React.createElement("button", {
+                                    type: "button",
+                                    onClick: () => setIncentivoForm(f => ({...f, status: 'ativo'})),
+                                    className: "flex-1 px-4 py-3 rounded-xl font-semibold transition-colors " +
+                                        ((incentivoForm.status || incentivoEdit?.status) === 'ativo' 
+                                            ? "bg-green-600 text-white" 
+                                            : "bg-green-100 text-green-700 hover:bg-green-200")
+                                }, "🟢 Ativo"),
+                                React.createElement("button", {
+                                    type: "button",
+                                    onClick: () => setIncentivoForm(f => ({...f, status: 'pausado'})),
+                                    className: "flex-1 px-4 py-3 rounded-xl font-semibold transition-colors " +
+                                        ((incentivoForm.status || incentivoEdit?.status) === 'pausado' 
+                                            ? "bg-yellow-500 text-white" 
+                                            : "bg-yellow-100 text-yellow-700 hover:bg-yellow-200")
+                                }, "⏸️ Pausado")
+                            )
+                        )
+                    ),
+                    
+                    // Footer do modal
+                    React.createElement("div", {className: "p-4 bg-gray-50 border-t flex gap-3"},
+                        React.createElement("button", {
+                            type: "button",
+                            onClick: () => setIncentivoModal(false),
+                            className: "flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-100"
+                        }, "Cancelar"),
+                        React.createElement("button", {
+                            type: "button",
+                            onClick: () => salvarIncentivo(),
+                            disabled: !incentivoForm.titulo.trim() || !incentivoForm.data_inicio || !incentivoForm.data_fim,
+                            className: "flex-1 px-6 py-3 bg-teal-600 text-white rounded-xl font-semibold hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        }, incentivoEdit ? "💾 Salvar Alterações" : "➕ Criar Incentivo")
+                    )
+                )
             ),
             // Modal de imagem ampliada
             relatorioImagemAmpliada && React.createElement("div", {
