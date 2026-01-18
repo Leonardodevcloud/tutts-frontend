@@ -1883,14 +1883,14 @@
                                 setIncentivoEdit(null); 
                                 setIncentivoForm({
                                     titulo: '',
-                                    descricao: '',
                                     tipo: 'promocao',
-                                    operacoes: [],
-                                    todas_operacoes: false,
                                     data_inicio: '',
                                     data_fim: '',
+                                    hora_inicio: '',
+                                    hora_fim: '',
                                     valor: '',
-                                    condicoes: '',
+                                    valor_incentivo: '',
+                                    clientes_vinculados: [],
                                     cor: '#0d9488'
                                 }); 
                                 setIncentivoModal(true); 
@@ -2034,7 +2034,7 @@
                                                         },
                                                         title: inc.titulo + (inc.status === 'pausado' ? ' (Pausado)' : '')
                                                     }, 
-                                                        (inc.tipo === 'meta' ? '🎯' : inc.tipo === 'bonus' ? '💰' : inc.tipo === 'incentivo' ? '⭐' : '🏷️') + ' ' + inc.titulo
+                                                        (inc.tipo === 'incentivo' ? '⭐' : '🏷️') + ' ' + inc.titulo
                                                     )
                                                 ),
                                                 incentivosNoDia.length > 3 && React.createElement("div", {
@@ -2085,7 +2085,7 @@
                                                 React.createElement("div", {className: "flex-1"},
                                                     React.createElement("div", {className: "flex items-center gap-2 flex-wrap"},
                                                         React.createElement("span", {className: "text-lg"}, 
-                                                            inc.tipo === 'meta' ? '🎯' : inc.tipo === 'bonus' ? '💰' : inc.tipo === 'incentivo' ? '⭐' : '🏷️'
+                                                            inc.tipo === 'incentivo' ? '⭐' : '🏷️'
                                                         ),
                                                         React.createElement("h4", {className: "font-bold text-gray-800"}, inc.titulo),
                                                         // Status badges
@@ -2094,14 +2094,28 @@
                                                         inc.status === 'pausado' && React.createElement("span", {className: "px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full text-xs font-semibold"}, "⏸️ Pausado"),
                                                         isEncerrado && inc.status !== 'pausado' && React.createElement("span", {className: "px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-xs font-semibold"}, "✓ Encerrado")
                                                     ),
-                                                    inc.descricao && React.createElement("p", {className: "text-sm text-gray-600 mt-1"}, inc.descricao),
                                                     
                                                     // Informações básicas
                                                     React.createElement("div", {className: "flex flex-wrap gap-3 mt-2 text-sm text-gray-500"},
                                                         React.createElement("span", null, "📅 ", new Date(inc.data_inicio).toLocaleDateString('pt-BR'), " → ", new Date(inc.data_fim).toLocaleDateString('pt-BR')),
-                                                        inc.hora_inicio && inc.hora_fim && React.createElement("span", null, "🕐 ", inc.hora_inicio?.slice(0,5), " - ", inc.hora_fim?.slice(0,5)),
-                                                        inc.tipo !== 'incentivo' && inc.valor && React.createElement("span", null, "💵 ", inc.valor),
-                                                        inc.tipo !== 'incentivo' && React.createElement("span", null, inc.todas_operacoes ? "🌎 Todas operações" : ("🏢 " + (inc.operacoes?.length || 0) + " operação(ões)"))
+                                                        inc.hora_inicio && inc.hora_fim && React.createElement("span", null, "🕐 ", inc.hora_inicio?.slice(0,5), " - ", inc.hora_fim?.slice(0,5))
+                                                    ),
+                                                    
+                                                    // Card para tipo PROMOÇÃO
+                                                    inc.tipo === 'promocao' && React.createElement("div", {className: "mt-3 p-3 bg-teal-50 border border-teal-200 rounded-lg"},
+                                                        React.createElement("div", {className: "flex items-center justify-between flex-wrap gap-2"},
+                                                            React.createElement("div", null,
+                                                                React.createElement("span", {className: "text-sm text-teal-800 font-medium"}, "💵 Valor/Benefício: "),
+                                                                React.createElement("span", {className: "font-bold text-teal-900"}, inc.valor || '-')
+                                                            )
+                                                        ),
+                                                        // Clientes vinculados
+                                                        (inc.clientes_nomes || []).length > 0 && React.createElement("div", {className: "mt-2 pt-2 border-t border-teal-200"},
+                                                            React.createElement("span", {className: "text-xs text-teal-700"}, "🏢 Clientes: "),
+                                                            React.createElement("span", {className: "text-xs text-gray-600"}, 
+                                                                (inc.clientes_nomes || []).map(c => c.nome_display).join(', ')
+                                                            )
+                                                        )
                                                     ),
                                                     
                                                     // Card de cálculo para tipo INCENTIVO
@@ -2141,10 +2155,7 @@
                                                         setIncentivoEdit(inc);
                                                         setIncentivoForm({
                                                             titulo: inc.titulo,
-                                                            descricao: inc.descricao || '',
                                                             tipo: inc.tipo,
-                                                            operacoes: inc.operacoes || [],
-                                                            todas_operacoes: inc.todas_operacoes,
                                                             data_inicio: inc.data_inicio?.slice(0, 10),
                                                             data_fim: inc.data_fim?.slice(0, 10),
                                                             hora_inicio: inc.hora_inicio?.slice(0, 5) || '',
@@ -2152,7 +2163,6 @@
                                                             valor: inc.valor || '',
                                                             valor_incentivo: inc.valor_incentivo || '',
                                                             clientes_vinculados: inc.clientes_vinculados || [],
-                                                            condicoes: inc.condicoes || '',
                                                             cor: inc.cor || '#0d9488'
                                                         });
                                                         setIncentivoModal(true);
@@ -2210,9 +2220,7 @@
                                     className: "w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-teal-500"
                                 },
                                     React.createElement("option", {value: "promocao"}, "🏷️ Promoção"),
-                                    React.createElement("option", {value: "incentivo"}, "⭐ Incentivo"),
-                                    React.createElement("option", {value: "bonus"}, "💰 Bônus"),
-                                    React.createElement("option", {value: "meta"}, "🎯 Meta")
+                                    React.createElement("option", {value: "incentivo"}, "⭐ Incentivo")
                                 )
                             ),
                             React.createElement("div", null,
@@ -2382,52 +2390,105 @@
                             )
                         ),
                         
-                        // Valor/Benefício (para outros tipos)
-                        incentivoForm.tipo !== 'incentivo' && React.createElement("div", null,
-                            React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-2"}, "Valor/Benefício"),
-                            React.createElement("input", {
-                                type: "text",
-                                value: incentivoForm.valor,
-                                onChange: e => setIncentivoForm(f => ({...f, valor: e.target.value})),
-                                placeholder: "Ex: R$ 50,00 por entrega extra, 10% de bônus, etc.",
-                                className: "w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-teal-500"
-                            })
-                        ),
-                        
-                        // Operações (para outros tipos)
-                        incentivoForm.tipo !== 'incentivo' && React.createElement("div", null,
-                            React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-2"}, "Operações Vinculadas"),
-                            React.createElement("label", {className: "flex items-center gap-2 mb-3 cursor-pointer"},
-                                React.createElement("input", {
-                                    type: "checkbox",
-                                    checked: incentivoForm.todas_operacoes,
-                                    onChange: e => setIncentivoForm(f => ({...f, todas_operacoes: e.target.checked, operacoes: []})),
-                                    className: "w-5 h-5 rounded text-teal-600"
-                                }),
-                                React.createElement("span", {className: "text-gray-700"}, "🌎 Todas as operações")
+                        // ========== CAMPOS ESPECÍFICOS PARA TIPO PROMOÇÃO ==========
+                        incentivoForm.tipo === 'promocao' && React.createElement("div", {className: "bg-teal-50 border border-teal-200 rounded-xl p-4 space-y-4"},
+                            React.createElement("div", {className: "flex items-center gap-2 text-teal-800 font-semibold"},
+                                React.createElement("span", null, "🏷️"),
+                                React.createElement("span", null, "Configurações da Promoção")
                             ),
-                            !incentivoForm.todas_operacoes && React.createElement("div", null,
+                            
+                            // Valor/Benefício
+                            React.createElement("div", null,
+                                React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-2"}, "Valor/Benefício *"),
                                 React.createElement("input", {
                                     type: "text",
-                                    value: incentivoForm.operacoes?.join(', ') || '',
-                                    onChange: e => setIncentivoForm(f => ({...f, operacoes: e.target.value.split(',').map(s => s.trim()).filter(Boolean)})),
-                                    placeholder: "Digite os nomes das operações separados por vírgula",
+                                    value: incentivoForm.valor,
+                                    onChange: e => setIncentivoForm(f => ({...f, valor: e.target.value})),
+                                    placeholder: "Ex: R$ 50,00 por entrega extra, 10% de bônus, etc.",
                                     className: "w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-teal-500"
-                                }),
-                                React.createElement("p", {className: "text-xs text-gray-500 mt-1"}, "Ex: Operação Centro, Operação Norte, Operação Sul")
+                                })
+                            ),
+                            
+                            // Clientes Vinculados (Multi-select com busca)
+                            React.createElement("div", null,
+                                React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-2"}, "Clientes Vinculados *"),
+                                
+                                // Campo de busca
+                                React.createElement("div", {className: "relative mb-2"},
+                                    React.createElement("input", {
+                                        type: "text",
+                                        placeholder: "🔍 Buscar cliente por nome ou código...",
+                                        className: "w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 text-sm",
+                                        onChange: e => {
+                                            const busca = e.target.value.toLowerCase();
+                                            const container = e.target.closest('.space-y-4').querySelector('[data-clientes-lista-promo]');
+                                            if (container) {
+                                                container.querySelectorAll('[data-cliente-item]').forEach(item => {
+                                                    const nome = item.getAttribute('data-nome').toLowerCase();
+                                                    const cod = item.getAttribute('data-cod');
+                                                    item.style.display = (nome.includes(busca) || cod.includes(busca)) ? '' : 'none';
+                                                });
+                                            }
+                                        }
+                                    })
+                                ),
+                                
+                                // Clientes selecionados (badges)
+                                (incentivoForm.clientes_vinculados || []).length > 0 && React.createElement("div", {className: "flex flex-wrap gap-2 mb-2"},
+                                    (incentivoForm.clientes_vinculados || []).map(codCliente => {
+                                        const cliente = (incentivoClientesBi || []).find(c => c.cod_cliente === codCliente);
+                                        return React.createElement("span", {
+                                            key: codCliente,
+                                            className: "inline-flex items-center gap-1 px-3 py-1 bg-teal-100 text-teal-800 rounded-full text-sm"
+                                        },
+                                            React.createElement("span", null, cliente?.nome_display || `Cliente ${codCliente}`),
+                                            React.createElement("button", {
+                                                type: "button",
+                                                onClick: () => setIncentivoForm(f => ({...f, clientes_vinculados: (f.clientes_vinculados || []).filter(c => c !== codCliente)})),
+                                                className: "ml-1 text-teal-600 hover:text-teal-800 font-bold"
+                                            }, "×")
+                                        );
+                                    })
+                                ),
+                                
+                                incentivoClientesLoading 
+                                    ? React.createElement("div", {className: "text-center py-4 text-gray-500"}, "Carregando clientes...")
+                                    : React.createElement("div", {"data-clientes-lista-promo": true, className: "border rounded-xl max-h-48 overflow-y-auto bg-white"},
+                                        (incentivoClientesBi || []).length === 0 
+                                            ? React.createElement("div", {className: "p-4 text-center text-gray-500"}, "Nenhum cliente encontrado no BI")
+                                            : (incentivoClientesBi || []).map(cliente => {
+                                                const isSelected = (incentivoForm.clientes_vinculados || []).includes(cliente.cod_cliente);
+                                                return React.createElement("label", {
+                                                    key: cliente.cod_cliente,
+                                                    "data-cliente-item": true,
+                                                    "data-nome": cliente.nome_display || '',
+                                                    "data-cod": String(cliente.cod_cliente),
+                                                    className: "flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0 " + (isSelected ? 'bg-teal-50' : '')
+                                                },
+                                                    React.createElement("input", {
+                                                        type: "checkbox",
+                                                        checked: isSelected,
+                                                        onChange: e => {
+                                                            if (e.target.checked) {
+                                                                setIncentivoForm(f => ({...f, clientes_vinculados: [...(f.clientes_vinculados || []), cliente.cod_cliente]}));
+                                                            } else {
+                                                                setIncentivoForm(f => ({...f, clientes_vinculados: (f.clientes_vinculados || []).filter(c => c !== cliente.cod_cliente)}));
+                                                            }
+                                                        },
+                                                        className: "w-5 h-5 rounded text-teal-600"
+                                                    }),
+                                                    React.createElement("div", {className: "flex-1"},
+                                                        React.createElement("span", {className: "font-medium text-gray-800"}, cliente.nome_display),
+                                                        cliente.mascara && React.createElement("span", {className: "ml-2 text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded"}, "Máscara")
+                                                    ),
+                                                    React.createElement("span", {className: "text-xs text-gray-400"}, "Cód: ", cliente.cod_cliente)
+                                                );
+                                            })
+                                    ),
+                                (incentivoForm.clientes_vinculados || []).length > 0 && React.createElement("p", {className: "text-xs text-teal-700 mt-2"}, 
+                                    "✓ ", (incentivoForm.clientes_vinculados || []).length, " cliente(s) selecionado(s)"
+                                )
                             )
-                        ),
-                        
-                        // Condições
-                        React.createElement("div", null,
-                            React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-2"}, "Condições/Regras"),
-                            React.createElement("textarea", {
-                                value: incentivoForm.condicoes,
-                                onChange: e => setIncentivoForm(f => ({...f, condicoes: e.target.value})),
-                                placeholder: "Descreva as condições para participar, regras, critérios de avaliação...",
-                                rows: 3,
-                                className: "w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-teal-500 resize-none"
-                            })
                         ),
                         
                         // Status (apenas para edição)
@@ -2465,7 +2526,8 @@
                             type: "button",
                             onClick: () => salvarIncentivo(),
                             disabled: !incentivoForm.titulo.trim() || !incentivoForm.data_inicio || !incentivoForm.data_fim || 
-                                (incentivoForm.tipo === 'incentivo' && (!incentivoForm.hora_inicio || !incentivoForm.hora_fim || !incentivoForm.valor_incentivo || (incentivoForm.clientes_vinculados || []).length === 0)),
+                                (incentivoForm.tipo === 'incentivo' && (!incentivoForm.hora_inicio || !incentivoForm.hora_fim || !incentivoForm.valor_incentivo || (incentivoForm.clientes_vinculados || []).length === 0)) ||
+                                (incentivoForm.tipo === 'promocao' && (!incentivoForm.valor || (incentivoForm.clientes_vinculados || []).length === 0)),
                             className: "flex-1 px-6 py-3 bg-teal-600 text-white rounded-xl font-semibold hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
                         }, incentivoEdit ? "💾 Salvar Alterações" : "➕ Criar Incentivo")
                     )
