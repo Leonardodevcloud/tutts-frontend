@@ -2006,10 +2006,7 @@ const hideLoadingScreen = () => {
         [incentivoEdit, setIncentivoEdit] = useState(null),
         [incentivoForm, setIncentivoForm] = useState({
             titulo: '',
-            descricao: '',
             tipo: 'promocao',
-            operacoes: [],
-            todas_operacoes: false,
             data_inicio: '',
             data_fim: '',
             hora_inicio: '',
@@ -2017,7 +2014,6 @@ const hideLoadingScreen = () => {
             valor: '',
             valor_incentivo: '',
             clientes_vinculados: [],
-            condicoes: '',
             cor: '#0d9488'
         }),
         [incentivosCalendarioMes, setIncentivosCalendarioMes] = useState(new Date()),
@@ -3474,10 +3470,7 @@ const hideLoadingScreen = () => {
                     setIncentivoEdit(null);
                     setIncentivoForm({
                         titulo: '',
-                        descricao: '',
                         tipo: 'promocao',
-                        operacoes: [],
-                        todas_operacoes: false,
                         data_inicio: '',
                         data_fim: '',
                         hora_inicio: '',
@@ -3485,7 +3478,6 @@ const hideLoadingScreen = () => {
                         valor: '',
                         valor_incentivo: '',
                         clientes_vinculados: [],
-                        condicoes: '',
                         cor: '#0d9488'
                     });
                     carregarIncentivos();
