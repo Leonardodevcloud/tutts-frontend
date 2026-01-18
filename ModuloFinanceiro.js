@@ -399,7 +399,7 @@
                                 React.createElement("div", {className: "w-14 h-14 bg-indigo-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
                                     React.createElement("span", {className: "text-3xl"}, "🚀")
                                 ),
-                                React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Promo Novatos"),
+                                React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Promoções"),
                                 React.createElement("p", {className: "text-sm text-gray-500"}, "Promoções e campanhas especiais para novos entregadores.")
                             )
                         ),
@@ -2464,7 +2464,7 @@
                 className: "flex justify-between items-center mb-4"
             }, React.createElement("h2", {
                 className: "text-xl font-bold text-green-800"
-            }, p.editPromoNovatos ? "✏️ Editar Promoção Novatos" : "🚀 Cadastrar Nova Promoção Novatos"), p.editPromoNovatos && React.createElement("button", {
+            }, p.editPromoNovatos ? "✏️ Editar Promoção" : "🚀 Cadastrar Nova Promoção"), p.editPromoNovatos && React.createElement("button", {
                 onClick: () => {
                     x({
                         ...p,
@@ -2711,31 +2711,47 @@
                 className: "bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-center"
             }, React.createElement("p", {
                 className: "text-3xl font-bold text-yellow-600"
-            }, ne.filter(e => "pendente" === e.status).length), React.createElement("p", {
+            }, ne.filter(e => {
+                const totalEntregas = e.total_entregas || 0;
+                const metaEntregas = e.meta_entregas || 50;
+                const metaAtingida = totalEntregas >= metaEntregas;
+                const expirado = e.expires_at && new Date() > new Date(e.expires_at);
+                return !metaAtingida && !expirado && !e.credito_lancado;
+            }).length), React.createElement("p", {
                 className: "text-sm text-yellow-700"
             }, "Pendentes")), React.createElement("div", {
                 className: "bg-green-50 border border-green-200 rounded-xl p-4 text-center"
             }, React.createElement("p", {
                 className: "text-3xl font-bold text-green-600"
-            }, ne.filter(e => "aprovada" === e.status).length), React.createElement("p", {
+            }, ne.filter(e => {
+                const totalEntregas = e.total_entregas || 0;
+                const metaEntregas = e.meta_entregas || 50;
+                return totalEntregas >= metaEntregas && !e.credito_lancado;
+            }).length), React.createElement("p", {
                 className: "text-sm text-green-700"
-            }, "Aprovadas")), React.createElement("div", {
-                className: "bg-red-50 border border-red-200 rounded-xl p-4 text-center"
+            }, "Completos")), React.createElement("div", {
+                className: "bg-blue-50 border border-blue-200 rounded-xl p-4 text-center"
             }, React.createElement("p", {
-                className: "text-3xl font-bold text-red-600"
-            }, ne.filter(e => "rejeitada" === e.status).length), React.createElement("p", {
-                className: "text-sm text-red-700"
-            }, "Rejeitadas")), React.createElement("div", {
+                className: "text-3xl font-bold text-blue-600"
+            }, ne.filter(e => e.credito_lancado).length), React.createElement("p", {
+                className: "text-sm text-blue-700"
+            }, "Lançados")), React.createElement("div", {
                 className: "bg-gray-50 border border-gray-200 rounded-xl p-4 text-center"
             }, React.createElement("p", {
                 className: "text-3xl font-bold text-gray-600"
-            }, ne.filter(e => "expirada" === e.status).length), React.createElement("p", {
+            }, ne.filter(e => {
+                const totalEntregas = e.total_entregas || 0;
+                const metaEntregas = e.meta_entregas || 50;
+                const metaAtingida = totalEntregas >= metaEntregas;
+                const expirado = e.expires_at && new Date() > new Date(e.expires_at);
+                return expirado && !metaAtingida && !e.credito_lancado;
+            }).length), React.createElement("p", {
                 className: "text-sm text-gray-700"
-            }, "Expiradas"))), React.createElement("div", {
+            }, "Expirados"))), React.createElement("div", {
                 className: "bg-white rounded-xl shadow p-6"
             }, React.createElement("h3", {
                 className: "font-semibold mb-4"
-            }, "🚀 Inscrições de Novatos"), 0 === ne.length ? React.createElement("p", {
+            }, "🚀 Inscrições Promo"), 0 === ne.length ? React.createElement("p", {
                 className: "text-gray-500 text-center py-8"
             }, "Nenhuma inscrição recebida") : React.createElement("div", {
                 className: "overflow-x-auto"
