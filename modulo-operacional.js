@@ -22,7 +22,7 @@
             // Operações
             operacaoModal, setOperacaoModal, operacaoEdit, setOperacaoEdit,
             operacaoForm, setOperacaoForm, operacoesData,
-            operacaoSubTab, setOperacaoSubTab, carregarOperacoes,
+            operacaoSubTab, setOperacaoSubTab, carregarOperacoes, notificarOperacaoSalva,
             gerarRelatorioOperacao, calcularContadorRegressivo,
             checklistMotos, setChecklistMotos,
             // Recrutamento
@@ -513,6 +513,7 @@
                                                         body: JSON.stringify({ status: novoStatus })
                                                     });
                                                     carregarOperacoes();
+                                                    if (notificarOperacaoSalva) notificarOperacaoSalva();
                                                     ja(novoStatus === 'ativo' ? '✅ Operação ativada!' : '⏸️ Operação pausada!', 'success');
                                                 },
                                                 className: "px-4 py-2 rounded-lg font-semibold text-sm " + 
@@ -523,6 +524,7 @@
                                                     if (confirm(`Excluir operação "${op.nome_cliente}"?`)) {
                                                         await fetch(`${API_URL}/operacoes/${op.id}`, { method: 'DELETE' });
                                                         carregarOperacoes();
+                                                        if (notificarOperacaoSalva) notificarOperacaoSalva();
                                                         ja('🗑️ Operação excluída!', 'success');
                                                     }
                                                 },
@@ -605,6 +607,7 @@
                                                         body: JSON.stringify({ status: 'concluido' })
                                                     });
                                                     carregarOperacoes();
+                                                    if (notificarOperacaoSalva) notificarOperacaoSalva();
                                                     ja('🎉 Demanda concluída com sucesso!', 'success');
                                                 }
                                             },
@@ -835,6 +838,7 @@
                                             ja(operacaoEdit ? '✅ Operação atualizada!' : '✅ Operação criada!', 'success');
                                             setOperacaoModal(false);
                                             carregarOperacoes();
+                                            if (notificarOperacaoSalva) notificarOperacaoSalva(); // Notificar calendário de incentivos
                                         } else {
                                             throw new Error('Erro ao salvar');
                                         }
