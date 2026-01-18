@@ -2012,11 +2012,17 @@ const hideLoadingScreen = () => {
             todas_operacoes: false,
             data_inicio: '',
             data_fim: '',
+            hora_inicio: '',
+            hora_fim: '',
             valor: '',
+            valor_incentivo: '',
+            clientes_vinculados: [],
             condicoes: '',
             cor: '#0d9488'
         }),
         [incentivosCalendarioMes, setIncentivosCalendarioMes] = useState(new Date()),
+        [incentivoClientesBi, setIncentivoClientesBi] = useState([]),
+        [incentivoClientesLoading, setIncentivoClientesLoading] = useState(false),
         // Estados do módulo Operações
         [operacoesData, setOperacoesData] = useState([]),
         [operacaoModal, setOperacaoModal] = useState(false),
@@ -3428,6 +3434,19 @@ const hideLoadingScreen = () => {
             }
         };
 
+        const carregarClientesBiIncentivos = async () => {
+            setIncentivoClientesLoading(true);
+            try {
+                const res = await fetchAuth(`${API_URL}/bi/clientes-por-regiao`);
+                const data = await res.json();
+                setIncentivoClientesBi(Array.isArray(data) ? data : []);
+            } catch (err) {
+                console.error('❌ Erro ao carregar clientes BI:', err);
+                setIncentivoClientesBi([]);
+            }
+            setIncentivoClientesLoading(false);
+        };
+
         const salvarIncentivo = async () => {
             try {
                 const url = incentivoEdit 
@@ -3438,6 +3457,7 @@ const hideLoadingScreen = () => {
                 
                 const payload = {
                     ...incentivoForm,
+                    valor_incentivo: incentivoForm.valor_incentivo ? parseFloat(incentivoForm.valor_incentivo) : null,
                     status: incentivoForm.status || incentivoEdit?.status || 'ativo',
                     created_by: l?.name || l?.email
                 };
@@ -3460,7 +3480,11 @@ const hideLoadingScreen = () => {
                         todas_operacoes: false,
                         data_inicio: '',
                         data_fim: '',
+                        hora_inicio: '',
+                        hora_fim: '',
                         valor: '',
+                        valor_incentivo: '',
+                        clientes_vinculados: [],
                         condicoes: '',
                         cor: '#0d9488'
                     });
@@ -4675,6 +4699,7 @@ const hideLoadingScreen = () => {
         useEffect(() => {
             if (p.opTab === 'incentivos' && l && (l.role === 'admin_master' || l.role === 'admin')) {
                 carregarIncentivos();
+                carregarClientesBiIncentivos();
             }
         }, [p.opTab, l]);
         
@@ -12488,7 +12513,8 @@ const hideLoadingScreen = () => {
                     incentivosData, setIncentivosData, incentivosStats,
                     incentivoModal, setIncentivoModal, incentivoEdit, setIncentivoEdit,
                     incentivoForm, setIncentivoForm, carregarIncentivos, salvarIncentivo, deletarIncentivo,
-                    incentivosCalendarioMes, setIncentivosCalendarioMes
+                    incentivosCalendarioMes, setIncentivosCalendarioMes,
+                    incentivoClientesBi, incentivoClientesLoading, carregarClientesBiIncentivos
                 });
             } else {
                 return React.createElement("div", {className: "min-h-screen bg-gray-50 flex items-center justify-center"},
