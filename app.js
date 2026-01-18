@@ -2021,6 +2021,7 @@ const hideLoadingScreen = () => {
         [incentivoClientesLoading, setIncentivoClientesLoading] = useState(false),
         // Estados do módulo Operações
         [operacoesData, setOperacoesData] = useState([]),
+        [operacoesRefreshKey, setOperacoesRefreshKey] = useState(0), // Trigger para atualizar calendário
         [operacaoModal, setOperacaoModal] = useState(false),
         [operacaoEdit, setOperacaoEdit] = useState(null),
         [operacaoForm, setOperacaoForm] = useState({
@@ -3665,6 +3666,11 @@ const hideLoadingScreen = () => {
             }
         };
         
+        // Função para notificar que operação foi salva (atualiza calendário de incentivos)
+        const notificarOperacaoSalva = () => {
+            setOperacoesRefreshKey(k => k + 1);
+        };
+        
         // ==================== FUNÇÕES RECRUTAMENTO ====================
         // Função para carregar necessidades de recrutamento
         const carregarRecrutamento = async () => {
@@ -4694,7 +4700,7 @@ const hideLoadingScreen = () => {
                 carregarClientesBiIncentivos();
                 carregarOperacoes(); // Carregar operações para exibir no calendário
             }
-        }, [p.opTab, l]);
+        }, [p.opTab, l, operacoesRefreshKey]); // Adicionar refreshKey para reagir a novas operações
         
         const loadTodoGrupos = async () => {
             try {
@@ -12474,7 +12480,7 @@ const hideLoadingScreen = () => {
                     // Operações
                     operacaoModal, setOperacaoModal, operacaoEdit, setOperacaoEdit,
                     operacaoForm, setOperacaoForm, operacoesData,
-                    operacaoSubTab, setOperacaoSubTab, carregarOperacoes,
+                    operacaoSubTab, setOperacaoSubTab, carregarOperacoes, notificarOperacaoSalva,
                     gerarRelatorioOperacao, calcularContadorRegressivo,
                     checklistMotos, setChecklistMotos,
                     // Recrutamento
