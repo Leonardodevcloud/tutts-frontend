@@ -289,7 +289,7 @@ const SISTEMA_MODULOS_CONFIG = [
       abas: [{id: "home-fin", label: "🏠 Home"}, {id: "solicitacoes", label: "Solicitações"}, {id: "validacao", label: "Validação"}, {id: "conciliacao", label: "Conciliação"}, {id: "resumo", label: "Resumo"}, {id: "gratuidades", label: "Gratuidades"}, {id: "restritos", label: "Restritos"}, {id: "indicacoes", label: "Indicações"}, {id: "promo-novatos", label: "Promo Novatos"}, {id: "loja", label: "Loja"}, {id: "relatorios", label: "Relatórios"}, {id: "horarios", label: "Horários"}, {id: "avisos", label: "Avisos"}, {id: "backup", label: "Backup"}, {id: "saldo-plific", label: "Saldo Plific"}]
     },
     { id: "operacional", label: "Operacional", icon: "⚙️",
-      abas: [{id: "indicacoes", label: "Indicações"}, {id: "promo-novatos", label: "Promo Novatos"}, {id: "avisos", label: "Avisos"}, {id: "novas-operacoes", label: "Novas Operações"}, {id: "recrutamento", label: "Recrutamento"}, {id: "localizacao-clientes", label: "Localização Clientes"}, {id: "relatorio-diario", label: "Relatório Diário"}, {id: "score-prof", label: "Score Prof"}]
+      abas: [{id: "indicacoes", label: "Indicações"}, {id: "promo-novatos", label: "Promo Novatos"}, {id: "avisos", label: "Avisos"}, {id: "novas-operacoes", label: "Novas Operações"}, {id: "recrutamento", label: "Recrutamento"}, {id: "localizacao-clientes", label: "Localização Clientes"}, {id: "relatorio-diario", label: "Relatório Diário"}, {id: "score-prof", label: "Score Prof"}, {id: "incentivos", label: "Incentivos"}]
     },
     { id: "disponibilidade", label: "Disponibilidade", icon: "📅",
       abas: [{id: "panorama", label: "Panorama"}, {id: "principal", label: "Principal"}, {id: "faltosos", label: "Faltosos"}, {id: "espelho", label: "Espelho"}, {id: "relatorios", label: "Relatórios"}, {id: "motoboys", label: "Motoboys"}, {id: "restricoes", label: "Restrições"}, {id: "config", label: "Configurações"}]
@@ -1999,6 +1999,24 @@ const hideLoadingScreen = () => {
             recorrencia_intervalo: 24,
             imagem_url: ''
         }),
+        // Estados do módulo Incentivos Operacionais
+        [incentivosData, setIncentivosData] = useState([]),
+        [incentivosStats, setIncentivosStats] = useState({ ativos: 0, vencendo_em_breve: 0, pausados: 0, encerrados: 0, total: 0 }),
+        [incentivoModal, setIncentivoModal] = useState(false),
+        [incentivoEdit, setIncentivoEdit] = useState(null),
+        [incentivoForm, setIncentivoForm] = useState({
+            titulo: '',
+            descricao: '',
+            tipo: 'promocao',
+            operacoes: [],
+            todas_operacoes: false,
+            data_inicio: '',
+            data_fim: '',
+            valor: '',
+            condicoes: '',
+            cor: '#0d9488'
+        }),
+        [incentivosCalendarioMes, setIncentivosCalendarioMes] = useState(new Date()),
         // Estados do módulo Operações
         [operacoesData, setOperacoesData] = useState([]),
         [operacaoModal, setOperacaoModal] = useState(false),
@@ -3392,6 +3410,90 @@ const hideLoadingScreen = () => {
             }
         };
 
+        // ==================== FUNÇÕES INCENTIVOS OPERACIONAIS ====================
+        const carregarIncentivos = async () => {
+            try {
+                const [dataRes, statsRes] = await Promise.all([
+                    fetchAuth(`${API_URL}/incentivos-op`),
+                    fetchAuth(`${API_URL}/incentivos-op/stats`)
+                ]);
+                
+                const data = await dataRes.json();
+                const stats = await statsRes.json();
+                
+                setIncentivosData(data || []);
+                setIncentivosStats(stats || { ativos: 0, vencendo_em_breve: 0, pausados: 0, encerrados: 0, total: 0 });
+            } catch (err) {
+                console.error('❌ Erro ao carregar incentivos:', err);
+            }
+        };
+
+        const salvarIncentivo = async () => {
+            try {
+                const url = incentivoEdit 
+                    ? `${API_URL}/incentivos-op/${incentivoEdit.id}`
+                    : `${API_URL}/incentivos-op`;
+                
+                const method = incentivoEdit ? 'PUT' : 'POST';
+                
+                const payload = {
+                    ...incentivoForm,
+                    status: incentivoForm.status || incentivoEdit?.status || 'ativo',
+                    created_by: l?.name || l?.email
+                };
+                
+                const res = await fetchAuth(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (res.ok) {
+                    ja(incentivoEdit ? '✅ Incentivo atualizado!' : '✅ Incentivo criado!', 'success');
+                    setIncentivoModal(false);
+                    setIncentivoEdit(null);
+                    setIncentivoForm({
+                        titulo: '',
+                        descricao: '',
+                        tipo: 'promocao',
+                        operacoes: [],
+                        todas_operacoes: false,
+                        data_inicio: '',
+                        data_fim: '',
+                        valor: '',
+                        condicoes: '',
+                        cor: '#0d9488'
+                    });
+                    carregarIncentivos();
+                } else {
+                    const err = await res.json();
+                    ja('Erro: ' + (err.error || 'Falha ao salvar'), 'error');
+                }
+            } catch (err) {
+                console.error('❌ Erro ao salvar incentivo:', err);
+                ja('Erro ao salvar incentivo', 'error');
+            }
+        };
+
+        const deletarIncentivo = async (id) => {
+            if (!confirm('Tem certeza que deseja excluir este incentivo?')) return;
+            
+            try {
+                const res = await fetchAuth(`${API_URL}/incentivos-op/${id}`, { method: 'DELETE' });
+                
+                if (res.ok) {
+                    ja('✅ Incentivo excluído!', 'success');
+                    carregarIncentivos();
+                } else {
+                    ja('Erro ao excluir incentivo', 'error');
+                }
+            } catch (err) {
+                console.error('❌ Erro ao deletar incentivo:', err);
+                ja('Erro ao excluir incentivo', 'error');
+            }
+        };
+        // ==================== FIM FUNÇÕES INCENTIVOS ====================
+
         const consultarSaldoPlific = async (idProf) => {
             if (!idProf) { ja("Informe o ID", "error"); return; }
             setPlificState(prev => ({ ...prev, loading: true }));
@@ -4566,6 +4668,13 @@ const hideLoadingScreen = () => {
             if (p.opTab === 'avisos' && l && (l.role === 'admin_master' || l.role === 'admin')) {
                 carregarAvisos();
                 carregarRegioes();
+            }
+        }, [p.opTab, l]);
+        
+        // useEffect para carregar incentivos quando entrar na aba
+        useEffect(() => {
+            if (p.opTab === 'incentivos' && l && (l.role === 'admin_master' || l.role === 'admin')) {
+                carregarIncentivos();
             }
         }, [p.opTab, l]);
         
@@ -12374,7 +12483,12 @@ const hideLoadingScreen = () => {
                     abrirNovoRelatorio, abrirEditarRelatorio,
                     salvarRelatorio, excluirRelatorio, gerarLinkWaze,
                     // Regiões e Setores
-                    aa, setores
+                    aa, setores,
+                    // Incentivos Operacionais
+                    incentivosData, setIncentivosData, incentivosStats,
+                    incentivoModal, setIncentivoModal, incentivoEdit, setIncentivoEdit,
+                    incentivoForm, setIncentivoForm, carregarIncentivos, salvarIncentivo, deletarIncentivo,
+                    incentivosCalendarioMes, setIncentivosCalendarioMes
                 });
             } else {
                 return React.createElement("div", {className: "min-h-screen bg-gray-50 flex items-center justify-center"},
