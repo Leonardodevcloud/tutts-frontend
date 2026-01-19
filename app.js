@@ -2,6 +2,19 @@ const {
     useState: useState,
     useEffect: useEffect
 } = React, API_URL = "https://tutts-backend-production.up.railway.app/api";
+// ==================== LOGGER CONTROLADO (PRODUÇÃO) ====================
+(function() {
+    if (window.__loggerConfigured) return;
+    const isProduction = !['localhost', '127.0.0.1'].includes(window.location.hostname);
+    if (isProduction) {
+        const noop = () => {};
+        window.console.log = noop;
+        window.console.debug = noop;
+        window.console.info = noop;
+    }
+    window.__loggerConfigured = true;
+})();
+// ==================== FIM LOGGER CONTROLADO ====================
 
 // ==================== LOGO URL ====================
 const TUTTS_LOGO_URL = "https://github.com/Leonardodevcloud/tutts-frontend/blob/main/logotuttsoriginal.png?raw=true";
