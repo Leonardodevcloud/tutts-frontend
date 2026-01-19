@@ -1013,8 +1013,8 @@ const hideLoadingScreen = () => {
     }) => {
         const t = {
                 pendente: e.filter(e => "pendente" === e.status).length,
-                aprovada: e.filter(e => "aprovada" === e.status).length,
-                rejeitada: e.filter(e => "rejeitada" === e.status).length
+                aprovado: e.filter(e => "aprovado" === e.status).length,
+                rejeitado: e.filter(e => "rejeitado" === e.status).length
             },
             a = e.length,
             l = [{
@@ -1022,12 +1022,12 @@ const hideLoadingScreen = () => {
                 value: t.pendente,
                 color: "#eab308"
             }, {
-                label: "Aprovadas",
-                value: t.aprovada,
+                label: "Aprovados",
+                value: t.aprovado,
                 color: "#22c55e"
             }, {
-                label: "Rejeitadas",
-                value: t.rejeitada,
+                label: "Rejeitados",
+                value: t.rejeitado,
                 color: "#ef4444"
             }].filter(e => e.value > 0);
         let r = 0;
@@ -1182,7 +1182,7 @@ const hideLoadingScreen = () => {
                 aprovadas: 0,
                 rejeitadas: 0,
                 pendentes: 0
-            }), t[a].total++, "aprovada" === e.status ? t[a].aprovadas++ : "rejeitada" === e.status ? t[a].rejeitadas++ : t[a].pendentes++
+            }), t[a].total++, "aprovado" === e.status ? t[a].aprovadas++ : "rejeitado" === e.status ? t[a].rejeitadas++ : t[a].pendentes++
         });
         const a = Object.entries(t).map(([e, t]) => ({
             name: e,
@@ -7275,7 +7275,7 @@ const hideLoadingScreen = () => {
             try {
                 C(a => a.map(a => a.id === e ? {
                     ...a,
-                    status: t ? "aprovada" : "rejeitada",
+                    status: t ? "aprovado" : "rejeitado",
                     validated_by_name: l.fullName
                 } : a)), await fetchAuth(`${API_URL}/submissions/${e}`, {
                     method: "PATCH",
@@ -7283,12 +7283,12 @@ const hideLoadingScreen = () => {
                         "Content-Type": "application/json"
                     },
                     body: JSON.stringify({
-                        status: t ? "aprovada" : "rejeitada",
+                        status: t ? "aprovado" : "rejeitado",
                         observacao: p[`obs_${e}`] || "",
                         validatedBy: l.id,
                         validatedByName: l.fullName || "Admin"
                     })
-                }), ja(t ? "✅ Aprovada!" : "❌ Rejeitada!", t ? "success" : "error");
+                }), ja(t ? "✅ Aprovado!" : "❌ Rejeitado!", t ? "success" : "error");
                 const {
                     pendingFilter: a,
                     adminTab: r
@@ -8580,8 +8580,8 @@ const hideLoadingScreen = () => {
         }, "OS: ", e.ordemServico), React.createElement("p", {
             className: "text-sm text-gray-600"
         }, e.motivo)), React.createElement("span", {
-            className: "px-3 py-1 rounded-full text-xs font-bold " + ("aprovada" === e.status ? "bg-green-500 text-white" : "rejeitada" === e.status ? "bg-red-500 text-white" : "bg-yellow-500 text-white")
-        }, e.status?.toUpperCase())), "rejeitada" === e.status && e.observacao && React.createElement("div", {
+            className: "px-3 py-1 rounded-full text-xs font-bold " + ("aprovado" === e.status ? "bg-green-500 text-white" : "rejeitado" === e.status ? "bg-red-500 text-white" : "bg-yellow-500 text-white")
+        }, e.status?.toUpperCase())), "rejeitado" === e.status && e.observacao && React.createElement("div", {
             className: "mt-2 p-2 bg-red-50 border border-red-200 rounded"
         }, React.createElement("p", {
             className: "text-xs text-red-800"
@@ -17982,13 +17982,13 @@ const hideLoadingScreen = () => {
                 className: "text-sm text-gray-600"
             }, "Aprovadas"), React.createElement("p", {
                 className: "text-2xl font-bold text-green-600"
-            }, j.filter(e => "aprovada" === e.status).length)), React.createElement("div", {
+            }, j.filter(e => "aprovado" === e.status).length)), React.createElement("div", {
                 className: "bg-white p-4 rounded-xl shadow"
             }, React.createElement("p", {
                 className: "text-sm text-gray-600"
-            }, "Rejeitadas"), React.createElement("p", {
+            }, "Rejeitados"), React.createElement("p", {
                 className: "text-2xl font-bold text-red-600"
-            }, j.filter(e => "rejeitada" === e.status).length)), React.createElement("div", {
+            }, j.filter(e => "rejeitado" === e.status).length)), React.createElement("div", {
                 className: "bg-white p-4 rounded-xl shadow"
             }, React.createElement("p", {
                 className: "text-sm text-gray-600"
@@ -18077,12 +18077,12 @@ const hideLoadingScreen = () => {
             submissions: j
         }), React.createElement(PieChart, {
             data: [{
-                label: "✓ Aprovadas",
-                value: j.filter(e => "aprovada" === e.status).length,
+                label: "✓ Aprovados",
+                value: j.filter(e => "aprovado" === e.status).length,
                 color: "#22c55e"
             }, {
-                label: "✗ Rejeitadas",
-                value: j.filter(e => "rejeitada" === e.status).length,
+                label: "✗ Rejeitados",
+                value: j.filter(e => "rejeitado" === e.status).length,
                 color: "#ef4444"
             }, {
                 label: "⏳ Pendentes",
@@ -18228,10 +18228,10 @@ const hideLoadingScreen = () => {
         }, "Todos status"), React.createElement("option", {
             value: "pendente"
         }, "Pendente"), React.createElement("option", {
-            value: "aprovada"
-        }, "Aprovada"), React.createElement("option", {
-            value: "rejeitada"
-        }, "Rejeitada")), React.createElement("select", {
+            value: "aprovado"
+        }, "Aprovado"), React.createElement("option", {
+            value: "rejeitado"
+        }, "Rejeitado")), React.createElement("select", {
             value: p.dateFilter || "",
             onChange: e => x({
                 ...p,
@@ -18269,7 +18269,7 @@ const hideLoadingScreen = () => {
             return !0
         }).map(e => React.createElement("div", {
             key: e.id,
-            className: "border rounded-lg p-3 text-sm " + ("aprovada" === e.status ? "bg-green-50" : "rejeitada" === e.status ? "bg-red-50" : "bg-yellow-50")
+            className: "border rounded-lg p-3 text-sm " + ("aprovado" === e.status ? "bg-green-50" : "rejeitado" === e.status ? "bg-red-50" : "bg-yellow-50")
         }, React.createElement("div", {
             className: "flex justify-between items-start mb-1"
         }, React.createElement("div", null, React.createElement("p", {
@@ -18279,7 +18279,7 @@ const hideLoadingScreen = () => {
         }, e.fullName)), React.createElement("div", {
             className: "flex items-center gap-1"
         }, React.createElement("span", {
-            className: "px-2 py-0.5 rounded-full text-xs font-bold " + ("aprovada" === e.status ? "bg-green-600 text-white" : "rejeitada" === e.status ? "bg-red-600 text-white" : "bg-yellow-600 text-white")
+            className: "px-2 py-0.5 rounded-full text-xs font-bold " + ("aprovado" === e.status ? "bg-green-600 text-white" : "rejeitado" === e.status ? "bg-red-600 text-white" : "bg-yellow-600 text-white")
         }, e.status?.toUpperCase()), React.createElement("button", {
             onClick: async () => {
                 confirm(`Excluir OS ${e.ordemServico}?`) && (await fetchAuth(`${API_URL}/submissions/${e.id}`, {
@@ -18355,7 +18355,7 @@ const hideLoadingScreen = () => {
             const e = new Date;
             e.setHours(0, 0, 0, 0);
             const t = j.filter(t => {
-                    if ("aprovada" !== t.status || "Ajuste de Retorno" !== t.motivo) return !1;
+                    if ("aprovado" !== t.status || "Ajuste de Retorno" !== t.motivo) return !1;
                     if (!p.rankingPeriod || "all" === p.rankingPeriod) return !0;
                     const a = new Date(t.created_at);
                     if ("today" === p.rankingPeriod) {
@@ -18472,8 +18472,8 @@ const hideLoadingScreen = () => {
                     const l = new Date(a.created_at);
                     return l.getMonth() === e && l.getFullYear() === t
                 }),
-                l = a.filter(e => "aprovada" === e.status),
-                r = a.filter(e => "rejeitada" === e.status),
+                l = a.filter(e => "aprovado" === e.status),
+                r = a.filter(e => "rejeitado" === e.status),
                 o = a.filter(e => "pendente" === e.status),
                 c = a.length > 0 ? (l.length / a.length * 100).toFixed(1) : 0,
                 s = a.length > 0 ? (r.length / a.length * 100).toFixed(1) : 0,
@@ -18485,7 +18485,7 @@ const hideLoadingScreen = () => {
                     aprovadas: 0,
                     rejeitadas: 0,
                     pendentes: 0
-                }), n[t].total++, "aprovada" === e.status && n[t].aprovadas++, "rejeitada" === e.status && n[t].rejeitadas++, "pendente" === e.status && n[t].pendentes++
+                }), n[t].total++, "aprovado" === e.status && n[t].aprovadas++, "rejeitado" === e.status && n[t].rejeitadas++, "pendente" === e.status && n[t].pendentes++
             });
             const m = {};
             a.forEach(e => {
@@ -18495,7 +18495,7 @@ const hideLoadingScreen = () => {
                     aprovadas: 0,
                     rejeitadas: 0,
                     cod: e.cod_profissional
-                }), m[t].total++, "aprovada" === e.status && m[t].aprovadas++, "rejeitada" === e.status && m[t].rejeitadas++
+                }), m[t].total++, "aprovado" === e.status && m[t].aprovadas++, "rejeitado" === e.status && m[t].rejeitadas++
             });
             const i = Object.entries(m).map(([e, t]) => ({
                     nome: e,
@@ -18526,7 +18526,7 @@ const hideLoadingScreen = () => {
             a.forEach(e => {
                 const t = new Date(e.created_at).getDate(),
                     a = d.find(e => t >= e.dias[0] && t <= e.dias[1]);
-                a && (a.total++, "aprovada" === e.status && a.aprovadas++)
+                a && (a.total++, "aprovado" === e.status && a.aprovadas++)
             });
             const u = Math.max(...d.map(e => e.total), 1),
                 g = [];
@@ -18543,7 +18543,7 @@ const hideLoadingScreen = () => {
                         month: "short"
                     }),
                     total: c.length,
-                    aprovadas: c.filter(e => "aprovada" === e.status).length
+                    aprovadas: c.filter(e => "aprovado" === e.status).length
                 })
             }
             const b = Math.max(...g.map(e => e.total), 1),
