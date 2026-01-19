@@ -75,13 +75,14 @@ const VERSION_KEY = "tutts_app_version";
 (function checkVersion() {
     const savedVersion = localStorage.getItem(VERSION_KEY);
     if (savedVersion !== APP_VERSION) {
-
+        console.log(`🔄 Atualizando de ${savedVersion || 'inicial'} para ${APP_VERSION}`);
+        
         // Limpar caches
         if ('caches' in window) {
             caches.keys().then(names => {
                 names.forEach(name => {
                     caches.delete(name);
-
+                    console.log(`🗑️ Cache ${name} limpo`);
                 });
             });
         }
@@ -99,7 +100,7 @@ const VERSION_KEY = "tutts_app_version";
         
         // Forçar reload se tinha versão anterior (não no primeiro acesso)
         if (savedVersion) {
-
+            console.log('🔄 Recarregando para aplicar atualizações...');
             window.location.reload(true);
         }
     }
@@ -181,11 +182,11 @@ const renovarToken = async () => {
                 if (data.user) {
                     sessionStorage.setItem("tutts_user", JSON.stringify(data.user));
                 }
-
+                console.log('🔄 Token renovado automaticamente');
                 return data.token;
             } else {
                 // Refresh token inválido ou expirado - fazer logout
-
+                console.log('❌ Refresh token inválido - fazendo logout');
                 fazerLogoutCompleto();
                 return null;
             }
@@ -232,7 +233,7 @@ const fetchAuth = async (url, options = {}, retryCount = 0) => {
             const data = await response.clone().json().catch(() => ({}));
             
             if (data.expired) {
-
+                console.log('🔄 Token expirado, tentando renovar...');
                 const novoToken = await renovarToken();
                 
                 if (novoToken) {
@@ -1420,7 +1421,7 @@ const hideLoadingScreen = () => {
                             }
                         });
                         var enderecosUnicos = Array.from(map.values());
-
+                        console.log('🗺️ Endereços carregados:', data.length, '-> únicos:', enderecosUnicos.length);
                         setEnderecosBI(enderecosUnicos);
                     }
                 } catch (err) { console.error(err); }
@@ -1560,7 +1561,7 @@ const hideLoadingScreen = () => {
                     if (data.features && data.features[0]) {
                         return Object.assign({}, sug, { latitude: data.features[0].geometry.coordinates[1], longitude: data.features[0].geometry.coordinates[0] });
                     }
-                } catch(e) { }
+                } catch(e) { console.log('Erro geocode:', e.message); }
             }
             return null;
         };
@@ -2188,7 +2189,7 @@ const hideLoadingScreen = () => {
         // ==================== PORTAL DO ROTEIRIZADOR ====================
         useEffect(() => {
             if (mostrarRoteirizador) {
-
+                console.log("🗺️ useEffect - Criando modal portal");
                 let portalDiv = document.getElementById('roteirizador-portal');
                 if (!portalDiv) {
                     portalDiv = document.createElement('div');
@@ -2199,7 +2200,7 @@ const hideLoadingScreen = () => {
                     React.createElement(RoteirizadorModule, {
                         enderecosBi: localizacaoClientes,
                         onClose: () => { 
-
+                            console.log("🗺️ Fechando modal via portal"); 
                             setMostrarRoteirizador(false); 
                         },
                         showToast: ja
@@ -2444,7 +2445,7 @@ const hideLoadingScreen = () => {
         const saveSocialProfile = async (displayName, photoBase64) => {
             try {
                 setSocialLoading(true);
-
+                console.log("📸 Salvando perfil:", { displayName, temFoto: !!photoBase64, tamanhoFoto: photoBase64?.length });
                 const res = await fetchAuth(`${API_URL}/social/profile/${l.codProfissional}`, {
                     method: "PUT",
                     headers: {"Content-Type": "application/json"},
@@ -2455,7 +2456,7 @@ const hideLoadingScreen = () => {
                 });
                 if (res.ok) {
                     const profile = await res.json();
-
+                    console.log("📸 Perfil salvo:", profile);
                     setSocialProfile(profile);
                     ja("✅ Perfil atualizado!", "success");
                 } else {
@@ -2732,6 +2733,7 @@ const hideLoadingScreen = () => {
                 if (isInitialCheck) {
                     // No login, mostra todas as pendentes
                     if (pendentes.length > 0) {
+                        console.log(`📢 Login: ${pendentes.length} mensagem(ns) da liderança pendente(s)`);
                         setLiderancaModal({ tipo: 'notificacao', dados: pendentes[0], fila: pendentes });
                         setLiderancaMensagensJaNotificadas(pendentes.map(m => m.id));
                     }
@@ -2739,6 +2741,7 @@ const hideLoadingScreen = () => {
                     // No polling, só mostra novas
                     const novas = pendentes.filter(m => !liderancaMensagensJaNotificadas.includes(m.id));
                     if (novas.length > 0) {
+                        console.log(`📢 Polling: ${novas.length} NOVA(S) mensagem(ns) da liderança!`);
                         setLiderancaModal({ tipo: 'notificacao', dados: novas[0], fila: novas });
                         setLiderancaMensagensJaNotificadas(prev => [...prev, ...novas.map(m => m.id)]);
                     }
@@ -2969,7 +2972,7 @@ const hideLoadingScreen = () => {
                 let todoPollingInterval = null;
                 if (canAccessTodoEff) {
                     todoPollingInterval = setInterval(() => {
-
+                        console.log("🔔 Polling: Verificando novas tarefas...");
                         checkTodoPendentes(false); // false = apenas novas tarefas
                     }, 90000); // A cada 1.5 minutos
                 }
@@ -2978,7 +2981,7 @@ const hideLoadingScreen = () => {
                 let liderancaPollingInterval = null;
                 if (isAdmin) {
                     liderancaPollingInterval = setInterval(() => {
-
+                        console.log("📢 Polling: Verificando mensagens da liderança...");
                         checkLiderancaPendentes(false);
                     }, 60000); // A cada 1 minuto
                 }
@@ -3033,7 +3036,7 @@ const hideLoadingScreen = () => {
                 try {
                     await e()
                 } catch (e) {
-
+                    console.log("Background load error:", e)
                 }
             }, t = () => {
                 "user" === l.role && (e($a), e(qa), e(vl), e(_l), e(kl), e(carregarProgressoNovatos), e(Dl), e(Il), e(Za), e(Ka), e(Ta)), "admin_financeiro" !== l.role && "admin_master" !== l.role || (e(za), e(Ba), e(gl), e(wl), e(Cl), e(Sl), e(Dl), e(Ll), e(Ia), e(Ja), e(Ha), e(Wa), e(Ya)), "admin" !== l.role && "admin_master" !== l.role || e(Ia), "admin" === l.role && hasModuleAccess(l, "financeiro") && (e(wl), e(gl), e(Cl), e(Sl), e(Ll)), e(La)
@@ -3057,7 +3060,7 @@ const hideLoadingScreen = () => {
                         t.stop()
                     }, 450)
                 } catch (e) {
-
+                    console.log("Audio não suportado")
                 }
             },
             
@@ -3069,11 +3072,11 @@ const hideLoadingScreen = () => {
             connectWebSocket = React.useCallback(() => {
                 if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) return;
                 const wsUrl = API_URL.replace('https://', 'wss://').replace('http://', 'ws://').replace('/api', '') + '/ws/financeiro';
-
+                console.log('🔌 [WS] Conectando:', wsUrl);
                 try {
                     wsRef.current = new WebSocket(wsUrl);
                     wsRef.current.onopen = () => {
-
+                        console.log('✅ [WS] Conectado!');
                         setWsConnected(true);
                         if (l) {
                             // Enviar token JWT para autenticação segura
@@ -3085,7 +3088,7 @@ const hideLoadingScreen = () => {
                     wsRef.current.onmessage = (event) => {
                         try {
                             const data = JSON.parse(event.data);
-
+                            console.log('📩 [WS]:', data.event);
                             if (data.event === 'NEW_WITHDRAWAL') {
                                 U(prev => { if (prev.some(w => w.id === data.data.id)) return prev; return [data.data, ...prev]; });
                                 v(prev => ({ ...prev, solicitacoes: (prev.solicitacoes || 0) + 1, validacao: (prev.validacao || 0) + 1 }));
@@ -3098,11 +3101,11 @@ const hideLoadingScreen = () => {
                             } else if (data.event === 'MY_WITHDRAWAL_UPDATE') {
                                 if (data.data.status === 'aprovado' || data.data.status === 'aprovado_gratuidade') { Ca(); ja('✅ Seu saque foi aprovado!', 'success'); }
                                 else if (data.data.status === 'rejeitado') { ja(`❌ Saque rejeitado: ${data.data.reject_reason || 'Sem motivo'}`, 'error'); }
-                            } else if (data.event === 'AUTH_SUCCESS') { }
+                            } else if (data.event === 'AUTH_SUCCESS') { console.log('✅ [WS] Autenticado:', data.role); }
                             else if (data.event === 'AUTH_ERROR') { console.error('❌ [WS] Erro de autenticação:', data.error); setWsConnected(false); }
                         } catch (err) { console.error('❌ [WS] Erro:', err); }
                     };
-                    wsRef.current.onclose = () => { setWsConnected(false); if (!wsReconnectTimer.current) { wsReconnectTimer.current = setTimeout(connectWebSocket, 5000); } };
+                    wsRef.current.onclose = () => { console.log('🔌 [WS] Desconectado'); setWsConnected(false); if (!wsReconnectTimer.current) { wsReconnectTimer.current = setTimeout(connectWebSocket, 5000); } };
                     wsRef.current.onerror = () => { setWsConnected(false); };
                 } catch (err) { console.error('❌ [WS] Falha:', err); }
             }, [l]),
@@ -3236,7 +3239,7 @@ const hideLoadingScreen = () => {
                     const abaAtiva = p.finTab || "home-fin";
                     "solicitacoes" === abaAtiva || "validacao" === abaAtiva ? Pa("solicitacoes") : "loja" === abaAtiva ? Pa("loja") : "gratuidades" === abaAtiva && Pa("gratuidades");
                     h(new Date);
-
+                    console.log('✅ Dados carregados:', saques.length, 'total,', pendentes.length, 'pendentes');
                 } catch (e) { console.error("Erro:", e); }
                 N(!1);
             };
@@ -3245,7 +3248,7 @@ const hideLoadingScreen = () => {
             
             // Fallback: polling APENAS se WebSocket offline (60s ao invés de 10s)
             const fallbackInterval = setInterval(() => {
-                if (!wsConnected) { carregarDados(); }
+                if (!wsConnected) { console.log('⚠️ [Fallback] WebSocket offline'); carregarDados(); }
             }, 60000);
             
             return () => clearInterval(fallbackInterval);
@@ -3315,7 +3318,7 @@ const hideLoadingScreen = () => {
                     x(e => ({
                         ...e,
                         dispData: t
-                    }))
+                    })), console.log("🔄 Disponibilidade atualizada em tempo real")
                 } catch (e) {
                     console.error("Erro no polling disponibilidade:", e)
                 }
@@ -3327,7 +3330,7 @@ const hideLoadingScreen = () => {
             (async () => {
                 try {
                     const [e, t] = await Promise.all([fetchAuth(`${API_URL}/horarios`).then(e => e.json()), fetchAuth(`${API_URL}/horarios/especiais`).then(e => e.json())]);
-                    Oe({
+                    console.log("Horários especiais recebidos:", t), Oe({
                         horarios: e,
                         especiais: t,
                         loading: !1
@@ -3561,6 +3564,7 @@ const hideLoadingScreen = () => {
             }
         };
 
+
         // Consulta em Lote - busca saldos de múltiplos profissionais
         const consultarSaldosLotePlific = async (pagina = 1) => {
             setPlificState(prev => ({ ...prev, loadingLote: true }));
@@ -3650,6 +3654,7 @@ const hideLoadingScreen = () => {
             URL.revokeObjectURL(url);
             ja("CSV exportado!", "success");
         };
+
 
         // Buscar saldo Plific do usuário logado (para tela de saque)
         const buscarSaldoPlificUsuario = async (forceRefresh = false) => {
@@ -4042,9 +4047,9 @@ const hideLoadingScreen = () => {
         
         // Carregar relatórios não lidos pelo usuário
         const carregarRelatoriosNaoLidos = async () => {
-
+            console.log('📢 Verificando relatórios não lidos para:', l?.codProfissional, 'setor:', l?.setor_id);
             if (!l?.codProfissional) {
-
+                console.log('❌ Sem codProfissional');
                 return;
             }
             try {
@@ -4052,15 +4057,15 @@ const hideLoadingScreen = () => {
                 const setorParam = l?.setor_id ? `?setor_id=${l.setor_id}` : '';
                 const res = await fetchAuth(`${API_URL}/relatorios-diarios/nao-lidos/${l.codProfissional}${setorParam}`);
                 const data = await res.json();
-
+                console.log('📢 Resposta do servidor:', data);
                 const naoLidos = Array.isArray(data) ? data : [];
                 setRelatoriosNaoLidos(naoLidos);
                 // Se houver relatórios não lidos, mostrar o primeiro
                 if (naoLidos.length > 0) {
-
+                    console.log('📢 Mostrando modal para:', naoLidos[0]);
                     setRelatorioNaoLido(naoLidos[0]);
                 } else {
-
+                    console.log('📢 Nenhum relatório não lido');
                 }
             } catch (err) { 
                 console.error('Erro ao carregar relatórios não lidos:', err); 
@@ -5069,6 +5074,7 @@ const hideLoadingScreen = () => {
                 // Na verificação inicial (login), mostra TODAS as pendentes
                 if (isInitialCheck) {
                     if (pendentes.length > 0) {
+                        console.log(`🔔 Login: ${pendentes.length} tarefa(s) pendente(s)`);
                         setTodoPendentesNotif(pendentes);
                         setTodoNotifModal(true);
                         // Marca todas como já notificadas
@@ -5079,6 +5085,7 @@ const hideLoadingScreen = () => {
                     const novasTarefas = pendentes.filter(t => !todoTarefasJaNotificadas.includes(t.id));
                     
                     if (novasTarefas.length > 0) {
+                        console.log(`🔔 Polling: ${novasTarefas.length} NOVA(S) tarefa(s) pendente(s)!`);
                         setTodoPendentesNotif(novasTarefas);
                         setTodoNotifModal(true);
                         // Adiciona às já notificadas
@@ -5132,7 +5139,7 @@ const hideLoadingScreen = () => {
                 xe(a);
                 const cidadesArray = Array.from(cidadesSet).sort((a, b) => a.localeCompare(b, 'pt-BR'));
                 setCidadesIndicacao(cidadesArray);
-
+                console.log(`📊 Planilha carregada: ${a.length} profissionais, ${cidadesArray.length} cidades`);
             } catch (e) {
                 console.error("Erro ao carregar planilha:", e), Re("Erro ao carregar lista de profissionais")
             }
@@ -5383,11 +5390,12 @@ const hideLoadingScreen = () => {
                 setLoadingMessage("Carregando mapa de calor...");
                 setMapaCalorDados(null);
                 const params = Xa();
+                console.log("🗺️ Carregando mapa de calor:", params.toString());
                 setLoadingMessage("Buscando coordenadas das entregas...");
                 const response = await fetch(API_URL + "/bi/mapa-calor?" + params);
                 const data = await response.json();
                 setLoadingMessage("Renderizando mapa...");
-
+                console.log("🗺️ Dados mapa recebidos:", data);
                 setMapaCalorDados(data);
             } catch (e) {
                 console.error("Erro mapa calor:", e);
@@ -5410,32 +5418,34 @@ const hideLoadingScreen = () => {
                 setAcompLoading(true);
                 setLoadingMessage("Carregando acompanhamento periódico...");
                 const params = Xa();
+                console.log("📈 Carregando acompanhamento - Filtros ua:", JSON.stringify(ua));
+                console.log("📈 Carregando acompanhamento - Params:", params.toString());
                 setLoadingMessage("Analisando dados do período...");
                 const response = await fetch(API_URL + "/bi/acompanhamento-periodico?" + params);
                 const data = await response.json();
-
+                console.log("📈 Dados recebidos:", data);
                 setAcompDados(data);
                 
                 // Carregar dados de clientes também
                 try {
                     const clientesRes = await fetch(API_URL + "/bi/acompanhamento-clientes?" + params);
                     const clientesData = await clientesRes.json();
-
+                    console.log("📊 Dados clientes:", clientesData);
                     setAcompClientes(clientesData);
-                } catch(e) { }
+                } catch(e) { console.log("Erro ao carregar clientes:", e); }
                 
                 // Carregar comparativo semanal
                 try {
                     const semanalRes = await fetch(API_URL + "/bi/comparativo-semanal?" + params);
                     const semanalData = await semanalRes.json();
-
+                    console.log("📅 Comparativo semanal:", semanalData);
                     if (semanalData && semanalData.semanas) {
                         setComparativoSemanal(semanalData);
                     } else {
                         setComparativoSemanal({semanas: []});
                     }
                 } catch(e) { 
-
+                    console.log("Erro ao carregar comparativo semanal:", e); 
                     setComparativoSemanal({semanas: []});
                 }
                 
@@ -5443,14 +5453,14 @@ const hideLoadingScreen = () => {
                 try {
                     const semanalClientesRes = await fetch(API_URL + "/bi/comparativo-semanal-clientes?" + params);
                     const semanalClientesData = await semanalClientesRes.json();
-
+                    console.log("📅 Comparativo semanal por cliente:", semanalClientesData);
                     if (semanalClientesData && semanalClientesData.clientes) {
                         setComparativoSemanalClientes(semanalClientesData);
                     } else {
                         setComparativoSemanalClientes({clientes: []});
                     }
                 } catch(e) { 
-
+                    console.log("Erro ao carregar comparativo semanal por cliente:", e);
                     setComparativoSemanalClientes({clientes: []});
                 }
             } catch (e) {
@@ -5462,7 +5472,7 @@ const hideLoadingScreen = () => {
         
         // Função para carregar dados do módulo Garantido
         const carregarGarantido = async () => {
-
+            console.log('💰💰💰 FUNÇÃO carregarGarantido CHAMADA! 💰💰💰');
             try {
                 setGarantidoLoading(true);
                 
@@ -5485,11 +5495,15 @@ const hideLoadingScreen = () => {
                             
                             filtrosUsados.data_inicio = formatDate(primeiroDiaMes);
                             filtrosUsados.data_fim = formatDate(ultimaData);
-
+                            
+                            console.log('💰 Garantido - Datas automáticas:', filtrosUsados.data_inicio, 'até', filtrosUsados.data_fim);
+                            
                             // Atualizar estado dos filtros
                             setGarantidoFiltros(filtrosUsados);
                         }
-                    } catch (metaErr) { }
+                    } catch (metaErr) {
+                        console.log('💰 Não foi possível obter meta do garantido:', metaErr);
+                    }
                 }
                 
                 const params = new URLSearchParams();
@@ -5500,14 +5514,16 @@ const hideLoadingScreen = () => {
                 if (filtrosUsados.filtro_status && filtrosUsados.filtro_status !== 'todos') {
                     params.append('filtro_status', filtrosUsados.filtro_status);
                 }
-
+                
+                console.log('💰 Garantido - Filtros usados:', filtrosUsados);
+                console.log('💰 Garantido - URL params:', params.toString() || '(sem filtros)');
                 
                 // Carregar dados principais
                 const url = `${API_URL}/bi/garantido?${params}`;
-
+                console.log('💰 Garantido - Chamando URL:', url);
                 const response = await fetch(url);
                 const data = await response.json();
-
+                console.log('💰 Garantido - Resposta:', data);
                 setGarantidoData(data.dados || []);
                 setGarantidoStats(data.totais || null);
                 
@@ -5593,7 +5609,7 @@ const hideLoadingScreen = () => {
                 
                 const response = await fetch(API_URL + "/bi/cliente-767?" + params);
                 const data = await response.json();
-
+                console.log("🏢 Cliente 767 dados:", data);
                 setCliente767Dados(data);
             } catch (e) {
                 console.error("Erro cliente 767:", e);
@@ -5615,7 +5631,9 @@ const hideLoadingScreen = () => {
                 setRelatorioIALoading(true);
                 setRelatorioIAErro(null);
                 setRelatorioIAResultado(null);
-
+                
+                console.log("🤖 Gerando relatório IA tipos:", tiposSelecionados);
+                
                 // Preparar parâmetros com filtros do Relatório IA
                 const params = new URLSearchParams();
                 
@@ -5646,7 +5664,8 @@ const hideLoadingScreen = () => {
                 
                 // Recarregar histórico do banco
                 carregarHistoricoRelatoriosIA();
-
+                
+                console.log("✅ Relatório IA gerado com sucesso");
             } catch (e) {
                 console.error("❌ Erro ao gerar relatório IA:", e);
                 setRelatorioIAErro(e.message || "Erro ao gerar relatório");
@@ -5780,7 +5799,7 @@ const hideLoadingScreen = () => {
         // useEffect para recarregar acompanhamento quando filtros mudam
         useEffect(() => {
             if (Et === "acompanhamento") {
-
+                console.log("📈 Filtros alterados, recarregando acompanhamento...");
                 carregarAcompanhamento();
             }
         }, [ua.data_inicio, ua.data_fim, ua.cod_cliente, ua.centro_custo, ua.categoria]);
@@ -5788,7 +5807,7 @@ const hideLoadingScreen = () => {
         // useEffect para CARREGAR DADOS DO BI automaticamente quando entrar no módulo
         useEffect(() => {
             if (Ee === "bi") {
-
+                console.log("📊 Entrando no módulo BI, carregando dados automaticamente...");
                 ll();
                 tl();
                 al();
@@ -5813,11 +5832,11 @@ const hideLoadingScreen = () => {
         // useEffect para RENDERIZAR o mapa quando os dados estiverem disponíveis
         useEffect(() => {
             if (Et === "dashboard" && mapaCalorVisivel && mapaCalorDados && !mapaCalorLoading && !ba) {
-
+                console.log("🗺️ Dados do mapa disponíveis, inicializando...");
                 setTimeout(() => {
                     if (window.initMapaCalor) {
                         const pontos = mapaCalorDados.pontos || (Array.isArray(mapaCalorDados) ? mapaCalorDados : []);
-
+                        console.log("🗺️ Renderizando mapa com", pontos.length, "pontos");
                         window.initMapaCalor(pontos);
                     }
                 }, 200);
@@ -5873,11 +5892,12 @@ const hideLoadingScreen = () => {
                 Ra(!0);
                 setLoadingMessage("Carregando dashboard...");
                 const e = Xa();
+                console.log("📊 Carregando dashboard com filtros:", e.toString() || "(sem filtros)");
                 setLoadingMessage("Buscando métricas de desempenho...");
                 const t = await fetchAuth(`${API_URL}/bi/dashboard-completo?${e}`),
                     a = await t.json();
                 setLoadingMessage("Processando dados...");
-                Nt(a.metricas || {}), Bt(a.porCliente || []), Jt(a.porProfissional || []);
+                console.log("📊 Dados recebidos:", a), Nt(a.metricas || {}), Bt(a.porCliente || []), Jt(a.porProfissional || []);
                 const l = a.dadosGraficos || [],
                     r = [{
                         label: "0 a 45 min",
@@ -6017,6 +6037,7 @@ const hideLoadingScreen = () => {
             }
         }, ll = async () => {
             try {
+                console.log("📊 ll() - Iniciando carregamento do BI...");
                 Ra(!0); // Mostrar loading
                 setLoadingMessage("Carregando dados do sistema...");
                 // Carregar máscaras PRIMEIRO junto com os outros dados
@@ -6025,7 +6046,9 @@ const hideLoadingScreen = () => {
                 // Setar máscaras ANTES de tudo
                 setLoadingMessage("Aplicando configurações...");
                 ta(mascarasData || []);
-
+                console.log("📊 Máscaras carregadas:", (mascarasData || []).length);
+                console.log("📊 Datas recebidas:", l?.length || 0);
+                console.log("📊 Clientes recebidos:", i?.length || 0);
                 Ct(i); St(t || []); Pt(t || []); Dt(c || {}); It(a || []); $t(l || []); Ot(r || []); Yt(o || []); oa(s || []); xa(s || []); la(n || []); ma(m || []); da(i);
                 
                 // Popular Set de datas com dados para indicador visual no filtro
@@ -6038,7 +6061,7 @@ const hideLoadingScreen = () => {
                         }
                     });
                     setBiDatasComDados(datasSet);
-
+                    console.log("📊 Datas com dados carregadas:", datasSet.size);
                 }
                 
                 let novosFiltros = {};
@@ -6068,14 +6091,17 @@ const hideLoadingScreen = () => {
                         cod_cliente: [],
                         centro_custo: []
                     };
-
+                    console.log("📊 Período padrão: dia 1 do mês até hoje");
+                    console.log("📊 Datas formatadas:", novosFiltros.data_inicio, "até", novosFiltros.data_fim);
                     ga(novosFiltros);
                 } else {
-
+                    console.log("📊 Sem datas, usando filtros vazios");
                 }
                 // Sempre chamar ol para carregar o dashboard
                 setLoadingMessage("Carregando dashboard principal...");
+                console.log("📊 Chamando ol() com filtros:", JSON.stringify(novosFiltros));
                 await ol(novosFiltros);
+                console.log("📊 ll() - Carregamento concluído!");
             } catch (e) {
                 console.error("❌ Erro ao carregar dropdowns:", e);
                 Ra(!1);
@@ -6165,10 +6191,10 @@ const hideLoadingScreen = () => {
                 clientesParaEnviar && clientesParaEnviar.length > 0 && clientesParaEnviar.forEach(c => t.append("cod_cliente", c));
                 centrosCustoParaEnviar && centrosCustoParaEnviar.length > 0 && centrosCustoParaEnviar.forEach(c => t.append("centro_custo", c));
                 clientesSemFiltroCC && clientesSemFiltroCC.length > 0 && t.append("clientes_sem_filtro_cc", clientesSemFiltroCC.join(","));
-                e.cod_prof && t.append("cod_prof", e.cod_prof), e.categoria && t.append("categoria", e.categoria), e.cidade && t.append("cidade", e.cidade), e.status_prazo && t.append("status_prazo", e.status_prazo), e.status_retorno && t.append("status_retorno", e.status_retorno);
+                e.cod_prof && t.append("cod_prof", e.cod_prof), e.categoria && t.append("categoria", e.categoria), e.cidade && t.append("cidade", e.cidade), e.status_prazo && t.append("status_prazo", e.status_prazo), e.status_retorno && t.append("status_retorno", e.status_retorno), console.log("📊 loadBiDashboardComFiltros - params:", t.toString());
                 const a = await fetchAuth(`${API_URL}/bi/dashboard-completo?${t}`),
                     l = await a.json();
-                Nt(l.metricas || {}), Bt(l.porCliente || []), Jt(l.porProfissional || []);
+                console.log("📊 loadBiDashboardComFiltros - resposta:", l), console.log("📊 metricas:", l.metricas), console.log("📊 porCliente:", l.porCliente?.length, "registros"), console.log("📊 porProfissional:", l.porProfissional?.length, "registros"), Nt(l.metricas || {}), Bt(l.porCliente || []), Jt(l.porProfissional || []);
                 const r = l.dadosGraficos || [],
                     o = [{
                         label: "0 a 45 min",
@@ -6283,7 +6309,7 @@ const hideLoadingScreen = () => {
                 const osResponse = await fetchAuth(`${API_URL}/bi/entregas-lista?${osParams}`);
                 const osData = await osResponse.json();
                 Ut(Array.isArray(osData) ? osData : []);
-
+                console.log("📋 Lista de OS recarregada com filtros");
             } catch (e) {
                 console.error("Erro ao carregar BI:", e)
             }
@@ -6535,7 +6561,7 @@ const hideLoadingScreen = () => {
         },
         // Função para verificar elegibilidade do usuário para promoções novatos
         verificarElegibilidadeNovatos = async () => {
-
+            console.log("🔍 Verificando elegibilidade novatos para:", l?.codProfissional);
             if (!l || !l.codProfissional || isNaN(l.codProfissional) || ['admin', 'admin_master', 'admin_financeiro'].includes(l.role)) {
                 setElegibilidadeNovatos({ elegivel: false, motivo: 'Usuário não logado', promocoes: [], carregando: false });
                 return;
@@ -6543,7 +6569,7 @@ const hideLoadingScreen = () => {
             try {
                 const response = await fetchAuth(`${API_URL}/promocoes-novatos/elegibilidade/${l.codProfissional}`);
                 const data = await response.json();
-
+                console.log("✅ Resposta elegibilidade novatos:", data);
                 setElegibilidadeNovatos({ ...data, carregando: false });
                 // SEMPRE atualiza a lista de promoções (vazia se não elegível)
                 se(data.promocoes || []);
@@ -6616,7 +6642,7 @@ const hideLoadingScreen = () => {
                 const e = await fetchAuth(`${API_URL}/inscricoes-novatos/progresso/${l.codProfissional}`);
                 const data = await e.json();
                 setProgressoNovatos(data);
-
+                console.log("📊 Progresso novatos carregado:", data);
             } catch (e) {
                 console.error("Erro ao carregar progresso novatos:", e)
             }
@@ -6644,7 +6670,7 @@ const hideLoadingScreen = () => {
                 const e = await fetchAuth(url);
                 const data = await e.json();
                 setClientesBINovatos(data);
-
+                console.log("📋 Clientes carregados para região", regiao, ":", data.length);
             } catch (e) {
                 console.error("Erro ao carregar clientes do BI:", e);
                 setClientesBINovatos([]);
@@ -6725,7 +6751,7 @@ const hideLoadingScreen = () => {
             try {
                 const e = await fetchAuth(`${API_URL}/quiz-procedimentos/config`),
                     t = await e.json();
-                Ne(t)
+                console.log("🎯 Quiz Config carregado:", t), Ne(t)
             } catch (e) {
                 console.error("Erro ao carregar config quiz:", e)
             }
@@ -6890,9 +6916,11 @@ const hideLoadingScreen = () => {
                                 },
                                 abas: allowedTabs
                             };
-
+                            console.log("Permissões carregadas:", perms);
                         }
-                    } catch (err) { }
+                    } catch (err) {
+                        console.log("Sem permissões definidas, usando padrão");
+                    }
                 }
                 // Salvar token JWT se retornado
                 if (t.token) {
@@ -7068,11 +7096,12 @@ const hideLoadingScreen = () => {
             try {
                 // Calcular data do débito baseado no toggle de acerto
                 let dataDebito = null;
-
+                console.log("🔍 Toggle acertoRealizado:", acertoRealizado);
                 if (t === "aprovado" || t === "aprovado_gratuidade") {
                     if (acertoRealizado) {
                         // Acerto realizado: data/hora atual
                         dataDebito = new Date().toISOString();
+                        console.log("📅 Data débito (hoje):", dataDebito);
                     } else {
                         // Acerto pendente: último domingo
                         const hoje = new Date();
@@ -7082,6 +7111,7 @@ const hideLoadingScreen = () => {
                         ultimoDomingo.setDate(hoje.getDate() - diasParaDomingo);
                         ultimoDomingo.setHours(23, 59, 0, 0);
                         dataDebito = ultimoDomingo.toISOString();
+                        console.log("📅 Data débito (último domingo):", dataDebito);
                     }
                 }
                 
@@ -10756,7 +10786,7 @@ const hideLoadingScreen = () => {
                             e.stopPropagation();
                             e.currentTarget.style.opacity = '1';
                             const tarefaId = e.dataTransfer.getData('text/plain');
-
+                            console.log('Drop na coluna TODO, tarefaId:', tarefaId);
                             if (tarefaId) await moverTodoKanban(parseInt(tarefaId), 'todo');
                         }
                     },
@@ -10820,7 +10850,7 @@ const hideLoadingScreen = () => {
                             e.stopPropagation();
                             e.currentTarget.style.opacity = '1';
                             const tarefaId = e.dataTransfer.getData('text/plain');
-
+                            console.log('Drop na coluna DOING, tarefaId:', tarefaId);
                             if (tarefaId) await moverTodoKanban(parseInt(tarefaId), 'doing');
                         }
                     },
@@ -10884,7 +10914,7 @@ const hideLoadingScreen = () => {
                             e.stopPropagation();
                             e.currentTarget.style.opacity = '1';
                             const tarefaId = e.dataTransfer.getData('text/plain');
-
+                            console.log('Drop na coluna DONE, tarefaId:', tarefaId);
                             if (tarefaId) await moverTodoKanban(parseInt(tarefaId), 'done');
                         }
                     },
@@ -15800,6 +15830,7 @@ const hideLoadingScreen = () => {
                     var renderRow = function(row, isFirst, rowIdx) {
                         // Debug: ver dados da linha (remover depois)
                         if (rowIdx === 0 && isFirst) {
+                            console.log("📋 Debug OS row:", JSON.stringify(row, null, 2));
                         }
                         
                         // Ponto vem como número do backend
@@ -15959,7 +15990,8 @@ const hideLoadingScreen = () => {
                     
                     // Pegar usuário logado
                     const usuarioLogado = l;
-
+                    console.log("👤 Usuário logado:", usuarioLogado);
+                    
                     let totalInseridos = 0;
                     let totalIgnorados = 0;
                     let arquivosProcessados = 0;
@@ -16016,7 +16048,9 @@ const hideLoadingScreen = () => {
                             // Extrair nome do usuário de forma robusta
                             const nomeUsuario = usuarioLogado?.fullName || usuarioLogado?.full_name || usuarioLogado?.username || usuarioLogado?.name || "Admin";
                             const idUsuario = usuarioLogado?.codProfissional || usuarioLogado?.cod_profissional || usuarioLogado?.cod || usuarioLogado?.id || "";
-
+                            
+                            console.log("📤 Enviando upload com usuario:", nomeUsuario, "id:", idUsuario);
+                            
                             const response = await fetchAuth(`${API_URL}/bi/entregas/upload`, {
                                 method: "POST",
                                 headers: { "Content-Type": "application/json" },
@@ -16088,7 +16122,7 @@ const hideLoadingScreen = () => {
                             })).filter(e => e.os && e.data_hora_alocado);
                             
                             if (entregas.length === 0) {
-
+                                console.log("Nenhum registro com Data/Hora Alocado encontrado");
                                 continue;
                             }
                             
