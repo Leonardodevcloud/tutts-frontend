@@ -10411,6 +10411,9 @@ const hideLoadingScreen = () => {
                     // Funções de ação
                     Rl, El, hl, fl, Nl, yl, bl, Jl, Hl, Gl, Ml, Ol, Sl, Tl, Fl, Pl,
                     lancarDebitoPlific,
+                    consultarSaldoPlific,
+                    consultarSaldosLotePlific,
+                    exportarSaldosCSVPlific,
                     // Quiz
                     fe, Ne, ye, ve, we, _e, je, Ce, Ae, Se, ke, Pe, Te, De, Le, Ie, Fe, $e,
                     // Notificações
