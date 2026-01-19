@@ -40,6 +40,9 @@
             Ua, za, Ba, Va, Ja, Qa, Ha, Ga, Wa, Za, Ya, Ka, gl, vl, wl, _l, Cl,
             Rl, El, hl, fl, Nl, yl, bl, Jl, Hl, Gl, Ml, Ol, Sl, Tl, Fl, Pl,
             lancarDebitoPlific,
+            consultarSaldoPlific,
+            consultarSaldosLotePlific,
+            exportarSaldosCSVPlific,
             fe, Ne, ye, ve, we, _e, je, Ce, Ae, Se, ke, Pe, Te, De, Le, Ie, Fe, $e,
             y, v, w, _
         } = props;
