@@ -1310,14 +1310,19 @@
                                 ) : (
                                     <div className="overflow-x-auto">
                                         <table className="w-full text-sm">
-                                            <thead className="bg-gray-50"><tr><th className="px-2 py-2 text-center font-medium text-gray-600 w-10"></th><th className="px-3 py-2 text-left font-medium text-gray-600">OS</th><th className="px-3 py-2 text-left font-medium text-gray-600">Status</th><th className="px-3 py-2 text-left font-medium text-gray-600">Data</th><th className="px-3 py-2 text-left font-medium text-gray-600">Profissional</th><th className="px-3 py-2 text-center font-medium text-gray-600">Pontos</th><th className="px-3 py-2 text-left font-medium text-gray-600">Distância</th></tr></thead>
+                                            <thead className="bg-gray-50"><tr><th className="px-2 py-2 text-center font-medium text-gray-600 w-10"></th><th className="px-2 py-2 text-center font-medium text-gray-600 w-12">Foto</th><th className="px-3 py-2 text-left font-medium text-gray-600">OS</th><th className="px-3 py-2 text-left font-medium text-gray-600">Nota</th><th className="px-3 py-2 text-left font-medium text-gray-600">Status</th><th className="px-3 py-2 text-left font-medium text-gray-600">Data</th><th className="px-3 py-2 text-left font-medium text-gray-600">Profissional</th><th className="px-3 py-2 text-center font-medium text-gray-600">Pontos</th><th className="px-3 py-2 text-left font-medium text-gray-600">Distância</th></tr></thead>
                                             <tbody className="divide-y">
                                                 {corridasConcluidas.filter(c => filtroConcluidas === 'todas' || (filtroConcluidas === 'finalizadas' && c.status === 'finalizado') || (filtroConcluidas === 'canceladas' && c.status === 'cancelado')).map(c => {
-                                                    // Verificar se tem retorno
+                                                    // Verificar se tem retorno e extrair primeira nota
                                                     let temRetorno = false;
+                                                    let primeiraNotaFiscal = null;
                                                     try {
                                                         const dadosPontos = c.dados_pontos ? (typeof c.dados_pontos === 'string' ? JSON.parse(c.dados_pontos) : c.dados_pontos) : [];
                                                         temRetorno = dadosPontos?.some(p => p.is_retorno || p.tipo_ponto === 'retorno');
+                                                        // Pegar primeira nota fiscal (do primeiro ponto de entrega, índice 1+)
+                                                        const pontosEntrega = dadosPontos?.slice(1) || [];
+                                                        const pontoComNota = pontosEntrega.find(p => p.numero_nota && p.numero_nota.trim() !== '');
+                                                        primeiraNotaFiscal = pontoComNota?.numero_nota || null;
                                                     } catch(e) {}
                                                     
                                                     return (
@@ -1328,9 +1333,23 @@
                                                                         <span className={`transition-transform duration-200 ${corridaExpandida === c.id ? 'rotate-45' : ''}`}>+</span>
                                                                     </div>
                                                                 </td>
+                                                                <td className="px-2 py-3 text-center">
+                                                                    {c.profissional_foto ? (
+                                                                        <img src={c.profissional_foto} className="w-8 h-8 rounded-full object-cover border border-gray-200 mx-auto" alt="" />
+                                                                    ) : (
+                                                                        <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center mx-auto text-sm">🏍️</div>
+                                                                    )}
+                                                                </td>
                                                                 <td className="px-3 py-3 font-medium">
                                                                     #{c.tutts_os_numero || c.id}
                                                                     {temRetorno && <span className="ml-2 text-orange-500" title="Corrida com retorno">⚠️</span>}
+                                                                </td>
+                                                                <td className="px-3 py-3">
+                                                                    {primeiraNotaFiscal ? (
+                                                                        <span className="text-green-600 font-medium">🏷️ {primeiraNotaFiscal}</span>
+                                                                    ) : (
+                                                                        <span className="text-gray-400">-</span>
+                                                                    )}
                                                                 </td>
                                                                 <td className="px-3 py-3"><span className={`px-2 py-1 rounded-full text-xs font-medium ${c.status === 'finalizado' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{c.status === 'finalizado' ? '✅ Finalizada' : '❌ Cancelada'}</span></td>
                                                                 <td className="px-3 py-3 text-gray-600">{new Date(c.criado_em).toLocaleDateString('pt-BR')} {new Date(c.criado_em).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}</td>
@@ -1341,7 +1360,7 @@
                                                             {/* Linha expandida com detalhes */}
                                                             {corridaExpandida === c.id && (
                                                                 <tr>
-                                                                    <td colSpan="7" className="px-4 py-4 bg-gray-50">
+                                                                    <td colSpan="9" className="px-4 py-4 bg-gray-50">
                                                                         {!detalhesCorridaExpandida ? (
                                                                             <div className="text-center py-4"><span className="animate-pulse">⏳ Carregando detalhes...</span></div>
                                                                         ) : (
@@ -1443,10 +1462,14 @@
                                                                                                         )}
                                                                                                         
                                                                                                         {/* Horários */}
-                                                                                                        {(p.data_chegada || p.data_finalizado) && (
-                                                                                                            <div className="mt-2 flex gap-3 text-xs text-gray-500">
-                                                                                                                {p.data_chegada && <span>🔵 Chegou: {new Date(p.data_chegada).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}</span>}
-                                                                                                                {p.data_finalizado && <span>✅ Finalizado: {new Date(p.data_finalizado).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}</span>}
+                                                                                                        {(p.data_chegada || p.data_coletado || p.data_finalizado) && (
+                                                                                                            <div className="mt-2 pt-2 border-t border-gray-200">
+                                                                                                                <div className="text-xs text-gray-500 mb-1">⏱️ Horários:</div>
+                                                                                                                <div className="flex flex-wrap gap-3 text-xs">
+                                                                                                                    {p.data_chegada && <span className="text-blue-600">🔵 Chegou: {new Date(p.data_chegada).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}</span>}
+                                                                                                                    {p.data_coletado && <span className="text-yellow-600">🟡 Coletou: {new Date(p.data_coletado).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}</span>}
+                                                                                                                    {p.data_finalizado && <span className="text-green-600">✅ Finalizado: {new Date(p.data_finalizado).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}</span>}
+                                                                                                                </div>
                                                                                                             </div>
                                                                                                         )}
                                                                                                     </div>
