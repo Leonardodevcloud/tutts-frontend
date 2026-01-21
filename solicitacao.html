@@ -28,10 +28,6 @@
         @keyframes slideDown { from { opacity: 0; max-height: 0; } to { opacity: 1; max-height: 100px; } }
         .slide-down { animation: slideDown 0.3s ease-out forwards; overflow: hidden; }
         .foto-modal { z-index: 9999 !important; }
-        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-        .marker-bounce { animation: bounce 0.5s ease-in-out; }
-        .mapa-ajuste-modal { z-index: 9998 !important; }
-        .mapa-ajuste-container .leaflet-container { z-index: 1 !important; }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
@@ -184,13 +180,11 @@
                 const container = mapRef.current;
                 if (!container) return;
                 
-                // Limpar mapa anterior se existir
                 if (mapInstanceRef.current) {
                     mapInstanceRef.current.remove();
                     mapInstanceRef.current = null;
                 }
                 
-                // Criar novo mapa
                 const map = L.map(container, { 
                     center: [latitude, longitude], 
                     zoom: zoom, 
@@ -202,17 +196,9 @@
                     attribution: '© OpenStreetMap' 
                 }).addTo(map);
                 
-                // Criar marcador arrastável com ícone personalizado
                 const icon = L.divIcon({ 
                     className: '', 
-                    html: `
-                        <div style="position:relative;">
-                            <div style="background:#ef4444;color:#fff;width:40px;height:40px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:16px;border:3px solid #fff;box-shadow:0 4px 12px rgba(0,0,0,0.4)">
-                                <span style="transform:rotate(45deg);">📍</span>
-                            </div>
-                            <div style="position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);width:8px;height:8px;background:#ef4444;border-radius:50%;box-shadow:0 2px 4px rgba(0,0,0,0.3);"></div>
-                        </div>
-                    `, 
+                    html: `<div style="position:relative;"><div style="background:#ef4444;color:#fff;width:40px;height:40px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:16px;border:3px solid #fff;box-shadow:0 4px 12px rgba(0,0,0,0.4)"><span style="transform:rotate(45deg);">📍</span></div></div>`, 
                     iconSize: [40, 48], 
                     iconAnchor: [20, 48] 
                 });
@@ -223,13 +209,11 @@
                     autoPan: true
                 }).addTo(map);
                 
-                // Evento quando arrasta o marcador
                 marker.on('dragend', function(e) {
                     const pos = e.target.getLatLng();
                     onPosicaoMudou(pos.lat, pos.lng);
                 });
                 
-                // Evento de clique no mapa para reposicionar marcador
                 map.on('click', function(e) {
                     marker.setLatLng(e.latlng);
                     onPosicaoMudou(e.latlng.lat, e.latlng.lng);
@@ -250,7 +234,6 @@
                 };
             }, []);
             
-            // Atualizar posição do marcador quando latitude/longitude mudam externamente
             useEffect(() => {
                 if (markerRef.current && mapInstanceRef.current) {
                     markerRef.current.setLatLng([latitude, longitude]);
@@ -258,13 +241,7 @@
                 }
             }, [latitude, longitude]);
             
-            return (
-                <div 
-                    ref={mapRef} 
-                    className="w-full h-full rounded-lg"
-                    style={{ minHeight: '300px' }}
-                />
-            );
+            return <div ref={mapRef} className="w-full h-full rounded-lg" style={{ minHeight: '300px' }} />;
         };
         
         const Solicitacao = ({ cliente, token, onLogout, showToast }) => {
@@ -310,14 +287,14 @@
             // ============ NOVO: Estados para modal de ajuste de mapa ============
             const [modalAjusteMapa, setModalAjusteMapa] = useState({
                 aberto: false,
-                sugestaoOriginal: null,  // Sugestão do Google que está sendo ajustada
+                sugestaoOriginal: null,
                 latitude: null,
                 longitude: null,
-                etapa: 'ajustar'  // 'ajustar' ou 'confirmar'
+                etapa: 'ajustar'
             });
             const [posicaoAjustada, setPosicaoAjustada] = useState({ lat: null, lng: null });
             const [enderecoAjustado, setEnderecoAjustado] = useState(null);
-            const [buscandoEndereco, setBuscandoEndereco] = useState(false);
+            const [buscandoEnderecoReverso, setBuscandoEnderecoReverso] = useState(false);
             
             const abrirFotoModal = (fotos, indice = 0) => {
                 setFotoModal({ aberto: true, fotos, indice });
@@ -448,9 +425,9 @@
                 setBuscando(false);
             };
             
-            // ============ NOVO: Função de geocodificação reversa ============
+            // ============ NOVO: Funções para ajuste de mapa ============
             const buscarEnderecoReverso = async (lat, lng) => {
-                setBuscandoEndereco(true);
+                setBuscandoEnderecoReverso(true);
                 try {
                     const resp = await fetch(`${API_URL}/api/geocode/google?endereco=${lat},${lng}`);
                     if (resp.ok) {
@@ -466,11 +443,10 @@
                     showToast('Erro ao buscar endereço', 'error');
                     return null;
                 } finally {
-                    setBuscandoEndereco(false);
+                    setBuscandoEnderecoReverso(false);
                 }
             };
             
-            // ============ NOVO: Abrir modal de ajuste de mapa ============
             const abrirModalAjusteMapa = (sugestao) => {
                 setModalAjusteMapa({
                     aberto: true,
@@ -483,12 +459,10 @@
                 setEnderecoAjustado(null);
             };
             
-            // ============ NOVO: Quando o usuário arrasta o marcador ============
             const onPosicaoMudou = (lat, lng) => {
                 setPosicaoAjustada({ lat, lng });
             };
             
-            // ============ NOVO: Confirmar posição e buscar endereço reverso ============
             const confirmarPosicaoMapa = async () => {
                 const endereco = await buscarEnderecoReverso(posicaoAjustada.lat, posicaoAjustada.lng);
                 if (endereco) {
@@ -496,11 +470,9 @@
                 }
             };
             
-            // ============ NOVO: Usar endereço ajustado ============
             const usarEnderecoAjustado = () => {
                 if (!enderecoAjustado) return;
                 
-                // Criar ponto com as coordenadas ajustadas
                 const sug = enderecoAjustado;
                 if (pontos.length >= 80) { showToast('Máximo 80 pontos', 'error'); return; }
                 const comp = sug.componentes || [];
@@ -517,7 +489,6 @@
                     cidade: get('administrative_area_level_2') || get('locality'), 
                     uf: getS('administrative_area_level_1'), 
                     cep: get('postal_code'), 
-                    // Usar coordenadas ajustadas
                     latitude: posicaoAjustada.lat, 
                     longitude: posicaoAjustada.lng, 
                     observacao: '', 
@@ -532,12 +503,8 @@
                 setTermoBusca(''); 
                 setSugestoes([]);
                 
-                // Fechar modal
-                setModalAjusteMapa({ aberto: false, sugestaoOriginal: null, latitude: null, longitude: null, etapa: 'ajustar' });
-                setEnderecoAjustado(null);
-                setPosicaoAjustada({ lat: null, lng: null });
+                fecharModalAjusteMapa();
                 
-                // Se for ponto de entrega (não o primeiro), mostrar input de nota
                 if (novosPontos.length > 1) {
                     setPontoRecemAdicionado(novoId);
                     setNotaRapida('');
@@ -546,13 +513,11 @@
                 showToast('✅ Endereço ajustado adicionado!', 'success');
             };
             
-            // ============ NOVO: Voltar para ajustar novamente ============
             const voltarParaAjustar = () => {
                 setModalAjusteMapa(prev => ({ ...prev, etapa: 'ajustar' }));
                 setEnderecoAjustado(null);
             };
             
-            // ============ NOVO: Fechar modal de ajuste ============
             const fecharModalAjusteMapa = () => {
                 setModalAjusteMapa({ aberto: false, sugestaoOriginal: null, latitude: null, longitude: null, etapa: 'ajustar' });
                 setEnderecoAjustado(null);
@@ -819,92 +784,104 @@
                         // Dados do profissional selecionado
                         profissional_nome: profSelecionado?.nome || null,
                         profissional_foto: profSelecionado?.foto || null,
-                        pontos: pontos.map(p => ({
-                            endereco_completo: p.endereco_completo,
-                            rua: p.rua,
-                            numero: p.numero,
-                            complemento: p.complemento,
-                            bairro: p.bairro,
-                            cidade: p.cidade,
-                            uf: p.uf,
-                            cep: p.cep,
-                            latitude: p.latitude,
-                            longitude: p.longitude,
-                            observacao: p.observacao,
-                            telefone: p.telefone,
-                            procurar_por: p.procurar_por,
-                            numero_nota: p.numero_nota,
-                            codigo_finalizar: p.codigo_finalizar
-                        }))
+                        profissional_telefone: profSelecionado?.telefone || null,
+                        profissional_placa: profSelecionado?.placa || null,
+                        sem_profissional: config.sem_profissional, 
+                        pontos: pontos.map(p => ({ 
+                            rua: p.rua || '', 
+                            numero: p.numero || '', 
+                            complemento: p.complemento || '', 
+                            bairro: p.bairro || '', 
+                            cidade: p.cidade || '', 
+                            uf: p.uf || '', 
+                            cep: p.cep || '', 
+                            latitude: p.latitude, 
+                            longitude: p.longitude, 
+                            observacao: p.observacao || '', 
+                            telefone: p.telefone || '', 
+                            procurar_por: p.procurar_por || '', 
+                            numero_nota: p.numero_nota || '', 
+                            codigo_finalizar: p.codigo_finalizar || '', 
+                            endereco_completo: p.endereco_completo || '' 
+                        })) 
                     };
-                    
-                    const resp = await fetch(`${API_URL}/api/solicitacao/criar`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(payload) });
+                    const resp = await fetch(`${API_URL}/api/solicitacao/corrida`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(payload) });
                     const data = await resp.json();
-                    if (resp.ok) { showToast(`🚀 Corrida #${data.os || data.id} criada!`, 'success'); limpar(); carregarCorridasAtivas(); }
+                    if (resp.ok) { 
+                        const motoboy = config.codigo_profissional ? profissionais.find(p => p.codigo === config.codigo_profissional)?.nome : null; 
+                        showToast(`✅ OS: ${data.os_numero}${motoboy ? ` → ${motoboy}` : ''}${data.modo_teste ? ' (TESTE)' : ''}`, 'success'); 
+                        limpar(); 
+                        setConfig(prev => ({ ...prev, codigo_profissional: '' })); 
+                        carregarHistorico(); 
+                        carregarCorridasAtivas(); 
+                    }
                     else showToast(data.error || 'Erro', 'error');
-                } catch (err) { showToast('Erro ao criar', 'error'); }
+                } catch { showToast('Erro', 'error'); }
                 setLoading(false);
             };
             
-            const statusCores = { enviado: 'bg-yellow-100 text-yellow-800', aceito: 'bg-blue-100 text-blue-800', em_andamento: 'bg-green-100 text-green-800', finalizado: 'bg-gray-100 text-gray-600', cancelado: 'bg-red-100 text-red-800' };
-            const statusIcons = { enviado: '📤', aceito: '✅', em_andamento: '🏍️', finalizado: '🏁', cancelado: '❌' };
-            const statusNomes = { enviado: 'Enviado', aceito: 'Aceito', em_andamento: 'Em andamento', finalizado: 'Finalizado', cancelado: 'Cancelado' };
+            // Mapeamentos de status
+            const statusCores = { enviado: 'bg-yellow-100 text-yellow-800 border-yellow-300', aceito: 'bg-blue-100 text-blue-800 border-blue-300', em_andamento: 'bg-purple-100 text-purple-800 border-purple-300', finalizado: 'bg-green-100 text-green-800 border-green-300', cancelado: 'bg-red-100 text-red-800 border-red-300', erro: 'bg-red-100 text-red-800 border-red-300' };
+            const statusNomes = { enviado: 'Aguardando', aceito: 'Aceito', em_andamento: 'Em Andamento', finalizado: 'Finalizado', cancelado: 'Cancelado', erro: 'Erro' };
+            const statusIcons = { enviado: '⏳', aceito: '✅', em_andamento: '🏍️', finalizado: '🏁', cancelado: '❌', erro: '⚠️' };
+            const statusPontoCores = { pendente: 'bg-gray-50 border-gray-200', chegou: 'bg-blue-50 border-blue-300', coletado: 'bg-yellow-50 border-yellow-300', finalizado: 'bg-green-50 border-green-300' };
+            const statusPontoNomes = { pendente: 'Pendente', chegou: 'Chegou', coletado: 'Coletado', finalizado: 'Finalizado' };
+            const statusPontoIcons = { pendente: '⚪', chegou: '🔵', coletado: '🟡', finalizado: '✅' };
             
-            const formatarData = (d) => { if (!d) return '—'; return new Date(d).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }); };
+            const formatarData = (d) => d ? new Date(d).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+            const formatarHora = (d) => d ? new Date(d).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '';
             const contarPontos = (corrida) => { const total = corrida.total_pontos || 0; return { coletas: 1, entregas: Math.max(0, total - 1) }; };
             
             return (
                 <div className="min-h-screen bg-gray-100">
-                    {/* Header fixo */}
-                    <header className="bg-gradient-to-r from-blue-900 to-blue-800 text-white px-4 py-3 sticky top-0 z-30 shadow-lg">
+                    <header className="bg-blue-900 text-white px-3 py-2 shadow-lg">
                         <div className="max-w-7xl mx-auto flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <img src="https://github.com/Leonardodevcloud/tutts-frontend/blob/main/logotuttsoriginal.png?raw=true" alt="Logo" className="w-10 h-10 rounded-xl" />
+                            <div className="flex items-center gap-2">
+                                <span className="text-xl">🏍️</span>
                                 <div>
-                                    <h1 className="font-bold text-lg">Tutts</h1>
-                                    <p className="text-xs text-blue-200 truncate max-w-[150px]">{cliente.nome}</p>
+                                    <h1 className="font-bold text-sm md:text-lg">Central Tutts</h1>
+                                    <p className="text-xs text-blue-200 hidden md:block">{cliente.empresa || cliente.nome}</p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-2">
-                                <button onClick={() => setMostrarHistorico(true)} className="p-2 bg-white/10 rounded-lg hover:bg-white/20" title="Histórico">📋</button>
-                                <button onClick={onLogout} className="p-2 bg-red-500/20 rounded-lg hover:bg-red-500/30" title="Sair">🚪</button>
+                                <button onClick={() => setMostrarHistorico(true)} className="text-xs bg-blue-800 hover:bg-blue-700 px-2 py-1 rounded">📋 Histórico</button>
+                                <button onClick={onLogout} className="text-xs bg-red-600 hover:bg-red-700 px-2 py-1 rounded">Sair</button>
                             </div>
                         </div>
                     </header>
                     
                     {/* Abas */}
-                    <div className="bg-white border-b sticky top-[68px] z-20">
+                    <div className="bg-white shadow border-b">
                         <div className="max-w-7xl mx-auto flex">
-                            <button onClick={() => { setAbaAtiva('nova'); setAbaMobile('form'); }} className={`flex-1 py-3 text-sm font-medium border-b-2 transition-all ${abaAtiva === 'nova' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>📝 Nova</button>
-                            <button onClick={() => { setAbaAtiva('acompanhar'); carregarCorridasAtivas(); }} className={`flex-1 py-3 text-sm font-medium border-b-2 transition-all relative ${abaAtiva === 'acompanhar' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>🏍️ Acompanhar{corridasAtivas.length > 0 && <span className="absolute -top-1 right-4 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">{corridasAtivas.length}</span>}</button>
-                            <button onClick={() => { setAbaAtiva('concluidas'); carregarConcluidas(); }} className={`flex-1 py-3 text-sm font-medium border-b-2 transition-all ${abaAtiva === 'concluidas' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>✅ Concluídas</button>
+                            <button onClick={() => { setAbaAtiva('nova'); setCorridaSelecionada(null); }} className={`flex-1 md:flex-none px-4 py-3 text-sm font-medium border-b-2 ${abaAtiva === 'nova' ? 'text-blue-600 border-blue-600 bg-blue-50' : 'text-gray-500 border-transparent'}`}>📝 Nova</button>
+                            <button onClick={() => { setAbaAtiva('acompanhar'); carregarCorridasAtivas(); }} className={`flex-1 md:flex-none px-4 py-3 text-sm font-medium border-b-2 flex items-center justify-center gap-2 ${abaAtiva === 'acompanhar' ? 'text-blue-600 border-blue-600 bg-blue-50' : 'text-gray-500 border-transparent'}`}>
+                                🗺️ Ativas {corridasAtivas.length > 0 && <span className="bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">{corridasAtivas.length}</span>}
+                            </button>
+                            <button onClick={() => { setAbaAtiva('concluidas'); carregarConcluidas(); }} className={`flex-1 md:flex-none px-4 py-3 text-sm font-medium border-b-2 ${abaAtiva === 'concluidas' ? 'text-green-600 border-green-600 bg-green-50' : 'text-gray-500 border-transparent'}`}>✅ Concluídas</button>
                         </div>
                     </div>
                     
                     {/* ========== ABA NOVA SOLICITAÇÃO ========== */}
                     {abaAtiva === 'nova' && (
                         <>
-                            {/* Switcher Mobile */}
-                            <div className="md:hidden flex bg-gray-200 m-2 rounded-lg p-1">
-                                <button onClick={() => setAbaMobile('form')} className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${abaMobile === 'form' ? 'bg-white shadow' : ''}`}>📝 Formulário</button>
-                                <button onClick={() => setAbaMobile('mapa')} className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${abaMobile === 'mapa' ? 'bg-white shadow' : ''}`}>🗺️ Mapa</button>
+                            <div className="md:hidden flex bg-white shadow">
+                                <button onClick={() => setAbaMobile('form')} className={`flex-1 py-2 text-sm ${abaMobile === 'form' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500'}`}>📝 Form</button>
+                                <button onClick={() => setAbaMobile('mapa')} className={`flex-1 py-2 text-sm ${abaMobile === 'mapa' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500'}`}>🗺️ Mapa</button>
                             </div>
-                            
                             <div className="max-w-7xl mx-auto p-2 md:p-4">
                                 <div className="flex flex-col md:flex-row gap-4">
-                                    {/* Formulário */}
                                     <div className={`${abaMobile === 'form' ? 'block' : 'hidden'} md:block w-full md:w-96 space-y-3`}>
-                                        {/* PONTO DE PARTIDA */}
-                                        <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl shadow p-3 border border-amber-200">
+                                        {/* PONTO DE COLETA */}
+                                        <div className="bg-gradient-to-r from-amber-50 to-yellow-50 rounded-xl shadow border-2 border-amber-300 p-3">
                                             <div className="flex items-center justify-between mb-2">
-                                                <span className="text-sm font-bold text-amber-800">📦 PONTO DE PARTIDA</span>
-                                                {pontos.length > 0 && <button onClick={salvarPartidaPadrao} className="text-xs text-amber-600 hover:text-amber-800">💾 Salvar padrão</button>}
+                                                <span className="text-sm font-bold text-amber-800">📦 PONTO DE COLETA</span>
+                                                {pontos.length > 0 && pontos[0] && <button onClick={salvarPartidaPadrao} className="text-xs text-amber-600 hover:text-amber-800 font-medium">⭐ Padrão</button>}
                                             </div>
-                                            {pontos.length === 0 ? (
+                                            {pontos.length === 0 || !pontos[0] ? (
                                                 <div>
                                                     <div className="flex gap-2">
-                                                        <input type="text" value={termoBusca} onChange={(e) => setTermoBusca(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && buscarEndereco()} className="flex-1 px-3 py-2 border border-amber-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-amber-400" placeholder="Digite o endereço de partida..." />
-                                                        <button onClick={buscarEndereco} disabled={buscando} className="px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm font-medium">{buscando ? '...' : '🔍'}</button>
+                                                        <input type="text" value={termoBusca} onChange={(e) => setTermoBusca(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && buscarEndereco()} className="flex-1 px-3 py-2 border border-amber-300 rounded-lg text-sm outline-none bg-white" placeholder="Digite apelido ou endereço..." />
+                                                        <button onClick={buscarEndereco} disabled={buscando} className="px-3 py-2 bg-amber-500 text-white rounded-lg text-sm" title="Buscar no Google">{buscando ? '...' : '🔍'}</button>
                                                     </div>
                                                     {/* Endereços salvos */}
                                                     {mostrarSalvos && enderecosSalvos.length > 0 && (
@@ -918,25 +895,8 @@
                                                             ))}
                                                         </div>
                                                     )}
-                                                    {/* Sugestões do Google com botão de ajustar */}
-                                                    {sugestoes.length > 0 && (
-                                                        <div className="mt-2 bg-white border border-amber-200 rounded-lg max-h-48 overflow-y-auto">
-                                                            {sugestoes.map((s, i) => (
-                                                                <div key={i} className="p-2 hover:bg-amber-50 border-b flex items-center gap-2">
-                                                                    <div className="flex-1 cursor-pointer" onClick={() => adicionarPonto(s)}>
-                                                                        <div className="text-xs">📍 {s.endereco}</div>
-                                                                    </div>
-                                                                    <button 
-                                                                        onClick={(e) => { e.stopPropagation(); abrirModalAjusteMapa(s); }}
-                                                                        className="px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-xs font-medium whitespace-nowrap"
-                                                                        title="Ajustar posição no mapa"
-                                                                    >
-                                                                        🎯 Ajustar
-                                                                    </button>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    )}
+                                                    {/* Sugestões do Google */}
+                                                    {sugestoes.length > 0 && <div className="mt-2 bg-white border border-amber-200 rounded-lg max-h-48 overflow-y-auto">{sugestoes.map((s, i) => <div key={i} className="p-2 hover:bg-amber-50 border-b flex items-center gap-2"><div className="flex-1 cursor-pointer" onClick={() => adicionarPonto(s)}><span className="text-xs">📍 {s.endereco}</span></div><button onClick={(e) => { e.stopPropagation(); abrirModalAjusteMapa(s); }} className="px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-xs font-medium whitespace-nowrap" title="Ajustar posição no mapa">🎯</button></div>)}</div>}
                                                 </div>
                                             ) : (
                                                 <div className="bg-white rounded-lg p-2 border border-amber-200">
@@ -987,123 +947,76 @@
                                                             ))}
                                                         </div>
                                                     )}
-                                                    {/* Sugestões do Google com botão de ajustar */}
-                                                    {sugestoes.length > 0 && (
-                                                        <div className="mt-2 bg-white border rounded-lg max-h-48 overflow-y-auto">
-                                                            {sugestoes.map((s, i) => (
-                                                                <div key={i} className="p-2 hover:bg-blue-50 border-b flex items-center gap-2">
-                                                                    <div className="flex-1 cursor-pointer" onClick={() => adicionarPonto(s)}>
-                                                                        <div className="text-xs">📍 {s.endereco}</div>
-                                                                    </div>
-                                                                    <button 
-                                                                        onClick={(e) => { e.stopPropagation(); abrirModalAjusteMapa(s); }}
-                                                                        className="px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-xs font-medium whitespace-nowrap"
-                                                                        title="Ajustar posição no mapa"
-                                                                    >
-                                                                        🎯 Ajustar
-                                                                    </button>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    )}
+                                                    {/* Sugestões do Google */}
+                                                    {sugestoes.length > 0 && <div className="mt-2 bg-white border rounded-lg max-h-48 overflow-y-auto">{sugestoes.map((s, i) => <div key={i} className="p-2 hover:bg-blue-50 border-b flex items-center gap-2"><div className="flex-1 cursor-pointer" onClick={() => adicionarPonto(s)}><span className="text-xs">📍 {s.endereco}</span></div><button onClick={(e) => { e.stopPropagation(); abrirModalAjusteMapa(s); }} className="px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-xs font-medium whitespace-nowrap" title="Ajustar posição no mapa">🎯</button></div>)}</div>}
                                                 </div>
                                             )}
                                             <div className="space-y-2 max-h-64 overflow-y-auto">
                                                 {pontos.length <= 1 ? (
-                                                    <div className="text-center py-6 text-gray-400"><div className="text-3xl mb-2">📍</div><div className="text-sm">Adicione pontos de entrega</div></div>
-                                                ) : (
-                                                    pontos.slice(1).map((p, idx) => {
-                                                        const realIdx = idx + 1;
-                                                        return (
-                                                            <div key={p.id}>
-                                                                <div className="bg-blue-50 rounded-lg p-2 border border-blue-100">
-                                                                    <div className="flex items-center gap-2">
-                                                                        <span className="w-7 h-7 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold">{realIdx}</span>
-                                                                        <div className="flex-1 min-w-0">
-                                                                            {p.apelido_salvo && <div className="text-xs text-blue-600 font-medium">⭐ {p.apelido_salvo}</div>}
-                                                                            <div className="text-xs font-medium truncate">{p.endereco_completo || `${p.rua}, ${p.numero}`}</div>
-                                                                            {p.complemento && <div className="text-xs text-blue-700">🏠 {p.complemento}</div>}
-                                                                            {p.bairro && <div className="text-xs text-gray-500">{p.bairro}</div>}
-                                                                            {p.numero_nota && <div className="text-xs text-blue-600">🏷️ {p.numero_nota}</div>}
-                                                                            {p.observacao && <div className="text-xs text-gray-500 truncate">📝 {p.observacao}</div>}
-                                                                            {p.ajustado_manualmente && <div className="text-xs text-green-600">🎯 Posição ajustada</div>}
-                                                                        </div>
-                                                                        <div className="flex flex-col gap-1">
-                                                                            <div className="flex gap-1">
-                                                                                <button onClick={() => moverPonto(realIdx, -1)} disabled={realIdx <= 1} className="text-gray-400 hover:text-gray-600 text-sm disabled:opacity-30">↑</button>
-                                                                                <button onClick={() => moverPonto(realIdx, 1)} disabled={realIdx >= pontos.length - 1} className="text-gray-400 hover:text-gray-600 text-sm disabled:opacity-30">↓</button>
-                                                                            </div>
-                                                                            <div className="flex gap-1">
-                                                                                {!p.endereco_salvo_id && (
-                                                                                    <button onClick={() => { setModalSalvarEndereco({ aberto: true, ponto: p }); setApelidoSalvar(''); setComplementoSalvar(p.complemento || ''); }} className="text-gray-400 hover:text-green-600 text-xs" title="Salvar">💾</button>
-                                                                                )}
-                                                                                <button onClick={() => abrirEdicaoPonto(realIdx)} className="text-gray-400 hover:text-blue-600 text-xs">✏️</button>
-                                                                                <button onClick={() => removerPonto(p.id)} className="text-gray-400 hover:text-red-600 text-xs">✕</button>
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
+                                                    <div className="text-center py-4 text-gray-400 text-sm">{pontos.length === 0 ? 'Defina a coleta primeiro' : 'Adicione pontos de entrega'}</div>
+                                                ) : pontos.slice(1).map((p, idx) => (
+                                                    <div key={p.id}>
+                                                        <div className={`p-2 rounded-lg border ${pontoRecemAdicionado === p.id ? 'bg-green-50 border-green-300' : 'bg-blue-50 border-blue-200'}`}>
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold">{idx + 1}</span>
+                                                                <div className="flex-1 min-w-0">
+                                                                    {p.apelido_salvo && <div className="text-xs text-blue-600 font-medium">⭐ {p.apelido_salvo}</div>}
+                                                                    <div className="text-xs font-medium truncate">{p.endereco_completo || `${p.rua}, ${p.numero}`}</div>
+                                                                    {p.complemento && <div className="text-xs text-blue-700">🏠 {p.complemento}</div>}
+                                                                    {p.bairro && <div className="text-xs text-gray-500 truncate">{p.bairro}</div>}
+                                                                    {p.numero_nota && <div className="text-xs text-green-600 font-medium">🏷️ Nota: {p.numero_nota}</div>}
+                                                                    {p.observacao && <div className="text-xs text-blue-600 truncate">📝 {p.observacao}</div>}
+                                                                    {p.ajustado_manualmente && <div className="text-xs text-green-600">🎯 Posição ajustada</div>}
                                                                 </div>
-                                                                {/* Input de nota rápida */}
-                                                                {pontoRecemAdicionado === p.id && (
-                                                                    <div className="mt-1 p-2 bg-yellow-50 border border-yellow-200 rounded-lg slide-down">
-                                                                        <div className="flex items-center gap-2">
-                                                                            <span className="text-xs text-yellow-700">🏷️</span>
-                                                                            <input 
-                                                                                ref={notaInputRef}
-                                                                                type="text" 
-                                                                                value={notaRapida} 
-                                                                                onChange={(e) => setNotaRapida(e.target.value)}
-                                                                                onKeyPress={(e) => e.key === 'Enter' && salvarNotaRapida()}
-                                                                                className="flex-1 px-2 py-1 border border-yellow-300 rounded text-xs outline-none focus:ring-1 focus:ring-yellow-400"
-                                                                                placeholder="Nº nota (opcional)"
-                                                                                autoFocus
-                                                                            />
-                                                                            <button onClick={salvarNotaRapida} className="px-2 py-1 bg-yellow-500 hover:bg-yellow-600 text-white rounded text-xs font-medium">✓</button>
-                                                                            <button onClick={pularNotaRapida} className="px-2 py-1 bg-gray-200 hover:bg-gray-300 text-gray-600 rounded text-xs">Pular</button>
-                                                                        </div>
-                                                                    </div>
-                                                                )}
+                                                                <div className="flex gap-1">
+                                                                    {!p.endereco_salvo_id && (
+                                                                        <button onClick={(e) => { e.stopPropagation(); setModalSalvarEndereco({ aberto: true, ponto: p }); setApelidoSalvar(''); setComplementoSalvar(p.complemento || ''); }} className="text-gray-400 hover:text-green-600 text-sm" title="Salvar endereço">💾</button>
+                                                                    )}
+                                                                    <button onClick={() => abrirEdicaoPonto(idx + 1)} className="text-gray-400 hover:text-blue-600 text-sm">✏️</button>
+                                                                    {idx > 0 && <button onClick={() => moverPonto(idx + 1, -1)} className="text-gray-400">▲</button>}
+                                                                    {idx < pontos.length - 2 && <button onClick={() => moverPonto(idx + 1, 1)} className="text-gray-400">▼</button>}
+                                                                    <button onClick={() => removerPonto(p.id)} className="text-gray-400 hover:text-red-600">✕</button>
+                                                                </div>
                                                             </div>
-                                                        );
-                                                    })
-                                                )}
+                                                        </div>
+                                                        
+                                                        {/* Input de nota rápida - aparece logo após adicionar o ponto */}
+                                                        {pontoRecemAdicionado === p.id && (
+                                                            <div className="slide-down mt-2 p-2 bg-green-50 border border-green-200 rounded-lg">
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="text-xs text-green-700">🏷️</span>
+                                                                    <input 
+                                                                        ref={notaInputRef}
+                                                                        type="text" 
+                                                                        value={notaRapida} 
+                                                                        onChange={(e) => setNotaRapida(e.target.value)}
+                                                                        onKeyPress={(e) => { if (e.key === 'Enter') salvarNotaRapida(); }}
+                                                                        className="flex-1 px-2 py-1 border border-green-300 rounded text-xs outline-none focus:ring-1 focus:ring-green-400" 
+                                                                        placeholder="Nº Nota/Pedido (opcional)"
+                                                                    />
+                                                                    <button onClick={salvarNotaRapida} className="px-2 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700">✓</button>
+                                                                    <button onClick={pularNotaRapida} className="px-2 py-1 text-gray-500 hover:text-gray-700 text-xs">Pular</button>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))}
                                             </div>
                                         </div>
                                         
                                         {/* Configurações */}
                                         <div className="bg-white rounded-xl shadow p-3">
-                                            <div className="text-sm font-bold text-gray-700 mb-2">⚙️ CONFIGURAÇÕES</div>
-                                            <div className="grid grid-cols-2 gap-2 text-xs">
-                                                <div><label className="block text-gray-500 mb-1">Nº Pedido</label><input type="text" value={config.numero_pedido} onChange={(e) => setConfig({...config, numero_pedido: e.target.value})} className="w-full px-2 py-1.5 border rounded text-xs" placeholder="Opcional" /></div>
-                                                <div><label className="block text-gray-500 mb-1">Centro Custo</label><input type="text" value={config.centro_custo} onChange={(e) => setConfig({...config, centro_custo: e.target.value})} className="w-full px-2 py-1.5 border rounded text-xs" /></div>
-                                                <div><label className="block text-gray-500 mb-1">Solicitante</label><input type="text" value={config.usuario_solicitante} onChange={(e) => setConfig({...config, usuario_solicitante: e.target.value})} className="w-full px-2 py-1.5 border rounded text-xs" /></div>
-                                                <div><label className="block text-gray-500 mb-1">Pagamento</label><select value={config.forma_pagamento} onChange={(e) => setConfig({...config, forma_pagamento: e.target.value})} className="w-full px-2 py-1.5 border rounded text-xs"><option value="F">Faturado</option><option value="C">Cartão</option><option value="D">Dinheiro</option><option value="P">Pix</option></select></div>
-                                                <div><label className="block text-gray-500 mb-1">Data Ret.</label><input type="date" value={config.data_retirada} onChange={(e) => setConfig({...config, data_retirada: e.target.value})} className="w-full px-2 py-1.5 border rounded text-xs" /></div>
-                                                <div><label className="block text-gray-500 mb-1">Hora Ret.</label><input type="time" value={config.hora_retirada} onChange={(e) => setConfig({...config, hora_retirada: e.target.value})} className="w-full px-2 py-1.5 border rounded text-xs" /></div>
-                                                <div className="col-span-2">
-                                                    <label className="block text-gray-500 mb-1">🏍️ Profissional</label>
-                                                    <select 
-                                                        value={config.codigo_profissional} 
-                                                        onChange={(e) => setConfig({...config, codigo_profissional: e.target.value})} 
-                                                        className={`w-full px-2 py-1.5 border rounded text-xs ${config.codigo_profissional ? 'border-green-500 bg-green-50' : ''}`}
-                                                        disabled={carregandoProfissionais}
-                                                    >
-                                                        <option value="">🎲 Qualquer disponível</option>
-                                                        {profissionais.map(p => (
-                                                            <option key={p.codigo} value={p.codigo}>
-                                                                {p.nome} ({p.codigo})
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                    {config.codigo_profissional && (
-                                                        <div className="mt-1 text-xs text-green-600 font-medium">
-                                                            ✅ Corrida será direcionada para: {profissionais.find(p => p.codigo === config.codigo_profissional)?.nome}
-                                                        </div>
-                                                    )}
-                                                </div>
+                                            <div className="text-sm font-bold text-gray-700 mb-2">⚙️ Configurações</div>
+                                            <div>
+                                                <label className="text-xs text-gray-600">🏍️ Motoboy Específico</label>
+                                                <select value={config.codigo_profissional} onChange={(e) => setConfig({...config, codigo_profissional: e.target.value})} className={`w-full px-2 py-1.5 border rounded text-sm ${config.codigo_profissional ? 'border-green-400 bg-green-50' : ''}`} disabled={carregandoProfissionais || profissionais.length === 0}>
+                                                    <option value="">{carregandoProfissionais ? '⏳ Carregando...' : profissionais.length === 0 ? '❌ Nenhum disponível' : '🔄 Disparar para todos'}</option>
+                                                    {profissionais.map(p => (<option key={p.codigo} value={p.codigo}>{p.nome}</option>))}
+                                                </select>
+                                                {config.codigo_profissional && <div className="text-xs text-green-600 mt-1">✅ Corrida para: {profissionais.find(p => p.codigo === config.codigo_profissional)?.nome}</div>}
                                             </div>
-                                            <div className="flex flex-wrap gap-3 mt-3">
-                                                <label className="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" checked={config.ordenar} onChange={(e) => setConfig({...config, ordenar: e.target.checked})} className="w-4 h-4" />🗺️ Ordenar rota</label>
+                                            <div className="flex flex-wrap gap-4 mt-3">
+                                                <label className="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" checked={config.ordenar} onChange={(e) => setConfig({...config, ordenar: e.target.checked})} className="w-4 h-4" />🔀 Ordenar rota</label>
                                                 <label className="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" checked={config.retorno} onChange={(e) => setConfig({...config, retorno: e.target.checked})} className="w-4 h-4" />↩️ Retorno</label>
                                             </div>
                                         </div>
@@ -1173,17 +1086,7 @@
                                                                 <span>📦 {coletas} → 📍 {entregas}</span>
                                                                 {c.tutts_valor && <span className="font-bold text-green-600">R$ {parseFloat(c.tutts_valor).toFixed(2)}</span>}
                                                             </div>
-                                                            {/* Notas das entregas */}
-                                                            {notas.length > 0 && (
-                                                                <div className="mt-2 pt-2 border-t border-gray-200">
-                                                                    <div className="flex flex-wrap gap-1">
-                                                                        {notas.slice(0, 3).map((nota, idx) => (
-                                                                            <span key={idx} className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">🏷️ {nota}</span>
-                                                                        ))}
-                                                                        {notas.length > 3 && <span className="text-xs text-gray-400">+{notas.length - 3}</span>}
-                                                                    </div>
-                                                                </div>
-                                                            )}
+                                                            {c.primeiro_numero_nota && <div className="mt-2 text-xs text-green-600 font-medium">🏷️ {c.primeiro_numero_nota}</div>}
                                                         </div>
                                                     );
                                                 })}
@@ -1192,82 +1095,194 @@
                                     </div>
                                 </div>
                                 
-                                {/* Detalhes da corrida selecionada */}
                                 <div className="flex-1">
-                                    {corridaSelecionada && detalheCorrida ? (
-                                        <div className="bg-white rounded-xl shadow overflow-hidden">
-                                            <div className="bg-blue-900 text-white px-4 py-3 flex items-center justify-between">
+                                    {!corridaSelecionada ? (
+                                        <div className="bg-white rounded-xl shadow p-8 text-center text-gray-400"><div className="text-6xl mb-4">👈</div><div>Selecione uma corrida para ver detalhes</div></div>
+                                    ) : !detalheCorrida ? (
+                                        <div className="bg-white rounded-xl shadow p-8 text-center"><div className="text-2xl animate-pulse">⏳</div><div className="text-gray-500 mt-2">Carregando...</div></div>
+                                    ) : (
+                                        <div className="space-y-3">
+                                            {/* Card compacto: OS + Profissional + Telefone + Nota + Ações */}
+                                            <div className={`p-3 rounded-xl border ${statusCores[detalheCorrida.status]}`}>
                                                 <div className="flex items-center gap-3">
-                                                    {detalheCorrida.profissional_foto ? <img src={detalheCorrida.profissional_foto} className="w-10 h-10 rounded-full object-cover border-2 border-white" /> : <div className="w-10 h-10 rounded-full bg-blue-700 flex items-center justify-center text-lg">🏍️</div>}
-                                                    <div>
-                                                        <div className="font-bold">{detalheCorrida.profissional_nome || 'Aguardando profissional...'}</div>
-                                                        <div className="text-sm text-blue-200">OS #{detalheCorrida.tutts_os_numero || detalheCorrida.id}</div>
+                                                    {/* Foto */}
+                                                    {detalheCorrida.profissional_foto ? (
+                                                        <img src={detalheCorrida.profissional_foto} className="w-12 h-12 rounded-full object-cover border-2 border-white shadow flex-shrink-0" />
+                                                    ) : (
+                                                        <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0 text-lg">🏍️</div>
+                                                    )}
+                                                    
+                                                    {/* Info */}
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center gap-2 flex-wrap">
+                                                            <span className="font-bold text-sm">OS #{detalheCorrida.tutts_os_numero || detalheCorrida.id}</span>
+                                                            <span className={`text-xs px-2 py-0.5 rounded-full ${statusCores[detalheCorrida.status]}`}>{statusIcons[detalheCorrida.status]} {statusNomes[detalheCorrida.status]}</span>
+                                                        </div>
+                                                        <div className="text-sm font-medium text-gray-800 truncate">{detalheCorrida.profissional_nome || 'Aguardando profissional...'}</div>
+                                                        <div className="flex items-center gap-3 text-xs text-gray-600 mt-1">
+                                                            {detalheCorrida.profissional_telefone && (
+                                                                <a href={`tel:${detalheCorrida.profissional_telefone}`} className="flex items-center gap-1 text-blue-600 hover:text-blue-800">
+                                                                    📞 {detalheCorrida.profissional_telefone}
+                                                                </a>
+                                                            )}
+                                                            {detalheCorrida.pontos?.[1]?.numero_nota && (
+                                                                <span className="text-green-600">🏷️ {detalheCorrida.pontos[1].numero_nota}</span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    {/* Botões de ação no canto direito */}
+                                                    <div className="flex flex-col gap-1 flex-shrink-0">
+                                                        {detalheCorrida.tutts_url_rastreamento && (
+                                                            <a href={detalheCorrida.tutts_url_rastreamento} target="_blank" className="px-2 py-1 bg-gray-700 text-white rounded text-xs hover:bg-gray-800 text-center">
+                                                                🗺️ Rastrear
+                                                            </a>
+                                                        )}
+                                                        {!['finalizado', 'cancelado'].includes(detalheCorrida.status) && (
+                                                            <button onClick={() => cancelarCorrida(detalheCorrida.id)} className="px-2 py-1 bg-red-100 text-red-600 rounded text-xs hover:bg-red-200">
+                                                                ✕ Cancelar
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center gap-2">
-                                                    {detalheCorrida.tutts_os_numero && (
-                                                        <>
-                                                            <button onClick={() => copiarLinkRastreio(detalheCorrida.tutts_os_numero)} className="p-2 bg-white/10 rounded-lg hover:bg-white/20" title="Copiar link">📋</button>
-                                                            <button onClick={() => compartilharWhatsApp(detalheCorrida.tutts_os_numero)} className="p-2 bg-green-500/20 rounded-lg hover:bg-green-500/30" title="WhatsApp">💬</button>
-                                                        </>
-                                                    )}
-                                                    {['enviado', 'aceito'].includes(detalheCorrida.status) && (
-                                                        <button onClick={() => cancelarCorrida(detalheCorrida.id)} className="p-2 bg-red-500/20 rounded-lg hover:bg-red-500/30 text-red-200" title="Cancelar">❌</button>
-                                                    )}
+                                                {/* Alerta de retorno no detalhe */}
+                                                {detalheCorrida.pontos?.some(p => p.is_retorno || p.tipo_ponto === 'retorno') && (
+                                                    <div className="mt-2 group relative inline-block">
+                                                        <div className="flex items-center gap-2 px-3 py-2 bg-orange-100 border border-orange-300 rounded-lg text-sm text-orange-700 font-medium cursor-help">
+                                                            <span className="text-lg">⚠️</span>
+                                                            <span>Atenção: Corrida com retorno</span>
+                                                        </div>
+                                                        <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block z-50">
+                                                            <div className="bg-gray-900 text-white text-xs rounded py-2 px-3 whitespace-nowrap shadow-lg">
+                                                                Caso o retorno seja indevido, solicite o<br/>cancelamento ao suporte Tutts.
+                                                            </div>
+                                                            <div className="w-2 h-2 bg-gray-900 transform rotate-45 absolute left-4 -bottom-1"></div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            
+                                            {/* Métricas compactas */}
+                                            <div className="grid grid-cols-4 gap-2">
+                                                <div className="bg-white p-2 rounded-lg shadow text-center">
+                                                    <div className="text-sm font-bold text-blue-600">{detalheCorrida.tutts_distancia || '-'} km</div>
+                                                    <div className="text-xs text-gray-400">Dist.</div>
+                                                </div>
+                                                <div className="bg-white p-2 rounded-lg shadow text-center">
+                                                    <div className="text-sm font-bold text-blue-600">{detalheCorrida.tutts_duracao || '-'}</div>
+                                                    <div className="text-xs text-gray-400">Tempo</div>
+                                                </div>
+                                                <div className="bg-white p-2 rounded-lg shadow text-center">
+                                                    <div className="text-sm font-bold text-green-600">{detalheCorrida.tutts_valor ? `R$ ${parseFloat(detalheCorrida.tutts_valor).toFixed(0)}` : '-'}</div>
+                                                    <div className="text-xs text-gray-400">Valor</div>
+                                                </div>
+                                                <div className="bg-white p-2 rounded-lg shadow text-center">
+                                                    <div className="text-sm font-bold text-purple-600">{detalheCorrida.pontos?.length || 0}</div>
+                                                    <div className="text-xs text-gray-400">Pontos</div>
                                                 </div>
                                             </div>
                                             
-                                            <div className="p-4">
-                                                <div className="flex items-center gap-2 mb-4">
-                                                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${statusCores[detalheCorrida.status]}`}>{statusIcons[detalheCorrida.status]} {statusNomes[detalheCorrida.status]}</span>
-                                                    {detalheCorrida.tutts_valor && <span className="text-lg font-bold text-green-600">R$ {parseFloat(detalheCorrida.tutts_valor).toFixed(2)}</span>}
-                                                </div>
-                                                
-                                                {/* Mapa da corrida */}
-                                                <div className="h-64 mb-4 rounded-lg overflow-hidden">
-                                                    <MapaLeaflet key={`acomp-${corridaSelecionada}-${mapaKey}`} id={`mapa-acompanhar-${corridaSelecionada}`} pontos={detalheCorrida.pontos || []} height="100%" tipo="acompanhar" />
-                                                </div>
-                                                
-                                                {/* Lista de pontos */}
-                                                <div className="space-y-2 max-h-64 overflow-y-auto">
-                                                    {(detalheCorrida.pontos || []).map((p, idx) => (
-                                                        <div key={idx} className={`p-3 rounded-lg border ${p.status === 'finalizado' ? 'bg-green-50 border-green-200' : p.status === 'chegou' || p.status === 'coletado' ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-200'}`}>
-                                                            <div className="flex items-center gap-2">
-                                                                <span className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold ${idx === 0 ? 'bg-amber-500' : p.status === 'finalizado' ? 'bg-green-500' : 'bg-blue-500'}`}>{idx === 0 ? '📦' : p.status === 'finalizado' ? '✓' : idx}</span>
-                                                                <div className="flex-1 min-w-0">
-                                                                    <div className="text-sm font-medium truncate">{p.endereco_completo || `${p.rua}, ${p.numero}`}</div>
-                                                                    {p.bairro && <div className="text-xs text-gray-500">{p.bairro}</div>}
-                                                                    {p.numero_nota && <div className="text-xs text-blue-600 font-medium">🏷️ {p.numero_nota}</div>}
-                                                                    {p.observacao && <div className="text-xs text-gray-500">📝 {p.observacao}</div>}
-                                                                </div>
-                                                                {p.status && <span className={`text-xs px-2 py-1 rounded ${p.status === 'finalizado' ? 'bg-green-100 text-green-700' : p.status === 'chegou' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'}`}>{p.status === 'finalizado' ? '✅ Entregue' : p.status === 'chegou' ? '📍 Chegou' : p.status === 'coletado' ? '📦 Coletado' : '⏳ Pendente'}</span>}
-                                                            </div>
+                                            <div className="flex flex-col md:flex-row gap-4">
+                                                <div className="w-full md:w-80 bg-white p-4 rounded-xl shadow">
+                                                    <div className="text-sm font-bold text-gray-700 mb-3">📍 Pontos da Rota</div>
+                                                    <div className="space-y-3 max-h-80 overflow-y-auto">
+                                                        {detalheCorrida.pontos?.map((p, idx) => {
+                                                            const isColeta = idx === 0;
+                                                            const status = p.status || 'pendente';
+                                                            // Montar endereço completo de forma inteligente
+                                                            const partes = [p.rua, p.numero, p.bairro, p.cidade, p.uf].filter(x => x && x.trim());
+                                                            const enderecoMontado = partes.length > 0 ? partes.join(', ') : null;
+                                                            const enderecoFinal = p.endereco_completo || enderecoMontado || 'Endereço não informado';
                                                             
-                                                            {/* Fotos do ponto */}
-                                                            {p.fotos && p.fotos.length > 0 && (
-                                                                <div className="mt-2 pt-2 border-t border-gray-200">
-                                                                    <div className="flex gap-2 overflow-x-auto">
-                                                                        {p.fotos.map((foto, fotoIdx) => (
-                                                                            <img 
-                                                                                key={fotoIdx} 
-                                                                                src={typeof foto === 'string' ? foto : foto.url || foto.link} 
-                                                                                className="w-16 h-16 rounded object-cover cursor-pointer hover:opacity-80 transition-opacity flex-shrink-0" 
-                                                                                onClick={() => abrirFotoModal(p.fotos, fotoIdx)}
-                                                                                alt={`Foto ${fotoIdx + 1}`}
-                                                                            />
-                                                                        ))}
+                                                            // Normalizar fotos para array
+                                                            let fotosArray = [];
+                                                            try {
+                                                                if (typeof p.fotos === 'string' && p.fotos !== '' && p.fotos !== '[]') {
+                                                                    fotosArray = JSON.parse(p.fotos);
+                                                                } else if (Array.isArray(p.fotos)) {
+                                                                    fotosArray = p.fotos;
+                                                                }
+                                                            } catch { fotosArray = []; }
+                                                            
+                                                            // Verificar se é ponto de retorno
+                                                            const isRetorno = p.is_retorno || p.tipo_ponto === 'retorno';
+                                                            
+                                                            // Cores específicas para retorno
+                                                            const corBorda = isRetorno ? 'border-orange-300 bg-orange-50' : statusPontoCores[status];
+                                                            const corIcone = isRetorno ? 'bg-orange-500' : (status === 'finalizado' ? 'bg-green-500' : status === 'chegou' || status === 'coletado' ? 'bg-blue-500' : isColeta ? 'bg-amber-500' : 'bg-gray-400');
+                                                            
+                                                            return (
+                                                                <div key={idx} className={`p-3 rounded-lg border-2 ${corBorda}`}>
+                                                                    <div className="flex items-start gap-2">
+                                                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0 ${corIcone}`}>
+                                                                            {isRetorno ? '↩️' : (status === 'finalizado' ? '✓' : isColeta ? '📦' : idx)}
+                                                                        </div>
+                                                                        <div className="flex-1 min-w-0">
+                                                                            <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                                                                <span className={`text-xs font-bold ${isRetorno ? 'text-orange-700' : isColeta ? 'text-amber-700' : 'text-blue-700'}`}>
+                                                                                    {isRetorno ? '↩️ RETORNO' : isColeta ? '📦 COLETA' : `📍 ENTREGA ${idx}`}
+                                                                                </span>
+                                                                                <span className={`text-xs px-1.5 py-0.5 rounded ${isRetorno ? 'bg-orange-100 text-orange-700' : statusPontoCores[status]}`}>
+                                                                                    {statusPontoIcons[status]} {statusPontoNomes[status]}
+                                                                                </span>
+                                                                                {isRetorno && p.ponto_retorno_de && (
+                                                                                    <span className="text-xs text-orange-600">(do ponto {p.ponto_retorno_de})</span>
+                                                                                )}
+                                                                            </div>
+                                                                            <div className="text-xs text-gray-700 leading-relaxed">{enderecoFinal}</div>
+                                                                            
+                                                                            {/* Horário de finalização - para coleta */}
+                                                                            {isColeta && p.data_finalizado && (
+                                                                                <div className="mt-1 text-xs text-green-600">✅ Coletado: {formatarHora(p.data_finalizado)}</div>
+                                                                            )}
+                                                                            
+                                                                            {/* Número da nota - só para entregas (não retorno) */}
+                                                                            {!isColeta && !isRetorno && p.numero_nota && <div className="text-xs text-green-600 mt-1 font-medium">🏷️ Nota: {p.numero_nota}</div>}
+                                                                            
+                                                                            {/* Horários - para entregas e retornos */}
+                                                                            {!isColeta && (p.data_chegada || p.data_finalizado || p.data_coletado) && (
+                                                                                <div className="mt-2 pt-2 border-t border-gray-200 text-xs space-y-1">
+                                                                                    {p.data_chegada && <div className="text-blue-600">🔵 Chegou: {formatarHora(p.data_chegada)}</div>}
+                                                                                    {p.data_coletado && <div className="text-yellow-600">🟡 Coletou: {formatarHora(p.data_coletado)}</div>}
+                                                                                    {p.data_finalizado && <div className="text-green-600">✅ Finalizado: {formatarHora(p.data_finalizado)}</div>}
+                                                                                </div>
+                                                                            )}
+                                                                            
+                                                                            {/* Motivo de finalização - para entregas e retornos */}
+                                                                            {!isColeta && p.motivo_finalizacao && (
+                                                                                <div className={`mt-2 text-xs px-2 py-1 rounded ${
+                                                                                    p.motivo_finalizacao.toLowerCase() === 'sucesso' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                                                                                }`}>
+                                                                                    {p.motivo_finalizacao.toLowerCase() === 'sucesso' ? '✅' : '⚠️'} {p.motivo_descricao || p.motivo_finalizacao}
+                                                                                </div>
+                                                                            )}
+                                                                            
+                                                                            {/* Fotos de protocolo - para entregas e retornos */}
+                                                                            {!isColeta && fotosArray.length > 0 && (
+                                                                                <div className="mt-2 text-xs">
+                                                                                    <span className="text-blue-600 font-medium">📸 {fotosArray.length} foto(s):</span>
+                                                                                    <div className="flex flex-wrap gap-1 mt-1">
+                                                                                        {fotosArray.map((foto, fotoIdx) => (
+                                                                                            <button 
+                                                                                                key={fotoIdx}
+                                                                                                onClick={() => abrirFotoModal(fotosArray, fotoIdx)}
+                                                                                                className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                                                                                            >
+                                                                                                Ver {fotoIdx + 1}
+                                                                                            </button>
+                                                                                        ))}
+                                                                                    </div>
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
                                                                     </div>
                                                                 </div>
-                                                            )}
-                                                        </div>
-                                                    ))}
+                                                            );
+                                                        })}
+                                                    </div>
                                                 </div>
+                                                <div className="flex-1"><MapaLeaflet key={`acompanhar-${mapaKey}-${corridaSelecionada}`} id={`mapa-acompanhar-${corridaSelecionada}`} pontos={detalheCorrida.pontos} height="350px" tipo="acompanhar" /></div>
                                             </div>
-                                        </div>
-                                    ) : (
-                                        <div className="bg-white rounded-xl shadow p-8 text-center text-gray-400">
-                                            <div className="text-6xl mb-4">🗺️</div>
-                                            <div className="text-lg">Selecione uma corrida para ver detalhes</div>
                                         </div>
                                     )}
                                 </div>
@@ -1277,162 +1292,287 @@
                     
                     {/* ========== ABA CONCLUÍDAS ========== */}
                     {abaAtiva === 'concluidas' && (
-                        <div className="max-w-4xl mx-auto p-2 md:p-4">
-                            <div className="bg-white rounded-xl shadow">
-                                <div className="p-3 border-b flex items-center justify-between">
-                                    <span className="font-bold text-gray-700">✅ Corridas Concluídas ({corridasConcluidas.length})</span>
-                                    <select value={filtroConcluidas} onChange={(e) => setFiltroConcluidas(e.target.value)} className="text-sm border rounded px-2 py-1">
-                                        <option value="todas">Todas</option>
-                                        <option value="finalizado">Finalizadas</option>
-                                        <option value="cancelado">Canceladas</option>
-                                    </select>
+                        <div className="max-w-7xl mx-auto p-2 md:p-4">
+                            <div className="bg-white rounded-xl shadow p-4">
+                                <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+                                    <h2 className="text-lg font-bold text-gray-800">✅ Corridas Concluídas</h2>
+                                    <div className="flex gap-2">
+                                        <select value={filtroConcluidas} onChange={(e) => setFiltroConcluidas(e.target.value)} className="px-3 py-1.5 border rounded-lg text-sm">
+                                            <option value="todas">Todas</option>
+                                            <option value="finalizadas">✅ Finalizadas</option>
+                                            <option value="canceladas">❌ Canceladas</option>
+                                        </select>
+                                        <button onClick={carregarConcluidas} className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm">🔄 Atualizar</button>
+                                    </div>
                                 </div>
-                                <div className="divide-y max-h-[calc(100vh-250px)] overflow-y-auto">
-                                    {corridasConcluidas.filter(c => filtroConcluidas === 'todas' || c.status === filtroConcluidas).length === 0 ? (
-                                        <div className="p-8 text-center text-gray-400"><div className="text-4xl mb-2">📭</div><div>Nenhuma corrida</div></div>
-                                    ) : (
-                                        corridasConcluidas.filter(c => filtroConcluidas === 'todas' || c.status === filtroConcluidas).map(c => {
-                                            const { coletas, entregas } = contarPontos(c);
-                                            const isExpandida = corridaExpandida === c.id;
-                                            return (
-                                                <div key={c.id} className="hover:bg-gray-50">
-                                                    <div className="p-3 cursor-pointer" onClick={() => toggleExpandirCorrida(c.id)}>
-                                                        <div className="flex items-center justify-between">
-                                                            <div className="flex items-center gap-3">
-                                                                {c.profissional_foto ? <img src={c.profissional_foto} className="w-10 h-10 rounded-full object-cover" /> : <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">🏍️</div>}
-                                                                <div>
-                                                                    <div className="font-medium text-sm">{c.profissional_nome || 'Sem profissional'}</div>
-                                                                    <div className="text-xs text-gray-500">{formatarData(c.criado_em)} • OS #{c.tutts_os_numero || c.id}</div>
-                                                                </div>
-                                                            </div>
-                                                            <div className="text-right flex items-center gap-3">
-                                                                <div>
-                                                                    <span className={`px-2 py-1 rounded text-xs font-medium ${statusCores[c.status]}`}>{statusIcons[c.status]} {statusNomes[c.status]}</span>
-                                                                    <div className="text-xs text-gray-500 mt-1">📦 {coletas} → 📍 {entregas}</div>
-                                                                    {c.tutts_valor && <div className="text-sm font-bold text-green-600">R$ {parseFloat(c.tutts_valor).toFixed(2)}</div>}
-                                                                </div>
-                                                                <span className={`text-gray-400 transition-transform ${isExpandida ? 'rotate-180' : ''}`}>▼</span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
+                                {corridasConcluidas.filter(c => filtroConcluidas === 'todas' || (filtroConcluidas === 'finalizadas' && c.status === 'finalizado') || (filtroConcluidas === 'canceladas' && c.status === 'cancelado')).length === 0 ? (
+                                    <div className="text-center py-12 text-gray-400"><div className="text-5xl mb-3">📭</div><div>Nenhuma corrida {filtroConcluidas !== 'todas' ? filtroConcluidas : 'concluída'}</div></div>
+                                ) : (
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-sm">
+                                            <thead className="bg-gray-50"><tr><th className="px-2 py-2 text-center font-medium text-gray-600 w-10"></th><th className="px-3 py-2 text-left font-medium text-gray-600">OS</th><th className="px-3 py-2 text-left font-medium text-gray-600">Status</th><th className="px-3 py-2 text-left font-medium text-gray-600">Data</th><th className="px-3 py-2 text-left font-medium text-gray-600">Profissional</th><th className="px-3 py-2 text-center font-medium text-gray-600">Pontos</th><th className="px-3 py-2 text-left font-medium text-gray-600">Distância</th></tr></thead>
+                                            <tbody className="divide-y">
+                                                {corridasConcluidas.filter(c => filtroConcluidas === 'todas' || (filtroConcluidas === 'finalizadas' && c.status === 'finalizado') || (filtroConcluidas === 'canceladas' && c.status === 'cancelado')).map(c => {
+                                                    // Verificar se tem retorno
+                                                    let temRetorno = false;
+                                                    try {
+                                                        const dadosPontos = c.dados_pontos ? (typeof c.dados_pontos === 'string' ? JSON.parse(c.dados_pontos) : c.dados_pontos) : [];
+                                                        temRetorno = dadosPontos?.some(p => p.is_retorno || p.tipo_ponto === 'retorno');
+                                                    } catch(e) {}
                                                     
-                                                    {/* Detalhes expandidos */}
-                                                    {isExpandida && (
-                                                        <div className="px-3 pb-3 border-t bg-gray-50">
-                                                            {!detalhesCorridaExpandida ? (
-                                                                <div className="py-4 text-center text-gray-400">
-                                                                    <span className="animate-pulse">Carregando detalhes...</span>
-                                                                </div>
-                                                            ) : (
-                                                                <div className="pt-3 space-y-2">
-                                                                    {/* Ações */}
-                                                                    <div className="flex gap-2 mb-3">
-                                                                        {c.tutts_os_numero && (
-                                                                            <>
-                                                                                <button onClick={(e) => { e.stopPropagation(); copiarLinkRastreio(c.tutts_os_numero); }} className="px-3 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-xs font-medium">📋 Copiar link</button>
-                                                                                <button onClick={(e) => { e.stopPropagation(); compartilharWhatsApp(c.tutts_os_numero); }} className="px-3 py-1.5 bg-green-100 hover:bg-green-200 text-green-700 rounded text-xs font-medium">💬 WhatsApp</button>
-                                                                            </>
-                                                                        )}
+                                                    return (
+                                                        <React.Fragment key={c.id}>
+                                                            <tr className={`hover:bg-gray-50 cursor-pointer ${temRetorno ? 'bg-orange-50 border-l-4 border-l-orange-400' : ''}`} onClick={() => toggleExpandirCorrida(c.id)}>
+                                                                <td className="px-2 py-3 text-center">
+                                                                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm font-bold transition-all duration-200 ${corridaExpandida === c.id ? 'bg-blue-500 text-white shadow-md rotate-90' : 'bg-gradient-to-br from-gray-100 to-gray-200 text-gray-600 hover:from-blue-100 hover:to-blue-200 hover:text-blue-600 shadow'}`}>
+                                                                        <span className={`transition-transform duration-200 ${corridaExpandida === c.id ? 'rotate-45' : ''}`}>+</span>
                                                                     </div>
-                                                                    
-                                                                    {/* Lista de pontos */}
-                                                                    {(detalhesCorridaExpandida.pontos || []).map((p, idx) => (
-                                                                        <div key={idx} className={`p-2 rounded border ${p.status === 'finalizado' ? 'bg-green-50 border-green-200' : 'bg-white border-gray-200'}`}>
-                                                                            <div className="flex items-center gap-2">
-                                                                                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold ${idx === 0 ? 'bg-amber-500' : 'bg-blue-500'}`}>{idx === 0 ? '📦' : idx}</span>
-                                                                                <div className="flex-1 min-w-0">
-                                                                                    <div className="text-xs font-medium truncate">{p.endereco_completo || `${p.rua}, ${p.numero}`}</div>
-                                                                                    {p.numero_nota && <div className="text-xs text-blue-600">🏷️ {p.numero_nota}</div>}
+                                                                </td>
+                                                                <td className="px-3 py-3 font-medium">
+                                                                    #{c.tutts_os_numero || c.id}
+                                                                    {temRetorno && <span className="ml-2 text-orange-500" title="Corrida com retorno">⚠️</span>}
+                                                                </td>
+                                                                <td className="px-3 py-3"><span className={`px-2 py-1 rounded-full text-xs font-medium ${c.status === 'finalizado' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{c.status === 'finalizado' ? '✅ Finalizada' : '❌ Cancelada'}</span></td>
+                                                                <td className="px-3 py-3 text-gray-600">{new Date(c.criado_em).toLocaleDateString('pt-BR')} {new Date(c.criado_em).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}</td>
+                                                                <td className="px-3 py-3">{c.profissional_nome || <span className="text-gray-400">-</span>}</td>
+                                                                <td className="px-3 py-3 text-center">{c.total_pontos || '-'}</td>
+                                                                <td className="px-3 py-3">{c.tutts_distancia ? `${c.tutts_distancia} km` : '-'}</td>
+                                                            </tr>
+                                                            {/* Linha expandida com detalhes */}
+                                                            {corridaExpandida === c.id && (
+                                                                <tr>
+                                                                    <td colSpan="7" className="px-4 py-4 bg-gray-50">
+                                                                        {!detalhesCorridaExpandida ? (
+                                                                            <div className="text-center py-4"><span className="animate-pulse">⏳ Carregando detalhes...</span></div>
+                                                                        ) : (
+                                                                            <div className="space-y-4">
+                                                                                {/* Cabeçalho com foto do profissional e info */}
+                                                                                <div className="flex items-start gap-4 p-3 bg-white rounded-lg border">
+                                                                                    {detalhesCorridaExpandida.profissional_foto ? (
+                                                                                        <img src={detalhesCorridaExpandida.profissional_foto} className="w-16 h-16 rounded-full object-cover border-2 border-gray-200" />
+                                                                                    ) : (
+                                                                                        <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center text-2xl">🏍️</div>
+                                                                                    )}
+                                                                                    <div className="flex-1">
+                                                                                        <div className="font-bold text-gray-800">{detalhesCorridaExpandida.profissional_nome || 'Sem profissional'}</div>
+                                                                                        {detalhesCorridaExpandida.profissional_telefone && <div className="text-sm text-gray-600">📞 {detalhesCorridaExpandida.profissional_telefone}</div>}
+                                                                                        <div className="flex gap-4 mt-2 text-xs text-gray-500">
+                                                                                            <span>📏 {detalhesCorridaExpandida.tutts_distancia || '-'} km</span>
+                                                                                            <span>📍 {detalhesCorridaExpandida.pontos?.length || 0} pontos</span>
+                                                                                        </div>
+                                                                                    </div>
                                                                                 </div>
-                                                                                {p.status === 'finalizado' && <span className="text-green-500">✅</span>}
+                                                                                
+                                                                                {/* Alerta de retorno */}
+                                                                                {detalhesCorridaExpandida.pontos?.some(p => p.is_retorno || p.tipo_ponto === 'retorno') && (
+                                                                                    <div className="flex items-center gap-2 px-4 py-3 bg-orange-100 border border-orange-300 rounded-lg text-orange-700">
+                                                                                        <span className="text-xl">⚠️</span>
+                                                                                        <div>
+                                                                                            <div className="font-bold">Atenção: Corrida com retorno</div>
+                                                                                            <div className="text-sm">Caso o retorno seja indevido, solicite o cancelamento ao suporte Tutts.</div>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                )}
+                                                                                
+                                                                                {/* Lista de pontos */}
+                                                                                <div className="space-y-2">
+                                                                                    <div className="font-medium text-gray-700">📍 Pontos da corrida:</div>
+                                                                                    {detalhesCorridaExpandida.pontos?.map((p, idx) => {
+                                                                                        const isColeta = idx === 0;
+                                                                                        const isRetorno = p.is_retorno || p.tipo_ponto === 'retorno';
+                                                                                        
+                                                                                        // Normalizar fotos
+                                                                                        let fotosArray = [];
+                                                                                        try {
+                                                                                            if (typeof p.fotos === 'string' && p.fotos !== '' && p.fotos !== '[]') {
+                                                                                                fotosArray = JSON.parse(p.fotos);
+                                                                                            } else if (Array.isArray(p.fotos)) {
+                                                                                                fotosArray = p.fotos;
+                                                                                            }
+                                                                                        } catch { fotosArray = []; }
+                                                                                        
+                                                                                        const endereco = p.endereco_completo || [p.rua, p.numero, p.bairro, p.cidade].filter(Boolean).join(', ') || 'Endereço não informado';
+                                                                                        
+                                                                                        return (
+                                                                                            <div key={idx} className={`p-3 rounded-lg border-2 ${isRetorno ? 'border-orange-300 bg-orange-50' : isColeta ? 'border-amber-200 bg-amber-50' : 'border-gray-200 bg-white'}`}>
+                                                                                                <div className="flex items-start gap-3">
+                                                                                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0 ${isRetorno ? 'bg-orange-500' : isColeta ? 'bg-amber-500' : 'bg-blue-500'}`}>
+                                                                                                        {isRetorno ? '↩️' : isColeta ? '📦' : idx}
+                                                                                                    </div>
+                                                                                                    <div className="flex-1">
+                                                                                                        <div className="flex items-center gap-2 flex-wrap">
+                                                                                                            <span className={`text-xs font-bold ${isRetorno ? 'text-orange-700' : isColeta ? 'text-amber-700' : 'text-blue-700'}`}>
+                                                                                                                {isRetorno ? '↩️ RETORNO' : isColeta ? '📦 COLETA' : `📍 ENTREGA ${idx}`}
+                                                                                                            </span>
+                                                                                                            {isRetorno && p.ponto_retorno_de && (
+                                                                                                                <span className="text-xs text-orange-600">(do ponto {p.ponto_retorno_de})</span>
+                                                                                                            )}
+                                                                                                            {p.numero_nota && <span className="text-xs text-green-600">🏷️ {p.numero_nota}</span>}
+                                                                                                        </div>
+                                                                                                        <div className="text-sm text-gray-700 mt-1">{endereco}</div>
+                                                                                                        
+                                                                                                        {/* Observação */}
+                                                                                                        {p.observacao && (
+                                                                                                            <div className="mt-2 text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded">
+                                                                                                                💬 {p.observacao}
+                                                                                                            </div>
+                                                                                                        )}
+                                                                                                        
+                                                                                                        {/* Motivo de finalização */}
+                                                                                                        {p.motivo_finalizacao && (
+                                                                                                            <div className={`mt-2 text-xs px-2 py-1 rounded ${p.motivo_finalizacao.toLowerCase() === 'sucesso' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                                                                                                {p.motivo_finalizacao.toLowerCase() === 'sucesso' ? '✅' : '⚠️'} {p.motivo_descricao || p.motivo_finalizacao}
+                                                                                                            </div>
+                                                                                                        )}
+                                                                                                        
+                                                                                                        {/* Fotos de protocolo */}
+                                                                                                        {fotosArray.length > 0 && (
+                                                                                                            <div className="mt-2">
+                                                                                                                <div className="text-xs text-gray-500 mb-1">📸 Fotos de protocolo:</div>
+                                                                                                                <div className="flex gap-2 flex-wrap">
+                                                                                                                    {fotosArray.map((foto, fIdx) => (
+                                                                                                                        <img 
+                                                                                                                            key={fIdx} 
+                                                                                                                            src={foto} 
+                                                                                                                            className="w-16 h-16 object-cover rounded cursor-pointer hover:opacity-80 border"
+                                                                                                                            onClick={(e) => { e.stopPropagation(); abrirFotoModal(fotosArray, fIdx); }}
+                                                                                                                        />
+                                                                                                                    ))}
+                                                                                                                </div>
+                                                                                                            </div>
+                                                                                                        )}
+                                                                                                        
+                                                                                                        {/* Horários */}
+                                                                                                        {(p.data_chegada || p.data_finalizado) && (
+                                                                                                            <div className="mt-2 flex gap-3 text-xs text-gray-500">
+                                                                                                                {p.data_chegada && <span>🔵 Chegou: {new Date(p.data_chegada).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}</span>}
+                                                                                                                {p.data_finalizado && <span>✅ Finalizado: {new Date(p.data_finalizado).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}</span>}
+                                                                                                            </div>
+                                                                                                        )}
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        );
+                                                                                    })}
+                                                                                </div>
                                                                             </div>
-                                                                            
-                                                                            {/* Fotos do ponto */}
-                                                                            {p.fotos && p.fotos.length > 0 && (
-                                                                                <div className="mt-2 flex gap-2 overflow-x-auto">
-                                                                                    {p.fotos.map((foto, fotoIdx) => (
-                                                                                        <img 
-                                                                                            key={fotoIdx} 
-                                                                                            src={typeof foto === 'string' ? foto : foto.url || foto.link} 
-                                                                                            className="w-12 h-12 rounded object-cover cursor-pointer hover:opacity-80 flex-shrink-0" 
-                                                                                            onClick={(e) => { e.stopPropagation(); abrirFotoModal(p.fotos, fotoIdx); }}
-                                                                                            alt={`Foto ${fotoIdx + 1}`}
-                                                                                        />
-                                                                                    ))}
-                                                                                </div>
-                                                                            )}
-                                                                        </div>
-                                                                    ))}
-                                                                </div>
+                                                                        )}
+                                                                    </td>
+                                                                </tr>
                                                             )}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            );
-                                        })
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                    
-                    {/* Modal editar ponto */}
-                    {pontoEditando !== null && (
-                        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setPontoEditando(null)}>
-                            <div className="bg-white rounded-xl shadow-2xl w-full max-w-md" onClick={e => e.stopPropagation()}>
-                                <div className="bg-blue-900 text-white px-4 py-3 rounded-t-xl flex items-center justify-between"><span className="font-bold">✏️ Editar Ponto</span><button onClick={() => setPontoEditando(null)} className="text-white/70 hover:text-white">✕</button></div>
-                                <div className="p-4 space-y-3">
-                                    <div><label className="block text-sm font-medium text-gray-700 mb-1">🏠 Complemento</label><input type="text" value={dadosPonto.complemento} onChange={(e) => setDadosPonto({...dadosPonto, complemento: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Apt, Bloco, Sala..." /></div>
-                                    <div><label className="block text-sm font-medium text-gray-700 mb-1">🏷️ Nº Nota</label><input type="text" value={dadosPonto.numero_nota} onChange={(e) => setDadosPonto({...dadosPonto, numero_nota: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Número da nota fiscal" /></div>
-                                    <div><label className="block text-sm font-medium text-gray-700 mb-1">📝 Observação</label><textarea value={dadosPonto.observacao} onChange={(e) => setDadosPonto({...dadosPonto, observacao: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-sm" rows="2" placeholder="Instruções especiais..."></textarea></div>
-                                    <div><label className="block text-sm font-medium text-gray-700 mb-1">📞 Telefone</label><input type="tel" value={dadosPonto.telefone} onChange={(e) => setDadosPonto({...dadosPonto, telefone: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="(62) 99999-9999" /></div>
-                                    <div><label className="block text-sm font-medium text-gray-700 mb-1">👤 Procurar por</label><input type="text" value={dadosPonto.procurar_por} onChange={(e) => setDadosPonto({...dadosPonto, procurar_por: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Nome do destinatário" /></div>
-                                    <div><label className="block text-sm font-medium text-gray-700 mb-1">🔑 Código finalizar</label><input type="text" value={dadosPonto.codigo_finalizar} onChange={(e) => setDadosPonto({...dadosPonto, codigo_finalizar: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Código para finalização" /></div>
-                                </div>
-                                <div className="p-4 border-t flex gap-2"><button onClick={() => setPontoEditando(null)} className="flex-1 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg font-medium">Cancelar</button><button onClick={salvarEdicaoPonto} className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium">💾 Salvar</button></div>
+                                                        </React.Fragment>
+                                                    );
+                                                })}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
+                                {corridasConcluidas.length > 0 && (
+                                    <div className="mt-4 pt-4 border-t grid grid-cols-3 gap-4">
+                                        <div className="bg-green-50 p-3 rounded-lg text-center"><div className="text-2xl font-bold text-green-600">{corridasConcluidas.filter(c => c.status === 'finalizado').length}</div><div className="text-xs text-gray-600">Finalizadas</div></div>
+                                        <div className="bg-red-50 p-3 rounded-lg text-center"><div className="text-2xl font-bold text-red-600">{corridasConcluidas.filter(c => c.status === 'cancelado').length}</div><div className="text-xs text-gray-600">Canceladas</div></div>
+                                        <div className="bg-blue-50 p-3 rounded-lg text-center"><div className="text-2xl font-bold text-blue-600">{corridasConcluidas.filter(c => c.status === 'finalizado').reduce((acc, c) => acc + parseFloat(c.tutts_distancia || 0), 0).toFixed(1)} km</div><div className="text-xs text-gray-600">Total Distância</div></div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}
                     
                     {/* Modal salvar endereço */}
                     {modalSalvarEndereco.aberto && (
-                        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setModalSalvarEndereco({ aberto: false, ponto: null })}>
-                            <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm" onClick={e => e.stopPropagation()}>
-                                <div className="bg-green-600 text-white px-4 py-3 rounded-t-xl flex items-center justify-between">
-                                    <span className="font-bold">💾 Salvar Endereço</span>
-                                    <button onClick={() => setModalSalvarEndereco({ aberto: false, ponto: null })} className="text-white/70 hover:text-white">✕</button>
+                        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => { setModalSalvarEndereco({ aberto: false, ponto: null }); setComplementoSalvar(''); }}>
+                            <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm p-4" onClick={e => e.stopPropagation()}>
+                                <div className="flex items-center justify-between mb-4">
+                                    <span className="font-bold text-green-700">💾 Salvar Endereço</span>
+                                    <button onClick={() => { setModalSalvarEndereco({ aberto: false, ponto: null }); setComplementoSalvar(''); }} className="text-gray-400 hover:text-gray-600">✕</button>
                                 </div>
-                                <div className="p-4 space-y-3">
-                                    <div className="bg-gray-50 p-2 rounded text-xs text-gray-600">
-                                        📍 {modalSalvarEndereco.ponto?.endereco_completo || `${modalSalvarEndereco.ponto?.rua}, ${modalSalvarEndereco.ponto?.numero}`}
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">⭐ Apelido *</label>
-                                        <input 
-                                            type="text" 
-                                            value={apelidoSalvar} 
-                                            onChange={(e) => setApelidoSalvar(e.target.value)} 
-                                            className="w-full px-3 py-2 border rounded-lg text-sm" 
-                                            placeholder="Ex: Loja Centro, Cliente João..."
-                                            autoFocus
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">🏠 Complemento</label>
-                                        <input 
-                                            type="text" 
-                                            value={complementoSalvar} 
-                                            onChange={(e) => setComplementoSalvar(e.target.value)} 
-                                            className="w-full px-3 py-2 border rounded-lg text-sm" 
-                                            placeholder="Apt, Bloco, Sala..."
-                                        />
-                                    </div>
+                                
+                                {/* Preview do endereço */}
+                                <div className="bg-gray-50 p-3 rounded-lg mb-4 text-sm">
+                                    <div className="font-medium text-gray-700">{modalSalvarEndereco.ponto?.endereco_completo || `${modalSalvarEndereco.ponto?.rua}, ${modalSalvarEndereco.ponto?.numero}`}</div>
+                                    {modalSalvarEndereco.ponto?.bairro && <div className="text-xs text-gray-500">{modalSalvarEndereco.ponto?.bairro}, {modalSalvarEndereco.ponto?.cidade}</div>}
                                 </div>
-                                <div className="p-4 border-t flex gap-2">
-                                    <button onClick={() => setModalSalvarEndereco({ aberto: false, ponto: null })} className="flex-1 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg font-medium text-sm">Cancelar</button>
-                                    <button onClick={salvarEndereco} disabled={salvandoEndereco || !apelidoSalvar.trim()} className="flex-1 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium text-sm disabled:opacity-50">
-                                        {salvandoEndereco ? '⏳ Salvando...' : '💾 Salvar'}
+                                
+                                {/* Input do complemento */}
+                                <div className="mb-3">
+                                    <label className="text-xs text-gray-600 font-medium">🏠 Complemento (opcional)</label>
+                                    <input 
+                                        type="text" 
+                                        value={complementoSalvar} 
+                                        onChange={(e) => setComplementoSalvar(e.target.value)}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm mt-1 focus:ring-2 focus:ring-green-400 outline-none" 
+                                        placeholder="Quadra, Lote, Apto, Bloco..."
+                                    />
+                                </div>
+                                
+                                {/* Input do apelido */}
+                                <div className="mb-4">
+                                    <label className="text-xs text-gray-600 font-medium">⭐ Apelido (para buscar depois)</label>
+                                    <input 
+                                        type="text" 
+                                        value={apelidoSalvar} 
+                                        onChange={(e) => setApelidoSalvar(e.target.value)}
+                                        onKeyPress={(e) => { if (e.key === 'Enter') salvarEndereco(); }}
+                                        className="w-full px-3 py-2 border border-green-300 rounded-lg text-sm mt-1 focus:ring-2 focus:ring-green-400 outline-none" 
+                                        placeholder="Ex: Loja Centro, CD Principal, Cliente X..."
+                                        autoFocus
+                                    />
+                                    <div className="text-xs text-gray-400 mt-1">💡 Use um nome fácil de lembrar</div>
+                                </div>
+                                
+                                <div className="flex gap-2">
+                                    <button onClick={() => { setModalSalvarEndereco({ aberto: false, ponto: null }); setComplementoSalvar(''); }} className="flex-1 py-2 border rounded-lg text-sm hover:bg-gray-50">Cancelar</button>
+                                    <button onClick={salvarEndereco} disabled={salvandoEndereco || !apelidoSalvar.trim()} className="flex-1 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 disabled:opacity-50">
+                                        {salvandoEndereco ? '...' : '💾 Salvar'}
                                     </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    
+                    {/* Modal edição de ponto */}
+                    {pontoEditando !== null && (
+                        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setPontoEditando(null)}>
+                            <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-4" onClick={e => e.stopPropagation()}>
+                                <div className="flex items-center justify-between mb-4">
+                                    <span className="font-bold">✏️ Editar Ponto {pontoEditando + 1}</span>
+                                    <button onClick={() => setPontoEditando(null)} className="text-gray-400 hover:text-gray-600">✕</button>
+                                </div>
+                                <div className="space-y-3">
+                                    {/* Campo Número Nota - Destaque */}
+                                    <div className="bg-green-50 p-3 rounded-lg border border-green-200">
+                                        <label className="text-xs text-green-700 font-medium">🏷️ Número da Nota/Pedido</label>
+                                        <input 
+                                            type="text" 
+                                            value={dadosPonto.numero_nota} 
+                                            onChange={(e) => setDadosPonto({...dadosPonto, numero_nota: e.target.value})} 
+                                            className="w-full px-3 py-2 border border-green-300 rounded text-sm mt-1 focus:ring-2 focus:ring-green-400 outline-none" 
+                                            placeholder="Ex: NF-12345, PED-0001..."
+                                        />
+                                    </div>
+                                    
+                                    <div>
+                                        <label className="text-xs text-gray-600">📝 Observação</label>
+                                        <textarea value={dadosPonto.observacao} onChange={(e) => setDadosPonto({...dadosPonto, observacao: e.target.value})} className="w-full px-3 py-2 border rounded text-sm" rows="2" placeholder="Instruções para o motoboy..." />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-gray-600">🏠 Complemento</label>
+                                        <input type="text" value={dadosPonto.complemento} onChange={(e) => setDadosPonto({...dadosPonto, complemento: e.target.value})} className="w-full px-3 py-2 border rounded text-sm" placeholder="Quadra, Lote, Apto, Bloco..." />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="text-xs text-gray-600">📞 Telefone</label>
+                                            <input type="text" value={dadosPonto.telefone} onChange={(e) => setDadosPonto({...dadosPonto, telefone: e.target.value})} className="w-full px-3 py-2 border rounded text-sm" placeholder="(62) 99999-9999" />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs text-gray-600">👤 Procurar por</label>
+                                            <input type="text" value={dadosPonto.procurar_por} onChange={(e) => setDadosPonto({...dadosPonto, procurar_por: e.target.value})} className="w-full px-3 py-2 border rounded text-sm" placeholder="Nome do responsável" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="flex gap-2 mt-4">
+                                    <button onClick={() => setPontoEditando(null)} className="flex-1 py-2 border rounded-lg text-sm hover:bg-gray-50">Cancelar</button>
+                                    <button onClick={salvarEdicaoPonto} className="flex-1 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">💾 Salvar</button>
                                 </div>
                             </div>
                         </div>
@@ -1440,53 +1580,35 @@
                     
                     {/* ============ NOVO: Modal de Ajuste de Mapa ============ */}
                     {modalAjusteMapa.aberto && (
-                        <div className="fixed inset-0 bg-black/80 flex items-center justify-center mapa-ajuste-modal p-2 md:p-4">
+                        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-2 md:p-4">
                             <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[95vh] overflow-hidden flex flex-col">
-                                {/* Header */}
                                 <div className="bg-blue-900 text-white px-4 py-3 flex items-center justify-between flex-shrink-0">
                                     <div className="flex items-center gap-2">
                                         <span className="text-xl">🎯</span>
                                         <div>
                                             <span className="font-bold">Ajustar Posição no Mapa</span>
-                                            <div className="text-xs text-blue-200">
-                                                {modalAjusteMapa.etapa === 'ajustar' 
-                                                    ? 'Arraste o pino ou clique no mapa' 
-                                                    : 'Confirme o endereço'}
-                                            </div>
+                                            <div className="text-xs text-blue-200">{modalAjusteMapa.etapa === 'ajustar' ? 'Arraste o pino ou clique no mapa' : 'Confirme o endereço'}</div>
                                         </div>
                                     </div>
-                                    <button 
-                                        onClick={fecharModalAjusteMapa} 
-                                        className="text-white/70 hover:text-white text-xl"
-                                    >
-                                        ✕
-                                    </button>
+                                    <button onClick={fecharModalAjusteMapa} className="text-white/70 hover:text-white text-xl">✕</button>
                                 </div>
                                 
-                                {/* Conteúdo */}
                                 <div className="flex-1 overflow-hidden flex flex-col">
                                     {modalAjusteMapa.etapa === 'ajustar' ? (
                                         <>
-                                            {/* Endereço original */}
                                             <div className="px-4 py-2 bg-gray-50 border-b flex-shrink-0">
                                                 <div className="text-xs text-gray-500">Endereço buscado:</div>
-                                                <div className="text-sm font-medium text-gray-700 truncate">
-                                                    📍 {modalAjusteMapa.sugestaoOriginal?.endereco}
-                                                </div>
+                                                <div className="text-sm font-medium text-gray-700 truncate">📍 {modalAjusteMapa.sugestaoOriginal?.endereco}</div>
                                             </div>
                                             
-                                            {/* Instruções */}
                                             <div className="px-4 py-2 bg-blue-50 border-b flex-shrink-0">
                                                 <div className="flex items-center gap-2 text-sm text-blue-700">
                                                     <span className="text-lg">👆</span>
-                                                    <div>
-                                                        <strong>Arraste o pino vermelho</strong> para a posição exata ou <strong>clique no mapa</strong> para reposicionar
-                                                    </div>
+                                                    <div><strong>Arraste o pino vermelho</strong> para a posição exata ou <strong>clique no mapa</strong></div>
                                                 </div>
                                             </div>
                                             
-                                            {/* Mapa */}
-                                            <div className="flex-1 min-h-[300px] mapa-ajuste-container">
+                                            <div className="flex-1 min-h-[300px]">
                                                 <MapaAjustavel 
                                                     latitude={posicaoAjustada.lat || modalAjusteMapa.latitude}
                                                     longitude={posicaoAjustada.lng || modalAjusteMapa.longitude}
@@ -1495,111 +1617,50 @@
                                                 />
                                             </div>
                                             
-                                            {/* Coordenadas atuais */}
                                             <div className="px-4 py-2 bg-gray-50 border-t flex-shrink-0">
                                                 <div className="flex items-center justify-between text-xs text-gray-500">
                                                     <span>Coordenadas:</span>
-                                                    <span className="font-mono">
-                                                        {posicaoAjustada.lat?.toFixed(6)}, {posicaoAjustada.lng?.toFixed(6)}
-                                                    </span>
+                                                    <span className="font-mono">{posicaoAjustada.lat?.toFixed(6)}, {posicaoAjustada.lng?.toFixed(6)}</span>
                                                 </div>
                                             </div>
                                             
-                                            {/* Botões */}
                                             <div className="p-4 border-t flex gap-2 flex-shrink-0">
-                                                <button 
-                                                    onClick={fecharModalAjusteMapa} 
-                                                    className="flex-1 py-2.5 bg-gray-200 hover:bg-gray-300 rounded-lg font-medium text-sm"
-                                                >
-                                                    Cancelar
-                                                </button>
-                                                <button 
-                                                    onClick={confirmarPosicaoMapa} 
-                                                    disabled={buscandoEndereco}
-                                                    className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-sm disabled:opacity-50"
-                                                >
-                                                    {buscandoEndereco ? '⏳ Buscando...' : '✓ Confirmar Posição'}
-                                                </button>
+                                                <button onClick={fecharModalAjusteMapa} className="flex-1 py-2.5 bg-gray-200 hover:bg-gray-300 rounded-lg font-medium text-sm">Cancelar</button>
+                                                <button onClick={confirmarPosicaoMapa} disabled={buscandoEnderecoReverso} className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-sm disabled:opacity-50">{buscandoEnderecoReverso ? '⏳ Buscando...' : '✓ Confirmar Posição'}</button>
                                             </div>
                                         </>
                                     ) : (
                                         <>
-                                            {/* Etapa de confirmação do endereço */}
                                             <div className="p-4 space-y-4 overflow-y-auto">
-                                                {/* Endereço original */}
                                                 <div className="bg-gray-50 rounded-lg p-3">
                                                     <div className="text-xs text-gray-500 mb-1">Endereço original buscado:</div>
-                                                    <div className="text-sm text-gray-600">
-                                                        📍 {modalAjusteMapa.sugestaoOriginal?.endereco}
-                                                    </div>
+                                                    <div className="text-sm text-gray-600">📍 {modalAjusteMapa.sugestaoOriginal?.endereco}</div>
                                                 </div>
                                                 
-                                                {/* Seta de mudança */}
-                                                <div className="flex justify-center">
-                                                    <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-xl">
-                                                        ↓
-                                                    </div>
-                                                </div>
+                                                <div className="flex justify-center"><div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-xl">↓</div></div>
                                                 
-                                                {/* Novo endereço */}
                                                 <div className="bg-green-50 rounded-lg p-3 border-2 border-green-200">
                                                     <div className="text-xs text-green-600 mb-1 font-medium">✅ Novo endereço (posição ajustada):</div>
-                                                    <div className="text-sm font-medium text-gray-800">
-                                                        🎯 {enderecoAjustado?.endereco}
-                                                    </div>
-                                                    <div className="mt-2 text-xs text-gray-500 font-mono">
-                                                        Coordenadas: {posicaoAjustada.lat?.toFixed(6)}, {posicaoAjustada.lng?.toFixed(6)}
-                                                    </div>
+                                                    <div className="text-sm font-medium text-gray-800">🎯 {enderecoAjustado?.endereco}</div>
+                                                    <div className="mt-2 text-xs text-gray-500 font-mono">Coordenadas: {posicaoAjustada.lat?.toFixed(6)}, {posicaoAjustada.lng?.toFixed(6)}</div>
                                                 </div>
                                                 
-                                                {/* Comparação visual */}
                                                 {enderecoAjustado && (
                                                     <div className="bg-blue-50 rounded-lg p-3">
-                                                        <div className="text-xs text-blue-600 mb-2 font-medium">📋 Detalhes do endereço:</div>
+                                                        <div className="text-xs text-blue-600 mb-2 font-medium">📋 Detalhes:</div>
                                                         <div className="grid grid-cols-2 gap-2 text-xs">
-                                                            {enderecoAjustado.componentes?.find(c => c.types?.includes('route')) && (
-                                                                <div>
-                                                                    <span className="text-gray-500">Rua:</span>
-                                                                    <span className="ml-1 font-medium">{enderecoAjustado.componentes.find(c => c.types?.includes('route'))?.long_name}</span>
-                                                                </div>
-                                                            )}
-                                                            {enderecoAjustado.componentes?.find(c => c.types?.includes('street_number')) && (
-                                                                <div>
-                                                                    <span className="text-gray-500">Número:</span>
-                                                                    <span className="ml-1 font-medium">{enderecoAjustado.componentes.find(c => c.types?.includes('street_number'))?.long_name}</span>
-                                                                </div>
-                                                            )}
-                                                            {enderecoAjustado.componentes?.find(c => c.types?.includes('sublocality_level_1') || c.types?.includes('sublocality')) && (
-                                                                <div>
-                                                                    <span className="text-gray-500">Bairro:</span>
-                                                                    <span className="ml-1 font-medium">{enderecoAjustado.componentes.find(c => c.types?.includes('sublocality_level_1') || c.types?.includes('sublocality'))?.long_name}</span>
-                                                                </div>
-                                                            )}
-                                                            {enderecoAjustado.componentes?.find(c => c.types?.includes('administrative_area_level_2') || c.types?.includes('locality')) && (
-                                                                <div>
-                                                                    <span className="text-gray-500">Cidade:</span>
-                                                                    <span className="ml-1 font-medium">{enderecoAjustado.componentes.find(c => c.types?.includes('administrative_area_level_2') || c.types?.includes('locality'))?.long_name}</span>
-                                                                </div>
-                                                            )}
+                                                            {enderecoAjustado.componentes?.find(c => c.types?.includes('route')) && <div><span className="text-gray-500">Rua:</span> <span className="font-medium">{enderecoAjustado.componentes.find(c => c.types?.includes('route'))?.long_name}</span></div>}
+                                                            {enderecoAjustado.componentes?.find(c => c.types?.includes('street_number')) && <div><span className="text-gray-500">Nº:</span> <span className="font-medium">{enderecoAjustado.componentes.find(c => c.types?.includes('street_number'))?.long_name}</span></div>}
+                                                            {enderecoAjustado.componentes?.find(c => c.types?.includes('sublocality_level_1') || c.types?.includes('sublocality')) && <div><span className="text-gray-500">Bairro:</span> <span className="font-medium">{enderecoAjustado.componentes.find(c => c.types?.includes('sublocality_level_1') || c.types?.includes('sublocality'))?.long_name}</span></div>}
+                                                            {enderecoAjustado.componentes?.find(c => c.types?.includes('administrative_area_level_2') || c.types?.includes('locality')) && <div><span className="text-gray-500">Cidade:</span> <span className="font-medium">{enderecoAjustado.componentes.find(c => c.types?.includes('administrative_area_level_2') || c.types?.includes('locality'))?.long_name}</span></div>}
                                                         </div>
                                                     </div>
                                                 )}
                                             </div>
                                             
-                                            {/* Botões */}
                                             <div className="p-4 border-t flex gap-2 flex-shrink-0">
-                                                <button 
-                                                    onClick={voltarParaAjustar} 
-                                                    className="flex-1 py-2.5 bg-gray-200 hover:bg-gray-300 rounded-lg font-medium text-sm flex items-center justify-center gap-1"
-                                                >
-                                                    ↩️ Ajustar novamente
-                                                </button>
-                                                <button 
-                                                    onClick={usarEnderecoAjustado} 
-                                                    className="flex-1 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium text-sm flex items-center justify-center gap-1"
-                                                >
-                                                    ✓ Usar este endereço
-                                                </button>
+                                                <button onClick={voltarParaAjustar} className="flex-1 py-2.5 bg-gray-200 hover:bg-gray-300 rounded-lg font-medium text-sm">↩️ Ajustar</button>
+                                                <button onClick={usarEnderecoAjustado} className="flex-1 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium text-sm">✓ Usar</button>
                                             </div>
                                         </>
                                     )}
