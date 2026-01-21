@@ -264,6 +264,7 @@
             const [corridaExpandida, setCorridaExpandida] = useState(null);
             const [detalhesCorridaExpandida, setDetalhesCorridaExpandida] = useState(null);
             const [sincronizando, setSincronizando] = useState(false);
+            const [sincronizandoHistorico, setSincronizandoHistorico] = useState(false);
             const [profissionais, setProfissionais] = useState([]);
             const [carregandoProfissionais, setCarregandoProfissionais] = useState(false);
             const [mapaKey, setMapaKey] = useState(0);
@@ -353,6 +354,35 @@
             const carregarHistorico = async () => { try { const resp = await fetch(`${API_URL}/api/solicitacao/historico?limite=20`, { headers: { 'Authorization': `Bearer ${token}` } }); if (resp.ok) { const data = await resp.json(); setHistorico(data.solicitacoes || []); } } catch (err) {} };
             const carregarCorridasAtivas = async () => { try { const resp = await fetch(`${API_URL}/api/solicitacao/historico?limite=50`, { headers: { 'Authorization': `Bearer ${token}` } }); if (resp.ok) { const data = await resp.json(); setCorridasAtivas((data.solicitacoes || []).filter(s => ['enviado', 'aceito', 'em_andamento'].includes(s.status))); } } catch (err) {} };
             const carregarConcluidas = async () => { try { const resp = await fetch(`${API_URL}/api/solicitacao/historico?limite=100`, { headers: { 'Authorization': `Bearer ${token}` } }); if (resp.ok) { const data = await resp.json(); setCorridasConcluidas((data.solicitacoes || []).filter(s => ['finalizado', 'cancelado'].includes(s.status))); } } catch (err) {} };
+            
+            // Função para sincronizar histórico (recuperar dados de corridas antigas)
+            const sincronizarHistorico = async () => {
+                if (sincronizandoHistorico) return;
+                setSincronizandoHistorico(true);
+                try {
+                    const resp = await fetch(`${API_URL}/api/solicitacao/sincronizar-historico`, {
+                        method: 'POST',
+                        headers: { 
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ limite: 50, apenasIncompletas: true })
+                    });
+                    if (resp.ok) {
+                        const data = await resp.json();
+                        alert(`✅ Sincronização concluída!\n\n${data.atualizadas} corridas atualizadas de ${data.total_verificadas} verificadas.`);
+                        // Recarregar a lista
+                        carregarConcluidas();
+                    } else {
+                        const err = await resp.json();
+                        alert('❌ Erro: ' + (err.error || 'Falha na sincronização'));
+                    }
+                } catch (err) {
+                    alert('❌ Erro de conexão');
+                } finally {
+                    setSincronizandoHistorico(false);
+                }
+            };
             const carregarDetalheCorrida = async (id) => { 
                 try { 
                     const resp = await fetch(`${API_URL}/api/solicitacao/corrida/${id}`, { headers: { 'Authorization': `Bearer ${token}` } }); 
@@ -1296,7 +1326,18 @@
                             <div className="bg-white rounded-xl shadow p-4">
                                 <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
                                     <h2 className="text-lg font-bold text-gray-800">✅ Corridas Concluídas</h2>
-                                    <div className="flex gap-2">
+                                    <div className="flex gap-2 flex-wrap">
+                                        <button 
+                                            onClick={sincronizarHistorico} 
+                                            disabled={sincronizandoHistorico}
+                                            className={`px-3 py-1.5 rounded-lg text-sm flex items-center gap-1 ${sincronizandoHistorico ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-purple-100 text-purple-700 hover:bg-purple-200'}`}
+                                        >
+                                            {sincronizandoHistorico ? (
+                                                <><span className="animate-spin">⏳</span> Sincronizando...</>
+                                            ) : (
+                                                <>🔄 Recuperar Dados</>
+                                            )}
+                                        </button>
                                         <select value={filtroConcluidas} onChange={(e) => setFiltroConcluidas(e.target.value)} className="px-3 py-1.5 border rounded-lg text-sm">
                                             <option value="todas">Todas</option>
                                             <option value="finalizadas">✅ Finalizadas</option>
