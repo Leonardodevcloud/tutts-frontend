@@ -366,7 +366,7 @@
                             'Authorization': `Bearer ${token}`,
                             'Content-Type': 'application/json'
                         },
-                        body: JSON.stringify({ limite: 50, apenasIncompletas: true })
+                        body: JSON.stringify({ limite: 100, apenasIncompletas: false })
                     });
                     if (resp.ok) {
                         const data = await resp.json();
