@@ -220,20 +220,6 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
     const podeChekin = gpsStatus === 'permitido' && (distanciaCentral === null || distanciaCentral <= minhaCentral.raio_metros);
     
     return React.createElement('div', { className: 'max-w-lg mx-auto p-4 space-y-6' },
-        // Modal de Notificação
-        mostrarNotificacao && notificacao && React.createElement('div', { className: 'fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50' },
-            React.createElement('div', { className: `rounded-2xl p-6 max-w-md w-full shadow-2xl ${notificacao.tipo === 'corrida_unica' ? 'bg-gradient-to-br from-yellow-400 to-orange-500' : 'bg-gradient-to-br from-green-400 to-green-600'}` },
-                React.createElement('div', { className: 'text-center text-white' },
-                    React.createElement('span', { className: 'text-6xl block mb-4' }, notificacao.tipo === 'corrida_unica' ? '👑' : '🚀'),
-                    React.createElement('h2', { className: 'text-xl font-bold mb-4' }, notificacao.tipo === 'corrida_unica' ? 'CORRIDA ÚNICA!' : 'ROTEIRO DESPACHADO!'),
-                    React.createElement('p', { className: 'text-lg mb-6 leading-relaxed' }, notificacao.mensagem),
-                    React.createElement('button', { 
-                        onClick: marcarNotificacaoLida, 
-                        className: 'w-full py-4 bg-white text-gray-800 rounded-xl font-bold text-lg hover:bg-gray-100'
-                    }, '✅ Entendido!')
-                )
-            )
-        ),
         React.createElement('div', { className: 'bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl p-4 text-white shadow-lg' },
             React.createElement('div', { className: 'flex items-center gap-3 mb-2' }, React.createElement('span', { className: 'text-2xl' }, '📍'), React.createElement('div', null, React.createElement('h1', { className: 'text-lg font-bold' }, minhaCentral.central_nome), React.createElement('p', { className: 'text-purple-200 text-xs' }, minhaCentral.endereco))),
             React.createElement('div', { className: `flex items-center gap-2 p-2 rounded-lg ${gpsStatus === 'permitido' ? 'bg-green-500/20' : gpsStatus === 'negado' ? 'bg-red-500/20' : 'bg-yellow-500/20'}` },
@@ -245,7 +231,16 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
         gpsStatus === 'negado' ? React.createElement('div', { className: 'bg-red-50 border-2 border-red-300 rounded-2xl p-6 text-center' }, React.createElement('span', { className: 'text-5xl block mb-4' }, '📍'), React.createElement('h2', { className: 'text-lg font-bold text-red-800 mb-2' }, 'GPS Necessário'), React.createElement('p', { className: 'text-red-600 mb-4' }, 'Permita acesso à localização.'), React.createElement('button', { onClick: solicitarGPS, className: 'px-6 py-3 bg-red-600 text-white rounded-xl font-bold' }, '🔓 Permitir')) :
         React.createElement(React.Fragment, null,
             minhaPosicao?.status === 'em_rota' && React.createElement('div', { className: `border-2 rounded-2xl p-6 ${minhaPosicao.corrida_unica ? 'bg-yellow-50 border-yellow-300' : 'bg-green-50 border-green-300'}` },
-                React.createElement('div', { className: 'flex items-center gap-4 mb-4' }, React.createElement('span', { className: 'text-5xl' }, minhaPosicao.corrida_unica ? '👑' : '🏍️'), React.createElement('div', null, React.createElement('h2', { className: `text-xl font-bold ${minhaPosicao.corrida_unica ? 'text-yellow-800' : 'text-green-800'}` }, minhaPosicao.corrida_unica ? 'Corrida Única!' : 'Você está em Rota!'), React.createElement('p', { className: minhaPosicao.corrida_unica ? 'text-yellow-600' : 'text-green-600' }, `⏱️ ${formatarTempo(minhaPosicao.minutos_em_rota)} em serviço`), minhaPosicao.corrida_unica && React.createElement('p', { className: 'text-yellow-700 text-sm mt-1' }, `🎁 Ao retornar, volta para posição ${minhaPosicao.posicao_original}`))),
+                React.createElement('div', { className: 'flex items-center gap-4 mb-4' }, React.createElement('span', { className: 'text-5xl' }, minhaPosicao.corrida_unica ? '👑' : '🏍️'), React.createElement('div', null, React.createElement('h2', { className: `text-xl font-bold ${minhaPosicao.corrida_unica ? 'text-yellow-800' : 'text-green-800'}` }, minhaPosicao.corrida_unica ? 'Corrida Única!' : 'Você está em Rota!'), React.createElement('p', { className: minhaPosicao.corrida_unica ? 'text-yellow-600' : 'text-green-600' }, `⏱️ ${formatarTempo(minhaPosicao.minutos_em_rota)} em serviço`))),
+                // Mensagem fixa
+                React.createElement('div', { className: `rounded-xl p-4 mb-4 ${minhaPosicao.corrida_unica ? 'bg-yellow-100 border border-yellow-300' : 'bg-green-100 border border-green-300'}` },
+                    React.createElement('p', { className: `text-sm leading-relaxed ${minhaPosicao.corrida_unica ? 'text-yellow-800' : 'text-green-800'}` }, 
+                        minhaPosicao.corrida_unica 
+                            ? '👑 Seu roteiro já foi definido, e você saiu com apenas uma corrida! Não há possibilidade de novas coletas. Retire a mercadoria na expedição e boas entregas! O seu bônus já está adicionado!'
+                            : '🚀 Seu roteiro já foi definido, não há possibilidade de novas coletas. Retire a mercadoria na expedição e boas entregas!'
+                    ),
+                    minhaPosicao.corrida_unica && minhaPosicao.posicao_original && React.createElement('p', { className: 'text-yellow-700 text-sm mt-2 font-medium' }, `🎁 Ao retornar, você volta para a posição ${minhaPosicao.posicao_original}`)
+                ),
                 React.createElement('button', { onClick: entrarNaFila, disabled: !podeChekin, className: `w-full py-4 rounded-xl font-bold text-lg ${!podeChekin ? 'bg-gray-300 text-gray-500' : minhaPosicao.corrida_unica ? 'bg-yellow-600 text-white hover:bg-yellow-700' : 'bg-green-600 text-white hover:bg-green-700'}` }, minhaPosicao.corrida_unica ? '👑 Retornar com Prioridade' : '🔄 Retornar para a Fila')
             ),
             minhaPosicao?.status === 'aguardando' && React.createElement('div', { className: 'bg-blue-50 border-2 border-blue-300 rounded-2xl p-6' },
