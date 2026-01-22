@@ -23,6 +23,8 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
     const [gpsStatus, setGpsStatus] = React.useState('verificando');
     const [minhaLocalizacao, setMinhaLocalizacao] = React.useState(null);
     const [distanciaCentral, setDistanciaCentral] = React.useState(null);
+    const [notificacao, setNotificacao] = React.useState(null);
+    const [mostrarNotificacao, setMostrarNotificacao] = React.useState(false);
     const isAdmin = ['admin', 'admin_master'].includes(usuario?.role);
 
     // BUSCA ENDEREÇO GOOGLE
@@ -81,13 +83,15 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
     const removerDaFila = async (cod) => { const obs=window.prompt('Motivo (opcional):'); if(obs===null)return; try{ const r=await fetchAuth(`${apiUrl}/filas/remover`,{method:'POST',body:JSON.stringify({cod_profissional:cod,central_id:centralSelecionada.id,observacao:obs})}); const d=await r.json(); if(d.success){ showToast('Removido!','success'); carregarFila(centralSelecionada.id); } }catch(e){ showToast('Erro','error'); } };
 
     // AÇÕES USER
-    const entrarNaFila = async () => { if(!minhaLocalizacao){ showToast('Aguarde GPS','error'); solicitarGPS(); return; } try{ const r=await fetchAuth(`${apiUrl}/filas/entrar`,{method:'POST',body:JSON.stringify({latitude:minhaLocalizacao.latitude,longitude:minhaLocalizacao.longitude})}); const d=await r.json(); if(d.success){ showToast(`Entrou! Posição: ${d.posicao}`,'success'); carregarMinhaPosicao(); }else{ showToast(d.mensagem||d.error||'Erro','error'); } }catch(e){ showToast('Erro','error'); } };
+    const entrarNaFila = async () => { if(!minhaLocalizacao){ showToast('Aguarde GPS','error'); solicitarGPS(); return; } try{ const r=await fetchAuth(`${apiUrl}/filas/entrar`,{method:'POST',body:JSON.stringify({latitude:minhaLocalizacao.latitude,longitude:minhaLocalizacao.longitude})}); const d=await r.json(); if(d.success){ showToast(d.prioridade ? `👑 Retornou com prioridade! Posição: ${d.posicao}` : `Entrou! Posição: ${d.posicao}`,'success'); carregarMinhaPosicao(); }else{ showToast(d.mensagem||d.error||'Erro','error'); } }catch(e){ showToast('Erro','error'); } };
     const sairDaFila = async () => { if(!window.confirm('Sair da fila?'))return; try{ const r=await fetchAuth(`${apiUrl}/filas/sair`,{method:'POST'}); const d=await r.json(); if(d.success){ showToast('Saiu!','success'); carregarMinhaPosicao(); } }catch(e){ showToast('Erro','error'); } };
+    const buscarNotificacao = async () => { try{ const r=await fetchAuth(`${apiUrl}/filas/minha-notificacao`); const d=await r.json(); if(d.success && d.tem_notificacao){ setNotificacao(d.notificacao); setMostrarNotificacao(true); } }catch(e){} };
+    const marcarNotificacaoLida = async () => { try{ await fetchAuth(`${apiUrl}/filas/notificacao-lida`,{method:'POST'}); setMostrarNotificacao(false); setNotificacao(null); }catch(e){} };
 
     // EFFECTS
     React.useEffect(() => { if(isAdmin){ carregarCentrais(); carregarProfissionais(); }else{ carregarMinhaCentral(); solicitarGPS(); } }, []);
     React.useEffect(() => { if(!isAdmin||!centralSelecionada)return; carregarFila(centralSelecionada.id); carregarVinculos(centralSelecionada.id); const i=setInterval(()=>carregarFila(centralSelecionada.id),5000); return()=>clearInterval(i); }, [centralSelecionada]);
-    React.useEffect(() => { if(isAdmin||!minhaCentral)return; carregarMinhaPosicao(); const i=setInterval(()=>{carregarMinhaPosicao();solicitarGPS();},10000); return()=>clearInterval(i); }, [minhaCentral]);
+    React.useEffect(() => { if(isAdmin||!minhaCentral)return; carregarMinhaPosicao(); buscarNotificacao(); const i=setInterval(()=>{carregarMinhaPosicao();solicitarGPS();buscarNotificacao();},10000); return()=>clearInterval(i); }, [minhaCentral]);
     React.useEffect(() => { if(abaAtiva==='relatorios'&&centralSelecionada){ carregarEstatisticas(centralSelecionada.id); carregarHistorico(centralSelecionada.id); } }, [abaAtiva,centralSelecionada,filtroData]);
     React.useEffect(() => { if(minhaLocalizacao&&minhaCentral?.latitude&&minhaCentral?.longitude){ setDistanciaCentral(Math.round(calcularDistanciaHaversine(minhaLocalizacao.latitude,minhaLocalizacao.longitude,parseFloat(minhaCentral.latitude),parseFloat(minhaCentral.longitude)))); } }, [minhaLocalizacao,minhaCentral]);
     React.useEffect(() => { if(modalCentral){ if(modalCentral.id){ setEnderecoValidado(true); setCoordenadasEncontradas({latitude:modalCentral.latitude,longitude:modalCentral.longitude,enderecoFormatado:modalCentral.endereco}); }else{ setEnderecoValidado(false); setCoordenadasEncontradas(null); } } }, [modalCentral]);
@@ -216,6 +220,20 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
     const podeChekin = gpsStatus === 'permitido' && (distanciaCentral === null || distanciaCentral <= minhaCentral.raio_metros);
     
     return React.createElement('div', { className: 'max-w-lg mx-auto p-4 space-y-6' },
+        // Modal de Notificação
+        mostrarNotificacao && notificacao && React.createElement('div', { className: 'fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50' },
+            React.createElement('div', { className: `rounded-2xl p-6 max-w-md w-full shadow-2xl ${notificacao.tipo === 'corrida_unica' ? 'bg-gradient-to-br from-yellow-400 to-orange-500' : 'bg-gradient-to-br from-green-400 to-green-600'}` },
+                React.createElement('div', { className: 'text-center text-white' },
+                    React.createElement('span', { className: 'text-6xl block mb-4' }, notificacao.tipo === 'corrida_unica' ? '👑' : '🚀'),
+                    React.createElement('h2', { className: 'text-xl font-bold mb-4' }, notificacao.tipo === 'corrida_unica' ? 'CORRIDA ÚNICA!' : 'ROTEIRO DESPACHADO!'),
+                    React.createElement('p', { className: 'text-lg mb-6 leading-relaxed' }, notificacao.mensagem),
+                    React.createElement('button', { 
+                        onClick: marcarNotificacaoLida, 
+                        className: 'w-full py-4 bg-white text-gray-800 rounded-xl font-bold text-lg hover:bg-gray-100'
+                    }, '✅ Entendido!')
+                )
+            )
+        ),
         React.createElement('div', { className: 'bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl p-4 text-white shadow-lg' },
             React.createElement('div', { className: 'flex items-center gap-3 mb-2' }, React.createElement('span', { className: 'text-2xl' }, '📍'), React.createElement('div', null, React.createElement('h1', { className: 'text-lg font-bold' }, minhaCentral.central_nome), React.createElement('p', { className: 'text-purple-200 text-xs' }, minhaCentral.endereco))),
             React.createElement('div', { className: `flex items-center gap-2 p-2 rounded-lg ${gpsStatus === 'permitido' ? 'bg-green-500/20' : gpsStatus === 'negado' ? 'bg-red-500/20' : 'bg-yellow-500/20'}` },
