@@ -34,14 +34,29 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
         if (isAdmin) return; // Admin não precisa de notificações de motoboy
         
         const token = localStorage.getItem('token');
-        if (!token) return;
+        if (!token) {
+            console.log('⚠️ [Filas] Sem token para WebSocket');
+            return;
+        }
         
         // Determinar URL do WebSocket
+        // apiUrl exemplo: "https://tutts-backend-production.up.railway.app/api"
+        // Precisamos extrair: "tutts-backend-production.up.railway.app"
+        let wsHost;
+        try {
+            const urlObj = new URL(apiUrl);
+            wsHost = urlObj.host; // Pega host sem protocolo e sem path
+        } catch (e) {
+            // Fallback: remover manualmente
+            wsHost = apiUrl.replace(/^https?:\/\//, '').replace(/\/api.*$/, '').replace(/\/$/, '');
+        }
+        
         const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsHost = apiUrl.replace(/^https?:\/\//, '').replace(/\/api$/, '').replace(/\/$/, '');
         const wsUrl = `${wsProtocol}//${wsHost}/ws/filas`;
         
         console.log('🔌 [Filas] Conectando WebSocket:', wsUrl);
+        console.log('🔌 [Filas] apiUrl original:', apiUrl);
+        console.log('🔌 [Filas] wsHost extraído:', wsHost);
         
         try {
             wsRef.current = new WebSocket(wsUrl);
@@ -97,15 +112,19 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
                 }
             };
             
-            wsRef.current.onclose = () => {
-                console.log('🔌 [Filas] WebSocket desconectado');
+            wsRef.current.onclose = (event) => {
+                console.log('🔌 [Filas] WebSocket desconectado. Code:', event.code, 'Reason:', event.reason);
                 setWsConectado(false);
-                // Reconectar após 5 segundos
-                setTimeout(conectarWebSocket, 5000);
+                // Reconectar após 5 segundos (apenas se não foi fechamento intencional)
+                if (event.code !== 1000) {
+                    setTimeout(conectarWebSocket, 5000);
+                }
             };
             
             wsRef.current.onerror = (error) => {
                 console.error('❌ [Filas] Erro WebSocket:', error);
+                console.error('❌ [Filas] URL tentada:', wsUrl);
+                setWsConectado(false);
             };
             
         } catch (e) {
@@ -172,15 +191,19 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
     
     // Conectar WebSocket ao montar (apenas para motoboys)
     React.useEffect(() => {
-        if (!isAdmin) {
-            conectarWebSocket();
+        if (!isAdmin && apiUrl) {
+            // Pequeno delay para garantir que tudo está montado
+            const timer = setTimeout(() => {
+                conectarWebSocket();
+            }, 1000);
+            return () => {
+                clearTimeout(timer);
+                if (wsRef.current) {
+                    wsRef.current.close(1000, 'Componente desmontado');
+                }
+            };
         }
-        return () => {
-            if (wsRef.current) {
-                wsRef.current.close();
-            }
-        };
-    }, []);
+    }, [apiUrl]);
 
     // BUSCA ENDEREÇO GOOGLE
     const buscarEndereco = async (endereco) => {
@@ -836,9 +859,19 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
                 gpsStatus === 'negado' && React.createElement('button', { onClick: solicitarGPS, className: 'px-2 py-1 bg-white/20 rounded-lg text-xs' }, 'Tentar')
             ),
             // ===== INDICADOR DE CONEXÃO WEBSOCKET =====
-            React.createElement('div', { className: `flex items-center gap-2 mt-2 p-2 rounded-lg ${wsConectado ? 'bg-green-500/20' : 'bg-orange-500/20'}` },
+            React.createElement('div', { 
+                className: `flex items-center gap-2 mt-2 p-2 rounded-lg cursor-pointer ${wsConectado ? 'bg-green-500/20' : 'bg-orange-500/20'}`,
+                onClick: () => {
+                    if (!wsConectado) {
+                        console.log('🔄 [Filas] Reconectando manualmente...');
+                        conectarWebSocket();
+                    }
+                }
+            },
                 React.createElement('span', { className: 'text-sm' }, wsConectado ? '🔔' : '🔕'),
-                React.createElement('p', { className: 'text-xs' }, wsConectado ? 'Notificações ativas' : 'Conectando notificações...')
+                React.createElement('p', { className: 'text-xs' }, 
+                    wsConectado ? 'Notificações ativas' : 'Toque para reconectar'
+                )
             )
         ),
         // CONTEÚDO PRINCIPAL
