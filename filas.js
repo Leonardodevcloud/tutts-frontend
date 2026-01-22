@@ -28,7 +28,7 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
 
     // ==================== HELPERS ====================
     const getAuthHeaders = () => ({
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Authorization': `Bearer ${sessionStorage.getItem('tutts_token')}`,
         'Content-Type': 'application/json'
     });
 
