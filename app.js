@@ -7227,7 +7227,7 @@ const hideLoadingScreen = () => {
                 }
                 s(!1)
             } else ja("Preencha todos os campos", "error")
-        }, Wl = ["Ajuste de Retorno", "Ajuste de Pedágio", "Ajuste Simões Filho (Salvador-BA)"], Zl = (e, t = 1920, a = .85) => new Promise((l, r) => {
+        }, Wl = ["Ajuste de Retorno", "Ajuste de Pedágio"], Zl = (e, t = 1920, a = .85) => new Promise((l, r) => {
             const o = new FileReader;
             o.onload = e => {
                 const o = new Image;
@@ -8508,7 +8508,7 @@ const hideLoadingScreen = () => {
             className: "w-full px-4 py-3 border rounded-lg"
         }, React.createElement("option", {
             value: ""
-        }, "Selecione o motivo"), React.createElement("option", null, "Ajuste de Retorno"), React.createElement("option", null, "Ajuste de Pedágio"), React.createElement("option", null, "Ajuste Simões Filho (Salvador-BA)")), Wl.includes(p.motivo) && React.createElement("div", {
+        }, "Selecione o motivo"), React.createElement("option", null, "Ajuste de Retorno"), React.createElement("option", null, "Ajuste de Pedágio"), React.createElement("option", null, "Ajustes Simões Filho e Camaçari")), Wl.includes(p.motivo) && React.createElement("div", {
             className: "border-2 border-dashed border-orange-300 bg-orange-50 rounded-lg p-4"
         }, React.createElement("p", {
             className: "text-sm font-bold text-orange-800 mb-2"
@@ -18103,7 +18103,7 @@ const hideLoadingScreen = () => {
                 pendingFilter: e
             }),
             className: "px-4 py-2 rounded-lg font-semibold " + ((p.pendingFilter || "all") === e ? "atrasados" === e ? "bg-red-600 text-white" : "bg-purple-600 text-white" : "bg-gray-100")
-        }, "all" === e && `📋 Todos (${j.filter(e=>"pendente"===e.status).length})`, "atrasados" === e && `🚨 Atrasados (${j.filter(e=>"pendente"===e.status&&Date.now()-new Date(e.created_at).getTime()>=864e5).length})`, "retorno" === e && `🔄 Retorno (${j.filter(e=>"pendente"===e.status&&"Ajuste de Retorno"===e.motivo).length})`, "ponto1" === e && `📍 Ponto 1 (${j.filter(e=>"pendente"===e.status&&e.motivo?.includes("Ponto 1")).length})`, "pedagio" === e && `🛣️ Pedágio (${j.filter(e=>"pendente"===e.status&&e.motivo?.includes("Pedágio")).length})`, "simoesfilho" === e && `🏭 Simões Filho (${j.filter(e=>"pendente"===e.status&&e.motivo?.includes("Simões Filho")).length})`))), React.createElement("div", {
+        }, "all" === e && `📋 Todos (${j.filter(e=>"pendente"===e.status).length})`, "atrasados" === e && `🚨 Atrasados (${j.filter(e=>"pendente"===e.status&&Date.now()-new Date(e.created_at).getTime()>=864e5).length})`, "retorno" === e && `🔄 Retorno (${j.filter(e=>"pendente"===e.status&&"Ajuste de Retorno"===e.motivo).length})`, "ponto1" === e && `📍 Ponto 1 (${j.filter(e=>"pendente"===e.status&&e.motivo?.includes("Ponto 1")).length})`, "pedagio" === e && `🛣️ Pedágio (${j.filter(e=>"pendente"===e.status&&e.motivo?.includes("Pedágio")).length})`, "simoesfilho" === e && `🏭 Simões Filho/Camaçari (${j.filter(e=>"pendente"===e.status&&e.motivo?.includes("Simões Filho")).length})`))), React.createElement("div", {
             className: "grid md:grid-cols-2 lg:grid-cols-3 gap-3"
         }, j.filter(e => "pendente" === e.status && (!p.pendingFilter || "all" === p.pendingFilter || ("atrasados" === p.pendingFilter ? Date.now() - new Date(e.created_at).getTime() >= 864e5 : "retorno" === p.pendingFilter ? "Ajuste de Retorno" === e.motivo : "ponto1" === p.pendingFilter ? e.motivo?.includes("Ponto 1") : "simoesfilho" === p.pendingFilter ? e.motivo?.includes("Simões Filho") : "pedagio" !== p.pendingFilter || e.motivo?.includes("Pedágio")))).map(e => {
             const t = Date.now() - new Date(e.created_at).getTime(),
