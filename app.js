@@ -4430,7 +4430,7 @@ const hideLoadingScreen = () => {
         const calcularContadorRegressivo = (dataInicio) => {
             const hoje = new Date();
             hoje.setHours(0, 0, 0, 0);
-            const inicio = new Date(dataInicio);
+            const inicio = new Date(dataInicio?.split('T')[0] + "T12:00:00");
             inicio.setHours(0, 0, 0, 0);
             const diffTime = inicio - hoje;
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
