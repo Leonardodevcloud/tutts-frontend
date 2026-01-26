@@ -132,7 +132,7 @@
                                             aviso.regioes?.map((r, i) => React.createElement("span", {key: i, className: "px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs"}, "📍 ", r))
                                         ),
                                         React.createElement("div", {className: "flex flex-wrap gap-4 text-sm text-gray-600"},
-                                            React.createElement("span", null, "📅 ", new Date(aviso.data_inicio).toLocaleDateString("pt-BR"), " - ", new Date(aviso.data_fim).toLocaleDateString("pt-BR")),
+                                            React.createElement("span", null, "📅 ", new Date(aviso.data_inicio?.slice(0,10) + "T12:00:00").toLocaleDateString("pt-BR"), " - ", new Date(aviso.data_fim?.slice(0,10) + "T12:00:00").toLocaleDateString("pt-BR")),
                                             React.createElement("span", null, "🔄 ", aviso.recorrencia_tipo === "uma_vez" ? "Uma vez" : aviso.recorrencia_tipo === "diario" ? "Diário" : `A cada ${aviso.recorrencia_intervalo}h`),
                                             React.createElement("span", null, "👁️ ", aviso.total_visualizacoes || 0, " visualizações")
                                         )
@@ -450,7 +450,7 @@
                                                 React.createElement("div", null,
                                                     React.createElement("p", {className: "text-xs text-gray-500 font-medium"}, "Data de Início"),
                                                     React.createElement("p", {className: "font-bold text-gray-800"}, 
-                                                        new Date(op.data_inicio).toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })
+                                                        new Date(op.data_inicio?.split('T')[0] + "T12:00:00").toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })
                                                     )
                                                 ),
                                                 React.createElement("span", {
@@ -976,7 +976,7 @@
                                 
                                 // Calcular dias restantes
                                 const hoje = new Date();
-                                const dataConclusao = new Date(nec.data_conclusao);
+                                const dataConclusao = new Date(nec.data_conclusao?.split('T')[0] + "T12:00:00");
                                 const diasRestantes = Math.ceil((dataConclusao - hoje) / (1000 * 60 * 60 * 24));
                                 
                                 return React.createElement("div", {
@@ -1003,7 +1003,7 @@
                                                 React.createElement("div", {className: "flex items-center gap-4 text-sm text-gray-600"},
                                                     React.createElement("span", {className: "flex items-center gap-1"},
                                                         "📅 Conclusão: ",
-                                                        React.createElement("strong", null, new Date(nec.data_conclusao).toLocaleDateString('pt-BR'))
+                                                        React.createElement("strong", null, new Date(nec.data_conclusao?.split('T')[0] + "T12:00:00").toLocaleDateString('pt-BR'))
                                                     ),
                                                     React.createElement("span", {
                                                         className: "px-2 py-1 rounded text-xs font-bold " +
@@ -2012,8 +2012,8 @@
                                     
                                     // Filtrar incentivos para este dia
                                     const incentivosNoDia = (incentivosData || []).filter(inc => {
-                                        const inicio = new Date(inc.data_inicio);
-                                        const fim = new Date(inc.data_fim);
+                                        const inicio = new Date(inc.data_inicio?.split('T')[0] + "T12:00:00");
+                                        const fim = new Date(inc.data_fim?.split('T')[0] + "T12:00:00");
                                         inicio.setHours(0,0,0,0);
                                         fim.setHours(23,59,59,999);
                                         return dataAtual >= inicio && dataAtual <= fim;
@@ -2022,7 +2022,7 @@
                                     // Filtrar operações que iniciam neste dia
                                     const operacoesNoDia = (operacoesData || []).filter(op => {
                                         if (!op.data_inicio) return false;
-                                        const inicio = new Date(op.data_inicio);
+                                        const inicio = new Date(op.data_inicio?.split('T')[0] + "T12:00:00");
                                         inicio.setHours(0,0,0,0);
                                         return dataAtual.getTime() === inicio.getTime();
                                     });
@@ -2143,8 +2143,8 @@
                                 todasDemandas.map((item, idx) => {
                                     const hoje = new Date();
                                     hoje.setHours(0,0,0,0);
-                                    const inicio = new Date(item.data_inicio);
-                                    const fim = item.data_fim ? new Date(item.data_fim) : inicio;
+                                    const inicio = new Date(item.data_inicio?.split('T')[0] + "T12:00:00");
+                                    const fim = item.data_fim ? new Date(item.data_fim?.split('T')[0] + "T12:00:00") : inicio;
                                     const isAtivo = item.status === 'ativo' && hoje >= inicio && hoje <= fim;
                                     const isVencendo = item.status === 'ativo' && fim >= hoje && fim <= new Date(hoje.getTime() + 7*24*60*60*1000);
                                     const isEncerrado = fim < hoje;
@@ -2174,7 +2174,7 @@
                                                         ),
                                                         // Informações da operação
                                                         React.createElement("div", {className: "flex flex-wrap gap-3 mt-2 text-sm text-gray-500"},
-                                                            React.createElement("span", null, "📅 Início: ", new Date(item.data_inicio).toLocaleDateString('pt-BR')),
+                                                            React.createElement("span", null, "📅 Início: ", new Date(item.data_inicio?.split('T')[0] + "T12:00:00").toLocaleDateString('pt-BR')),
                                                             React.createElement("span", null, "📍 ", item.regiao),
                                                             React.createElement("span", null, "🏍️ ", item.quantidade_motos, " moto(s)"),
                                                             item.possui_garantido && React.createElement("span", {className: "text-green-600"}, "💰 Garantido")
@@ -2237,7 +2237,7 @@
                                                     
                                                     // Informações básicas
                                                     React.createElement("div", {className: "flex flex-wrap gap-3 mt-2 text-sm text-gray-500"},
-                                                        React.createElement("span", null, "📅 ", new Date(item.data_inicio).toLocaleDateString('pt-BR'), " → ", new Date(item.data_fim).toLocaleDateString('pt-BR')),
+                                                        React.createElement("span", null, "📅 ", new Date(item.data_inicio?.split('T')[0] + "T12:00:00").toLocaleDateString('pt-BR'), " → ", new Date(item.data_fim?.split('T')[0] + "T12:00:00").toLocaleDateString('pt-BR')),
                                                         item.hora_inicio && item.hora_fim && React.createElement("span", null, "🕐 ", item.hora_inicio?.slice(0,5), " - ", item.hora_fim?.slice(0,5))
                                                     ),
                                                     
