@@ -89,6 +89,122 @@
             console.log("🔍 [DEBUG Indicações] Planilha carregada:", planilhaProfissionais?.length || 0, "profissionais");
         }
         
+        // ========== FUNÇÃO EXPORTAR VALIDAÇÃO EXCEL ==========
+        const exportarValidacaoExcel = () => {
+            const tipoFiltro = p.validacaoTipo || "solicitacao";
+            const dataInicio = p.validacaoDataInicio;
+            const dataFim = p.validacaoDataFim;
+            
+            // Aplicar os mesmos filtros da visualização
+            const dadosFiltrados = q.filter(item => {
+                if (!dataInicio && !dataFim) return true;
+                let dataComparacao;
+                if (tipoFiltro === "solicitacao") {
+                    if (!item.created_at) return false;
+                    dataComparacao = item.created_at.split("T")[0];
+                } else if (tipoFiltro === "lancamento") {
+                    if (!item.lancamento_at) return false;
+                    dataComparacao = item.lancamento_at.split("T")[0];
+                } else {
+                    if (!item.debito_plific_at) return false;
+                    dataComparacao = item.debito_plific_at.split("T")[0];
+                }
+                if (dataInicio && dataFim) return dataComparacao >= dataInicio && dataComparacao <= dataFim;
+                if (dataInicio) return dataComparacao >= dataInicio;
+                return dataComparacao <= dataFim;
+            });
+            
+            if (dadosFiltrados.length === 0) {
+                ja("Nenhum dado encontrado com os filtros selecionados", "warning");
+                return;
+            }
+            
+            const formatarDataExcel = (dataISO) => {
+                if (!dataISO) return "-";
+                const dt = new Date(dataISO);
+                return dt.toLocaleDateString("pt-BR") + " " + dt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+            };
+            
+            const formatarValorExcel = (valor) => parseFloat(valor || 0).toFixed(2).replace(".", ",");
+            
+            const traduzirStatus = (status) => {
+                const map = { "aprovado": "Aprovado", "aprovado_gratuidade": "Aprovado c/ Gratuidade", "rejeitado": "Rejeitado", "aguardando_aprovacao": "Aguardando" };
+                return map[status] || status || "-";
+            };
+            
+            const traduzirTipoFiltro = (tipo) => {
+                const map = { "solicitacao": "Data da Solicitação", "lancamento": "Data de Lançamento", "debito": "Data do Débito" };
+                return map[tipo] || tipo;
+            };
+            
+            // Estatísticas
+            const totalAprovadas = dadosFiltrados.filter(e => e.status === "aprovado" || e.status === "aprovado_gratuidade").length;
+            const totalSemGrat = dadosFiltrados.filter(e => e.status === "aprovado").length;
+            const totalComGrat = dadosFiltrados.filter(e => e.status === "aprovado_gratuidade").length;
+            const totalRejeitadas = dadosFiltrados.filter(e => e.status === "rejeitado").length;
+            const valorTotal = dadosFiltrados.filter(e => e.status?.includes("aprovado")).reduce((a, e) => a + parseFloat(e.requested_amount || 0), 0);
+            
+            // Construir dados Excel
+            const dadosExcel = [];
+            dadosExcel.push(["RELATÓRIO DE VALIDAÇÃO - TUTTS"]);
+            dadosExcel.push(["Gerado em:", new Date().toLocaleString("pt-BR")]);
+            dadosExcel.push(["Filtro:", traduzirTipoFiltro(tipoFiltro)]);
+            
+            if (dataInicio && dataFim && dataInicio === dataFim) {
+                dadosExcel.push(["Período:", new Date(dataInicio + "T12:00:00").toLocaleDateString("pt-BR")]);
+            } else if (dataInicio && dataFim) {
+                dadosExcel.push(["Período:", new Date(dataInicio + "T12:00:00").toLocaleDateString("pt-BR") + " até " + new Date(dataFim + "T12:00:00").toLocaleDateString("pt-BR")]);
+            } else {
+                dadosExcel.push(["Período:", "Todos"]);
+            }
+            
+            dadosExcel.push([]);
+            dadosExcel.push(["=== RESUMO ==="]);
+            dadosExcel.push(["Total Registros:", dadosFiltrados.length]);
+            dadosExcel.push(["Total Aprovadas:", totalAprovadas]);
+            dadosExcel.push(["Sem Gratuidade:", totalSemGrat]);
+            dadosExcel.push(["Com Gratuidade:", totalComGrat]);
+            dadosExcel.push(["Rejeitadas:", totalRejeitadas]);
+            dadosExcel.push(["Valor Total Aprovado:", "R$ " + formatarValorExcel(valorTotal)]);
+            dadosExcel.push(["Taxa (4.5%):", "R$ " + formatarValorExcel(valorTotal * 0.045)]);
+            dadosExcel.push([]);
+            dadosExcel.push([]);
+            
+            // Cabeçalho tabela
+            dadosExcel.push(["ID", "Código", "Nome", "CPF", "Data Solicitação", "Data Aprovação", "Data Lançamento", "Data Débito", "Valor Solicitado", "Valor Final", "Taxa", "Status", "Gratuidade", "OMIE"]);
+            
+            // Dados
+            dadosFiltrados.forEach(item => {
+                const valSolic = parseFloat(item.requested_amount || 0);
+                dadosExcel.push([
+                    item.id || "-",
+                    item.user_cod || "-",
+                    item.user_name || "-",
+                    item.cpf || "-",
+                    formatarDataExcel(item.created_at),
+                    formatarDataExcel(item.approved_at),
+                    formatarDataExcel(item.lancamento_at),
+                    formatarDataExcel(item.debito_plific_at),
+                    valSolic,
+                    parseFloat(item.final_amount || 0),
+                    valSolic * 0.045,
+                    traduzirStatus(item.status),
+                    item.has_gratuity ? "Sim" : "Não",
+                    item.conciliacao_omie ? "Sim" : "Não"
+                ]);
+            });
+            
+            // Criar e baixar Excel
+            const ws = XLSX.utils.aoa_to_sheet(dadosExcel);
+            ws["!cols"] = [{ wch: 8 }, { wch: 12 }, { wch: 30 }, { wch: 15 }, { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 14 }, { wch: 14 }, { wch: 12 }, { wch: 22 }, { wch: 12 }, { wch: 10 }];
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Validação");
+            const nomeArquivo = "Validacao_" + tipoFiltro + "_" + new Date().toISOString().split("T")[0].replace(/-/g, "") + ".xlsx";
+            XLSX.writeFile(wb, nomeArquivo);
+            ja("Exportação concluída: " + dadosFiltrados.length + " registros", "success");
+        };
+        // ========== FIM FUNÇÃO EXPORTAR ==========
+        
             return React.createElement("div", {
                 className: "min-h-screen bg-gray-50"
             }, i && React.createElement(Toast, i), n && React.createElement(LoadingOverlay, null), 
@@ -1042,7 +1158,10 @@
                     validacaoDataFim: ""
                 }),
                 className: "px-6 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300"
-            }, "🔄 Limpar"))), (() => {
+            }, "🔄 Limpar"), React.createElement("button", {
+                onClick: exportarValidacaoExcel,
+                className: "px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700"
+            }, "📥 Exportar Excel"))), (() => {
                 const e = p.validacaoTipo || "solicitacao",
                     t = p.validacaoDataInicio,
                     a = p.validacaoDataFim,
