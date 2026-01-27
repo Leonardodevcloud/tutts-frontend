@@ -269,7 +269,6 @@ const fetchAuth = async (url, options = {}, retryCount = 0) => {
 
 // Função helper para verificar permissões de módulo
 // Retorna true se o usuário tem acesso ao módulo
-// CORREÇÃO: Verificação rigorosa de permissões para admins
 function hasModuleAccess(user, moduleId) {
     if (!user) return false;
     
@@ -291,23 +290,21 @@ function hasModuleAccess(user, moduleId) {
         // Se não tem permissões configuradas, dar acesso a tudo
         if (!user.permissions) return true;
         
-        // Se hasConfig é false, significa que nunca foi configurado - dar acesso total
+        // Se hasConfig é false, significa que nunca foi configurado
         if (user.permissions.hasConfig === false) return true;
         
         // Se não existe o objeto modulos, dar acesso total
         if (!user.permissions.modulos) return true;
         
-        // CORREÇÃO CRÍTICA: Verificar se o módulo está EXPLICITAMENTE permitido
+        // Verificar permissão específica do módulo
         const perm = user.permissions.modulos[moduleId];
         
-        // Se hasConfig é true (foi configurado), então o módulo precisa estar como true
-        // Antes: undefined !== false retornava true (BUG!)
-        // Agora: só retorna true se perm === true
+        // CORREÇÃO: Se hasConfig é true, só permite se perm === true
         if (user.permissions.hasConfig === true) {
             return perm === true;
         }
         
-        // Fallback para casos de migração: se a permissão não é explicitamente false, tem acesso
+        // Fallback: se a permissão não é explicitamente false, tem acesso
         return perm !== false;
     }
     
@@ -6912,16 +6909,15 @@ const hideLoadingScreen = () => {
                 if (!e.ok) throw new Error("Credenciais inválidas");
                 const t = await e.json();
                 
-                // CORREÇÃO: Salvar token JWT ANTES de buscar permissões
+                // Salvar token JWT ANTES de buscar permissões
                 if (t.token) {
                     setToken(t.token);
                 }
-                // Salvar refresh token se retornado
                 if (t.refreshToken) {
                     setRefreshToken(t.refreshToken);
                 }
                 
-                // Carregar permissões se for admin (agora o token já está salvo)
+                // Carregar permissões se for admin
                 let perms = null;
                 if (t.role === "admin" || t.role === "admin_financeiro") {
                     try {
@@ -6931,7 +6927,6 @@ const hideLoadingScreen = () => {
                             const allowedMods = Array.isArray(permData.allowed_modules) ? permData.allowed_modules : [];
                             const allowedTabs = permData.allowed_tabs && typeof permData.allowed_tabs === 'object' ? permData.allowed_tabs : {};
                             
-                            // CORREÇÃO: hasConfig é true se há módulos OU abas configuradas
                             const hasConfig = allowedMods.length > 0 || Object.keys(allowedTabs).length > 0;
                             
                             perms = {
@@ -6939,7 +6934,6 @@ const hideLoadingScreen = () => {
                                 allowed_tabs: allowedTabs,
                                 hasConfig: hasConfig,
                                 modulos: {
-                                    // CORREÇÃO: Se hasConfig, só permite módulos explicitamente listados
                                     solicitacoes: !hasConfig || allowedMods.includes("solicitacoes"),
                                     financeiro: !hasConfig || allowedMods.includes("financeiro"),
                                     operacional: !hasConfig || allowedMods.includes("operacional"),
@@ -6952,12 +6946,10 @@ const hideLoadingScreen = () => {
                                 },
                                 abas: allowedTabs
                             };
-                            console.log("✅ Permissões carregadas:", perms);
-                        } else {
-                            console.log("⚠️ Erro ao carregar permissões:", permRes.status);
+                            console.log("Permissões carregadas:", perms);
                         }
                     } catch (err) {
-                        console.log("❌ Erro ao buscar permissões:", err);
+                        console.log("Sem permissões definidas, usando padrão");
                     }
                 }
                 o({
