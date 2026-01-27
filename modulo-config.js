@@ -1,6 +1,7 @@
 // ==================== MÓDULO CONFIG ====================
 // Arquivo: modulo-config.js
 // Carregado dinamicamente quando usuário acessa Configurações
+// VERSÃO CORRIGIDA - Sistema de permissões de abas restaurado
 
 (function() {
     'use strict';
@@ -140,13 +141,14 @@
                         React.createElement("div", null,
                             React.createElement("label", {className: "block text-sm font-semibold mb-1 text-gray-700"}, "Tipo de Usuário"),
                             React.createElement("select", {
-                                value: p.newUserRole || "user",
-                                onChange: function(e) { x({...p, newUserRole: e.target.value}); },
-                                className: "w-full px-4 py-2 border rounded-lg bg-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                                value: p.newRole || "user",
+                                onChange: function(e) { x({...p, newRole: e.target.value}); },
+                                className: "w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                             },
-                                React.createElement("option", {value: "user"}, "👤 Usuário Comum (Entregador)"),
-                                React.createElement("option", {value: "admin"}, "👑 Administrador"),
-                                React.createElement("option", {value: "admin_financeiro"}, "💰 Admin Financeiro")
+                                React.createElement("option", {value: "user"}, "👤 Usuário (Motoboy)"),
+                                React.createElement("option", {value: "admin"}, "👑 Admin"),
+                                React.createElement("option", {value: "admin_financeiro"}, "💰 Admin Financeiro"),
+                                "admin_master" === l.role && React.createElement("option", {value: "admin_master"}, "👑 Master")
                             )
                         )
                     ),
@@ -156,195 +158,157 @@
                                 ja("Preencha todos os campos", "error");
                                 return;
                             }
+                            if (p.newUserPass.length < 4) {
+                                ja("Senha muito curta (mín. 4)", "error");
+                                return;
+                            }
                             s(true);
                             try {
-                                const res = await fetch(API_URL + "/users/register", {
+                                const res = await fetchAuth(API_URL + "/users/register", {
                                     method: "POST",
                                     headers: {"Content-Type": "application/json"},
                                     body: JSON.stringify({
-                                        fullName: p.newUserName,
                                         codProfissional: p.newUserCod,
+                                        fullName: p.newUserName,
                                         password: p.newUserPass,
-                                        role: p.newUserRole || "user"
+                                        role: p.newRole || "user"
                                     })
                                 });
                                 if (res.ok) {
-                                    ja("✅ Usuário criado com sucesso!", "success");
-                                    x({...p, newUserName: "", newUserCod: "", newUserPass: "", newUserRole: "user"});
+                                    ja("✅ Usuário criado!", "success");
+                                    x({...p, newUserName: "", newUserCod: "", newUserPass: "", newRole: "user"});
                                     Ia();
                                 } else {
-                                    const data = await res.json();
-                                    ja("❌ " + (data.error || "Erro ao criar"), "error");
+                                    const err = await res.json();
+                                    ja(err.error || "Erro ao criar usuário", "error");
                                 }
                             } catch (err) {
-                                ja("❌ Erro ao criar usuário", "error");
+                                ja("Erro de conexão", "error");
                             }
                             s(false);
                         },
-                        className: "w-full px-6 py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition-colors"
-                    }, "➕ Criar Usuário")
+                        className: "w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg font-semibold hover:from-purple-700 hover:to-indigo-700 transition-all"
+                    }, "✅ Criar Usuário")
                 ),
                 
-                // ===== SEÇÃO DE SETORES =====
+                // Gerenciamento de Setores
                 React.createElement("div", {className: "bg-white rounded-xl shadow-sm border p-6 mb-6"},
                     React.createElement("div", {className: "flex items-center justify-between mb-4"},
                         React.createElement("h2", {className: "text-lg font-bold flex items-center gap-2"},
                             React.createElement("span", null, "🏢"),
-                            "Setores (",
-                            setores.length,
-                            ")"
+                            "Setores"
                         ),
                         React.createElement("button", {
-                            onClick: () => {
+                            onClick: function() {
                                 setSetorEdit(null);
-                                setSetorForm({ nome: '', descricao: '', cor: '#6366f1' });
+                                setSetorForm({nome: "", cor: "#6366f1", ativo: true});
                                 setShowSetorModal(true);
                             },
-                            className: "px-4 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors text-sm"
+                            className: "px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700"
                         }, "➕ Novo Setor")
                     ),
                     setores.length === 0 
-                        ? React.createElement("p", {className: "text-gray-500 text-center py-4"}, 
-                            "Nenhum setor cadastrado. Crie setores para organizar os usuários."
-                        )
-                        : React.createElement("div", {className: "space-y-3"},
-                            setores.map(setor => {
-                                const usuariosDoSetor = A.filter(u => u.setor_id === setor.id);
-                                const isExpandido = setorExpandido === setor.id;
-                                
+                        ? React.createElement("p", {className: "text-gray-500 text-center py-4"}, "Nenhum setor cadastrado")
+                        : React.createElement("div", {className: "space-y-2"},
+                            setores.map(function(setor) {
+                                const isExpanded = setorExpandido === setor.id;
+                                const usersInSetor = A.filter(u => u.setor_id === setor.id);
                                 return React.createElement("div", {
                                     key: setor.id,
-                                    className: "border rounded-lg overflow-hidden transition-all " + (isExpandido ? "ring-2 ring-indigo-500" : "")
+                                    className: "border rounded-lg overflow-hidden"
                                 },
                                     React.createElement("div", {
-                                        className: "p-4 flex items-center justify-between hover:bg-gray-50 cursor-pointer",
-                                        onClick: () => setSetorExpandido(isExpandido ? null : setor.id)
+                                        className: "flex items-center justify-between p-3 cursor-pointer hover:bg-gray-50",
+                                        onClick: () => setSetorExpandido(isExpanded ? null : setor.id)
                                     },
                                         React.createElement("div", {className: "flex items-center gap-3"},
                                             React.createElement("div", {
-                                                className: "w-4 h-10 rounded",
-                                                style: { backgroundColor: setor.cor || '#6366f1' }
+                                                className: "w-4 h-4 rounded-full",
+                                                style: {backgroundColor: setor.cor || "#6366f1"}
                                             }),
-                                            React.createElement("div", null,
-                                                React.createElement("p", {className: "font-semibold flex items-center gap-2"},
-                                                    setor.nome,
-                                                    !setor.ativo && React.createElement("span", {className: "text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded"}, "Inativo")
-                                                ),
-                                                React.createElement("p", {className: "text-sm text-gray-500"},
-                                                    usuariosDoSetor.length, " usuário(s)",
-                                                    setor.descricao ? " • " + setor.descricao : ""
-                                                )
-                                            )
+                                            React.createElement("span", {className: "font-medium"}, setor.nome),
+                                            React.createElement("span", {
+                                                className: "text-xs px-2 py-0.5 rounded " + (setor.ativo ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500")
+                                            }, setor.ativo ? "Ativo" : "Inativo"),
+                                            React.createElement("span", {className: "text-xs text-gray-500"}, usersInSetor.length, " usuários")
                                         ),
                                         React.createElement("div", {className: "flex items-center gap-2"},
                                             React.createElement("button", {
-                                                onClick: (e) => {
+                                                onClick: function(e) {
                                                     e.stopPropagation();
                                                     setSetorEdit(setor);
-                                                    setSetorForm({ nome: setor.nome, descricao: setor.descricao || '', cor: setor.cor || '#6366f1' });
+                                                    setSetorForm({nome: setor.nome, cor: setor.cor || "#6366f1", ativo: setor.ativo});
                                                     setShowSetorModal(true);
                                                 },
-                                                className: "px-3 py-1.5 bg-blue-100 text-blue-700 rounded font-semibold hover:bg-blue-200 text-sm"
+                                                className: "p-1.5 hover:bg-gray-200 rounded"
                                             }, "✏️"),
                                             React.createElement("button", {
-                                                onClick: (e) => { e.stopPropagation(); excluirSetor(setor); },
-                                                className: "px-3 py-1.5 bg-red-100 text-red-700 rounded font-semibold hover:bg-red-200 text-sm"
+                                                onClick: function(e) {
+                                                    e.stopPropagation();
+                                                    if (confirm("Excluir setor " + setor.nome + "?")) {
+                                                        excluirSetor(setor.id);
+                                                    }
+                                                },
+                                                className: "p-1.5 hover:bg-red-100 rounded text-red-600"
                                             }, "🗑️"),
-                                            React.createElement("span", {
-                                                className: "text-gray-400 text-xl ml-2 transition-transform " + (isExpandido ? "rotate-180" : "")
-                                            }, "▼")
+                                            React.createElement("span", {className: "text-gray-400"}, isExpanded ? "▼" : "▶")
                                         )
                                     ),
-                                    
-                                    isExpandido && React.createElement("div", {className: "border-t bg-gray-50 p-4"},
-                                        React.createElement("p", {className: "text-sm font-semibold text-gray-600 mb-3"}, 
-                                            "👥 Usuários neste setor:"
-                                        ),
-                                        usuariosDoSetor.length === 0
-                                            ? React.createElement("p", {className: "text-sm text-gray-400 italic"}, 
-                                                "Nenhum usuário vinculado a este setor"
-                                            )
-                                            : React.createElement("div", {className: "space-y-2"},
-                                                usuariosDoSetor.map(user => 
-                                                    React.createElement("div", {
-                                                        key: user.codProfissional,
-                                                        className: "flex items-center justify-between bg-white p-3 rounded-lg border"
-                                                    },
-                                                        React.createElement("div", {className: "flex items-center gap-3"},
-                                                            React.createElement("div", {
-                                                                className: "w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm " +
-                                                                    (user.role === "admin_master" ? "bg-purple-600" :
-                                                                     user.role === "admin" ? "bg-blue-600" :
-                                                                     user.role === "admin_financeiro" ? "bg-green-600" : "bg-gray-500")
-                                                            }, user.fullName ? user.fullName.charAt(0).toUpperCase() : "?"),
-                                                            React.createElement("div", null,
-                                                                React.createElement("p", {className: "font-medium text-sm"}, user.fullName),
-                                                                React.createElement("p", {className: "text-xs text-gray-500"}, 
-                                                                    "COD: ", user.codProfissional
-                                                                )
-                                                            )
-                                                        ),
-                                                        React.createElement("button", {
-                                                            onClick: async () => {
-                                                                if (confirm('Remover "' + user.fullName + '" do setor "' + setor.nome + '"?')) {
-                                                                    await atualizarSetorUsuario(user.codProfissional, null);
-                                                                }
-                                                            },
-                                                            className: "px-3 py-1.5 bg-red-100 text-red-600 rounded text-sm font-medium hover:bg-red-200"
-                                                        }, "✕ Remover")
-                                                    )
+                                    isExpanded && usersInSetor.length > 0 && React.createElement("div", {className: "border-t bg-gray-50 p-3"},
+                                        React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-3 gap-2"},
+                                            usersInSetor.map(u => 
+                                                React.createElement("div", {key: u.codProfissional, className: "text-sm text-gray-600"},
+                                                    "• ", u.fullName
                                                 )
                                             )
+                                        )
                                     )
                                 );
                             })
                         )
                 ),
                 
-                // Modal de Criar/Editar Setor
+                // Modal de Setor
                 showSetorModal && React.createElement("div", {
-                    className: "fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4",
-                    onClick: (e) => { if (e.target === e.currentTarget) setShowSetorModal(false); }
+                    className: "fixed inset-0 bg-black/50 flex items-center justify-center z-50",
+                    onClick: () => setShowSetorModal(false)
                 },
-                    React.createElement("div", {className: "bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden"},
-                        React.createElement("div", {className: "bg-indigo-600 text-white p-4"},
-                            React.createElement("h3", {className: "text-lg font-bold"}, setorEdit ? "✏️ Editar Setor" : "🏢 Novo Setor")
-                        ),
-                        React.createElement("div", {className: "p-4 space-y-4"},
+                    React.createElement("div", {
+                        className: "bg-white rounded-xl p-6 w-full max-w-md mx-4",
+                        onClick: e => e.stopPropagation()
+                    },
+                        React.createElement("h3", {className: "text-lg font-bold mb-4"}, setorEdit ? "✏️ Editar Setor" : "➕ Novo Setor"),
+                        React.createElement("div", {className: "space-y-4"},
                             React.createElement("div", null,
-                                React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-1"}, "Nome *"),
+                                React.createElement("label", {className: "block text-sm font-semibold mb-1"}, "Nome"),
                                 React.createElement("input", {
                                     type: "text",
                                     value: setorForm.nome,
-                                    onChange: e => setSetorForm(prev => ({...prev, nome: e.target.value})),
-                                    placeholder: "Ex: Operacional, Financeiro, Logística...",
-                                    className: "w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
+                                    onChange: e => setSetorForm({...setorForm, nome: e.target.value}),
+                                    className: "w-full px-3 py-2 border rounded-lg",
+                                    placeholder: "Nome do setor"
                                 })
                             ),
                             React.createElement("div", null,
-                                React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-1"}, "Descrição"),
+                                React.createElement("label", {className: "block text-sm font-semibold mb-1"}, "Cor"),
                                 React.createElement("input", {
-                                    type: "text",
-                                    value: setorForm.descricao,
-                                    onChange: e => setSetorForm(prev => ({...prev, descricao: e.target.value})),
-                                    placeholder: "Descrição opcional do setor",
-                                    className: "w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
+                                    type: "color",
+                                    value: setorForm.cor,
+                                    onChange: e => setSetorForm({...setorForm, cor: e.target.value}),
+                                    className: "w-full h-10 rounded-lg cursor-pointer"
                                 })
                             ),
-                            React.createElement("div", null,
-                                React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-1"}, "Cor"),
-                                React.createElement("div", {className: "flex items-center gap-2"},
-                                    React.createElement("input", {
-                                        type: "color",
-                                        value: setorForm.cor,
-                                        onChange: e => setSetorForm(prev => ({...prev, cor: e.target.value})),
-                                        className: "w-12 h-10 rounded cursor-pointer"
-                                    }),
-                                    React.createElement("span", {className: "text-sm text-gray-500"}, setorForm.cor)
-                                )
+                            React.createElement("label", {className: "flex items-center gap-2"},
+                                React.createElement("input", {
+                                    type: "checkbox",
+                                    checked: setorForm.ativo,
+                                    onChange: e => setSetorForm({...setorForm, ativo: e.target.checked}),
+                                    className: "w-4 h-4 rounded"
+                                }),
+                                React.createElement("span", {className: "text-sm"}, "Setor ativo")
                             )
                         ),
-                        React.createElement("div", {className: "p-4 bg-gray-50 flex gap-3"},
+                        React.createElement("div", {className: "flex gap-3 mt-6"},
                             React.createElement("button", {
                                 onClick: () => setShowSetorModal(false),
                                 className: "flex-1 px-4 py-2 border rounded-lg font-semibold hover:bg-gray-100"
@@ -470,7 +434,7 @@
                 )
             ),
             
-            // ==================== TAB PERMISSÕES ====================
+            // ==================== TAB PERMISSÕES ADM ====================
             p.configTab === "permissoes" && verificarPermissaoAba("permissoes") && React.createElement("div", null,
                 // Carregar permissões automaticamente
                 !p.permsLoaded && (function() {
@@ -484,12 +448,23 @@
                                     const mods = Array.isArray(adm.allowed_modules) ? adm.allowed_modules : [];
                                     const tabs = adm.allowed_tabs && typeof adm.allowed_tabs === 'object' ? adm.allowed_tabs : {};
                                     const modulosObj = {};
+                                    
+                                    // CORREÇÃO: Se não há módulos configurados, marcar como "não configurado"
+                                    // Se há módulos, usar APENAS os que estão na lista
                                     SISTEMA_MODULOS_CONFIG.forEach(function(mod) {
-                                        modulosObj[mod.id] = mods.length === 0 || mods.includes(mod.id);
+                                        if (mods.length === 0) {
+                                            // Sem configuração = acesso total
+                                            modulosObj[mod.id] = true;
+                                        } else {
+                                            // Com configuração = APENAS os listados têm acesso
+                                            modulosObj[mod.id] = mods.includes(mod.id);
+                                        }
                                     });
+                                    
                                     permsObj[adm.cod_profissional] = {
                                         modulos: modulosObj,
-                                        abas: tabs
+                                        abas: tabs,
+                                        hasConfig: mods.length > 0
                                     };
                                 });
                                 x(prev => ({...prev, adminPerms: permsObj, permsLoaded: true}));
@@ -522,11 +497,16 @@
                                                 const tabs = adm.allowed_tabs && typeof adm.allowed_tabs === 'object' ? adm.allowed_tabs : {};
                                                 const modulosObj = {};
                                                 SISTEMA_MODULOS_CONFIG.forEach(function(mod) {
-                                                    modulosObj[mod.id] = mods.length === 0 || mods.includes(mod.id);
+                                                    if (mods.length === 0) {
+                                                        modulosObj[mod.id] = true;
+                                                    } else {
+                                                        modulosObj[mod.id] = mods.includes(mod.id);
+                                                    }
                                                 });
                                                 permsObj[adm.cod_profissional] = {
                                                     modulos: modulosObj,
-                                                    abas: tabs
+                                                    abas: tabs,
+                                                    hasConfig: mods.length > 0
                                                 };
                                             });
                                             x({...p, adminPerms: permsObj, permsLoaded: true});
@@ -552,10 +532,13 @@
                                         
                                         if (!perms) continue;
                                         
+                                        // CORREÇÃO: Apenas incluir módulos que estão EXPLICITAMENTE true
                                         const allowedModules = [];
                                         const mods = perms.modulos || {};
                                         SISTEMA_MODULOS_CONFIG.forEach(function(mod) {
-                                            if (mods[mod.id] !== false) allowedModules.push(mod.id);
+                                            if (mods[mod.id] === true) {
+                                                allowedModules.push(mod.id);
+                                            }
                                         });
                                         
                                         const allowedTabs = perms.abas || {};
@@ -595,7 +578,7 @@
                             const isExpanded = p.expandedAdmin === cod;
                             
                             const modulosConfig = SISTEMA_MODULOS_CONFIG;
-                            const modulosAtivos = modulosConfig.filter(function(m) { return mods[m.id] !== false; }).length;
+                            const modulosAtivos = modulosConfig.filter(function(m) { return mods[m.id] === true; }).length;
                             const abasRestritas = Object.keys(abas).filter(function(k) { return abas[k] === false; }).length;
                             
                             return React.createElement("div", {
@@ -629,33 +612,99 @@
                                     )
                                 ),
                                 
+                                // ==================== SEÇÃO EXPANDIDA COM MÓDULOS E ABAS ====================
                                 isExpanded && React.createElement("div", {className: "border-t p-4 bg-gray-50"},
                                     React.createElement("div", {className: "space-y-3"},
                                         modulosConfig.map(function(modConfig) {
-                                            const modAtivo = mods[modConfig.id] !== false;
+                                            const modAtivo = mods[modConfig.id] === true;
                                             const modKey = modConfig.id;
+                                            const modAbas = modConfig.abas || [];
+                                            const isModExpanded = p.expandedModulo === cod + "_" + modKey;
+                                            
+                                            // Contar abas restritas deste módulo
+                                            const abasRestritasDoModulo = modAbas.filter(function(aba) {
+                                                const abaKey = modKey + "_" + aba.id.replace(/-/g, "");
+                                                return abas[abaKey] === false;
+                                            }).length;
                                             
                                             return React.createElement("div", {
                                                 key: modKey,
-                                                className: "border rounded-lg overflow-hidden bg-white " + (modAtivo ? "border-green-200" : "border-gray-200")
+                                                className: "border rounded-lg overflow-hidden bg-white " + (modAtivo ? "border-green-200" : "border-red-200")
                                             },
+                                                // Header do módulo
                                                 React.createElement("div", {
-                                                    className: "flex items-center justify-between p-2 cursor-pointer " + (modAtivo ? "bg-green-50" : "bg-gray-100"),
-                                                    onClick: function() {
-                                                        const newPerms = JSON.parse(JSON.stringify(p.adminPerms || {}));
-                                                        if (!newPerms[cod]) newPerms[cod] = { modulos: {}, abas: {} };
-                                                        if (!newPerms[cod].modulos) newPerms[cod].modulos = {};
-                                                        newPerms[cod].modulos[modKey] = !modAtivo;
-                                                        x({...p, adminPerms: newPerms});
-                                                    }
+                                                    className: "flex items-center justify-between p-2 " + (modAtivo ? "bg-green-50" : "bg-red-50")
                                                 },
-                                                    React.createElement("div", {className: "flex items-center gap-2"},
+                                                    React.createElement("div", {
+                                                        className: "flex items-center gap-2 flex-1 cursor-pointer",
+                                                        onClick: function() {
+                                                            // Toggle expandir/colapsar módulo para ver abas
+                                                            const expandKey = cod + "_" + modKey;
+                                                            x({...p, expandedModulo: isModExpanded ? null : expandKey});
+                                                        }
+                                                    },
+                                                        React.createElement("span", {className: "text-gray-400"}, isModExpanded && modAbas.length > 0 ? "▼" : modAbas.length > 0 ? "▶" : ""),
                                                         React.createElement("span", null, modConfig.icon),
-                                                        React.createElement("span", {className: "font-medium text-sm"}, modConfig.label)
+                                                        React.createElement("span", {className: "font-medium text-sm"}, modConfig.label),
+                                                        modAbas.length > 0 && React.createElement("span", {className: "text-xs text-gray-400"}, 
+                                                            "(", modAbas.length, " abas",
+                                                            abasRestritasDoModulo > 0 ? ", " + abasRestritasDoModulo + " restritas" : "",
+                                                            ")"
+                                                        )
                                                     ),
-                                                    React.createElement("span", {
-                                                        className: "px-2 py-0.5 rounded text-xs font-bold " + (modAtivo ? "bg-green-200 text-green-800" : "bg-gray-200 text-gray-600")
-                                                    }, modAtivo ? "✓" : "✗")
+                                                    // Toggle do módulo
+                                                    React.createElement("button", {
+                                                        onClick: function(e) {
+                                                            e.stopPropagation();
+                                                            const newPerms = JSON.parse(JSON.stringify(p.adminPerms || {}));
+                                                            if (!newPerms[cod]) newPerms[cod] = { modulos: {}, abas: {} };
+                                                            if (!newPerms[cod].modulos) newPerms[cod].modulos = {};
+                                                            newPerms[cod].modulos[modKey] = !modAtivo;
+                                                            x({...p, adminPerms: newPerms});
+                                                        },
+                                                        className: "px-3 py-1 rounded text-xs font-bold transition-colors " + 
+                                                            (modAtivo ? "bg-green-200 text-green-800 hover:bg-green-300" : "bg-red-200 text-red-800 hover:bg-red-300")
+                                                    }, modAtivo ? "✓ Permitido" : "✗ Bloqueado")
+                                                ),
+                                                
+                                                // ==================== LISTA DE ABAS DO MÓDULO ====================
+                                                isModExpanded && modAbas.length > 0 && React.createElement("div", {
+                                                    className: "border-t bg-gray-50 p-3"
+                                                },
+                                                    React.createElement("p", {className: "text-xs text-gray-500 mb-2 font-semibold"}, "📑 Abas do módulo:"),
+                                                    React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-3 gap-2"},
+                                                        modAbas.map(function(aba) {
+                                                            const abaKey = modKey + "_" + aba.id.replace(/-/g, "");
+                                                            const abaPermitida = abas[abaKey] !== false;
+                                                            
+                                                            return React.createElement("div", {
+                                                                key: abaKey,
+                                                                className: "flex items-center justify-between p-2 rounded border text-sm " +
+                                                                    (abaPermitida ? "bg-white border-gray-200" : "bg-red-50 border-red-200")
+                                                            },
+                                                                React.createElement("span", {
+                                                                    className: abaPermitida ? "text-gray-700" : "text-red-700"
+                                                                }, aba.label),
+                                                                React.createElement("button", {
+                                                                    onClick: function() {
+                                                                        const newPerms = JSON.parse(JSON.stringify(p.adminPerms || {}));
+                                                                        if (!newPerms[cod]) newPerms[cod] = { modulos: {}, abas: {} };
+                                                                        if (!newPerms[cod].abas) newPerms[cod].abas = {};
+                                                                        // Toggle: se está permitida (undefined ou true), bloquear (false)
+                                                                        // Se está bloqueada (false), permitir (removendo a chave ou setando true)
+                                                                        if (abaPermitida) {
+                                                                            newPerms[cod].abas[abaKey] = false;
+                                                                        } else {
+                                                                            delete newPerms[cod].abas[abaKey];
+                                                                        }
+                                                                        x({...p, adminPerms: newPerms});
+                                                                    },
+                                                                    className: "w-6 h-6 rounded flex items-center justify-center text-xs font-bold transition-colors " +
+                                                                        (abaPermitida ? "bg-green-100 text-green-700 hover:bg-green-200" : "bg-red-100 text-red-700 hover:bg-red-200")
+                                                                }, abaPermitida ? "✓" : "✗")
+                                                            );
+                                                        })
+                                                    )
                                                 )
                                             );
                                         })
@@ -892,6 +941,6 @@
 
     // Marcar que o módulo foi carregado
     window.ModuloConfigLoaded = true;
-    console.log("✅ Módulo Config carregado com sucesso!");
+    console.log("✅ Módulo Config carregado com sucesso! (versão corrigida com abas)");
 
 })();
