@@ -6911,7 +6911,17 @@ const hideLoadingScreen = () => {
                 });
                 if (!e.ok) throw new Error("Credenciais inválidas");
                 const t = await e.json();
-                // Carregar permissões se for admin
+                
+                // CORREÇÃO: Salvar token JWT ANTES de buscar permissões
+                if (t.token) {
+                    setToken(t.token);
+                }
+                // Salvar refresh token se retornado
+                if (t.refreshToken) {
+                    setRefreshToken(t.refreshToken);
+                }
+                
+                // Carregar permissões se for admin (agora o token já está salvo)
                 let perms = null;
                 if (t.role === "admin" || t.role === "admin_financeiro") {
                     try {
@@ -6921,38 +6931,34 @@ const hideLoadingScreen = () => {
                             const allowedMods = Array.isArray(permData.allowed_modules) ? permData.allowed_modules : [];
                             const allowedTabs = permData.allowed_tabs && typeof permData.allowed_tabs === 'object' ? permData.allowed_tabs : {};
                             
-                            // Se não há módulos configurados, dar acesso a todos (primeira vez)
-                            // Se há módulos configurados, usar apenas os que estão na lista
-                            const hasConfig = allowedMods.length > 0;
+                            // CORREÇÃO: hasConfig é true se há módulos OU abas configuradas
+                            const hasConfig = allowedMods.length > 0 || Object.keys(allowedTabs).length > 0;
                             
                             perms = {
                                 allowed_modules: allowedMods,
                                 allowed_tabs: allowedTabs,
                                 hasConfig: hasConfig,
                                 modulos: {
+                                    // CORREÇÃO: Se hasConfig, só permite módulos explicitamente listados
                                     solicitacoes: !hasConfig || allowedMods.includes("solicitacoes"),
                                     financeiro: !hasConfig || allowedMods.includes("financeiro"),
                                     operacional: !hasConfig || allowedMods.includes("operacional"),
                                     disponibilidade: !hasConfig || allowedMods.includes("disponibilidade"),
                                     bi: !hasConfig || allowedMods.includes("bi"),
                                     todo: !hasConfig || allowedMods.includes("todo"),
+                                    filas: !hasConfig || allowedMods.includes("filas"),
+                                    social: !hasConfig || allowedMods.includes("social"),
                                     config: !hasConfig || allowedMods.includes("config")
                                 },
                                 abas: allowedTabs
                             };
-                            console.log("Permissões carregadas:", perms);
+                            console.log("✅ Permissões carregadas:", perms);
+                        } else {
+                            console.log("⚠️ Erro ao carregar permissões:", permRes.status);
                         }
                     } catch (err) {
-                        console.log("Sem permissões definidas, usando padrão");
+                        console.log("❌ Erro ao buscar permissões:", err);
                     }
-                }
-                // Salvar token JWT se retornado
-                if (t.token) {
-                    setToken(t.token);
-                }
-                // Salvar refresh token se retornado
-                if (t.refreshToken) {
-                    setRefreshToken(t.refreshToken);
                 }
                 o({
                     ...t,
