@@ -269,6 +269,7 @@ const fetchAuth = async (url, options = {}, retryCount = 0) => {
 
 // Função helper para verificar permissões de módulo
 // Retorna true se o usuário tem acesso ao módulo
+// CORREÇÃO: Verificação rigorosa de permissões para admins
 function hasModuleAccess(user, moduleId) {
     if (!user) return false;
     
@@ -288,15 +289,25 @@ function hasModuleAccess(user, moduleId) {
     // Admin normal - verificar permissões
     if (user.role === "admin") {
         // Se não tem permissões configuradas, dar acesso a tudo
-        if (!user.permissions || !user.permissions.modulos) return true;
+        if (!user.permissions) return true;
         
-        // Se hasConfig é false, significa que nunca foi configurado
+        // Se hasConfig é false, significa que nunca foi configurado - dar acesso total
         if (user.permissions.hasConfig === false) return true;
         
-        // Verificar permissão específica do módulo
+        // Se não existe o objeto modulos, dar acesso total
+        if (!user.permissions.modulos) return true;
+        
+        // CORREÇÃO CRÍTICA: Verificar se o módulo está EXPLICITAMENTE permitido
         const perm = user.permissions.modulos[moduleId];
-        // Se a permissão é undefined ou true, tem acesso
-        // Se é false, não tem acesso
+        
+        // Se hasConfig é true (foi configurado), então o módulo precisa estar como true
+        // Antes: undefined !== false retornava true (BUG!)
+        // Agora: só retorna true se perm === true
+        if (user.permissions.hasConfig === true) {
+            return perm === true;
+        }
+        
+        // Fallback para casos de migração: se a permissão não é explicitamente false, tem acesso
         return perm !== false;
     }
     
