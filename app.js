@@ -1835,7 +1835,7 @@ const hideLoadingScreen = () => {
             validacao: [],
             loja: [],
             gratuidades: []
-        }), [j, C] = useState([]), [A, S] = useState([]), [k, P] = useState(!1), [T, D] = useState(null), [L, I] = useState([]), [F, $] = useState(!1), [M, O] = useState([]), [q, U] = useState([]), [z, B] = useState([]), [V, J] = useState(null), [Q, H] = useState([]), [G, W] = useState([]), [Z, Y] = useState([]), [K, X] = useState({}), [ee, te] = useState([]), [ae, le] = useState([]), [re, oe] = useState([]), [ce, se] = useState([]), [ne, me] = useState([]), [ie, de] = useState([]), [progressoNovatos, setProgressoNovatos] = useState([]), [modalEntregasNovatos, setModalEntregasNovatos] = useState(null), [pe, xe] = useState([]), [cidadesIndicacao, setCidadesIndicacao] = useState([]), [ue, ge] = useState(!1), [be, Re] = useState(null), [Ee, he] = useState("home"), [mensagemGentileza, setMensagemGentileza] = useState(() => getMensagemGentileza()), [elegibilidadeNovatos, setElegibilidadeNovatos] = useState({ elegivel: false, motivo: '', promocoes: [], carregando: true }), [regioesNovatos, setRegioesNovatos] = useState([]), [clientesBINovatos, setClientesBINovatos] = useState([]), [clientesSelecionados, setClientesSelecionados] = useState([]), [carregandoClientes, setCarregandoClientes] = useState(false), [solicitacoesPagina, setSolicitacoesPagina] = useState(1), [acertoRealizado, setAcertoRealizado] = useState(() => { try { const saved = localStorage.getItem("tutts_acerto_realizado"); return saved !== null ? JSON.parse(saved) : true; } catch(e) { return true; } }), [solicitacoesPorPagina] = useState(120), [conciliacaoPagina, setConciliacaoPagina] = useState(1), [conciliacaoPorPagina] = useState(120), 
+        }), [j, C] = useState([]), [A, S] = useState([]), [k, P] = useState(!1), [T, D] = useState(null), [L, I] = useState([]), [F, $] = useState(!1), [M, O] = useState([]), [q, U] = useState([]), [z, B] = useState([]), [V, J] = useState(null), [Q, H] = useState([]), [G, W] = useState([]), [Z, Y] = useState([]), [K, X] = useState({}), [ee, te] = useState([]), [ae, le] = useState([]), [re, oe] = useState([]), [ce, se] = useState([]), [ne, me] = useState([]), [ie, de] = useState([]), [progressoNovatos, setProgressoNovatos] = useState([]), [modalEntregasNovatos, setModalEntregasNovatos] = useState(null), [pe, xe] = useState([]), [cidadesIndicacao, setCidadesIndicacao] = useState([]), [ue, ge] = useState(!1), [be, Re] = useState(null), [Ee, he] = useState("home"), [mensagemGentileza, setMensagemGentileza] = useState(() => getMensagemGentileza()), [elegibilidadeNovatos, setElegibilidadeNovatos] = useState({ elegivel: false, motivo: '', promocoes: [], carregando: true }), [regioesNovatos, setRegioesNovatos] = useState([]), [clientesBINovatos, setClientesBINovatos] = useState([]), [clientesSelecionados, setClientesSelecionados] = useState([]), [carregandoClientes, setCarregandoClientes] = useState(false), [solicitacoesPagina, setSolicitacoesPagina] = useState(1), [acertoRealizado, setAcertoRealizado] = useState(() => { try { const saved = localStorage.getItem("tutts_acerto_realizado"); return saved !== null ? JSON.parse(saved) : true; } catch(e) { return true; } }), [solicitacoesPorPagina] = useState(120), [conciliacaoPagina, setConciliacaoPagina] = useState(1), [conciliacaoPorPagina] = useState(120), [processandoWithdrawals, setProcessandoWithdrawals] = useState(new Set()), 
         
         // Helper para parse de saldo (aceita número ou string brasileira)
         parseSaldoBR = (valor) => {
@@ -7115,6 +7115,25 @@ const hideLoadingScreen = () => {
             }
             s(!1)
         }, Jl = async (e, t, a = null) => {
+            // =============== PROTEÇÃO 1: VERIFICAR SE JÁ ESTÁ PROCESSANDO ===============
+            const withdrawalKey = `${e}_${t}`; // ID + status
+            
+            // Verificar se já está processando este withdrawal
+            if (processandoWithdrawals.has(withdrawalKey)) {
+                console.log(`⚠️ Withdrawal ${e} já está sendo processado para status ${t}`);
+                ja("⏳ Aguarde, esta solicitação já está sendo processada...", "warning");
+                return;
+            }
+            
+            // =============== PROTEÇÃO 2: MARCAR COMO PROCESSANDO ===============
+            setProcessandoWithdrawals(prev => new Set([...prev, withdrawalKey]));
+            
+            // Também desabilitar a UI imediatamente
+            x({
+                ...p,
+                [`processing_${e}`]: true
+            });
+            
             try {
                 // Calcular data do débito baseado no toggle de acerto
                 let dataDebito = null;
@@ -7137,6 +7156,10 @@ const hideLoadingScreen = () => {
                     }
                 }
                 
+                // =============== PROTEÇÃO 3: GERAR CHAVE DE IDEMPOTÊNCIA ===============
+                const idempotencyKey = `withdrawal_${e}_${t}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                console.log("🔑 Idempotency Key:", idempotencyKey);
+                
                 const response = await fetchAuth(`${API_URL}/withdrawals/${e}`, {
                     method: "PATCH",
                     headers: {
@@ -7147,24 +7170,58 @@ const hideLoadingScreen = () => {
                         adminId: l.id,
                         adminName: l.fullName || "Admin Financeiro",
                         rejectReason: a,
-                        dataDebito: dataDebito
+                        dataDebito: dataDebito,
+                        idempotencyKey: idempotencyKey
                     })
                 });
                 
                 const data = await response.json();
+                
                 if (!response.ok) {
-                    ja("❌ " + (data.error || "Erro ao atualizar"), "error");
+                    // =============== TRATAMENTO DE ERROS ESPECÍFICOS ===============
+                    if (response.status === 400 && data.error?.includes('já foi aprovado')) {
+                        ja("⚠️ Este saque já foi aprovado anteriormente!", "warning");
+                    } else if (response.status === 400 && data.error?.includes('Débito já foi realizado')) {
+                        ja("⚠️ O débito já foi realizado para este saque!", "warning");
+                    } else if (response.status === 409) {
+                        ja("⏳ Este saque está sendo processado. Aguarde...", "warning");
+                    } else {
+                        ja("❌ " + (data.error || "Erro ao atualizar"), "error");
+                    }
                     return;
                 }
                 
-                ja("✅ Status atualizado!" + (!acertoRealizado && (t === "aprovado" || t === "aprovado_gratuidade") ? " (Débito no último domingo)" : ""), "success");
+                // =============== VERIFICAR SE FOI REQUISIÇÃO IDEMPOTENTE ===============
+                if (data._idempotent) {
+                    ja("ℹ️ Esta operação já foi processada anteriormente", "info");
+                } else {
+                    ja("✅ Status atualizado!" + (!acertoRealizado && (t === "aprovado" || t === "aprovado_gratuidade") ? " (Débito no último domingo)" : ""), "success");
+                }
+                
                 x({
                     ...p,
                     [`reject_${e}`]: "",
-                    [`showReject_${e}`]: !1
-                }), Ua()
-            } catch (e) {
-                ja("Erro", "error")
+                    [`showReject_${e}`]: false,
+                    [`processing_${e}`]: false
+                });
+                
+                Ua(); // Recarregar lista
+                
+            } catch (err) {
+                console.error("❌ Erro ao atualizar status:", err);
+                ja("Erro de conexão. Tente novamente.", "error");
+            } finally {
+                // =============== PROTEÇÃO 4: LIMPAR ESTADO DE PROCESSAMENTO ===============
+                setProcessandoWithdrawals(prev => {
+                    const newSet = new Set(prev);
+                    newSet.delete(withdrawalKey);
+                    return newSet;
+                });
+                
+                x(prevP => ({
+                    ...prevP,
+                    [`processing_${e}`]: false
+                }));
             }
         }, Ql = async (e, t) => {
             try {
@@ -10400,6 +10457,8 @@ const hideLoadingScreen = () => {
                     // Paginação
                     solicitacoesPagina, setSolicitacoesPagina, conciliacaoPagina, setConciliacaoPagina,
                     solicitacoesPorPagina, conciliacaoPorPagina, acertoRealizado, setAcertoRealizado,
+                    // Proteção contra débito duplicado
+                    processandoWithdrawals, setProcessandoWithdrawals,
                     // Navegação e usuário
                     l, Ee, he, o, f, E, e,
                     // Utilitários
