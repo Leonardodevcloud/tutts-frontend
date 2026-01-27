@@ -27,6 +27,8 @@
             debitoFormPlific, setDebitoFormPlific, saldoPlificUser, setSaldoPlificUser,
             solicitacoesPagina, setSolicitacoesPagina, conciliacaoPagina, setConciliacaoPagina,
             solicitacoesPorPagina, conciliacaoPorPagina, acertoRealizado, setAcertoRealizado,
+            // Proteção contra débito duplicado
+            processandoWithdrawals, setProcessandoWithdrawals,
             l, Ee, he, o, f, E, e,
             er, ja, ul, fetchAuth, API_URL, navegarSidebar,
             HeaderCompacto, Toast, LoadingOverlay, PixQRCodeModal, i, n,
@@ -992,32 +994,71 @@
                 }, React.createElement("select", {
                     value: p[`showReject_${e.id}`] ? "rejeitado" : e.status,
                     onChange: t => {
-                        return a = e.id, void("rejeitado" === (l = t.target.value) ? x({
-                            ...p,
-                            [`showReject_${a}`]: !0,
-                            [`pendingStatus_${a}`]: l
-                        }) : Jl(a, l));
-                        var a, l
+                        const novoStatus = t.target.value;
+                        const withdrawalId = e.id;
+                        
+                        // =============== PROTEÇÃO: VERIFICAR SE ESTÁ PROCESSANDO ===============
+                        if (p[`processing_${withdrawalId}`]) {
+                            ja("⏳ Aguarde o processamento atual...", "warning");
+                            t.target.value = e.status; // Reverter para valor original
+                            return;
+                        }
+                        
+                        // =============== PROTEÇÃO: VERIFICAR SE JÁ ESTÁ APROVADO ===============
+                        if (novoStatus === "aprovado" || novoStatus === "aprovado_gratuidade") {
+                            // Verificar se já está aprovado
+                            if (e.status === "aprovado" || e.status === "aprovado_gratuidade") {
+                                ja("⚠️ Este saque já está aprovado!", "warning");
+                                t.target.value = e.status;
+                                return;
+                            }
+                            
+                            // Pedir confirmação antes de aprovar
+                            if (!confirm(`Confirma a aprovação do saque de ${er(e.requested_amount)} para ${e.user_name}?\n\nEsta ação realizará o DÉBITO automaticamente e não pode ser desfeita.`)) {
+                                t.target.value = e.status;
+                                return;
+                            }
+                        }
+                        
+                        // Processar mudança de status
+                        if (novoStatus === "rejeitado") {
+                            x({
+                                ...p,
+                                [`showReject_${withdrawalId}`]: true,
+                                [`pendingStatus_${withdrawalId}`]: novoStatus
+                            });
+                        } else {
+                            Jl(withdrawalId, novoStatus);
+                        }
                     },
-                    className: "px-1 py-1 border rounded text-xs w-full"
+                    // =============== DESABILITAR DURANTE PROCESSAMENTO OU JÁ APROVADO ===============
+                    disabled: p[`processing_${e.id}`] || e.status === "aprovado" || e.status === "aprovado_gratuidade",
+                    className: "px-1 py-1 border rounded text-xs w-full " + 
+                        (p[`processing_${e.id}`] ? "opacity-50 cursor-not-allowed bg-yellow-50 animate-pulse" : "") +
+                        ((e.status === "aprovado" || e.status === "aprovado_gratuidade") ? "bg-green-50 cursor-not-allowed text-green-700" : "")
                 }, 
-                React.createElement("option", {
-                    value: "aguardando_aprovacao"
-                }, "⏳ Aguardando"), 
-                // Mostrar "Aprovado" apenas para saques SEM gratuidade
-                !e.has_gratuity && React.createElement("option", {
-                    value: "aprovado"
-                }, "✅ Aprovado"), 
-                // Mostrar "c/ Gratuidade" apenas para saques COM gratuidade
-                e.has_gratuity && React.createElement("option", {
-                    value: "aprovado_gratuidade"
-                }, "✅ c/ Gratuidade"), 
-                React.createElement("option", {
-                    value: "rejeitado"
-                }, "❌ Rejeitado"), 
-                React.createElement("option", {
-                    value: "inativo"
-                }, "⚠️ Inativo")), p[`showReject_${e.id}`] && React.createElement("div", {
+                // Mostrar "Processando..." se estiver processando
+                p[`processing_${e.id}`] ? React.createElement("option", {
+                    value: e.status
+                }, "⏳ Processando...") : React.createElement(React.Fragment, null,
+                    React.createElement("option", {
+                        value: "aguardando_aprovacao"
+                    }, "⏳ Aguardando"), 
+                    // Mostrar "Aprovado" apenas para saques SEM gratuidade
+                    !e.has_gratuity && React.createElement("option", {
+                        value: "aprovado"
+                    }, "✅ Aprovado"), 
+                    // Mostrar "c/ Gratuidade" apenas para saques COM gratuidade
+                    e.has_gratuity && React.createElement("option", {
+                        value: "aprovado_gratuidade"
+                    }, "✅ c/ Gratuidade"), 
+                    React.createElement("option", {
+                        value: "rejeitado"
+                    }, "❌ Rejeitado"), 
+                    React.createElement("option", {
+                        value: "inativo"
+                    }, "⚠️ Inativo")
+                )), p[`showReject_${e.id}`] && React.createElement("div", {
                     className: "mt-2 space-y-2"
                 }, React.createElement("input", {
                     type: "text",
