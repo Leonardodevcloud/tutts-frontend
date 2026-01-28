@@ -7128,11 +7128,11 @@ const hideLoadingScreen = () => {
             // =============== PROTEÇÃO 2: MARCAR COMO PROCESSANDO ===============
             setProcessandoWithdrawals(prev => new Set([...prev, withdrawalKey]));
             
-            // Também desabilitar a UI imediatamente
-            x({
-                ...p,
+            // Também desabilitar a UI imediatamente (usando função para evitar stale state)
+            x(prevP => ({
+                ...prevP,
                 [`processing_${e}`]: true
-            });
+            }));
             
             try {
                 // Calcular data do débito baseado no toggle de acerto
@@ -7188,41 +7188,60 @@ const hideLoadingScreen = () => {
                     } else {
                         ja("❌ " + (data.error || "Erro ao atualizar"), "error");
                     }
+                    // Limpar estado de processamento em caso de erro
+                    setProcessandoWithdrawals(prev => {
+                        const newSet = new Set(prev);
+                        newSet.delete(withdrawalKey);
+                        return newSet;
+                    });
+                    x(prevP => ({
+                        ...prevP,
+                        [`processing_${e}`]: false
+                    }));
                     return;
                 }
                 
-                // =============== VERIFICAR SE FOI REQUISIÇÃO IDEMPOTENTE ===============
+                // =============== SUCESSO - ATUALIZAR UI ===============
                 if (data._idempotent) {
                     ja("ℹ️ Esta operação já foi processada anteriormente", "info");
                 } else {
                     ja("✅ Status atualizado!" + (!acertoRealizado && (t === "aprovado" || t === "aprovado_gratuidade") ? " (Débito no último domingo)" : ""), "success");
                 }
                 
-                x({
-                    ...p,
+                // Limpar estados usando função para evitar stale state
+                x(prevP => ({
+                    ...prevP,
                     [`reject_${e}`]: "",
                     [`showReject_${e}`]: false,
                     [`processing_${e}`]: false
-                });
+                }));
                 
-                Ua(); // Recarregar lista
-                
-            } catch (err) {
-                console.error("❌ Erro ao atualizar status:", err);
-                ja("Erro de conexão. Tente novamente.", "error");
-            } finally {
-                // =============== PROTEÇÃO 4: LIMPAR ESTADO DE PROCESSAMENTO ===============
+                // Limpar do Set de processamento
                 setProcessandoWithdrawals(prev => {
                     const newSet = new Set(prev);
                     newSet.delete(withdrawalKey);
                     return newSet;
                 });
                 
+                // Recarregar lista para pegar dados atualizados do servidor
+                Ua();
+                
+            } catch (err) {
+                console.error("❌ Erro ao atualizar status:", err);
+                ja("Erro de conexão. Tente novamente.", "error");
+                
+                // Limpar estado de processamento em caso de erro
+                setProcessandoWithdrawals(prev => {
+                    const newSet = new Set(prev);
+                    newSet.delete(withdrawalKey);
+                    return newSet;
+                });
                 x(prevP => ({
                     ...prevP,
                     [`processing_${e}`]: false
                 }));
             }
+            // REMOVIDO O FINALLY - estava causando race condition com o Ua()
         }, Ql = async (e, t) => {
             try {
                 await fetchAuth(`${API_URL}/withdrawals/${e}/saldo`, {
