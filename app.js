@@ -17998,8 +17998,8 @@ const hideLoadingScreen = () => {
         if ("crm-whatsapp" === Ee) {
             const token = sessionStorage.getItem("tutts_token");
             const crmUrl = token 
-                ? `https://crm-whatsapp-tamny.vercel.app/inbox?token=${encodeURIComponent(token)}&embed=true`
-                : "https://crm-whatsapp-tamny.vercel.app/login";
+                ? `https://crm-whatsapp-tawny.vercel.app/inbox?token=${encodeURIComponent(token)}&embed=true`
+                : "https://crm-whatsapp-tawny.vercel.app/login";
             
             return React.createElement("div", {
                 className: "min-h-screen bg-gray-50"
