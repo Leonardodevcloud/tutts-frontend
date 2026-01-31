@@ -277,7 +277,7 @@ function hasModuleAccess(user, moduleId) {
     
     // Admin financeiro tem acesso apenas ao financeiro e solicitações
     if (user.role === "admin_financeiro") {
-        return ["financeiro", "solicitacoes", "disponibilidade"].includes(moduleId);
+        return ["financeiro", "solicitacoes", "disponibilidade", "crm-whatsapp"].includes(moduleId);
     }
     
     // User comum tem acesso ao módulo de filas (para check-in na fila)
@@ -367,7 +367,8 @@ const SISTEMA_MODULOS_CONFIG = [
     },
     { id: "config", label: "Configurações", icon: "🔧",
       abas: [{id: "usuarios", label: "Usuários"}, {id: "permissoes", label: "Permissões ADM"}, {id: "clientes-api", label: "Clientes API"}, {id: "auditoria", label: "Auditoria"}, {id: "sistema", label: "Sistema"}]
-    }
+    },
+    { id: "crm-whatsapp", label: "CRM WhatsApp", icon: "💬", abas: [] }
 ];
 
 // ==================== COMPONENTE NAVEGAÇÃO HORIZONTAL ====================
@@ -17958,6 +17959,22 @@ const hideLoadingScreen = () => {
                             React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Config"),
                             React.createElement("p", {className: "text-sm text-gray-500"}, "Configurações")
                         )
+                    ),
+                    
+                    // CRM WhatsApp
+                    hasModuleAccess(l, "crm-whatsapp") &&
+                    React.createElement("div", {
+                        onClick: () => he("crm-whatsapp"),
+                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-green-300"
+                    },
+                        React.createElement("div", {className: "h-2 bg-gradient-to-r from-green-500 to-emerald-600"}),
+                        React.createElement("div", {className: "p-6"},
+                            React.createElement("div", {className: "w-14 h-14 bg-green-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
+                                React.createElement("span", {className: "text-3xl"}, "💬")
+                            ),
+                            React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "CRM WhatsApp"),
+                            React.createElement("p", {className: "text-sm text-gray-500"}, "Leads e conversas")
+                        )
                     )
                 )
             ),
@@ -17975,6 +17992,28 @@ const hideLoadingScreen = () => {
         // Se é módulo DISPONIBILIDADE, setar adminTab para usar o código original
         if ("disponibilidade" === Ee && p.adminTab !== "disponibilidade") {
             x(prev => ({...prev, adminTab: "disponibilidade"}));
+        }
+        
+        // Módulo CRM WhatsApp - Iframe
+        if ("crm-whatsapp" === Ee) {
+            const token = sessionStorage.getItem("tutts_token");
+            const crmUrl = token 
+                ? `https://crm-whatsapp-tamny.vercel.app/inbox?token=${encodeURIComponent(token)}&embed=true`
+                : "https://crm-whatsapp-tamny.vercel.app/login";
+            
+            return React.createElement("div", {
+                className: "min-h-screen bg-gray-50"
+            },
+                React.createElement("iframe", {
+                    src: crmUrl,
+                    style: {
+                        width: "100%",
+                        height: "calc(100vh - 64px)",
+                        border: "none"
+                    },
+                    title: "CRM WhatsApp"
+                })
+            );
         }
         
         // Módulo SOLICITAÇÕES ou DISPONIBILIDADE
