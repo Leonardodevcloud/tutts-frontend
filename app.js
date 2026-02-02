@@ -299,6 +299,12 @@ function hasModuleAccess(user, moduleId) {
         // Verificar permissão específica do módulo
         const perm = user.permissions.modulos[moduleId];
         
+        // CORREÇÃO: Módulos novos que não existem nas permissões antigas
+        // Dar acesso por padrão ao CRM WhatsApp se não foi configurado
+        if (perm === undefined && moduleId === "crm-whatsapp") {
+            return true;
+        }
+        
         // CORREÇÃO: Se hasConfig é true, só permite se perm === true
         if (user.permissions.hasConfig === true) {
             return perm === true;
