@@ -19085,7 +19085,7 @@ function ScoreEntregador({ user, apiUrl, showToast }) {
       if (filtroData.inicio) params.append('data_inicio', filtroData.inicio);
       if (filtroData.fim) params.append('data_fim', filtroData.fim);
       if (params.toString()) url += `?${params.toString()}`;
-      const response = await fetch(url);
+      const response = await fetchAuth(url);
       const data = await response.json();
       setDados(data);
     } catch (error) {
@@ -19364,14 +19364,14 @@ function ScoreAdmin({ apiUrl, showToast }) {
       if (filtros.data_fim) rankingUrl += `&data_fim=${filtros.data_fim}`;
       
       const [rankingRes, estatRes, milestonesRes] = await Promise.all([
-        fetch(rankingUrl).then(r => r.json()),
-        fetch(`${apiUrl}/score/estatisticas${filtros.data_inicio ? `?data_inicio=${filtros.data_inicio}&data_fim=${filtros.data_fim}` : ''}`).then(r => r.json()),
-        fetch(`${apiUrl}/score/milestones`).then(r => r.json())
+        fetchAuth(rankingUrl).then(r => r.json()),
+        fetchAuth(`${apiUrl}/score/estatisticas${filtros.data_inicio ? `?data_inicio=${filtros.data_inicio}&data_fim=${filtros.data_fim}` : ''}`).then(r => r.json()),
+        fetchAuth(`${apiUrl}/score/milestones`).then(r => r.json())
       ]);
       
       setRanking(rankingRes.ranking || []);
       setEstatisticas(estatRes);
-      setMilestones(milestonesRes);
+      setMilestones(Array.isArray(milestonesRes) ? milestonesRes : []);
       setDadosCarregados(true);
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
@@ -19383,7 +19383,7 @@ function ScoreAdmin({ apiUrl, showToast }) {
 
   const carregarPremios = async () => {
     try {
-      const res = await fetch(`${apiUrl}/score/premios-pendentes`);
+      const res = await fetchAuth(`${apiUrl}/score/premios-pendentes`);
       const data = await res.json();
       setPremiosPendentes(data || []);
     } catch (error) {
@@ -19399,7 +19399,7 @@ function ScoreAdmin({ apiUrl, showToast }) {
     if (!window.confirm('Recalcular todos os scores? Isso pode levar alguns minutos.')) return;
     try {
       setRecalculando(true);
-      const response = await fetch(`${apiUrl}/score/recalcular`, {
+      const response = await fetchAuth(`${apiUrl}/score/recalcular`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ data_inicio: filtros.data_inicio || null, data_fim: filtros.data_fim || null })
       });
@@ -19418,7 +19418,7 @@ function ScoreAdmin({ apiUrl, showToast }) {
   const buscarProfissional = async () => {
     if (!buscaProfissional) return;
     try {
-      const response = await fetch(`${apiUrl}/score/profissional/${buscaProfissional}`);
+      const response = await fetchAuth(`${apiUrl}/score/profissional/${buscaProfissional}`);
       const data = await response.json();
       setProfissionalSelecionado(data);
     } catch (error) {
@@ -19536,7 +19536,7 @@ function ScoreAdmin({ apiUrl, showToast }) {
               else if (score >= 80) nivel = { icone: '🥉', nome: 'Bronze', cor: 'bg-orange-100 text-orange-700' };
               
               return React.createElement('tr', { key: idx, className: 'hover:bg-gray-50 cursor-pointer',
-                onClick: async () => { const res = await fetch(`${apiUrl}/score/profissional/${prof.cod_prof}`); setProfissionalSelecionado(await res.json()); }
+                onClick: async () => { const res = await fetchAuth(`${apiUrl}/score/profissional/${prof.cod_prof}`); setProfissionalSelecionado(await res.json()); }
               },
                 React.createElement('td', { className: 'px-4 py-3' },
                   React.createElement('span', { className: `inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold ${prof.posicao === 1 ? 'bg-yellow-100 text-yellow-700' : prof.posicao === 2 ? 'bg-gray-200 text-gray-700' : prof.posicao === 3 ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-600'}` }, 
@@ -19596,7 +19596,7 @@ function ScoreAdmin({ apiUrl, showToast }) {
                               onClick: async () => {
                                 if (!window.confirm(`Confirmar entrega de "${premio.beneficio}" para ${prof.nome_prof}?`)) return;
                                 try {
-                                  const res = await fetch(`${apiUrl}/score/premios-fisicos/confirmar`, {
+                                  const res = await fetchAuth(`${apiUrl}/score/premios-fisicos/confirmar`, {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
                                     body: JSON.stringify({ cod_prof: prof.cod_prof, milestone_id: premio.milestone_id, confirmado_por: 'Admin' })
