@@ -183,6 +183,7 @@ const renovarToken = async () => {
             const response = await fetch(API_URL + '/users/refresh-token', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include', // 🔒 Envia refresh cookie automaticamente
                 body: JSON.stringify({ refreshToken })
             });
             
@@ -231,6 +232,7 @@ const fetchAuth = async (url, options = {}, retryCount = 0) => {
         ...options.headers
     };
     
+    // Header Authorization mantido para compatibilidade
     if (token) {
         headers['Authorization'] = `Bearer ${token}`;
     }
@@ -238,7 +240,8 @@ const fetchAuth = async (url, options = {}, retryCount = 0) => {
     try {
         const response = await fetch(url, {
             ...options,
-            headers
+            headers,
+            credentials: 'include' // 🔒 Envia cookies HttpOnly automaticamente
         });
         
         // Se token expirou, tentar renovar automaticamente
