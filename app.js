@@ -139,7 +139,7 @@ const getToken = () => {
 
 // Obter refresh token armazenado
 const getRefreshToken = () => {
-    return localStorage.getItem("tutts_refresh_token"); // localStorage para persistir entre sessões
+    return null; // 🔒 Refresh token agora está em HttpOnly cookie
 };
 
 // Salvar token JWT
@@ -153,27 +153,20 @@ const setToken = (token) => {
 
 // Salvar refresh token
 const setRefreshToken = (refreshToken) => {
-    if (refreshToken) {
-        localStorage.setItem("tutts_refresh_token", refreshToken);
-    } else {
-        localStorage.removeItem("tutts_refresh_token");
-    }
+    // 🔒 Refresh token agora está em HttpOnly cookie
+    // Limpar qualquer resquício do localStorage antigo
+    localStorage.removeItem("tutts_refresh_token");
 };
 
 // Variável para controlar se está renovando token (evitar múltiplas chamadas)
 let isRefreshingToken = false;
 let refreshPromise = null;
 
-// Função para renovar token usando refresh token
+// Função para renovar token usando refresh token (via HttpOnly cookie)
 const renovarToken = async () => {
     // Se já está renovando, esperar a promise existente
     if (isRefreshingToken && refreshPromise) {
         return refreshPromise;
-    }
-    
-    const refreshToken = getRefreshToken();
-    if (!refreshToken) {
-        return null;
     }
     
     isRefreshingToken = true;
@@ -184,14 +177,15 @@ const renovarToken = async () => {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include', // 🔒 Envia refresh cookie automaticamente
-                body: JSON.stringify({ refreshToken })
+                body: JSON.stringify({}) // Body vazio — refresh token vai no cookie
             });
             
             if (response.ok) {
                 const data = await response.json();
                 setToken(data.token);
-                if (data.refreshToken) {
-                    setRefreshToken(data.refreshToken);
+                // 🔒 Atualizar CSRF token se veio novo
+                if (data.csrfToken) {
+                    sessionStorage.setItem('tutts_csrf', data.csrfToken);
                 }
                 if (data.user) {
                     sessionStorage.setItem("tutts_user", JSON.stringify(data.user));
@@ -220,7 +214,8 @@ const renovarToken = async () => {
 const fazerLogoutCompleto = () => {
     sessionStorage.removeItem("tutts_user");
     sessionStorage.removeItem("tutts_token");
-    localStorage.removeItem("tutts_refresh_token");
+    sessionStorage.removeItem("tutts_csrf");
+    localStorage.removeItem("tutts_refresh_token"); // Limpar resquício antigo
     window.location.reload();
 };
 
@@ -232,9 +227,18 @@ const fetchAuth = async (url, options = {}, retryCount = 0) => {
         ...options.headers
     };
     
-    // Header Authorization mantido para compatibilidade
+    // Header Authorization mantido para WebSocket/iframe compat
     if (token) {
         headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    // 🔒 CSRF token em mutações (POST, PUT, DELETE, PATCH)
+    const method = (options.method || 'GET').toUpperCase();
+    if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+        const csrfToken = sessionStorage.getItem('tutts_csrf');
+        if (csrfToken) {
+            headers['X-CSRF-Token'] = csrfToken;
+        }
     }
     
     try {
@@ -245,7 +249,7 @@ const fetchAuth = async (url, options = {}, retryCount = 0) => {
         });
         
         // Se token expirou, tentar renovar automaticamente
-        if (response.status === 401 && token && retryCount === 0) {
+        if (response.status === 401 && retryCount === 0) {
             const data = await response.clone().json().catch(() => ({}));
             
             if (data.expired) {
@@ -1822,17 +1826,15 @@ const hideLoadingScreen = () => {
             if (e) {
                 sessionStorage.setItem("tutts_user", JSON.stringify(e));
             } else {
-                // Notificar servidor sobre logout (revogar refresh token)
-                const refreshToken = getRefreshToken();
-                if (refreshToken) {
-                    fetchAuth(`${API_URL}/users/logout`, {
-                        method: 'POST',
-                        body: JSON.stringify({ refreshToken })
-                    }).catch(() => {}); // Ignorar erros no logout
-                }
+                // Notificar servidor sobre logout (revogar refresh token via cookie)
+                fetchAuth(`${API_URL}/users/logout`, {
+                    method: 'POST',
+                    body: JSON.stringify({})
+                }).catch(() => {}); // Ignorar erros no logout
                 sessionStorage.removeItem("tutts_user");
-                sessionStorage.removeItem("tutts_token"); // Limpar token JWT no logout
-                localStorage.removeItem("tutts_refresh_token"); // Limpar refresh token
+                sessionStorage.removeItem("tutts_token");
+                sessionStorage.removeItem("tutts_csrf");
+                localStorage.removeItem("tutts_refresh_token"); // Limpar resquício antigo
             }
             r(e);
         }, [c, s] = useState(!1), [n, m] = useState(!1), [i, d] = useState(null), [p, x] = useState({}), [u, g] = useState(null), [b, R] = useState(Date.now()), [E, h] = useState(null), [f, N] = useState(!1), [y, v] = useState({
@@ -6926,6 +6928,10 @@ const hideLoadingScreen = () => {
                 if (t.refreshToken) {
                     setRefreshToken(t.refreshToken);
                 }
+                // 🔒 Salvar CSRF token
+                if (t.csrfToken) {
+                    sessionStorage.setItem('tutts_csrf', t.csrfToken);
+                }
                 
                 // Carregar permissões se for admin
                 let perms = null;
@@ -6998,6 +7004,10 @@ const hideLoadingScreen = () => {
                 // Salvar refresh token se retornado
                 if (data.refreshToken) {
                     setRefreshToken(data.refreshToken);
+                }
+                // 🔒 Salvar CSRF token
+                if (data.csrfToken) {
+                    sessionStorage.setItem('tutts_csrf', data.csrfToken);
                 }
                 ja("Cadastro realizado!", "success"), x({
                     view: "login"
