@@ -32,7 +32,7 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
         if (!endereco || endereco.length < 5) { setEnderecoValidado(false); setCoordenadasEncontradas(null); return; }
         setBuscandoEndereco(true);
         try {
-            const response = await fetch(`${apiUrl}/geocode/google?endereco=${encodeURIComponent(endereco)}`);
+            const response = await fetchAuth(`${apiUrl}/geocode/google?endereco=${encodeURIComponent(endereco)}`);
             const data = await response.json();
             // Resposta vem em data.results[0]
             const resultado = data.results && data.results[0];

@@ -16,10 +16,14 @@
             // Dados de profissionais
             pe, Ta,
             // Usuários
-            A, l
+            A, l,
+            // Auth
+            fetchAuth
         } = props;
 
         // ===== CÓDIGO DO MÓDULO DISPONIBILIDADE =====
+        // Fallback: se fetchAuth não vier nas props, usa fetch normal
+        const _fetch = fetchAuth || fetch;
                     const e = p.dispData || {
                     regioes: [],
                     lojas: [],
@@ -33,7 +37,7 @@
                             ...e,
                             dispLoading: !0
                         }));
-                        const e = await fetch(`${API_URL}/disponibilidade`);
+                        const e = await _fetch(`${API_URL}/disponibilidade`);
                         if (!e.ok) throw new Error("Erro ao carregar");
                         const t = await e.json();
                         x(e => ({
@@ -54,7 +58,7 @@
             const o = async () => {
                 const e = p.novaRegiao?.trim();
                 if (e) try {
-                    const t = await fetch(`${API_URL}/disponibilidade/regioes`, {
+                    const t = await _fetch(`${API_URL}/disponibilidade/regioes`, {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json"
@@ -80,7 +84,7 @@
                 if (-1 === o) return;
                 const c = r[o];
                 if ("cod_profissional" === a && l && "" !== l.trim()) try {
-                    const e = await fetch(`${API_URL}/disponibilidade/restricoes/verificar?cod_profissional=${l}&loja_id=${c.loja_id}`),
+                    const e = await _fetch(`${API_URL}/disponibilidade/restricoes/verificar?cod_profissional=${l}&loja_id=${c.loja_id}`),
                         t = await e.json();
                     if (t.restrito) {
                         const e = t.todas_lojas ? "TODAS AS LOJAS" : `loja ${t.loja_codigo} - ${t.loja_nome}`;
@@ -114,7 +118,7 @@
                 })), clearTimeout(window.dispDebounce), window.dispDebounce = setTimeout(async () => {
                     try {
                         const usuarioLogado = JSON.parse(sessionStorage.getItem("tutts_user") || "{}");
-                        await fetch(`${API_URL}/disponibilidade/linhas/${t}`, {
+                        await _fetch(`${API_URL}/disponibilidade/linhas/${t}`, {
                             method: "PUT",
                             headers: {
                                 "Content-Type": "application/json"
@@ -133,7 +137,7 @@
                 }, 500)
             }, s = async (e, t, a = !1) => {
                 try {
-                    await fetch(`${API_URL}/disponibilidade/linhas`, {
+                    await _fetch(`${API_URL}/disponibilidade/linhas`, {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json"
@@ -201,7 +205,7 @@
                         dispSubTab: "faltosos"
                     }));
                     try {
-                        const e = await fetch(`${API_URL}/disponibilidade/faltosos`),
+                        const e = await _fetch(`${API_URL}/disponibilidade/faltosos`),
                             t = await e.json();
                         x(e => ({
                             ...e,
@@ -219,7 +223,7 @@
                         dispSubTab: "espelho"
                     }));
                     try {
-                        const e = await fetch(`${API_URL}/disponibilidade/espelho`),
+                        const e = await _fetch(`${API_URL}/disponibilidade/espelho`),
                             t = await e.json();
                         x(e => ({
                             ...e,
@@ -238,7 +242,7 @@
                         relatoriosLoading: !0
                     }));
                     try {
-                        const [e, t, a, l, r] = await Promise.all([fetch(`${API_URL}/disponibilidade/relatorios/metricas`).then(e => e.json()).catch(() => []), fetch(`${API_URL}/disponibilidade/relatorios/ranking-lojas`).then(e => e.json()).catch(() => []), fetch(`${API_URL}/disponibilidade/relatorios/ranking-faltosos`).then(e => e.json()).catch(() => []), fetch(`${API_URL}/disponibilidade/relatorios/comparativo`).then(e => e.json()).catch(() => ({})), fetch(`${API_URL}/disponibilidade/relatorios/heatmap`).then(e => e.json()).catch(() => ({
+                        const [e, t, a, l, r] = await Promise.all([_fetch(`${API_URL}/disponibilidade/relatorios/metricas`).then(e => e.json()).catch(() => []), _fetch(`${API_URL}/disponibilidade/relatorios/ranking-lojas`).then(e => e.json()).catch(() => []), _fetch(`${API_URL}/disponibilidade/relatorios/ranking-faltosos`).then(e => e.json()).catch(() => []), _fetch(`${API_URL}/disponibilidade/relatorios/comparativo`).then(e => e.json()).catch(() => ({})), _fetch(`${API_URL}/disponibilidade/relatorios/heatmap`).then(e => e.json()).catch(() => ({
                             diasSemana: [],
                             lojas: []
                         }))]);
@@ -286,7 +290,7 @@
                         motoboysLoading: !0
                     }));
                     try {
-                        const e = await fetch(`${API_URL}/disponibilidade/motoboys?dias=30`),
+                        const e = await _fetch(`${API_URL}/disponibilidade/motoboys?dias=30`),
                             t = await e.json();
                         x(e => ({
                             ...e,
@@ -309,7 +313,7 @@
                         restricoesLoading: !0
                     }));
                     try {
-                        const e = await fetch(`${API_URL}/disponibilidade/restricoes`),
+                        const e = await _fetch(`${API_URL}/disponibilidade/restricoes`),
                             t = await e.json();
                         x(e => ({
                             ...e,
@@ -1104,7 +1108,7 @@
                     try {
                         const e = new URLSearchParams;
                         e.append("dias", p.motoboysDias || 30), p.motoboysLojaFiltro && e.append("loja_id", p.motoboysLojaFiltro), p.motoboysBusca && e.append("busca", p.motoboysBusca);
-                        const t = await fetch(`${API_URL}/disponibilidade/motoboys?${e}`),
+                        const t = await _fetch(`${API_URL}/disponibilidade/motoboys?${e}`),
                             a = await t.json();
                         x(e => ({
                             ...e,
@@ -1302,7 +1306,7 @@
                 onClick: async () => {
                     if (p.restricaoCod && p.restricaoMotivo)
                         if (p.restricaoTodasLojas || p.restricaoLojaId) try {
-                            const e = await fetch(`${API_URL}/disponibilidade/restricoes`, {
+                            const e = await _fetch(`${API_URL}/disponibilidade/restricoes`, {
                                 method: "POST",
                                 headers: {
                                     "Content-Type": "application/json"
@@ -1328,7 +1332,7 @@
                                 restricaoTodasLojas: !1,
                                 restricaoMotivo: ""
                             }));
-                            const t = await fetch(`${API_URL}/disponibilidade/restricoes`),
+                            const t = await _fetch(`${API_URL}/disponibilidade/restricoes`),
                                 a = await t.json();
                             x(e => ({
                                 ...e,
@@ -1397,10 +1401,10 @@
             }, React.createElement("button", {
                 onClick: async () => {
                     if (confirm(`Remover restrição de ${e.cod_profissional} - ${e.nome_profissional||"N/A"}?`)) try {
-                        await fetch(`${API_URL}/disponibilidade/restricoes/${e.id}`, {
+                        await _fetch(`${API_URL}/disponibilidade/restricoes/${e.id}`, {
                             method: "DELETE"
                         }), ja("✅ Restrição removida!", "success");
-                        const t = await fetch(`${API_URL}/disponibilidade/restricoes`),
+                        const t = await _fetch(`${API_URL}/disponibilidade/restricoes`),
                             a = await t.json();
                         x(e => ({
                             ...e,
@@ -1478,7 +1482,7 @@
                         }
                     })), clearTimeout(window.gestoresDebounce), window.gestoresDebounce = setTimeout(async () => {
                         try {
-                            await fetch(`${API_URL}/disponibilidade/regioes/${t.id}`, {
+                            await _fetch(`${API_URL}/disponibilidade/regioes/${t.id}`, {
                                 method: "PUT",
                                 headers: {
                                     "Content-Type": "application/json"
@@ -1496,7 +1500,7 @@
             }), React.createElement("button", {
                 onClick: () => (async (e, t) => {
                     if (window.confirm(`Remover região "${t}" e todas suas lojas?`)) try {
-                        await fetch(`${API_URL}/disponibilidade/regioes/${e}`, {
+                        await _fetch(`${API_URL}/disponibilidade/regioes/${e}`, {
                             method: "DELETE"
                         }), ja(`🗑️ Região "${t}" removida!`, "success"), r()
                     } catch (e) {
@@ -1574,7 +1578,7 @@
                         o = parseInt(p.novaQtdExcedentes) || 0;
                     if (e && t && a)
                         if (0 !== l || 0 !== o) try {
-                            if (!(await fetch(`${API_URL}/disponibilidade/lojas`, {
+                            if (!(await _fetch(`${API_URL}/disponibilidade/lojas`, {
                                     method: "POST",
                                     headers: {
                                         "Content-Type": "application/json"
@@ -1675,7 +1679,7 @@
                     }, c ? React.createElement(React.Fragment, null, React.createElement("button", {
                         onClick: async () => {
                             try {
-                                await fetch(`${API_URL}/disponibilidade/lojas/${t.id}`, {
+                                await _fetch(`${API_URL}/disponibilidade/lojas/${t.id}`, {
                                     method: "PUT",
                                     headers: {
                                         "Content-Type": "application/json"
@@ -1719,7 +1723,7 @@
                     }, "+E"), React.createElement("button", {
                         onClick: () => (async (e, t) => {
                             if (window.confirm(`Remover loja "${t}"?`)) try {
-                                await fetch(`${API_URL}/disponibilidade/lojas/${e}`, {
+                                await _fetch(`${API_URL}/disponibilidade/lojas/${e}`, {
                                     method: "DELETE"
                                 }), ja("🗑️ Loja removida!", "success"), r()
                             } catch (e) {
@@ -1741,7 +1745,7 @@
             }, "Reseta todos os entregadores, mantém a estrutura de regiões e lojas.")), React.createElement("button", {
                 onClick: async () => {
                     if (window.confirm("Limpar TODAS as linhas? (mantém a estrutura de regiões e lojas)")) try {
-                        await fetch(`${API_URL}/disponibilidade/limpar-linhas`, {
+                        await _fetch(`${API_URL}/disponibilidade/limpar-linhas`, {
                             method: "DELETE"
                         }), ja("✅ Todas as linhas foram resetadas!", "success"), r()
                     } catch (e) {
@@ -1804,7 +1808,7 @@
                             ...e,
                             dispLoading: !0
                         }));
-                        const a = await fetch(`${API_URL}/disponibilidade/resetar`, {
+                        const a = await _fetch(`${API_URL}/disponibilidade/resetar`, {
                                 method: "POST",
                                 headers: {
                                     "Content-Type": "application/json"
@@ -1898,7 +1902,7 @@
                     if (!a) return void ja("Digite o motivo da falta", "error");
                     const l = p.dispDataPlanilha || (new Date).toISOString().split("T")[0];
                     try {
-                        await fetch(`${API_URL}/disponibilidade/linhas/${t.id}`, {
+                        await _fetch(`${API_URL}/disponibilidade/linhas/${t.id}`, {
                             method: "PUT",
                             headers: {
                                 "Content-Type": "application/json"
@@ -1909,7 +1913,7 @@
                                 status: "FALTANDO",
                                 observacao: a
                             })
-                        }), await fetch(`${API_URL}/disponibilidade/faltosos`, {
+                        }), await _fetch(`${API_URL}/disponibilidade/faltosos`, {
                             method: "POST",
                             headers: {
                                 "Content-Type": "application/json"
@@ -1922,7 +1926,7 @@
                                 data_falta: l
                             })
                         });
-                        const r = await fetch(`${API_URL}/disponibilidade/linha-reposicao`, {
+                        const r = await _fetch(`${API_URL}/disponibilidade/linha-reposicao`, {
                                 method: "POST",
                                 headers: {
                                     "Content-Type": "application/json"
@@ -2135,7 +2139,7 @@
                     }, React.createElement("button", {
                         onClick: () => (async e => {
                             try {
-                                await fetch(`${API_URL}/disponibilidade/linhas/${e}`, {
+                                await _fetch(`${API_URL}/disponibilidade/linhas/${e}`, {
                                     method: "DELETE"
                                 }), r()
                             } catch (e) {
@@ -2231,7 +2235,7 @@
                     try {
                         let e = `${API_URL}/disponibilidade/faltosos?`;
                         p.faltososDataInicio && (e += `data_inicio=${p.faltososDataInicio}&`), p.faltososDataFim && (e += `data_fim=${p.faltososDataFim}&`), p.faltososLojaId && (e += `loja_id=${p.faltososLojaId}`);
-                        const t = await fetch(e),
+                        const t = await _fetch(e),
                             a = await t.json();
                         x(e => ({
                             ...e,
@@ -2251,7 +2255,7 @@
                         faltososLojaId: ""
                     }));
                     try {
-                        const e = await fetch(`${API_URL}/disponibilidade/faltosos`),
+                        const e = await _fetch(`${API_URL}/disponibilidade/faltosos`),
                             t = await e.json();
                         x(e => ({
                             ...e,
@@ -2311,7 +2315,7 @@
             }, React.createElement("button", {
                 onClick: async () => {
                     if (window.confirm(`Excluir registro de falta de ${e.nome_profissional||e.cod_profissional}?`)) try {
-                        await fetch(`${API_URL}/disponibilidade/faltosos/${e.id}`, {
+                        await _fetch(`${API_URL}/disponibilidade/faltosos/${e.id}`, {
                             method: "DELETE"
                         }), x(t => ({
                             ...t,
@@ -2344,7 +2348,7 @@
                             espelhoDataSelecionada: t,
                             espelhoCarregando: !0
                         })), t) try {
-                        const e = await fetch(`${API_URL}/disponibilidade/espelho/${t}`),
+                        const e = await _fetch(`${API_URL}/disponibilidade/espelho/${t}`),
                             a = await e.json();
                         console.log("Espelho carregado:", a), x(e => ({
                             ...e,
@@ -2376,7 +2380,7 @@
             }))), React.createElement("button", {
                 onClick: async () => {
                     try {
-                        const e = await fetch(`${API_URL}/disponibilidade/espelho`),
+                        const e = await _fetch(`${API_URL}/disponibilidade/espelho`),
                             t = await e.json();
                         console.log("Datas espelho:", t), x(e => ({
                             ...e,
@@ -2393,10 +2397,10 @@
                     if (!e) return;
                     const t = p.espelhoDataSelecionada.split("-").reverse().join("/");
                     if (window.confirm(`⚠️ Excluir espelho de ${t}?\n\nEssa ação não pode ser desfeita.`)) try {
-                        await fetch(`${API_URL}/disponibilidade/espelho/${e.id}`, {
+                        await _fetch(`${API_URL}/disponibilidade/espelho/${e.id}`, {
                             method: "DELETE"
                         });
-                        const a = await fetch(`${API_URL}/disponibilidade/espelho`),
+                        const a = await _fetch(`${API_URL}/disponibilidade/espelho`),
                             l = await a.json();
                         x(e => ({
                             ...e,

@@ -10,7 +10,7 @@
         const {
             // Básicos
             l, p, x, ja, s, n, f, i, E,
-            API_URL, getToken,
+            API_URL, getToken, fetchAuth,
             // Componentes
             HeaderCompacto, Toast, LoadingOverlay,
             // Navegação
@@ -148,7 +148,7 @@
                                         className: "px-4 py-2 bg-blue-100 text-blue-700 rounded-lg font-semibold hover:bg-blue-200"
                                     }, "✏️ Editar"),
                                     React.createElement("button", {
-                                        onClick: async () => { await fetch(`${API_URL}/avisos-op/${aviso.id}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({...aviso, ativo: !aviso.ativo})}); carregarAvisos(); },
+                                        onClick: async () => { await fetchAuth(`${API_URL}/avisos-op/${aviso.id}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({...aviso, ativo: !aviso.ativo})}); carregarAvisos(); },
                                         className: "px-4 py-2 rounded-lg font-semibold " + (aviso.ativo ? "bg-yellow-100 text-yellow-700 hover:bg-yellow-200" : "bg-green-100 text-green-700 hover:bg-green-200")
                                     }, aviso.ativo ? "⏸️ Desativar" : "▶️ Ativar"),
                                     React.createElement("button", {
@@ -507,7 +507,7 @@
                                             op.status !== 'concluido' && React.createElement("button", {
                                                 onClick: async () => {
                                                     const novoStatus = op.status === 'ativo' ? 'pausado' : 'ativo';
-                                                    await fetch(`${API_URL}/operacoes/${op.id}`, {
+                                                    await fetchAuth(`${API_URL}/operacoes/${op.id}`, {
                                                         method: 'PUT',
                                                         headers: {'Content-Type': 'application/json'},
                                                         body: JSON.stringify({ status: novoStatus })
@@ -522,7 +522,7 @@
                                             React.createElement("button", {
                                                 onClick: async () => {
                                                     if (confirm(`Excluir operação "${op.nome_cliente}"?`)) {
-                                                        await fetch(`${API_URL}/operacoes/${op.id}`, { method: 'DELETE' });
+                                                        await fetchAuth(`${API_URL}/operacoes/${op.id}`, { method: 'DELETE' });
                                                         carregarOperacoes();
                                                         if (notificarOperacaoSalva) notificarOperacaoSalva();
                                                         ja('🗑️ Operação excluída!', 'success');
@@ -601,7 +601,7 @@
                                                     }
                                                 }
                                                 if (confirm(`✅ Confirmar conclusão da demanda "${op.nome_cliente}"?`)) {
-                                                    await fetch(`${API_URL}/operacoes/${op.id}`, {
+                                                    await fetchAuth(`${API_URL}/operacoes/${op.id}`, {
                                                         method: 'PUT',
                                                         headers: {'Content-Type': 'application/json'},
                                                         body: JSON.stringify({ status: 'concluido' })
@@ -825,7 +825,7 @@
                                             ? `${API_URL}/operacoes/${operacaoEdit.id}`
                                             : `${API_URL}/operacoes`;
                                         
-                                        const response = await fetch(url, {
+                                        const response = await fetchAuth(url, {
                                             method: operacaoEdit ? 'PUT' : 'POST',
                                             headers: { 'Content-Type': 'application/json' },
                                             body: JSON.stringify({

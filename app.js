@@ -7686,7 +7686,8 @@ const hideLoadingScreen = () => {
                                 apiUrl: API_URL,
                                 showToast: ja,
                                 abaAtiva: "monitoramento",
-                                onChangeTab: () => {}
+                                onChangeTab: () => {},
+                                fetchAuth: fetchAuth
                             })
                             : React.createElement("div", { className: "text-center py-12" },
                                 React.createElement("p", { className: "text-red-500" }, "⚠️ Módulo não carregado")
@@ -11687,7 +11688,8 @@ const hideLoadingScreen = () => {
                             apiUrl: API_URL,
                             showToast: ja,
                             abaAtiva: filasTab,
-                            onChangeTab: setFilasTab
+                            onChangeTab: setFilasTab,
+                            fetchAuth: fetchAuth
                         })
                         : React.createElement("div", { className: "text-center py-12" },
                             React.createElement("p", { className: "text-red-500" }, "⚠️ Módulo de Filas não carregado. Verifique se o arquivo filas.js está presente.")
@@ -12624,7 +12626,7 @@ const hideLoadingScreen = () => {
                 return React.createElement(window.ModuloOperacionalComponent, {
                     // Básicos
                     l, p, x, ja, s, n, f, i, E,
-                    API_URL, getToken,
+                    API_URL, getToken, fetchAuth,
                     // Componentes
                     HeaderCompacto, Toast, LoadingOverlay,
                     // Navegação
@@ -18589,7 +18591,7 @@ const hideLoadingScreen = () => {
         })())), "disponibilidade" === p.adminTab && (
             typeof window.ModuloDisponibilidadeContent !== 'undefined' 
                 ? React.createElement(window.ModuloDisponibilidadeContent, {
-                    p, x, ja, API_URL, pe, Ta, A, l
+                    p, x, ja, API_URL, pe, Ta, A, l, fetchAuth
                 })
                 : React.createElement("div", {className: "flex items-center justify-center py-12"},
                     React.createElement("div", {className: "text-center"},
