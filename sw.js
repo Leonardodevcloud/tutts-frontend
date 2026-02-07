@@ -1,6 +1,6 @@
 // Service Worker - Sistema Tutts PWA
 // IMPORTANTE: Mude este numero a cada deploy para forcar atualizacao!
-const CACHE_VERSION = '20250105_001';
+const CACHE_VERSION = '20250207_001';
 const CACHE_NAME = `tutts-cache-${CACHE_VERSION}`;
 const API_URL = 'https://tutts-backend-production.up.railway.app';
 
@@ -46,8 +46,8 @@ self.addEventListener('install', (event) => {
       ]);
     }).then(() => {
       console.log('Service Worker: Instalacao completa!');
-      // NAO forca skipWaiting - deixa o usuario decidir quando atualizar
-      // Isso evita problemas de paginas fechando inesperadamente
+      // Forca ativacao imediata - nao espera abas fecharem
+      return self.skipWaiting();
     })
   );
 });
@@ -69,8 +69,8 @@ self.addEventListener('activate', (event) => {
       );
     }).then(() => {
       console.log('Service Worker: Ativado e caches limpos!');
-      // NAO forca clients.claim() para evitar reloads inesperados
-      // O controle sera assumido naturalmente na proxima navegacao
+      // Assume controle imediato de todas as abas abertas
+      return self.clients.claim();
     })
   );
 });
