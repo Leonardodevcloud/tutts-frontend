@@ -6079,18 +6079,16 @@ const hideLoadingScreen = () => {
             }
         }, ll = async () => {
             try {
-                console.log("📊 ll() - Iniciando carregamento do BI...");
-                Ra(!0); // Mostrar loading
-                setLoadingMessage("Carregando dados do sistema...");
-                // Carregar máscaras PRIMEIRO junto com os outros dados
-                setLoadingMessage("Buscando clientes e profissionais...");
-                const [e, t, a, l, r, o, c, s, n, m, mascarasData] = await Promise.all([fetchAuth(`${API_URL}/bi/clientes`).then(e => e.json()), fetchAuth(`${API_URL}/bi/centros-custo`).then(e => e.json()), fetchAuth(`${API_URL}/bi/profissionais`).then(e => e.json()), fetchAuth(`${API_URL}/bi/datas`).then(e => e.json()), fetchAuth(`${API_URL}/bi/uploads`).then(e => e.json()), fetchAuth(`${API_URL}/bi/cidades`).then(e => e.json()).catch(() => []), fetchAuth(`${API_URL}/bi/cliente-centros`).then(e => e.json()).catch(() => ({})), fetchAuth(`${API_URL}/bi/categorias`).then(e => e.json()).catch(() => []), fetchAuth(`${API_URL}/bi/regioes`).then(e => e.json()).catch(() => []), fetchAuth(`${API_URL}/bi/dados-filtro`).then(e => e.json()).catch(() => []), fetchAuth(`${API_URL}/bi/mascaras`).then(e => e.json()).catch(() => [])]), i = (e || []).sort((e, t) => (parseInt(e.cod_cliente) || 0) - (parseInt(t.cod_cliente) || 0));
-                // Setar máscaras ANTES de tudo
+                console.log("📊 ll() - Carregando filtros (endpoint combinado)...");
+                Ra(!0);
+                setLoadingMessage("Carregando filtros...");
+                const filtrosResp = await fetchAuth(`${API_URL}/bi/filtros-iniciais`);
+                const filtros = await filtrosResp.json();
+                const e = filtros.clientes || [], t = filtros.centros_custo || [], a = filtros.profissionais || [], l = filtros.datas || [], r = filtros.uploads || [], o = filtros.cidades || [], c = filtros.cliente_centros || {}, s = filtros.categorias || [], n = filtros.regioes || [], m = filtros.dados_filtro || [], mascarasData = filtros.mascaras || [];
+                const i = e;
                 setLoadingMessage("Aplicando configurações...");
                 ta(mascarasData || []);
-                console.log("📊 Máscaras carregadas:", (mascarasData || []).length);
-                console.log("📊 Datas recebidas:", l?.length || 0);
-                console.log("📊 Clientes recebidos:", i?.length || 0);
+                console.log("📊 Filtros carregados em 1 request:", {clientes: i.length, datas: l.length, mascaras: mascarasData.length});
                 Ct(i); St(t || []); Pt(t || []); Dt(c || {}); It(a || []); $t(l || []); Ot(r || []); Yt(o || []); oa(s || []); xa(s || []); la(n || []); ma(m || []); da(i);
                 
                 // Popular Set de datas com dados para indicador visual no filtro
