@@ -18244,19 +18244,19 @@ const hideLoadingScreen = () => {
             className: "grid md:grid-cols-2 gap-6 mb-6"
         }, React.createElement(MotivosPieChart, {
             submissions: j,
-            motivosData: ds.motivos || null
+            motivosData: dashStats && dashStats.motivos ? dashStats.motivos : null
         }), React.createElement(PieChart, {
             data: [{
                 label: "✓ Aprovados",
-                value: aprovadosCount,
+                value: dashStats ? dashStats.aprovados : j.filter(e => "aprovado" === e.status).length,
                 color: "#22c55e"
             }, {
                 label: "✗ Rejeitados",
-                value: rejeitadosCount,
+                value: dashStats ? dashStats.rejeitados : j.filter(e => "rejeitado" === e.status).length,
                 color: "#ef4444"
             }, {
                 label: "⏳ Pendentes",
-                value: pendentesCount,
+                value: dashStats ? dashStats.pendentes : j.filter(e => "pendente" === e.status).length,
                 color: "#fbbf24"
             }],
             title: "📈 Status das Solicitações"
