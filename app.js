@@ -3746,7 +3746,7 @@ const hideLoadingScreen = () => {
                     : `${API_URL}/recrutamento`;
                 const method = recrutamentoEdit ? 'PUT' : 'POST';
                 
-                const res = await fetch(url, {
+                const res = await fetchAuth(url, {
                     method,
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -3987,7 +3987,7 @@ const hideLoadingScreen = () => {
                     : `${API_URL}/setores`;
                 const method = setorEdit ? 'PUT' : 'POST';
                 
-                const res = await fetch(url, {
+                const res = await fetchAuth(url, {
                     method,
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(setorForm)
@@ -4354,7 +4354,7 @@ const hideLoadingScreen = () => {
                     ? `${API_URL}/relatorios-diarios/${relatorioEdit.id}`
                     : `${API_URL}/relatorios-diarios`;
                     
-                const response = await fetch(urlApi, {
+                const response = await fetchAuth(urlApi, {
                     method: relatorioEdit ? 'PUT' : 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
@@ -4689,7 +4689,7 @@ const hideLoadingScreen = () => {
                 const url = avisoEdit ? `${API_URL}/avisos-op/${avisoEdit.id}` : `${API_URL}/avisos-op`;
                 const method = avisoEdit ? 'PUT' : 'POST';
                 
-                await fetch(url, {
+                await fetchAuth(url, {
                     method,
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -4761,7 +4761,7 @@ const hideLoadingScreen = () => {
                 let url = `${API_URL}/todo/tarefas?user_cod=${l.codProfissional}&role=${l.role}`;
                 if (grupoId) url += `&grupo_id=${grupoId}`;
                 if (status !== "todas") url += `&status=${status}`;
-                const res = await fetch(url);
+                const res = await fetchAuth(url);
                 return await res.json()
             } catch (err) {
                 console.error("Erro:", err);
@@ -5563,7 +5563,7 @@ const hideLoadingScreen = () => {
                 // Carregar dados principais
                 const url = `${API_URL}/bi/garantido?${params}`;
                 console.log('💰 Garantido - Chamando URL:', url);
-                const response = await fetch(url);
+                const response = await fetchAuth(url);
                 const data = await response.json();
                 console.log('💰 Garantido - Resposta:', data);
                 setGarantidoData(data.dados || []);
@@ -16347,7 +16347,7 @@ const hideLoadingScreen = () => {
                         const endpoint = uploadData.id 
                             ? `${API_URL}/bi/uploads/historico/${uploadData.id}`
                             : `${API_URL}/bi/uploads/${uploadData.data_upload}`;
-                        const t = await fetch(endpoint, { method: "DELETE" }),
+                        const t = await fetchAuth(endpoint, { method: "DELETE" }),
                             a = await t.json();
                         ja(`✅ Upload excluído!`, "success"), ll(), el()
                     } catch (err) {
@@ -17002,7 +17002,7 @@ const hideLoadingScreen = () => {
                             ? API_URL + "/bi/regioes/" + regiaoEditando 
                             : API_URL + "/bi/regioes";
                         var method = regiaoEditando ? "PUT" : "POST";
-                        var resp = await fetch(url, {
+                        var resp = await fetchAuth(url, {
                             method: method,
                             headers: {"Content-Type": "application/json"},
                             body: JSON.stringify({
