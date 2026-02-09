@@ -235,7 +235,8 @@ const fetchAuth = async (url, options = {}, retryCount = 0) => {
     // 🔒 CSRF token em mutações (POST, PUT, DELETE, PATCH)
     const method = (options.method || 'GET').toUpperCase();
     if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
-        const csrfToken = sessionStorage.getItem('tutts_csrf');
+        // Lê direto do cookie para garantir sincronia com o backend
+        const csrfToken = document.cookie.split('; ').find(c => c.startsWith('tutts_csrf='))?.split('=')[1] || sessionStorage.getItem('tutts_csrf');
         if (csrfToken) {
             headers['X-CSRF-Token'] = csrfToken;
         }
