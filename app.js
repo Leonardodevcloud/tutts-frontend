@@ -3333,23 +3333,6 @@ const hideLoadingScreen = () => {
                 verificarElegibilidadeNovatos();
             }
         }, [l]), useEffect(() => {
-            if (!l || !["admin", "admin_master"].includes(l.role)) return;
-            if ("disponibilidade" !== p.adminTab) return;
-            const e = setInterval(async () => {
-                try {
-                    const e = await fetchAuth(`${API_URL}/disponibilidade`);
-                    if (!e.ok) return;
-                    const t = await e.json();
-                    x(e => ({
-                        ...e,
-                        dispData: t
-                    })), console.log("🔄 Disponibilidade atualizada em tempo real")
-                } catch (e) {
-                    console.error("Erro no polling disponibilidade:", e)
-                }
-            }, 1e4);
-            return () => clearInterval(e)
-        }, [l, p.adminTab]), useEffect(() => {
             if (!l || !["admin", "admin_master", "admin_financeiro"].includes(l.role)) return;
             if ("horarios" !== p.finTab) return;
             (async () => {
