@@ -1116,14 +1116,19 @@ const hideLoadingScreen = () => {
         }, "(", (e.value / a * 100).toFixed(1), "%)"))))))
     },
     MotivosPieChart = ({
-        submissions: e
+        submissions: e,
+        motivosData: motivosPreComputed
     }) => {
         const t = {};
-        e.forEach(e => {
-            t[e.motivo] = (t[e.motivo] || 0) + 1
-        });
+        let l;
+        if (motivosPreComputed && motivosPreComputed.length > 0) {
+            motivosPreComputed.forEach(m => { t[m.motivo] = parseInt(m.total); });
+            l = motivosPreComputed.reduce((acc, m) => acc + parseInt(m.total), 0);
+        } else {
+            e.forEach(e => { t[e.motivo] = (t[e.motivo] || 0) + 1; });
+            l = e.length;
+        }
         const a = ["#7c3aed", "#2563eb", "#059669", "#dc2626", "#ea580c", "#8b5cf6"],
-            l = e.length,
             r = Object.entries(t).map(([e, t], r) => ({
                 motivo: e,
                 count: t,
@@ -1847,7 +1852,7 @@ const hideLoadingScreen = () => {
             validacao: [],
             loja: [],
             gratuidades: []
-        }), [j, C] = useState([]), [A, S] = useState([]), [k, P] = useState(!1), [T, D] = useState(null), [L, I] = useState([]), [F, $] = useState(!1), [M, O] = useState([]), [q, U] = useState([]), [z, B] = useState([]), [V, J] = useState(null), [Q, H] = useState([]), [G, W] = useState([]), [Z, Y] = useState([]), [K, X] = useState({}), [ee, te] = useState([]), [ae, le] = useState([]), [re, oe] = useState([]), [ce, se] = useState([]), [ne, me] = useState([]), [ie, de] = useState([]), [progressoNovatos, setProgressoNovatos] = useState([]), [modalEntregasNovatos, setModalEntregasNovatos] = useState(null), [pe, xe] = useState([]), [cidadesIndicacao, setCidadesIndicacao] = useState([]), [ue, ge] = useState(!1), [be, Re] = useState(null), [Ee, he] = useState("home"), [mensagemGentileza, setMensagemGentileza] = useState(() => getMensagemGentileza()), [elegibilidadeNovatos, setElegibilidadeNovatos] = useState({ elegivel: false, motivo: '', promocoes: [], carregando: true }), [regioesNovatos, setRegioesNovatos] = useState([]), [clientesBINovatos, setClientesBINovatos] = useState([]), [clientesSelecionados, setClientesSelecionados] = useState([]), [carregandoClientes, setCarregandoClientes] = useState(false), [solicitacoesPagina, setSolicitacoesPagina] = useState(1), [acertoRealizado, setAcertoRealizado] = useState(() => { try { const saved = localStorage.getItem("tutts_acerto_realizado"); return saved !== null ? JSON.parse(saved) : true; } catch(e) { return true; } }), [solicitacoesPorPagina] = useState(120), [conciliacaoPagina, setConciliacaoPagina] = useState(1), [conciliacaoPorPagina] = useState(120), [processandoWithdrawals, setProcessandoWithdrawals] = useState(new Set()), 
+        }), [j, C] = useState([]), [dashStats, setDashStats] = useState(null), [buscaResults, setBuscaResults] = useState([]), [buscaTotal, setBuscaTotal] = useState(0), [buscaLoading, setBuscaLoading] = useState(false), [A, S] = useState([]), [k, P] = useState(!1), [T, D] = useState(null), [L, I] = useState([]), [F, $] = useState(!1), [M, O] = useState([]), [q, U] = useState([]), [z, B] = useState([]), [V, J] = useState(null), [Q, H] = useState([]), [G, W] = useState([]), [Z, Y] = useState([]), [K, X] = useState({}), [ee, te] = useState([]), [ae, le] = useState([]), [re, oe] = useState([]), [ce, se] = useState([]), [ne, me] = useState([]), [ie, de] = useState([]), [progressoNovatos, setProgressoNovatos] = useState([]), [modalEntregasNovatos, setModalEntregasNovatos] = useState(null), [pe, xe] = useState([]), [cidadesIndicacao, setCidadesIndicacao] = useState([]), [ue, ge] = useState(!1), [be, Re] = useState(null), [Ee, he] = useState("home"), [mensagemGentileza, setMensagemGentileza] = useState(() => getMensagemGentileza()), [elegibilidadeNovatos, setElegibilidadeNovatos] = useState({ elegivel: false, motivo: '', promocoes: [], carregando: true }), [regioesNovatos, setRegioesNovatos] = useState([]), [clientesBINovatos, setClientesBINovatos] = useState([]), [clientesSelecionados, setClientesSelecionados] = useState([]), [carregandoClientes, setCarregandoClientes] = useState(false), [solicitacoesPagina, setSolicitacoesPagina] = useState(1), [acertoRealizado, setAcertoRealizado] = useState(() => { try { const saved = localStorage.getItem("tutts_acerto_realizado"); return saved !== null ? JSON.parse(saved) : true; } catch(e) { return true; } }), [solicitacoesPorPagina] = useState(120), [conciliacaoPagina, setConciliacaoPagina] = useState(1), [conciliacaoPorPagina] = useState(120), [processandoWithdrawals, setProcessandoWithdrawals] = useState(new Set()), 
         
         // Helper para parse de saldo (aceita número ou string brasileira)
         parseSaldoBR = (valor) => {
@@ -5195,21 +5200,56 @@ const hideLoadingScreen = () => {
         },
         La = async () => {
             try {
-                const e = "user" === l.role ? `?userId=${l.id}&userCod=${l.cod_profissional}` : "",
-                    t = await fetchAuth(`${API_URL}/submissions${e}`),
-                    a = await t.json();
-                C(a.map(e => ({
-                    ...e,
-                    ordemServico: e.ordem_servico,
-                    codProfissional: e.user_cod,
-                    fullName: e.user_name,
-                    temImagem: e.tem_imagem,
-                    imagemComprovante: null,
-                    timestamp: new Date(e.created_at).toLocaleString("pt-BR")
-                })))
+                const isAdmin = ['admin', 'admin_master', 'admin_financeiro'].includes(l.role);
+                if (isAdmin) {
+                    // Admin: carregar stats leves + só pendentes para validação
+                    const [statsRes, pendRes] = await Promise.all([
+                        fetchAuth(`${API_URL}/submissions/dashboard`),
+                        fetchAuth(`${API_URL}/submissions/busca?status=pendente&limit=500`)
+                    ]);
+                    if (statsRes.ok) { const stats = await statsRes.json(); setDashStats(stats); }
+                    if (pendRes.ok) {
+                        const data = await pendRes.json();
+                        C((data.submissions || []).map(e => ({
+                            ...e, ordemServico: e.ordem_servico, codProfissional: e.user_cod,
+                            fullName: e.user_name, temImagem: e.tem_imagem, imagemComprovante: null,
+                            timestamp: new Date(e.created_at).toLocaleString("pt-BR")
+                        })));
+                    }
+                } else {
+                    const e = `?userId=${l.id}&userCod=${l.cod_profissional}`,
+                        t = await fetchAuth(`${API_URL}/submissions${e}`),
+                        a = await t.json();
+                    C(a.map(e => ({
+                        ...e, ordemServico: e.ordem_servico, codProfissional: e.user_cod,
+                        fullName: e.user_name, temImagem: e.tem_imagem, imagemComprovante: null,
+                        timestamp: new Date(e.created_at).toLocaleString("pt-BR")
+                    })));
+                }
             } catch (e) {
                 console.error(e)
             }
+        }, buscarSubmissions = async (query, status, periodo) => {
+            if (!query && !status && !periodo) { setBuscaResults([]); setBuscaTotal(0); return; }
+            setBuscaLoading(true);
+            try {
+                const params = new URLSearchParams();
+                if (query) params.set('q', query);
+                if (status) params.set('status', status);
+                if (periodo) params.set('periodo', periodo);
+                params.set('limit', '100');
+                const resp = await fetchAuth(`${API_URL}/submissions/busca?${params}`);
+                if (resp.ok) {
+                    const data = await resp.json();
+                    setBuscaResults((data.submissions || []).map(e => ({
+                        ...e, ordemServico: e.ordem_servico, codProfissional: e.user_cod,
+                        fullName: e.user_name, temImagem: e.tem_imagem, imagemComprovante: null,
+                        timestamp: new Date(e.created_at).toLocaleString("pt-BR")
+                    })));
+                    setBuscaTotal(data.total || 0);
+                }
+            } catch (e) { console.error(e); }
+            setBuscaLoading(false);
         }, Ia = async () => {
             try {
                 const e = await fetchAuth(`${API_URL}/users`),
@@ -18078,20 +18118,17 @@ const hideLoadingScreen = () => {
         React.createElement("div", {
             className: "max-w-7xl mx-auto p-6"
         }, (!p.adminTab || "dashboard" === p.adminTab) && React.createElement(React.Fragment, null, (() => {
-            const e = e => {
-                    const t = new Date(e),
-                        a = t.getDay(),
-                        l = t.getHours() + t.getMinutes() / 60;
-                    return 0 !== a && (6 === a ? l >= 8 && l < 12 : l >= 9 && l < 18)
-                },
-                t = new Date;
-            t.setHours(0, 0, 0, 0);
-            const a = j.filter(e => new Date(e.created_at) >= t),
-                l = a.filter(e => "pendente" !== e.status),
-                r = j.filter(t => "pendente" !== t.status && t.updated_at && t.created_at && e(t.created_at)).map(e => (new Date(e.updated_at) - new Date(e.created_at)) / 36e5),
-                o = r.length > 0 ? r.reduce((e, t) => e + t, 0) / r.length : 0,
-                c = j.filter(t => "pendente" === t.status && e(t.created_at) && Date.now() - new Date(t.created_at).getTime() >= 864e5),
-                s = 0 === c.length ? 100 : Math.max(0, 100 - 15 * c.length),
+            const ds = dashStats || {},
+                totalCount = ds.total || j.length,
+                pendentesCount = ds.pendentes || j.filter(e => "pendente" === e.status).length,
+                aprovadosCount = ds.aprovados || j.filter(e => "aprovado" === e.status).length,
+                rejeitadosCount = ds.rejeitados || j.filter(e => "rejeitado" === e.status).length,
+                atrasadasCount = ds.atrasadas || 0,
+                hojeTotal = ds.hoje_total || 0,
+                hojeProcessadas = ds.hoje_processadas || 0,
+                o = ds.tempo_medio_horas || 0,
+                c = ds.atrasadas_os || [],
+                s = 0 === atrasadasCount ? 100 : Math.max(0, 100 - 15 * atrasadasCount),
                 n = o <= 6 ? 100 : o <= 12 ? 80 : o <= 24 ? 60 : 40,
                 m = Math.round((s + n) / 2);
             return React.createElement(React.Fragment, null, React.createElement("div", {
@@ -18102,25 +18139,25 @@ const hideLoadingScreen = () => {
                 className: "text-sm text-gray-600"
             }, "Total"), React.createElement("p", {
                 className: "text-2xl font-bold text-purple-900"
-            }, j.length)), React.createElement("div", {
+            }, totalCount)), React.createElement("div", {
                 className: "bg-white p-4 rounded-xl shadow"
             }, React.createElement("p", {
                 className: "text-sm text-gray-600"
             }, "Pendentes"), React.createElement("p", {
                 className: "text-2xl font-bold text-yellow-600"
-            }, j.filter(e => "pendente" === e.status).length)), React.createElement("div", {
+            }, pendentesCount)), React.createElement("div", {
                 className: "bg-white p-4 rounded-xl shadow"
             }, React.createElement("p", {
                 className: "text-sm text-gray-600"
             }, "Aprovadas"), React.createElement("p", {
                 className: "text-2xl font-bold text-green-600"
-            }, j.filter(e => "aprovado" === e.status).length)), React.createElement("div", {
+            }, aprovadosCount)), React.createElement("div", {
                 className: "bg-white p-4 rounded-xl shadow"
             }, React.createElement("p", {
                 className: "text-sm text-gray-600"
             }, "Rejeitados"), React.createElement("p", {
                 className: "text-2xl font-bold text-red-600"
-            }, j.filter(e => "rejeitado" === e.status).length)), React.createElement("div", {
+            }, rejeitadosCount)), React.createElement("div", {
                 className: "bg-white p-4 rounded-xl shadow"
             }, React.createElement("p", {
                 className: "text-sm text-gray-600"
@@ -18138,7 +18175,7 @@ const hideLoadingScreen = () => {
                 className: "text-red-800 font-bold text-lg"
             }, "ATENÇÃO: ", c.length, " solicitação(ões) aguardando há mais de 24 horas!"), React.createElement("p", {
                 className: "text-red-600 text-sm mt-1"
-            }, "OS: ", c.slice(0, 5).map(e => e.ordemServico).join(", "), c.length > 5 ? "..." : "")))), React.createElement("div", {
+            }, "OS: ", c.slice(0, 5).join(", "), c.length > 5 ? "..." : "")))), React.createElement("div", {
                 className: "bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl shadow-lg p-6 mb-6 text-white"
             }, React.createElement("div", {
                 className: "flex flex-col md:flex-row items-center gap-6"
@@ -18176,9 +18213,9 @@ const hideLoadingScreen = () => {
                 className: "text-white/70 text-xs"
             }, "Hoje"), React.createElement("p", {
                 className: "text-xl font-bold"
-            }, a.length), React.createElement("p", {
+            }, hojeTotal), React.createElement("p", {
                 className: "text-xs text-white/60"
-            }, l.length, " processadas")), React.createElement("div", {
+            }, hojeProcessadas, " processadas")), React.createElement("div", {
                 className: "bg-white/10 rounded-lg p-3 text-center"
             }, React.createElement("p", {
                 className: "text-white/70 text-xs"
@@ -18192,7 +18229,7 @@ const hideLoadingScreen = () => {
                 className: "text-white/70 text-xs"
             }, "Pendentes"), React.createElement("p", {
                 className: "text-xl font-bold"
-            }, j.filter(e => "pendente" === e.status).length), React.createElement("p", {
+            }, pendentesCount), React.createElement("p", {
                 className: "text-xs text-white/60"
             }, "aguardando")), React.createElement("div", {
                 className: "bg-white/10 rounded-lg p-3 text-center"
@@ -18206,19 +18243,20 @@ const hideLoadingScreen = () => {
         })(), React.createElement("div", {
             className: "grid md:grid-cols-2 gap-6 mb-6"
         }, React.createElement(MotivosPieChart, {
-            submissions: j
+            submissions: j,
+            motivosData: ds.motivos || null
         }), React.createElement(PieChart, {
             data: [{
                 label: "✓ Aprovados",
-                value: j.filter(e => "aprovado" === e.status).length,
+                value: aprovadosCount,
                 color: "#22c55e"
             }, {
                 label: "✗ Rejeitados",
-                value: j.filter(e => "rejeitado" === e.status).length,
+                value: rejeitadosCount,
                 color: "#ef4444"
             }, {
                 label: "⏳ Pendentes",
-                value: j.filter(e => "pendente" === e.status).length,
+                value: pendentesCount,
                 color: "#fbbf24"
             }],
             title: "📈 Status das Solicitações"
@@ -18341,12 +18379,13 @@ const hideLoadingScreen = () => {
             className: "flex flex-wrap gap-4 mb-6"
         }, React.createElement("input", {
             type: "text",
-            placeholder: "🔍 Buscar por OS ou código...",
+            placeholder: "🔍 Buscar por OS, código ou nome...",
             value: p.searchOS || "",
             onChange: e => x({
                 ...p,
                 searchOS: e.target.value
             }),
+            onKeyDown: e => { if (e.key === "Enter") buscarSubmissions(p.searchOS, p.statusFilter, p.dateFilter); },
             className: "flex-1 px-4 py-2 border rounded-lg"
         }), React.createElement("select", {
             value: p.statusFilter || "",
@@ -18378,28 +18417,17 @@ const hideLoadingScreen = () => {
             value: "week"
         }, "Esta semana"), React.createElement("option", {
             value: "month"
-        }, "Este mês"))), React.createElement("div", {
+        }, "Este mês")), React.createElement("button", {
+            onClick: () => buscarSubmissions(p.searchOS, p.statusFilter, p.dateFilter),
+            disabled: buscaLoading,
+            className: "px-6 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 disabled:opacity-50"
+        }, buscaLoading ? "🔄 Buscando..." : "🔍 Buscar")), buscaTotal > 0 && React.createElement("p", {
+            className: "text-sm text-gray-500 mb-4"
+        }, `${buscaTotal} resultado(s) encontrado(s)${buscaTotal > 100 ? " (mostrando 100)" : ""}`), 0 === buscaResults.length && !buscaLoading && React.createElement("div", {
+            className: "text-center py-12 text-gray-400"
+        }, React.createElement("p", { className: "text-4xl mb-2" }, "🔍"), React.createElement("p", { className: "text-lg" }, "Use os filtros acima para buscar solicitações")), React.createElement("div", {
             className: "grid md:grid-cols-2 lg:grid-cols-3 gap-3"
-        }, j.filter(e => {
-            if (p.searchOS && !e.ordemServico?.toLowerCase().includes(p.searchOS.toLowerCase()) && !e.codProfissional?.toLowerCase().includes(p.searchOS.toLowerCase())) return !1;
-            if (p.statusFilter && e.status !== p.statusFilter) return !1;
-            if (p.dateFilter) {
-                const t = new Date;
-                t.setHours(0, 0, 0, 0);
-                const a = new Date(e.created_at);
-                if ("today" === p.dateFilter) {
-                    const e = new Date(t);
-                    if (e.setDate(e.getDate() + 1), a < t || a >= e) return !1
-                } else if ("week" === p.dateFilter) {
-                    const e = new Date(t);
-                    if (e.setDate(e.getDate() - 7), a < e) return !1
-                } else if ("month" === p.dateFilter) {
-                    const e = new Date(t);
-                    if (e.setMonth(e.getMonth() - 1), a < e) return !1
-                }
-            }
-            return !0
-        }).map(e => React.createElement("div", {
+        }, buscaResults.map(e => React.createElement("div", {
             key: e.id,
             className: "border rounded-lg p-3 text-sm " + ("aprovado" === e.status ? "bg-green-50" : "rejeitado" === e.status ? "bg-red-50" : "bg-yellow-50")
         }, React.createElement("div", {
