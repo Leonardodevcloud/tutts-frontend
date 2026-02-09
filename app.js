@@ -5463,14 +5463,14 @@ const hideLoadingScreen = () => {
                 console.log("📈 Carregando acompanhamento - Filtros ua:", JSON.stringify(ua));
                 console.log("📈 Carregando acompanhamento - Params:", params.toString());
                 setLoadingMessage("Analisando dados do período...");
-                const response = await fetch(API_URL + "/bi/acompanhamento-periodico?" + params);
+                const response = await fetchAuth(API_URL + "/bi/acompanhamento-periodico?" + params);
                 const data = await response.json();
                 console.log("📈 Dados recebidos:", data);
                 setAcompDados(data);
                 
                 // Carregar dados de clientes também
                 try {
-                    const clientesRes = await fetch(API_URL + "/bi/acompanhamento-clientes?" + params);
+                    const clientesRes = await fetchAuth(API_URL + "/bi/acompanhamento-clientes?" + params);
                     const clientesData = await clientesRes.json();
                     console.log("📊 Dados clientes:", clientesData);
                     setAcompClientes(clientesData);
@@ -5478,7 +5478,7 @@ const hideLoadingScreen = () => {
                 
                 // Carregar comparativo semanal
                 try {
-                    const semanalRes = await fetch(API_URL + "/bi/comparativo-semanal?" + params);
+                    const semanalRes = await fetchAuth(API_URL + "/bi/comparativo-semanal?" + params);
                     const semanalData = await semanalRes.json();
                     console.log("📅 Comparativo semanal:", semanalData);
                     if (semanalData && semanalData.semanas) {
@@ -5493,7 +5493,7 @@ const hideLoadingScreen = () => {
                 
                 // Carregar comparativo semanal POR CLIENTE
                 try {
-                    const semanalClientesRes = await fetch(API_URL + "/bi/comparativo-semanal-clientes?" + params);
+                    const semanalClientesRes = await fetchAuth(API_URL + "/bi/comparativo-semanal-clientes?" + params);
                     const semanalClientesData = await semanalClientesRes.json();
                     console.log("📅 Comparativo semanal por cliente:", semanalClientesData);
                     if (semanalClientesData && semanalClientesData.clientes) {
@@ -5649,7 +5649,7 @@ const hideLoadingScreen = () => {
                     params.append("centro_custo", cliente767Filtros.centros_custo.join(","));
                 }
                 
-                const response = await fetch(API_URL + "/bi/cliente-767?" + params);
+                const response = await fetchAuth(API_URL + "/bi/cliente-767?" + params);
                 const data = await response.json();
                 console.log("🏢 Cliente 767 dados:", data);
                 setCliente767Dados(data);
@@ -16850,7 +16850,7 @@ const hideLoadingScreen = () => {
                                                 });
                                                 // Buscar centros de custo
                                                 try {
-                                                    var resp = await fetch(API_URL + "/bi/centros-custo/" + c.cod_cliente);
+                                                    var resp = await fetchAuth(API_URL + "/bi/centros-custo/" + c.cod_cliente);
                                                     var data = await resp.json();
                                                     setRegiaoCentrosCusto(function(prev) {
                                                         var novo = {...prev};
@@ -17076,7 +17076,7 @@ const hideLoadingScreen = () => {
                             var novosCC = {};
                             for (var cod of clientesCods) {
                                 try {
-                                    var resp = await fetch(API_URL + "/bi/centros-custo/" + cod);
+                                    var resp = await fetchAuth(API_URL + "/bi/centros-custo/" + cod);
                                     var data = await resp.json();
                                     novosCC[cod] = data || [];
                                 } catch(err) {
@@ -17094,7 +17094,7 @@ const hideLoadingScreen = () => {
                         onClick: async function() {
                             if (confirm("Excluir a região '" + e.nome + "'?")) {
                                 try {
-                                    var resp = await fetch(API_URL + "/bi/regioes/" + e.id, {method: "DELETE"});
+                                    var resp = await fetchAuth(API_URL + "/bi/regioes/" + e.id, {method: "DELETE"});
                                     if (resp.ok) {
                                         ja("✅ Região excluída!", "success");
                                         pl();
