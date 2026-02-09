@@ -2995,40 +2995,27 @@ const hideLoadingScreen = () => {
                     setTimeout(() => checkLiderancaPendentes(true), 1000); // Aguarda 1s após login
                 }
                 
-                // Atualizar status online periodicamente
-                const statusInterval = setInterval(() => {
-                    updateOnlineStatus(true);
-                    loadSocialMessages();
-                }, 60000); // A cada 1 minuto
+                // ⚡ Status online REMOVIDO — economiza ~300 queries/min
                 
-                // Polling: Verificar novas tarefas pendentes a cada 90 segundos
+                // Polling: Verificar novas tarefas pendentes a cada 5 minutos
                 let todoPollingInterval = null;
                 if (canAccessTodoEff) {
                     todoPollingInterval = setInterval(() => {
-                        console.log("🔔 Polling: Verificando novas tarefas...");
-                        checkTodoPendentes(false); // false = apenas novas tarefas
-                    }, 90000); // A cada 1.5 minutos
+                        checkTodoPendentes(false);
+                    }, 300000); // A cada 5 minutos
                 }
                 
-                // Polling: Verificar novas mensagens da liderança a cada 60 segundos
+                // Polling: Verificar novas mensagens da liderança a cada 5 minutos
                 let liderancaPollingInterval = null;
                 if (isAdmin) {
                     liderancaPollingInterval = setInterval(() => {
-                        console.log("📢 Polling: Verificando mensagens da liderança...");
                         checkLiderancaPendentes(false);
-                    }, 60000); // A cada 1 minuto
+                    }, 300000); // A cada 5 minutos
                 }
                 
-                // Marcar como offline ao fechar
-                const handleBeforeUnload = () => updateOnlineStatus(false);
-                window.addEventListener('beforeunload', handleBeforeUnload);
-                
                 return () => {
-                    clearInterval(statusInterval);
                     if (todoPollingInterval) clearInterval(todoPollingInterval);
                     if (liderancaPollingInterval) clearInterval(liderancaPollingInterval);
-                    window.removeEventListener('beforeunload', handleBeforeUnload);
-                    updateOnlineStatus(false);
                 };
             }
         }, [l?.codProfissional]);
@@ -4141,9 +4128,7 @@ const hideLoadingScreen = () => {
         React.useEffect(() => {
             if (l?.codProfissional) {
                 carregarRelatoriosNaoLidos();
-                // Verificar a cada 30 segundos
-                const interval = setInterval(carregarRelatoriosNaoLidos, 30000);
-                return () => clearInterval(interval);
+                // ⚡ Polling removido — carrega só 1x no login
             }
         }, [l?.codProfissional]);
         
