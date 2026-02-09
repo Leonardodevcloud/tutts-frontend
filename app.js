@@ -6139,11 +6139,9 @@ const hideLoadingScreen = () => {
                 } else {
                     console.log("📊 Sem datas, usando filtros vazios");
                 }
-                // Sempre chamar ol para carregar o dashboard
-                setLoadingMessage("Carregando dashboard principal...");
-                console.log("📊 Chamando ol() com filtros:", JSON.stringify(novosFiltros));
-                await ol(novosFiltros);
-                console.log("📊 ll() - Carregamento concluído!");
+                // NÃO carregar dashboard automaticamente - usuário deve clicar "Aplicar Filtros"
+                console.log("📊 ll() - Filtros carregados! Aguardando usuário aplicar filtros...");
+                Ra(!1); // Esconder loading - filtros prontos
             } catch (e) {
                 console.error("❌ Erro ao carregar dropdowns:", e);
                 Ra(!1);
@@ -17763,9 +17761,9 @@ const hideLoadingScreen = () => {
                 className: "text-5xl mb-4"
             }, "📊"), React.createElement("p", {
                 className: "text-gray-500"
-            }, "Nenhum dado encontrado"), React.createElement("p", {
+            }, "Selecione os filtros desejados"), React.createElement("p", {
                 className: "text-sm text-gray-400 mt-2"
-            }, 'Faça upload de uma planilha na aba "Upload"')))))
+            }, 'Escolha o período e clique em "Aplicar Filtros" para carregar o dashboard')))))
         }
         
         // ========== PÁGINA HOME - BEM-VINDO ==========

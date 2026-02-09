@@ -1,6 +1,6 @@
 // Service Worker - Sistema Tutts PWA
 // IMPORTANTE: Mude este numero a cada deploy para forcar atualizacao!
-const CACHE_VERSION = '20250209_002';
+const CACHE_VERSION = '20250209_003';
 const CACHE_NAME = `tutts-cache-${CACHE_VERSION}`;
 const API_URL = 'https://tutts-backend-production.up.railway.app';
 
