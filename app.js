@@ -5434,7 +5434,7 @@ const hideLoadingScreen = () => {
                 const params = Xa();
                 console.log("🗺️ Carregando mapa de calor:", params.toString());
                 setLoadingMessage("Buscando coordenadas das entregas...");
-                const response = await fetch(API_URL + "/bi/mapa-calor?" + params);
+                const response = await fetchAuth(API_URL + "/bi/mapa-calor?" + params);
                 const data = await response.json();
                 setLoadingMessage("Renderizando mapa...");
                 console.log("🗺️ Dados mapa recebidos:", data);
