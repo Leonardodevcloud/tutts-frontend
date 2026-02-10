@@ -5306,7 +5306,13 @@ const hideLoadingScreen = () => {
             try {
                 const t = await fetchAuth(`${API_URL}/submissions/${e}/imagem`),
                     a = await t.json();
+                // Atualizar submissions do dashboard
                 C(t => t.map(t => t.id === e ? {
+                    ...t,
+                    imagemComprovante: a.imagem
+                } : t));
+                // Atualizar buscaResults também (aba Buscar)
+                setBuscaResults(t => t.map(t => t.id === e ? {
                     ...t,
                     imagemComprovante: a.imagem
                 } : t))
@@ -18527,7 +18533,7 @@ const hideLoadingScreen = () => {
             className: "h-20 rounded cursor-pointer",
             onClick: () => g(e)
         }))), React.createElement("button", {
-            onClick: () => C(t => t.map(t => t.id === e.id ? {
+            onClick: () => setBuscaResults(t => t.map(t => t.id === e.id ? {
                 ...t,
                 imagemComprovante: null
             } : t)),
