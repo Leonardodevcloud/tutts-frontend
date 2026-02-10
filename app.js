@@ -17,7 +17,7 @@ const {
 // ==================== FIM LOGGER CONTROLADO ====================
 
 // ==================== LOGO URL ====================
-const TUTTS_LOGO_URL = "/logotuttsoriginal.png";
+const TUTTS_LOGO_URL = "https://github.com/Leonardodevcloud/tutts-frontend/blob/main/logotuttsoriginal.png?raw=true";
 
 // ==================== SPLASH SCREEN COMPONENT ====================
 const SplashScreen = ({ onComplete }) => {
@@ -403,7 +403,7 @@ const NavegacaoHorizontal = ({ usuario, moduloAtivo, abaAtiva, onNavigate, hasMo
                         title: "Ir para Início"
                     },
                         React.createElement("img", {
-                            src: "/logotuttsoriginal.png",
+                            src: "https://github.com/Leonardodevcloud/tutts-frontend/blob/main/logotuttsoriginal.png?raw=true",
                             alt: "Tutts",
                             className: "w-10 h-10 rounded-lg"
                         }),
@@ -619,7 +619,7 @@ const HeaderCompacto = ({ usuario, moduloAtivo, abaAtiva, socialProfile, isLoadi
                         title: "Ir para Início"
                     },
                         React.createElement("img", {
-                            src: "/logotuttsoriginal.png",
+                            src: "https://github.com/Leonardodevcloud/tutts-frontend/blob/main/logotuttsoriginal.png?raw=true",
                             alt: "Tutts",
                             className: "w-9 h-9 rounded-lg",
                             onError: (e) => { e.target.style.display = "none"; }
@@ -1853,7 +1853,7 @@ const hideLoadingScreen = () => {
             validacao: [],
             loja: [],
             gratuidades: []
-        }), [j, C] = useState([]), [dashStats, setDashStats] = useState(null), [buscaResults, setBuscaResults] = useState([]), [buscaTotal, setBuscaTotal] = useState(0), [buscaLoading, setBuscaLoading] = useState(false), [A, S] = useState([]), [k, P] = useState(!1), [T, D] = useState(null), [L, I] = useState([]), [F, $] = useState(!1), [M, O] = useState([]), [q, U] = useState([]), [z, B] = useState([]), [V, J] = useState(null), [Q, H] = useState([]), [G, W] = useState([]), [Z, Y] = useState([]), [K, X] = useState({}), [ee, te] = useState([]), [ae, le] = useState([]), [re, oe] = useState([]), [ce, se] = useState([]), [ne, me] = useState([]), [ie, de] = useState([]), [progressoNovatos, setProgressoNovatos] = useState([]), [modalEntregasNovatos, setModalEntregasNovatos] = useState(null), [pe, xe] = useState([]), [cidadesIndicacao, setCidadesIndicacao] = useState([]), [ue, ge] = useState(!1), [be, Re] = useState(null), [Ee, he] = useState("home"), [mensagemGentileza, setMensagemGentileza] = useState(() => getMensagemGentileza()), [elegibilidadeNovatos, setElegibilidadeNovatos] = useState({ elegivel: false, motivo: '', promocoes: [], carregando: true }), [regioesNovatos, setRegioesNovatos] = useState([]), [clientesBINovatos, setClientesBINovatos] = useState([]), [clientesSelecionados, setClientesSelecionados] = useState([]), [carregandoClientes, setCarregandoClientes] = useState(false), [solicitacoesPagina, setSolicitacoesPagina] = useState(1), [acertoRealizado, setAcertoRealizado] = useState(() => { try { const saved = localStorage.getItem("tutts_acerto_realizado"); return saved !== null ? JSON.parse(saved) : true; } catch(e) { return true; } }), [solicitacoesPorPagina] = useState(120), [conciliacaoPagina, setConciliacaoPagina] = useState(1), [conciliacaoPorPagina] = useState(120), [processandoWithdrawals, setProcessandoWithdrawals] = useState(new Set()), [withdrawalCounts, setWithdrawalCounts] = useState({}), [rankingRetorno, setRankingRetorno] = useState([]), [rankingLoading, setRankingLoading] = useState(false), [relatorioData, setRelatorioData] = useState(null), [relatorioLoading, setRelatorioLoading] = useState(false), 
+        }), [j, C] = useState([]), [dashStats, setDashStats] = useState(null), [buscaResults, setBuscaResults] = useState([]), [buscaTotal, setBuscaTotal] = useState(0), [buscaLoading, setBuscaLoading] = useState(false), [A, S] = useState([]), [k, P] = useState(!1), [T, D] = useState(null), [L, I] = useState([]), [F, $] = useState(!1), [M, O] = useState([]), [q, U] = useState([]), [z, B] = useState([]), [V, J] = useState(null), [Q, H] = useState([]), [G, W] = useState([]), [Z, Y] = useState([]), [K, X] = useState({}), [ee, te] = useState([]), [ae, le] = useState([]), [re, oe] = useState([]), [ce, se] = useState([]), [ne, me] = useState([]), [ie, de] = useState([]), [progressoNovatos, setProgressoNovatos] = useState([]), [modalEntregasNovatos, setModalEntregasNovatos] = useState(null), [pe, xe] = useState([]), [cidadesIndicacao, setCidadesIndicacao] = useState([]), [ue, ge] = useState(!1), [be, Re] = useState(null), [Ee, he] = useState("home"), [mensagemGentileza, setMensagemGentileza] = useState(() => getMensagemGentileza()), [elegibilidadeNovatos, setElegibilidadeNovatos] = useState({ elegivel: false, motivo: '', promocoes: [], carregando: true }), [regioesNovatos, setRegioesNovatos] = useState([]), [clientesBINovatos, setClientesBINovatos] = useState([]), [clientesSelecionados, setClientesSelecionados] = useState([]), [carregandoClientes, setCarregandoClientes] = useState(false), [solicitacoesPagina, setSolicitacoesPagina] = useState(1), [acertoRealizado, setAcertoRealizado] = useState(() => { try { const saved = localStorage.getItem("tutts_acerto_realizado"); return saved !== null ? JSON.parse(saved) : true; } catch(e) { return true; } }), [solicitacoesPorPagina] = useState(120), [conciliacaoPagina, setConciliacaoPagina] = useState(1), [conciliacaoPorPagina] = useState(120), [processandoWithdrawals, setProcessandoWithdrawals] = useState(new Set()), [rankingRetorno, setRankingRetorno] = useState([]), [rankingLoading, setRankingLoading] = useState(false), [relatorioData, setRelatorioData] = useState(null), [relatorioLoading, setRelatorioLoading] = useState(false), 
         
         // Helper para parse de saldo (aceita número ou string brasileira)
         parseSaldoBR = (valor) => {
@@ -3056,72 +3056,23 @@ const hideLoadingScreen = () => {
                     codValido: !1
                 }))
             }
-        }, [p.cod, p.view, pe]), 
-        
-        useEffect(() => {
+        }, [p.cod, p.view, pe]), useEffect(() => {
             if (!l) return;
-            // ⚡ PERFORMANCE: No login, carregar APENAS dados essenciais
-            // Dados pesados de cada módulo carregam sob demanda (lazy)
-            const initEssenciais = async () => {
-                const safeCall = async (fn) => { try { await fn() } catch(e) { console.log("Init error:", e) } };
-                
-                // Social profile + mensagens (necessário para header/badges)
-                safeCall(() => loadSocialProfile(l.codProfissional));
-                safeCall(loadSocialMessages);
-                
-                // Submissions dashboard (usado no home admin como La)
-                safeCall(La);
-                
-                // Para user: apenas check-terms e produtos ativos (mínimo para home)
-                if ("user" === l.role) {
-                    safeCall($a);
-                    safeCall(Ga);
+            const e = async e => {
+                try {
+                    await e()
+                } catch (e) {
+                    console.log("Background load error:", e)
                 }
+            }, t = () => {
+                "user" === l.role && (e($a), e(qa), e(vl), e(_l), e(kl), e(carregarProgressoNovatos), e(Dl), e(Il), e(Za), e(Ka), e(Ta)), "admin_financeiro" !== l.role && "admin_master" !== l.role || (e(za), e(Ba), e(gl), e(wl), e(Cl), e(Sl), e(Dl), e(Ll), e(Ia), e(Ja), e(Ha), e(Wa), e(Ya)), "admin" !== l.role && "admin_master" !== l.role || e(Ia), "admin" === l.role && hasModuleAccess(l, "financeiro") && (e(wl), e(gl), e(Cl), e(Sl), e(Ll)), e(La)
             };
-            initEssenciais();
-        }, [l]),
-        
-        // ⚡ PERFORMANCE: Carregar dados do módulo sob demanda quando navega
-        useEffect(() => {
-            if (!l) return;
-            const safeCall = async (fn) => { try { await fn() } catch(e) { console.log("Module load error:", e) } };
-            
-            // Módulo Financeiro (admin) — NÃO carregar aqui, o financeiro tem useEffect dedicado
-            // que já faz Promise.all de withdrawals+pedidos+gratuidades
-            if ("financeiro" === Ee) {
-                // Apenas dados complementares que NÃO são carregados pelo useEffect dedicado
-                if ("admin_financeiro" === l.role || "admin_master" === l.role) {
-                    // za=gratuities, Ba=restricted — já carregam pelo useEffect dedicado ou por aba
-                }
-                if ("user" === l.role) {
-                    safeCall(Oa); safeCall(qa); safeCall(Za); safeCall(Ka);
-                }
-            }
-            
-            // Módulo Operacional/Config — carrega promoções, indicações, novatos
-            if ("operacional" === Ee || "config" === Ee || "financeiro" === Ee) {
-                if ("admin_financeiro" === l.role || "admin_master" === l.role || ("admin" === l.role && hasModuleAccess(l, "financeiro"))) {
-                    safeCall(gl); safeCall(wl); safeCall(Cl); safeCall(Sl); safeCall(Ll);
-                }
-                if ("admin" === l.role || "admin_master" === l.role) {
-                    safeCall(Ia);
-                }
-            }
-            
-            // Módulo Config — lista de usuários
-            if ("config" === Ee) {
-                safeCall(Ia);
-            }
-            
-            // Módulo user — promoções, indicações, quiz, etc
-            if ("user" === l.role && ("home" === Ee || "financeiro" === Ee)) {
-                safeCall(vl); safeCall(_l); safeCall(kl);
-                safeCall(carregarProgressoNovatos);
-                safeCall(Dl); safeCall(Il);
-                safeCall(Ta); // planilha Google Sheets
-            }
-            
-        }, [l, Ee]);
+            (async () => {
+                "user" === l.role && await Promise.all([Oa(), Ga()]), "admin_financeiro" !== l.role && "admin_master" !== l.role || await Promise.all([Ua(), Va()])
+            })().then(() => {
+                setTimeout(t, 100)
+            })
+        }, [l]);
         const Ca = () => {
                 try {
                     const e = new(window.AudioContext || window.webkitAudioContext),
@@ -3261,36 +3212,34 @@ const hideLoadingScreen = () => {
             }
             
             // ==================== CARREGAMENTO OTIMIZADO ====================
-            // ⚡ PERFORMANCE: Carregar apenas PENDENTES + contadores (não todos os 4870)
-            // Dados históricos carregam sob demanda ao clicar nos filtros
             const carregarDados = async () => {
                 N(!0);
                 try {
-                    // ⚡ 1 request — retorna só pendentes + contadores
-                    const res = await fetchAuth(`${API_URL}/financeiro/init`);
+                    // Carregar TODOS os saques para visão geral + pedidos + gratuidades
+                    // Usar fetchAuth para enviar token JWT
+                    const [saquesRes, pedidosRes, gratuidadesRes] = await Promise.all([
+                        fetchAuth(`${API_URL}/withdrawals`),
+                        fetchAuth(`${API_URL}/loja/pedidos`),
+                        fetchAuth(`${API_URL}/gratuities`)
+                    ]);
                     
-                    if (!res.ok) {
-                        // Fallback para endpoints individuais se /financeiro/init não existir
-                        console.warn('financeiro/init falhou, usando fallback');
-                        const [saquesRes, pedidosRes, gratuidadesRes] = await Promise.all([
-                            fetchAuth(`${API_URL}/withdrawals?limit=50`),
-                            fetchAuth(`${API_URL}/loja/pedidos`),
-                            fetchAuth(`${API_URL}/gratuities`)
-                        ]);
-                        const saques = await saquesRes.json();
-                        const pedidos = await pedidosRes.json();
-                        const gratuidades = await gratuidadesRes.json();
-                        U(Array.isArray(saques) ? saques : []); 
-                        tt(Array.isArray(pedidos) ? pedidos : []); 
-                        H(Array.isArray(gratuidades) ? gratuidades : []);
+                    // Verificar se as respostas são válidas
+                    if (!saquesRes.ok || !gratuidadesRes.ok) {
+                        console.error('Erro nas requisições:', saquesRes.status, gratuidadesRes.status);
                         N(!1);
                         return;
                     }
                     
-                    const data = await res.json();
-                    const saques = data.withdrawals || [];
-                    const pedidos = data.pedidos || [];
-                    const gratuidades = data.gratuidades || [];
+                    const saques = await saquesRes.json();
+                    const pedidos = await pedidosRes.json();
+                    const gratuidades = await gratuidadesRes.json();
+                    
+                    // Verificar se são arrays válidos
+                    if (!Array.isArray(saques) || !Array.isArray(gratuidades)) {
+                        console.error('Resposta inválida:', saques, gratuidades);
+                        N(!1);
+                        return;
+                    }
                     
                     // Filtrar pendentes para contadores
                     const pendentes = saques.filter(e => e.status === "pending" || e.status === "aguardando_aprovacao");
@@ -3310,27 +3259,26 @@ const hideLoadingScreen = () => {
                         Sa.current = countPedidos;
                     }
                     
+                    // IMPORTANTE: Carregar TODOS os saques para a tabela
                     U(saques); tt(pedidos); H(gratuidades);
-                    // ⚡ Armazenar contadores do backend (precisos, sem precisar carregar 4879 registros)
-                    if (data.counts) setWithdrawalCounts(data.counts);
                     
                     const abaAtiva = p.finTab || "home-fin";
                     "solicitacoes" === abaAtiva || "validacao" === abaAtiva ? Pa("solicitacoes") : "loja" === abaAtiva ? Pa("loja") : "gratuidades" === abaAtiva && Pa("gratuidades");
                     h(new Date);
-                    console.log('✅ Financeiro carregado:', saques.length, 'saques (pendentes),', pedidos.length, 'pedidos,', gratuidades.length, 'gratuidades');
+                    console.log('✅ Dados carregados:', saques.length, 'total,', pendentes.length, 'pendentes');
                 } catch (e) { console.error("Erro:", e); }
                 N(!1);
             };
             
             carregarDados();
             
-            // Fallback: polling APENAS se WebSocket offline (60s)
+            // Fallback: polling APENAS se WebSocket offline (60s ao invés de 10s)
             const fallbackInterval = setInterval(() => {
                 if (!wsConnected) { console.log('⚠️ [Fallback] WebSocket offline'); carregarDados(); }
             }, 60000);
             
             return () => clearInterval(fallbackInterval);
-        }, [l, Ee]), 
+        }, [l, p.finTab, Ee, wsConnected]), 
         
         // useEffect separado para carregar dados específicos da aba (só quando muda de aba)
         useEffect(() => {
@@ -5286,6 +5234,40 @@ const hideLoadingScreen = () => {
                 }
             } catch (e) { console.error(e); }
             setBuscaLoading(false);
+        }, Ia = async () => {
+            try {
+                const e = await fetchAuth(`${API_URL}/users`),
+                    t = await e.json();
+                S(t.map(e => ({
+                    codProfissional: e.cod_profissional,
+                    fullName: e.full_name,
+                    role: e.role,
+                    setor_id: e.setor_id,
+                    setor_nome: e.setor_nome,
+                    setor_cor: e.setor_cor,
+                    createdAt: new Date(e.created_at).toLocaleString("pt-BR")
+                })))
+            } catch (e) {
+                console.error(e)
+            }
+        }, Fa = async e => {
+            try {
+                const t = await fetchAuth(`${API_URL}/submissions/${e}/imagem`),
+                    a = await t.json();
+                const imgData = a.imagem || a.imagemComprovante || a.imagem_comprovante;
+                if (!imgData) return;
+                const idNum = parseInt(e);
+                C(t => t.map(t => parseInt(t.id) === idNum ? {
+                    ...t,
+                    imagemComprovante: imgData
+                } : t));
+                setBuscaResults(t => t.map(t => parseInt(t.id) === idNum ? {
+                    ...t,
+                    imagemComprovante: imgData
+                } : t))
+            } catch (err) {
+                ja("Erro ao carregar imagem", "error")
+            }
         }, carregarRankingRetorno = async (periodo) => {
             try {
                 setRankingLoading(true);
@@ -5310,43 +5292,6 @@ const hideLoadingScreen = () => {
                 }
             } catch (e) { console.error('Erro relatorio:', e); }
             setRelatorioLoading(false);
-        }, Ia = async () => {
-            try {
-                const e = await fetchAuth(`${API_URL}/users`),
-                    t = await e.json();
-                S(t.map(e => ({
-                    codProfissional: e.cod_profissional,
-                    fullName: e.full_name,
-                    role: e.role,
-                    setor_id: e.setor_id,
-                    setor_nome: e.setor_nome,
-                    setor_cor: e.setor_cor,
-                    createdAt: new Date(e.created_at).toLocaleString("pt-BR")
-                })))
-            } catch (e) {
-                console.error(e)
-            }
-        }, Fa = async e => {
-            try {
-                const t = await fetchAuth(`${API_URL}/submissions/${e}/imagem`),
-                    a = await t.json();
-                const imgData = a.imagem || a.imagemComprovante || a.imagem_comprovante;
-                if (!imgData) { console.warn('Fa: sem imagem na resposta', a); return; }
-                const idNum = parseInt(e);
-                // Atualizar submissions do dashboard
-                C(t => t.map(t => parseInt(t.id) === idNum ? {
-                    ...t,
-                    imagemComprovante: imgData
-                } : t));
-                // Atualizar buscaResults também (aba Buscar)
-                setBuscaResults(t => t.map(t => parseInt(t.id) === idNum ? {
-                    ...t,
-                    imagemComprovante: imgData
-                } : t))
-            } catch (err) {
-                console.error('Fa erro:', err);
-                ja("Erro ao carregar imagem", "error")
-            }
         }, $a = async () => {
             try {
                 const e = await fetchAuth(`${API_URL}/financial/check-terms/${l.cod_profissional}`),
@@ -5383,14 +5328,14 @@ const hideLoadingScreen = () => {
             }
         }, Ua = async () => {
             try {
-                const e = await fetchAuth(`${API_URL}/withdrawals?limit=50`);
+                const e = await fetchAuth(`${API_URL}/withdrawals`);
                 if (e.ok) U(await e.json())
             } catch (e) {
                 console.error(e)
             }
         }, za = async () => {
             try {
-                const e = await fetchAuth(`${API_URL}/gratuities?limit=50`);
+                const e = await fetchAuth(`${API_URL}/gratuities`);
                 if (e.ok) H(await e.json())
             } catch (e) {
                 console.error(e)
@@ -6491,32 +6436,7 @@ const hideLoadingScreen = () => {
         }, ul = async () => {
             m(!0);
             try {
-                // ⚡ PERFORMANCE: Refresh apenas dados do módulo ativo
-                await La();
-                if ("financeiro" === Ee) {
-                    "user" === l.role && (await Oa(), await qa(), await Za());
-                    if ("admin_financeiro" === l.role || "admin_master" === l.role || ("admin" === l.role && hasModuleAccess(l, "financeiro"))) {
-                        // ⚡ 1 request consolidado ao invés de 7 individuais
-                        try {
-                            const res = await fetchAuth(`${API_URL}/financeiro/init`);
-                            if (res.ok) {
-                                const data = await res.json();
-                                U(data.withdrawals || []); tt(data.pedidos || []); H(data.gratuidades || []);
-                                if (data.counts) setWithdrawalCounts(data.counts);
-                                h(new Date);
-                                console.log('✅ Refresh financeiro:', (data.withdrawals||[]).length, 'pendentes');
-                            }
-                        } catch(e) { console.error('Refresh erro:', e); }
-                    }
-                }
-                if ("operacional" === Ee || "config" === Ee) {
-                    ("admin" === l.role || "admin_master" === l.role) && await Ia();
-                    ("admin_financeiro" === l.role || "admin_master" === l.role) && (await gl(), await wl());
-                }
-                if ("user" === l.role && "home" === Ee) {
-                    await Oa(); await vl(); await _l(); await Ga();
-                }
-                ja("🔄 Atualizado!", "success")
+                await La(), "admin" !== l.role && "admin_master" !== l.role || await Ia(), "user" === l.role && (await Oa(), await qa(), await vl(), await _l(), await Ga(), await Za()), "admin_financeiro" !== l.role && "admin_master" !== l.role || (await Ua(), await za(), await Ba(), await Va(), await gl(), await wl(), await Ia(), await Ja(), await Ha(), await Wa()), "admin" === l.role && hasModuleAccess(l, "financeiro") && (await wl(), await gl()), ja("🔄 Atualizado!", "success")
             } catch (e) {
                 ja("Erro", "error")
             }
@@ -8329,7 +8249,7 @@ const hideLoadingScreen = () => {
                         // Imagem da moto com baú - LAZY LOADING
                         React.createElement("div", {className: "flex justify-center mb-6 animate-scaleIn", style: { animationDelay: "0.3s", opacity: 0, animationFillMode: "forwards" }},
                             React.createElement("img", {
-                                src: "/Layer%200%20copy%20(1).png",
+                                src: "https://github.com/Leonardodevcloud/tutts-frontend/blob/main/Layer%200%20copy%20(1).png?raw=true",
                                 alt: "Moto com baú",
                                 loading: "lazy",
                                 decoding: "async",
@@ -10615,8 +10535,6 @@ const hideLoadingScreen = () => {
                     solicitacoesPorPagina, conciliacaoPorPagina, acertoRealizado, setAcertoRealizado,
                     // Proteção contra débito duplicado
                     processandoWithdrawals, setProcessandoWithdrawals,
-                    // ⚡ Contadores do backend (precisos sem carregar todos)
-                    withdrawalCounts,
                     // Navegação e usuário
                     l, Ee, he, o, f, E, e,
                     // Utilitários
@@ -13485,7 +13403,7 @@ const hideLoadingScreen = () => {
                 // Hero Section com Logo
                 React.createElement("div", {className: "flex flex-col items-center justify-center py-12"},
                     React.createElement("img", {
-                        src: "/Tutts%20BI(1).png",
+                        src: "https://github.com/Leonardodevcloud/tutts-frontend/blob/main/Tutts%20BI(1).png?raw=true",
                         alt: "Tutts BI",
                         className: "w-64 h-64 object-contain mb-6 drop-shadow-2xl"
                     }),
@@ -18205,7 +18123,7 @@ const hideLoadingScreen = () => {
             onLogout: () => o(null),
             onGoHome: () => he("home"),
             onNavigate: navegarSidebar,
-            onChangeTab: Ee === "disponibilidade" ? null : (abaId) => { x({...p, adminTab: abaId}); if (abaId === 'ranking' && !rankingRetorno.length) carregarRankingRetorno(p.rankingPeriod || 'all'); if (abaId === 'relatorios' && !relatorioData) carregarRelatorio(p.relMes, p.relAno); }
+            onChangeTab: Ee === "disponibilidade" ? null : (abaId) => { x({...p, adminTab: abaId}); if (abaId === 'ranking') carregarRankingRetorno(p.rankingPeriod || 'all'); if (abaId === 'relatorios') carregarRelatorio(p.relMes, p.relAno); }
         }),
         // Conteúdo principal (sub-abas removidas - navegação via sidebar)
         React.createElement("div", {
@@ -18586,64 +18504,94 @@ const hideLoadingScreen = () => {
         }, React.createElement("h2", {
             className: "text-lg font-semibold mb-4"
         }, "🏆 Ranking de Retorno - Aprovações"), React.createElement("div", {
-            className: "mb-6 flex gap-3 items-center"
+            className: "mb-6"
         }, React.createElement("select", {
             value: p.rankingPeriod || "all",
             onChange: e => { x({ ...p, rankingPeriod: e.target.value }); carregarRankingRetorno(e.target.value); },
             className: "px-4 py-2 border rounded-lg"
-        }, React.createElement("option", { value: "all" }, "📅 Todos os Tempos"), 
-           React.createElement("option", { value: "today" }, "📅 Hoje"), 
-           React.createElement("option", { value: "week" }, "📅 Esta Semana"), 
-           React.createElement("option", { value: "month" }, "📅 Este Mês")),
-        React.createElement("button", {
-            onClick: () => carregarRankingRetorno(p.rankingPeriod || "all"),
-            disabled: rankingLoading,
-            className: "px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-semibold hover:bg-purple-700 disabled:opacity-50"
-        }, rankingLoading ? "🔄 Carregando..." : "🔄 Atualizar")), 
-        !rankingRetorno.length && !rankingLoading && React.createElement("button", {
-            onClick: () => carregarRankingRetorno(p.rankingPeriod || "all"),
-            className: "w-full py-4 bg-purple-50 text-purple-700 rounded-lg font-semibold hover:bg-purple-100"
-        }, "📊 Carregar Ranking"),
-        rankingLoading && React.createElement("div", { className: "text-center py-8" },
-            React.createElement("div", { className: "animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto" }),
-            React.createElement("p", { className: "mt-2 text-gray-500" }, "Carregando ranking...")),
-        React.createElement("div", {
+        }, React.createElement("option", {
+            value: "all"
+        }, "📅 Todos os Tempos"), React.createElement("option", {
+            value: "today"
+        }, "📅 Hoje"), React.createElement("option", {
+            value: "week"
+        }, "📅 Esta Semana"), React.createElement("option", {
+            value: "month"
+        }, "📅 Este Mês"))), React.createElement("div", {
             className: "space-y-3"
-        }, rankingRetorno.map((v, i) => React.createElement("div", {
+        }, (() => {
+            if (rankingLoading) return React.createElement("div", { className: "text-center py-8" }, React.createElement("div", { className: "animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto" }), React.createElement("p", { className: "mt-2 text-gray-500" }, "Carregando ranking..."));
+            const l = rankingRetorno.map(r => [r.user_cod, { nome: r.user_name, cod: r.user_cod, total: parseInt(r.total), solicitacoes: (r.solicitacoes || []).map(s => ({ ordemServico: s.ordemServico, created_at: s.created_at, temImagem: s.temImagem })) }]);
+            return 0 === l.length ? React.createElement("p", {
+                className: "text-gray-500 text-center py-8"
+            }, "Sem dados no período") : l.map(([k, v], i) => React.createElement("div", {
                 key: i,
                 className: "bg-gray-50 rounded-lg hover:bg-gray-100"
             }, React.createElement("div", {
                 className: "flex items-center gap-4 p-4 cursor-pointer",
-                onClick: () => x({ ...p, [`rankingExp_${v.user_cod}`]: !p[`rankingExp_${v.user_cod}`] })
+                onClick: () => x({
+                    ...p,
+                    [`rankingExp_${k}`]: !p[`rankingExp_${k}`]
+                })
             }, React.createElement("div", {
                 className: "text-3xl font-bold w-12 " + (0 === i ? "text-yellow-500" : 1 === i ? "text-gray-400" : 2 === i ? "text-orange-600" : "text-gray-400")
             }, 0 === i ? "🥇" : 1 === i ? "🥈" : 2 === i ? "🥉" : `${i+1}º`), React.createElement("div", {
                 className: "flex-1"
-            }, React.createElement("p", { className: "font-semibold text-lg text-gray-800" }, v.user_name),
-               React.createElement("p", { className: "text-sm text-gray-500 font-mono" }, "COD: ", v.user_cod)),
-            React.createElement("div", { className: "text-right flex items-center gap-3" },
-                React.createElement("div", null, 
-                    React.createElement("p", { className: "text-3xl font-bold text-purple-600" }, parseInt(v.total)),
-                    React.createElement("p", { className: "text-xs text-gray-500" }, "aprovações")),
-                React.createElement("button", {
-                    className: "w-8 h-8 rounded-full bg-purple-600 text-white font-bold text-lg flex items-center justify-center hover:bg-purple-700 transition-all " + (p[`rankingExp_${v.user_cod}`] ? "rotate-45" : "")
-                }, "+"))),
-            p[`rankingExp_${v.user_cod}`] && React.createElement("div", { className: "px-4 pb-4" },
-                React.createElement("div", { className: "bg-white rounded-lg border border-gray-200 divide-y divide-gray-100 max-h-64 overflow-y-auto" },
-                    v.solicitacoes.map((s, idx) => React.createElement("div", { key: idx, className: "p-3 hover:bg-gray-50" },
-                        React.createElement("div", { className: "flex justify-between items-center" },
-                            React.createElement("div", null,
-                                React.createElement("p", { className: "font-mono font-semibold text-sm" }, "OS: ", s.ordemServico),
-                                React.createElement("p", { className: "text-xs text-gray-500" }, 
-                                    new Date(s.created_at).toLocaleDateString("pt-BR"), " às ",
-                                    new Date(s.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }))),
-                            React.createElement("div", { className: "flex items-center gap-2" },
-                                s.temImagem && React.createElement("button", {
-                                    onClick: e => { e.stopPropagation(); ja("🔄 Carregando...", "success"); Fa(s.id); },
-                                    className: "px-2 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded hover:bg-blue-200"
-                                }, "📷 Ver Foto"),
-                                React.createElement("span", { className: "px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded" }, "✓ Aprovada")))))))
-        ))), "disponibilidade" === p.adminTab && (
+            }, React.createElement("p", {
+                className: "font-semibold text-lg text-gray-800"
+            }, v.nome), React.createElement("p", {
+                className: "text-sm text-gray-500 font-mono"
+            }, "COD: ", v.cod)), React.createElement("div", {
+                className: "text-right flex items-center gap-3"
+            }, React.createElement("div", null, React.createElement("p", {
+                className: "text-3xl font-bold text-purple-600"
+            }, v.total), React.createElement("p", {
+                className: "text-xs text-gray-500"
+            }, "aprovações")), React.createElement("button", {
+                className: "w-8 h-8 rounded-full bg-purple-600 text-white font-bold text-lg flex items-center justify-center hover:bg-purple-700 transition-all " + (p[`rankingExp_${k}`] ? "rotate-45" : "")
+            }, "+"))), p[`rankingExp_${k}`] && React.createElement("div", {
+                className: "px-4 pb-4"
+            }, React.createElement("div", {
+                className: "bg-white rounded-lg border border-gray-200 divide-y divide-gray-100 max-h-64 overflow-y-auto"
+            }, v.solicitacoes.map((s, idx) => React.createElement("div", {
+                key: idx,
+                className: "p-3 hover:bg-gray-50"
+            }, React.createElement("div", {
+                className: "flex justify-between items-center"
+            }, React.createElement("div", null, React.createElement("p", {
+                className: "font-mono font-semibold text-sm"
+            }, "OS: ", s.ordemServico), React.createElement("p", {
+                className: "text-xs text-gray-500"
+            }, new Date(s.created_at).toLocaleDateString("pt-BR"), " às ", new Date(s.created_at).toLocaleTimeString("pt-BR", {
+                hour: "2-digit",
+                minute: "2-digit"
+            }))), React.createElement("div", {
+                className: "flex items-center gap-2"
+            }, s.temImagem && React.createElement("button", {
+                onClick: e => {
+                    e.stopPropagation();
+                    if (s.imagemComprovante) {
+                        g(s.imagemComprovante.split("|||")[0])
+                    } else {
+                        ja("🔄 Carregando...", "success");
+                        Fa(s.id)
+                    }
+                },
+                className: "px-2 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded hover:bg-blue-200 flex items-center gap-1"
+            }, "📷 Ver Foto"), React.createElement("span", {
+                className: "px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded"
+            }, "✓ Aprovada"))), s.imagemComprovante && React.createElement("div", {
+                className: "mt-2 flex gap-2 flex-wrap"
+            }, s.imagemComprovante.split("|||").map((img, imgIdx) => React.createElement("img", {
+                key: imgIdx,
+                src: img,
+                className: "h-16 rounded cursor-pointer border border-gray-200 hover:border-purple-400",
+                onClick: e => {
+                    e.stopPropagation();
+                    g(img)
+                }
+            })))))))))
+        })())), "disponibilidade" === p.adminTab && (
             typeof window.ModuloDisponibilidadeContent !== 'undefined' 
                 ? React.createElement(window.ModuloDisponibilidadeContent, {
                     p, x, ja, API_URL, pe, Ta, A, l, fetchAuth
@@ -18657,9 +18605,8 @@ const hideLoadingScreen = () => {
         ), "relatorios" === p.adminTab && (() => {
             const e = void 0 !== p.relMes ? parseInt(p.relMes) : (new Date).getMonth(),
                 t = void 0 !== p.relAno ? parseInt(p.relAno) : (new Date).getFullYear();
-            // Auto-carregar dados do backend
             if (!relatorioData && !relatorioLoading) { carregarRelatorio(e, t); }
-            if (relatorioLoading) return React.createElement("div", { className: "flex items-center justify-center py-12" }, React.createElement("div", { className: "animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600" }), React.createElement("span", { className: "ml-3 text-gray-600" }, "Carregando relatório..."));
+            if (relatorioLoading) return React.createElement("div", { className: "flex items-center justify-center py-12" }, React.createElement("div", { className: "animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto" }), React.createElement("span", { className: "ml-3 text-gray-600" }, "Carregando relatório..."));
             const rd = relatorioData || {},
                 a = { length: rd.total || 0 },
                 l = { length: rd.aprovados || 0 },
@@ -18669,10 +18616,10 @@ const hideLoadingScreen = () => {
                 s = rd.taxaRejeicao || "0.0",
                 n = rd.motivos || {},
                 i = rd.topProfissionais || [],
-                d = rd.semanas || [{ label: "Semana 1", dias: [1,7], total: 0, aprovadas: 0 }, { label: "Semana 2", dias: [8,14], total: 0, aprovadas: 0 }, { label: "Semana 3", dias: [15,21], total: 0, aprovadas: 0 }, { label: "Semana 4", dias: [22,31], total: 0, aprovadas: 0 }];
-            const u = Math.max(...d.map(e => e.total), 1),
+                d = rd.semanas && rd.semanas.length > 0 ? rd.semanas : [{ label: "Semana 1", dias: [1,7], total: 0, aprovadas: 0 }, { label: "Semana 2", dias: [8,14], total: 0, aprovadas: 0 }, { label: "Semana 3", dias: [15,21], total: 0, aprovadas: 0 }, { label: "Semana 4", dias: [22,31], total: 0, aprovadas: 0 }],
+                u = Math.max(...d.map(e => e.total), 1),
                 g = rd.evolucao || [],
-                b = Math.max(...g.map(e => e.total), 1),
+                b = Math.max(...(g.length ? g.map(e => e.total) : [1]), 1),
                 E = { length: rd.mesAnteriorTotal || 0 },
                 h = rd.variacao || "0.0",
                 f = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
@@ -18684,7 +18631,7 @@ const hideLoadingScreen = () => {
                 className: "font-semibold"
             }, "📅 Período:"), React.createElement("select", {
                 value: e,
-                onChange: e => { x({ ...p, relMes: e.target.value }); carregarRelatorio(parseInt(e.target.value), t); },
+                onChange: ev => { x({ ...p, relMes: ev.target.value }); carregarRelatorio(parseInt(ev.target.value), t); },
                 className: "px-3 py-2 border rounded-lg"
             }, f.map((e, t) => React.createElement("option", {
                 key: t,
@@ -18697,11 +18644,8 @@ const hideLoadingScreen = () => {
                 key: e,
                 value: e
             }, e)))), React.createElement("button", {
-                onClick: () => carregarRelatorio(e, t),
-                className: "px-3 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 text-sm"
-            }, "🔄 Atualizar"), React.createElement("button", {
                 onClick: () => {
-                    const m = `\n                  <html>\n                  <head>\n                    <title>Relatório Tutts - ${f[e]}/${t}</title>\n                    <style>\n                      body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }\n                      h1 { color: #581c87; border-bottom: 2px solid #581c87; padding-bottom: 10px; }\n                      h2 { color: #7c3aed; margin-top: 30px; }\n                      .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }\n                      .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin: 20px 0; }\n                      .card { background: #f3f4f6; padding: 15px; border-radius: 8px; text-align: center; }\n                      .card-value { font-size: 28px; font-weight: bold; }\n                      .green { color: #16a34a; }\n                      .red { color: #dc2626; }\n                      .yellow { color: #ca8a04; }\n                      .purple { color: #7c3aed; }\n                      table { width: 100%; border-collapse: collapse; margin: 15px 0; }\n                      th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }\n                      th { background: #f3f4f6; }\n                      .footer { margin-top: 40px; text-align: center; color: #666; font-size: 12px; border-top: 1px solid #ddd; padding-top: 20px; }\n                      .comparativo { background: ${parseFloat(h)>=0?"#dcfce7":"#fee2e2"}; padding: 15px; border-radius: 8px; margin: 20px 0; }\n                    </style>\n                  </head>\n                  <body>\n                    <div class="header">\n                      <h1>📊 Relatório Tutts</h1>\n                      <div>\n                        <strong>${f[e]} / ${t}</strong><br>\n                        <small>Gerado em: ${(new Date).toLocaleString("pt-BR")}</small>\n                      </div>\n                    </div>\n                    \n                    <h2>📋 Resumo Geral</h2>\n                    <div class="cards">\n                      <div class="card"><div class="card-value purple">${a.length}</div><div>Total</div></div>\n                      <div class="card"><div class="card-value green">${l.length}</div><div>Aprovadas</div></div>\n                      <div class="card"><div class="card-value red">${r.length}</div><div>Rejeitadas</div></div>\n                      <div class="card"><div class="card-value yellow">${o.length}</div><div>Pendentes</div></div>\n                    </div>\n                    \n                    <div class="cards">\n                      <div class="card"><div class="card-value green">${c}%</div><div>Taxa Aprovação</div></div>\n                      <div class="card"><div class="card-value red">${s}%</div><div>Taxa Rejeição</div></div>\n                      <div class="card"><div class="card-value purple">${A.length}</div><div>Profissionais</div></div>\n                      <div class="card"><div class="card-value purple">${A.length>0?(a.length/A.length).toFixed(1):0}</div><div>Média/Profissional</div></div>\n                    </div>\n                    \n                    <div class="comparativo">\n                      <strong>📊 Comparativo com Mês Anterior:</strong> \n                      ${parseFloat(h)>=0?"📈":"📉"} ${parseFloat(h)>=0?"+":""}${h}% \n                      (${E.length} → ${a.length} solicitações)\n                    </div>\n                    \n                    <h2>📁 Por Motivo</h2>\n                    <table>\n                      <thead><tr><th>Motivo</th><th>Total</th><th>Aprovadas</th><th>Rejeitadas</th><th>Pendentes</th><th>Taxa</th></tr></thead>\n                      <tbody>\n                        ${Object.entries(n).map(([e,t])=>`\n                          <tr>\n                            <td>${e}</td>\n                            <td>${t.total}</td>\n                            <td class="green">${t.aprovadas}</td>\n                            <td class="red">${t.rejeitadas}</td>\n                            <td class="yellow">${t.pendentes}</td>\n                            <td>${t.total>0?(t.aprovadas/t.total*100).toFixed(0):0}%</td>\n                          </tr>\n                        `).join("")}\n                      </tbody>\n                    </table>\n                    \n                    <h2>👷 Top 10 Profissionais</h2>\n                    <table>\n                      <thead><tr><th>#</th><th>Profissional</th><th>Código</th><th>Total</th><th>Aprovadas</th><th>Rejeitadas</th><th>Taxa</th></tr></thead>\n                      <tbody>\n                        ${i.map((e,t)=>`\n                          <tr>\n                            <td>${t+1}</td>\n                            <td>${e.nome}</td>\n                            <td>${e.cod||"-"}</td>\n                            <td>${e.total}</td>\n                            <td class="green">${e.aprovadas}</td>\n                            <td class="red">${e.rejeitadas}</td>\n                            <td>${e.taxa}%</td>\n                          </tr>\n                        `).join("")}\n                      </tbody>\n                    </table>\n                    \n                    <h2>📅 Por Semana</h2>\n                    <table>\n                      <thead><tr><th>Semana</th><th>Total</th><th>Aprovadas</th><th>Taxa</th></tr></thead>\n                      <tbody>\n                        ${d.map(e=>`\n                          <tr>\n                            <td>${e.label} (dias ${e.dias[0]}-${e.dias[1]})</td>\n                            <td>${e.total}</td>\n                            <td class="green">${e.aprovadas}</td>\n                            <td>${e.total>0?(e.aprovadas/e.total*100).toFixed(0):0}%</td>\n                          </tr>\n                        `).join("")}\n                      </tbody>\n                    </table>\n                    \n                    <div class="footer">\n                      <strong>Central do Entregador Tutts</strong> - Relatório Gerado Automaticamente<br>\n                      ${(new Date).toLocaleString("pt-BR")}\n                    </div>\n                  </body>\n                  </html>\n                `,
+                    const m = `\n                  <html>\n                  <head>\n                    <title>Relatório Tutts - ${f[e]}/${t}</title>\n                    <style>\n                      body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }\n                      h1 { color: #581c87; border-bottom: 2px solid #581c87; padding-bottom: 10px; }\n                      h2 { color: #7c3aed; margin-top: 30px; }\n                      .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }\n                      .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin: 20px 0; }\n                      .card { background: #f3f4f6; padding: 15px; border-radius: 8px; text-align: center; }\n                      .card-value { font-size: 28px; font-weight: bold; }\n                      .green { color: #16a34a; }\n                      .red { color: #dc2626; }\n                      .yellow { color: #ca8a04; }\n                      .purple { color: #7c3aed; }\n                      table { width: 100%; border-collapse: collapse; margin: 15px 0; }\n                      th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }\n                      th { background: #f3f4f6; }\n                      .footer { margin-top: 40px; text-align: center; color: #666; font-size: 12px; border-top: 1px solid #ddd; padding-top: 20px; }\n                      .comparativo { background: ${parseFloat(h)>=0?"#dcfce7":"#fee2e2"}; padding: 15px; border-radius: 8px; margin: 20px 0; }\n                    </style>\n                  </head>\n                  <body>\n                    <div class="header">\n                      <h1>📊 Relatório Tutts</h1>\n                      <div>\n                        <strong>${f[e]} / ${t}</strong><br>\n                        <small>Gerado em: ${(new Date).toLocaleString("pt-BR")}</small>\n                      </div>\n                    </div>\n                    \n                    <h2>📋 Resumo Geral</h2>\n                    <div class="cards">\n                      <div class="card"><div class="card-value purple">${a.length}</div><div>Total</div></div>\n                      <div class="card"><div class="card-value green">${l.length}</div><div>Aprovadas</div></div>\n                      <div class="card"><div class="card-value red">${r.length}</div><div>Rejeitadas</div></div>\n                      <div class="card"><div class="card-value yellow">${o.length}</div><div>Pendentes</div></div>\n                    </div>\n                    \n                    <div class="cards">\n                      <div class="card"><div class="card-value green">${c}%</div><div>Taxa Aprovação</div></div>\n                      <div class="card"><div class="card-value red">${s}%</div><div>Taxa Rejeição</div></div>\n                      <div class="card"><div class="card-value purple">${rd.totalProfissionais||0}</div><div>Profissionais</div></div>\n                      <div class="card"><div class="card-value purple">${rd.mediaPorProfissional||0}</div><div>Média/Profissional</div></div>\n                    </div>\n                    \n                    <div class="comparativo">\n                      <strong>📊 Comparativo com Mês Anterior:</strong> \n                      ${parseFloat(h)>=0?"📈":"📉"} ${parseFloat(h)>=0?"+":""}${h}% \n                      (${E.length} → ${a.length} solicitações)\n                    </div>\n                    \n                    <h2>📁 Por Motivo</h2>\n                    <table>\n                      <thead><tr><th>Motivo</th><th>Total</th><th>Aprovadas</th><th>Rejeitadas</th><th>Pendentes</th><th>Taxa</th></tr></thead>\n                      <tbody>\n                        ${Object.entries(n).map(([e,t])=>`\n                          <tr>\n                            <td>${e}</td>\n                            <td>${t.total}</td>\n                            <td class="green">${t.aprovadas}</td>\n                            <td class="red">${t.rejeitadas}</td>\n                            <td class="yellow">${t.pendentes}</td>\n                            <td>${t.total>0?(t.aprovadas/t.total*100).toFixed(0):0}%</td>\n                          </tr>\n                        `).join("")}\n                      </tbody>\n                    </table>\n                    \n                    <h2>👷 Top 10 Profissionais</h2>\n                    <table>\n                      <thead><tr><th>#</th><th>Profissional</th><th>Código</th><th>Total</th><th>Aprovadas</th><th>Rejeitadas</th><th>Taxa</th></tr></thead>\n                      <tbody>\n                        ${i.map((e,t)=>`\n                          <tr>\n                            <td>${t+1}</td>\n                            <td>${e.nome}</td>\n                            <td>${e.cod||"-"}</td>\n                            <td>${e.total}</td>\n                            <td class="green">${e.aprovadas}</td>\n                            <td class="red">${e.rejeitadas}</td>\n                            <td>${e.taxa}%</td>\n                          </tr>\n                        `).join("")}\n                      </tbody>\n                    </table>\n                    \n                    <h2>📅 Por Semana</h2>\n                    <table>\n                      <thead><tr><th>Semana</th><th>Total</th><th>Aprovadas</th><th>Taxa</th></tr></thead>\n                      <tbody>\n                        ${d.map(e=>`\n                          <tr>\n                            <td>${e.label} (dias ${e.dias[0]}-${e.dias[1]})</td>\n                            <td>${e.total}</td>\n                            <td class="green">${e.aprovadas}</td>\n                            <td>${e.total>0?(e.aprovadas/e.total*100).toFixed(0):0}%</td>\n                          </tr>\n                        `).join("")}\n                      </tbody>\n                    </table>\n                    \n                    <div class="footer">\n                      <strong>Central do Entregador Tutts</strong> - Relatório Gerado Automaticamente<br>\n                      ${(new Date).toLocaleString("pt-BR")}\n                    </div>\n                  </body>\n                  </html>\n                `,
                         p = window.open("", "_blank");
                     p.document.write(m), p.document.close(), p.print()
                 },
@@ -18750,13 +18694,13 @@ const hideLoadingScreen = () => {
                 className: "bg-purple-50 rounded-xl p-4 text-center border border-purple-200"
             }, React.createElement("p", {
                 className: "text-3xl font-bold text-purple-600"
-            }, rd.totalProfissionais || A.length), React.createElement("p", {
+            }, rd.totalProfissionais || 0), React.createElement("p", {
                 className: "text-xs text-purple-700"
             }, "Total Profissionais")), React.createElement("div", {
                 className: "bg-blue-50 rounded-xl p-4 text-center border border-blue-200"
             }, React.createElement("p", {
                 className: "text-3xl font-bold text-blue-600"
-            }, rd.mediaPorProfissional || (A.length > 0 ? (a.length / A.length).toFixed(1) : 0)), React.createElement("p", {
+            }, rd.mediaPorProfissional || 0), React.createElement("p", {
                 className: "text-xs text-blue-700"
             }, "Média por Profissional"))), React.createElement("div", {
                 className: "rounded-xl p-4 mb-6 " + (parseFloat(h) >= 0 ? "bg-green-50 border border-green-200" : "bg-red-50 border border-red-200")
