@@ -1,6 +1,6 @@
 // Service Worker - Sistema Tutts PWA
 // IMPORTANTE: Mude este numero a cada deploy para forcar atualizacao!
-const CACHE_VERSION = '20250209_008';
+const CACHE_VERSION = '20250210_001';
 const CACHE_NAME = `tutts-cache-${CACHE_VERSION}`;
 const API_URL = 'https://tutts-backend-production.up.railway.app';
 
@@ -19,6 +19,11 @@ const STATIC_ASSETS = [
   '/tutts-novatos.html',
   '/manifest.json',
   '/icon-192.png',
+  '/ModuloFinanceiro.js',
+  '/modulo-operacional.js',
+  '/modulo-config.js',
+  '/modulo-disponibilidade.js',
+  '/filas.js',
   '/icon-512.png'
 ];
 
@@ -237,6 +242,11 @@ self.addEventListener('push', (event) => {
   const options = {
     body: data.body,
     icon: '/icon-192.png',
+  '/ModuloFinanceiro.js',
+  '/modulo-operacional.js',
+  '/modulo-config.js',
+  '/modulo-disponibilidade.js',
+  '/filas.js',
     badge: '/icon-96.png',
     vibrate: [100, 50, 100],
     data: {
