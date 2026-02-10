@@ -1853,7 +1853,7 @@ const hideLoadingScreen = () => {
             validacao: [],
             loja: [],
             gratuidades: []
-        }), [j, C] = useState([]), [dashStats, setDashStats] = useState(null), [buscaResults, setBuscaResults] = useState([]), [buscaTotal, setBuscaTotal] = useState(0), [buscaLoading, setBuscaLoading] = useState(false), [A, S] = useState([]), [k, P] = useState(!1), [T, D] = useState(null), [L, I] = useState([]), [F, $] = useState(!1), [M, O] = useState([]), [q, U] = useState([]), [z, B] = useState([]), [V, J] = useState(null), [Q, H] = useState([]), [G, W] = useState([]), [Z, Y] = useState([]), [K, X] = useState({}), [ee, te] = useState([]), [ae, le] = useState([]), [re, oe] = useState([]), [ce, se] = useState([]), [ne, me] = useState([]), [ie, de] = useState([]), [progressoNovatos, setProgressoNovatos] = useState([]), [modalEntregasNovatos, setModalEntregasNovatos] = useState(null), [pe, xe] = useState([]), [cidadesIndicacao, setCidadesIndicacao] = useState([]), [ue, ge] = useState(!1), [be, Re] = useState(null), [Ee, he] = useState("home"), [mensagemGentileza, setMensagemGentileza] = useState(() => getMensagemGentileza()), [elegibilidadeNovatos, setElegibilidadeNovatos] = useState({ elegivel: false, motivo: '', promocoes: [], carregando: true }), [regioesNovatos, setRegioesNovatos] = useState([]), [clientesBINovatos, setClientesBINovatos] = useState([]), [clientesSelecionados, setClientesSelecionados] = useState([]), [carregandoClientes, setCarregandoClientes] = useState(false), [solicitacoesPagina, setSolicitacoesPagina] = useState(1), [acertoRealizado, setAcertoRealizado] = useState(() => { try { const saved = localStorage.getItem("tutts_acerto_realizado"); return saved !== null ? JSON.parse(saved) : true; } catch(e) { return true; } }), [solicitacoesPorPagina] = useState(120), [conciliacaoPagina, setConciliacaoPagina] = useState(1), [conciliacaoPorPagina] = useState(120), [processandoWithdrawals, setProcessandoWithdrawals] = useState(new Set()), [withdrawalCounts, setWithdrawalCounts] = useState({}), 
+        }), [j, C] = useState([]), [dashStats, setDashStats] = useState(null), [buscaResults, setBuscaResults] = useState([]), [buscaTotal, setBuscaTotal] = useState(0), [buscaLoading, setBuscaLoading] = useState(false), [A, S] = useState([]), [k, P] = useState(!1), [T, D] = useState(null), [L, I] = useState([]), [F, $] = useState(!1), [M, O] = useState([]), [q, U] = useState([]), [z, B] = useState([]), [V, J] = useState(null), [Q, H] = useState([]), [G, W] = useState([]), [Z, Y] = useState([]), [K, X] = useState({}), [ee, te] = useState([]), [ae, le] = useState([]), [re, oe] = useState([]), [ce, se] = useState([]), [ne, me] = useState([]), [ie, de] = useState([]), [progressoNovatos, setProgressoNovatos] = useState([]), [modalEntregasNovatos, setModalEntregasNovatos] = useState(null), [pe, xe] = useState([]), [cidadesIndicacao, setCidadesIndicacao] = useState([]), [ue, ge] = useState(!1), [be, Re] = useState(null), [Ee, he] = useState("home"), [mensagemGentileza, setMensagemGentileza] = useState(() => getMensagemGentileza()), [elegibilidadeNovatos, setElegibilidadeNovatos] = useState({ elegivel: false, motivo: '', promocoes: [], carregando: true }), [regioesNovatos, setRegioesNovatos] = useState([]), [clientesBINovatos, setClientesBINovatos] = useState([]), [clientesSelecionados, setClientesSelecionados] = useState([]), [carregandoClientes, setCarregandoClientes] = useState(false), [solicitacoesPagina, setSolicitacoesPagina] = useState(1), [acertoRealizado, setAcertoRealizado] = useState(() => { try { const saved = localStorage.getItem("tutts_acerto_realizado"); return saved !== null ? JSON.parse(saved) : true; } catch(e) { return true; } }), [solicitacoesPorPagina] = useState(120), [conciliacaoPagina, setConciliacaoPagina] = useState(1), [conciliacaoPorPagina] = useState(120), [processandoWithdrawals, setProcessandoWithdrawals] = useState(new Set()), [withdrawalCounts, setWithdrawalCounts] = useState({}), [rankingRetorno, setRankingRetorno] = useState([]), [rankingLoading, setRankingLoading] = useState(false), [relatorioData, setRelatorioData] = useState(null), [relatorioLoading, setRelatorioLoading] = useState(false), 
         
         // Helper para parse de saldo (aceita número ou string brasileira)
         parseSaldoBR = (valor) => {
@@ -5286,6 +5286,30 @@ const hideLoadingScreen = () => {
                 }
             } catch (e) { console.error(e); }
             setBuscaLoading(false);
+        }, carregarRankingRetorno = async (periodo) => {
+            try {
+                setRankingLoading(true);
+                const params = periodo && periodo !== 'all' ? `?periodo=${periodo}` : '';
+                const resp = await fetchAuth(`${API_URL}/submissions/ranking-retorno${params}`);
+                if (resp.ok) {
+                    const data = await resp.json();
+                    setRankingRetorno(data.ranking || []);
+                }
+            } catch (e) { console.error('Erro ranking:', e); }
+            setRankingLoading(false);
+        }, carregarRelatorio = async (mes, ano) => {
+            try {
+                setRelatorioLoading(true);
+                setRelatorioData(null);
+                const m = mes !== undefined ? mes : new Date().getMonth();
+                const a = ano !== undefined ? ano : new Date().getFullYear();
+                const resp = await fetchAuth(`${API_URL}/submissions/relatorios?mes=${m}&ano=${a}`);
+                if (resp.ok) {
+                    const data = await resp.json();
+                    setRelatorioData(data);
+                }
+            } catch (e) { console.error('Erro relatorio:', e); }
+            setRelatorioLoading(false);
         }, Ia = async () => {
             try {
                 const e = await fetchAuth(`${API_URL}/users`),
@@ -18181,7 +18205,7 @@ const hideLoadingScreen = () => {
             onLogout: () => o(null),
             onGoHome: () => he("home"),
             onNavigate: navegarSidebar,
-            onChangeTab: Ee === "disponibilidade" ? null : (abaId) => x({...p, adminTab: abaId})
+            onChangeTab: Ee === "disponibilidade" ? null : (abaId) => { x({...p, adminTab: abaId}); if (abaId === 'ranking' && !rankingRetorno.length) carregarRankingRetorno(p.rankingPeriod || 'all'); if (abaId === 'relatorios' && !relatorioData) carregarRelatorio(p.relMes, p.relAno); }
         }),
         // Conteúdo principal (sub-abas removidas - navegação via sidebar)
         React.createElement("div", {
@@ -18562,128 +18586,64 @@ const hideLoadingScreen = () => {
         }, React.createElement("h2", {
             className: "text-lg font-semibold mb-4"
         }, "🏆 Ranking de Retorno - Aprovações"), React.createElement("div", {
-            className: "mb-6"
+            className: "mb-6 flex gap-3 items-center"
         }, React.createElement("select", {
             value: p.rankingPeriod || "all",
-            onChange: e => x({
-                ...p,
-                rankingPeriod: e.target.value
-            }),
+            onChange: e => { x({ ...p, rankingPeriod: e.target.value }); carregarRankingRetorno(e.target.value); },
             className: "px-4 py-2 border rounded-lg"
-        }, React.createElement("option", {
-            value: "all"
-        }, "📅 Todos os Tempos"), React.createElement("option", {
-            value: "today"
-        }, "📅 Hoje"), React.createElement("option", {
-            value: "week"
-        }, "📅 Esta Semana"), React.createElement("option", {
-            value: "month"
-        }, "📅 Este Mês"))), React.createElement("div", {
+        }, React.createElement("option", { value: "all" }, "📅 Todos os Tempos"), 
+           React.createElement("option", { value: "today" }, "📅 Hoje"), 
+           React.createElement("option", { value: "week" }, "📅 Esta Semana"), 
+           React.createElement("option", { value: "month" }, "📅 Este Mês")),
+        React.createElement("button", {
+            onClick: () => carregarRankingRetorno(p.rankingPeriod || "all"),
+            disabled: rankingLoading,
+            className: "px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-semibold hover:bg-purple-700 disabled:opacity-50"
+        }, rankingLoading ? "🔄 Carregando..." : "🔄 Atualizar")), 
+        !rankingRetorno.length && !rankingLoading && React.createElement("button", {
+            onClick: () => carregarRankingRetorno(p.rankingPeriod || "all"),
+            className: "w-full py-4 bg-purple-50 text-purple-700 rounded-lg font-semibold hover:bg-purple-100"
+        }, "📊 Carregar Ranking"),
+        rankingLoading && React.createElement("div", { className: "text-center py-8" },
+            React.createElement("div", { className: "animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto" }),
+            React.createElement("p", { className: "mt-2 text-gray-500" }, "Carregando ranking...")),
+        React.createElement("div", {
             className: "space-y-3"
-        }, (() => {
-            const e = new Date;
-            e.setHours(0, 0, 0, 0);
-            const t = j.filter(t => {
-                    if ("aprovado" !== t.status || "Ajuste de Retorno" !== t.motivo) return !1;
-                    if (!p.rankingPeriod || "all" === p.rankingPeriod) return !0;
-                    const a = new Date(t.created_at);
-                    if ("today" === p.rankingPeriod) {
-                        const t = new Date(e);
-                        return t.setDate(t.getDate() + 1), a >= e && a < t
-                    }
-                    if ("week" === p.rankingPeriod) {
-                        const t = new Date(e);
-                        return t.setDate(t.getDate() - 7), a >= t
-                    }
-                    if ("month" === p.rankingPeriod) {
-                        const t = new Date(e);
-                        return t.setMonth(t.getMonth() - 1), a >= t
-                    }
-                    return !0
-                }),
-                a = {};
-            t.forEach(e => {
-                const t = e.codProfissional || "SEM_COD";
-                a[t] || (a[t] = {
-                    nome: e.fullName || "Desconhecido",
-                    cod: e.codProfissional || "-",
-                    total: 0,
-                    solicitacoes: []
-                });
-                a[t].total += 1;
-                a[t].solicitacoes.push(e)
-            });
-            const l = Object.entries(a).sort((e, t) => t[1].total - e[1].total);
-            return 0 === l.length ? React.createElement("p", {
-                className: "text-gray-500 text-center py-8"
-            }, "Sem dados no período") : l.map(([k, v], i) => React.createElement("div", {
+        }, rankingRetorno.map((v, i) => React.createElement("div", {
                 key: i,
                 className: "bg-gray-50 rounded-lg hover:bg-gray-100"
             }, React.createElement("div", {
                 className: "flex items-center gap-4 p-4 cursor-pointer",
-                onClick: () => x({
-                    ...p,
-                    [`rankingExp_${k}`]: !p[`rankingExp_${k}`]
-                })
+                onClick: () => x({ ...p, [`rankingExp_${v.user_cod}`]: !p[`rankingExp_${v.user_cod}`] })
             }, React.createElement("div", {
                 className: "text-3xl font-bold w-12 " + (0 === i ? "text-yellow-500" : 1 === i ? "text-gray-400" : 2 === i ? "text-orange-600" : "text-gray-400")
             }, 0 === i ? "🥇" : 1 === i ? "🥈" : 2 === i ? "🥉" : `${i+1}º`), React.createElement("div", {
                 className: "flex-1"
-            }, React.createElement("p", {
-                className: "font-semibold text-lg text-gray-800"
-            }, v.nome), React.createElement("p", {
-                className: "text-sm text-gray-500 font-mono"
-            }, "COD: ", v.cod)), React.createElement("div", {
-                className: "text-right flex items-center gap-3"
-            }, React.createElement("div", null, React.createElement("p", {
-                className: "text-3xl font-bold text-purple-600"
-            }, v.total), React.createElement("p", {
-                className: "text-xs text-gray-500"
-            }, "aprovações")), React.createElement("button", {
-                className: "w-8 h-8 rounded-full bg-purple-600 text-white font-bold text-lg flex items-center justify-center hover:bg-purple-700 transition-all " + (p[`rankingExp_${k}`] ? "rotate-45" : "")
-            }, "+"))), p[`rankingExp_${k}`] && React.createElement("div", {
-                className: "px-4 pb-4"
-            }, React.createElement("div", {
-                className: "bg-white rounded-lg border border-gray-200 divide-y divide-gray-100 max-h-64 overflow-y-auto"
-            }, v.solicitacoes.map((s, idx) => React.createElement("div", {
-                key: idx,
-                className: "p-3 hover:bg-gray-50"
-            }, React.createElement("div", {
-                className: "flex justify-between items-center"
-            }, React.createElement("div", null, React.createElement("p", {
-                className: "font-mono font-semibold text-sm"
-            }, "OS: ", s.ordemServico), React.createElement("p", {
-                className: "text-xs text-gray-500"
-            }, new Date(s.created_at).toLocaleDateString("pt-BR"), " às ", new Date(s.created_at).toLocaleTimeString("pt-BR", {
-                hour: "2-digit",
-                minute: "2-digit"
-            }))), React.createElement("div", {
-                className: "flex items-center gap-2"
-            }, s.temImagem && React.createElement("button", {
-                onClick: e => {
-                    e.stopPropagation();
-                    if (s.imagemComprovante) {
-                        g(s.imagemComprovante.split("|||")[0])
-                    } else {
-                        ja("🔄 Carregando...", "success");
-                        Fa(s.id)
-                    }
-                },
-                className: "px-2 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded hover:bg-blue-200 flex items-center gap-1"
-            }, "📷 Ver Foto"), React.createElement("span", {
-                className: "px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded"
-            }, "✓ Aprovada"))), s.imagemComprovante && React.createElement("div", {
-                className: "mt-2 flex gap-2 flex-wrap"
-            }, s.imagemComprovante.split("|||").map((img, imgIdx) => React.createElement("img", {
-                key: imgIdx,
-                src: img,
-                className: "h-16 rounded cursor-pointer border border-gray-200 hover:border-purple-400",
-                onClick: e => {
-                    e.stopPropagation();
-                    g(img)
-                }
-            })))))))))
-        })())), "disponibilidade" === p.adminTab && (
+            }, React.createElement("p", { className: "font-semibold text-lg text-gray-800" }, v.user_name),
+               React.createElement("p", { className: "text-sm text-gray-500 font-mono" }, "COD: ", v.user_cod)),
+            React.createElement("div", { className: "text-right flex items-center gap-3" },
+                React.createElement("div", null, 
+                    React.createElement("p", { className: "text-3xl font-bold text-purple-600" }, parseInt(v.total)),
+                    React.createElement("p", { className: "text-xs text-gray-500" }, "aprovações")),
+                React.createElement("button", {
+                    className: "w-8 h-8 rounded-full bg-purple-600 text-white font-bold text-lg flex items-center justify-center hover:bg-purple-700 transition-all " + (p[`rankingExp_${v.user_cod}`] ? "rotate-45" : "")
+                }, "+"))),
+            p[`rankingExp_${v.user_cod}`] && React.createElement("div", { className: "px-4 pb-4" },
+                React.createElement("div", { className: "bg-white rounded-lg border border-gray-200 divide-y divide-gray-100 max-h-64 overflow-y-auto" },
+                    v.solicitacoes.map((s, idx) => React.createElement("div", { key: idx, className: "p-3 hover:bg-gray-50" },
+                        React.createElement("div", { className: "flex justify-between items-center" },
+                            React.createElement("div", null,
+                                React.createElement("p", { className: "font-mono font-semibold text-sm" }, "OS: ", s.ordemServico),
+                                React.createElement("p", { className: "text-xs text-gray-500" }, 
+                                    new Date(s.created_at).toLocaleDateString("pt-BR"), " às ",
+                                    new Date(s.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }))),
+                            React.createElement("div", { className: "flex items-center gap-2" },
+                                s.temImagem && React.createElement("button", {
+                                    onClick: e => { e.stopPropagation(); ja("🔄 Carregando...", "success"); Fa(s.id); },
+                                    className: "px-2 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded hover:bg-blue-200"
+                                }, "📷 Ver Foto"),
+                                React.createElement("span", { className: "px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded" }, "✓ Aprovada")))))))
+        ))), "disponibilidade" === p.adminTab && (
             typeof window.ModuloDisponibilidadeContent !== 'undefined' 
                 ? React.createElement(window.ModuloDisponibilidadeContent, {
                     p, x, ja, API_URL, pe, Ta, A, l, fetchAuth
@@ -18696,92 +18656,25 @@ const hideLoadingScreen = () => {
                 )
         ), "relatorios" === p.adminTab && (() => {
             const e = void 0 !== p.relMes ? parseInt(p.relMes) : (new Date).getMonth(),
-                t = void 0 !== p.relAno ? parseInt(p.relAno) : (new Date).getFullYear(),
-                a = j.filter(a => {
-                    const l = new Date(a.created_at);
-                    return l.getMonth() === e && l.getFullYear() === t
-                }),
-                l = a.filter(e => "aprovado" === e.status),
-                r = a.filter(e => "rejeitado" === e.status),
-                o = a.filter(e => "pendente" === e.status),
-                c = a.length > 0 ? (l.length / a.length * 100).toFixed(1) : 0,
-                s = a.length > 0 ? (r.length / a.length * 100).toFixed(1) : 0,
-                n = {};
-            a.forEach(e => {
-                const t = e.motivo || "Outros";
-                n[t] || (n[t] = {
-                    total: 0,
-                    aprovadas: 0,
-                    rejeitadas: 0,
-                    pendentes: 0
-                }), n[t].total++, "aprovado" === e.status && n[t].aprovadas++, "rejeitado" === e.status && n[t].rejeitadas++, "pendente" === e.status && n[t].pendentes++
-            });
-            const m = {};
-            a.forEach(e => {
-                const t = e.user_name || e.cod_profissional || "Desconhecido";
-                m[t] || (m[t] = {
-                    total: 0,
-                    aprovadas: 0,
-                    rejeitadas: 0,
-                    cod: e.cod_profissional
-                }), m[t].total++, "aprovado" === e.status && m[t].aprovadas++, "rejeitado" === e.status && m[t].rejeitadas++
-            });
-            const i = Object.entries(m).map(([e, t]) => ({
-                    nome: e,
-                    ...t,
-                    taxa: t.total > 0 ? (t.aprovadas / t.total * 100).toFixed(0) : 0
-                })).sort((e, t) => t.total - e.total).slice(0, 10),
-                d = [{
-                    label: "Semana 1",
-                    dias: [1, 7],
-                    total: 0,
-                    aprovadas: 0
-                }, {
-                    label: "Semana 2",
-                    dias: [8, 14],
-                    total: 0,
-                    aprovadas: 0
-                }, {
-                    label: "Semana 3",
-                    dias: [15, 21],
-                    total: 0,
-                    aprovadas: 0
-                }, {
-                    label: "Semana 4",
-                    dias: [22, 31],
-                    total: 0,
-                    aprovadas: 0
-                }];
-            a.forEach(e => {
-                const t = new Date(e.created_at).getDate(),
-                    a = d.find(e => t >= e.dias[0] && t <= e.dias[1]);
-                a && (a.total++, "aprovado" === e.status && a.aprovadas++)
-            });
+                t = void 0 !== p.relAno ? parseInt(p.relAno) : (new Date).getFullYear();
+            // Auto-carregar dados do backend
+            if (!relatorioData && !relatorioLoading) { carregarRelatorio(e, t); }
+            if (relatorioLoading) return React.createElement("div", { className: "flex items-center justify-center py-12" }, React.createElement("div", { className: "animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600" }), React.createElement("span", { className: "ml-3 text-gray-600" }, "Carregando relatório..."));
+            const rd = relatorioData || {},
+                a = { length: rd.total || 0 },
+                l = { length: rd.aprovados || 0 },
+                r = { length: rd.rejeitados || 0 },
+                o = { length: rd.pendentes || 0 },
+                c = rd.taxaAprovacao || "0.0",
+                s = rd.taxaRejeicao || "0.0",
+                n = rd.motivos || {},
+                i = rd.topProfissionais || [],
+                d = rd.semanas || [{ label: "Semana 1", dias: [1,7], total: 0, aprovadas: 0 }, { label: "Semana 2", dias: [8,14], total: 0, aprovadas: 0 }, { label: "Semana 3", dias: [15,21], total: 0, aprovadas: 0 }, { label: "Semana 4", dias: [22,31], total: 0, aprovadas: 0 }];
             const u = Math.max(...d.map(e => e.total), 1),
-                g = [];
-            for (let a = 5; a >= 0; a--) {
-                const l = new Date(t, e - a, 1),
-                    r = l.getMonth(),
-                    o = l.getFullYear(),
-                    c = j.filter(e => {
-                        const t = new Date(e.created_at);
-                        return t.getMonth() === r && t.getFullYear() === o
-                    });
-                g.push({
-                    label: l.toLocaleDateString("pt-BR", {
-                        month: "short"
-                    }),
-                    total: c.length,
-                    aprovadas: c.filter(e => "aprovado" === e.status).length
-                })
-            }
-            const b = Math.max(...g.map(e => e.total), 1),
-                R = new Date(t, e - 1, 1),
-                E = j.filter(e => {
-                    const t = new Date(e.created_at);
-                    return t.getMonth() === R.getMonth() && t.getFullYear() === R.getFullYear()
-                }),
-                h = E.length > 0 ? ((a.length - E.length) / E.length * 100).toFixed(1) : 0,
+                g = rd.evolucao || [],
+                b = Math.max(...g.map(e => e.total), 1),
+                E = { length: rd.mesAnteriorTotal || 0 },
+                h = rd.variacao || "0.0",
                 f = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
             return React.createElement(React.Fragment, null, React.createElement("div", {
                 className: "bg-white rounded-xl shadow p-4 mb-6 flex flex-wrap items-center gap-4"
@@ -18791,25 +18684,22 @@ const hideLoadingScreen = () => {
                 className: "font-semibold"
             }, "📅 Período:"), React.createElement("select", {
                 value: e,
-                onChange: e => x({
-                    ...p,
-                    relMes: e.target.value
-                }),
+                onChange: e => { x({ ...p, relMes: e.target.value }); carregarRelatorio(parseInt(e.target.value), t); },
                 className: "px-3 py-2 border rounded-lg"
             }, f.map((e, t) => React.createElement("option", {
                 key: t,
                 value: t
             }, e))), React.createElement("select", {
                 value: t,
-                onChange: e => x({
-                    ...p,
-                    relAno: e.target.value
-                }),
+                onChange: ev => { x({ ...p, relAno: ev.target.value }); carregarRelatorio(e, parseInt(ev.target.value)); },
                 className: "px-3 py-2 border rounded-lg"
             }, [2024, 2025, 2026].map(e => React.createElement("option", {
                 key: e,
                 value: e
             }, e)))), React.createElement("button", {
+                onClick: () => carregarRelatorio(e, t),
+                className: "px-3 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 text-sm"
+            }, "🔄 Atualizar"), React.createElement("button", {
                 onClick: () => {
                     const m = `\n                  <html>\n                  <head>\n                    <title>Relatório Tutts - ${f[e]}/${t}</title>\n                    <style>\n                      body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }\n                      h1 { color: #581c87; border-bottom: 2px solid #581c87; padding-bottom: 10px; }\n                      h2 { color: #7c3aed; margin-top: 30px; }\n                      .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }\n                      .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin: 20px 0; }\n                      .card { background: #f3f4f6; padding: 15px; border-radius: 8px; text-align: center; }\n                      .card-value { font-size: 28px; font-weight: bold; }\n                      .green { color: #16a34a; }\n                      .red { color: #dc2626; }\n                      .yellow { color: #ca8a04; }\n                      .purple { color: #7c3aed; }\n                      table { width: 100%; border-collapse: collapse; margin: 15px 0; }\n                      th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }\n                      th { background: #f3f4f6; }\n                      .footer { margin-top: 40px; text-align: center; color: #666; font-size: 12px; border-top: 1px solid #ddd; padding-top: 20px; }\n                      .comparativo { background: ${parseFloat(h)>=0?"#dcfce7":"#fee2e2"}; padding: 15px; border-radius: 8px; margin: 20px 0; }\n                    </style>\n                  </head>\n                  <body>\n                    <div class="header">\n                      <h1>📊 Relatório Tutts</h1>\n                      <div>\n                        <strong>${f[e]} / ${t}</strong><br>\n                        <small>Gerado em: ${(new Date).toLocaleString("pt-BR")}</small>\n                      </div>\n                    </div>\n                    \n                    <h2>📋 Resumo Geral</h2>\n                    <div class="cards">\n                      <div class="card"><div class="card-value purple">${a.length}</div><div>Total</div></div>\n                      <div class="card"><div class="card-value green">${l.length}</div><div>Aprovadas</div></div>\n                      <div class="card"><div class="card-value red">${r.length}</div><div>Rejeitadas</div></div>\n                      <div class="card"><div class="card-value yellow">${o.length}</div><div>Pendentes</div></div>\n                    </div>\n                    \n                    <div class="cards">\n                      <div class="card"><div class="card-value green">${c}%</div><div>Taxa Aprovação</div></div>\n                      <div class="card"><div class="card-value red">${s}%</div><div>Taxa Rejeição</div></div>\n                      <div class="card"><div class="card-value purple">${A.length}</div><div>Profissionais</div></div>\n                      <div class="card"><div class="card-value purple">${A.length>0?(a.length/A.length).toFixed(1):0}</div><div>Média/Profissional</div></div>\n                    </div>\n                    \n                    <div class="comparativo">\n                      <strong>📊 Comparativo com Mês Anterior:</strong> \n                      ${parseFloat(h)>=0?"📈":"📉"} ${parseFloat(h)>=0?"+":""}${h}% \n                      (${E.length} → ${a.length} solicitações)\n                    </div>\n                    \n                    <h2>📁 Por Motivo</h2>\n                    <table>\n                      <thead><tr><th>Motivo</th><th>Total</th><th>Aprovadas</th><th>Rejeitadas</th><th>Pendentes</th><th>Taxa</th></tr></thead>\n                      <tbody>\n                        ${Object.entries(n).map(([e,t])=>`\n                          <tr>\n                            <td>${e}</td>\n                            <td>${t.total}</td>\n                            <td class="green">${t.aprovadas}</td>\n                            <td class="red">${t.rejeitadas}</td>\n                            <td class="yellow">${t.pendentes}</td>\n                            <td>${t.total>0?(t.aprovadas/t.total*100).toFixed(0):0}%</td>\n                          </tr>\n                        `).join("")}\n                      </tbody>\n                    </table>\n                    \n                    <h2>👷 Top 10 Profissionais</h2>\n                    <table>\n                      <thead><tr><th>#</th><th>Profissional</th><th>Código</th><th>Total</th><th>Aprovadas</th><th>Rejeitadas</th><th>Taxa</th></tr></thead>\n                      <tbody>\n                        ${i.map((e,t)=>`\n                          <tr>\n                            <td>${t+1}</td>\n                            <td>${e.nome}</td>\n                            <td>${e.cod||"-"}</td>\n                            <td>${e.total}</td>\n                            <td class="green">${e.aprovadas}</td>\n                            <td class="red">${e.rejeitadas}</td>\n                            <td>${e.taxa}%</td>\n                          </tr>\n                        `).join("")}\n                      </tbody>\n                    </table>\n                    \n                    <h2>📅 Por Semana</h2>\n                    <table>\n                      <thead><tr><th>Semana</th><th>Total</th><th>Aprovadas</th><th>Taxa</th></tr></thead>\n                      <tbody>\n                        ${d.map(e=>`\n                          <tr>\n                            <td>${e.label} (dias ${e.dias[0]}-${e.dias[1]})</td>\n                            <td>${e.total}</td>\n                            <td class="green">${e.aprovadas}</td>\n                            <td>${e.total>0?(e.aprovadas/e.total*100).toFixed(0):0}%</td>\n                          </tr>\n                        `).join("")}\n                      </tbody>\n                    </table>\n                    \n                    <div class="footer">\n                      <strong>Central do Entregador Tutts</strong> - Relatório Gerado Automaticamente<br>\n                      ${(new Date).toLocaleString("pt-BR")}\n                    </div>\n                  </body>\n                  </html>\n                `,
                         p = window.open("", "_blank");
@@ -18860,13 +18750,13 @@ const hideLoadingScreen = () => {
                 className: "bg-purple-50 rounded-xl p-4 text-center border border-purple-200"
             }, React.createElement("p", {
                 className: "text-3xl font-bold text-purple-600"
-            }, A.length), React.createElement("p", {
+            }, rd.totalProfissionais || A.length), React.createElement("p", {
                 className: "text-xs text-purple-700"
             }, "Total Profissionais")), React.createElement("div", {
                 className: "bg-blue-50 rounded-xl p-4 text-center border border-blue-200"
             }, React.createElement("p", {
                 className: "text-3xl font-bold text-blue-600"
-            }, A.length > 0 ? (a.length / A.length).toFixed(1) : 0), React.createElement("p", {
+            }, rd.mediaPorProfissional || (A.length > 0 ? (a.length / A.length).toFixed(1) : 0)), React.createElement("p", {
                 className: "text-xs text-blue-700"
             }, "Média por Profissional"))), React.createElement("div", {
                 className: "rounded-xl p-4 mb-6 " + (parseFloat(h) >= 0 ? "bg-green-50 border border-green-200" : "bg-red-50 border border-red-200")
