@@ -5306,17 +5306,21 @@ const hideLoadingScreen = () => {
             try {
                 const t = await fetchAuth(`${API_URL}/submissions/${e}/imagem`),
                     a = await t.json();
+                const imgData = a.imagem || a.imagemComprovante || a.imagem_comprovante;
+                if (!imgData) { console.warn('Fa: sem imagem na resposta', a); return; }
+                const idNum = parseInt(e);
                 // Atualizar submissions do dashboard
-                C(t => t.map(t => t.id === e ? {
+                C(t => t.map(t => parseInt(t.id) === idNum ? {
                     ...t,
-                    imagemComprovante: a.imagem
+                    imagemComprovante: imgData
                 } : t));
                 // Atualizar buscaResults também (aba Buscar)
-                setBuscaResults(t => t.map(t => t.id === e ? {
+                setBuscaResults(t => t.map(t => parseInt(t.id) === idNum ? {
                     ...t,
-                    imagemComprovante: a.imagem
+                    imagemComprovante: imgData
                 } : t))
-            } catch (e) {
+            } catch (err) {
+                console.error('Fa erro:', err);
                 ja("Erro ao carregar imagem", "error")
             }
         }, $a = async () => {
