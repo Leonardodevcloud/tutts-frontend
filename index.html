@@ -278,6 +278,30 @@
   
   <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" integrity="sha384-DGyLxAyjq0f9SPpVevD6IgztCFlnMF6oW/XQGmfe+IsZ8TqEiDrcHkMLKI6fiB/Z" crossorigin="anonymous"></script>
   <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" integrity="sha384-gTGxhz21lVGYNMcdJOyq01Edg0jhn/c22nsx0kyqP0TxaV5WVdsSH1fSDUf5YJj1" crossorigin="anonymous"></script>
+  <!-- ⚡ FORCE: Limpar Service Worker antigo com erro de sintaxe -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(regs) {
+        var needsRefresh = false;
+        regs.forEach(function(reg) {
+          if (reg.active && reg.active.scriptURL && reg.active.scriptURL.includes('sw.js')) {
+            reg.unregister().then(function() { needsRefresh = true; console.log('🔄 SW antigo removido'); });
+          }
+        });
+        // Após remover, registrar o novo SW limpo
+        setTimeout(function() {
+          navigator.serviceWorker.register('/sw.js?v=20250210_003').then(function() {
+            console.log('✅ SW novo registrado');
+            if (needsRefresh && !sessionStorage.getItem('sw_refreshed')) {
+              sessionStorage.setItem('sw_refreshed', '1');
+              location.reload();
+            }
+          });
+        }, 500);
+      });
+    }
+  </script>
+
   <script src="/ModuloFinanceiro.js?v=20250210b"></script>
   <script src="/modulo-operacional.js?v=20250210"></script>
   <script src="/modulo-config.js?v=20250210"></script>

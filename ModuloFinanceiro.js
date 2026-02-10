@@ -29,6 +29,8 @@
             solicitacoesPorPagina, conciliacaoPorPagina, acertoRealizado, setAcertoRealizado,
             // Proteção contra débito duplicado
             processandoWithdrawals, setProcessandoWithdrawals,
+            // ⚡ Contadores do backend
+            withdrawalCounts,
             l, Ee, he, o, f, E, e,
             er, ja, ul, fetchAuth, API_URL, navegarSidebar,
             HeaderCompacto, Toast, LoadingOverlay, PixQRCodeModal, i, n,
@@ -60,6 +62,9 @@
         const cidadeUsuarioLogado = l && l.role === "user" && (l.cod_profissional || l.codProfissional)
             ? getCidadeProfissional(l.cod_profissional || l.codProfissional) 
             : null;
+        
+        // ⚡ Contadores do backend (precisos, sem carregar todos os registros)
+        const wc = withdrawalCounts || {};
         
         // Normalizar string para comparação (remove acentos, lowercase, trim)
         const normalizarTexto = (texto) => {
@@ -668,37 +673,37 @@
                     className: "text-sm text-gray-600"
                 }, "Total"), React.createElement("p", {
                     className: "text-2xl font-bold text-purple-600"
-                }, q.length)), React.createElement("div", {
+                }, parseInt(wc.total) || q.length)), React.createElement("div", {
                     className: "bg-white rounded-xl shadow p-4"
                 }, React.createElement("p", {
                     className: "text-sm text-gray-600"
                 }, "Aguardando"), React.createElement("p", {
                     className: "text-2xl font-bold text-yellow-600"
-                }, q.filter(e => "aguardando_aprovacao" === e.status).length)), React.createElement("div", {
+                }, parseInt(wc.aguardando) || q.filter(e => "aguardando_aprovacao" === e.status).length)), React.createElement("div", {
                     className: "bg-white rounded-xl shadow p-4"
                 }, React.createElement("p", {
                     className: "text-sm text-gray-600"
                 }, "Aprovadas"), React.createElement("p", {
                     className: "text-2xl font-bold text-green-600"
-                }, q.filter(e => "aprovado" === e.status).length)), React.createElement("div", {
+                }, parseInt(wc.aprovadas) || q.filter(e => "aprovado" === e.status).length)), React.createElement("div", {
                     className: "bg-white rounded-xl shadow p-4"
                 }, React.createElement("p", {
                     className: "text-sm text-gray-600"
                 }, "Aprov. Gratuidade"), React.createElement("p", {
                     className: "text-2xl font-bold text-blue-600"
-                }, q.filter(e => "aprovado_gratuidade" === e.status).length)), React.createElement("div", {
+                }, parseInt(wc.gratuidade) || q.filter(e => "aprovado_gratuidade" === e.status).length)), React.createElement("div", {
                     className: "bg-white rounded-xl shadow p-4"
                 }, React.createElement("p", {
                     className: "text-sm text-gray-600"
                 }, "Rejeitadas"), React.createElement("p", {
                     className: "text-2xl font-bold text-red-600"
-                }, q.filter(e => "rejeitado" === e.status).length)), React.createElement("div", {
+                }, parseInt(wc.rejeitadas) || q.filter(e => "rejeitado" === e.status).length)), React.createElement("div", {
                     className: "bg-white rounded-xl shadow p-4"
                 }, React.createElement("p", {
                     className: "text-sm text-gray-600"
                 }, "🚨 Atrasadas (+1h)"), React.createElement("p", {
                     className: "text-2xl font-bold " + (c.length > 0 ? "text-red-600 animate-pulse" : "text-gray-400")
-                }, c.length))), React.createElement("div", {
+                }, parseInt(wc.atrasadas) || c.length))), React.createElement("div", {
                     className: "bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl shadow-lg p-6 mb-6 text-white"
                 }, React.createElement("div", {
                     className: "flex flex-col md:flex-row items-center gap-6"
@@ -799,37 +804,50 @@
                     filterStatus: ""
                 }); },
                 className: "px-4 py-2 rounded-lg font-semibold text-sm " + (p.filterStatus ? "bg-gray-100 hover:bg-gray-200" : "bg-purple-600 text-white")
-            }, "📋 Todas (", q.length, ")"), React.createElement("button", {
+            }, "📋 Todas (", parseInt(wc.total) || q.length, ")"), React.createElement("button", {
                 onClick: () => { setSolicitacoesPagina(1); x({
                     ...p,
                     filterStatus: "atrasados"
                 }); },
                 className: "px-4 py-2 rounded-lg font-semibold text-sm " + ("atrasados" === p.filterStatus ? "bg-red-600 text-white" : "bg-gray-100 hover:bg-gray-200")
-            }, "🚨 Atrasados (", q.filter(e => "aguardando_aprovacao" === e.status && Date.now() - new Date(e.created_at).getTime() >= 36e5).length, ")"), React.createElement("button", {
+            }, "🚨 Atrasados (", parseInt(wc.atrasadas) || q.filter(e => "aguardando_aprovacao" === e.status && Date.now() - new Date(e.created_at).getTime() >= 36e5).length, ")"), React.createElement("button", {
                 onClick: () => { setSolicitacoesPagina(1); x({
                     ...p,
                     filterStatus: "aguardando_aprovacao"
                 }); },
                 className: "px-4 py-2 rounded-lg font-semibold text-sm " + ("aguardando_aprovacao" === p.filterStatus ? "bg-yellow-500 text-white" : "bg-gray-100 hover:bg-gray-200")
-            }, "⏳ Aguardando (", q.filter(e => "aguardando_aprovacao" === e.status).length, ")"), React.createElement("button", {
+            }, "⏳ Aguardando (", parseInt(wc.aguardando) || q.filter(e => "aguardando_aprovacao" === e.status).length, ")"), React.createElement("button", {
                 onClick: () => { setSolicitacoesPagina(1); x({
                     ...p,
                     filterStatus: "aprovado"
-                }); },
+                }); 
+                // ⚡ Carregar aprovadas sob demanda (não vem no init)
+                if (q.filter(e => "aprovado" === e.status).length === 0) {
+                    fetchAuth(`${API_URL}/withdrawals?status=approved&limit=100`).then(r => r.json()).then(data => { if (Array.isArray(data)) U([...q, ...data]); });
+                }
+                },
                 className: "px-4 py-2 rounded-lg font-semibold text-sm " + ("aprovado" === p.filterStatus ? "bg-green-600 text-white" : "bg-gray-100 hover:bg-gray-200")
-            }, "✅ Aprovadas (", q.filter(e => "aprovado" === e.status).length, ")"), React.createElement("button", {
+            }, "✅ Aprovadas (", parseInt(wc.aprovadas) || q.filter(e => "aprovado" === e.status).length, ")"), React.createElement("button", {
                 onClick: () => { setSolicitacoesPagina(1); x({
                     ...p,
                     filterStatus: "aprovado_gratuidade"
-                }); },
+                }); 
+                if (q.filter(e => "aprovado_gratuidade" === e.status).length === 0) {
+                    fetchAuth(`${API_URL}/withdrawals?status=aprovado_gratuidade&limit=100`).then(r => r.json()).then(data => { if (Array.isArray(data)) U([...q, ...data]); });
+                }
+                },
                 className: "px-4 py-2 rounded-lg font-semibold text-sm " + ("aprovado_gratuidade" === p.filterStatus ? "bg-blue-600 text-white" : "bg-gray-100 hover:bg-gray-200")
-            }, "🎁 Aprov. Gratuidade (", q.filter(e => "aprovado_gratuidade" === e.status).length, ")"), React.createElement("button", {
+            }, "🎁 Aprov. Gratuidade (", parseInt(wc.gratuidade) || q.filter(e => "aprovado_gratuidade" === e.status).length, ")"), React.createElement("button", {
                 onClick: () => { setSolicitacoesPagina(1); x({
                     ...p,
                     filterStatus: "rejeitado"
-                }); },
+                }); 
+                if (q.filter(e => "rejeitado" === e.status).length === 0) {
+                    fetchAuth(`${API_URL}/withdrawals?status=rejected&limit=100`).then(r => r.json()).then(data => { if (Array.isArray(data)) U([...q, ...data]); });
+                }
+                },
                 className: "px-4 py-2 rounded-lg font-semibold text-sm " + ("rejeitado" === p.filterStatus ? "bg-red-600 text-white" : "bg-gray-100 hover:bg-gray-200")
-            }, "❌ Rejeitadas (", q.filter(e => "rejeitado" === e.status).length, ")"), React.createElement("button", {
+            }, "❌ Rejeitadas (", parseInt(wc.rejeitadas) || q.filter(e => "rejeitado" === e.status).length, ")"), React.createElement("button", {
                 onClick: () => { setSolicitacoesPagina(1); x({
                     ...p,
                     filterStatus: "inativo"
