@@ -403,7 +403,7 @@ const NavegacaoHorizontal = ({ usuario, moduloAtivo, abaAtiva, onNavigate, hasMo
                         title: "Ir para Início"
                     },
                         React.createElement("img", {
-                            src: "https://github.com/Leonardodevcloud/tutts-frontend/blob/main/logotuttsoriginal.png?raw=true",
+                            src: "/logotuttsoriginal.png",
                             alt: "Tutts",
                             className: "w-10 h-10 rounded-lg"
                         }),
@@ -619,7 +619,7 @@ const HeaderCompacto = ({ usuario, moduloAtivo, abaAtiva, socialProfile, isLoadi
                         title: "Ir para Início"
                     },
                         React.createElement("img", {
-                            src: "https://github.com/Leonardodevcloud/tutts-frontend/blob/main/logotuttsoriginal.png?raw=true",
+                            src: "/logotuttsoriginal.png",
                             alt: "Tutts",
                             className: "w-9 h-9 rounded-lg",
                             onError: (e) => { e.target.style.display = "none"; }
@@ -3086,17 +3086,15 @@ const hideLoadingScreen = () => {
             if (!l) return;
             const safeCall = async (fn) => { try { await fn() } catch(e) { console.log("Module load error:", e) } };
             
-            // Módulo Financeiro (admin) — carrega dados financeiros
+            // Módulo Financeiro (admin) — NÃO carregar aqui, o financeiro tem useEffect dedicado
+            // que já faz Promise.all de withdrawals+pedidos+gratuidades
             if ("financeiro" === Ee) {
+                // Apenas dados complementares que NÃO são carregados pelo useEffect dedicado
                 if ("admin_financeiro" === l.role || "admin_master" === l.role) {
-                    safeCall(Ua); safeCall(Va); safeCall(za); safeCall(Ba);
-                    safeCall(Ja); safeCall(Ha); safeCall(Wa); safeCall(Ya);
+                    // za=gratuities, Ba=restricted — já carregam pelo useEffect dedicado ou por aba
                 }
                 if ("user" === l.role) {
                     safeCall(Oa); safeCall(qa); safeCall(Za); safeCall(Ka);
-                }
-                if ("admin" === l.role && hasModuleAccess(l, "financeiro")) {
-                    safeCall(Ua); safeCall(za);
                 }
             }
             
@@ -3263,31 +3261,24 @@ const hideLoadingScreen = () => {
             }
             
             // ==================== CARREGAMENTO OTIMIZADO ====================
+            // ⚡ PERFORMANCE: Carregar dados UMA VEZ ao entrar no financeiro
+            // Usa endpoint consolidado: 1 request ao invés de 3
             const carregarDados = async () => {
                 N(!0);
                 try {
-                    // Carregar TODOS os saques para visão geral + pedidos + gratuidades
-                    // Usar fetchAuth para enviar token JWT
-                    const [saquesRes, pedidosRes, gratuidadesRes] = await Promise.all([
-                        fetchAuth(`${API_URL}/withdrawals`),
-                        fetchAuth(`${API_URL}/loja/pedidos`),
-                        fetchAuth(`${API_URL}/gratuities`)
-                    ]);
+                    // ⚡ 1 request consolidado ao invés de 3 separados
+                    const res = await fetchAuth(`${API_URL}/financeiro/init`);
                     
-                    // Verificar se as respostas são válidas
-                    if (!saquesRes.ok || !gratuidadesRes.ok) {
-                        console.error('Erro nas requisições:', saquesRes.status, gratuidadesRes.status);
+                    if (!res.ok) {
+                        console.error('Erro no financeiro/init:', res.status);
                         N(!1);
                         return;
                     }
                     
-                    const saques = await saquesRes.json();
-                    const pedidos = await pedidosRes.json();
-                    const gratuidades = await gratuidadesRes.json();
+                    const { withdrawals: saques, pedidos, gratuidades } = await res.json();
                     
-                    // Verificar se são arrays válidos
                     if (!Array.isArray(saques) || !Array.isArray(gratuidades)) {
-                        console.error('Resposta inválida:', saques, gratuidades);
+                        console.error('Resposta inválida');
                         N(!1);
                         return;
                     }
@@ -3323,13 +3314,13 @@ const hideLoadingScreen = () => {
             
             carregarDados();
             
-            // Fallback: polling APENAS se WebSocket offline (60s ao invés de 10s)
+            // Fallback: polling APENAS se WebSocket offline (60s)
             const fallbackInterval = setInterval(() => {
                 if (!wsConnected) { console.log('⚠️ [Fallback] WebSocket offline'); carregarDados(); }
             }, 60000);
             
             return () => clearInterval(fallbackInterval);
-        }, [l, p.finTab, Ee, wsConnected]), 
+        }, [l, Ee]), 
         
         // useEffect separado para carregar dados específicos da aba (só quando muda de aba)
         useEffect(() => {
@@ -8283,7 +8274,7 @@ const hideLoadingScreen = () => {
                         // Imagem da moto com baú - LAZY LOADING
                         React.createElement("div", {className: "flex justify-center mb-6 animate-scaleIn", style: { animationDelay: "0.3s", opacity: 0, animationFillMode: "forwards" }},
                             React.createElement("img", {
-                                src: "https://github.com/Leonardodevcloud/tutts-frontend/blob/main/Layer%200%20copy%20(1).png?raw=true",
+                                src: "/Layer%200%20copy%20(1).png",
                                 alt: "Moto com baú",
                                 loading: "lazy",
                                 decoding: "async",
@@ -13437,7 +13428,7 @@ const hideLoadingScreen = () => {
                 // Hero Section com Logo
                 React.createElement("div", {className: "flex flex-col items-center justify-center py-12"},
                     React.createElement("img", {
-                        src: "https://github.com/Leonardodevcloud/tutts-frontend/blob/main/Tutts%20BI(1).png?raw=true",
+                        src: "/Tutts%20BI(1).png",
                         alt: "Tutts BI",
                         className: "w-64 h-64 object-contain mb-6 drop-shadow-2xl"
                     }),
