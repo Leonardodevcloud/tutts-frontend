@@ -247,7 +247,7 @@
           <p class="text-sm opacity-90">Clique para atualizar o aplicativo</p>
         </div>
       </div>
-      <button onclick="window.location.reload(true)" class="bg-white text-purple-700 px-4 py-2 rounded-lg font-semibold hover:bg-purple-100 transition-colors">
+      <button onclick="document.getElementById('update-banner').classList.add('hidden'); window.location.reload(true)" class="bg-white text-purple-700 px-4 py-2 rounded-lg font-semibold hover:bg-purple-100 transition-colors">
         Atualizar
       </button>
     </div>
@@ -278,31 +278,8 @@
   
   <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" integrity="sha384-DGyLxAyjq0f9SPpVevD6IgztCFlnMF6oW/XQGmfe+IsZ8TqEiDrcHkMLKI6fiB/Z" crossorigin="anonymous"></script>
   <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" integrity="sha384-gTGxhz21lVGYNMcdJOyq01Edg0jhn/c22nsx0kyqP0TxaV5WVdsSH1fSDUf5YJj1" crossorigin="anonymous"></script>
-  <!-- ⚡ FORCE: Limpar Service Worker antigo com erro de sintaxe -->
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(function(regs) {
-        var needsRefresh = false;
-        regs.forEach(function(reg) {
-          if (reg.active && reg.active.scriptURL && reg.active.scriptURL.includes('sw.js')) {
-            reg.unregister().then(function() { needsRefresh = true; console.log('🔄 SW antigo removido'); });
-          }
-        });
-        // Após remover, registrar o novo SW limpo
-        setTimeout(function() {
-          navigator.serviceWorker.register('/sw.js?v=20250210_003').then(function() {
-            console.log('✅ SW novo registrado');
-            if (needsRefresh && !sessionStorage.getItem('sw_refreshed')) {
-              sessionStorage.setItem('sw_refreshed', '1');
-              location.reload();
-            }
-          });
-        }, 500);
-      });
-    }
-  </script>
-
-  <script src="/ModuloFinanceiro.js?v=20250210b"></script>
+  <!-- Service Worker + Módulos -->
+  <script src="/ModuloFinanceiro.js?v=20250210c"></script>
   <script src="/modulo-operacional.js?v=20250210"></script>
   <script src="/modulo-config.js?v=20250210"></script>
   <script src="/modulo-disponibilidade.js?v=20250210"></script>
@@ -346,13 +323,16 @@
       navigator.serviceWorker.register('/sw.js').then(registration => {
         console.log('SW registered:', registration.scope);
         
-        // Check for updates
+        // Only show update banner if SW was already active before (not first install)
         registration.addEventListener('updatefound', () => {
           const newWorker = registration.installing;
           newWorker.addEventListener('statechange', () => {
             if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              // New version available
-              document.getElementById('update-banner').classList.remove('hidden');
+              // Prevent loop: only show once per session
+              if (!sessionStorage.getItem('sw_update_shown')) {
+                sessionStorage.setItem('sw_update_shown', '1');
+                document.getElementById('update-banner').classList.remove('hidden');
+              }
             }
           });
         });
