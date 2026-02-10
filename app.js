@@ -1853,7 +1853,7 @@ const hideLoadingScreen = () => {
             validacao: [],
             loja: [],
             gratuidades: []
-        }), [j, C] = useState([]), [dashStats, setDashStats] = useState(null), [buscaResults, setBuscaResults] = useState([]), [buscaTotal, setBuscaTotal] = useState(0), [buscaLoading, setBuscaLoading] = useState(false), [A, S] = useState([]), [k, P] = useState(!1), [T, D] = useState(null), [L, I] = useState([]), [F, $] = useState(!1), [M, O] = useState([]), [q, U] = useState([]), [z, B] = useState([]), [V, J] = useState(null), [Q, H] = useState([]), [G, W] = useState([]), [Z, Y] = useState([]), [K, X] = useState({}), [ee, te] = useState([]), [ae, le] = useState([]), [re, oe] = useState([]), [ce, se] = useState([]), [ne, me] = useState([]), [ie, de] = useState([]), [progressoNovatos, setProgressoNovatos] = useState([]), [modalEntregasNovatos, setModalEntregasNovatos] = useState(null), [pe, xe] = useState([]), [cidadesIndicacao, setCidadesIndicacao] = useState([]), [ue, ge] = useState(!1), [be, Re] = useState(null), [Ee, he] = useState("home"), [mensagemGentileza, setMensagemGentileza] = useState(() => getMensagemGentileza()), [elegibilidadeNovatos, setElegibilidadeNovatos] = useState({ elegivel: false, motivo: '', promocoes: [], carregando: true }), [regioesNovatos, setRegioesNovatos] = useState([]), [clientesBINovatos, setClientesBINovatos] = useState([]), [clientesSelecionados, setClientesSelecionados] = useState([]), [carregandoClientes, setCarregandoClientes] = useState(false), [solicitacoesPagina, setSolicitacoesPagina] = useState(1), [acertoRealizado, setAcertoRealizado] = useState(() => { try { const saved = localStorage.getItem("tutts_acerto_realizado"); return saved !== null ? JSON.parse(saved) : true; } catch(e) { return true; } }), [solicitacoesPorPagina] = useState(120), [conciliacaoPagina, setConciliacaoPagina] = useState(1), [conciliacaoPorPagina] = useState(120), [processandoWithdrawals, setProcessandoWithdrawals] = useState(new Set()), 
+        }), [j, C] = useState([]), [dashStats, setDashStats] = useState(null), [buscaResults, setBuscaResults] = useState([]), [buscaTotal, setBuscaTotal] = useState(0), [buscaLoading, setBuscaLoading] = useState(false), [A, S] = useState([]), [k, P] = useState(!1), [T, D] = useState(null), [L, I] = useState([]), [F, $] = useState(!1), [M, O] = useState([]), [q, U] = useState([]), [z, B] = useState([]), [V, J] = useState(null), [Q, H] = useState([]), [G, W] = useState([]), [Z, Y] = useState([]), [K, X] = useState({}), [ee, te] = useState([]), [ae, le] = useState([]), [re, oe] = useState([]), [ce, se] = useState([]), [ne, me] = useState([]), [ie, de] = useState([]), [progressoNovatos, setProgressoNovatos] = useState([]), [modalEntregasNovatos, setModalEntregasNovatos] = useState(null), [pe, xe] = useState([]), [cidadesIndicacao, setCidadesIndicacao] = useState([]), [ue, ge] = useState(!1), [be, Re] = useState(null), [Ee, he] = useState("home"), [mensagemGentileza, setMensagemGentileza] = useState(() => getMensagemGentileza()), [elegibilidadeNovatos, setElegibilidadeNovatos] = useState({ elegivel: false, motivo: '', promocoes: [], carregando: true }), [regioesNovatos, setRegioesNovatos] = useState([]), [clientesBINovatos, setClientesBINovatos] = useState([]), [clientesSelecionados, setClientesSelecionados] = useState([]), [carregandoClientes, setCarregandoClientes] = useState(false), [solicitacoesPagina, setSolicitacoesPagina] = useState(1), [acertoRealizado, setAcertoRealizado] = useState(() => { try { const saved = localStorage.getItem("tutts_acerto_realizado"); return saved !== null ? JSON.parse(saved) : true; } catch(e) { return true; } }), [solicitacoesPorPagina] = useState(120), [conciliacaoPagina, setConciliacaoPagina] = useState(1), [conciliacaoPorPagina] = useState(120), [processandoWithdrawals, setProcessandoWithdrawals] = useState(new Set()), [withdrawalCounts, setWithdrawalCounts] = useState({}), 
         
         // Helper para parse de saldo (aceita número ou string brasileira)
         parseSaldoBR = (valor) => {
@@ -3311,6 +3311,8 @@ const hideLoadingScreen = () => {
                     }
                     
                     U(saques); tt(pedidos); H(gratuidades);
+                    // ⚡ Armazenar contadores do backend (precisos, sem precisar carregar 4879 registros)
+                    if (data.counts) setWithdrawalCounts(data.counts);
                     
                     const abaAtiva = p.finTab || "home-fin";
                     "solicitacoes" === abaAtiva || "validacao" === abaAtiva ? Pa("solicitacoes") : "loja" === abaAtiva ? Pa("loja") : "gratuidades" === abaAtiva && Pa("gratuidades");
@@ -6459,8 +6461,19 @@ const hideLoadingScreen = () => {
                 await La();
                 if ("financeiro" === Ee) {
                     "user" === l.role && (await Oa(), await qa(), await Za());
-                    ("admin_financeiro" === l.role || "admin_master" === l.role) && (await Ua(), await za(), await Ba(), await Va(), await Ja(), await Ha(), await Wa());
-                    "admin" === l.role && hasModuleAccess(l, "financeiro") && (await Ua(), await za());
+                    if ("admin_financeiro" === l.role || "admin_master" === l.role || ("admin" === l.role && hasModuleAccess(l, "financeiro"))) {
+                        // ⚡ 1 request consolidado ao invés de 7 individuais
+                        try {
+                            const res = await fetchAuth(`${API_URL}/financeiro/init`);
+                            if (res.ok) {
+                                const data = await res.json();
+                                U(data.withdrawals || []); tt(data.pedidos || []); H(data.gratuidades || []);
+                                if (data.counts) setWithdrawalCounts(data.counts);
+                                h(new Date);
+                                console.log('✅ Refresh financeiro:', (data.withdrawals||[]).length, 'pendentes');
+                            }
+                        } catch(e) { console.error('Refresh erro:', e); }
+                    }
                 }
                 if ("operacional" === Ee || "config" === Ee) {
                     ("admin" === l.role || "admin_master" === l.role) && await Ia();
@@ -10568,6 +10581,8 @@ const hideLoadingScreen = () => {
                     solicitacoesPorPagina, conciliacaoPorPagina, acertoRealizado, setAcertoRealizado,
                     // Proteção contra débito duplicado
                     processandoWithdrawals, setProcessandoWithdrawals,
+                    // ⚡ Contadores do backend (precisos sem carregar todos)
+                    withdrawalCounts,
                     // Navegação e usuário
                     l, Ee, he, o, f, E, e,
                     // Utilitários
