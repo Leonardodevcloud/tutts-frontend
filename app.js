@@ -3261,27 +3261,36 @@ const hideLoadingScreen = () => {
             }
             
             // ==================== CARREGAMENTO OTIMIZADO ====================
-            // ⚡ PERFORMANCE: Carregar dados UMA VEZ ao entrar no financeiro
-            // Usa endpoint consolidado: 1 request ao invés de 3
+            // ⚡ PERFORMANCE: Carregar apenas PENDENTES + contadores (não todos os 4870)
+            // Dados históricos carregam sob demanda ao clicar nos filtros
             const carregarDados = async () => {
                 N(!0);
                 try {
-                    // ⚡ 1 request consolidado ao invés de 3 separados
+                    // ⚡ 1 request — retorna só pendentes + contadores
                     const res = await fetchAuth(`${API_URL}/financeiro/init`);
                     
                     if (!res.ok) {
-                        console.error('Erro no financeiro/init:', res.status);
+                        // Fallback para endpoints individuais se /financeiro/init não existir
+                        console.warn('financeiro/init falhou, usando fallback');
+                        const [saquesRes, pedidosRes, gratuidadesRes] = await Promise.all([
+                            fetchAuth(`${API_URL}/withdrawals?limit=50`),
+                            fetchAuth(`${API_URL}/loja/pedidos`),
+                            fetchAuth(`${API_URL}/gratuities`)
+                        ]);
+                        const saques = await saquesRes.json();
+                        const pedidos = await pedidosRes.json();
+                        const gratuidades = await gratuidadesRes.json();
+                        U(Array.isArray(saques) ? saques : []); 
+                        tt(Array.isArray(pedidos) ? pedidos : []); 
+                        H(Array.isArray(gratuidades) ? gratuidades : []);
                         N(!1);
                         return;
                     }
                     
-                    const { withdrawals: saques, pedidos, gratuidades } = await res.json();
-                    
-                    if (!Array.isArray(saques) || !Array.isArray(gratuidades)) {
-                        console.error('Resposta inválida');
-                        N(!1);
-                        return;
-                    }
+                    const data = await res.json();
+                    const saques = data.withdrawals || [];
+                    const pedidos = data.pedidos || [];
+                    const gratuidades = data.gratuidades || [];
                     
                     // Filtrar pendentes para contadores
                     const pendentes = saques.filter(e => e.status === "pending" || e.status === "aguardando_aprovacao");
@@ -3301,13 +3310,12 @@ const hideLoadingScreen = () => {
                         Sa.current = countPedidos;
                     }
                     
-                    // IMPORTANTE: Carregar TODOS os saques para a tabela
                     U(saques); tt(pedidos); H(gratuidades);
                     
                     const abaAtiva = p.finTab || "home-fin";
                     "solicitacoes" === abaAtiva || "validacao" === abaAtiva ? Pa("solicitacoes") : "loja" === abaAtiva ? Pa("loja") : "gratuidades" === abaAtiva && Pa("gratuidades");
                     h(new Date);
-                    console.log('✅ Dados carregados:', saques.length, 'total,', pendentes.length, 'pendentes');
+                    console.log('✅ Financeiro carregado:', saques.length, 'saques (pendentes),', pedidos.length, 'pedidos,', gratuidades.length, 'gratuidades');
                 } catch (e) { console.error("Erro:", e); }
                 N(!1);
             };
@@ -5339,14 +5347,14 @@ const hideLoadingScreen = () => {
             }
         }, Ua = async () => {
             try {
-                const e = await fetchAuth(`${API_URL}/withdrawals`);
+                const e = await fetchAuth(`${API_URL}/withdrawals?limit=50`);
                 if (e.ok) U(await e.json())
             } catch (e) {
                 console.error(e)
             }
         }, za = async () => {
             try {
-                const e = await fetchAuth(`${API_URL}/gratuities`);
+                const e = await fetchAuth(`${API_URL}/gratuities?limit=50`);
                 if (e.ok) H(await e.json())
             } catch (e) {
                 console.error(e)
