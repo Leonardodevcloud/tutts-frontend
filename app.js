@@ -18278,7 +18278,11 @@ const hideLoadingScreen = () => {
                 label: "⏳ Pendentes",
                 value: dashStats ? dashStats.pendentes : j.filter(e => "pendente" === e.status).length,
                 color: "#fbbf24"
-            }],
+            }, {
+                label: "📦 Outros",
+                value: dashStats ? Math.max(0, dashStats.total - dashStats.aprovados - dashStats.rejeitados - dashStats.pendentes) : j.filter(e => !["aprovado","rejeitado","pendente"].includes(e.status)).length,
+                color: "#94a3b8"
+            }].filter(e => e.value > 0),
             title: "📈 Status das Solicitações"
         })), React.createElement("div", {
             className: "bg-white rounded-xl shadow p-6"
