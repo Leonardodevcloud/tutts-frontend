@@ -432,7 +432,12 @@
                         
                         // Card Validação
                         React.createElement("div", {
-                            onClick: () => { x({...p, finTab: "validacao"}); },
+                            onClick: () => { 
+                                const now = new Date();
+                                const hoje = now.getFullYear() + "-" + String(now.getMonth()+1).padStart(2,"0") + "-" + String(now.getDate()).padStart(2,"0");
+                                x({...p, finTab: "validacao", validacaoDataInicio: hoje, validacaoDataFim: hoje}); 
+                                carregarValidacao(p.validacaoTipo || "solicitacao", hoje, hoje);
+                            },
                             className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-blue-300"
                         },
                             React.createElement("div", {className: "h-2 bg-gradient-to-r from-blue-500 to-cyan-600"}),
