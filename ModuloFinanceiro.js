@@ -29,6 +29,8 @@
             solicitacoesPorPagina, conciliacaoPorPagina, acertoRealizado, setAcertoRealizado,
             // Proteção contra débito duplicado
             processandoWithdrawals, setProcessandoWithdrawals,
+            // Validação server-side
+            validacaoData, setValidacaoData, validacaoLoading, setValidacaoLoading, carregarValidacao,
             // ⚡ Contadores do backend
             withdrawalCounts,
             l, Ee, he, o, f, E, e,
@@ -1132,10 +1134,10 @@
                 className: "block text-sm font-semibold mb-1"
             }, "Filtrar por"), React.createElement("select", {
                 value: p.validacaoTipo || "solicitacao",
-                onChange: e => x({
-                    ...p,
-                    validacaoTipo: e.target.value
-                }),
+                onChange: e => {
+                    x({ ...p, validacaoTipo: e.target.value });
+                    if (p.validacaoDataInicio && p.validacaoDataFim) carregarValidacao(e.target.value, p.validacaoDataInicio, p.validacaoDataFim);
+                },
                 className: "px-4 py-2 border rounded-lg"
             }, React.createElement("option", {
                 value: "solicitacao"
@@ -1148,47 +1150,45 @@
             }, "Data Início"), React.createElement("input", {
                 type: "date",
                 value: p.validacaoDataInicio || "",
-                onChange: e => x({
-                    ...p,
-                    validacaoDataInicio: e.target.value
-                }),
+                onChange: e => {
+                    const novoInicio = e.target.value;
+                    x({ ...p, validacaoDataInicio: novoInicio });
+                    if (novoInicio && p.validacaoDataFim) carregarValidacao(p.validacaoTipo || "solicitacao", novoInicio, p.validacaoDataFim);
+                },
                 className: "px-4 py-2 border rounded-lg"
             })), React.createElement("div", null, React.createElement("label", {
                 className: "block text-sm font-semibold mb-1"
             }, "Data Fim"), React.createElement("input", {
                 type: "date",
                 value: p.validacaoDataFim || "",
-                onChange: e => x({
-                    ...p,
-                    validacaoDataFim: e.target.value
-                }),
+                onChange: e => {
+                    const novoFim = e.target.value;
+                    x({ ...p, validacaoDataFim: novoFim });
+                    if (p.validacaoDataInicio && novoFim) carregarValidacao(p.validacaoTipo || "solicitacao", p.validacaoDataInicio, novoFim);
+                },
                 className: "px-4 py-2 border rounded-lg"
             })), React.createElement("button", {
                 onClick: () => {
                     const now = new Date();
                     const e = now.getFullYear() + "-" + String(now.getMonth()+1).padStart(2,"0") + "-" + String(now.getDate()).padStart(2,"0");
-                    x({
-                        ...p,
-                        validacaoDataInicio: e,
-                        validacaoDataFim: e
-                    })
+                    x({ ...p, validacaoDataInicio: e, validacaoDataFim: e });
+                    carregarValidacao(p.validacaoTipo || "solicitacao", e, e);
                 },
                 className: "px-6 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700"
             }, "📆 Hoje"), React.createElement("button", {
-                onClick: () => x({
-                    ...p,
-                    validacaoDataInicio: "",
-                    validacaoDataFim: ""
-                }),
+                onClick: () => {
+                    x({ ...p, validacaoDataInicio: "", validacaoDataFim: "" });
+                    setValidacaoData(null);
+                },
                 className: "px-6 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300"
             }, "🔄 Limpar"), React.createElement("button", {
                 onClick: exportarValidacaoExcel,
                 className: "px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700"
-            }, "📥 Exportar Excel"))), (() => {
+            }, "📥 Exportar Excel"))), validacaoLoading ? React.createElement("div", { className: "flex items-center justify-center py-12" }, React.createElement("div", { className: "animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto" }), React.createElement("span", { className: "ml-3 text-gray-600" }, "Carregando validação...")) : (() => {
                 const e = p.validacaoTipo || "solicitacao",
                     t = p.validacaoDataInicio,
                     a = p.validacaoDataFim,
-                    l = q.filter(l => {
+                    l = (t && a && validacaoData) ? validacaoData : q.filter(l => {
                         if (!t && !a) return !0;
                         let r;
                         const toLocalDate = (dt) => { const d = new Date(dt); return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); };
