@@ -5325,13 +5325,19 @@ const hideLoadingScreen = () => {
                 }
             } catch (e) { console.error('Erro ranking:', e); }
             setRankingLoading(false);
-        }, carregarRelatorio = async (mes, ano) => {
+        }, carregarRelatorio = async (mes, ano, dataInicio, dataFim) => {
             try {
                 setRelatorioLoading(true);
                 setRelatorioData(null);
-                const m = mes !== undefined ? mes : new Date().getMonth();
-                const a = ano !== undefined ? ano : new Date().getFullYear();
-                const resp = await fetchAuth(`${API_URL}/submissions/relatorios?mes=${m}&ano=${a}`);
+                let url;
+                if (dataInicio && dataFim) {
+                    url = `${API_URL}/submissions/relatorios?dataInicio=${dataInicio}&dataFim=${dataFim}`;
+                } else {
+                    const m = mes !== undefined ? mes : new Date().getMonth();
+                    const a = ano !== undefined ? ano : new Date().getFullYear();
+                    url = `${API_URL}/submissions/relatorios?mes=${m}&ano=${a}`;
+                }
+                const resp = await fetchAuth(url);
                 if (resp.ok) {
                     const data = await resp.json();
                     setRelatorioData(data);
@@ -18232,7 +18238,7 @@ const hideLoadingScreen = () => {
                 className: "text-red-800 font-bold text-lg"
             }, "ATENÇÃO: ", c.length, " solicitação(ões) aguardando há mais de 24 horas!"), React.createElement("p", {
                 className: "text-red-600 text-sm mt-1"
-            }, "OS: ", c.slice(0, 5).join(", "), c.length > 5 ? "..." : "")))))})(), React.createElement("div", {
+            }, "OS: ", c.slice(0, 5).join(", "), c.length > 5 ? "..." : ""))))); })(), React.createElement("div", {
             className: "grid md:grid-cols-2 gap-6 mb-6"
         }, React.createElement(MotivosPieChart, {
             submissions: j,
@@ -18502,7 +18508,7 @@ const hideLoadingScreen = () => {
             className: "space-y-3"
         }, (() => {
             if (rankingLoading) return React.createElement("div", { className: "text-center py-8" }, React.createElement("div", { className: "animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto" }), React.createElement("p", { className: "mt-2 text-gray-500" }, "Carregando ranking..."));
-            const l = rankingRetorno.map(r => [r.user_cod, { nome: r.user_name, cod: r.user_cod, total: parseInt(r.total), solicitacoes: (r.solicitacoes || []).map(s => ({ ordemServico: s.ordemServico, created_at: s.created_at, temImagem: s.temImagem })) }]);
+            const l = rankingRetorno.map(r => [r.user_cod, { nome: r.user_name, cod: r.user_cod, total: parseInt(r.total), solicitacoes: (r.solicitacoes || []).map(s => ({ id: s.id, ordemServico: s.ordemServico, created_at: s.created_at, temImagem: s.temImagem, imagemComprovante: s.imagemComprovante })) }]);
             return 0 === l.length ? React.createElement("p", {
                 className: "text-gray-500 text-center py-8"
             }, "Sem dados no período") : l.map(([k, v], i) => React.createElement("div", {
@@ -18611,6 +18617,23 @@ const hideLoadingScreen = () => {
             }, React.createElement("label", {
                 className: "font-semibold"
             }, "📅 Período:"), React.createElement("select", {
+                value: p.relTipoFiltro || "mes",
+                onChange: ev => { x({ ...p, relTipoFiltro: ev.target.value }); },
+                className: "px-3 py-2 border rounded-lg bg-purple-50 font-semibold"
+            }, React.createElement("option", { value: "mes" }, "Por Mês"), React.createElement("option", { value: "custom" }, "Personalizado")), p.relTipoFiltro === "custom" ? React.createElement(React.Fragment, null, React.createElement("input", {
+                type: "date",
+                value: p.relDataInicio || "",
+                onChange: ev => x({ ...p, relDataInicio: ev.target.value }),
+                className: "px-3 py-2 border rounded-lg"
+            }), React.createElement("span", { className: "text-gray-500" }, "até"), React.createElement("input", {
+                type: "date",
+                value: p.relDataFim || "",
+                onChange: ev => x({ ...p, relDataFim: ev.target.value }),
+                className: "px-3 py-2 border rounded-lg"
+            }), React.createElement("button", {
+                onClick: () => { if (p.relDataInicio && p.relDataFim) carregarRelatorio(null, null, p.relDataInicio, p.relDataFim); else ja("Selecione data início e fim", "error"); },
+                className: "px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
+            }, "🔍 Filtrar")) : React.createElement(React.Fragment, null, React.createElement("select", {
                 value: e,
                 onChange: ev => { x({ ...p, relMes: ev.target.value }); carregarRelatorio(parseInt(ev.target.value), t); },
                 className: "px-3 py-2 border rounded-lg"
@@ -18624,7 +18647,7 @@ const hideLoadingScreen = () => {
             }, [2024, 2025, 2026].map(e => React.createElement("option", {
                 key: e,
                 value: e
-            }, e)))), React.createElement("button", {
+            }, e))))), React.createElement("button", {
                 onClick: () => {
                     const m = `\n                  <html>\n                  <head>\n                    <title>Relatório Tutts - ${f[e]}/${t}</title>\n                    <style>\n                      body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }\n                      h1 { color: #581c87; border-bottom: 2px solid #581c87; padding-bottom: 10px; }\n                      h2 { color: #7c3aed; margin-top: 30px; }\n                      .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }\n                      .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin: 20px 0; }\n                      .card { background: #f3f4f6; padding: 15px; border-radius: 8px; text-align: center; }\n                      .card-value { font-size: 28px; font-weight: bold; }\n                      .green { color: #16a34a; }\n                      .red { color: #dc2626; }\n                      .yellow { color: #ca8a04; }\n                      .purple { color: #7c3aed; }\n                      table { width: 100%; border-collapse: collapse; margin: 15px 0; }\n                      th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }\n                      th { background: #f3f4f6; }\n                      .footer { margin-top: 40px; text-align: center; color: #666; font-size: 12px; border-top: 1px solid #ddd; padding-top: 20px; }\n                      .comparativo { background: ${parseFloat(h)>=0?"#dcfce7":"#fee2e2"}; padding: 15px; border-radius: 8px; margin: 20px 0; }\n                    </style>\n                  </head>\n                  <body>\n                    <div class="header">\n                      <h1>📊 Relatório Tutts</h1>\n                      <div>\n                        <strong>${f[e]} / ${t}</strong><br>\n                        <small>Gerado em: ${(new Date).toLocaleString("pt-BR")}</small>\n                      </div>\n                    </div>\n                    \n                    <h2>📋 Resumo Geral</h2>\n                    <div class="cards">\n                      <div class="card"><div class="card-value purple">${a.length}</div><div>Total</div></div>\n                      <div class="card"><div class="card-value green">${l.length}</div><div>Aprovadas</div></div>\n                      <div class="card"><div class="card-value red">${r.length}</div><div>Rejeitadas</div></div>\n                      <div class="card"><div class="card-value yellow">${o.length}</div><div>Pendentes</div></div>\n                    </div>\n                    \n                    <div class="cards">\n                      <div class="card"><div class="card-value green">${c}%</div><div>Taxa Aprovação</div></div>\n                      <div class="card"><div class="card-value red">${s}%</div><div>Taxa Rejeição</div></div>\n                      <div class="card"><div class="card-value purple">${rd.totalProfissionais||0}</div><div>Profissionais</div></div>\n                      <div class="card"><div class="card-value purple">${rd.mediaPorProfissional||0}</div><div>Média/Profissional</div></div>\n                    </div>\n                    \n                    <div class="comparativo">\n                      <strong>📊 Comparativo com Mês Anterior:</strong> \n                      ${parseFloat(h)>=0?"📈":"📉"} ${parseFloat(h)>=0?"+":""}${h}% \n                      (${E.length} → ${a.length} solicitações)\n                    </div>\n                    \n                    <h2>📁 Por Motivo</h2>\n                    <table>\n                      <thead><tr><th>Motivo</th><th>Total</th><th>Aprovadas</th><th>Rejeitadas</th><th>Pendentes</th><th>Taxa</th></tr></thead>\n                      <tbody>\n                        ${Object.entries(n).map(([e,t])=>`\n                          <tr>\n                            <td>${e}</td>\n                            <td>${t.total}</td>\n                            <td class="green">${t.aprovadas}</td>\n                            <td class="red">${t.rejeitadas}</td>\n                            <td class="yellow">${t.pendentes}</td>\n                            <td>${t.total>0?(t.aprovadas/t.total*100).toFixed(0):0}%</td>\n                          </tr>\n                        `).join("")}\n                      </tbody>\n                    </table>\n                    \n                    <h2>👷 Top 10 Profissionais</h2>\n                    <table>\n                      <thead><tr><th>#</th><th>Profissional</th><th>Código</th><th>Total</th><th>Aprovadas</th><th>Rejeitadas</th><th>Taxa</th></tr></thead>\n                      <tbody>\n                        ${i.map((e,t)=>`\n                          <tr>\n                            <td>${t+1}</td>\n                            <td>${e.nome}</td>\n                            <td>${e.cod||"-"}</td>\n                            <td>${e.total}</td>\n                            <td class="green">${e.aprovadas}</td>\n                            <td class="red">${e.rejeitadas}</td>\n                            <td>${e.taxa}%</td>\n                          </tr>\n                        `).join("")}\n                      </tbody>\n                    </table>\n                    \n                    <h2>📅 Por Semana</h2>\n                    <table>\n                      <thead><tr><th>Semana</th><th>Total</th><th>Aprovadas</th><th>Taxa</th></tr></thead>\n                      <tbody>\n                        ${d.map(e=>`\n                          <tr>\n                            <td>${e.label} (dias ${e.dias[0]}-${e.dias[1]})</td>\n                            <td>${e.total}</td>\n                            <td class="green">${e.aprovadas}</td>\n                            <td>${e.total>0?(e.aprovadas/e.total*100).toFixed(0):0}%</td>\n                          </tr>\n                        `).join("")}\n                      </tbody>\n                    </table>\n                    \n                    <div class="footer">\n                      <strong>Central do Entregador Tutts</strong> - Relatório Gerado Automaticamente<br>\n                      ${(new Date).toLocaleString("pt-BR")}\n                    </div>\n                  </body>\n                  </html>\n                `,
                         p = window.open("", "_blank");
