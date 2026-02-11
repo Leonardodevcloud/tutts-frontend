@@ -3056,23 +3056,64 @@ const hideLoadingScreen = () => {
                     codValido: !1
                 }))
             }
-        }, [p.cod, p.view, pe]), useEffect(() => {
+        }, [p.cod, p.view, pe]), 
+        
+        useEffect(() => {
             if (!l) return;
-            const e = async e => {
-                try {
-                    await e()
-                } catch (e) {
-                    console.log("Background load error:", e)
+            // ⚡ PERFORMANCE: No login, carregar APENAS dados essenciais
+            // Dados pesados de cada módulo carregam sob demanda (lazy)
+            const safeCall = async (fn) => { try { await fn() } catch(e) { console.log("Init error:", e) } };
+            
+            // Social profile + mensagens (necessário para header/badges)
+            safeCall(() => loadSocialProfile(l.codProfissional));
+            safeCall(loadSocialMessages);
+            
+            // Submissions dashboard (usado no home admin como La)
+            safeCall(La);
+            
+            // Para user: apenas check-terms e produtos ativos (mínimo para home)
+            if ("user" === l.role) {
+                safeCall($a);
+                safeCall(Ga);
+            }
+        }, [l]),
+        
+        // ⚡ PERFORMANCE: Carregar dados do módulo sob demanda quando navega
+        useEffect(() => {
+            if (!l) return;
+            const safeCall = async (fn) => { try { await fn() } catch(e) { console.log("Module load error:", e) } };
+            
+            // Módulo Financeiro (admin) — NÃO carregar aqui, o financeiro tem useEffect dedicado
+            if ("financeiro" === Ee) {
+                if ("user" === l.role) {
+                    safeCall(Oa); safeCall(qa); safeCall(Za); safeCall(Ka);
                 }
-            }, t = () => {
-                "user" === l.role && (e($a), e(qa), e(vl), e(_l), e(kl), e(carregarProgressoNovatos), e(Dl), e(Il), e(Za), e(Ka), e(Ta)), "admin_financeiro" !== l.role && "admin_master" !== l.role || (e(za), e(Ba), e(gl), e(wl), e(Cl), e(Sl), e(Dl), e(Ll), e(Ia), e(Ja), e(Ha), e(Wa), e(Ya)), "admin" !== l.role && "admin_master" !== l.role || e(Ia), "admin" === l.role && hasModuleAccess(l, "financeiro") && (e(wl), e(gl), e(Cl), e(Sl), e(Ll)), e(La)
-            };
-            (async () => {
-                "user" === l.role && await Promise.all([Oa(), Ga()]), "admin_financeiro" !== l.role && "admin_master" !== l.role || await Promise.all([Ua(), Va()])
-            })().then(() => {
-                setTimeout(t, 100)
-            })
-        }, [l]);
+            }
+            
+            // Módulo Operacional/Config — carrega promoções, indicações, novatos
+            if ("operacional" === Ee || "config" === Ee || "financeiro" === Ee) {
+                if ("admin_financeiro" === l.role || "admin_master" === l.role || ("admin" === l.role && hasModuleAccess(l, "financeiro"))) {
+                    safeCall(gl); safeCall(wl); safeCall(Cl); safeCall(Sl); safeCall(Ll);
+                }
+                if ("admin" === l.role || "admin_master" === l.role) {
+                    safeCall(Ia);
+                }
+            }
+            
+            // Módulo Config — lista de usuários
+            if ("config" === Ee) {
+                safeCall(Ia);
+            }
+            
+            // Módulo user — promoções, indicações, quiz, etc
+            if ("user" === l.role && ("home" === Ee || "financeiro" === Ee)) {
+                safeCall(vl); safeCall(_l); safeCall(kl);
+                safeCall(carregarProgressoNovatos);
+                safeCall(Dl); safeCall(Il);
+                safeCall(Ta); // planilha Google Sheets
+            }
+            
+        }, [l, Ee]);
         const Ca = () => {
                 try {
                     const e = new(window.AudioContext || window.webkitAudioContext),
