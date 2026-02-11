@@ -106,15 +106,16 @@
             const dadosFiltrados = q.filter(item => {
                 if (!dataInicio && !dataFim) return true;
                 let dataComparacao;
+                const toLocalDate = (dt) => { const d = new Date(dt); return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); };
                 if (tipoFiltro === "solicitacao") {
                     if (!item.created_at) return false;
-                    dataComparacao = item.created_at.split("T")[0];
+                    dataComparacao = toLocalDate(item.created_at);
                 } else if (tipoFiltro === "lancamento") {
                     if (!item.lancamento_at) return false;
-                    dataComparacao = item.lancamento_at.split("T")[0];
+                    dataComparacao = toLocalDate(item.lancamento_at);
                 } else {
                     if (!item.debito_plific_at) return false;
-                    dataComparacao = item.debito_plific_at.split("T")[0];
+                    dataComparacao = toLocalDate(item.debito_plific_at);
                 }
                 if (dataInicio && dataFim) return dataComparacao >= dataInicio && dataComparacao <= dataFim;
                 if (dataInicio) return dataComparacao >= dataInicio;
@@ -666,44 +667,6 @@
                     n = o <= 30 ? 100 : o <= 60 ? 80 : o <= 120 ? 60 : 40,
                     m = Math.round((s + n) / 2);
                 return React.createElement(React.Fragment, null, React.createElement("div", {
-                    className: "grid grid-cols-2 md:grid-cols-6 gap-4 mb-6"
-                }, React.createElement("div", {
-                    className: "bg-white rounded-xl shadow p-4"
-                }, React.createElement("p", {
-                    className: "text-sm text-gray-600"
-                }, "Total"), React.createElement("p", {
-                    className: "text-2xl font-bold text-purple-600"
-                }, parseInt(wc.total) || q.length)), React.createElement("div", {
-                    className: "bg-white rounded-xl shadow p-4"
-                }, React.createElement("p", {
-                    className: "text-sm text-gray-600"
-                }, "Aguardando"), React.createElement("p", {
-                    className: "text-2xl font-bold text-yellow-600"
-                }, parseInt(wc.aguardando) || q.filter(e => "aguardando_aprovacao" === e.status).length)), React.createElement("div", {
-                    className: "bg-white rounded-xl shadow p-4"
-                }, React.createElement("p", {
-                    className: "text-sm text-gray-600"
-                }, "Aprovadas"), React.createElement("p", {
-                    className: "text-2xl font-bold text-green-600"
-                }, parseInt(wc.aprovadas) || q.filter(e => "aprovado" === e.status).length)), React.createElement("div", {
-                    className: "bg-white rounded-xl shadow p-4"
-                }, React.createElement("p", {
-                    className: "text-sm text-gray-600"
-                }, "Aprov. Gratuidade"), React.createElement("p", {
-                    className: "text-2xl font-bold text-blue-600"
-                }, parseInt(wc.gratuidade) || q.filter(e => "aprovado_gratuidade" === e.status).length)), React.createElement("div", {
-                    className: "bg-white rounded-xl shadow p-4"
-                }, React.createElement("p", {
-                    className: "text-sm text-gray-600"
-                }, "Rejeitadas"), React.createElement("p", {
-                    className: "text-2xl font-bold text-red-600"
-                }, parseInt(wc.rejeitadas) || q.filter(e => "rejeitado" === e.status).length)), React.createElement("div", {
-                    className: "bg-white rounded-xl shadow p-4"
-                }, React.createElement("p", {
-                    className: "text-sm text-gray-600"
-                }, "🚨 Atrasadas (+1h)"), React.createElement("p", {
-                    className: "text-2xl font-bold " + (c.length > 0 ? "text-red-600 animate-pulse" : "text-gray-400")
-                }, parseInt(wc.atrasadas) || c.length))), React.createElement("div", {
                     className: "bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl shadow-lg p-6 mb-6 text-white"
                 }, React.createElement("div", {
                     className: "flex flex-col md:flex-row items-center gap-6"
@@ -823,7 +786,7 @@
                 }); 
                 // ⚡ Carregar aprovadas sob demanda (não vem no init)
                 if (q.filter(e => "aprovado" === e.status).length === 0) {
-                    fetchAuth(`${API_URL}/withdrawals?status=approved&limit=100`).then(r => r.json()).then(data => { if (Array.isArray(data)) U([...q, ...data]); });
+                    fetchAuth(`${API_URL}/withdrawals?status=approved&limit=200`).then(r => r.json()).then(data => { if (Array.isArray(data)) U([...q, ...data]); });
                 }
                 },
                 className: "px-4 py-2 rounded-lg font-semibold text-sm " + ("aprovado" === p.filterStatus ? "bg-green-600 text-white" : "bg-gray-100 hover:bg-gray-200")
@@ -833,7 +796,7 @@
                     filterStatus: "aprovado_gratuidade"
                 }); 
                 if (q.filter(e => "aprovado_gratuidade" === e.status).length === 0) {
-                    fetchAuth(`${API_URL}/withdrawals?status=aprovado_gratuidade&limit=100`).then(r => r.json()).then(data => { if (Array.isArray(data)) U([...q, ...data]); });
+                    fetchAuth(`${API_URL}/withdrawals?status=aprovado_gratuidade&limit=200`).then(r => r.json()).then(data => { if (Array.isArray(data)) U([...q, ...data]); });
                 }
                 },
                 className: "px-4 py-2 rounded-lg font-semibold text-sm " + ("aprovado_gratuidade" === p.filterStatus ? "bg-blue-600 text-white" : "bg-gray-100 hover:bg-gray-200")
@@ -843,7 +806,7 @@
                     filterStatus: "rejeitado"
                 }); 
                 if (q.filter(e => "rejeitado" === e.status).length === 0) {
-                    fetchAuth(`${API_URL}/withdrawals?status=rejected&limit=100`).then(r => r.json()).then(data => { if (Array.isArray(data)) U([...q, ...data]); });
+                    fetchAuth(`${API_URL}/withdrawals?status=rejected&limit=200`).then(r => r.json()).then(data => { if (Array.isArray(data)) U([...q, ...data]); });
                 }
                 },
                 className: "px-4 py-2 rounded-lg font-semibold text-sm " + ("rejeitado" === p.filterStatus ? "bg-red-600 text-white" : "bg-gray-100 hover:bg-gray-200")
@@ -1202,7 +1165,8 @@
                 className: "px-4 py-2 border rounded-lg"
             })), React.createElement("button", {
                 onClick: () => {
-                    const e = (new Date).toISOString().split("T")[0];
+                    const now = new Date();
+                    const e = now.getFullYear() + "-" + String(now.getMonth()+1).padStart(2,"0") + "-" + String(now.getDate()).padStart(2,"0");
                     x({
                         ...p,
                         validacaoDataInicio: e,
@@ -1227,18 +1191,16 @@
                     l = q.filter(l => {
                         if (!t && !a) return !0;
                         let r;
+                        const toLocalDate = (dt) => { const d = new Date(dt); return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); };
                         if ("solicitacao" === e) {
-                            // Data da solicitação - extrair só a data sem timezone
                             if (!l.created_at) return !1;
-                            r = l.created_at.split("T")[0];
+                            r = toLocalDate(l.created_at);
                         } else if ("lancamento" === e) {
-                            // Data de lançamento (momento da aprovação)
                             if (!l.lancamento_at) return !1;
-                            r = l.lancamento_at.split("T")[0];
+                            r = toLocalDate(l.lancamento_at);
                         } else {
-                            // Data do débito (coluna Débito no front)
                             if (!l.debito_plific_at) return !1;
-                            r = l.debito_plific_at.split("T")[0];
+                            r = toLocalDate(l.debito_plific_at);
                         }
                         return t && a ? r >= t && r <= a : t ? r >= t : !a || r <= a
                     }),
@@ -1362,12 +1324,12 @@
                     const dadosFiltrados = q.filter(e => {
                         if (!e.status?.includes("aprovado")) return false;
                         if (p.concDataSolicitacao) {
-                            const dataSolic = new Date(e.created_at).toISOString().split('T')[0];
+                            const dataSolic = (() => { const d = new Date(e.created_at); return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); })();
                             if (dataSolic !== p.concDataSolicitacao) return false;
                         }
                         if (p.concDataRealizacao) {
                             if (!e.approved_at) return false;
-                            const dataReal = new Date(e.approved_at).toISOString().split('T')[0];
+                            const dataReal = (() => { const d = new Date(e.approved_at); return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); })();
                             if (dataReal !== p.concDataRealizacao) return false;
                         }
                         if (p.concApenasGratuidade && !e.has_gratuity) return false;
@@ -1442,14 +1404,14 @@
                     
                     // Filtro por data de solicitação
                     if (p.concDataSolicitacao) {
-                        const dataSolic = new Date(e.created_at).toISOString().split('T')[0];
+                        const dataSolic = (() => { const d = new Date(e.created_at); return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); })();
                         if (dataSolic !== p.concDataSolicitacao) return false;
                     }
                     
                     // Filtro por data de realização
                     if (p.concDataRealizacao) {
                         if (!e.approved_at) return false;
-                        const dataReal = new Date(e.approved_at).toISOString().split('T')[0];
+                        const dataReal = (() => { const d = new Date(e.approved_at); return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); })();
                         if (dataReal !== p.concDataRealizacao) return false;
                     }
                     
@@ -1540,12 +1502,12 @@
                 const filtrados = q.filter(e => {
                     if (!e.status?.includes("aprovado")) return false;
                     if (p.concDataSolicitacao) {
-                        const dataSolic = new Date(e.created_at).toISOString().split('T')[0];
+                        const dataSolic = (() => { const d = new Date(e.created_at); return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); })();
                         if (dataSolic !== p.concDataSolicitacao) return false;
                     }
                     if (p.concDataRealizacao) {
                         if (!e.approved_at) return false;
-                        const dataReal = new Date(e.approved_at).toISOString().split('T')[0];
+                        const dataReal = (() => { const d = new Date(e.approved_at); return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); })();
                         if (dataReal !== p.concDataRealizacao) return false;
                     }
                     if (p.concApenasGratuidade && !e.has_gratuity) return false;
