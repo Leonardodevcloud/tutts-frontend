@@ -6,6 +6,15 @@
         return parseFloat(valor || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
     };
     
+    // 🕐 Parse data do banco como UTC (evita +3h fantasma do BRT)
+    const parseUTC = (dt) => {
+        if (!dt) return 0;
+        const s = String(dt);
+        if (s.includes('Z') || s.includes('+') || /\d{2}-\d{2}:\d{2}$/.test(s)) return new Date(s).getTime();
+        return new Date(s + 'Z').getTime();
+    };
+    const dateUTC = (dt) => new Date(parseUTC(dt));
+    
     window.parseSaldoBR = window.parseSaldoBR || function(valor) {
         if (typeof valor === "number") return valor;
         if (!valor) return 0;
@@ -660,11 +669,11 @@
                     },
                     t = new Date;
                 t.setHours(0, 0, 0, 0);
-                const a = q.filter(e => new Date(e.created_at) >= t),
+                const a = q.filter(e => dateUTC(e.created_at) >= t),
                     l = a.filter(e => "aguardando_aprovacao" !== e.status),
-                    r = (a.filter(e => "aguardando_aprovacao" === e.status), a.filter(t => ("aprovado" === t.status || "aprovado_gratuidade" === t.status) && t.updated_at && t.created_at && e(t.created_at)).map(e => (new Date(e.updated_at) - new Date(e.created_at)) / 6e4).filter(e => e > 0 && e <= 1440)),
+                    r = (a.filter(e => "aguardando_aprovacao" === e.status), a.filter(t => ("aprovado" === t.status || "aprovado_gratuidade" === t.status) && t.updated_at && t.created_at && e(t.created_at)).map(e => (dateUTC(e.updated_at) - dateUTC(e.created_at)) / 6e4).filter(e => e > 0 && e <= 1440)),
                     o = r.length > 0 ? Math.round(r.reduce((e, t) => e + t, 0) / r.length) : 0,
-                    c = a.filter(t => "aguardando_aprovacao" === t.status && e(t.created_at) && Date.now() - new Date(t.created_at).getTime() >= 36e5),
+                    c = a.filter(t => "aguardando_aprovacao" === t.status && e(t.created_at) && Date.now() - parseUTC(t.created_at) >= 36e5),
                     s = 0 === c.length ? 100 : Math.max(0, 100 - 20 * c.length),
                     n = o <= 30 ? 100 : o <= 60 ? 80 : o <= 120 ? 60 : 40,
                     m = Math.round((s + n) / 2);
@@ -736,7 +745,7 @@
             })(), (() => {
                 const e = q.filter(e => {
                     if ("aguardando_aprovacao" !== e.status) return !1;
-                    return (Date.now() - new Date(e.created_at).getTime()) / 36e5 >= 1
+                    return (Date.now() - parseUTC(e.created_at)) / 36e5 >= 1
                 });
                 return 0 === e.length ? null : React.createElement("div", {
                     className: "bg-red-50 border-2 border-red-400 rounded-xl p-4 mb-6 animate-pulse"
@@ -775,7 +784,7 @@
                     filterStatus: "atrasados"
                 }); },
                 className: "px-4 py-2 rounded-lg font-semibold text-sm " + ("atrasados" === p.filterStatus ? "bg-red-600 text-white" : "bg-gray-100 hover:bg-gray-200")
-            }, "🚨 Atrasados (", parseInt(wc.atrasadas) || q.filter(e => "aguardando_aprovacao" === e.status && Date.now() - new Date(e.created_at).getTime() >= 36e5).length, ")"), React.createElement("button", {
+            }, "🚨 Atrasados (", parseInt(wc.atrasadas) || q.filter(e => "aguardando_aprovacao" === e.status && Date.now() - parseUTC(e.created_at) >= 36e5).length, ")"), React.createElement("button", {
                 onClick: () => { setSolicitacoesPagina(1); x({
                     ...p,
                     filterStatus: "aguardando_aprovacao"
@@ -875,9 +884,9 @@
                 className: "px-2 py-3 text-center w-[40px]"
             }, React.createElement("input", {
                 type: "checkbox",
-                checked: q.filter(e => !p.filterStatus || ("atrasados" === p.filterStatus ? "aguardando_aprovacao" === e.status && Date.now() - new Date(e.created_at).getTime() >= 36e5 : e.status === p.filterStatus)).length > 0 && q.filter(e => !p.filterStatus || ("atrasados" === p.filterStatus ? "aguardando_aprovacao" === e.status && Date.now() - new Date(e.created_at).getTime() >= 36e5 : e.status === p.filterStatus)).every(e => z.includes(e.id)),
+                checked: q.filter(e => !p.filterStatus || ("atrasados" === p.filterStatus ? "aguardando_aprovacao" === e.status && Date.now() - parseUTC(e.created_at) >= 36e5 : e.status === p.filterStatus)).length > 0 && q.filter(e => !p.filterStatus || ("atrasados" === p.filterStatus ? "aguardando_aprovacao" === e.status && Date.now() - parseUTC(e.created_at) >= 36e5 : e.status === p.filterStatus)).every(e => z.includes(e.id)),
                 onChange: e => {
-                    const t = q.filter(e => !p.filterStatus || ("atrasados" === p.filterStatus ? "aguardando_aprovacao" === e.status && Date.now() - new Date(e.created_at).getTime() >= 36e5 : e.status === p.filterStatus));
+                    const t = q.filter(e => !p.filterStatus || ("atrasados" === p.filterStatus ? "aguardando_aprovacao" === e.status && Date.now() - parseUTC(e.created_at) >= 36e5 : e.status === p.filterStatus));
                     e.target.checked ? B([...new Set([...z, ...t.map(e => e.id)])]) : B(z.filter(e => !t.map(e => e.id).includes(e)))
                 },
                 className: "w-4 h-4",
@@ -904,22 +913,22 @@
                 className: "px-2 py-3 text-center w-[50px]"
             }, "Ações"))), React.createElement("tbody", null, (() => {
                 // Filtra por status
-                const filtradas = q.filter(e => !p.filterStatus || ("atrasados" === p.filterStatus ? "aguardando_aprovacao" === e.status && Date.now() - new Date(e.created_at).getTime() >= 36e5 : e.status === p.filterStatus));
+                const filtradas = q.filter(e => !p.filterStatus || ("atrasados" === p.filterStatus ? "aguardando_aprovacao" === e.status && Date.now() - parseUTC(e.created_at) >= 36e5 : e.status === p.filterStatus));
                 // Aplica paginação
                 const inicio = (solicitacoesPagina - 1) * solicitacoesPorPagina;
                 const fim = inicio + solicitacoesPorPagina;
                 const paginadas = filtradas.slice(inicio, fim);
                 return paginadas;
             })().map(e => {
-                const t = "aguardando_aprovacao" === e.status && Date.now() - new Date(e.created_at).getTime() >= 36e5,
-                    a = Math.floor((Date.now() - new Date(e.created_at).getTime()) / 6e4),
+                const t = "aguardando_aprovacao" === e.status && Date.now() - parseUTC(e.created_at) >= 36e5,
+                    a = Math.floor((Date.now() - parseUTC(e.created_at)) / 6e4),
                     l = Math.floor(a / 60),
                     r = a % 60,
                     o = "aprovado" === e.status,
                     c = "aprovado_gratuidade" === e.status,
                     s = "rejeitado" === e.status,
                     n = s ? "font-bold text-red-800 bg-red-100" : c ? "font-bold text-blue-800 bg-blue-100 border-l-4 border-l-blue-500" : o ? "font-bold bg-green-100" : "",
-                    m = new Date(e.created_at),
+                    m = dateUTC(e.created_at),
                     i = m.toLocaleDateString("pt-BR"),
                     d = m.toLocaleTimeString("pt-BR", {
                         hour: "2-digit",
@@ -1074,8 +1083,8 @@
                 React.createElement("td", {
                     className: "px-2 py-3 text-center text-xs"
                 }, e.debito_plific_at ? React.createElement("div", {className: "flex flex-col"},
-                    React.createElement("span", {className: "font-medium text-green-600"}, new Date(e.debito_plific_at).toLocaleDateString("pt-BR")),
-                    React.createElement("span", {className: "text-[10px] text-gray-500"}, new Date(e.debito_plific_at).toLocaleTimeString("pt-BR", {hour: "2-digit", minute: "2-digit"}))
+                    React.createElement("span", {className: "font-medium text-green-600"}, dateUTC(e.debito_plific_at).toLocaleDateString("pt-BR")),
+                    React.createElement("span", {className: "text-[10px] text-gray-500"}, dateUTC(e.debito_plific_at).toLocaleTimeString("pt-BR", {hour: "2-digit", minute: "2-digit"}))
                 ) : (e.status === "aprovado" || e.status === "aprovado_gratuidade") ? React.createElement("span", {className: "text-orange-500"}, "Pendente") : React.createElement("span", {className: "text-gray-400"}, "-")),
                 React.createElement("td", {
                     className: "px-2 py-3 text-center"
@@ -1090,7 +1099,7 @@
             }))), 
             // Controles de paginação
             (() => {
-                const filtradas = q.filter(e => !p.filterStatus || ("atrasados" === p.filterStatus ? "aguardando_aprovacao" === e.status && Date.now() - new Date(e.created_at).getTime() >= 36e5 : e.status === p.filterStatus));
+                const filtradas = q.filter(e => !p.filterStatus || ("atrasados" === p.filterStatus ? "aguardando_aprovacao" === e.status && Date.now() - parseUTC(e.created_at) >= 36e5 : e.status === p.filterStatus));
                 const totalPaginas = Math.ceil(filtradas.length / solicitacoesPorPagina);
                 if (totalPaginas <= 1) return null;
                 return React.createElement("div", {
@@ -1324,12 +1333,12 @@
                     const dadosFiltrados = q.filter(e => {
                         if (!e.status?.includes("aprovado")) return false;
                         if (p.concDataSolicitacao) {
-                            const dataSolic = (() => { const d = new Date(e.created_at); return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); })();
+                            const dataSolic = (() => { const d = dateUTC(e.created_at); return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); })();
                             if (dataSolic !== p.concDataSolicitacao) return false;
                         }
                         if (p.concDataRealizacao) {
                             if (!e.approved_at) return false;
-                            const dataReal = (() => { const d = new Date(e.approved_at); return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); })();
+                            const dataReal = (() => { const d = dateUTC(e.approved_at); return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); })();
                             if (dataReal !== p.concDataRealizacao) return false;
                         }
                         if (p.concApenasGratuidade && !e.has_gratuity) return false;
@@ -1404,14 +1413,14 @@
                     
                     // Filtro por data de solicitação
                     if (p.concDataSolicitacao) {
-                        const dataSolic = (() => { const d = new Date(e.created_at); return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); })();
+                        const dataSolic = (() => { const d = dateUTC(e.created_at); return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); })();
                         if (dataSolic !== p.concDataSolicitacao) return false;
                     }
                     
                     // Filtro por data de realização
                     if (p.concDataRealizacao) {
                         if (!e.approved_at) return false;
-                        const dataReal = (() => { const d = new Date(e.approved_at); return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); })();
+                        const dataReal = (() => { const d = dateUTC(e.approved_at); return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); })();
                         if (dataReal !== p.concDataRealizacao) return false;
                     }
                     
@@ -1426,13 +1435,13 @@
                 const fim = inicio + conciliacaoPorPagina;
                 return filtrados.slice(inicio, fim);
             })().map(e => {
-                const t = new Date(e.created_at),
+                const t = dateUTC(e.created_at),
                     a = t.toLocaleDateString("pt-BR"),
                     l = t.toLocaleTimeString("pt-BR", {
                         hour: "2-digit",
                         minute: "2-digit"
                     }),
-                    r = e.approved_at ? new Date(e.approved_at) : null,
+                    r = e.approved_at ? dateUTC(e.approved_at) : null,
                     o = r ? r.toLocaleDateString("pt-BR") : "-",
                     c = r ? r.toLocaleTimeString("pt-BR", {
                         hour: "2-digit",
@@ -1502,12 +1511,12 @@
                 const filtrados = q.filter(e => {
                     if (!e.status?.includes("aprovado")) return false;
                     if (p.concDataSolicitacao) {
-                        const dataSolic = (() => { const d = new Date(e.created_at); return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); })();
+                        const dataSolic = (() => { const d = dateUTC(e.created_at); return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); })();
                         if (dataSolic !== p.concDataSolicitacao) return false;
                     }
                     if (p.concDataRealizacao) {
                         if (!e.approved_at) return false;
-                        const dataReal = (() => { const d = new Date(e.approved_at); return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); })();
+                        const dataReal = (() => { const d = dateUTC(e.approved_at); return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); })();
                         if (dataReal !== p.concDataRealizacao) return false;
                     }
                     if (p.concApenasGratuidade && !e.has_gratuity) return false;
@@ -1668,13 +1677,13 @@
                 }, "Gratuidade"), React.createElement("th", {
                     className: "px-4 py-3 text-center"
                 }, "Status"))), React.createElement("tbody", null, e.filter(e => !p.resumoFilter || e.status === p.resumoFilter).map(e => {
-                    const t = new Date(e.created_at),
+                    const t = dateUTC(e.created_at),
                         a = t.toLocaleDateString("pt-BR"),
                         l = t.toLocaleTimeString("pt-BR", {
                             hour: "2-digit",
                             minute: "2-digit"
                         }),
-                        r = e.approved_at ? new Date(e.approved_at) : null,
+                        r = e.approved_at ? dateUTC(e.approved_at) : null,
                         o = r ? r.toLocaleDateString("pt-BR") : "-",
                         c = r ? r.toLocaleTimeString("pt-BR", {
                             hour: "2-digit",
@@ -1969,7 +1978,7 @@
                 className: "px-4 py-3 text-xs text-gray-600"
             }, e.created_by || "-"), React.createElement("td", {
                 className: "px-4 py-3"
-            }, new Date(e.created_at).toLocaleDateString("pt-BR")), React.createElement("td", {
+            }, dateUTC(e.created_at).toLocaleDateString("pt-BR")), React.createElement("td", {
                 className: "px-4 py-3 text-center"
             }, React.createElement("span", {
                 className: "px-2 py-1 rounded text-xs font-bold " + ("ativo" === e.status ? "bg-red-500 text-white" : "bg-gray-400 text-white")
@@ -2223,7 +2232,7 @@
             }, "Crédito Lançado"), React.createElement("th", {
                 className: "px-3 py-3 text-center"
             }, "Ações"))), React.createElement("tbody", null, ae.map(e => {
-                const t = Math.ceil((new Date(e.expires_at) - new Date) / 864e5),
+                const t = Math.ceil((dateUTC(e.expires_at) - new Date) / 864e5),
                     a = e.indicado_contato ? e.indicado_contato.replace(/\D/g, "") : "",
                     r = a ? `https://wa.me/55${a}` : "#";
                 return React.createElement("tr", {
@@ -2231,7 +2240,7 @@
                     className: "border-t " + ("pendente" === e.status ? "bg-yellow-50" : "")
                 }, React.createElement("td", {
                     className: "px-2 py-3 whitespace-nowrap text-xs"
-                }, new Date(e.created_at).toLocaleDateString("pt-BR")), React.createElement("td", {
+                }, dateUTC(e.created_at).toLocaleDateString("pt-BR")), React.createElement("td", {
                     className: "px-2 py-3"
                 }, React.createElement("p", {
                     className: "font-semibold text-xs"
@@ -2576,7 +2585,7 @@
                 className: "border-b hover:bg-gray-50 " + (e.passou ? "bg-green-50" : "")
             }, React.createElement("td", {
                 className: "px-3 py-2 text-xs text-gray-600"
-            }, new Date(e.created_at).toLocaleDateString("pt-BR"), " ", new Date(e.created_at).toLocaleTimeString("pt-BR", {
+            }, dateUTC(e.created_at).toLocaleDateString("pt-BR"), " ", dateUTC(e.created_at).toLocaleTimeString("pt-BR", {
                 hour: "2-digit",
                 minute: "2-digit"
             })), React.createElement("td", {
@@ -2858,7 +2867,7 @@
                 const totalEntregas = e.total_entregas || 0;
                 const metaEntregas = e.meta_entregas || 50;
                 const metaAtingida = totalEntregas >= metaEntregas;
-                const expirado = e.expires_at && new Date() > new Date(e.expires_at);
+                const expirado = e.expires_at && new Date() > dateUTC(e.expires_at);
                 return !metaAtingida && !expirado && !e.credito_lancado;
             }).length), React.createElement("p", {
                 className: "text-sm text-yellow-700"
@@ -2886,7 +2895,7 @@
                 const totalEntregas = e.total_entregas || 0;
                 const metaEntregas = e.meta_entregas || 50;
                 const metaAtingida = totalEntregas >= metaEntregas;
-                const expirado = e.expires_at && new Date() > new Date(e.expires_at);
+                const expirado = e.expires_at && new Date() > dateUTC(e.expires_at);
                 return expirado && !metaAtingida && !e.credito_lancado;
             }).length), React.createElement("p", {
                 className: "text-sm text-gray-700"
@@ -2943,7 +2952,7 @@
                 const bPerc = (bTotal / bMeta) * 100;
                 return bPerc - aPerc;
             }).map(e => {
-                const t = e.expires_at ? new Date(e.expires_at) : null,
+                const t = e.expires_at ? dateUTC(e.expires_at) : null,
                     a = t && new Date > t,
                     totalEntregas = e.total_entregas || 0,
                     metaEntregas = e.meta_entregas || 50,
@@ -2975,7 +2984,7 @@
                     className: "border-b " + (e.credito_lancado ? "bg-blue-50" : metaAtingida ? "bg-green-50" : a ? "bg-gray-100" : "")
                 }, React.createElement("td", {
                     className: "px-2 py-3 text-xs"
-                }, new Date(e.created_at).toLocaleDateString("pt-BR")), React.createElement("td", {
+                }, dateUTC(e.created_at).toLocaleDateString("pt-BR")), React.createElement("td", {
                     className: "px-2 py-3 text-xs font-medium"
                 }, e.user_name), React.createElement("td", {
                     className: "px-2 py-3 text-xs"
@@ -3260,9 +3269,9 @@
                 className: "border-t hover:bg-gray-50"
             }, React.createElement("td", {
                 className: "px-4 py-3 text-xs"
-            }, new Date(e.created_at).toLocaleDateString("pt-BR"), React.createElement("br", null), React.createElement("span", {
+            }, dateUTC(e.created_at).toLocaleDateString("pt-BR"), React.createElement("br", null), React.createElement("span", {
                 className: "text-gray-500"
-            }, new Date(e.created_at).toLocaleTimeString("pt-BR", {
+            }, dateUTC(e.created_at).toLocaleTimeString("pt-BR", {
                 hour: "2-digit",
                 minute: "2-digit"
             }))), React.createElement("td", {
@@ -4112,7 +4121,7 @@
                 className: "border-t hover:bg-gray-50"
             }, React.createElement("td", {
                 className: "px-3 py-3 text-xs"
-            }, new Date(e.created_at).toLocaleDateString("pt-BR")), React.createElement("td", {
+            }, dateUTC(e.created_at).toLocaleDateString("pt-BR")), React.createElement("td", {
                 className: "px-3 py-3"
             }, React.createElement("p", {
                 className: "font-semibold text-sm"
@@ -4160,7 +4169,7 @@
                 className: "w-5 h-5 accent-green-600"
             }), e.debito_lancado && e.debito_lancado_em && React.createElement("p", {
                 className: "text-xs text-gray-500 mt-1"
-            }, new Date(e.debito_lancado_em).toLocaleDateString("pt-BR"), React.createElement("br", null), new Date(e.debito_lancado_em).toLocaleTimeString("pt-BR", {
+            }, dateUTC(e.debito_lancado_em).toLocaleDateString("pt-BR"), React.createElement("br", null), dateUTC(e.debito_lancado_em).toLocaleTimeString("pt-BR", {
                 hour: "2-digit",
                 minute: "2-digit"
             }))), "aprovado" !== e.status && React.createElement("span", {
@@ -4283,7 +4292,7 @@
                 className: "text-gray-700 bg-white p-3 rounded-lg border"
             }, e.sugestao), React.createElement("p", {
                 className: "text-xs text-gray-500 mt-2"
-            }, "Enviado em ", new Date(e.created_at).toLocaleDateString("pt-BR"), " às ", new Date(e.created_at).toLocaleTimeString("pt-BR", {
+            }, "Enviado em ", dateUTC(e.created_at).toLocaleDateString("pt-BR"), " às ", dateUTC(e.created_at).toLocaleTimeString("pt-BR", {
                 hour: "2-digit",
                 minute: "2-digit"
             })), e.resposta && React.createElement("div", {
@@ -4432,7 +4441,7 @@
                         return 0 !== a && (6 === a ? l >= 9 && l < 12 : l >= 9 && l < 18)
                     },
                     c = q.filter(e => {
-                        const t = new Date(e.created_at);
+                        const t = dateUTC(e.created_at);
                         return t.getMonth() === l && t.getFullYear() === r
                     }),
                     s = c.filter(e => "aprovado" === e.status || "aprovado_gratuidade" === e.status),
@@ -4443,12 +4452,12 @@
                         const t = new Date(e);
                         return t.getFullYear() > i || !(t.getFullYear() < i) && (t.getMonth() > 11 || !(t.getMonth() < 11) && t.getDate() >= 13)
                     },
-                    u = s.filter(e => !(!e.updated_at || !e.created_at) && (!!o(e.created_at) && !!d(e.created_at))).map(e => (new Date(e.updated_at) - new Date(e.created_at)) / 6e4).filter(e => e > 0 && e <= 1440),
+                    u = s.filter(e => !(!e.updated_at || !e.created_at) && (!!o(e.created_at) && !!d(e.created_at))).map(e => (dateUTC(e.updated_at) - dateUTC(e.created_at)) / 6e4).filter(e => e > 0 && e <= 1440),
                     g = u.length > 0 ? Math.round(u.reduce((e, t) => e + t, 0) / u.length) : 0,
                     b = s.filter(e => {
                         if (!e.updated_at || !e.created_at || !o(e.created_at)) return !1;
                         if (!d(e.created_at)) return !1;
-                        const t = (new Date(e.updated_at) - new Date(e.created_at)) / 6e4;
+                        const t = (dateUTC(e.updated_at) - dateUTC(e.created_at)) / 6e4;
                         return t > 60 && t <= 1440
                     }),
                     R = [],
@@ -4462,8 +4471,8 @@
                         });
                         continue
                     }
-                    const t = s.filter(t => new Date(t.created_at).getDate() === e && o(t.created_at)),
-                        a = t.filter(e => e.updated_at).map(e => (new Date(e.updated_at) - new Date(e.created_at)) / 6e4).filter(e => e > 0 && e <= 1440),
+                    const t = s.filter(t => dateUTC(t.created_at).getDate() === e && o(t.created_at)),
+                        a = t.filter(e => e.updated_at).map(e => (dateUTC(e.updated_at) - dateUTC(e.created_at)) / 6e4).filter(e => e > 0 && e <= 1440),
                         c = a.length > 0 ? Math.round(a.reduce((e, t) => e + t, 0) / a.length) : 0;
                     R.push({
                         dia: e,
@@ -4518,7 +4527,7 @@
                         dias: [22, 31]
                     }].map(e => {
                         const t = s.filter(t => {
-                            const a = new Date(t.created_at).getDate();
+                            const a = dateUTC(t.created_at).getDate();
                             return a >= e.dias[0] && a <= e.dias[1]
                         });
                         return {
@@ -4531,7 +4540,7 @@
                     L = 0 === l ? 11 : l - 1,
                     I = 0 === l ? r - 1 : r,
                     F = q.filter(e => {
-                        const t = new Date(e.created_at);
+                        const t = dateUTC(e.created_at);
                         return t.getMonth() === L && t.getFullYear() === I && ("aprovado" === e.status || "aprovado_gratuidade" === e.status)
                     }).reduce((e, t) => e + parseFloat(t.final_amount || 0), 0),
                     $ = F > 0 ? (S - F) / F * 100 : 0;
@@ -4565,7 +4574,7 @@
                     value: e
                 }, e)))), React.createElement("button", {
                     onClick: () => {
-                        const e = `\n                        <html>\n                        <head>\n                          <title>Relatório ${_} ${r}</title>\n                          <style>\n                            body { font-family: Arial, sans-serif; padding: 40px; font-size: 12px; }\n                            h1 { color: #166534; border-bottom: 3px solid #166534; padding-bottom: 10px; }\n                            h2 { color: #374151; margin-top: 25px; }\n                            .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin: 20px 0; }\n                            .card { background: #f3f4f6; padding: 15px; border-radius: 8px; text-align: center; }\n                            .card-value { font-size: 20px; font-weight: bold; color: #166534; }\n                            .card-label { font-size: 11px; color: #6b7280; }\n                            table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 11px; }\n                            th, td { border: 1px solid #d1d5db; padding: 8px; text-align: left; }\n                            th { background: #166534; color: white; }\n                            .footer { margin-top: 30px; text-align: center; color: #9ca3af; font-size: 10px; }\n                          </style>\n                        </head>\n                        <body>\n                          <h1>📊 Relatório Financeiro - ${_} ${r}</h1>\n                          <p><strong>Gerado em:</strong> ${(new Date).toLocaleString("pt-BR")}</p>\n                          <div class="cards">\n                            <div class="card"><div class="card-value">R$ ${A.toFixed(2)}</div><div class="card-label">Total Solicitado</div></div>\n                            <div class="card"><div class="card-value">R$ ${S.toFixed(2)}</div><div class="card-label">Total Pago</div></div>\n                            <div class="card"><div class="card-value" style="color:#059669">R$ ${k.toFixed(2)}</div><div class="card-label">Lucro (Taxas)</div></div>\n                            <div class="card"><div class="card-value" style="color:#dc2626">R$ ${P.toFixed(2)}</div><div class="card-label">Deixou Arrecadar</div></div>\n                          </div>\n                          <h2>📋 Detalhamento</h2>\n                          <table>\n                            <thead><tr><th>Data</th><th>Profissional</th><th>Código</th><th>Solicitado</th><th>Pago</th><th>Status</th></tr></thead>\n                            <tbody>\n                              ${c.slice(0,100).map(e=>`\n                                <tr>\n                                  <td>${new Date(e.created_at).toLocaleDateString("pt-BR")}</td>\n                                  <td>${e.user_name||"-"}</td>\n                                  <td>${e.user_cod}</td>\n                                  <td>R$ ${parseFloat(e.requested_amount).toFixed(2)}</td>\n                                  <td>R$ ${parseFloat(e.final_amount).toFixed(2)}</td>\n                                  <td>${"aprovado"===e.status?"✅":"aprovado_gratuidade"===e.status?"🎁":"rejeitado"===e.status?"❌":"⏳"}</td>\n                                </tr>\n                              `).join("")}\n                            </tbody>\n                          </table>\n                          <div class="footer"><p>Central do Entregador Tutts</p></div>\n                        </body>\n                        </html>\n                      `,
+                        const e = `\n                        <html>\n                        <head>\n                          <title>Relatório ${_} ${r}</title>\n                          <style>\n                            body { font-family: Arial, sans-serif; padding: 40px; font-size: 12px; }\n                            h1 { color: #166534; border-bottom: 3px solid #166534; padding-bottom: 10px; }\n                            h2 { color: #374151; margin-top: 25px; }\n                            .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin: 20px 0; }\n                            .card { background: #f3f4f6; padding: 15px; border-radius: 8px; text-align: center; }\n                            .card-value { font-size: 20px; font-weight: bold; color: #166534; }\n                            .card-label { font-size: 11px; color: #6b7280; }\n                            table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 11px; }\n                            th, td { border: 1px solid #d1d5db; padding: 8px; text-align: left; }\n                            th { background: #166534; color: white; }\n                            .footer { margin-top: 30px; text-align: center; color: #9ca3af; font-size: 10px; }\n                          </style>\n                        </head>\n                        <body>\n                          <h1>📊 Relatório Financeiro - ${_} ${r}</h1>\n                          <p><strong>Gerado em:</strong> ${(new Date).toLocaleString("pt-BR")}</p>\n                          <div class="cards">\n                            <div class="card"><div class="card-value">R$ ${A.toFixed(2)}</div><div class="card-label">Total Solicitado</div></div>\n                            <div class="card"><div class="card-value">R$ ${S.toFixed(2)}</div><div class="card-label">Total Pago</div></div>\n                            <div class="card"><div class="card-value" style="color:#059669">R$ ${k.toFixed(2)}</div><div class="card-label">Lucro (Taxas)</div></div>\n                            <div class="card"><div class="card-value" style="color:#dc2626">R$ ${P.toFixed(2)}</div><div class="card-label">Deixou Arrecadar</div></div>\n                          </div>\n                          <h2>📋 Detalhamento</h2>\n                          <table>\n                            <thead><tr><th>Data</th><th>Profissional</th><th>Código</th><th>Solicitado</th><th>Pago</th><th>Status</th></tr></thead>\n                            <tbody>\n                              ${c.slice(0,100).map(e=>`\n                                <tr>\n                                  <td>${dateUTC(e.created_at).toLocaleDateString("pt-BR")}</td>\n                                  <td>${e.user_name||"-"}</td>\n                                  <td>${e.user_cod}</td>\n                                  <td>R$ ${parseFloat(e.requested_amount).toFixed(2)}</td>\n                                  <td>R$ ${parseFloat(e.final_amount).toFixed(2)}</td>\n                                  <td>${"aprovado"===e.status?"✅":"aprovado_gratuidade"===e.status?"🎁":"rejeitado"===e.status?"❌":"⏳"}</td>\n                                </tr>\n                              `).join("")}\n                            </tbody>\n                          </table>\n                          <div class="footer"><p>Central do Entregador Tutts</p></div>\n                        </body>\n                        </html>\n                      `,
                             t = window.open("", "_blank");
                         t.document.write(e), t.document.close(), t.print()
                     },
@@ -4815,7 +4824,7 @@
                 }, "Valor"), React.createElement("th", {
                     className: "px-3 py-2 text-right"
                 }, "Tempo"))), React.createElement("tbody", null, b.slice(0, 20).map((e, t) => {
-                    const a = Math.round((new Date(e.updated_at) - new Date(e.created_at)) / 6e4);
+                    const a = Math.round((dateUTC(e.updated_at) - dateUTC(e.created_at)) / 6e4);
                     return React.createElement("tr", {
                         key: t,
                         className: "border-b hover:bg-red-50"
@@ -4827,7 +4836,7 @@
                         className: "text-xs text-gray-500"
                     }, e.user_cod)), React.createElement("td", {
                         className: "px-3 py-2"
-                    }, new Date(e.created_at).toLocaleDateString("pt-BR")), React.createElement("td", {
+                    }, dateUTC(e.created_at).toLocaleDateString("pt-BR")), React.createElement("td", {
                         className: "px-3 py-2 text-right"
                     }, er(e.final_amount)), React.createElement("td", {
                         className: "px-3 py-2 text-right"
@@ -5092,7 +5101,7 @@
                 className: "text-sm text-gray-700"
             }, e.mensagem), React.createElement("p", {
                 className: "text-xs text-gray-400 mt-2"
-            }, "Criado em: ", new Date(e.created_at).toLocaleString("pt-BR"))), React.createElement("div", {
+            }, "Criado em: ", dateUTC(e.created_at).toLocaleString("pt-BR"))), React.createElement("div", {
                 className: "flex flex-col gap-2"
             }, React.createElement("button", {
                 onClick: () => fl(e),
@@ -5129,7 +5138,7 @@
                 className: "text-xs text-gray-500"
             }, e.mensagem), React.createElement("p", {
                 className: "text-[10px] text-gray-400 mt-1"
-            }, "Criado: ", new Date(e.created_at).toLocaleString("pt-BR"))), React.createElement("div", {
+            }, "Criado: ", dateUTC(e.created_at).toLocaleString("pt-BR"))), React.createElement("div", {
                 className: "flex gap-2"
             }, React.createElement("button", {
                 onClick: () => fl(e),
