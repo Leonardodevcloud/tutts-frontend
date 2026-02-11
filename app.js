@@ -5296,7 +5296,8 @@ const hideLoadingScreen = () => {
                 const t = await fetchAuth(`${API_URL}/submissions/${e}/imagem`),
                     a = await t.json();
                 const imgData = a.imagem || a.imagemComprovante || a.imagem_comprovante;
-                if (!imgData) return;
+                if (!imgData) { ja("Imagem não encontrada", "error"); return; }
+                g(imgData.split("|||")[0]);
                 const idNum = parseInt(e);
                 C(t => t.map(t => parseInt(t.id) === idNum ? {
                     ...t,
@@ -5305,7 +5306,11 @@ const hideLoadingScreen = () => {
                 setBuscaResults(t => t.map(t => parseInt(t.id) === idNum ? {
                     ...t,
                     imagemComprovante: imgData
-                } : t))
+                } : t));
+                setRankingRetorno(prev => prev.map(r => ({
+                    ...r,
+                    solicitacoes: (r.solicitacoes || []).map(s => parseInt(s.id) === idNum ? { ...s, imagemComprovante: imgData } : s)
+                })))
             } catch (err) {
                 ja("Erro ao carregar imagem", "error")
             }
@@ -18227,72 +18232,7 @@ const hideLoadingScreen = () => {
                 className: "text-red-800 font-bold text-lg"
             }, "ATENÇÃO: ", c.length, " solicitação(ões) aguardando há mais de 24 horas!"), React.createElement("p", {
                 className: "text-red-600 text-sm mt-1"
-            }, "OS: ", c.slice(0, 5).join(", "), c.length > 5 ? "..." : "")))), React.createElement("div", {
-                className: "bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl shadow-lg p-6 mb-6 text-white"
-            }, React.createElement("div", {
-                className: "flex flex-col md:flex-row items-center gap-6"
-            }, React.createElement("div", {
-                className: "relative w-28 h-28"
-            }, React.createElement("svg", {
-                className: "w-28 h-28 transform -rotate-90"
-            }, React.createElement("circle", {
-                cx: "56",
-                cy: "56",
-                r: "48",
-                stroke: "rgba(255,255,255,0.2)",
-                strokeWidth: "10",
-                fill: "none"
-            }), React.createElement("circle", {
-                cx: "56",
-                cy: "56",
-                r: "48",
-                stroke: m >= 80 ? "#10b981" : m >= 50 ? "#f59e0b" : "#ef4444",
-                strokeWidth: "10",
-                fill: "none",
-                strokeDasharray: 3.02 * m + " 302",
-                strokeLinecap: "round"
-            })), React.createElement("div", {
-                className: "absolute inset-0 flex flex-col items-center justify-center"
-            }, React.createElement("span", {
-                className: "text-2xl font-bold"
-            }, m), React.createElement("span", {
-                className: "text-xs opacity-70"
-            }, "SCORE"))), React.createElement("div", {
-                className: "flex-1 grid grid-cols-2 md:grid-cols-4 gap-4"
-            }, React.createElement("div", {
-                className: "bg-white/10 rounded-lg p-3 text-center"
-            }, React.createElement("p", {
-                className: "text-white/70 text-xs"
-            }, "Hoje"), React.createElement("p", {
-                className: "text-xl font-bold"
-            }, hojeTotal), React.createElement("p", {
-                className: "text-xs text-white/60"
-            }, hojeProcessadas, " processadas")), React.createElement("div", {
-                className: "bg-white/10 rounded-lg p-3 text-center"
-            }, React.createElement("p", {
-                className: "text-white/70 text-xs"
-            }, "Tempo Médio"), React.createElement("p", {
-                className: "text-xl font-bold"
-            }, o < 1 ? `${Math.round(60*o)}min` : `${o.toFixed(1)}h`), React.createElement("p", {
-                className: "text-xs " + (o <= 12 ? "text-green-300" : o <= 24 ? "text-yellow-300" : "text-red-300")
-            }, o <= 6 ? "✅ Excelente" : o <= 12 ? "✅ Bom" : o <= 24 ? "⚠️ Regular" : "🚨 Lento")), React.createElement("div", {
-                className: "bg-white/10 rounded-lg p-3 text-center"
-            }, React.createElement("p", {
-                className: "text-white/70 text-xs"
-            }, "Pendentes"), React.createElement("p", {
-                className: "text-xl font-bold"
-            }, pendentesCount), React.createElement("p", {
-                className: "text-xs text-white/60"
-            }, "aguardando")), React.createElement("div", {
-                className: "bg-white/10 rounded-lg p-3 text-center"
-            }, React.createElement("p", {
-                className: "text-white/70 text-xs"
-            }, "Prazo (24h)"), React.createElement("p", {
-                className: "text-xl font-bold " + (0 === c.length ? "text-green-300" : "text-red-300")
-            }, 0 === c.length ? "✅" : `${c.length} 🚨`), React.createElement("p", {
-                className: "text-xs text-white/60"
-            }, 0 === c.length ? "Nenhum atraso" : "Ação necessária!"))))))
-        })(), React.createElement("div", {
+            }, "OS: ", c.slice(0, 5).join(", "), c.length > 5 ? "..." : "")))))})(), React.createElement("div", {
             className: "grid md:grid-cols-2 gap-6 mb-6"
         }, React.createElement(MotivosPieChart, {
             submissions: j,
