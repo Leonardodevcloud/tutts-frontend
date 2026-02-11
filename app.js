@@ -5254,14 +5254,15 @@ const hideLoadingScreen = () => {
             } catch (e) {
                 console.error(e)
             }
-        }, buscarSubmissions = async (query, status, periodo) => {
-            if (!query && !status && !periodo) { setBuscaResults([]); setBuscaTotal(0); return; }
+        }, buscarSubmissions = async (query, status, periodo, dataInicio, dataFim) => {
             setBuscaLoading(true);
             try {
                 const params = new URLSearchParams();
                 if (query) params.set('q', query);
                 if (status) params.set('status', status);
                 if (periodo) params.set('periodo', periodo);
+                if (dataInicio) params.set('dataInicio', dataInicio);
+                if (dataFim) params.set('dataFim', dataFim);
                 params.set('limit', '100');
                 const resp = await fetchAuth(`${API_URL}/submissions/busca?${params}`);
                 if (resp.ok) {
@@ -18195,50 +18196,71 @@ const hideLoadingScreen = () => {
                 n = o <= 6 ? 100 : o <= 12 ? 80 : o <= 24 ? 60 : 40,
                 m = Math.round((s + n) / 2);
             return React.createElement(React.Fragment, null, React.createElement("div", {
-                className: "grid grid-cols-2 md:grid-cols-5 gap-4 mb-6"
+                className: "bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl shadow-lg p-6 mb-6 text-white"
             }, React.createElement("div", {
-                className: "bg-white p-4 rounded-xl shadow"
-            }, React.createElement("p", {
-                className: "text-sm text-gray-600"
-            }, "Total"), React.createElement("p", {
-                className: "text-2xl font-bold text-purple-900"
-            }, totalCount)), React.createElement("div", {
-                className: "bg-white p-4 rounded-xl shadow"
-            }, React.createElement("p", {
-                className: "text-sm text-gray-600"
-            }, "Pendentes"), React.createElement("p", {
-                className: "text-2xl font-bold text-yellow-600"
-            }, pendentesCount)), React.createElement("div", {
-                className: "bg-white p-4 rounded-xl shadow"
-            }, React.createElement("p", {
-                className: "text-sm text-gray-600"
-            }, "Aprovadas"), React.createElement("p", {
-                className: "text-2xl font-bold text-green-600"
-            }, aprovadosCount)), React.createElement("div", {
-                className: "bg-white p-4 rounded-xl shadow"
-            }, React.createElement("p", {
-                className: "text-sm text-gray-600"
-            }, "Rejeitados"), React.createElement("p", {
-                className: "text-2xl font-bold text-red-600"
-            }, rejeitadosCount)), React.createElement("div", {
-                className: "bg-white p-4 rounded-xl shadow"
-            }, React.createElement("p", {
-                className: "text-sm text-gray-600"
-            }, "🚨 Atrasadas (+24h)"), React.createElement("p", {
-                className: "text-2xl font-bold " + (c.length > 0 ? "text-red-600 animate-pulse" : "text-gray-400")
-            }, c.length))), c.length > 0 && React.createElement("div", {
-                className: "bg-red-50 border-2 border-red-400 rounded-xl p-4 mb-6 animate-pulse"
+                className: "flex flex-col md:flex-row items-center gap-6"
             }, React.createElement("div", {
-                className: "flex items-center gap-3"
+                className: "relative w-28 h-28"
+            }, React.createElement("svg", {
+                className: "w-28 h-28 transform -rotate-90"
+            }, React.createElement("circle", {
+                cx: "56",
+                cy: "56",
+                r: "48",
+                stroke: "rgba(255,255,255,0.2)",
+                strokeWidth: "10",
+                fill: "none"
+            }), React.createElement("circle", {
+                cx: "56",
+                cy: "56",
+                r: "48",
+                stroke: m >= 80 ? "#10b981" : m >= 50 ? "#f59e0b" : "#ef4444",
+                strokeWidth: "10",
+                fill: "none",
+                strokeDasharray: 3.02 * m + " 302",
+                strokeLinecap: "round"
+            })), React.createElement("div", {
+                className: "absolute inset-0 flex flex-col items-center justify-center"
             }, React.createElement("span", {
-                className: "text-3xl"
-            }, "🚨"), React.createElement("div", {
-                className: "flex-1"
+                className: "text-2xl font-bold"
+            }, m), React.createElement("span", {
+                className: "text-xs opacity-70"
+            }, "SCORE"))), React.createElement("div", {
+                className: "flex-1 grid grid-cols-2 md:grid-cols-4 gap-4"
+            }, React.createElement("div", {
+                className: "bg-white/10 rounded-lg p-3 text-center"
             }, React.createElement("p", {
-                className: "text-red-800 font-bold text-lg"
-            }, "ATENÇÃO: ", c.length, " solicitação(ões) aguardando há mais de 24 horas!"), React.createElement("p", {
-                className: "text-red-600 text-sm mt-1"
-            }, "OS: ", c.slice(0, 5).join(", "), c.length > 5 ? "..." : ""))))); })(), React.createElement("div", {
+                className: "text-white/70 text-xs"
+            }, "Hoje"), React.createElement("p", {
+                className: "text-xl font-bold"
+            }, hojeTotal), React.createElement("p", {
+                className: "text-xs text-white/60"
+            }, hojeProcessadas, " processadas")), React.createElement("div", {
+                className: "bg-white/10 rounded-lg p-3 text-center"
+            }, React.createElement("p", {
+                className: "text-white/70 text-xs"
+            }, "Tempo Médio"), React.createElement("p", {
+                className: "text-xl font-bold"
+            }, o < 1 ? `${Math.round(60*o)}min` : `${o.toFixed(1)}h`), React.createElement("p", {
+                className: "text-xs " + (o <= 12 ? "text-green-300" : o <= 24 ? "text-yellow-300" : "text-red-300")
+            }, o <= 6 ? "✅ Excelente" : o <= 12 ? "✅ Bom" : o <= 24 ? "⚠️ Regular" : "🚨 Lento")), React.createElement("div", {
+                className: "bg-white/10 rounded-lg p-3 text-center"
+            }, React.createElement("p", {
+                className: "text-white/70 text-xs"
+            }, "Pendentes"), React.createElement("p", {
+                className: "text-xl font-bold"
+            }, pendentesCount), React.createElement("p", {
+                className: "text-xs text-white/60"
+            }, "aguardando")), React.createElement("div", {
+                className: "bg-white/10 rounded-lg p-3 text-center"
+            }, React.createElement("p", {
+                className: "text-white/70 text-xs"
+            }, "Prazo (24h)"), React.createElement("p", {
+                className: "text-xl font-bold " + (0 === c.length ? "text-green-300" : "text-red-300")
+            }, 0 === c.length ? "✅" : `${c.length} 🚨`), React.createElement("p", {
+                className: "text-xs text-white/60"
+            }, 0 === c.length ? "Nenhum atraso" : "Ação necessária!"))))))
+        })(), React.createElement("div", {
             className: "grid md:grid-cols-2 gap-6 mb-6"
         }, React.createElement(MotivosPieChart, {
             submissions: j,
@@ -18383,7 +18405,7 @@ const hideLoadingScreen = () => {
                 ...p,
                 searchOS: e.target.value
             }),
-            onKeyDown: e => { if (e.key === "Enter") buscarSubmissions(p.searchOS, p.statusFilter, p.dateFilter); },
+            onKeyDown: e => { if (e.key === "Enter") buscarSubmissions(p.searchOS, p.statusFilter, p.dateFilter === "custom" ? "" : p.dateFilter, p.dateFilter === "custom" ? p.buscaDataInicio : "", p.dateFilter === "custom" ? p.buscaDataFim : ""); },
             className: "flex-1 px-4 py-2 border rounded-lg"
         }), React.createElement("select", {
             value: p.statusFilter || "",
@@ -18415,8 +18437,20 @@ const hideLoadingScreen = () => {
             value: "week"
         }, "Esta semana"), React.createElement("option", {
             value: "month"
-        }, "Este mês")), React.createElement("button", {
-            onClick: () => buscarSubmissions(p.searchOS, p.statusFilter, p.dateFilter),
+        }, "Este mês"), React.createElement("option", {
+            value: "custom"
+        }, "📅 Personalizado")), p.dateFilter === "custom" && React.createElement(React.Fragment, null, React.createElement("input", {
+            type: "date",
+            value: p.buscaDataInicio || "",
+            onChange: e => x({ ...p, buscaDataInicio: e.target.value }),
+            className: "px-3 py-2 border rounded-lg"
+        }), React.createElement("span", { className: "text-gray-500 self-center" }, "até"), React.createElement("input", {
+            type: "date",
+            value: p.buscaDataFim || "",
+            onChange: e => x({ ...p, buscaDataFim: e.target.value }),
+            className: "px-3 py-2 border rounded-lg"
+        })), React.createElement("button", {
+            onClick: () => buscarSubmissions(p.searchOS, p.statusFilter, p.dateFilter === "custom" ? "" : p.dateFilter, p.dateFilter === "custom" ? p.buscaDataInicio : "", p.dateFilter === "custom" ? p.buscaDataFim : ""),
             disabled: buscaLoading,
             className: "px-6 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 disabled:opacity-50"
         }, buscaLoading ? "🔄 Buscando..." : "🔍 Buscar")), buscaTotal > 0 && React.createElement("p", {
@@ -18620,34 +18654,39 @@ const hideLoadingScreen = () => {
                 value: p.relTipoFiltro || "mes",
                 onChange: ev => { x({ ...p, relTipoFiltro: ev.target.value }); },
                 className: "px-3 py-2 border rounded-lg bg-purple-50 font-semibold"
-            }, React.createElement("option", { value: "mes" }, "Por Mês"), React.createElement("option", { value: "custom" }, "Personalizado")), p.relTipoFiltro === "custom" ? React.createElement(React.Fragment, null, React.createElement("input", {
-                type: "date",
-                value: p.relDataInicio || "",
-                onChange: ev => x({ ...p, relDataInicio: ev.target.value }),
-                className: "px-3 py-2 border rounded-lg"
-            }), React.createElement("span", { className: "text-gray-500" }, "até"), React.createElement("input", {
-                type: "date",
-                value: p.relDataFim || "",
-                onChange: ev => x({ ...p, relDataFim: ev.target.value }),
-                className: "px-3 py-2 border rounded-lg"
-            }), React.createElement("button", {
-                onClick: () => { if (p.relDataInicio && p.relDataFim) carregarRelatorio(null, null, p.relDataInicio, p.relDataFim); else ja("Selecione data início e fim", "error"); },
-                className: "px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
-            }, "🔍 Filtrar")) : React.createElement(React.Fragment, null, React.createElement("select", {
-                value: e,
-                onChange: ev => { x({ ...p, relMes: ev.target.value }); carregarRelatorio(parseInt(ev.target.value), t); },
-                className: "px-3 py-2 border rounded-lg"
-            }, f.map((e, t) => React.createElement("option", {
-                key: t,
-                value: t
-            }, e))), React.createElement("select", {
-                value: t,
-                onChange: ev => { x({ ...p, relAno: ev.target.value }); carregarRelatorio(e, parseInt(ev.target.value)); },
-                className: "px-3 py-2 border rounded-lg"
-            }, [2024, 2025, 2026].map(e => React.createElement("option", {
-                key: e,
-                value: e
-            }, e))))), React.createElement("button", {
+            }, React.createElement("option", { value: "mes" }, "Por Mês"), React.createElement("option", { value: "custom" }, "📅 Personalizado")),
+            p.relTipoFiltro === "custom" ? React.createElement(React.Fragment, null,
+                React.createElement("input", {
+                    type: "date", value: p.relDataInicio || "",
+                    onChange: ev => x({ ...p, relDataInicio: ev.target.value }),
+                    className: "px-3 py-2 border rounded-lg"
+                }),
+                React.createElement("span", { className: "text-gray-500" }, "até"),
+                React.createElement("input", {
+                    type: "date", value: p.relDataFim || "",
+                    onChange: ev => x({ ...p, relDataFim: ev.target.value }),
+                    className: "px-3 py-2 border rounded-lg"
+                }),
+                React.createElement("button", {
+                    onClick: () => { if (p.relDataInicio && p.relDataFim) carregarRelatorio(null, null, p.relDataInicio, p.relDataFim); else ja("Selecione data início e fim", "error"); },
+                    className: "px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
+                }, "🔍 Filtrar")
+            ) : React.createElement(React.Fragment, null,
+                React.createElement("select", {
+                    value: e,
+                    onChange: ev => { x({ ...p, relMes: ev.target.value }); carregarRelatorio(parseInt(ev.target.value), t); },
+                    className: "px-3 py-2 border rounded-lg"
+                }, f.map((e, t) => React.createElement("option", {
+                    key: t, value: t
+                }, e))),
+                React.createElement("select", {
+                    value: t,
+                    onChange: ev => { x({ ...p, relAno: ev.target.value }); carregarRelatorio(e, parseInt(ev.target.value)); },
+                    className: "px-3 py-2 border rounded-lg"
+                }, [2024, 2025, 2026].map(e => React.createElement("option", {
+                    key: e, value: e
+                }, e)))
+            )), React.createElement("button", {
                 onClick: () => {
                     const m = `\n                  <html>\n                  <head>\n                    <title>Relatório Tutts - ${f[e]}/${t}</title>\n                    <style>\n                      body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }\n                      h1 { color: #581c87; border-bottom: 2px solid #581c87; padding-bottom: 10px; }\n                      h2 { color: #7c3aed; margin-top: 30px; }\n                      .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }\n                      .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin: 20px 0; }\n                      .card { background: #f3f4f6; padding: 15px; border-radius: 8px; text-align: center; }\n                      .card-value { font-size: 28px; font-weight: bold; }\n                      .green { color: #16a34a; }\n                      .red { color: #dc2626; }\n                      .yellow { color: #ca8a04; }\n                      .purple { color: #7c3aed; }\n                      table { width: 100%; border-collapse: collapse; margin: 15px 0; }\n                      th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }\n                      th { background: #f3f4f6; }\n                      .footer { margin-top: 40px; text-align: center; color: #666; font-size: 12px; border-top: 1px solid #ddd; padding-top: 20px; }\n                      .comparativo { background: ${parseFloat(h)>=0?"#dcfce7":"#fee2e2"}; padding: 15px; border-radius: 8px; margin: 20px 0; }\n                    </style>\n                  </head>\n                  <body>\n                    <div class="header">\n                      <h1>📊 Relatório Tutts</h1>\n                      <div>\n                        <strong>${f[e]} / ${t}</strong><br>\n                        <small>Gerado em: ${(new Date).toLocaleString("pt-BR")}</small>\n                      </div>\n                    </div>\n                    \n                    <h2>📋 Resumo Geral</h2>\n                    <div class="cards">\n                      <div class="card"><div class="card-value purple">${a.length}</div><div>Total</div></div>\n                      <div class="card"><div class="card-value green">${l.length}</div><div>Aprovadas</div></div>\n                      <div class="card"><div class="card-value red">${r.length}</div><div>Rejeitadas</div></div>\n                      <div class="card"><div class="card-value yellow">${o.length}</div><div>Pendentes</div></div>\n                    </div>\n                    \n                    <div class="cards">\n                      <div class="card"><div class="card-value green">${c}%</div><div>Taxa Aprovação</div></div>\n                      <div class="card"><div class="card-value red">${s}%</div><div>Taxa Rejeição</div></div>\n                      <div class="card"><div class="card-value purple">${rd.totalProfissionais||0}</div><div>Profissionais</div></div>\n                      <div class="card"><div class="card-value purple">${rd.mediaPorProfissional||0}</div><div>Média/Profissional</div></div>\n                    </div>\n                    \n                    <div class="comparativo">\n                      <strong>📊 Comparativo com Mês Anterior:</strong> \n                      ${parseFloat(h)>=0?"📈":"📉"} ${parseFloat(h)>=0?"+":""}${h}% \n                      (${E.length} → ${a.length} solicitações)\n                    </div>\n                    \n                    <h2>📁 Por Motivo</h2>\n                    <table>\n                      <thead><tr><th>Motivo</th><th>Total</th><th>Aprovadas</th><th>Rejeitadas</th><th>Pendentes</th><th>Taxa</th></tr></thead>\n                      <tbody>\n                        ${Object.entries(n).map(([e,t])=>`\n                          <tr>\n                            <td>${e}</td>\n                            <td>${t.total}</td>\n                            <td class="green">${t.aprovadas}</td>\n                            <td class="red">${t.rejeitadas}</td>\n                            <td class="yellow">${t.pendentes}</td>\n                            <td>${t.total>0?(t.aprovadas/t.total*100).toFixed(0):0}%</td>\n                          </tr>\n                        `).join("")}\n                      </tbody>\n                    </table>\n                    \n                    <h2>👷 Top 10 Profissionais</h2>\n                    <table>\n                      <thead><tr><th>#</th><th>Profissional</th><th>Código</th><th>Total</th><th>Aprovadas</th><th>Rejeitadas</th><th>Taxa</th></tr></thead>\n                      <tbody>\n                        ${i.map((e,t)=>`\n                          <tr>\n                            <td>${t+1}</td>\n                            <td>${e.nome}</td>\n                            <td>${e.cod||"-"}</td>\n                            <td>${e.total}</td>\n                            <td class="green">${e.aprovadas}</td>\n                            <td class="red">${e.rejeitadas}</td>\n                            <td>${e.taxa}%</td>\n                          </tr>\n                        `).join("")}\n                      </tbody>\n                    </table>\n                    \n                    <h2>📅 Por Semana</h2>\n                    <table>\n                      <thead><tr><th>Semana</th><th>Total</th><th>Aprovadas</th><th>Taxa</th></tr></thead>\n                      <tbody>\n                        ${d.map(e=>`\n                          <tr>\n                            <td>${e.label} (dias ${e.dias[0]}-${e.dias[1]})</td>\n                            <td>${e.total}</td>\n                            <td class="green">${e.aprovadas}</td>\n                            <td>${e.total>0?(e.aprovadas/e.total*100).toFixed(0):0}%</td>\n                          </tr>\n                        `).join("")}\n                      </tbody>\n                    </table>\n                    \n                    <div class="footer">\n                      <strong>Central do Entregador Tutts</strong> - Relatório Gerado Automaticamente<br>\n                      ${(new Date).toLocaleString("pt-BR")}\n                    </div>\n                  </body>\n                  </html>\n                `,
                         p = window.open("", "_blank");
