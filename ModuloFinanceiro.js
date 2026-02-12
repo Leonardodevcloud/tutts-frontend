@@ -35,6 +35,8 @@
             conciliacaoData, setConciliacaoData, conciliacaoLoading, setConciliacaoLoading, carregarConciliacao,
             // Resumo server-side
             resumoData, setResumoData, resumoLoading, setResumoLoading, carregarResumo,
+            // Cadastro indicados (API Tutts prof-status)
+            cadastroIndicados, setCadastroIndicados, cadastroIndicadosLoading, verificarCadastrosIndicados,
             // ⚡ Contadores do backend
             withdrawalCounts,
             l, Ee, he, o, f, E, e,
@@ -518,7 +520,7 @@
                         
                         // Card Indicações
                         React.createElement("div", {
-                            onClick: () => { x({...p, finTab: "indicacoes"}); },
+                            onClick: () => { x({...p, finTab: "indicacoes"}); if (ae && ae.length > 0) verificarCadastrosIndicados(ae); },
                             className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-amber-300"
                         },
                             React.createElement("div", {className: "h-2 bg-gradient-to-r from-amber-500 to-orange-600"}),
@@ -2243,9 +2245,15 @@
                 className: "text-sm text-gray-700"
             }, "Expiradas"))), React.createElement("div", {
                 className: "bg-white rounded-xl shadow p-6"
+            }, React.createElement("div", {
+                className: "flex justify-between items-center mb-4"
             }, React.createElement("h3", {
-                className: "font-semibold mb-4"
-            }, "👥 Indicações Recebidas"), 0 === ae.length ? React.createElement("p", {
+                className: "font-semibold"
+            }, "👥 Indicações Recebidas"), React.createElement("button", {
+                onClick: () => verificarCadastrosIndicados(ae),
+                disabled: cadastroIndicadosLoading,
+                className: "px-3 py-1 text-xs rounded-lg font-semibold " + (cadastroIndicadosLoading ? "bg-gray-100 text-gray-400" : "bg-purple-100 text-purple-700 hover:bg-purple-200")
+            }, cadastroIndicadosLoading ? "⏳ Verificando..." : "🔄 Verificar Cadastros")), 0 === ae.length ? React.createElement("p", {
                 className: "text-gray-500 text-center py-8"
             }, "Nenhuma indicação recebida") : React.createElement("div", {
                 className: "overflow-x-auto"
@@ -2262,6 +2270,8 @@
             }, "Indicado"), React.createElement("th", {
                 className: "px-2 py-3 text-left text-xs"
             }, "Contato"), React.createElement("th", {
+                className: "px-2 py-3 text-center text-xs"
+            }, "Cadastro"), React.createElement("th", {
                 className: "px-2 py-3 text-left text-xs"
             }, "Região"), React.createElement("th", {
                 className: "px-2 py-3 text-center text-xs"
@@ -2301,7 +2311,25 @@
                     target: "_blank",
                     rel: "noopener noreferrer",
                     className: "text-green-600 hover:text-green-800 font-semibold text-xs flex items-center gap-1"
-                }, "📱 ", e.indicado_contato)), React.createElement("td", {
+                }, "📱 ", e.indicado_contato)), (() => {
+                    // Coluna Cadastro Realizado
+                    const celLimpo = a; // já é o número limpo (sem formatação)
+                    const info = cadastroIndicados[celLimpo];
+                    const loading = cadastroIndicadosLoading && !info;
+                    return React.createElement("td", {
+                        className: "px-2 py-3 text-center"
+                    }, loading 
+                        ? React.createElement("div", {className: "w-4 h-4 border-2 border-purple-400 border-t-transparent rounded-full animate-spin mx-auto"})
+                        : info 
+                            ? info.cadastrado 
+                                ? React.createElement("div", {className: "flex flex-col items-center", title: `${info.nome || ''} - Cód: ${info.codigo || 'N/A'}\n${info.status || ''}\nCadastro: ${info.dataCadastro || 'N/A'}`},
+                                    React.createElement("span", {className: "text-green-600 text-lg font-bold"}, "✅"),
+                                    info.codigo && React.createElement("span", {className: "text-[9px] text-gray-500"}, info.codigo)
+                                )
+                                : React.createElement("span", {className: "text-red-500 text-lg font-bold", title: "Não cadastrado no app Tutts"}, "❌")
+                            : React.createElement("span", {className: "text-gray-300 text-xs"}, "-")
+                    );
+                })(), React.createElement("td", {
                     className: "px-2 py-3 text-xs"
                 }, e.regiao), React.createElement("td", {
                     className: "px-2 py-3 text-center font-bold text-green-600 text-xs"
