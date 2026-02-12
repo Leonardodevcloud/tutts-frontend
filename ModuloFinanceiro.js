@@ -33,6 +33,8 @@
             validacaoData, setValidacaoData, validacaoLoading, setValidacaoLoading, carregarValidacao,
             // Conciliação server-side
             conciliacaoData, setConciliacaoData, conciliacaoLoading, setConciliacaoLoading, carregarConciliacao,
+            // Resumo server-side
+            resumoData, setResumoData, resumoLoading, setResumoLoading, carregarResumo,
             // ⚡ Contadores do backend
             withdrawalCounts,
             l, Ee, he, o, f, E, e,
@@ -1589,7 +1591,7 @@
             )), "resumo" === p.finTab && React.createElement(React.Fragment, null, React.createElement("div", {
                 className: "bg-white rounded-xl shadow p-4 mb-6"
             }, React.createElement("div", {
-                className: "flex gap-4"
+                className: "flex gap-4 items-center"
             }, React.createElement("input", {
                 type: "text",
                 placeholder: "🔍 Buscar por código do profissional...",
@@ -1598,15 +1600,17 @@
                     ...p,
                     searchCod: e.target.value
                 }),
+                onKeyDown: e => { if (e.key === "Enter" && p.searchCod) carregarResumo(p.searchCod); },
                 className: "flex-1 px-4 py-2 border rounded-lg"
-            }), p.searchCod && React.createElement("button", {
-                onClick: () => x({
-                    ...p,
-                    searchCod: ""
-                }),
+            }), React.createElement("button", {
+                onClick: () => { if (p.searchCod) carregarResumo(p.searchCod); },
+                disabled: resumoLoading || !p.searchCod,
+                className: "px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 disabled:opacity-50"
+            }, resumoLoading ? "⏳ Buscando..." : "🔍 Buscar"), p.searchCod && React.createElement("button", {
+                onClick: () => { x({ ...p, searchCod: "" }); setResumoData(null); },
                 className: "px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold"
-            }, "✕ Limpar"))), p.searchCod && (() => {
-                const e = q.filter(e => e.user_cod.toLowerCase().includes(p.searchCod.toLowerCase()));
+            }, "✕ Limpar"))), p.searchCod && resumoData && (() => {
+                const e = resumoData;
                 return React.createElement(React.Fragment, null, React.createElement("div", {
                     className: "grid grid-cols-2 md:grid-cols-5 gap-4 mb-6"
                 }, React.createElement("div", {
@@ -1772,7 +1776,16 @@
                 className: "bg-white rounded-xl shadow p-8 text-center"
             }, React.createElement("p", {
                 className: "text-gray-500 text-lg"
-            }, "🔍 Digite o código do profissional para ver o resumo"))), "gratuidades" === p.finTab && React.createElement("div", {
+            }, "🔍 Digite o código do profissional e clique Buscar")),
+            p.searchCod && !resumoData && !resumoLoading && React.createElement("div", {
+                className: "bg-white rounded-xl shadow p-8 text-center"
+            }, React.createElement("p", {
+                className: "text-gray-500 text-lg"
+            }, "🔍 Clique em Buscar para pesquisar")),
+            resumoLoading && React.createElement("div", {
+                className: "bg-white rounded-xl shadow p-8 text-center"
+            }, React.createElement("div", {className: "w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"}),
+            React.createElement("p", {className: "text-purple-600"}, "Buscando dados do servidor..."))), "gratuidades" === p.finTab && React.createElement("div", {
                 className: "space-y-6"
             }, React.createElement("div", {
                 className: "bg-white rounded-xl shadow p-6"
