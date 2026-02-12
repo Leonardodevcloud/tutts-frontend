@@ -2262,62 +2262,81 @@
             }, React.createElement("thead", {
                 className: "bg-gray-50"
             }, React.createElement("tr", null, React.createElement("th", {
-                className: "px-2 py-3 text-left text-xs"
+                className: "px-2 py-2 text-left text-xs"
             }, "Data"), React.createElement("th", {
-                className: "px-2 py-3 text-left text-xs"
+                className: "px-2 py-2 text-left text-xs"
             }, "Profissional"), React.createElement("th", {
-                className: "px-2 py-3 text-left text-xs"
+                className: "px-2 py-2 text-left text-xs"
             }, "Indicado"), React.createElement("th", {
-                className: "px-2 py-3 text-left text-xs"
+                className: "px-2 py-2 text-left text-xs"
             }, "Contato"), React.createElement("th", {
-                className: "px-2 py-3 text-center text-xs"
+                className: "px-2 py-2 text-center text-xs"
             }, "Cadastro"), React.createElement("th", {
-                className: "px-2 py-3 text-left text-xs"
+                className: "px-2 py-2 text-left text-xs"
             }, "Região"), React.createElement("th", {
-                className: "px-2 py-3 text-center text-xs"
+                className: "px-2 py-2 text-center text-xs"
             }, "Bônus"), React.createElement("th", {
-                className: "px-2 py-3 text-center text-xs"
+                className: "px-2 py-2 text-center text-xs"
             }, "Expira"), React.createElement("th", {
-                className: "px-3 py-3 text-center"
+                className: "px-2 py-2 text-center text-xs"
             }, "Status"), React.createElement("th", {
-                className: "px-3 py-3 text-center"
-            }, "Crédito Lançado"), React.createElement("th", {
-                className: "px-3 py-3 text-center"
-            }, "Ações"))), React.createElement("tbody", null, ae.map(e => {
+                className: "px-2 py-2 text-center text-xs"
+            }, "Crédito"), React.createElement("th", {
+                className: "px-2 py-2 text-center text-xs"
+            }, "Ações"))), React.createElement("tbody", null, (() => {
+                // Ordenar: 1) pendente c/ cadastro, 2) pendente s/ cadastro, 3) aprovada, 4) rejeitada, 5) expirada
+                const ordenado = [...ae].sort((a, b) => {
+                    const celA = a.indicado_contato ? a.indicado_contato.replace(/\D/g, "") : "";
+                    const celB = b.indicado_contato ? b.indicado_contato.replace(/\D/g, "") : "";
+                    const cadA = cadastroIndicados[celA];
+                    const cadB = cadastroIndicados[celB];
+                    const prioStatus = s => s === "pendente" ? 0 : s === "aprovada" ? 2 : s === "rejeitada" ? 3 : 4;
+                    const pA = prioStatus(a.status);
+                    const pB = prioStatus(b.status);
+                    if (pA !== pB) return pA - pB;
+                    // Dentro de pendentes: cadastrado primeiro
+                    if (a.status === "pendente" && b.status === "pendente") {
+                        const cA = cadA && cadA.cadastrado ? 0 : 1;
+                        const cB = cadB && cadB.cadastrado ? 0 : 1;
+                        if (cA !== cB) return cA - cB;
+                    }
+                    return new Date(b.created_at) - new Date(a.created_at);
+                });
+                return ordenado;
+            })().map(e => {
                 const t = Math.ceil((new Date(e.expires_at) - new Date) / 864e5),
                     a = e.indicado_contato ? e.indicado_contato.replace(/\D/g, "") : "",
                     r = a ? `https://wa.me/55${a}` : "#";
                 return React.createElement("tr", {
                     key: e.id,
-                    className: "border-t " + ("pendente" === e.status ? "bg-yellow-50" : "")
+                    className: "border-t " + ("pendente" === e.status ? "bg-yellow-50" : "expirada" === e.status ? "bg-gray-50 opacity-60" : "")
                 }, React.createElement("td", {
-                    className: "px-2 py-3 whitespace-nowrap text-xs"
+                    className: "px-2 py-2 whitespace-nowrap text-xs"
                 }, new Date(e.created_at).toLocaleDateString("pt-BR")), React.createElement("td", {
-                    className: "px-2 py-3"
+                    className: "px-2 py-2"
                 }, React.createElement("p", {
                     className: "font-semibold text-xs"
                 }, e.user_name), React.createElement("p", {
                     className: "text-xs text-gray-500"
                 }, e.user_cod)), React.createElement("td", {
-                    className: "px-2 py-3"
+                    className: "px-2 py-2"
                 }, React.createElement("p", {
                     className: "font-semibold text-xs"
                 }, e.indicado_nome), e.indicado_cpf && React.createElement("p", {
                     className: "text-xs text-gray-500"
                 }, e.indicado_cpf)), React.createElement("td", {
-                    className: "px-2 py-3"
+                    className: "px-2 py-2"
                 }, React.createElement("a", {
                     href: r,
                     target: "_blank",
                     rel: "noopener noreferrer",
-                    className: "text-green-600 hover:text-green-800 font-semibold text-xs flex items-center gap-1"
+                    className: "text-green-600 hover:text-green-800 font-semibold text-xs flex items-center gap-1 whitespace-nowrap"
                 }, "📱 ", e.indicado_contato)), (() => {
-                    // Coluna Cadastro Realizado
-                    const celLimpo = a; // já é o número limpo (sem formatação)
+                    const celLimpo = a;
                     const info = cadastroIndicados[celLimpo];
                     const loading = cadastroIndicadosLoading && !info;
                     return React.createElement("td", {
-                        className: "px-2 py-3 text-center"
+                        className: "px-2 py-2 text-center"
                     }, loading 
                         ? React.createElement("div", {className: "w-4 h-4 border-2 border-purple-400 border-t-transparent rounded-full animate-spin mx-auto"})
                         : info 
@@ -2330,23 +2349,21 @@
                             : React.createElement("span", {className: "text-gray-300 text-xs"}, "-")
                     );
                 })(), React.createElement("td", {
-                    className: "px-2 py-3 text-xs"
+                    className: "px-2 py-2 text-xs whitespace-nowrap"
                 }, e.regiao), React.createElement("td", {
-                    className: "px-2 py-3 text-center font-bold text-green-600 text-xs"
+                    className: "px-2 py-2 text-center font-bold text-green-600 text-xs whitespace-nowrap"
                 }, er(e.valor_bonus)), React.createElement("td", {
-                    className: "px-2 py-3 text-center"
+                    className: "px-2 py-2 text-center whitespace-nowrap"
                 }, "pendente" === e.status ? React.createElement("span", {
-                    className: "text-xs font-bold " + (t <= 5 ? "text-red-600" : "text-gray-600")
-                }, t > 0 ? `${t}d` : "Exp") : "-"), React.createElement("td", {
-                    className: "px-3 py-3 text-center"
-                }, React.createElement("div", {
-                    className: "flex flex-col items-center"
+                    className: "text-xs font-bold " + (t <= 0 ? "text-red-600" : t <= 5 ? "text-orange-600" : "text-gray-600")
+                }, t > 0 ? `${t}d` : "Exp!") : "-"), React.createElement("td", {
+                    className: "px-2 py-2 text-center whitespace-nowrap"
                 }, React.createElement("span", {
-                    className: "px-2 py-1 rounded-full text-xs font-bold " + ("pendente" === e.status ? "bg-yellow-500 text-white" : "aprovada" === e.status ? "bg-green-500 text-white" : "rejeitada" === e.status ? "bg-red-500 text-white" : "bg-gray-500 text-white")
-                }, "pendente" === e.status ? "⏳ Pendente" : "aprovada" === e.status ? "✅ Aprovada" : "rejeitada" === e.status ? "❌ Rejeitada" : "⏰ Expirada"), ("aprovada" === e.status || "rejeitada" === e.status) && e.resolved_by && React.createElement("span", {
-                    className: "text-xs text-gray-500 mt-1"
-                }, e.resolved_by))), React.createElement("td", {
-                    className: "px-3 py-3 text-center"
+                    className: "px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap " + ("pendente" === e.status ? "bg-yellow-500 text-white" : "aprovada" === e.status ? "bg-green-500 text-white" : "rejeitada" === e.status ? "bg-red-500 text-white" : "bg-gray-400 text-white")
+                }, "pendente" === e.status ? "⏳ Pendente" : "aprovada" === e.status ? "✅ Aprovada" : "rejeitada" === e.status ? "❌ Rejeitada" : "⏰ Expirada"), ("aprovada" === e.status || "rejeitada" === e.status) && e.resolved_by && React.createElement("p", {
+                    className: "text-[9px] text-gray-500 mt-0.5"
+                }, e.resolved_by)), React.createElement("td", {
+                    className: "px-2 py-2 text-center"
                 }, "aprovada" === e.status && React.createElement("div", {
                     className: "flex flex-col items-center"
                 }, React.createElement("input", {
@@ -2370,11 +2387,11 @@
                     },
                     className: "w-5 h-5 cursor-pointer"
                 }), e.credito_lancado && e.lancado_por && React.createElement("span", {
-                    className: "text-xs text-gray-500 mt-1"
+                    className: "text-[9px] text-gray-500 mt-0.5"
                 }, e.lancado_por))), React.createElement("td", {
-                    className: "px-3 py-3 text-center"
+                    className: "px-2 py-2 text-center whitespace-nowrap"
                 }, "pendente" === e.status && React.createElement("div", {
-                    className: "flex gap-2 justify-center"
+                    className: "flex gap-1 justify-center"
                 }, React.createElement("button", {
                     onClick: () => (async e => {
                         s(!0);
@@ -2394,15 +2411,15 @@
                         }
                         s(!1)
                     })(e.id),
-                    className: "px-3 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700"
-                }, "✅ Aprovar"), React.createElement("button", {
+                    className: "px-2 py-1 bg-green-600 text-white rounded text-[10px] font-semibold hover:bg-green-700 whitespace-nowrap"
+                }, "Aprovar"), React.createElement("button", {
                     onClick: () => x({
                         ...p,
                         modalRejeitar: e
                     }),
-                    className: "px-3 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700"
-                }, "❌ Rejeitar")), "rejeitada" === e.status && e.motivo_rejeicao && React.createElement("span", {
-                    className: "text-xs text-red-600",
+                    className: "px-2 py-1 bg-red-600 text-white rounded text-[10px] font-semibold hover:bg-red-700 whitespace-nowrap"
+                }, "Rejeitar")), "rejeitada" === e.status && e.motivo_rejeicao && React.createElement("span", {
+                    className: "text-[9px] text-red-600",
                     title: e.motivo_rejeicao
                 }, "📝 ", e.motivo_rejeicao.substring(0, 20), "...")))
             })))))), "promo-novatos" === p.finTab && React.createElement(React.Fragment, null, p.modalRejeitarNovatos && React.createElement("div", {
