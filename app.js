@@ -12051,37 +12051,27 @@ const hideLoadingScreen = () => {
                 // Aba Comunidade
                 socialTab === "comunidade" && React.createElement("div", null,
                     React.createElement("div", {className: "mb-4 text-center"},
-                        React.createElement("p", {className: "text-gray-600"}, "👥 ", socialUsers.filter(u => u.role === "admin" || u.role === "admin_master" || u.role === "admin_financeiro").length, " admins | 🟢 ", socialUsers.filter(u => u.is_online && (u.role === "admin" || u.role === "admin_master" || u.role === "admin_financeiro")).length, " online")
+                        React.createElement("p", {className: "text-gray-600"}, "👥 ", socialUsers.filter(u => u.role === "admin" || u.role === "admin_master" || u.role === "admin_financeiro").length, " membros da equipe")
                     ),
-                    React.createElement("div", {className: "grid gap-3"},
+                    React.createElement("div", {className: "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4"},
                         socialUsers.filter(u => u.cod_profissional !== l.codProfissional && (u.role === "admin" || u.role === "admin_master" || u.role === "admin_financeiro")).map(user => 
                             React.createElement("div", {
                                 key: user.cod_profissional,
-                                className: "bg-white rounded-xl shadow p-4 flex items-center justify-between hover:shadow-lg transition-shadow"
+                                className: "bg-white rounded-xl shadow p-4 flex flex-col items-center text-center hover:shadow-lg transition-shadow cursor-pointer",
+                                onClick: () => setSocialModalUser(user)
                             },
-                                React.createElement("div", {className: "flex items-center gap-3"},
-                                    React.createElement("div", {className: "relative"},
-                                        user.profile_photo ? 
-                                            React.createElement("img", {
-                                                src: user.profile_photo,
-                                                className: "w-12 h-12 rounded-full object-cover"
-                                            }) : 
-                                            React.createElement("div", {
-                                                className: "w-12 h-12 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white font-bold"
-                                            }, user.display_name?.charAt(0)?.toUpperCase() || "?"),
-                                        React.createElement("span", {
-                                            className: "absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white " + (user.is_online ? "bg-green-500" : "bg-gray-400")
-                                        })
-                                    ),
-                                    React.createElement("div", null,
-                                        React.createElement("p", {className: "font-semibold text-gray-800"}, user.display_name),
-                                        React.createElement("p", {className: "text-xs text-gray-500"}, user.is_online ? "🟢 Online agora" : 
-                                            user.last_seen ? "Visto: " + new Date(user.last_seen).toLocaleString("pt-BR") : "Offline")
-                                    )
-                                ),
+                                user.profile_photo ? 
+                                    React.createElement("img", {
+                                        src: user.profile_photo,
+                                        className: "w-16 h-16 rounded-full object-cover mb-3"
+                                    }) : 
+                                    React.createElement("div", {
+                                        className: "w-16 h-16 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white font-bold text-xl mb-3"
+                                    }, user.display_name?.charAt(0)?.toUpperCase() || "?"),
+                                React.createElement("p", {className: "font-semibold text-gray-800 text-sm truncate w-full"}, user.display_name),
                                 React.createElement("button", {
-                                    onClick: () => setSocialModalUser(user),
-                                    className: "px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-semibold hover:from-purple-600 hover:to-pink-600"
+                                    onClick: (e) => { e.stopPropagation(); setSocialModalUser(user); },
+                                    className: "mt-2 px-3 py-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg text-xs font-semibold hover:from-purple-600 hover:to-pink-600"
                                 }, "💜 Interagir")
                             )
                         )
