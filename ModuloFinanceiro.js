@@ -1509,19 +1509,21 @@
                 }, React.createElement("input", {
                     type: "checkbox",
                     checked: e.conciliacao_omie,
-                    onChange: t => (async (e, t, a) => {
+                    onChange: t => (async (id, field, value) => {
                         try {
-                            await fetchAuth(`${API_URL}/withdrawals/${e}/conciliacao`, {
+                            // Otimista: atualiza na tela imediatamente
+                            if (conciliacaoData) {
+                                setConciliacaoData(prev => prev.map(w => w.id === id ? {...w, conciliacao_omie: value} : w));
+                            }
+                            U(prev => prev.map(w => w.id === id ? {...w, conciliacao_omie: value} : w));
+                            await fetchAuth(`${API_URL}/withdrawals/${id}/conciliacao`, {
                                 method: "PATCH",
-                                headers: {
-                                    "Content-Type": "application/json"
-                                },
-                                body: JSON.stringify({
-                                    [t]: a
-                                })
-                            }), Ua(), Va()
-                        } catch (e) {
-                            ja("Erro", "error")
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ [field]: value })
+                            });
+                        } catch (err) {
+                            ja("Erro ao conciliar", "error");
+                            Ua();
                         }
                     })(e.id, "conciliacaoOmie", t.target.checked),
                     className: "w-5 h-5"
