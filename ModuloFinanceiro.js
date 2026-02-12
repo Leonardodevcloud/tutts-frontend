@@ -31,6 +31,8 @@
             processandoWithdrawals, setProcessandoWithdrawals,
             // Validação server-side
             validacaoData, setValidacaoData, validacaoLoading, setValidacaoLoading, carregarValidacao,
+            // Conciliação server-side
+            conciliacaoData, setConciliacaoData, conciliacaoLoading, setConciliacaoLoading, carregarConciliacao,
             // ⚡ Contadores do backend
             withdrawalCounts,
             l, Ee, he, o, f, E, e,
@@ -1298,7 +1300,12 @@
                             React.createElement("input", {
                                 type: "date",
                                 value: p.concDataSolicitacao || "",
-                                onChange: e => { setConciliacaoPagina(1); x({...p, concDataSolicitacao: e.target.value}); },
+                                onChange: e => { 
+                                    setConciliacaoPagina(1); 
+                                    x({...p, concDataSolicitacao: e.target.value, concDataRealizacao: ""});
+                                    if (e.target.value) carregarConciliacao(e.target.value, e.target.value, "solicitacao");
+                                    else setConciliacaoData(null);
+                                },
                                 className: "px-3 py-2 border rounded-lg text-sm"
                             })
                         ),
@@ -1308,9 +1315,19 @@
                             React.createElement("input", {
                                 type: "date",
                                 value: p.concDataRealizacao || "",
-                                onChange: e => { setConciliacaoPagina(1); x({...p, concDataRealizacao: e.target.value}); },
+                                onChange: e => { 
+                                    setConciliacaoPagina(1); 
+                                    x({...p, concDataRealizacao: e.target.value, concDataSolicitacao: ""});
+                                    if (e.target.value) carregarConciliacao(e.target.value, e.target.value, "lancamento");
+                                    else setConciliacaoData(null);
+                                },
                                 className: "px-3 py-2 border rounded-lg text-sm"
                             })
+                        ),
+                        // Loading indicator
+                        conciliacaoLoading && React.createElement("div", {className: "flex items-center gap-2 text-purple-600"},
+                            React.createElement("div", {className: "w-4 h-4 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"}),
+                            React.createElement("span", {className: "text-sm"}, "Buscando...")
                         ),
                         // Filtro de Gratuidade
                         React.createElement("div", {className: "flex items-center gap-2"},
@@ -1322,28 +1339,34 @@
                         ),
                         // Botão Limpar Filtros
                         (p.concDataSolicitacao || p.concDataRealizacao || p.concApenasGratuidade) && React.createElement("button", {
-                            onClick: () => { setConciliacaoPagina(1); x({...p, concDataSolicitacao: "", concDataRealizacao: "", concApenasGratuidade: false}); },
+                            onClick: () => { setConciliacaoPagina(1); setConciliacaoData(null); x({...p, concDataSolicitacao: "", concDataRealizacao: "", concApenasGratuidade: false}); },
                             className: "px-4 py-2 bg-red-100 text-red-700 rounded-lg text-sm font-semibold hover:bg-red-200"
                         }, "✕ Limpar Filtros")
                     )
                 ),
                 // Cards dinâmicos baseados nos filtros
                 (() => {
-                    // Aplicar os mesmos filtros para calcular os cards
-                    const dadosFiltrados = q.filter(e => {
-                        if (!e.status?.includes("aprovado")) return false;
-                        if (p.concDataSolicitacao) {
-                            const dataSolic = (() => { const d = new Date(e.created_at); return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); })();
-                            if (dataSolic !== p.concDataSolicitacao) return false;
-                        }
-                        if (p.concDataRealizacao) {
-                            if (!e.approved_at) return false;
-                            const dataReal = (() => { const d = new Date(e.approved_at); return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); })();
-                            if (dataReal !== p.concDataRealizacao) return false;
-                        }
-                        if (p.concApenasGratuidade && !e.has_gratuity) return false;
-                        return true;
-                    });
+                    // Usar dados do servidor quando disponível
+                    const fonte = conciliacaoData || q;
+                    const dadosFiltrados = conciliacaoData 
+                        ? fonte.filter(e => {
+                            if (p.concApenasGratuidade && !e.has_gratuity) return false;
+                            return true;
+                        })
+                        : fonte.filter(e => {
+                            if (!e.status?.includes("aprovado")) return false;
+                            if (p.concDataSolicitacao) {
+                                const dataSolic = (() => { const d = new Date(e.created_at); return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); })();
+                                if (dataSolic !== p.concDataSolicitacao) return false;
+                            }
+                            if (p.concDataRealizacao) {
+                                if (!e.approved_at) return false;
+                                const dataReal = (() => { const d = new Date(e.approved_at); return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); })();
+                                if (dataReal !== p.concDataRealizacao) return false;
+                            }
+                            if (p.concApenasGratuidade && !e.has_gratuity) return false;
+                            return true;
+                        });
                     
                     const totalAprovados = dadosFiltrados.length;
                     const totalConciliados = dadosFiltrados.filter(e => e.conciliacao_omie).length;
@@ -1406,29 +1429,27 @@
             }, "Gratuidade"), React.createElement("th", {
                 className: "px-4 py-3 text-center"
             }, "OMIE"))), React.createElement("tbody", null, (() => {
-                // Filtrar dados
-                const filtrados = q.filter(e => {
-                    // Filtro base: apenas aprovados
-                    if (!e.status?.includes("aprovado")) return false;
-                    
-                    // Filtro por data de solicitação
-                    if (p.concDataSolicitacao) {
-                        const dataSolic = (() => { const d = new Date(e.created_at); return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); })();
-                        if (dataSolic !== p.concDataSolicitacao) return false;
-                    }
-                    
-                    // Filtro por data de realização
-                    if (p.concDataRealizacao) {
-                        if (!e.approved_at) return false;
-                        const dataReal = (() => { const d = new Date(e.approved_at); return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); })();
-                        if (dataReal !== p.concDataRealizacao) return false;
-                    }
-                    
-                    // Filtro apenas gratuidades
-                    if (p.concApenasGratuidade && !e.has_gratuity) return false;
-                    
-                    return true;
-                });
+                // Filtrar dados - usar servidor quando disponível
+                const fonte = conciliacaoData || q;
+                const filtrados = conciliacaoData
+                    ? fonte.filter(e => {
+                        if (p.concApenasGratuidade && !e.has_gratuity) return false;
+                        return true;
+                    })
+                    : fonte.filter(e => {
+                        if (!e.status?.includes("aprovado")) return false;
+                        if (p.concDataSolicitacao) {
+                            const dataSolic = (() => { const d = new Date(e.created_at); return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); })();
+                            if (dataSolic !== p.concDataSolicitacao) return false;
+                        }
+                        if (p.concDataRealizacao) {
+                            if (!e.approved_at) return false;
+                            const dataReal = (() => { const d = new Date(e.approved_at); return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); })();
+                            if (dataReal !== p.concDataRealizacao) return false;
+                        }
+                        if (p.concApenasGratuidade && !e.has_gratuity) return false;
+                        return true;
+                    });
                 
                 // Aplicar paginação
                 const inicio = (conciliacaoPagina - 1) * conciliacaoPorPagina;
@@ -1508,20 +1529,26 @@
             }))),
             // Controles de paginação da Conciliação
             (() => {
-                const filtrados = q.filter(e => {
-                    if (!e.status?.includes("aprovado")) return false;
-                    if (p.concDataSolicitacao) {
-                        const dataSolic = (() => { const d = new Date(e.created_at); return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); })();
-                        if (dataSolic !== p.concDataSolicitacao) return false;
-                    }
-                    if (p.concDataRealizacao) {
-                        if (!e.approved_at) return false;
-                        const dataReal = (() => { const d = new Date(e.approved_at); return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); })();
-                        if (dataReal !== p.concDataRealizacao) return false;
-                    }
-                    if (p.concApenasGratuidade && !e.has_gratuity) return false;
-                    return true;
-                });
+                const fonte = conciliacaoData || q;
+                const filtrados = conciliacaoData
+                    ? fonte.filter(e => {
+                        if (p.concApenasGratuidade && !e.has_gratuity) return false;
+                        return true;
+                    })
+                    : fonte.filter(e => {
+                        if (!e.status?.includes("aprovado")) return false;
+                        if (p.concDataSolicitacao) {
+                            const dataSolic = (() => { const d = new Date(e.created_at); return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); })();
+                            if (dataSolic !== p.concDataSolicitacao) return false;
+                        }
+                        if (p.concDataRealizacao) {
+                            if (!e.approved_at) return false;
+                            const dataReal = (() => { const d = new Date(e.approved_at); return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); })();
+                            if (dataReal !== p.concDataRealizacao) return false;
+                        }
+                        if (p.concApenasGratuidade && !e.has_gratuity) return false;
+                        return true;
+                    });
                 const totalPaginas = Math.ceil(filtrados.length / conciliacaoPorPagina);
                 if (totalPaginas <= 1) return null;
                 return React.createElement("div", {
