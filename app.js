@@ -3435,10 +3435,12 @@ const hideLoadingScreen = () => {
             
             // Atualiza imediatamente ao entrar
             Oa();
+            qa();
             
             // Polling a cada 15 segundos
             const pollingInterval = setInterval(() => {
                 Oa();
+                qa();
                 buscarSaldoPlificUsuario();
             }, 15000);
             
