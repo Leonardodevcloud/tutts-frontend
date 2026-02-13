@@ -308,8 +308,8 @@ function hasModuleAccess(user, moduleId) {
         const perm = user.permissions.modulos[moduleId];
         
         // CORREÇÃO: Módulos novos que não existem nas permissões antigas
-        // Dar acesso por padrão ao CRM WhatsApp se não foi configurado
-        if (perm === undefined && moduleId === "crm-whatsapp") {
+        // Dar acesso por padrão ao CRM WhatsApp e CS se não foi configurado
+        if (perm === undefined && (moduleId === "crm-whatsapp" || moduleId === "cs")) {
             return true;
         }
         
@@ -378,6 +378,9 @@ const SISTEMA_MODULOS_CONFIG = [
     },
     { id: "social", label: "Social", icon: "💜",
       abas: [{id: "perfil", label: "Meu Perfil"}, {id: "comunidade", label: "Comunidade"}, {id: "mensagens", label: "Mensagens"}]
+    },
+    { id: "cs", label: "Sucesso do Cliente", icon: "🤝",
+      abas: [{id: "dashboard", label: "Dashboard"}, {id: "clientes", label: "Clientes"}, {id: "interacoes", label: "Interações"}, {id: "ocorrencias", label: "Ocorrências"}, {id: "agenda", label: "Agenda"}]
     },
     { id: "config", label: "Configurações", icon: "🔧",
       abas: [{id: "usuarios", label: "Usuários"}, {id: "permissoes", label: "Permissões ADM"}, {id: "clientes-api", label: "Clientes API"}, {id: "auditoria", label: "Auditoria"}, {id: "sistema", label: "Sistema"}]
@@ -12826,6 +12829,42 @@ const hideLoadingScreen = () => {
                     React.createElement("div", {className: "text-center"},
                         React.createElement("div", {className: "animate-spin w-12 h-12 border-4 border-teal-500 border-t-transparent rounded-full mx-auto mb-4"}),
                         React.createElement("p", {className: "text-gray-600"}, "Carregando módulo operacional...")
+                    )
+                );
+            }
+        }
+
+        // ========== MÓDULO SUCESSO DO CLIENTE (CARREGAMENTO EXTERNO) ==========
+        const canAccessCs = hasModuleAccess(l, "cs");
+        if (canAccessCs && "cs" === Ee) {
+            if (typeof window.ModuloCsComponent !== 'undefined') {
+                return React.createElement(window.ModuloCsComponent, {
+                    usuario: l,
+                    estado: p,
+                    setEstado: x,
+                    API_URL: API_URL,
+                    getToken: getToken,
+                    fetchAuth: fetchAuth,
+                    HeaderCompacto: HeaderCompacto,
+                    Toast: Toast,
+                    LoadingOverlay: LoadingOverlay,
+                    Ee: Ee,
+                    socialProfile: socialProfile,
+                    ul: ul,
+                    o: o,
+                    he: he,
+                    navegarSidebar: navegarSidebar,
+                    showToast: ja,
+                    n: n,
+                    i: i,
+                    f: f,
+                    E: E,
+                });
+            } else {
+                return React.createElement("div", {className: "min-h-screen bg-gray-50 flex items-center justify-center"},
+                    React.createElement("div", {className: "text-center"},
+                        React.createElement("div", {className: "animate-spin w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4"}),
+                        React.createElement("p", {className: "text-gray-600"}, "Carregando módulo Sucesso do Cliente...")
                     )
                 );
             }
