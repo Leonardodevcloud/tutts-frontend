@@ -420,6 +420,13 @@
                         h('span', null, `🚚 ${cli.total_entregas_30d || 0} entregas/30d`),
                         h('span', null, `⏱️ ${cli.taxa_prazo_30d || 0}% prazo`),
                         h('span', null, `💰 ${formatCurrency(cli.valor_total_30d)}`),
+                        parseFloat(cli.taxa_retorno_30d) > 5
+                          ? h('span', { className: 'text-red-600 font-semibold bg-red-50 px-2 py-0.5 rounded-full' }, `🔄 ${cli.taxa_retorno_30d}% retorno`)
+                          : parseFloat(cli.taxa_retorno_30d) > 3
+                            ? h('span', { className: 'text-orange-600 font-medium bg-orange-50 px-2 py-0.5 rounded-full' }, `🔄 ${cli.taxa_retorno_30d}% retorno`)
+                            : parseInt(cli.total_retornos_30d) > 0
+                              ? h('span', null, `🔄 ${cli.total_retornos_30d} retornos`)
+                              : null,
                         cli.ocorrencias_abertas > 0 && h('span', { className: 'text-red-500 font-medium' }, `🚨 ${cli.ocorrencias_abertas} ocorrências`),
                         cli.ultima_interacao && h('span', null, `📝 Última interação: ${diasAtras(cli.ultima_interacao)}`)
                       )
@@ -532,13 +539,31 @@
       ),
 
       // KPIs Rápidos
-      h('div', { className: 'grid grid-cols-2 md:grid-cols-6 gap-3' },
+      h('div', { className: 'grid grid-cols-2 md:grid-cols-7 gap-3' },
         h(KpiCard, { titulo: 'Entregas', valor: parseInt(m.total_entregas || 0).toLocaleString(), icone: '🚚', cor: 'blue' }),
         h(KpiCard, { titulo: 'Taxa Prazo', valor: `${m.taxa_prazo || 0}%`, icone: '⏱️', cor: parseFloat(m.taxa_prazo) >= 85 ? 'green' : 'amber' }),
         h(KpiCard, { titulo: 'Faturamento', valor: formatCurrency(m.valor_total), icone: '💰', cor: 'green' }),
         h(KpiCard, { titulo: 'Tempo Médio', valor: `${m.tempo_medio || 0}min`, icone: '🕐', cor: 'gray' }),
         h(KpiCard, { titulo: 'Profissionais', valor: m.profissionais_unicos || 0, icone: '🏍️', cor: 'purple' }),
-        h(KpiCard, { titulo: 'Retornos', valor: m.total_retornos || 0, icone: '🔄', cor: parseInt(m.total_retornos) > 5 ? 'red' : 'gray' })
+        h(KpiCard, { titulo: 'Retornos', valor: `${m.total_retornos || 0}`, icone: '🔄', cor: parseFloat(m.taxa_retorno || 0) > 5 ? 'red' : parseFloat(m.taxa_retorno || 0) > 3 ? 'amber' : 'gray' }),
+        h(KpiCard, { titulo: 'Taxa Retorno', valor: `${m.taxa_retorno || 0}%`, icone: '⚠️', cor: parseFloat(m.taxa_retorno || 0) > 5 ? 'red' : parseFloat(m.taxa_retorno || 0) > 3 ? 'amber' : 'green' })
+      ),
+
+      // Alertas automáticos
+      diag.alertas && diag.alertas.length > 0 && h('div', { className: 'space-y-2' },
+        ...diag.alertas.map((alerta, i) =>
+          h('div', {
+            key: i,
+            className: `flex items-center gap-3 px-4 py-3 rounded-xl border ${
+              alerta.tipo === 'critico' ? 'bg-red-50 border-red-200 text-red-800' :
+              alerta.tipo === 'alto' ? 'bg-orange-50 border-orange-200 text-orange-800' :
+              'bg-amber-50 border-amber-200 text-amber-800'
+            }`
+          },
+            h('span', { className: 'text-lg' }, alerta.icone),
+            h('span', { className: 'text-sm font-medium flex-1' }, alerta.msg)
+          )
+        )
       ),
 
       // Ações Rápidas
