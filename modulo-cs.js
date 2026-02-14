@@ -551,7 +551,7 @@
         });
         if (res.success) setRaioXResult(res.raio_x);
         else alert('Erro: ' + (res.error || 'Falha ao gerar'));
-      } catch (e) { alert('Erro ao gerar Raio-X'); console.error(e); }
+      } catch (e) { alert('Erro ao gerar Raio-X: ' + (e.message || e)); console.error(e); }
       setRaioXLoading(false);
     };
 
