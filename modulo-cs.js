@@ -514,7 +514,7 @@
   // ══════════════════════════════════════════════════
   // SUB-TELA: DETALHE DO CLIENTE (com Raio-X)
   // ══════════════════════════════════════════════════
-  function ClienteDetalheView({ codCliente, fetchApi, onVoltar }) {
+  function ClienteDetalheView({ codCliente, fetchApi, apiUrl, getToken, onVoltar }) {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [raioXLoading, setRaioXLoading] = useState(false);
@@ -556,8 +556,7 @@
     };
 
     const abrirMapaCalor = () => {
-      const baseUrl = window.location.origin.replace('www.centraltutts.online', 'tutts-backend-produc.app');
-      const url = `${baseUrl}/api/cs/mapa-calor/${codCliente}?data_inicio=${periodoRaioX.inicio}&data_fim=${periodoRaioX.fim}`;
+      const url = `${apiUrl}/cs/mapa-calor/${codCliente}?data_inicio=${periodoRaioX.inicio}&data_fim=${periodoRaioX.fim}`;
       window.open(url, '_blank');
     };
 
@@ -1059,7 +1058,7 @@
     const renderContent = () => {
       // Se tiver cliente selecionado, mostra detalhe
       if (clienteDetalhe) {
-        return h(ClienteDetalheView, { codCliente: clienteDetalhe, fetchApi, onVoltar: () => setClienteDetalhe(null) });
+        return h(ClienteDetalheView, { codCliente: clienteDetalhe, fetchApi, apiUrl, getToken, onVoltar: () => setClienteDetalhe(null) });
       }
 
       switch (activeTab) {
