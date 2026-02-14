@@ -182,7 +182,7 @@
     if (loading) return h('div', { className: 'p-6 space-y-6' }, h(Skeleton, { linhas: 8 }));
     if (!data) return h(EmptyState, { titulo: 'Erro ao carregar dashboard' });
 
-    const { kpis, clientes_risco, interacoes_recentes, distribuicao_health } = data;
+    const { kpis, clientes_risco, churned_confirmados, possiveis_churn, interacoes_recentes, distribuicao_health } = data;
     const kc = kpis.clientes || {};
     const ki = kpis.interacoes || {};
     const ko = kpis.ocorrencias || {};
@@ -202,10 +202,11 @@
       // KPIs Clientes
       h('div', null,
         h('h3', { className: 'text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3' }, '👥 Carteira de Clientes'),
-        h('div', { className: 'grid grid-cols-2 md:grid-cols-4 gap-4' },
+        h('div', { className: 'grid grid-cols-2 md:grid-cols-5 gap-4' },
           h(KpiCard, { titulo: 'Total de Clientes', valor: kc.total_clientes || 0, icone: '🏢', cor: 'blue' }),
           h(KpiCard, { titulo: 'Ativos', valor: kc.ativos || 0, icone: '✅', cor: 'green' }),
           h(KpiCard, { titulo: 'Em Risco', valor: kc.em_risco || 0, icone: '⚠️', cor: 'amber' }),
+          h(KpiCard, { titulo: 'Churned', valor: kc.churned || 0, icone: '💀', cor: parseInt(kc.churned) > 0 ? 'red' : 'gray' }),
           h(KpiCard, { titulo: 'Health Score Médio', valor: `${kc.health_score_medio || 0}/100`, icone: '💚', cor: parseFloat(kc.health_score_medio) >= 60 ? 'green' : 'amber' })
         )
       ),
@@ -309,6 +310,71 @@
                 )
               )
             : h('p', { className: 'text-gray-400 text-sm text-center py-4' }, '🎉 Nenhum cliente em risco!')
+        )
+      ),
+
+      // Possível Churn + Churned Confirmado
+      h('div', { className: 'grid md:grid-cols-2 gap-6' },
+        // Possível Churn
+        h('div', { className: 'bg-white rounded-xl border border-orange-200 p-5' },
+          h('div', { className: 'flex items-center gap-2 mb-4' },
+            h('span', { className: 'text-lg' }, '📉'),
+            h('h3', { className: 'text-sm font-semibold text-orange-600 uppercase tracking-wider' }, 'Possível Churn'),
+            possiveis_churn && possiveis_churn.length > 0 && h('span', { className: 'ml-auto bg-orange-100 text-orange-700 text-xs font-bold px-2 py-0.5 rounded-full' }, possiveis_churn.length)
+          ),
+          possiveis_churn && possiveis_churn.length > 0
+            ? h('div', { className: 'space-y-2 max-h-72 overflow-y-auto' },
+                ...possiveis_churn.map((cli, i) =>
+                  h('div', { key: i, className: 'flex items-center gap-3 p-3 rounded-lg bg-orange-50/70 border border-orange-100' },
+                    h(HealthRing, { score: cli.health_score, size: 40 }),
+                    h('div', { className: 'flex-1 min-w-0' },
+                      h('p', { className: 'text-sm font-medium text-gray-900 truncate' }, cli.nome_fantasia || `Cliente ${cli.cod_cliente}`),
+                      h('div', { className: 'flex flex-wrap items-center gap-2 mt-1' },
+                        cli.motivo_alerta === 'sem_solicitacao_7d'
+                          ? h('span', { className: 'text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-medium' },
+                              `${cli.dias_desde_ultima_semana}d sem solicitar`)
+                          : null,
+                        (cli.motivo_alerta === 'queda_abrupta' || cli.motivo_alerta === 'queda_moderada')
+                          ? h('span', { className: `text-xs px-2 py-0.5 rounded-full font-medium ${
+                              cli.motivo_alerta === 'queda_abrupta' ? 'bg-red-100 text-red-700' : 'bg-orange-100 text-orange-700'
+                            }` }, `${cli.oscilacao_pct}% volume`)
+                          : null,
+                        cli.media_anterior > 0 && h('span', { className: 'text-xs text-gray-500' },
+                          `${cli.media_anterior} → ${cli.media_recente} ent/sem`)
+                      )
+                    ),
+                    h(Badge, {
+                      text: cli.motivo_alerta === 'sem_solicitacao_7d' ? 'inativo' : 'oscilação',
+                      cor: cli.motivo_alerta === 'sem_solicitacao_7d' ? '#EF4444' : '#F97316'
+                    })
+                  )
+                )
+              )
+            : h('p', { className: 'text-gray-400 text-sm text-center py-4' }, '✅ Nenhum sinal de churn detectado')
+        ),
+
+        // Churned Confirmado
+        h('div', { className: 'bg-white rounded-xl border border-gray-300 p-5' },
+          h('div', { className: 'flex items-center gap-2 mb-4' },
+            h('span', { className: 'text-lg' }, '💀'),
+            h('h3', { className: 'text-sm font-semibold text-gray-500 uppercase tracking-wider' }, 'Churned Confirmado (>30d)'),
+            churned_confirmados && churned_confirmados.length > 0 && h('span', { className: 'ml-auto bg-gray-200 text-gray-700 text-xs font-bold px-2 py-0.5 rounded-full' }, churned_confirmados.length)
+          ),
+          churned_confirmados && churned_confirmados.length > 0
+            ? h('div', { className: 'space-y-2 max-h-72 overflow-y-auto' },
+                ...churned_confirmados.map((cli, i) =>
+                  h('div', { key: i, className: 'flex items-center gap-3 p-3 rounded-lg bg-gray-50 border border-gray-200' },
+                    h('div', { className: 'w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-400 text-sm font-bold flex-shrink-0' }, '—'),
+                    h('div', { className: 'flex-1 min-w-0' },
+                      h('p', { className: 'text-sm font-medium text-gray-600 truncate' }, cli.nome_fantasia || `Cliente ${cli.cod_cliente}`),
+                      h('p', { className: 'text-xs text-gray-400 mt-0.5' },
+                        `${cli.dias_sem_entrega}d sem solicitar · ${parseInt(cli.total_entregas_historico || 0).toLocaleString('pt-BR')} entregas no histórico · ${formatCurrency(cli.valor_total_historico)}`)
+                    ),
+                    cli.ultima_entrega && h('span', { className: 'text-xs text-gray-400 whitespace-nowrap' }, `Última: ${formatDate(cli.ultima_entrega)}`)
+                  )
+                )
+              )
+            : h('p', { className: 'text-gray-400 text-sm text-center py-4' }, 'Nenhum cliente em churn')
         )
       ),
 
