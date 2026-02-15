@@ -510,7 +510,9 @@
                               ? h('span', null, `🔄 ${cli.total_retornos_30d} retornos`)
                               : null,
                         cli.ocorrencias_abertas > 0 && h('span', { className: 'text-red-500 font-medium' }, `🚨 ${cli.ocorrencias_abertas} ocorrências`),
-                        cli.ultima_interacao && h('span', null, `📝 Última interação: ${diasAtras(cli.ultima_interacao)}`)
+                        cli.ultima_interacao && h('span', null, `📝 Última interação: ${diasAtras(cli.ultima_interacao)}`),
+                        parseInt(cli.qtd_centros_custo) > 1 && h('span', { className: 'text-indigo-600 font-medium bg-indigo-50 px-2 py-0.5 rounded-full' }, 
+                          `📋 ${cli.qtd_centros_custo} centros de custo`)
                       )
                     ),
                     h('div', { className: 'flex flex-col items-end gap-1' },
@@ -547,16 +549,21 @@
       };
     });
 
-    const carregar = useCallback(async () => {
+    const carregar = useCallback(async (filtroInicio, filtroFim) => {
       setLoading(true);
       try {
-        const res = await fetchApi(`/cs/clientes/${codCliente}?data_inicio=${periodoRaioX.inicio}&data_fim=${periodoRaioX.fim}`);
+        let url = `/cs/clientes/${codCliente}`;
+        if (filtroInicio && filtroFim) url += `?data_inicio=${filtroInicio}&data_fim=${filtroFim}`;
+        const res = await fetchApi(url);
         if (res.success) setData(res);
       } catch (e) { console.error(e); }
       setLoading(false);
-    }, [fetchApi, codCliente, periodoRaioX]);
+    }, [fetchApi, codCliente]);
 
+    // Carregar uma vez ao abrir (sem filtro = histórico completo)
     useEffect(() => { carregar(); }, [carregar]);
+
+    const filtrarPeriodo = () => { carregar(periodoRaioX.inicio, periodoRaioX.fim); };
 
     const gerarRaioX = async () => {
       setRaioXLoading(true);
@@ -720,6 +727,10 @@ ${renderMarkdown(raioXResult.analise)}
           className: 'px-3 py-2 border border-gray-200 rounded-lg text-sm' }),
         h('input', { type: 'date', value: periodoRaioX.fim, onChange: e => setPeriodoRaioX(p => ({ ...p, fim: e.target.value })),
           className: 'px-3 py-2 border border-gray-200 rounded-lg text-sm' }),
+        h('button', { onClick: filtrarPeriodo,
+          className: 'px-4 py-2 bg-gray-700 text-white rounded-lg text-sm font-medium hover:bg-gray-800' },
+          '🔍 Filtrar'
+        ),
         h('button', { onClick: gerarRaioX, disabled: raioXLoading,
           className: 'px-5 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg text-sm font-bold hover:from-purple-700 hover:to-indigo-700 disabled:opacity-50 shadow-lg' },
           raioXLoading ? '🔬 Gerando análise...' : '🔬 Gerar Raio-X IA'
