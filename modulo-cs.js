@@ -1,1189 +1,389 @@
-// ==================== MÓDULO SUCESSO DO CLIENTE ====================
-// Arquivo: modulo-cs.js
-// Self-contained: gerencia próprio estado e fetch
-// UI inspirada no CRM WhatsApp: clean, sidebar + content
-// ================================================================
+/**
+ * CS Sub-Router: Gestão de Clientes
+ * CRUD + métricas diretas do bi_entregas
+ */
+const express = require('express');
+const { calcularHealthScore, determinarStatusCliente, STATUS_CLIENTE } = require('../cs.service');
 
-(function() {
-  'use strict';
+function createClientesRoutes(pool) {
+  const router = express.Router();
 
-  const { useState, useEffect, useCallback, useRef, useMemo } = React;
+  // ==================== GET /cs/clientes ====================
+  router.get('/cs/clientes', async (req, res) => {
+    try {
+      const { status, search, ordem = 'health', direcao = 'desc', page = 1, limit = 50 } = req.query;
+      const offset = (Math.max(1, parseInt(page)) - 1) * parseInt(limit);
 
-  // ── Helper: React.createElement shortcut ──
-  const h = React.createElement;
+      let whereClause = 'WHERE 1=1';
+      const params = [];
+      let paramIndex = 1;
 
-  // ── Constantes ──
-  const TABS = [
-    { id: 'dashboard', label: 'Dashboard', icon: '📊' },
-    { id: 'clientes', label: 'Clientes', icon: '🏢' },
-    { id: 'interacoes', label: 'Interações', icon: '📝' },
-    { id: 'ocorrencias', label: 'Ocorrências', icon: '🚨' },
-    { id: 'agenda', label: 'Agenda', icon: '📅' },
-  ];
-
-  const CORES_HEALTH = {
-    excelente: { bg: 'bg-emerald-50', text: 'text-emerald-700', bar: 'bg-emerald-500', border: 'border-emerald-200' },
-    bom: { bg: 'bg-blue-50', text: 'text-blue-700', bar: 'bg-blue-500', border: 'border-blue-200' },
-    atencao: { bg: 'bg-amber-50', text: 'text-amber-700', bar: 'bg-amber-500', border: 'border-amber-200' },
-    critico: { bg: 'bg-orange-50', text: 'text-orange-700', bar: 'bg-orange-500', border: 'border-orange-200' },
-    urgente: { bg: 'bg-red-50', text: 'text-red-700', bar: 'bg-red-500', border: 'border-red-200' },
-  };
-
-  function getHealthCor(score) {
-    if (score >= 80) return CORES_HEALTH.excelente;
-    if (score >= 60) return CORES_HEALTH.bom;
-    if (score >= 40) return CORES_HEALTH.atencao;
-    if (score >= 20) return CORES_HEALTH.critico;
-    return CORES_HEALTH.urgente;
-  }
-
-  function getHealthLabel(score) {
-    if (score >= 80) return 'Excelente';
-    if (score >= 60) return 'Bom';
-    if (score >= 40) return 'Atenção';
-    if (score >= 20) return 'Crítico';
-    return 'Urgente';
-  }
-
-  function formatCurrency(v) {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v || 0);
-  }
-
-  function formatDate(d) {
-    if (!d) return '-';
-    return new Date(d).toLocaleDateString('pt-BR');
-  }
-
-  function formatDateTime(d) {
-    if (!d) return '-';
-    return new Date(d).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
-  }
-
-  function diasAtras(d) {
-    if (!d) return null;
-    const diff = Math.floor((Date.now() - new Date(d).getTime()) / (1000 * 60 * 60 * 24));
-    if (diff === 0) return 'Hoje';
-    if (diff === 1) return 'Ontem';
-    return `${diff}d atrás`;
-  }
-
-  // ── Componente: Pill/Badge ──
-  function Badge({ text, cor = '#6B7280', className = '' }) {
-    return h('span', {
-      className: `inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${className}`,
-      style: { backgroundColor: cor + '20', color: cor }
-    }, text);
-  }
-
-  // ── Componente: Health Score Ring ──
-  function HealthRing({ score, size = 60 }) {
-    const cor = getHealthCor(score);
-    const radius = (size - 8) / 2;
-    const circumference = 2 * Math.PI * radius;
-    const progress = ((score || 0) / 100) * circumference;
-
-    return h('div', { className: 'relative inline-flex items-center justify-center', style: { width: size, height: size } },
-      h('svg', { width: size, height: size, className: 'transform -rotate-90' },
-        h('circle', { cx: size/2, cy: size/2, r: radius, fill: 'none', stroke: '#E5E7EB', strokeWidth: 4 }),
-        h('circle', { cx: size/2, cy: size/2, r: radius, fill: 'none', stroke: 'currentColor',
-          strokeWidth: 4, strokeDasharray: circumference, strokeDashoffset: circumference - progress,
-          strokeLinecap: 'round', className: cor.text, style: { transition: 'stroke-dashoffset 0.8s ease' }
-        })
-      ),
-      h('span', { className: `absolute text-sm font-bold ${cor.text}` }, score || 0)
-    );
-  }
-
-  // ── Componente: Card KPI ──
-  function KpiCard({ titulo, valor, subtitulo, icone, cor = 'blue', trend }) {
-    const cores = {
-      blue: 'bg-blue-50 text-blue-600 border-blue-100',
-      green: 'bg-emerald-50 text-emerald-600 border-emerald-100',
-      amber: 'bg-amber-50 text-amber-600 border-amber-100',
-      red: 'bg-red-50 text-red-600 border-red-100',
-      purple: 'bg-purple-50 text-purple-600 border-purple-100',
-      gray: 'bg-gray-50 text-gray-600 border-gray-100',
-    };
-    return h('div', { className: `bg-white rounded-xl border ${cores[cor]?.split(' ')[2] || 'border-gray-200'} p-4 hover:shadow-md transition-shadow` },
-      h('div', { className: 'flex items-start justify-between mb-2' },
-        h('span', { className: 'text-2xl' }, icone),
-        trend !== undefined && h('span', {
-          className: `text-xs font-semibold px-2 py-0.5 rounded-full ${trend >= 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`
-        }, `${trend >= 0 ? '↑' : '↓'} ${Math.abs(trend)}%`)
-      ),
-      h('p', { className: 'text-2xl font-bold text-gray-900' }, valor),
-      h('p', { className: 'text-sm text-gray-500 mt-1' }, titulo),
-      subtitulo && h('p', { className: 'text-xs text-gray-400 mt-0.5' }, subtitulo)
-    );
-  }
-
-  // ── Componente: Modal ──
-  function Modal({ aberto, fechar, titulo, largura = 'max-w-2xl', children }) {
-    if (!aberto) return null;
-    return h('div', { className: 'fixed inset-0 z-50 flex items-center justify-center p-4', onClick: fechar },
-      h('div', { className: 'fixed inset-0 bg-black/50 backdrop-blur-sm' }),
-      h('div', {
-        className: `relative bg-white rounded-2xl shadow-2xl w-full ${largura} max-h-[90vh] flex flex-col`,
-        onClick: e => e.stopPropagation()
-      },
-        h('div', { className: 'flex items-center justify-between p-5 border-b border-gray-100' },
-          h('h3', { className: 'text-lg font-bold text-gray-900' }, titulo),
-          h('button', { onClick: fechar, className: 'p-1.5 hover:bg-gray-100 rounded-lg transition-colors text-gray-400 hover:text-gray-600' }, '✕')
-        ),
-        h('div', { className: 'p-5 overflow-y-auto flex-1' }, children)
-      )
-    );
-  }
-
-  // ── Componente: Empty State ──
-  function EmptyState({ icone = '📭', titulo, descricao, acao }) {
-    return h('div', { className: 'flex flex-col items-center justify-center py-16 text-center' },
-      h('span', { className: 'text-5xl mb-4' }, icone),
-      h('h3', { className: 'text-lg font-semibold text-gray-700 mb-2' }, titulo),
-      descricao && h('p', { className: 'text-gray-500 mb-4 max-w-md' }, descricao),
-      acao
-    );
-  }
-
-  // ── Componente: Skeleton Loader ──
-  function Skeleton({ linhas = 3 }) {
-    return h('div', { className: 'animate-pulse space-y-3' },
-      ...Array.from({ length: linhas }, (_, i) =>
-        h('div', { key: i, className: `h-4 bg-gray-200 rounded ${i === linhas - 1 ? 'w-2/3' : 'w-full'}` })
-      )
-    );
-  }
-
-  // ══════════════════════════════════════════════════
-  // SUB-TELA: DASHBOARD
-  // ══════════════════════════════════════════════════
-  function DashboardView({ fetchApi }) {
-    const [data, setData] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [periodo, setPeriodo] = useState(() => {
-      const now = new Date();
-      return {
-        inicio: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`,
-        fim: now.toISOString().split('T')[0],
-      };
-    });
-
-    const carregar = useCallback(async () => {
-      setLoading(true);
-      try {
-        const res = await fetchApi(`/cs/dashboard?data_inicio=${periodo.inicio}&data_fim=${periodo.fim}`);
-        if (res.success) setData(res);
-      } catch (e) { console.error('Erro dashboard CS:', e); }
-      setLoading(false);
-    }, [fetchApi, periodo]);
-
-    useEffect(() => { carregar(); }, [carregar]);
-
-    if (loading) return h('div', { className: 'p-6 space-y-6' }, h(Skeleton, { linhas: 8 }));
-    if (!data) return h(EmptyState, { titulo: 'Erro ao carregar dashboard' });
-
-    const { kpis, clientes_risco, churned_confirmados, possiveis_churn, interacoes_recentes, distribuicao_health } = data;
-    const kc = kpis.clientes || {};
-    const ki = kpis.interacoes || {};
-    const ko = kpis.ocorrencias || {};
-    const kop = kpis.operacao || {};
-
-    return h('div', { className: 'space-y-6' },
-      // Filtro de período
-      h('div', { className: 'flex flex-wrap items-center gap-3' },
-        h('input', { type: 'date', value: periodo.inicio, onChange: e => setPeriodo(p => ({ ...p, inicio: e.target.value })),
-          className: 'px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent' }),
-        h('span', { className: 'text-gray-400' }, 'até'),
-        h('input', { type: 'date', value: periodo.fim, onChange: e => setPeriodo(p => ({ ...p, fim: e.target.value })),
-          className: 'px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent' }),
-        h('button', { onClick: carregar, className: 'px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors' }, '🔄 Atualizar')
-      ),
-
-      // KPIs Clientes
-      h('div', null,
-        h('h3', { className: 'text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3' }, '👥 Carteira de Clientes'),
-        h('div', { className: 'grid grid-cols-2 md:grid-cols-5 gap-4' },
-          h(KpiCard, { titulo: 'Total de Clientes', valor: kc.total_clientes || 0, icone: '🏢', cor: 'blue' }),
-          h(KpiCard, { titulo: 'Ativos', valor: kc.ativos || 0, icone: '✅', cor: 'green' }),
-          h(KpiCard, { titulo: 'Em Risco', valor: kc.em_risco || 0, icone: '⚠️', cor: 'amber' }),
-          h(KpiCard, { titulo: 'Churned', valor: kc.churned || 0, icone: '💀', cor: parseInt(kc.churned) > 0 ? 'red' : 'gray' }),
-          h(KpiCard, { titulo: 'Health Score Médio', valor: `${kc.health_score_medio || 0}/100`, icone: '💚', cor: parseFloat(kc.health_score_medio) >= 60 ? 'green' : 'amber' })
-        )
-      ),
-
-      // KPIs Operação (BI)
-      h('div', null,
-        h('h3', { className: 'text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3' }, '📦 Operação (BI)'),
-        h('div', { className: 'grid grid-cols-2 md:grid-cols-5 gap-4' },
-          h(KpiCard, { titulo: 'Entregas', valor: parseInt(kop.total_entregas || 0).toLocaleString('pt-BR'), icone: '🚚', cor: 'blue' }),
-          h(KpiCard, { titulo: 'Taxa de Prazo', valor: `${kop.taxa_prazo_global || 0}%`, icone: '⏱️', cor: parseFloat(kop.taxa_prazo_global) >= 85 ? 'green' : 'amber' }),
-          h(KpiCard, { titulo: 'Faturamento', valor: formatCurrency(kop.faturamento_total), icone: '💰', cor: 'green' }),
-          h(KpiCard, { titulo: 'Clientes Ativos BI', valor: kop.clientes_ativos_bi || 0, icone: '📊', cor: 'purple' }),
-          h(KpiCard, { titulo: 'Tempo Médio', valor: `${kop.tempo_medio_entrega || 0} min`, icone: '🕐', cor: 'gray' })
-        )
-      ),
-
-      // KPIs Interações + Ocorrências
-      h('div', { className: 'grid md:grid-cols-2 gap-6' },
-        // Interações
-        h('div', { className: 'bg-white rounded-xl border border-gray-200 p-5' },
-          h('h3', { className: 'text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4' }, '📝 Interações no Período'),
-          h('div', { className: 'grid grid-cols-2 gap-3' },
-            h('div', { className: 'text-center p-3 bg-gray-50 rounded-lg' },
-              h('p', { className: 'text-2xl font-bold text-gray-900' }, ki.total_interacoes || 0),
-              h('p', { className: 'text-xs text-gray-500' }, 'Total')
-            ),
-            h('div', { className: 'text-center p-3 bg-gray-50 rounded-lg' },
-              h('p', { className: 'text-2xl font-bold text-blue-600' }, ki.clientes_contatados || 0),
-              h('p', { className: 'text-xs text-gray-500' }, 'Clientes Contatados')
-            ),
-            h('div', { className: 'text-center p-3 bg-blue-50 rounded-lg' },
-              h('p', { className: 'text-2xl font-bold text-blue-700' }, ki.visitas || 0),
-              h('p', { className: 'text-xs text-gray-500' }, 'Visitas')
-            ),
-            h('div', { className: 'text-center p-3 bg-purple-50 rounded-lg' },
-              h('p', { className: 'text-2xl font-bold text-purple-700' }, ki.reunioes || 0),
-              h('p', { className: 'text-xs text-gray-500' }, 'Reuniões')
-            )
-          )
-        ),
-
-        // Ocorrências
-        h('div', { className: 'bg-white rounded-xl border border-gray-200 p-5' },
-          h('h3', { className: 'text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4' }, '🚨 Ocorrências'),
-          h('div', { className: 'grid grid-cols-2 gap-3' },
-            h('div', { className: 'text-center p-3 bg-red-50 rounded-lg' },
-              h('p', { className: 'text-2xl font-bold text-red-600' }, ko.abertas || 0),
-              h('p', { className: 'text-xs text-gray-500' }, 'Abertas')
-            ),
-            h('div', { className: 'text-center p-3 bg-orange-50 rounded-lg' },
-              h('p', { className: 'text-2xl font-bold text-orange-600' }, ko.criticas || 0),
-              h('p', { className: 'text-xs text-gray-500' }, 'Críticas')
-            ),
-            h('div', { className: 'text-center p-3 bg-emerald-50 rounded-lg' },
-              h('p', { className: 'text-2xl font-bold text-emerald-600' }, ko.resolvidas_periodo || 0),
-              h('p', { className: 'text-xs text-gray-500' }, 'Resolvidas')
-            ),
-            h('div', { className: 'text-center p-3 bg-gray-50 rounded-lg' },
-              h('p', { className: 'text-2xl font-bold text-gray-700' }, ko.tempo_medio_resolucao_horas ? `${ko.tempo_medio_resolucao_horas}h` : '-'),
-              h('p', { className: 'text-xs text-gray-500' }, 'T. Médio Resolução')
-            )
-          )
-        )
-      ),
-
-      // Distribuição Health Score + Clientes em Risco
-      h('div', { className: 'grid md:grid-cols-2 gap-6' },
-        // Health Score Distribution
-        h('div', { className: 'bg-white rounded-xl border border-gray-200 p-5' },
-          h('h3', { className: 'text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4' }, '💚 Distribuição Health Score'),
-          distribuicao_health && distribuicao_health.length > 0
-            ? h('div', { className: 'space-y-3' },
-                ...distribuicao_health.map((faixa, i) =>
-                  h('div', { key: i, className: 'flex items-center gap-3' },
-                    h('div', { className: 'w-3 h-3 rounded-full flex-shrink-0', style: { backgroundColor: faixa.cor } }),
-                    h('span', { className: 'text-sm text-gray-700 flex-1' }, faixa.faixa),
-                    h('span', { className: 'text-sm font-bold text-gray-900' }, faixa.quantidade),
-                    h('div', { className: 'w-24 h-2 bg-gray-100 rounded-full overflow-hidden' },
-                      h('div', { className: 'h-full rounded-full transition-all', style: { width: `${Math.min(100, (parseInt(faixa.quantidade) / Math.max(1, parseInt(kc.total_clientes))) * 100)}%`, backgroundColor: faixa.cor } })
-                    )
-                  )
-                )
-              )
-            : h('p', { className: 'text-gray-400 text-sm' }, 'Nenhum dado disponível')
-        ),
-
-        // Clientes em Risco
-        h('div', { className: 'bg-white rounded-xl border border-red-100 p-5' },
-          h('h3', { className: 'text-sm font-semibold text-red-500 uppercase tracking-wider mb-4' }, '⚠️ Clientes em Risco'),
-          clientes_risco && clientes_risco.length > 0
-            ? h('div', { className: 'space-y-3' },
-                ...clientes_risco.map((cli, i) =>
-                  h('div', { key: i, className: 'flex items-center gap-3 p-3 bg-red-50/50 rounded-lg' },
-                    h(HealthRing, { score: cli.health_score, size: 44 }),
-                    h('div', { className: 'flex-1 min-w-0' },
-                      h('p', { className: 'text-sm font-medium text-gray-900 truncate' }, cli.nome_fantasia || `Cliente ${cli.cod_cliente}`),
-                      h('p', { className: 'text-xs text-gray-500' }, `${cli.total_entregas_30d || 0} entregas · ${cli.taxa_prazo_30d || 0}% prazo · ${cli.ocorrencias_abertas || 0} ocorrências`)
-                    ),
-                    h(Badge, { text: cli.status, cor: cli.status === 'em_risco' ? '#F59E0B' : '#EF4444' })
-                  )
-                )
-              )
-            : h('p', { className: 'text-gray-400 text-sm text-center py-4' }, '🎉 Nenhum cliente em risco!')
-        )
-      ),
-
-      // Possível Churn + Churned Confirmado
-      h('div', { className: 'grid md:grid-cols-2 gap-6' },
-        // Possível Churn
-        h('div', { className: 'bg-white rounded-xl border border-orange-200 p-5' },
-          h('div', { className: 'flex items-center gap-2 mb-4' },
-            h('span', { className: 'text-lg' }, '📉'),
-            h('h3', { className: 'text-sm font-semibold text-orange-600 uppercase tracking-wider' }, 'Possível Churn'),
-            possiveis_churn && possiveis_churn.length > 0 && h('span', { className: 'ml-auto bg-orange-100 text-orange-700 text-xs font-bold px-2 py-0.5 rounded-full' }, possiveis_churn.length)
-          ),
-          possiveis_churn && possiveis_churn.length > 0
-            ? h('div', { className: 'space-y-2 max-h-72 overflow-y-auto' },
-                ...possiveis_churn.map((cli, i) =>
-                  h('div', { key: i, className: 'flex items-center gap-3 p-3 rounded-lg bg-orange-50/70 border border-orange-100' },
-                    h(HealthRing, { score: cli.health_score, size: 40 }),
-                    h('div', { className: 'flex-1 min-w-0' },
-                      h('p', { className: 'text-sm font-medium text-gray-900 truncate' }, cli.nome_fantasia || `Cliente ${cli.cod_cliente}`),
-                      h('div', { className: 'flex flex-wrap items-center gap-2 mt-1' },
-                        cli.motivo_alerta === 'sem_solicitacao_7d'
-                          ? h('span', { className: 'text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-medium' },
-                              `${cli.dias_desde_ultima_semana}d sem solicitar`)
-                          : null,
-                        (cli.motivo_alerta === 'queda_abrupta' || cli.motivo_alerta === 'queda_moderada')
-                          ? h('span', { className: `text-xs px-2 py-0.5 rounded-full font-medium ${
-                              cli.motivo_alerta === 'queda_abrupta' ? 'bg-red-100 text-red-700' : 'bg-orange-100 text-orange-700'
-                            }` }, `${cli.oscilacao_pct}% volume`)
-                          : null,
-                        cli.media_anterior > 0 && h('span', { className: 'text-xs text-gray-500' },
-                          `${cli.media_anterior} → ${cli.media_recente} ent/sem`)
-                      )
-                    ),
-                    h(Badge, {
-                      text: cli.motivo_alerta === 'sem_solicitacao_7d' ? 'inativo' : 'oscilação',
-                      cor: cli.motivo_alerta === 'sem_solicitacao_7d' ? '#EF4444' : '#F97316'
-                    })
-                  )
-                )
-              )
-            : h('p', { className: 'text-gray-400 text-sm text-center py-4' }, '✅ Nenhum sinal de churn detectado')
-        ),
-
-        // Churned Confirmado
-        h('div', { className: 'bg-white rounded-xl border border-gray-300 p-5' },
-          h('div', { className: 'flex items-center gap-2 mb-4' },
-            h('span', { className: 'text-lg' }, '💀'),
-            h('h3', { className: 'text-sm font-semibold text-gray-500 uppercase tracking-wider' }, 'Churned Confirmado (>30d)'),
-            churned_confirmados && churned_confirmados.length > 0 && h('span', { className: 'ml-auto bg-gray-200 text-gray-700 text-xs font-bold px-2 py-0.5 rounded-full' }, churned_confirmados.length)
-          ),
-          churned_confirmados && churned_confirmados.length > 0
-            ? h('div', { className: 'space-y-2 max-h-72 overflow-y-auto' },
-                ...churned_confirmados.map((cli, i) =>
-                  h('div', { key: i, className: 'flex items-center gap-3 p-3 rounded-lg bg-gray-50 border border-gray-200' },
-                    h('div', { className: 'w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-400 text-sm font-bold flex-shrink-0' }, '—'),
-                    h('div', { className: 'flex-1 min-w-0' },
-                      h('p', { className: 'text-sm font-medium text-gray-600 truncate' }, cli.nome_fantasia || `Cliente ${cli.cod_cliente}`),
-                      h('p', { className: 'text-xs text-gray-400 mt-0.5' },
-                        `${cli.dias_sem_entrega}d sem solicitar · ${parseInt(cli.total_entregas_historico || 0).toLocaleString('pt-BR')} entregas no histórico · ${formatCurrency(cli.valor_total_historico)}`)
-                    ),
-                    cli.ultima_entrega && h('span', { className: 'text-xs text-gray-400 whitespace-nowrap' }, `Última: ${formatDate(cli.ultima_entrega)}`)
-                  )
-                )
-              )
-            : h('p', { className: 'text-gray-400 text-sm text-center py-4' }, 'Nenhum cliente em churn')
-        )
-      ),
-
-      // Interações Recentes
-      h('div', { className: 'bg-white rounded-xl border border-gray-200 p-5' },
-        h('h3', { className: 'text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4' }, '🕐 Interações Recentes'),
-        interacoes_recentes && interacoes_recentes.length > 0
-          ? h('div', { className: 'divide-y divide-gray-100' },
-              ...interacoes_recentes.map((int, i) =>
-                h('div', { key: i, className: 'flex items-center gap-3 py-3' },
-                  h('span', { className: 'text-lg' }, int.tipo === 'visita' ? '📍' : int.tipo === 'reuniao' ? '👥' : int.tipo === 'ligacao' ? '📞' : int.tipo === 'whatsapp' ? '💬' : '📝'),
-                  h('div', { className: 'flex-1 min-w-0' },
-                    h('p', { className: 'text-sm font-medium text-gray-900 truncate' }, int.titulo),
-                    h('p', { className: 'text-xs text-gray-500' }, `${int.nome_fantasia || 'Cliente'} · por ${int.criado_por_nome || 'Sistema'}`)
-                  ),
-                  h('span', { className: 'text-xs text-gray-400 whitespace-nowrap' }, diasAtras(int.data_interacao))
-                )
-              )
-            )
-          : h('p', { className: 'text-gray-400 text-sm text-center py-4' }, 'Nenhuma interação registrada')
-      )
-    );
-  }
-
-  // ══════════════════════════════════════════════════
-  // SUB-TELA: LISTA DE CLIENTES
-  // ══════════════════════════════════════════════════
-  function ClientesView({ fetchApi, onSelectCliente }) {
-    const [clientes, setClientes] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [search, setSearch] = useState('');
-    const [filtroStatus, setFiltroStatus] = useState('');
-    const [syncing, setSyncing] = useState(false);
-
-    const carregar = useCallback(async () => {
-      setLoading(true);
-      try {
-        const params = new URLSearchParams({ limit: '100' });
-        if (search) params.set('search', search);
-        if (filtroStatus) params.set('status', filtroStatus);
-        const res = await fetchApi(`/cs/clientes?${params}`);
-        if (res.success) setClientes(res.clientes || []);
-      } catch (e) { console.error(e); }
-      setLoading(false);
-    }, [fetchApi, search, filtroStatus]);
-
-    useEffect(() => { carregar(); }, [carregar]);
-
-    const syncBi = async () => {
-      setSyncing(true);
-      try {
-        const res = await fetchApi('/cs/clientes/sync-bi', { method: 'POST' });
-        if (res.success) {
-          alert(`✅ ${res.importados} novos clientes importados do BI!`);
-          carregar();
-        }
-      } catch (e) { alert('Erro ao sincronizar'); }
-      setSyncing(false);
-    };
-
-    return h('div', { className: 'space-y-4' },
-      // Toolbar
-      h('div', { className: 'flex flex-wrap items-center gap-3' },
-        h('div', { className: 'flex-1 min-w-[200px]' },
-          h('input', {
-            type: 'text', placeholder: '🔍 Buscar cliente (nome, código, CNPJ)...',
-            value: search, onChange: e => setSearch(e.target.value),
-            className: 'w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent'
-          })
-        ),
-        h('select', {
-          value: filtroStatus, onChange: e => setFiltroStatus(e.target.value),
-          className: 'px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white'
-        },
-          h('option', { value: '' }, 'Todos os status'),
-          h('option', { value: 'ativo' }, '✅ Ativo'),
-          h('option', { value: 'em_risco' }, '⚠️ Em Risco'),
-          h('option', { value: 'inativo' }, '🔴 Inativo'),
-          h('option', { value: 'churned' }, '⚫ Churned')
-        ),
-        h('button', { onClick: syncBi, disabled: syncing, className: 'px-4 py-2.5 bg-purple-600 text-white rounded-xl text-sm font-medium hover:bg-purple-700 transition-colors disabled:opacity-50' },
-          syncing ? '⏳ Sincronizando...' : '📥 Sync BI'
-        )
-      ),
-
-      // Contador
-      h('p', { className: 'text-sm text-gray-500' }, `${clientes.length} clientes encontrados`),
-
-      // Lista
-      loading
-        ? h(Skeleton, { linhas: 6 })
-        : clientes.length === 0
-          ? h(EmptyState, { titulo: 'Nenhum cliente encontrado', descricao: 'Clique em "Sync BI" para importar clientes das entregas.' })
-          : h('div', { className: 'space-y-2' },
-              ...clientes.map(cli =>
-                h('div', {
-                  key: cli.cod_cliente,
-                  onClick: () => onSelectCliente(cli.cod_cliente),
-                  className: 'bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md hover:border-blue-300 transition-all cursor-pointer'
-                },
-                  h('div', { className: 'flex items-center gap-4' },
-                    h(HealthRing, { score: cli.health_score, size: 52 }),
-                    h('div', { className: 'flex-1 min-w-0' },
-                      h('div', { className: 'flex items-center gap-2 mb-1' },
-                        h('h4', { className: 'font-semibold text-gray-900 truncate' }, cli.nome_fantasia || `Cliente ${cli.cod_cliente}`),
-                        h('span', { className: 'text-xs text-gray-400' }, `#${cli.cod_cliente}`)
-                      ),
-                      h('div', { className: 'flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500' },
-                        h('span', null, `🚚 ${cli.total_entregas_30d || 0} entregas/30d`),
-                        h('span', null, `⏱️ ${cli.taxa_prazo_30d || 0}% prazo`),
-                        h('span', null, `💰 ${formatCurrency(cli.valor_total_30d)}`),
-                        parseFloat(cli.taxa_retorno_30d) > 5
-                          ? h('span', { className: 'text-red-600 font-semibold bg-red-50 px-2 py-0.5 rounded-full' }, `🔄 ${cli.taxa_retorno_30d}% retorno`)
-                          : parseFloat(cli.taxa_retorno_30d) > 3
-                            ? h('span', { className: 'text-orange-600 font-medium bg-orange-50 px-2 py-0.5 rounded-full' }, `🔄 ${cli.taxa_retorno_30d}% retorno`)
-                            : parseInt(cli.total_retornos_30d) > 0
-                              ? h('span', null, `🔄 ${cli.total_retornos_30d} retornos`)
-                              : null,
-                        cli.ocorrencias_abertas > 0 && h('span', { className: 'text-red-500 font-medium' }, `🚨 ${cli.ocorrencias_abertas} ocorrências`),
-                        cli.ultima_interacao && h('span', null, `📝 Última interação: ${diasAtras(cli.ultima_interacao)}`)
-                      )
-                    ),
-                    h('div', { className: 'flex flex-col items-end gap-1' },
-                      h(Badge, {
-                        text: cli.status || 'ativo',
-                        cor: cli.status === 'ativo' ? '#10B981' : cli.status === 'em_risco' ? '#F59E0B' : cli.status === 'inativo' ? '#EF4444' : '#6B7280'
-                      }),
-                      cli.ultima_entrega && h('span', { className: 'text-xs text-gray-400' }, `Última entrega: ${diasAtras(cli.ultima_entrega)}`)
-                    )
-                  )
-                )
-              )
-            )
-    );
-  }
-
-  // ══════════════════════════════════════════════════
-  // SUB-TELA: DETALHE DO CLIENTE (com Raio-X)
-  // ══════════════════════════════════════════════════
-  function ClienteDetalheView({ codCliente, fetchApi, apiUrl, getToken, onVoltar }) {
-    const [data, setData] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [raioXLoading, setRaioXLoading] = useState(false);
-    const [raioXResult, setRaioXResult] = useState(null);
-    const [showNovaInteracao, setShowNovaInteracao] = useState(false);
-    const [showNovaOcorrencia, setShowNovaOcorrencia] = useState(false);
-    const [interacaoForm, setInteracaoForm] = useState({ tipo: 'ligacao', titulo: '', descricao: '', resultado: '', proxima_acao: '' });
-    const [ocorrenciaForm, setOcorrenciaForm] = useState({ tipo: 'problema_entrega', titulo: '', descricao: '', severidade: 'media' });
-    const [periodoRaioX, setPeriodoRaioX] = useState(() => {
-      const now = new Date();
-      return {
-        inicio: new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().split('T')[0],
-        fim: now.toISOString().split('T')[0],
-      };
-    });
-
-    const carregar = useCallback(async () => {
-      setLoading(true);
-      try {
-        const res = await fetchApi(`/cs/clientes/${codCliente}`);
-        if (res.success) setData(res);
-      } catch (e) { console.error(e); }
-      setLoading(false);
-    }, [fetchApi, codCliente]);
-
-    useEffect(() => { carregar(); }, [carregar]);
-
-    const gerarRaioX = async () => {
-      setRaioXLoading(true);
-      try {
-        const res = await fetchApi('/cs/raio-x', {
-          method: 'POST',
-          body: JSON.stringify({ cod_cliente: codCliente, data_inicio: periodoRaioX.inicio, data_fim: periodoRaioX.fim }),
-        });
-        if (res.success) setRaioXResult(res.raio_x);
-        else alert('Erro: ' + (res.error || 'Falha ao gerar'));
-      } catch (e) { alert('Erro ao gerar Raio-X: ' + (e.message || e)); console.error(e); }
-      setRaioXLoading(false);
-    };
-
-    const abrirMapaCalor = () => {
-      const url = `${apiUrl}/cs/mapa-calor/${codCliente}?data_inicio=${periodoRaioX.inicio}&data_fim=${periodoRaioX.fim}`;
-      // Abrir popup com loading enquanto backend processa
-      const w = window.open('', '_blank');
-      if (w) {
-        w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Mapa de Calor</title>
-<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Segoe UI',sans-serif;background:#0f172a;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;color:white}
-.spinner{width:60px;height:60px;border:4px solid rgba(255,255,255,0.2);border-top:4px solid #a78bfa;border-radius:50%;animation:spin 1s linear infinite;margin-bottom:24px}
-@keyframes spin{to{transform:rotate(360deg)}}
-h2{font-size:20px;font-weight:700;margin-bottom:8px}p{font-size:14px;opacity:0.7;max-width:400px;text-align:center;line-height:1.6}
-.dots::after{content:'';animation:dots 1.5s infinite}@keyframes dots{0%{content:''}33%{content:'.'}66%{content:'..'}100%{content:'...'}}
-</style></head><body><div class="spinner"></div><h2>🗺️ Preparando seu Mapa de Calor</h2>
-<p>Estamos geocodificando os endereços da operação<span class="dots"></span></p>
-<p style="margin-top:12px;font-size:12px;opacity:0.5">Na primeira vez pode levar alguns segundos. Acessos futuros serão instantâneos.</p>
-</body></html>`);
-        w.document.close();
-        // Redirecionar para URL real
-        w.location.href = url;
+      if (status) {
+        whereClause += ` AND c.status = $${paramIndex}`;
+        params.push(status);
+        paramIndex++;
       }
-    };
 
-    const gerarPdfRaioX = () => {
-      if (!raioXResult) return;
-      const printWindow = window.open('', '_blank');
-      if (!printWindow) return;
-      const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
-<title>Raio-X — ${data?.cliente?.nome_fantasia || 'Cliente'}</title>
-<style>
-  *{margin:0;padding:0;box-sizing:border-box}
-  body{font-family:'Segoe UI',sans-serif;padding:40px 50px;color:#1e293b;font-size:13px;line-height:1.7}
-  h1{font-size:22px;color:#4f46e5;margin-bottom:4px}
-  h2{font-size:16px;color:#4f46e5;margin-top:28px;margin-bottom:8px;border-bottom:2px solid #e0e7ff;padding-bottom:4px}
-  h3{font-size:14px;color:#6366f1;margin-top:20px;margin-bottom:6px}
-  strong{color:#1e293b}
-  li{margin-left:20px;margin-bottom:4px}
-  a{color:#4f46e5;text-decoration:underline}
-  .header{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #6366f1;padding-bottom:16px;margin-bottom:24px}
-  .header .score{font-size:36px;font-weight:800;color:#6366f1}
-  .header .info{font-size:12px;color:#94a3b8}
-  @media print{body{padding:20px 30px}a[href]:after{content:none}}
-</style></head><body>
-<div class="header">
-  <div><h1>🔬 Raio-X Operacional</h1><p>${data?.cliente?.nome_fantasia || ''}</p><p class="info">Período: ${periodoRaioX.inicio} a ${periodoRaioX.fim} · Gerado em ${new Date(raioXResult.gerado_em).toLocaleDateString('pt-BR')}</p></div>
-  <div class="score">${raioXResult.health_score}</div>
-</div>
-${renderMarkdown(raioXResult.analise)}
-<script>setTimeout(function(){window.print()},500)</script>
-</body></html>`;
-      printWindow.document.write(html);
-      printWindow.document.close();
-    };
+      if (search) {
+        whereClause += ` AND (c.nome_fantasia ILIKE $${paramIndex} OR c.razao_social ILIKE $${paramIndex} OR c.cnpj ILIKE $${paramIndex} OR c.cod_cliente::text ILIKE $${paramIndex})`;
+        params.push(`%${search}%`);
+        paramIndex++;
+      }
 
-    const salvarInteracao = async () => {
-      try {
-        const res = await fetchApi('/cs/interacoes', {
-          method: 'POST',
-          body: JSON.stringify({ ...interacaoForm, cod_cliente: codCliente }),
-        });
-        if (res.success) {
-          setShowNovaInteracao(false);
-          setInteracaoForm({ tipo: 'ligacao', titulo: '', descricao: '', resultado: '', proxima_acao: '' });
-          carregar();
-        }
-      } catch (e) { alert('Erro ao salvar interação'); }
-    };
+      const query = `
+        SELECT 
+          c.*,
+          COALESCE(bi.total_entregas_30d, 0) as total_entregas_30d,
+          COALESCE(bi.taxa_prazo_30d, 0) as taxa_prazo_30d,
+          COALESCE(bi.valor_total_30d, 0) as valor_total_30d,
+          bi.ultima_entrega,
+          COALESCE(bi.total_retornos_30d, 0) as total_retornos_30d,
+          COALESCE(oc.ocorrencias_abertas, 0) as ocorrencias_abertas,
+          COALESCE(it.ultima_interacao, NULL) as ultima_interacao,
+          COALESCE(it.total_interacoes_30d, 0) as total_interacoes_30d
+        FROM cs_clientes c
+        LEFT JOIN LATERAL (
+          SELECT 
+            COUNT(CASE WHEN COALESCE(ponto, 1) >= 2 THEN 1 END) as total_entregas_30d,
+            ROUND(
+              SUM(CASE WHEN COALESCE(ponto, 1) >= 2 AND dentro_prazo = true THEN 1 ELSE 0 END)::numeric /
+              NULLIF(COUNT(CASE WHEN COALESCE(ponto, 1) >= 2 AND dentro_prazo IS NOT NULL THEN 1 END), 0) * 100, 1
+            ) as taxa_prazo_30d,
+            COALESCE(SUM(CASE WHEN COALESCE(ponto, 1) >= 2 THEN valor ELSE 0 END), 0) as valor_total_30d,
+            MAX(data_solicitado) as ultima_entrega,
+            SUM(CASE WHEN COALESCE(ponto, 1) >= 2 AND (
+              LOWER(ocorrencia) LIKE '%%cliente fechado%%' OR 
+              LOWER(ocorrencia) LIKE '%%clienteaus%%' OR 
+              LOWER(ocorrencia) LIKE '%%cliente ausente%%' OR
+              LOWER(ocorrencia) LIKE '%%loja fechada%%' OR
+              LOWER(ocorrencia) LIKE '%%produto incorreto%%'
+            ) THEN 1 ELSE 0 END) as total_retornos_30d,
+            ROUND(
+              SUM(CASE WHEN COALESCE(ponto, 1) >= 2 AND (
+                LOWER(ocorrencia) LIKE '%%cliente fechado%%' OR 
+                LOWER(ocorrencia) LIKE '%%clienteaus%%' OR 
+                LOWER(ocorrencia) LIKE '%%cliente ausente%%' OR
+                LOWER(ocorrencia) LIKE '%%loja fechada%%' OR
+                LOWER(ocorrencia) LIKE '%%produto incorreto%%'
+              ) THEN 1 ELSE 0 END)::numeric /
+              NULLIF(COUNT(CASE WHEN COALESCE(ponto, 1) >= 2 THEN 1 END), 0) * 100, 1
+            ) as taxa_retorno_30d
+          FROM bi_entregas 
+          WHERE cod_cliente = c.cod_cliente
+            AND data_solicitado >= CURRENT_DATE - 30
+            AND COALESCE(ponto, 1) >= 2
+        ) bi ON true
+        LEFT JOIN LATERAL (
+          SELECT COUNT(*) as ocorrencias_abertas
+          FROM cs_ocorrencias 
+          WHERE cod_cliente = c.cod_cliente AND status IN ('aberta', 'em_andamento')
+        ) oc ON true
+        LEFT JOIN LATERAL (
+          SELECT 
+            MAX(data_interacao) as ultima_interacao,
+            COUNT(*) FILTER (WHERE data_interacao >= NOW() - INTERVAL '30 days') as total_interacoes_30d
+          FROM cs_interacoes WHERE cod_cliente = c.cod_cliente
+        ) it ON true
+        ${whereClause}
+        ORDER BY ${ordem === 'health' ? 'c.health_score' : ordem === 'entregas' ? 'bi.total_entregas_30d' : 'c.nome_fantasia'} ${direcao === 'desc' ? 'DESC' : 'ASC'} NULLS LAST
+        LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+      `;
+      params.push(parseInt(limit), offset);
 
-    const salvarOcorrencia = async () => {
-      try {
-        const res = await fetchApi('/cs/ocorrencias', {
-          method: 'POST',
-          body: JSON.stringify({ ...ocorrenciaForm, cod_cliente: codCliente }),
-        });
-        if (res.success) {
-          setShowNovaOcorrencia(false);
-          setOcorrenciaForm({ tipo: 'problema_entrega', titulo: '', descricao: '', severidade: 'media' });
-          carregar();
-        }
-      } catch (e) { alert('Erro ao salvar ocorrência'); }
-    };
+      const result = await pool.query(query, params);
 
-    if (loading) return h('div', { className: 'p-6' }, h(Skeleton, { linhas: 10 }));
-    if (!data) return h(EmptyState, { titulo: 'Cliente não encontrado' });
-
-    const { ficha, metricas_bi: m, diagnostico: diag, interacoes, ocorrencias, evolucao_semanal, raio_x_historico } = data;
-    const cor = getHealthCor(diag.health_score);
-
-    return h('div', { className: 'space-y-6' },
-      // Header com voltar
-      h('div', { className: 'flex items-center gap-4' },
-        h('button', { onClick: onVoltar, className: 'p-2 hover:bg-gray-100 rounded-lg transition-colors' }, '← Voltar'),
-        h('div', { className: 'flex-1' },
-          h('h2', { className: 'text-xl font-bold text-gray-900' }, ficha.nome_fantasia || `Cliente ${codCliente}`),
-          h('p', { className: 'text-sm text-gray-500' }, `Cód: ${codCliente} · ${ficha.cidade || ''} ${ficha.estado ? '- ' + ficha.estado : ''} · ${ficha.segmento || 'Autopeças'}`)
-        ),
-        h(HealthRing, { score: diag.health_score, size: 64 }),
-        h('div', { className: 'text-right' },
-          h('p', { className: `text-lg font-bold ${cor.text}` }, getHealthLabel(diag.health_score)),
-          h('p', { className: 'text-xs text-gray-400' }, diag.dias_sem_entrega < 999 ? `${diag.dias_sem_entrega}d sem entrega` : 'Sem entregas')
-        )
-      ),
-
-      // KPIs Rápidos
-      h('div', { className: 'grid grid-cols-2 md:grid-cols-7 gap-3' },
-        h(KpiCard, { titulo: 'Entregas', valor: parseInt(m.total_entregas || 0).toLocaleString(), icone: '🚚', cor: 'blue' }),
-        h(KpiCard, { titulo: 'Taxa Prazo', valor: `${m.taxa_prazo || 0}%`, icone: '⏱️', cor: parseFloat(m.taxa_prazo) >= 85 ? 'green' : 'amber' }),
-        h(KpiCard, { titulo: 'Faturamento', valor: formatCurrency(m.valor_total), icone: '💰', cor: 'green' }),
-        h(KpiCard, { titulo: 'Tempo Médio', valor: `${m.tempo_medio || 0}min`, icone: '🕐', cor: 'gray' }),
-        h(KpiCard, { titulo: 'Profissionais', valor: m.profissionais_unicos || 0, icone: '🏍️', cor: 'purple' }),
-        h(KpiCard, { titulo: 'Retornos', valor: `${m.total_retornos || 0}`, icone: '🔄', cor: parseFloat(m.taxa_retorno || 0) > 5 ? 'red' : parseFloat(m.taxa_retorno || 0) > 3 ? 'amber' : 'gray' }),
-        h(KpiCard, { titulo: 'Taxa Retorno', valor: `${m.taxa_retorno || 0}%`, icone: '⚠️', cor: parseFloat(m.taxa_retorno || 0) > 5 ? 'red' : parseFloat(m.taxa_retorno || 0) > 3 ? 'amber' : 'green' })
-      ),
-
-      // Alertas automáticos
-      diag.alertas && diag.alertas.length > 0 && h('div', { className: 'space-y-2' },
-        ...diag.alertas.map((alerta, i) =>
-          h('div', {
-            key: i,
-            className: `flex items-center gap-3 px-4 py-3 rounded-xl border ${
-              alerta.tipo === 'critico' ? 'bg-red-50 border-red-200 text-red-800' :
-              alerta.tipo === 'alto' ? 'bg-orange-50 border-orange-200 text-orange-800' :
-              'bg-amber-50 border-amber-200 text-amber-800'
-            }`
-          },
-            h('span', { className: 'text-lg' }, alerta.icone),
-            h('span', { className: 'text-sm font-medium flex-1' }, alerta.msg)
-          )
-        )
-      ),
-
-      // Ações Rápidas
-      h('div', { className: 'flex flex-wrap gap-2' },
-        h('button', { onClick: () => setShowNovaInteracao(true), className: 'px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700' }, '📝 Nova Interação'),
-        h('button', { onClick: () => setShowNovaOcorrencia(true), className: 'px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700' }, '🚨 Nova Ocorrência'),
-        h('div', { className: 'flex-1' }),
-        h('input', { type: 'date', value: periodoRaioX.inicio, onChange: e => { setPeriodoRaioX(p => ({ ...p, inicio: e.target.value })); setRaioXResult(null); },
-          className: 'px-3 py-2 border border-gray-200 rounded-lg text-sm' }),
-        h('input', { type: 'date', value: periodoRaioX.fim, onChange: e => { setPeriodoRaioX(p => ({ ...p, fim: e.target.value })); setRaioXResult(null); },
-          className: 'px-3 py-2 border border-gray-200 rounded-lg text-sm' }),
-        h('button', { onClick: gerarRaioX, disabled: raioXLoading,
-          className: 'px-5 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg text-sm font-bold hover:from-purple-700 hover:to-indigo-700 disabled:opacity-50 shadow-lg' },
-          raioXLoading ? '🔬 Gerando análise...' : '🔬 Gerar Raio-X IA'
-        ),
-        h('button', { onClick: abrirMapaCalor,
-          className: 'px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-lg text-sm font-bold hover:from-emerald-600 hover:to-teal-700 shadow-lg' },
-          '🗺️ Mapa de Calor'
-        )
-      ),
-
-      // Raio-X IA (quando gerado)
-      raioXResult && h('div', { className: 'bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl border border-indigo-200 p-6 shadow-inner' },
-        h('div', { className: 'flex items-center gap-2 mb-4 flex-wrap' },
-          h('span', { className: 'text-2xl' }, '🔬'),
-          h('h3', { className: 'text-lg font-bold text-indigo-900' }, 'Raio-X Inteligente'),
-          h('span', { className: 'text-xs text-indigo-400 ml-auto' }, `Gerado em ${formatDateTime(raioXResult.gerado_em)} · ${raioXResult.tokens} tokens`),
-          h('button', { onClick: gerarPdfRaioX,
-            className: 'ml-2 px-4 py-1.5 bg-white border border-indigo-300 text-indigo-700 rounded-lg text-xs font-bold hover:bg-indigo-50 shadow-sm' },
-            '📄 Gerar PDF'
-          )
-        ),
-        h('div', {
-          className: 'prose prose-sm prose-indigo max-w-none',
-          dangerouslySetInnerHTML: { __html: renderMarkdown(raioXResult.analise) }
-        })
-      ),
-
-      // Timeline Interações + Ocorrências
-      h('div', { className: 'grid md:grid-cols-2 gap-6' },
-        // Interações
-        h('div', { className: 'bg-white rounded-xl border border-gray-200 p-5' },
-          h('h3', { className: 'font-semibold text-gray-700 mb-4' }, '📝 Últimas Interações'),
-          interacoes && interacoes.length > 0
-            ? h('div', { className: 'space-y-3' }, ...interacoes.map((int, i) =>
-                h('div', { key: i, className: 'flex gap-3 p-3 bg-gray-50 rounded-lg' },
-                  h('span', { className: 'text-lg mt-0.5' }, int.tipo === 'visita' ? '📍' : int.tipo === 'reuniao' ? '👥' : int.tipo === 'ligacao' ? '📞' : int.tipo === 'whatsapp' ? '💬' : int.tipo === 'pos_venda' ? '✅' : '📝'),
-                  h('div', { className: 'flex-1 min-w-0' },
-                    h('p', { className: 'text-sm font-medium text-gray-900' }, int.titulo),
-                    int.descricao && h('p', { className: 'text-xs text-gray-500 mt-1 line-clamp-2' }, int.descricao),
-                    h('p', { className: 'text-xs text-gray-400 mt-1' }, `${formatDateTime(int.data_interacao)} · ${int.criado_por_nome || ''}`)
-                  )
-                )
-              ))
-            : h('p', { className: 'text-sm text-gray-400 text-center py-4' }, 'Nenhuma interação registrada')
-        ),
-
-        // Ocorrências
-        h('div', { className: 'bg-white rounded-xl border border-gray-200 p-5' },
-          h('h3', { className: 'font-semibold text-gray-700 mb-4' }, '🚨 Ocorrências Abertas'),
-          ocorrencias && ocorrencias.length > 0
-            ? h('div', { className: 'space-y-3' }, ...ocorrencias.map((oc, i) =>
-                h('div', { key: i, className: `flex gap-3 p-3 rounded-lg ${oc.severidade === 'critica' ? 'bg-red-50' : oc.severidade === 'alta' ? 'bg-orange-50' : 'bg-amber-50'}` },
-                  h('span', { className: 'text-lg mt-0.5' }, oc.severidade === 'critica' ? '🔴' : oc.severidade === 'alta' ? '🟠' : '🟡'),
-                  h('div', { className: 'flex-1 min-w-0' },
-                    h('p', { className: 'text-sm font-medium text-gray-900' }, oc.titulo),
-                    h('div', { className: 'flex items-center gap-2 mt-1' },
-                      h(Badge, { text: oc.tipo, cor: '#6B7280' }),
-                      h(Badge, { text: oc.severidade, cor: oc.severidade === 'critica' ? '#EF4444' : oc.severidade === 'alta' ? '#F97316' : '#F59E0B' }),
-                      h(Badge, { text: oc.status, cor: '#3B82F6' })
-                    ),
-                    h('p', { className: 'text-xs text-gray-400 mt-1' }, formatDateTime(oc.data_abertura))
-                  )
-                )
-              ))
-            : h('p', { className: 'text-sm text-gray-400 text-center py-4' }, '✅ Nenhuma ocorrência aberta!')
-        )
-      ),
-
-      // Histórico Raio-X
-      raio_x_historico && raio_x_historico.length > 0 && h('div', { className: 'bg-white rounded-xl border border-gray-200 p-5' },
-        h('h3', { className: 'font-semibold text-gray-700 mb-4' }, '📋 Histórico de Raio-X'),
-        h('div', { className: 'space-y-2' }, ...raio_x_historico.map((rx, i) =>
-          h('div', { key: i, className: 'flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-indigo-50',
-            onClick: async () => {
-              try {
-                const res = await fetchApi(`/cs/raio-x/${rx.id}`);
-                if (res.success) setRaioXResult({ analise: res.raio_x.analise_texto, gerado_em: res.raio_x.created_at, tokens: res.raio_x.tokens_utilizados });
-              } catch (e) { console.error(e); }
-            }
-          },
-            h(HealthRing, { score: rx.score_saude, size: 36 }),
-            h('div', { className: 'flex-1' },
-              h('p', { className: 'text-sm font-medium text-gray-900' }, `${formatDate(rx.data_inicio)} a ${formatDate(rx.data_fim)}`),
-              h('p', { className: 'text-xs text-gray-500' }, `${rx.tipo_analise} · por ${rx.gerado_por_nome || 'Sistema'}`)
-            ),
-            h('span', { className: 'text-xs text-gray-400' }, formatDateTime(rx.created_at))
-          )
-        ))
-      ),
-
-      // Modal Nova Interação
-      h(Modal, { aberto: showNovaInteracao, fechar: () => setShowNovaInteracao(false), titulo: '📝 Nova Interação' },
-        h('div', { className: 'space-y-4' },
-          h('div', null,
-            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Tipo'),
-            h('select', { value: interacaoForm.tipo, onChange: e => setInteracaoForm(f => ({ ...f, tipo: e.target.value })),
-              className: 'w-full px-3 py-2 border border-gray-200 rounded-lg' },
-              h('option', { value: 'visita' }, '📍 Visita Presencial'),
-              h('option', { value: 'reuniao' }, '👥 Reunião'),
-              h('option', { value: 'ligacao' }, '📞 Ligação'),
-              h('option', { value: 'pos_venda' }, '✅ Pós-Venda'),
-              h('option', { value: 'whatsapp' }, '💬 WhatsApp'),
-              h('option', { value: 'email' }, '📧 E-mail'),
-              h('option', { value: 'anotacao' }, '📝 Anotação')
-            )
-          ),
-          h('div', null,
-            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Título *'),
-            h('input', { type: 'text', value: interacaoForm.titulo, onChange: e => setInteracaoForm(f => ({ ...f, titulo: e.target.value })),
-              placeholder: 'Ex: Reunião de alinhamento mensal',
-              className: 'w-full px-3 py-2 border border-gray-200 rounded-lg' })
-          ),
-          h('div', null,
-            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Descrição'),
-            h('textarea', { value: interacaoForm.descricao, onChange: e => setInteracaoForm(f => ({ ...f, descricao: e.target.value })),
-              rows: 3, placeholder: 'Detalhes da interação...',
-              className: 'w-full px-3 py-2 border border-gray-200 rounded-lg resize-none' })
-          ),
-          h('div', null,
-            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Resultado'),
-            h('input', { type: 'text', value: interacaoForm.resultado, onChange: e => setInteracaoForm(f => ({ ...f, resultado: e.target.value })),
-              placeholder: 'Ex: Cliente satisfeito, solicitou aumento de frota',
-              className: 'w-full px-3 py-2 border border-gray-200 rounded-lg' })
-          ),
-          h('div', null,
-            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Próxima Ação'),
-            h('input', { type: 'text', value: interacaoForm.proxima_acao, onChange: e => setInteracaoForm(f => ({ ...f, proxima_acao: e.target.value })),
-              placeholder: 'Ex: Enviar proposta comercial até sexta',
-              className: 'w-full px-3 py-2 border border-gray-200 rounded-lg' })
-          ),
-          h('button', { onClick: salvarInteracao, disabled: !interacaoForm.titulo,
-            className: 'w-full py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 disabled:opacity-50' }, '💾 Salvar Interação')
-        )
-      ),
-
-      // Modal Nova Ocorrência
-      h(Modal, { aberto: showNovaOcorrencia, fechar: () => setShowNovaOcorrencia(false), titulo: '🚨 Nova Ocorrência' },
-        h('div', { className: 'space-y-4' },
-          h('div', { className: 'grid grid-cols-2 gap-4' },
-            h('div', null,
-              h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Tipo'),
-              h('select', { value: ocorrenciaForm.tipo, onChange: e => setOcorrenciaForm(f => ({ ...f, tipo: e.target.value })),
-                className: 'w-full px-3 py-2 border border-gray-200 rounded-lg' },
-                h('option', { value: 'reclamacao' }, 'Reclamação'),
-                h('option', { value: 'problema_entrega' }, 'Problema na Entrega'),
-                h('option', { value: 'atraso' }, 'Atraso Recorrente'),
-                h('option', { value: 'financeiro' }, 'Problema Financeiro'),
-                h('option', { value: 'operacional' }, 'Problema Operacional'),
-                h('option', { value: 'sugestao' }, 'Sugestão'),
-                h('option', { value: 'elogio' }, 'Elogio')
-              )
-            ),
-            h('div', null,
-              h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Severidade'),
-              h('select', { value: ocorrenciaForm.severidade, onChange: e => setOcorrenciaForm(f => ({ ...f, severidade: e.target.value })),
-                className: 'w-full px-3 py-2 border border-gray-200 rounded-lg' },
-                h('option', { value: 'baixa' }, '🟢 Baixa'),
-                h('option', { value: 'media' }, '🟡 Média'),
-                h('option', { value: 'alta' }, '🟠 Alta'),
-                h('option', { value: 'critica' }, '🔴 Crítica')
-              )
-            )
-          ),
-          h('div', null,
-            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Título *'),
-            h('input', { type: 'text', value: ocorrenciaForm.titulo, onChange: e => setOcorrenciaForm(f => ({ ...f, titulo: e.target.value })),
-              placeholder: 'Ex: Entregas atrasadas na região sul',
-              className: 'w-full px-3 py-2 border border-gray-200 rounded-lg' })
-          ),
-          h('div', null,
-            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Descrição'),
-            h('textarea', { value: ocorrenciaForm.descricao, onChange: e => setOcorrenciaForm(f => ({ ...f, descricao: e.target.value })),
-              rows: 3, placeholder: 'Descreva a ocorrência em detalhes...',
-              className: 'w-full px-3 py-2 border border-gray-200 rounded-lg resize-none' })
-          ),
-          h('button', { onClick: salvarOcorrencia, disabled: !ocorrenciaForm.titulo,
-            className: 'w-full py-3 bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700 disabled:opacity-50' }, '💾 Registrar Ocorrência')
-        )
-      )
-    );
-  }
-
-  // ══════════════════════════════════════════════════
-  // SUB-TELA: INTERAÇÕES (visão geral)
-  // ══════════════════════════════════════════════════
-  function InteracoesView({ fetchApi }) {
-    const [interacoes, setInteracoes] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [filtroTipo, setFiltroTipo] = useState('');
-
-    useEffect(() => {
-      (async () => {
-        setLoading(true);
-        try {
-          const params = new URLSearchParams({ limit: '50' });
-          if (filtroTipo) params.set('tipo', filtroTipo);
-          const res = await fetchApi(`/cs/interacoes?${params}`);
-          if (res.success) setInteracoes(res.interacoes || []);
-        } catch (e) { console.error(e); }
-        setLoading(false);
-      })();
-    }, [fetchApi, filtroTipo]);
-
-    return h('div', { className: 'space-y-4' },
-      h('div', { className: 'flex items-center gap-3' },
-        h('h3', { className: 'text-lg font-bold text-gray-900' }, 'Todas as Interações'),
-        h('select', { value: filtroTipo, onChange: e => setFiltroTipo(e.target.value),
-          className: 'px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white ml-auto' },
-          h('option', { value: '' }, 'Todos os tipos'),
-          h('option', { value: 'visita' }, '📍 Visitas'),
-          h('option', { value: 'reuniao' }, '👥 Reuniões'),
-          h('option', { value: 'ligacao' }, '📞 Ligações'),
-          h('option', { value: 'pos_venda' }, '✅ Pós-Venda'),
-          h('option', { value: 'whatsapp' }, '💬 WhatsApp')
-        )
-      ),
-      loading ? h(Skeleton, { linhas: 5 }) :
-      interacoes.length === 0 ? h(EmptyState, { titulo: 'Nenhuma interação encontrada', icone: '📝' }) :
-      h('div', { className: 'space-y-2' },
-        ...interacoes.map((int, i) =>
-          h('div', { key: i, className: 'bg-white rounded-xl border border-gray-200 p-4 flex gap-4 items-start' },
-            h('span', { className: 'text-2xl' }, int.tipo === 'visita' ? '📍' : int.tipo === 'reuniao' ? '👥' : int.tipo === 'ligacao' ? '📞' : int.tipo === 'whatsapp' ? '💬' : int.tipo === 'pos_venda' ? '✅' : '📝'),
-            h('div', { className: 'flex-1 min-w-0' },
-              h('div', { className: 'flex items-center gap-2 mb-1' },
-                h('h4', { className: 'font-semibold text-gray-900' }, int.titulo),
-                h(Badge, { text: int.tipo, cor: '#6366F1' })
-              ),
-              h('p', { className: 'text-sm text-gray-600 mb-1' }, int.nome_fantasia || `Cliente ${int.cod_cliente}`),
-              int.descricao && h('p', { className: 'text-sm text-gray-500 line-clamp-2' }, int.descricao),
-              int.resultado && h('p', { className: 'text-xs text-emerald-600 mt-1' }, `✅ ${int.resultado}`),
-              int.proxima_acao && h('p', { className: 'text-xs text-blue-600 mt-1' }, `📅 Próxima: ${int.proxima_acao}`)
-            ),
-            h('div', { className: 'text-right whitespace-nowrap' },
-              h('p', { className: 'text-xs text-gray-400' }, formatDateTime(int.data_interacao)),
-              h('p', { className: 'text-xs text-gray-400' }, int.criado_por_nome)
-            )
-          )
-        )
-      )
-    );
-  }
-
-  // ══════════════════════════════════════════════════
-  // SUB-TELA: OCORRÊNCIAS (visão geral)
-  // ══════════════════════════════════════════════════
-  function OcorrenciasView({ fetchApi }) {
-    const [ocorrencias, setOcorrencias] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [filtroStatus, setFiltroStatus] = useState('');
-
-    const carregar = useCallback(async () => {
-      setLoading(true);
-      try {
-        const params = new URLSearchParams({ limit: '50' });
-        if (filtroStatus) params.set('status', filtroStatus);
-        const res = await fetchApi(`/cs/ocorrencias?${params}`);
-        if (res.success) setOcorrencias(res.ocorrencias || []);
-      } catch (e) { console.error(e); }
-      setLoading(false);
-    }, [fetchApi, filtroStatus]);
-
-    useEffect(() => { carregar(); }, [carregar]);
-
-    const atualizarStatus = async (id, novoStatus) => {
-      try {
-        await fetchApi(`/cs/ocorrencias/${id}`, { method: 'PUT', body: JSON.stringify({ status: novoStatus }) });
-        carregar();
-      } catch (e) { console.error(e); }
-    };
-
-    return h('div', { className: 'space-y-4' },
-      h('div', { className: 'flex items-center gap-3' },
-        h('h3', { className: 'text-lg font-bold text-gray-900' }, 'Gestão de Ocorrências'),
-        h('select', { value: filtroStatus, onChange: e => setFiltroStatus(e.target.value),
-          className: 'px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white ml-auto' },
-          h('option', { value: '' }, 'Todos os status'),
-          h('option', { value: 'aberta' }, '🔵 Abertas'),
-          h('option', { value: 'em_andamento' }, '🟡 Em Andamento'),
-          h('option', { value: 'resolvida' }, '🟢 Resolvidas'),
-          h('option', { value: 'fechada' }, '⚫ Fechadas')
-        )
-      ),
-      loading ? h(Skeleton, { linhas: 5 }) :
-      ocorrencias.length === 0 ? h(EmptyState, { titulo: 'Nenhuma ocorrência', icone: '✅', descricao: 'Tudo limpo por aqui!' }) :
-      h('div', { className: 'space-y-2' },
-        ...ocorrencias.map((oc, i) =>
-          h('div', { key: i, className: `bg-white rounded-xl border p-4 ${oc.severidade === 'critica' ? 'border-red-300' : oc.severidade === 'alta' ? 'border-orange-200' : 'border-gray-200'}` },
-            h('div', { className: 'flex items-start gap-3' },
-              h('span', { className: 'text-2xl' }, oc.severidade === 'critica' ? '🔴' : oc.severidade === 'alta' ? '🟠' : oc.severidade === 'media' ? '🟡' : '🟢'),
-              h('div', { className: 'flex-1 min-w-0' },
-                h('div', { className: 'flex items-center gap-2 mb-1 flex-wrap' },
-                  h('h4', { className: 'font-semibold text-gray-900' }, oc.titulo),
-                  h(Badge, { text: oc.tipo, cor: '#6B7280' }),
-                  h(Badge, { text: oc.severidade, cor: oc.severidade === 'critica' ? '#EF4444' : oc.severidade === 'alta' ? '#F97316' : '#F59E0B' }),
-                  h(Badge, { text: oc.status, cor: oc.status === 'aberta' ? '#3B82F6' : oc.status === 'resolvida' ? '#10B981' : '#F59E0B' })
-                ),
-                h('p', { className: 'text-sm text-gray-600' }, oc.nome_fantasia || `Cliente ${oc.cod_cliente}`),
-                oc.descricao && h('p', { className: 'text-sm text-gray-500 mt-1' }, oc.descricao),
-                h('div', { className: 'flex items-center gap-2 mt-2' },
-                  oc.status === 'aberta' && h('button', { onClick: () => atualizarStatus(oc.id, 'em_andamento'), className: 'text-xs px-3 py-1 bg-amber-100 text-amber-700 rounded-full hover:bg-amber-200' }, '▶ Iniciar'),
-                  (oc.status === 'aberta' || oc.status === 'em_andamento') && h('button', { onClick: () => atualizarStatus(oc.id, 'resolvida'), className: 'text-xs px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full hover:bg-emerald-200' }, '✅ Resolver')
-                )
-              ),
-              h('span', { className: 'text-xs text-gray-400 whitespace-nowrap' }, formatDateTime(oc.data_abertura))
-            )
-          )
-        )
-      )
-    );
-  }
-
-  // ══════════════════════════════════════════════════
-  // SUB-TELA: AGENDA
-  // ══════════════════════════════════════════════════
-  function AgendaView({ fetchApi }) {
-    const [agenda, setAgenda] = useState([]);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-      (async () => {
-        setLoading(true);
-        try {
-          const res = await fetchApi('/cs/interacoes/agenda?dias=30');
-          if (res.success) setAgenda(res.agenda || []);
-        } catch (e) { console.error(e); }
-        setLoading(false);
-      })();
-    }, [fetchApi]);
-
-    return h('div', { className: 'space-y-4' },
-      h('h3', { className: 'text-lg font-bold text-gray-900' }, '📅 Próximas Ações Agendadas (30 dias)'),
-      loading ? h(Skeleton, { linhas: 5 }) :
-      agenda.length === 0 ? h(EmptyState, { titulo: 'Nenhuma ação agendada', icone: '📅', descricao: 'Registre interações com próximas ações para vê-las aqui.' }) :
-      h('div', { className: 'space-y-2' },
-        ...agenda.map((a, i) =>
-          h('div', { key: i, className: 'bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-4' },
-            h('div', { className: 'text-center min-w-[60px]' },
-              h('p', { className: 'text-2xl font-bold text-blue-600' }, new Date(a.data_proxima_acao).getDate()),
-              h('p', { className: 'text-xs text-gray-500' }, new Date(a.data_proxima_acao).toLocaleDateString('pt-BR', { month: 'short' }))
-            ),
-            h('div', { className: 'flex-1 min-w-0' },
-              h('p', { className: 'font-medium text-gray-900' }, a.proxima_acao),
-              h('p', { className: 'text-sm text-gray-500' }, `${a.nome_fantasia || 'Cliente'} · Ref: ${a.titulo}`),
-              h('p', { className: 'text-xs text-gray-400' }, `Interação original: ${formatDateTime(a.data_interacao)}`)
-            ),
-            h(Badge, { text: diasAtras(a.data_proxima_acao) || formatDate(a.data_proxima_acao), cor: new Date(a.data_proxima_acao) < new Date() ? '#EF4444' : '#3B82F6' })
-          )
-        )
-      )
-    );
-  }
-
-  // ══════════════════════════════════════════════════
-  // Markdown simples → HTML
-  // ══════════════════════════════════════════════════
-  function renderMarkdown(text) {
-    if (!text) return '';
-    // Primeiro, extrair e proteger URLs antes do escape HTML
-    const urlPlaceholders = [];
-    let processed = text.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, (match, label, url) => {
-      const idx = urlPlaceholders.length;
-      urlPlaceholders.push({ label, url });
-      return `__URL_PLACEHOLDER_${idx}__`;
-    });
-    // Links soltos (URLs puras)
-    processed = processed.replace(/(https?:\/\/[^\s<>\[\]()]+)/g, (match) => {
-      const idx = urlPlaceholders.length;
-      urlPlaceholders.push({ label: 'Abrir link', url: match });
-      return `__URL_PLACEHOLDER_${idx}__`;
-    });
-    // Agora escape HTML
-    processed = processed
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-      .replace(/^### (.+)$/gm, '<h3 class="text-base font-bold text-indigo-800 mt-6 mb-2">$1</h3>')
-      .replace(/^## (.+)$/gm, '<h2 class="text-lg font-bold text-indigo-900 mt-6 mb-2">$1</h2>')
-      .replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold text-gray-900">$1</strong>')
-      .replace(/\*(.+?)\*/g, '<em>$1</em>')
-      .replace(/^- (.+)$/gm, '<li class="ml-4 text-sm text-gray-700 mb-1">• $1</li>')
-      .replace(/^\d+\. (.+)$/gm, '<li class="ml-4 text-sm text-gray-700 mb-1">$1</li>')
-      .replace(/\n\n/g, '<br/><br/>')
-      .replace(/\n/g, '<br/>');
-    // Restaurar URLs como botões estilizados
-    urlPlaceholders.forEach((u, i) => {
-      const isMapLink = u.url.includes('mapa-calor');
-      const btnClass = isMapLink
-        ? 'display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#10b981,#059669);color:white;padding:10px 20px;border-radius:10px;text-decoration:none;font-weight:700;font-size:14px;margin:12px 0;box-shadow:0 4px 12px rgba(16,185,129,0.3)'
-        : 'color:#4f46e5;text-decoration:underline;font-weight:600';
-      const label = isMapLink ? '🗺️ Abrir Mapa de Calor Interativo' : u.label;
-      processed = processed.replace(`__URL_PLACEHOLDER_${i}__`,
-        `<a href="${u.url}" target="_blank" rel="noopener" style="${btnClass}">${label}</a>`
+      const countResult = await pool.query(
+        `SELECT COUNT(*) as total FROM cs_clientes c ${whereClause}`,
+        params.slice(0, paramIndex - 1)
       );
-    });
-    return processed;
-  }
 
-  // ══════════════════════════════════════════════════
-  // COMPONENTE PRINCIPAL
-  // ══════════════════════════════════════════════════
-  window.ModuloCsComponent = function(props) {
-    const {
-      usuario, estado, setEstado, API_URL: apiUrl, getToken, fetchAuth,
-      HeaderCompacto, Toast, LoadingOverlay,
-      Ee, socialProfile, ul, o, he, navegarSidebar, showToast,
-      // Flags de loading/toast do parent
-      n: isLoadingGlobal, i: toastData, f: isLoading, E: lastUpdate,
-    } = props;
-
-    const [activeTab, setActiveTab] = useState('dashboard');
-    const [clienteDetalhe, setClienteDetalhe] = useState(null);
-
-    // Fetch wrapper que usa a autenticação existente
-    const fetchApi = useCallback(async (endpoint, options = {}) => {
-      const token = getToken();
-      const url = `${apiUrl}${endpoint}`;
-      const res = await fetch(url, {
-        ...options,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-          ...(options.headers || {}),
-        },
-        credentials: 'include',
+      res.json({
+        success: true,
+        clientes: result.rows,
+        total: parseInt(countResult.rows[0].total),
+        page: parseInt(page),
+        limit: parseInt(limit),
+        statusOptions: STATUS_CLIENTE,
       });
-      return res.json();
-    }, [apiUrl, getToken]);
+    } catch (error) {
+      console.error('❌ Erro ao listar clientes CS:', error);
+      res.status(500).json({ error: 'Erro ao listar clientes' });
+    }
+  });
 
-    // Navegar para tab
-    const handleTabChange = (tabId) => {
-      setActiveTab(tabId);
-      setClienteDetalhe(null);
-      setEstado({ ...estado, csTab: tabId });
-    };
+  // ==================== GET /cs/clientes/:cod ====================
+  router.get('/cs/clientes/:cod', async (req, res) => {
+    try {
+      const cod = parseInt(req.params.cod);
+      if (!cod || isNaN(cod)) return res.status(400).json({ error: 'Código inválido' });
 
-    // Abrir detalhe do cliente
-    const handleSelectCliente = (cod) => {
-      setClienteDetalhe(cod);
-    };
+      // Filtro de período opcional
+      const { data_inicio, data_fim } = req.query;
+      const temFiltro = data_inicio && data_fim;
+      const filtroSQL = temFiltro ? ` AND data_solicitado >= '${data_inicio}' AND data_solicitado <= '${data_fim}'` : '';
 
-    // Renderizar conteúdo ativo
-    const renderContent = () => {
-      // Se tiver cliente selecionado, mostra detalhe
-      if (clienteDetalhe) {
-        return h(ClienteDetalheView, { codCliente: clienteDetalhe, fetchApi, apiUrl, getToken, onVoltar: () => setClienteDetalhe(null) });
+      // Dados da ficha
+      const fichaResult = await pool.query(
+        'SELECT * FROM cs_clientes WHERE cod_cliente = $1', [cod]
+      );
+
+      let ficha = fichaResult.rows[0];
+      if (!ficha) {
+        const biInfo = await pool.query(
+          `SELECT DISTINCT nome_fantasia, nome_cliente, cidade, estado
+           FROM bi_entregas WHERE cod_cliente = $1 LIMIT 1`, [cod]
+        );
+        if (biInfo.rows.length > 0) {
+          const bi = biInfo.rows[0];
+          const insertResult = await pool.query(
+            `INSERT INTO cs_clientes (cod_cliente, nome_fantasia, razao_social, cidade, estado, status)
+             VALUES ($1, LEFT($2, 255), LEFT($3, 255), LEFT($4, 100), LEFT($5, 10), 'ativo')
+             ON CONFLICT (cod_cliente) DO NOTHING
+             RETURNING *`,
+            [cod, bi.nome_fantasia || bi.nome_cliente, bi.nome_cliente, bi.cidade, bi.estado]
+          );
+          ficha = insertResult.rows[0] || { cod_cliente: cod, nome_fantasia: bi.nome_fantasia, status: 'ativo' };
+        } else {
+          return res.status(404).json({ error: 'Cliente não encontrado no BI' });
+        }
       }
 
-      switch (activeTab) {
-        case 'dashboard': return h(DashboardView, { fetchApi });
-        case 'clientes': return h(ClientesView, { fetchApi, onSelectCliente: handleSelectCliente });
-        case 'interacoes': return h(InteracoesView, { fetchApi });
-        case 'ocorrencias': return h(OcorrenciasView, { fetchApi });
-        case 'agenda': return h(AgendaView, { fetchApi });
-        default: return h(DashboardView, { fetchApi });
+      // Centros de custo do cliente
+      const centrosCusto = await pool.query(`
+        SELECT DISTINCT centro_custo, 
+          COUNT(CASE WHEN COALESCE(ponto, 1) >= 2 THEN 1 END) as total_entregas
+        FROM bi_entregas 
+        WHERE cod_cliente = $1 AND centro_custo IS NOT NULL AND centro_custo != ''
+        GROUP BY centro_custo
+        ORDER BY COUNT(*) DESC
+      `, [cod]);
+
+      // Métricas BI — com filtro de período se informado
+      const metricasBi = await pool.query(`
+        SELECT 
+          COUNT(CASE WHEN COALESCE(ponto, 1) >= 2 THEN 1 END) as total_entregas,
+          COUNT(DISTINCT os) as total_os,
+          SUM(CASE WHEN COALESCE(ponto, 1) >= 2 AND dentro_prazo = true THEN 1 ELSE 0 END) as entregas_no_prazo,
+          SUM(CASE WHEN COALESCE(ponto, 1) >= 2 AND dentro_prazo = false THEN 1 ELSE 0 END) as entregas_fora_prazo,
+          ROUND(SUM(CASE WHEN COALESCE(ponto, 1) >= 2 AND dentro_prazo = true THEN 1 ELSE 0 END)::numeric /
+                NULLIF(COUNT(CASE WHEN COALESCE(ponto, 1) >= 2 AND dentro_prazo IS NOT NULL THEN 1 END), 0) * 100, 1) as taxa_prazo,
+          COALESCE(SUM(CASE WHEN COALESCE(ponto, 1) >= 2 THEN valor ELSE 0 END), 0) as valor_total,
+          COALESCE(SUM(CASE WHEN COALESCE(ponto, 1) >= 2 THEN valor_prof ELSE 0 END), 0) as valor_prof,
+          ROUND(AVG(
+            CASE 
+              WHEN COALESCE(ponto, 1) >= 2
+                   AND data_hora IS NOT NULL 
+                   AND data_chegada IS NOT NULL 
+                   AND hora_chegada IS NOT NULL
+                   AND (data_chegada + hora_chegada::time) >= data_hora
+              THEN EXTRACT(EPOCH FROM (
+                (data_chegada + hora_chegada::time) - 
+                CASE WHEN DATE(data_chegada) <> DATE(data_hora)
+                     THEN DATE(data_chegada) + TIME '08:00:00'
+                     ELSE data_hora END
+              )) / 60
+              WHEN COALESCE(ponto, 1) >= 2
+                   AND data_hora IS NOT NULL 
+                   AND finalizado IS NOT NULL
+                   AND finalizado >= data_hora
+              THEN EXTRACT(EPOCH FROM (
+                finalizado - 
+                CASE WHEN DATE(finalizado) <> DATE(data_hora)
+                     THEN DATE(finalizado) + TIME '08:00:00'
+                     ELSE data_hora END
+              )) / 60
+              ELSE NULL
+            END
+          ), 1) as tempo_medio,
+          ROUND(AVG(CASE WHEN COALESCE(ponto, 1) >= 2 THEN distancia END), 1) as km_medio,
+          COUNT(DISTINCT CASE WHEN COALESCE(ponto, 1) >= 2 THEN cod_prof END) as profissionais_unicos,
+          MAX(data_solicitado) as ultima_entrega,
+          MIN(data_solicitado) as primeira_entrega,
+          SUM(CASE WHEN COALESCE(ponto, 1) >= 2 AND (
+            LOWER(ocorrencia) LIKE '%%cliente fechado%%' OR 
+            LOWER(ocorrencia) LIKE '%%clienteaus%%' OR 
+            LOWER(ocorrencia) LIKE '%%cliente ausente%%' OR
+            LOWER(ocorrencia) LIKE '%%loja fechada%%' OR
+            LOWER(ocorrencia) LIKE '%%produto incorreto%%'
+          ) THEN 1 ELSE 0 END) as total_retornos,
+          CURRENT_DATE - MAX(data_solicitado) as dias_sem_entrega
+        FROM bi_entregas
+        WHERE cod_cliente = $1 ${filtroSQL}
+      `, [cod]);
+
+      // Evolução por semana (últimos 180 dias — visão mais ampla)
+      const evolucaoSemanal = await pool.query(`
+        SELECT 
+          DATE_TRUNC('week', data_solicitado)::date as semana,
+          COUNT(CASE WHEN COALESCE(ponto, 1) >= 2 THEN 1 END) as entregas,
+          ROUND(SUM(CASE WHEN COALESCE(ponto, 1) >= 2 AND dentro_prazo = true THEN 1 ELSE 0 END)::numeric /
+                NULLIF(COUNT(CASE WHEN COALESCE(ponto, 1) >= 2 AND dentro_prazo IS NOT NULL THEN 1 END), 0) * 100, 1) as taxa_prazo,
+          COALESCE(SUM(CASE WHEN COALESCE(ponto, 1) >= 2 THEN valor ELSE 0 END), 0) as valor
+        FROM bi_entregas
+        WHERE cod_cliente = $1 AND data_solicitado >= CURRENT_DATE - 180
+        GROUP BY DATE_TRUNC('week', data_solicitado)
+        ORDER BY semana
+      `, [cod]);
+
+      // Últimas interações
+      const interacoes = await pool.query(
+        `SELECT * FROM cs_interacoes WHERE cod_cliente = $1 ORDER BY data_interacao DESC LIMIT 10`, [cod]
+      );
+
+      // Ocorrências abertas
+      const ocorrencias = await pool.query(
+        `SELECT * FROM cs_ocorrencias WHERE cod_cliente = $1 AND status IN ('aberta', 'em_andamento') ORDER BY data_abertura DESC`, [cod]
+      );
+
+      // Últimos raio-x
+      const raioXHistorico = await pool.query(
+        `SELECT id, data_inicio, data_fim, score_saude, tipo_analise, created_at FROM cs_raio_x_historico WHERE cod_cliente = $1 ORDER BY created_at DESC LIMIT 5`, [cod]
+      );
+
+      // Calcular health score atualizado
+      const metricas = metricasBi.rows[0];
+      const healthScore = calcularHealthScore(metricas);
+      const diasSemEntrega = metricas.dias_sem_entrega != null
+        ? parseInt(metricas.dias_sem_entrega)
+        : (metricas.ultima_entrega
+            ? Math.floor((Date.now() - new Date(metricas.ultima_entrega).getTime()) / (1000 * 60 * 60 * 24))
+            : 999);
+      const statusSugerido = determinarStatusCliente(healthScore, diasSemEntrega);
+
+      // Calcular taxa de retorno
+      const totalEntregas = parseInt(metricas.total_entregas) || 0;
+      const totalRetornos = parseInt(metricas.total_retornos) || 0;
+      const taxaRetorno = totalEntregas > 0 ? parseFloat(((totalRetornos / totalEntregas) * 100).toFixed(1)) : 0;
+
+      // Gerar alertas automáticos
+      const alertas = [];
+      if (taxaRetorno > 10) alertas.push({ tipo: 'critico', icone: '🔴', msg: `Taxa de retorno crítica: ${taxaRetorno}% (${totalRetornos} retornos)` });
+      else if (taxaRetorno > 5) alertas.push({ tipo: 'alto', icone: '🟠', msg: `Taxa de retorno alta: ${taxaRetorno}% (${totalRetornos} retornos)` });
+      else if (taxaRetorno > 3) alertas.push({ tipo: 'moderado', icone: '🟡', msg: `Taxa de retorno elevada: ${taxaRetorno}% (${totalRetornos} retornos)` });
+
+      if (parseFloat(metricas.taxa_prazo || 0) < 70) alertas.push({ tipo: 'critico', icone: '🔴', msg: `Taxa de prazo abaixo de 70%: ${metricas.taxa_prazo}%` });
+      else if (parseFloat(metricas.taxa_prazo || 0) < 85) alertas.push({ tipo: 'moderado', icone: '🟡', msg: `Taxa de prazo abaixo da meta (85%): ${metricas.taxa_prazo}%` });
+
+      if (diasSemEntrega > 15) alertas.push({ tipo: 'alto', icone: '🟠', msg: `${diasSemEntrega} dias sem entregas — risco de churn` });
+      else if (diasSemEntrega > 7) alertas.push({ tipo: 'moderado', icone: '🟡', msg: `${diasSemEntrega} dias sem entregas` });
+
+      // Atualizar health score no banco
+      await pool.query(
+        'UPDATE cs_clientes SET health_score = $1, updated_at = NOW() WHERE cod_cliente = $2',
+        [healthScore, cod]
+      ).catch(() => {});
+
+      // Enriquecer métricas com taxa calculada
+      metricas.taxa_retorno = taxaRetorno;
+
+      res.json({
+        success: true,
+        ficha: { ...ficha, health_score: healthScore },
+        metricas_bi: metricas,
+        centros_custo: centrosCusto.rows,
+        periodo_filtrado: temFiltro ? { inicio: data_inicio, fim: data_fim } : null,
+        evolucao_semanal: evolucaoSemanal.rows,
+        interacoes: interacoes.rows,
+        ocorrencias: ocorrencias.rows,
+        raio_x_historico: raioXHistorico.rows,
+        diagnostico: {
+          health_score: healthScore,
+          status_sugerido: statusSugerido,
+          dias_sem_entrega: diasSemEntrega,
+          taxa_retorno: taxaRetorno,
+          alertas,
+        },
+      });
+    } catch (error) {
+      console.error('❌ Erro ao buscar detalhes CS:', error);
+      res.status(500).json({ error: 'Erro ao buscar detalhes do cliente' });
+    }
+  });
+
+  // ==================== PUT /cs/clientes/:cod ====================
+  router.put('/cs/clientes/:cod', async (req, res) => {
+    try {
+      const cod = parseInt(req.params.cod);
+      const {
+        razao_social, cnpj, telefone, email, endereco, cidade, estado,
+        responsavel_nome, responsavel_telefone, responsavel_email,
+        segmento, porte, data_inicio_parceria, observacoes, tags, status,
+      } = req.body;
+
+      const result = await pool.query(`
+        UPDATE cs_clientes SET
+          razao_social = COALESCE($1, razao_social),
+          cnpj = COALESCE($2, cnpj),
+          telefone = COALESCE($3, telefone),
+          email = COALESCE($4, email),
+          endereco = COALESCE($5, endereco),
+          cidade = COALESCE($6, cidade),
+          estado = COALESCE($7, estado),
+          responsavel_nome = COALESCE($8, responsavel_nome),
+          responsavel_telefone = COALESCE($9, responsavel_telefone),
+          responsavel_email = COALESCE($10, responsavel_email),
+          segmento = COALESCE($11, segmento),
+          porte = COALESCE($12, porte),
+          data_inicio_parceria = COALESCE($13, data_inicio_parceria),
+          observacoes = COALESCE($14, observacoes),
+          tags = COALESCE($15, tags),
+          status = COALESCE($16, status),
+          updated_by = $17,
+          updated_at = NOW()
+        WHERE cod_cliente = $18
+        RETURNING *
+      `, [
+        razao_social, cnpj, telefone, email, endereco, cidade, estado,
+        responsavel_nome, responsavel_telefone, responsavel_email,
+        segmento, porte, data_inicio_parceria, observacoes,
+        tags ? JSON.stringify(tags) : null, status,
+        req.user?.codProfissional, cod,
+      ]);
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: 'Cliente não encontrado' });
       }
-    };
 
-    return h('div', { className: 'min-h-screen bg-gray-50' },
-      // Toast
-      toastData && h(Toast, toastData),
-      isLoadingGlobal && h(LoadingOverlay),
+      res.json({ success: true, cliente: result.rows[0] });
+    } catch (error) {
+      console.error('❌ Erro ao atualizar cliente CS:', error);
+      res.status(500).json({ error: 'Erro ao atualizar cliente' });
+    }
+  });
 
-      // Header com navegação
-      h(HeaderCompacto, {
-        usuario: usuario,
-        moduloAtivo: Ee,
-        abaAtiva: activeTab,
-        socialProfile: socialProfile,
-        isLoading: isLoading,
-        lastUpdate: lastUpdate,
-        onRefresh: ul,
-        onLogout: () => o(null),
-        onGoHome: () => he('home'),
-        onNavigate: navegarSidebar,
-        onChangeTab: handleTabChange,
-      }),
+  // ==================== POST /cs/clientes/sync-bi ====================
+  router.post('/cs/clientes/sync-bi', async (req, res) => {
+    try {
+      const result = await pool.query(`
+        INSERT INTO cs_clientes (cod_cliente, nome_fantasia, cidade, estado, status)
+        SELECT DISTINCT 
+          e.cod_cliente, 
+          LEFT(e.nome_fantasia, 255),
+          LEFT(MAX(e.cidade), 100),
+          LEFT(MAX(e.estado), 10),
+          'ativo'
+        FROM bi_entregas e
+        WHERE e.cod_cliente IS NOT NULL
+          AND e.cod_cliente NOT IN (SELECT cod_cliente FROM cs_clientes)
+          AND e.data_solicitado >= CURRENT_DATE - 90
+        GROUP BY e.cod_cliente, e.nome_fantasia
+        ON CONFLICT (cod_cliente) DO NOTHING
+        RETURNING cod_cliente, nome_fantasia
+      `);
 
-      // Conteúdo
-      h('div', { className: 'max-w-7xl mx-auto p-4 md:p-6' },
-        // Breadcrumb quando em detalhe
-        clienteDetalhe && h('div', { className: 'mb-4' },
-          h('nav', { className: 'text-sm text-gray-500' },
-            h('span', { className: 'cursor-pointer hover:text-blue-600', onClick: () => { setClienteDetalhe(null); setActiveTab('clientes'); } }, 'Clientes'),
-            ' → ',
-            h('span', { className: 'text-gray-900 font-medium' }, `Cliente #${clienteDetalhe}`)
-          )
-        ),
+      console.log(`📥 CS Sync: ${result.rows.length} novos clientes importados do BI`);
+      res.json({
+        success: true,
+        importados: result.rows.length,
+        clientes: result.rows,
+      });
+    } catch (error) {
+      console.error('❌ Erro ao sincronizar clientes do BI:', error);
+      res.status(500).json({ error: 'Erro ao sincronizar' });
+    }
+  });
 
-        // Conteúdo ativo
-        renderContent()
-      )
-    );
-  };
+  return router;
+}
 
-  console.log('✅ Módulo Sucesso do Cliente carregado');
-})();
+module.exports = { createClientesRoutes };
