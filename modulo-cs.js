@@ -1219,7 +1219,7 @@ ${renderMarkdown(raioXResult.analise)}
           h('nav', { className: 'text-sm text-gray-500' },
             h('span', { className: 'cursor-pointer hover:text-blue-600', onClick: () => { setClienteDetalhe(null); setActiveTab('clientes'); } }, 'Clientes'),
             ' → ',
-            h('span', { className: 'text-gray-900 font-medium' }, `Cliente #${clienteDetalhe}`)
+            h('span', { className: 'text-gray-900 font-medium' }, `Cliente #${clienteDetalhe ? clienteDetalhe.cod : ''}`)
           )
         ),
 
