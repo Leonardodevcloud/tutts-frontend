@@ -557,7 +557,54 @@
 
     const abrirMapaCalor = () => {
       const url = `${apiUrl}/cs/mapa-calor/${codCliente}?data_inicio=${periodoRaioX.inicio}&data_fim=${periodoRaioX.fim}`;
-      window.open(url, '_blank');
+      // Abrir popup com loading enquanto backend processa
+      const w = window.open('', '_blank');
+      if (w) {
+        w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Mapa de Calor</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Segoe UI',sans-serif;background:#0f172a;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;color:white}
+.spinner{width:60px;height:60px;border:4px solid rgba(255,255,255,0.2);border-top:4px solid #a78bfa;border-radius:50%;animation:spin 1s linear infinite;margin-bottom:24px}
+@keyframes spin{to{transform:rotate(360deg)}}
+h2{font-size:20px;font-weight:700;margin-bottom:8px}p{font-size:14px;opacity:0.7;max-width:400px;text-align:center;line-height:1.6}
+.dots::after{content:'';animation:dots 1.5s infinite}@keyframes dots{0%{content:''}33%{content:'.'}66%{content:'..'}100%{content:'...'}}
+</style></head><body><div class="spinner"></div><h2>🗺️ Preparando seu Mapa de Calor</h2>
+<p>Estamos geocodificando os endereços da operação<span class="dots"></span></p>
+<p style="margin-top:12px;font-size:12px;opacity:0.5">Na primeira vez pode levar alguns segundos. Acessos futuros serão instantâneos.</p>
+</body></html>`);
+        w.document.close();
+        // Redirecionar para URL real
+        w.location.href = url;
+      }
+    };
+
+    const gerarPdfRaioX = () => {
+      if (!raioXResult) return;
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) return;
+      const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+<title>Raio-X — ${data?.cliente?.nome_fantasia || 'Cliente'}</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Segoe UI',sans-serif;padding:40px 50px;color:#1e293b;font-size:13px;line-height:1.7}
+  h1{font-size:22px;color:#4f46e5;margin-bottom:4px}
+  h2{font-size:16px;color:#4f46e5;margin-top:28px;margin-bottom:8px;border-bottom:2px solid #e0e7ff;padding-bottom:4px}
+  h3{font-size:14px;color:#6366f1;margin-top:20px;margin-bottom:6px}
+  strong{color:#1e293b}
+  li{margin-left:20px;margin-bottom:4px}
+  a{color:#4f46e5;text-decoration:underline}
+  .header{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #6366f1;padding-bottom:16px;margin-bottom:24px}
+  .header .score{font-size:36px;font-weight:800;color:#6366f1}
+  .header .info{font-size:12px;color:#94a3b8}
+  @media print{body{padding:20px 30px}a[href]:after{content:none}}
+</style></head><body>
+<div class="header">
+  <div><h1>🔬 Raio-X Operacional</h1><p>${data?.cliente?.nome_fantasia || ''}</p><p class="info">Período: ${periodoRaioX.inicio} a ${periodoRaioX.fim} · Gerado em ${new Date(raioXResult.gerado_em).toLocaleDateString('pt-BR')}</p></div>
+  <div class="score">${raioXResult.health_score}</div>
+</div>
+${renderMarkdown(raioXResult.analise)}
+<script>setTimeout(function(){window.print()},500)</script>
+</body></html>`;
+      printWindow.document.write(html);
+      printWindow.document.close();
     };
 
     const salvarInteracao = async () => {
@@ -642,9 +689,9 @@
         h('button', { onClick: () => setShowNovaInteracao(true), className: 'px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700' }, '📝 Nova Interação'),
         h('button', { onClick: () => setShowNovaOcorrencia(true), className: 'px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700' }, '🚨 Nova Ocorrência'),
         h('div', { className: 'flex-1' }),
-        h('input', { type: 'date', value: periodoRaioX.inicio, onChange: e => setPeriodoRaioX(p => ({ ...p, inicio: e.target.value })),
+        h('input', { type: 'date', value: periodoRaioX.inicio, onChange: e => { setPeriodoRaioX(p => ({ ...p, inicio: e.target.value })); setRaioXResult(null); },
           className: 'px-3 py-2 border border-gray-200 rounded-lg text-sm' }),
-        h('input', { type: 'date', value: periodoRaioX.fim, onChange: e => setPeriodoRaioX(p => ({ ...p, fim: e.target.value })),
+        h('input', { type: 'date', value: periodoRaioX.fim, onChange: e => { setPeriodoRaioX(p => ({ ...p, fim: e.target.value })); setRaioXResult(null); },
           className: 'px-3 py-2 border border-gray-200 rounded-lg text-sm' }),
         h('button', { onClick: gerarRaioX, disabled: raioXLoading,
           className: 'px-5 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg text-sm font-bold hover:from-purple-700 hover:to-indigo-700 disabled:opacity-50 shadow-lg' },
@@ -658,10 +705,14 @@
 
       // Raio-X IA (quando gerado)
       raioXResult && h('div', { className: 'bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl border border-indigo-200 p-6 shadow-inner' },
-        h('div', { className: 'flex items-center gap-2 mb-4' },
+        h('div', { className: 'flex items-center gap-2 mb-4 flex-wrap' },
           h('span', { className: 'text-2xl' }, '🔬'),
           h('h3', { className: 'text-lg font-bold text-indigo-900' }, 'Raio-X Inteligente'),
-          h('span', { className: 'text-xs text-indigo-400 ml-auto' }, `Gerado em ${formatDateTime(raioXResult.gerado_em)} · ${raioXResult.tokens} tokens`)
+          h('span', { className: 'text-xs text-indigo-400 ml-auto' }, `Gerado em ${formatDateTime(raioXResult.gerado_em)} · ${raioXResult.tokens} tokens`),
+          h('button', { onClick: gerarPdfRaioX,
+            className: 'ml-2 px-4 py-1.5 bg-white border border-indigo-300 text-indigo-700 rounded-lg text-xs font-bold hover:bg-indigo-50 shadow-sm' },
+            '📄 Gerar PDF'
+          )
         ),
         h('div', {
           className: 'prose prose-sm prose-indigo max-w-none',
@@ -999,7 +1050,21 @@
   // ══════════════════════════════════════════════════
   function renderMarkdown(text) {
     if (!text) return '';
-    return text
+    // Primeiro, extrair e proteger URLs antes do escape HTML
+    const urlPlaceholders = [];
+    let processed = text.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, (match, label, url) => {
+      const idx = urlPlaceholders.length;
+      urlPlaceholders.push({ label, url });
+      return `__URL_PLACEHOLDER_${idx}__`;
+    });
+    // Links soltos (URLs puras)
+    processed = processed.replace(/(https?:\/\/[^\s<>\[\]()]+)/g, (match) => {
+      const idx = urlPlaceholders.length;
+      urlPlaceholders.push({ label: 'Abrir link', url: match });
+      return `__URL_PLACEHOLDER_${idx}__`;
+    });
+    // Agora escape HTML
+    processed = processed
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
       .replace(/^### (.+)$/gm, '<h3 class="text-base font-bold text-indigo-800 mt-6 mb-2">$1</h3>')
       .replace(/^## (.+)$/gm, '<h2 class="text-lg font-bold text-indigo-900 mt-6 mb-2">$1</h2>')
@@ -1009,6 +1074,18 @@
       .replace(/^\d+\. (.+)$/gm, '<li class="ml-4 text-sm text-gray-700 mb-1">$1</li>')
       .replace(/\n\n/g, '<br/><br/>')
       .replace(/\n/g, '<br/>');
+    // Restaurar URLs como botões estilizados
+    urlPlaceholders.forEach((u, i) => {
+      const isMapLink = u.url.includes('mapa-calor');
+      const btnClass = isMapLink
+        ? 'display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#10b981,#059669);color:white;padding:10px 20px;border-radius:10px;text-decoration:none;font-weight:700;font-size:14px;margin:12px 0;box-shadow:0 4px 12px rgba(16,185,129,0.3)'
+        : 'color:#4f46e5;text-decoration:underline;font-weight:600';
+      const label = isMapLink ? '🗺️ Abrir Mapa de Calor Interativo' : u.label;
+      processed = processed.replace(`__URL_PLACEHOLDER_${i}__`,
+        `<a href="${u.url}" target="_blank" rel="noopener" style="${btnClass}">${label}</a>`
+      );
+    });
+    return processed;
   }
 
   // ══════════════════════════════════════════════════
