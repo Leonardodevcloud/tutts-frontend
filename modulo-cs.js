@@ -488,14 +488,14 @@
               ...clientes.map(cli =>
                 h('div', {
                   key: cli.cod_cliente,
-                  onClick: () => onSelectCliente(cli.cod_cliente),
+                  onClick: () => onSelectCliente(cli.cod_cliente, cli.centro_custo),
                   className: 'bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md hover:border-blue-300 transition-all cursor-pointer'
                 },
                   h('div', { className: 'flex items-center gap-4' },
                     h(HealthRing, { score: cli.health_score, size: 52 }),
                     h('div', { className: 'flex-1 min-w-0' },
                       h('div', { className: 'flex items-center gap-2 mb-1' },
-                        h('h4', { className: 'font-semibold text-gray-900 truncate' }, cli.nome_fantasia || `Cliente ${cli.cod_cliente}`),
+                        h('h4', { className: 'font-semibold text-gray-900 truncate' }, cli.centro_custo || cli.nome_fantasia || `Cliente ${cli.cod_cliente}`),
                         h('span', { className: 'text-xs text-gray-400' }, `#${cli.cod_cliente}`)
                       ),
                       h('div', { className: 'flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500' },
@@ -510,9 +510,7 @@
                               ? h('span', null, `🔄 ${cli.total_retornos_30d} retornos`)
                               : null,
                         cli.ocorrencias_abertas > 0 && h('span', { className: 'text-red-500 font-medium' }, `🚨 ${cli.ocorrencias_abertas} ocorrências`),
-                        cli.ultima_interacao && h('span', null, `📝 Última interação: ${diasAtras(cli.ultima_interacao)}`),
-                        parseInt(cli.qtd_centros_custo) > 1 && h('span', { className: 'text-indigo-600 font-medium bg-indigo-50 px-2 py-0.5 rounded-full' }, 
-                          `📋 ${cli.qtd_centros_custo} centros de custo`)
+                        cli.ultima_interacao && h('span', null, `📝 Última interação: ${diasAtras(cli.ultima_interacao)}`)
                       )
                     ),
                     h('div', { className: 'flex flex-col items-end gap-1' },
@@ -532,7 +530,7 @@
   // ══════════════════════════════════════════════════
   // SUB-TELA: DETALHE DO CLIENTE (com Raio-X)
   // ══════════════════════════════════════════════════
-  function ClienteDetalheView({ codCliente, fetchApi, apiUrl, getToken, onVoltar }) {
+  function ClienteDetalheView({ codCliente, centroCusto, fetchApi, apiUrl, getToken, onVoltar }) {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [raioXLoading, setRaioXLoading] = useState(false);
@@ -553,12 +551,15 @@
       setLoading(true);
       try {
         let url = `/cs/clientes/${codCliente}`;
-        if (filtroInicio && filtroFim) url += `?data_inicio=${filtroInicio}&data_fim=${filtroFim}`;
+        const params = [];
+        if (filtroInicio && filtroFim) { params.push(`data_inicio=${filtroInicio}`, `data_fim=${filtroFim}`); }
+        if (centroCusto) { params.push(`centro_custo=${encodeURIComponent(centroCusto)}`); }
+        if (params.length > 0) url += '?' + params.join('&');
         const res = await fetchApi(url);
         if (res.success) setData(res);
       } catch (e) { console.error(e); }
       setLoading(false);
-    }, [fetchApi, codCliente]);
+    }, [fetchApi, codCliente, centroCusto]);
 
     // Carregar uma vez ao abrir (sem filtro = histórico completo)
     useEffect(() => { carregar(); }, [carregar]);
@@ -1165,15 +1166,20 @@ ${renderMarkdown(raioXResult.analise)}
     };
 
     // Abrir detalhe do cliente
-    const handleSelectCliente = (cod) => {
-      setClienteDetalhe(cod);
+    const handleSelectCliente = (cod, centroCusto) => {
+      setClienteDetalhe({ cod, centro_custo: centroCusto || null });
     };
 
     // Renderizar conteúdo ativo
     const renderContent = () => {
       // Se tiver cliente selecionado, mostra detalhe
       if (clienteDetalhe) {
-        return h(ClienteDetalheView, { codCliente: clienteDetalhe, fetchApi, apiUrl, getToken, onVoltar: () => setClienteDetalhe(null) });
+        return h(ClienteDetalheView, { 
+          codCliente: clienteDetalhe.cod, 
+          centroCusto: clienteDetalhe.centro_custo,
+          fetchApi, apiUrl, getToken, 
+          onVoltar: () => setClienteDetalhe(null) 
+        });
       }
 
       switch (activeTab) {
