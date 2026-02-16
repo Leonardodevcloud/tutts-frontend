@@ -757,8 +757,31 @@ ${renderMarkdown(raioXResult.analise)}
           className: 'prose prose-sm prose-indigo max-w-none',
           dangerouslySetInnerHTML: { __html: renderMarkdown(raioXResult.analise) }
         }),
-        // Gráficos interativos
+        // Gráficos do Raio-X (dados completos da IA)
         raioXResult.dados_utilizados && h(RaioXCharts, { dadosUtilizados: raioXResult.dados_utilizados })
+      ),
+
+      // Gráficos de evolução (sempre visível, usa dados do detalhe do cliente)
+      !raioXResult && evolucao_semanal && evolucao_semanal.length > 0 && h('div', { className: 'bg-white rounded-xl border border-gray-200 p-5' },
+        h('h4', { className: 'text-sm font-semibold text-gray-700 mb-3' }, '📈 Evolução Semanal'),
+        h(ChartCanvas, {
+          type: 'bar',
+          height: 220,
+          data: {
+            labels: evolucao_semanal.map(s => { const d = new Date(s.semana); return `${d.getDate()}/${d.getMonth()+1}`; }),
+            datasets: [
+              { label: 'Entregas', data: evolucao_semanal.map(s => parseInt(s.entregas) || 0), backgroundColor: 'rgba(99,102,241,0.7)', borderRadius: 4, yAxisID: 'y' },
+              { label: 'Taxa Prazo %', data: evolucao_semanal.map(s => parseFloat(s.taxa_prazo) || 0), type: 'line', borderColor: '#10B981', backgroundColor: 'rgba(16,185,129,0.1)', tension: 0.3, fill: true, yAxisID: 'y1' },
+            ],
+          },
+          options: {
+            plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } },
+            scales: {
+              y: { beginAtZero: true, title: { display: true, text: 'Entregas', font: { size: 10 } } },
+              y1: { position: 'right', min: 0, max: 100, title: { display: true, text: '% Prazo', font: { size: 10 } }, grid: { drawOnChartArea: false } },
+            },
+          },
+        })
       ),
 
       // Timeline Interações + Ocorrências
@@ -1095,16 +1118,28 @@ ${renderMarkdown(raioXResult.analise)}
 
     useEffect(() => {
       if (!canvasRef.current || !window.Chart) return;
-      if (chartRef.current) chartRef.current.destroy();
-      chartRef.current = new window.Chart(canvasRef.current, {
-        type,
-        data,
-        options: { responsive: true, maintainAspectRatio: false, ...options },
-      });
-      return () => { if (chartRef.current) chartRef.current.destroy(); };
+      // Pequeno delay para garantir que o DOM está pronto
+      const timer = setTimeout(() => {
+        if (chartRef.current) { chartRef.current.destroy(); chartRef.current = null; }
+        try {
+          chartRef.current = new window.Chart(canvasRef.current, {
+            type,
+            data,
+            options: { 
+              responsive: true, 
+              maintainAspectRatio: false,
+              animation: { duration: 400 },
+              ...options 
+            },
+          });
+        } catch (e) { console.warn('Chart error:', e); }
+      }, 50);
+      return () => { clearTimeout(timer); if (chartRef.current) { chartRef.current.destroy(); chartRef.current = null; } };
     }, [type, JSON.stringify(data)]);
 
-    return h('canvas', { ref: canvasRef, style: { height: height + 'px', width: '100%' } });
+    return h('div', { style: { position: 'relative', height: height + 'px', width: '100%' } },
+      h('canvas', { ref: canvasRef })
+    );
   }
 
   function RaioXCharts({ dadosUtilizados }) {
