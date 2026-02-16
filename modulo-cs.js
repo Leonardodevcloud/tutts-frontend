@@ -756,7 +756,9 @@ ${renderMarkdown(raioXResult.analise)}
         h('div', {
           className: 'prose prose-sm prose-indigo max-w-none',
           dangerouslySetInnerHTML: { __html: renderMarkdown(raioXResult.analise) }
-        })
+        }),
+        // Gráficos interativos
+        raioXResult.dados_utilizados && h(RaioXCharts, { dadosUtilizados: raioXResult.dados_utilizados })
       ),
 
       // Timeline Interações + Ocorrências
@@ -1080,6 +1082,203 @@ ${renderMarkdown(raioXResult.analise)}
             h(Badge, { text: diasAtras(a.data_proxima_acao) || formatDate(a.data_proxima_acao), cor: new Date(a.data_proxima_acao) < new Date() ? '#EF4444' : '#3B82F6' })
           )
         )
+      )
+    );
+  }
+
+  // ══════════════════════════════════════════════════
+  // Gráficos do Raio-X (Chart.js)
+  // ══════════════════════════════════════════════════
+  function ChartCanvas({ type, data, options, height = 220 }) {
+    const canvasRef = useRef(null);
+    const chartRef = useRef(null);
+
+    useEffect(() => {
+      if (!canvasRef.current || !window.Chart) return;
+      if (chartRef.current) chartRef.current.destroy();
+      chartRef.current = new window.Chart(canvasRef.current, {
+        type,
+        data,
+        options: { responsive: true, maintainAspectRatio: false, ...options },
+      });
+      return () => { if (chartRef.current) chartRef.current.destroy(); };
+    }, [type, JSON.stringify(data)]);
+
+    return h('canvas', { ref: canvasRef, style: { height: height + 'px', width: '100%' } });
+  }
+
+  function RaioXCharts({ dadosUtilizados }) {
+    if (!dadosUtilizados || !window.Chart) return null;
+    const { evolucao_semanal, padroes_horario, corridas_por_motoboy, faixas_km, mapa_calor_bairros, metricas_atuais, metricas_periodo_anterior } = dadosUtilizados;
+
+    return h('div', { className: 'grid md:grid-cols-2 gap-4 mt-4' },
+
+      // 1. Evolução Semanal (Barras + Linha)
+      evolucao_semanal && evolucao_semanal.length > 0 && h('div', { className: 'bg-white rounded-xl border border-gray-200 p-4' },
+        h('h4', { className: 'text-sm font-semibold text-gray-700 mb-2' }, '📈 Evolução Semanal'),
+        h(ChartCanvas, {
+          type: 'bar',
+          height: 200,
+          data: {
+            labels: evolucao_semanal.map(s => {
+              const d = new Date(s.semana);
+              return `${d.getDate()}/${d.getMonth() + 1}`;
+            }),
+            datasets: [
+              {
+                label: 'Entregas',
+                data: evolucao_semanal.map(s => parseInt(s.entregas) || 0),
+                backgroundColor: 'rgba(99, 102, 241, 0.7)',
+                borderRadius: 4,
+                yAxisID: 'y',
+              },
+              {
+                label: 'Taxa Prazo %',
+                data: evolucao_semanal.map(s => parseFloat(s.taxa_prazo) || 0),
+                type: 'line',
+                borderColor: '#10B981',
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                tension: 0.3,
+                fill: true,
+                yAxisID: 'y1',
+              },
+            ],
+          },
+          options: {
+            plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } },
+            scales: {
+              y: { beginAtZero: true, title: { display: true, text: 'Entregas', font: { size: 10 } } },
+              y1: { position: 'right', min: 0, max: 100, title: { display: true, text: '% Prazo', font: { size: 10 } }, grid: { drawOnChartArea: false } },
+            },
+          },
+        })
+      ),
+
+      // 2. Top Motoboys (Barras Horizontal)
+      corridas_por_motoboy && corridas_por_motoboy.length > 0 && h('div', { className: 'bg-white rounded-xl border border-gray-200 p-4' },
+        h('h4', { className: 'text-sm font-semibold text-gray-700 mb-2' }, '🏍️ Top Motoboys'),
+        h(ChartCanvas, {
+          type: 'bar',
+          height: 200,
+          data: {
+            labels: corridas_por_motoboy.slice(0, 8).map(m => (m.nome_prof || `Prof ${m.cod_prof}`).substring(0, 15)),
+            datasets: [{
+              label: 'Entregas',
+              data: corridas_por_motoboy.slice(0, 8).map(m => parseInt(m.entregas) || 0),
+              backgroundColor: ['#6366F1', '#8B5CF6', '#A78BFA', '#C4B5FD', '#818CF8', '#7C3AED', '#6D28D9', '#5B21B6'],
+              borderRadius: 4,
+            }],
+          },
+          options: {
+            indexAxis: 'y',
+            plugins: { legend: { display: false } },
+            scales: { x: { beginAtZero: true } },
+          },
+        })
+      ),
+
+      // 3. Padrão de Horários (Barras)
+      padroes_horario && padroes_horario.length > 0 && h('div', { className: 'bg-white rounded-xl border border-gray-200 p-4' },
+        h('h4', { className: 'text-sm font-semibold text-gray-700 mb-2' }, '🕐 Padrão de Horários'),
+        h(ChartCanvas, {
+          type: 'bar',
+          height: 200,
+          data: {
+            labels: padroes_horario.map(p => `${p.hora}h`),
+            datasets: [{
+              label: 'Entregas',
+              data: padroes_horario.map(p => parseInt(p.entregas) || 0),
+              backgroundColor: padroes_horario.map(p => {
+                const hora = parseInt(p.hora);
+                return hora >= 8 && hora <= 12 ? 'rgba(245, 158, 11, 0.7)' : hora >= 13 && hora <= 18 ? 'rgba(59, 130, 246, 0.7)' : 'rgba(107, 114, 128, 0.5)';
+              }),
+              borderRadius: 4,
+            }],
+          },
+          options: {
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true } },
+          },
+        })
+      ),
+
+      // 4. Top Bairros (Doughnut)
+      mapa_calor_bairros && mapa_calor_bairros.length > 0 && h('div', { className: 'bg-white rounded-xl border border-gray-200 p-4' },
+        h('h4', { className: 'text-sm font-semibold text-gray-700 mb-2' }, '📍 Top Bairros'),
+        h(ChartCanvas, {
+          type: 'doughnut',
+          height: 200,
+          data: {
+            labels: mapa_calor_bairros.slice(0, 7).map(b => (b.bairro || 'Outros').substring(0, 20)),
+            datasets: [{
+              data: mapa_calor_bairros.slice(0, 7).map(b => parseInt(b.entregas) || 0),
+              backgroundColor: ['#6366F1', '#EC4899', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#EF4444'],
+            }],
+          },
+          options: {
+            plugins: { legend: { position: 'right', labels: { boxWidth: 10, font: { size: 10 } } } },
+          },
+        })
+      ),
+
+      // 5. Faixas de Distância (Barras)
+      faixas_km && faixas_km.length > 0 && h('div', { className: 'bg-white rounded-xl border border-gray-200 p-4' },
+        h('h4', { className: 'text-sm font-semibold text-gray-700 mb-2' }, '📏 Faixas de Distância'),
+        h(ChartCanvas, {
+          type: 'bar',
+          height: 200,
+          data: {
+            labels: faixas_km.map(f => f.faixa),
+            datasets: [{
+              label: 'Entregas',
+              data: faixas_km.map(f => parseInt(f.entregas) || 0),
+              backgroundColor: 'rgba(59, 130, 246, 0.7)',
+              borderRadius: 4,
+            }],
+          },
+          options: {
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true } },
+          },
+        })
+      ),
+
+      // 6. Comparativo Período (Radar se tiver dados anteriores)
+      metricas_atuais && metricas_periodo_anterior && h('div', { className: 'bg-white rounded-xl border border-gray-200 p-4' },
+        h('h4', { className: 'text-sm font-semibold text-gray-700 mb-2' }, '🔄 Comparativo com Período Anterior'),
+        h(ChartCanvas, {
+          type: 'bar',
+          height: 200,
+          data: {
+            labels: ['Entregas', 'Taxa Prazo %', 'Tempo Médio (min)'],
+            datasets: [
+              {
+                label: 'Atual',
+                data: [
+                  parseInt(metricas_atuais.total_entregas) || 0,
+                  parseFloat(metricas_atuais.taxa_prazo) || 0,
+                  parseFloat(metricas_atuais.tempo_medio) || 0,
+                ],
+                backgroundColor: 'rgba(99, 102, 241, 0.7)',
+                borderRadius: 4,
+              },
+              {
+                label: 'Anterior',
+                data: [
+                  parseInt(metricas_periodo_anterior.total_entregas) || 0,
+                  parseFloat(metricas_periodo_anterior.taxa_prazo) || 0,
+                  parseFloat(metricas_periodo_anterior.tempo_medio) || 0,
+                ],
+                backgroundColor: 'rgba(156, 163, 175, 0.5)',
+                borderRadius: 4,
+              },
+            ],
+          },
+          options: {
+            plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } },
+            scales: { y: { beginAtZero: true } },
+          },
+        })
       )
     );
   }
