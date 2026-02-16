@@ -1323,12 +1323,37 @@ ${renderMarkdown(raioXResult.analise)}
   function renderMarkdown(text) {
     if (!text) return '';
     // Proteger blocos SVG/HTML inline (gráficos do Raio-X)
+    // Os gráficos seguem o padrão: <div style="margin:16px...">...<svg...>...</svg>...</div>
     const htmlBlocks = [];
-    let processed = text.replace(/<div style="[^"]*"[\s\S]*?<\/div>/g, (match) => {
-      const idx = htmlBlocks.length;
-      htmlBlocks.push(match);
-      return `__HTML_BLOCK_${idx}__`;
-    });
+    let processed = text;
+    
+    // Extrair blocos de gráfico: começam com <div style="margin: e terminam com </svg></div> ou similar
+    // Usar busca iterativa para lidar com aninhamento
+    let safetyCounter = 0;
+    while (safetyCounter < 20) {
+      const startIdx = processed.indexOf('<div style="margin:');
+      if (startIdx === -1) break;
+      
+      // Encontrar o </div> correspondente contando aberturas/fechamentos
+      let depth = 0;
+      let endIdx = -1;
+      for (let i = startIdx; i < processed.length - 5; i++) {
+        if (processed.substring(i, i + 4) === '<div') depth++;
+        if (processed.substring(i, i + 6) === '</div>') {
+          depth--;
+          if (depth === 0) { endIdx = i + 6; break; }
+        }
+      }
+      
+      if (endIdx === -1) break;
+      
+      const block = processed.substring(startIdx, endIdx);
+      const placeholder = `__HTML_BLOCK_${htmlBlocks.length}__`;
+      htmlBlocks.push(block);
+      processed = processed.substring(0, startIdx) + placeholder + processed.substring(endIdx);
+      safetyCounter++;
+    }
+    
     // Extrair e proteger URLs antes do escape HTML
     const urlPlaceholders = [];
     processed = processed.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, (match, label, url) => {
