@@ -757,21 +757,20 @@ ${renderMarkdown(raioXResult.analise)}
           className: 'prose prose-sm prose-indigo max-w-none',
           dangerouslySetInnerHTML: { __html: renderMarkdown(raioXResult.analise) }
         }),
-        // Gráficos do Raio-X (dados completos da IA)
-        raioXResult.dados_utilizados && h(RaioXCharts, { dadosUtilizados: raioXResult.dados_utilizados })
+        // Gráficos agora estão embutidos no texto como SVG inline
       ),
 
-      // Gráficos de evolução (sempre visível, usa dados do detalhe do cliente)
-      !raioXResult && evolucao_semanal && evolucao_semanal.length > 0 && h('div', { className: 'bg-white rounded-xl border border-gray-200 p-5' },
+      // Gráficos de evolução (sempre visível, usa dados do detalhe do cliente quando raio-x não está gerado)
+      !raioXResult && data && data.evolucao_semanal && data.evolucao_semanal.length > 0 && window.Chart && h('div', { className: 'bg-white rounded-xl border border-gray-200 p-5' },
         h('h4', { className: 'text-sm font-semibold text-gray-700 mb-3' }, '📈 Evolução Semanal'),
         h(ChartCanvas, {
           type: 'bar',
           height: 220,
           data: {
-            labels: evolucao_semanal.map(s => { const d = new Date(s.semana); return `${d.getDate()}/${d.getMonth()+1}`; }),
+            labels: data.evolucao_semanal.map(s => { const d = new Date(s.semana); return `${d.getDate()}/${d.getMonth()+1}`; }),
             datasets: [
-              { label: 'Entregas', data: evolucao_semanal.map(s => parseInt(s.entregas) || 0), backgroundColor: 'rgba(99,102,241,0.7)', borderRadius: 4, yAxisID: 'y' },
-              { label: 'Taxa Prazo %', data: evolucao_semanal.map(s => parseFloat(s.taxa_prazo) || 0), type: 'line', borderColor: '#10B981', backgroundColor: 'rgba(16,185,129,0.1)', tension: 0.3, fill: true, yAxisID: 'y1' },
+              { label: 'Entregas', data: data.evolucao_semanal.map(s => parseInt(s.entregas) || 0), backgroundColor: 'rgba(99,102,241,0.7)', borderRadius: 4, yAxisID: 'y' },
+              { label: 'Taxa Prazo %', data: data.evolucao_semanal.map(s => parseFloat(s.taxa_prazo) || 0), type: 'line', borderColor: '#10B981', backgroundColor: 'rgba(16,185,129,0.1)', tension: 0.3, fill: true, yAxisID: 'y1' },
             ],
           },
           options: {
@@ -1323,9 +1322,16 @@ ${renderMarkdown(raioXResult.analise)}
   // ══════════════════════════════════════════════════
   function renderMarkdown(text) {
     if (!text) return '';
-    // Primeiro, extrair e proteger URLs antes do escape HTML
+    // Proteger blocos SVG/HTML inline (gráficos do Raio-X)
+    const htmlBlocks = [];
+    let processed = text.replace(/<div style="[^"]*"[\s\S]*?<\/div>/g, (match) => {
+      const idx = htmlBlocks.length;
+      htmlBlocks.push(match);
+      return `__HTML_BLOCK_${idx}__`;
+    });
+    // Extrair e proteger URLs antes do escape HTML
     const urlPlaceholders = [];
-    let processed = text.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, (match, label, url) => {
+    processed = processed.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, (match, label, url) => {
       const idx = urlPlaceholders.length;
       urlPlaceholders.push({ label, url });
       return `__URL_PLACEHOLDER_${idx}__`;
@@ -1336,7 +1342,7 @@ ${renderMarkdown(raioXResult.analise)}
       urlPlaceholders.push({ label: 'Abrir link', url: match });
       return `__URL_PLACEHOLDER_${idx}__`;
     });
-    // Agora escape HTML
+    // Agora escape HTML (blocos SVG já estão protegidos)
     processed = processed
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
       .replace(/^### (.+)$/gm, '<h3 class="text-base font-bold text-indigo-800 mt-6 mb-2">$1</h3>')
@@ -1357,6 +1363,10 @@ ${renderMarkdown(raioXResult.analise)}
       processed = processed.replace(`__URL_PLACEHOLDER_${i}__`,
         `<a href="${u.url}" target="_blank" rel="noopener" style="${btnClass}">${label}</a>`
       );
+    });
+    // Restaurar blocos HTML/SVG (gráficos)
+    htmlBlocks.forEach((block, i) => {
+      processed = processed.replace(`__HTML_BLOCK_${i}__`, block);
     });
     return processed;
   }
