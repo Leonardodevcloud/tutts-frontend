@@ -760,29 +760,6 @@ ${renderMarkdown(raioXResult.analise)}
         // Gráficos agora estão embutidos no texto como SVG inline
       ),
 
-      // Gráficos de evolução (sempre visível, usa dados do detalhe do cliente quando raio-x não está gerado)
-      !raioXResult && data && data.evolucao_semanal && data.evolucao_semanal.length > 0 && window.Chart && h('div', { className: 'bg-white rounded-xl border border-gray-200 p-5' },
-        h('h4', { className: 'text-sm font-semibold text-gray-700 mb-3' }, '📈 Evolução Semanal'),
-        h(ChartCanvas, {
-          type: 'bar',
-          height: 220,
-          data: {
-            labels: data.evolucao_semanal.map(s => { const d = new Date(s.semana); return `${d.getDate()}/${d.getMonth()+1}`; }),
-            datasets: [
-              { label: 'Entregas', data: data.evolucao_semanal.map(s => parseInt(s.entregas) || 0), backgroundColor: 'rgba(99,102,241,0.7)', borderRadius: 4, yAxisID: 'y' },
-              { label: 'Taxa Prazo %', data: data.evolucao_semanal.map(s => parseFloat(s.taxa_prazo) || 0), type: 'line', borderColor: '#10B981', backgroundColor: 'rgba(16,185,129,0.1)', tension: 0.3, fill: true, yAxisID: 'y1' },
-            ],
-          },
-          options: {
-            plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } },
-            scales: {
-              y: { beginAtZero: true, title: { display: true, text: 'Entregas', font: { size: 10 } } },
-              y1: { position: 'right', min: 0, max: 100, title: { display: true, text: '% Prazo', font: { size: 10 } }, grid: { drawOnChartArea: false } },
-            },
-          },
-        })
-      ),
-
       // Timeline Interações + Ocorrências
       h('div', { className: 'grid md:grid-cols-2 gap-6' },
         // Interações
@@ -790,13 +767,24 @@ ${renderMarkdown(raioXResult.analise)}
           h('h3', { className: 'font-semibold text-gray-700 mb-4' }, '📝 Últimas Interações'),
           interacoes && interacoes.length > 0
             ? h('div', { className: 'space-y-3' }, ...interacoes.map((int, i) =>
-                h('div', { key: i, className: 'flex gap-3 p-3 bg-gray-50 rounded-lg' },
+                h('div', { key: i, className: 'flex gap-3 p-3 bg-gray-50 rounded-lg group' },
                   h('span', { className: 'text-lg mt-0.5' }, int.tipo === 'visita' ? '📍' : int.tipo === 'reuniao' ? '👥' : int.tipo === 'ligacao' ? '📞' : int.tipo === 'whatsapp' ? '💬' : int.tipo === 'pos_venda' ? '✅' : '📝'),
                   h('div', { className: 'flex-1 min-w-0' },
                     h('p', { className: 'text-sm font-medium text-gray-900' }, int.titulo),
                     int.descricao && h('p', { className: 'text-xs text-gray-500 mt-1 line-clamp-2' }, int.descricao),
                     h('p', { className: 'text-xs text-gray-400 mt-1' }, `${formatDateTime(int.data_interacao)} · ${int.criado_por_nome || ''}`)
-                  )
+                  ),
+                  h('button', {
+                    className: 'opacity-0 group-hover:opacity-100 transition-opacity p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded',
+                    title: 'Excluir interação',
+                    onClick: async () => {
+                      if (!confirm('Excluir esta interação?')) return;
+                      try {
+                        const res = await fetchApi(`/cs/interacoes/${int.id}`, { method: 'DELETE' });
+                        if (res.success) carregar();
+                      } catch (e) { console.error(e); }
+                    }
+                  }, '🗑️')
                 )
               ))
             : h('p', { className: 'text-sm text-gray-400 text-center py-4' }, 'Nenhuma interação registrada')
@@ -807,7 +795,7 @@ ${renderMarkdown(raioXResult.analise)}
           h('h3', { className: 'font-semibold text-gray-700 mb-4' }, '🚨 Ocorrências Abertas'),
           ocorrencias && ocorrencias.length > 0
             ? h('div', { className: 'space-y-3' }, ...ocorrencias.map((oc, i) =>
-                h('div', { key: i, className: `flex gap-3 p-3 rounded-lg ${oc.severidade === 'critica' ? 'bg-red-50' : oc.severidade === 'alta' ? 'bg-orange-50' : 'bg-amber-50'}` },
+                h('div', { key: i, className: `flex gap-3 p-3 rounded-lg group ${oc.severidade === 'critica' ? 'bg-red-50' : oc.severidade === 'alta' ? 'bg-orange-50' : 'bg-amber-50'}` },
                   h('span', { className: 'text-lg mt-0.5' }, oc.severidade === 'critica' ? '🔴' : oc.severidade === 'alta' ? '🟠' : '🟡'),
                   h('div', { className: 'flex-1 min-w-0' },
                     h('p', { className: 'text-sm font-medium text-gray-900' }, oc.titulo),
@@ -817,7 +805,18 @@ ${renderMarkdown(raioXResult.analise)}
                       h(Badge, { text: oc.status, cor: '#3B82F6' })
                     ),
                     h('p', { className: 'text-xs text-gray-400 mt-1' }, formatDateTime(oc.data_abertura))
-                  )
+                  ),
+                  h('button', {
+                    className: 'opacity-0 group-hover:opacity-100 transition-opacity p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded',
+                    title: 'Excluir ocorrência',
+                    onClick: async () => {
+                      if (!confirm('Excluir esta ocorrência?')) return;
+                      try {
+                        const res = await fetchApi(`/cs/ocorrencias/${oc.id}`, { method: 'DELETE' });
+                        if (res.success) carregar();
+                      } catch (e) { console.error(e); }
+                    }
+                  }, '🗑️')
                 )
               ))
             : h('p', { className: 'text-sm text-gray-400 text-center py-4' }, '✅ Nenhuma ocorrência aberta!')
@@ -828,20 +827,34 @@ ${renderMarkdown(raioXResult.analise)}
       raio_x_historico && raio_x_historico.length > 0 && h('div', { className: 'bg-white rounded-xl border border-gray-200 p-5' },
         h('h3', { className: 'font-semibold text-gray-700 mb-4' }, '📋 Histórico de Raio-X'),
         h('div', { className: 'space-y-2' }, ...raio_x_historico.map((rx, i) =>
-          h('div', { key: i, className: 'flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-indigo-50',
-            onClick: async () => {
-              try {
-                const res = await fetchApi(`/cs/raio-x/${rx.id}`);
-                if (res.success) setRaioXResult({ analise: res.raio_x.analise_texto, gerado_em: res.raio_x.created_at, tokens: res.raio_x.tokens_utilizados });
-              } catch (e) { console.error(e); }
-            }
-          },
-            h(HealthRing, { score: rx.score_saude, size: 36 }),
-            h('div', { className: 'flex-1' },
-              h('p', { className: 'text-sm font-medium text-gray-900' }, `${formatDate(rx.data_inicio)} a ${formatDate(rx.data_fim)}`),
-              h('p', { className: 'text-xs text-gray-500' }, `${rx.tipo_analise} · por ${rx.gerado_por_nome || 'Sistema'}`)
+          h('div', { key: i, className: 'flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-indigo-50 group' },
+            h('div', { className: 'cursor-pointer flex items-center gap-3 flex-1 min-w-0',
+              onClick: async () => {
+                try {
+                  const res = await fetchApi(`/cs/raio-x/${rx.id}`);
+                  if (res.success) setRaioXResult({ analise: res.raio_x.analise_texto, gerado_em: res.raio_x.created_at, tokens: res.raio_x.tokens_utilizados, health_score: rx.score_saude });
+                } catch (e) { console.error(e); }
+              }
+            },
+              h(HealthRing, { score: rx.score_saude, size: 36 }),
+              h('div', { className: 'flex-1 min-w-0' },
+                h('p', { className: 'text-sm font-medium text-gray-900' }, `${formatDate(rx.data_inicio)} a ${formatDate(rx.data_fim)}`),
+                h('p', { className: 'text-xs text-gray-500' }, `${rx.tipo_analise} · por ${rx.gerado_por_nome || 'Sistema'}`)
+              ),
+              h('span', { className: 'text-xs text-gray-400' }, formatDateTime(rx.created_at))
             ),
-            h('span', { className: 'text-xs text-gray-400' }, formatDateTime(rx.created_at))
+            h('button', { 
+              className: 'opacity-0 group-hover:opacity-100 transition-opacity ml-2 p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg',
+              title: 'Excluir relatório',
+              onClick: async (e) => {
+                e.stopPropagation();
+                if (!confirm('Excluir este relatório?')) return;
+                try {
+                  const res = await fetchApi(`/cs/raio-x/${rx.id}`, { method: 'DELETE' });
+                  if (res.success) carregar();
+                } catch (e) { console.error(e); }
+              }
+            }, '🗑️')
           )
         ))
       ),
@@ -976,7 +989,7 @@ ${renderMarkdown(raioXResult.analise)}
       interacoes.length === 0 ? h(EmptyState, { titulo: 'Nenhuma interação encontrada', icone: '📝' }) :
       h('div', { className: 'space-y-2' },
         ...interacoes.map((int, i) =>
-          h('div', { key: i, className: 'bg-white rounded-xl border border-gray-200 p-4 flex gap-4 items-start' },
+          h('div', { key: i, className: 'bg-white rounded-xl border border-gray-200 p-4 flex gap-4 items-start group' },
             h('span', { className: 'text-2xl' }, int.tipo === 'visita' ? '📍' : int.tipo === 'reuniao' ? '👥' : int.tipo === 'ligacao' ? '📞' : int.tipo === 'whatsapp' ? '💬' : int.tipo === 'pos_venda' ? '✅' : '📝'),
             h('div', { className: 'flex-1 min-w-0' },
               h('div', { className: 'flex items-center gap-2 mb-1' },
@@ -988,9 +1001,20 @@ ${renderMarkdown(raioXResult.analise)}
               int.resultado && h('p', { className: 'text-xs text-emerald-600 mt-1' }, `✅ ${int.resultado}`),
               int.proxima_acao && h('p', { className: 'text-xs text-blue-600 mt-1' }, `📅 Próxima: ${int.proxima_acao}`)
             ),
-            h('div', { className: 'text-right whitespace-nowrap' },
+            h('div', { className: 'text-right whitespace-nowrap flex flex-col items-end gap-1' },
               h('p', { className: 'text-xs text-gray-400' }, formatDateTime(int.data_interacao)),
-              h('p', { className: 'text-xs text-gray-400' }, int.criado_por_nome)
+              h('p', { className: 'text-xs text-gray-400' }, int.criado_por_nome),
+              h('button', {
+                className: 'opacity-0 group-hover:opacity-100 transition-opacity mt-1 p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded text-xs',
+                title: 'Excluir interação',
+                onClick: async () => {
+                  if (!confirm('Excluir esta interação?')) return;
+                  try {
+                    const res = await fetchApi(`/cs/interacoes/${int.id}`, { method: 'DELETE' });
+                    if (res.success) { setLoading(true); fetchApi('/cs/interacoes?limit=50' + (filtroTipo ? `&tipo=${filtroTipo}` : '')).then(r => { if (r.success) setInteracoes(r.interacoes || []); setLoading(false); }); }
+                  } catch (e) { console.error(e); }
+                }
+              }, '🗑️')
             )
           )
         )
@@ -1059,7 +1083,18 @@ ${renderMarkdown(raioXResult.analise)}
                   (oc.status === 'aberta' || oc.status === 'em_andamento') && h('button', { onClick: () => atualizarStatus(oc.id, 'resolvida'), className: 'text-xs px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full hover:bg-emerald-200' }, '✅ Resolver')
                 )
               ),
-              h('span', { className: 'text-xs text-gray-400 whitespace-nowrap' }, formatDateTime(oc.data_abertura))
+              h('span', { className: 'text-xs text-gray-400 whitespace-nowrap' }, formatDateTime(oc.data_abertura)),
+              h('button', {
+                className: 'ml-2 p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded text-xs',
+                title: 'Excluir ocorrência',
+                onClick: async () => {
+                  if (!confirm('Excluir esta ocorrência?')) return;
+                  try {
+                    const res = await fetchApi(`/cs/ocorrencias/${oc.id}`, { method: 'DELETE' });
+                    if (res.success) carregar();
+                  } catch (e) { console.error(e); }
+                }
+              }, '🗑️')
             )
           )
         )
