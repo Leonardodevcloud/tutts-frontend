@@ -537,6 +537,8 @@
     const [raioXResult, setRaioXResult] = useState(null);
     const [showNovaInteracao, setShowNovaInteracao] = useState(false);
     const [showNovaOcorrencia, setShowNovaOcorrencia] = useState(false);
+    const [showEmailModal, setShowEmailModal] = useState(false);
+    const [emailSending, setEmailSending] = useState(false);
     const [interacaoForm, setInteracaoForm] = useState({ tipo: 'ligacao', titulo: '', descricao: '', resultado: '', proxima_acao: '' });
     const [ocorrenciaForm, setOcorrenciaForm] = useState({ tipo: 'problema_entrega', titulo: '', descricao: '', severidade: 'media' });
     const [periodoRaioX, setPeriodoRaioX] = useState(() => {
@@ -751,6 +753,10 @@ ${renderMarkdown(raioXResult.analise)}
           h('button', { onClick: gerarPdfRaioX,
             className: 'ml-2 px-4 py-1.5 bg-white border border-indigo-300 text-indigo-700 rounded-lg text-xs font-bold hover:bg-indigo-50 shadow-sm' },
             '📄 Gerar PDF'
+          ),
+          h('button', { onClick: () => setShowEmailModal(true),
+            className: 'ml-2 px-4 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-bold hover:bg-indigo-700 shadow-sm' },
+            '📧 Enviar por Email'
           )
         ),
         h('div', {
@@ -857,6 +863,66 @@ ${renderMarkdown(raioXResult.analise)}
             }, '🗑️')
           )
         ))
+      ),
+
+      // Modal Enviar por Email
+      h(Modal, { aberto: showEmailModal, fechar: () => setShowEmailModal(false), titulo: '📧 Enviar Raio-X por Email' },
+        h('form', { className: 'space-y-4', onSubmit: async (e) => {
+          e.preventDefault();
+          const formData = new FormData(e.target);
+          const para = formData.get('para');
+          const cc = formData.get('cc');
+          const remetente = formData.get('remetente');
+          if (!para) return alert('Informe o email do destinatário');
+          setEmailSending(true);
+          try {
+            const body = {
+              para, cc: cc || undefined, remetente,
+              analise: raioXResult.analise,
+              health_score: raioXResult.health_score,
+              nome_cliente: data?.cliente?.nome_fantasia || '',
+              data_inicio: periodoRaioX.inicio,
+              data_fim: periodoRaioX.fim,
+            };
+            if (raioXResult.id) body.raio_x_id = raioXResult.id;
+            const res = await fetchApi('/cs/raio-x/enviar-email', { method: 'POST', body: JSON.stringify(body) });
+            if (res.success) {
+              alert('✅ Email enviado com sucesso!');
+              setShowEmailModal(false);
+            } else {
+              alert('❌ Erro: ' + (res.error || 'Falha ao enviar'));
+            }
+          } catch (err) { alert('❌ Erro: ' + err.message); }
+          setEmailSending(false);
+        }},
+          h('div', null,
+            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Para (email do cliente) *'),
+            h('input', { name: 'para', type: 'email', required: true,
+              defaultValue: data?.cliente?.email || data?.cliente?.responsavel_email || '',
+              placeholder: 'cliente@empresa.com.br',
+              className: 'w-full px-3 py-2 border border-gray-200 rounded-lg' })
+          ),
+          h('div', null,
+            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'CC (opcional)'),
+            h('input', { name: 'cc', type: 'email',
+              placeholder: 'copia@empresa.com.br',
+              className: 'w-full px-3 py-2 border border-gray-200 rounded-lg' })
+          ),
+          h('div', null,
+            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Remetente'),
+            h('select', { name: 'remetente', className: 'w-full px-3 py-2 border border-gray-200 rounded-lg' },
+              h('option', { value: 'contato@tutts.com.br' }, 'contato@tutts.com.br'),
+              h('option', { value: 'supervisor@tutts.com.br' }, 'supervisor@tutts.com.br')
+            )
+          ),
+          h('div', { className: 'bg-amber-50 border border-amber-200 rounded-lg p-3' },
+            h('p', { className: 'text-xs text-amber-700' }, '⚠️ O relatório completo com gráficos será enviado no corpo do email. O cliente receberá exatamente o que está sendo exibido acima.')
+          ),
+          h('button', { type: 'submit', disabled: emailSending,
+            className: 'w-full py-2.5 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 disabled:opacity-50' },
+            emailSending ? '⏳ Enviando...' : '📧 Enviar Email'
+          )
+        )
       ),
 
       // Modal Nova Interação
