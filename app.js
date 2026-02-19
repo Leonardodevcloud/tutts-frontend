@@ -7596,6 +7596,15 @@ const hideLoadingScreen = () => {
                 }, o.onerror = r, o.src = e.target.result
             }, o.onerror = r, o.readAsDataURL(e)
         }), Yl = async () => {
+            // Verificar OS duplicada com status pendente
+            const osDuplicada = j.find(sub => 
+                String(sub.ordemServico) === String(p.os) && 
+                sub.status === "pendente"
+            );
+            if (osDuplicada) {
+                ja("⚠️ Você já tem uma solicitação pendente com esta OS. Aguarde a análise ou solicite novamente após a recusa.", "error");
+                return;
+            }
             s(!0);
             try {
                 const e = p.imagens?.length > 0 ? p.imagens.join("|||") : null;
@@ -8923,9 +8932,11 @@ const hideLoadingScreen = () => {
             className: "border rounded-lg p-4"
         }, React.createElement("div", {
             className: "flex justify-between items-start"
-        }, React.createElement("div", null, React.createElement("p", {
-            className: "font-mono text-lg font-bold"
-        }, "OS: ", e.ordemServico), React.createElement("p", {
+        }, React.createElement("div", null, React.createElement("button", {
+            className: "font-mono text-lg font-bold flex items-center gap-1.5 group hover:text-purple-700 transition-colors cursor-pointer",
+            title: "Clique para copiar o número da OS",
+            onClick: () => { navigator.clipboard.writeText(String(e.ordemServico)); ja("📋 OS " + e.ordemServico + " copiada!", "success"); }
+        }, "OS: ", e.ordemServico, React.createElement("span", { className: "opacity-0 group-hover:opacity-100 transition-opacity text-sm text-purple-400" }, "📋")), React.createElement("p", {
             className: "text-sm text-gray-600"
         }, e.motivo)), React.createElement("span", {
             className: "px-3 py-1 rounded-full text-xs font-bold " + ("aprovado" === e.status ? "bg-green-500 text-white" : "rejeitado" === e.status ? "bg-red-500 text-white" : "bg-yellow-500 text-white")
@@ -18532,9 +18543,13 @@ const hideLoadingScreen = () => {
                 className: "text-lg"
             }, "⚠️"), React.createElement("span", null, "ATENÇÃO: ", rtnW > 3 ? `${rtnW} retornos na semana (máx 3)` : "", " ", rtnM > 5 ? `| ${rtnM} retornos no mês (máx 5)` : "")), React.createElement("div", {
                 className: "flex justify-between items-start mb-2"
-            }, React.createElement("p", {
-                className: "font-mono text-lg font-bold"
-            }, "OS: ", e.ordemServico), React.createElement("span", {
+            }, React.createElement("button", {
+                className: "font-mono text-lg font-bold flex items-center gap-1.5 group hover:text-purple-700 transition-colors cursor-pointer",
+                title: "Clique para copiar o número da OS",
+                onClick: () => { navigator.clipboard.writeText(String(e.ordemServico)); ja("📋 OS " + e.ordemServico + " copiada!", "success"); }
+            }, "OS: ", e.ordemServico,
+                React.createElement("span", { className: "opacity-0 group-hover:opacity-100 transition-opacity text-sm text-purple-400" }, "📋")
+            ), React.createElement("span", {
                 className: "px-2 py-0.5 rounded text-xs font-bold " + (r ? "bg-red-500 text-white animate-pulse" : o ? "bg-orange-400 text-white" : "bg-gray-100 text-gray-600")
             }, r ? "🚨" : o ? "⚠️" : "⏱️", a > 0 ? `${a}h ${l}m` : `${l}min`)), React.createElement("p", {
                 className: "text-xs text-gray-700"
@@ -18671,9 +18686,11 @@ const hideLoadingScreen = () => {
             className: "border rounded-lg p-3 text-sm " + ("aprovado" === e.status ? "bg-green-50" : "rejeitado" === e.status ? "bg-red-50" : "bg-yellow-50")
         }, React.createElement("div", {
             className: "flex justify-between items-start mb-1"
-        }, React.createElement("div", null, React.createElement("p", {
-            className: "font-mono font-bold"
-        }, "OS: ", e.ordemServico), React.createElement("p", {
+        }, React.createElement("div", null, React.createElement("button", {
+            className: "font-mono font-bold flex items-center gap-1 group hover:text-purple-700 transition-colors cursor-pointer",
+            title: "Clique para copiar o número da OS",
+            onClick: () => { navigator.clipboard.writeText(String(e.ordemServico)); ja("📋 OS " + e.ordemServico + " copiada!", "success"); }
+        }, "OS: ", e.ordemServico, React.createElement("span", { className: "opacity-0 group-hover:opacity-100 transition-opacity text-xs text-purple-400" }, "📋")), React.createElement("p", {
             className: "text-xs text-gray-700"
         }, e.fullName)), React.createElement("div", {
             className: "flex items-center gap-1"
@@ -18786,9 +18803,11 @@ const hideLoadingScreen = () => {
                 className: "p-3 hover:bg-gray-50"
             }, React.createElement("div", {
                 className: "flex justify-between items-center"
-            }, React.createElement("div", null, React.createElement("p", {
-                className: "font-mono font-semibold text-sm"
-            }, "OS: ", s.ordemServico), React.createElement("p", {
+            }, React.createElement("div", null, React.createElement("button", {
+                className: "font-mono font-semibold text-sm flex items-center gap-1 group hover:text-purple-700 transition-colors cursor-pointer",
+                title: "Clique para copiar o número da OS",
+                onClick: (ev) => { ev.stopPropagation(); navigator.clipboard.writeText(String(s.ordemServico)); ja("📋 OS " + s.ordemServico + " copiada!", "success"); }
+            }, "OS: ", s.ordemServico, React.createElement("span", { className: "opacity-0 group-hover:opacity-100 transition-opacity text-xs text-purple-400" }, "📋")), React.createElement("p", {
                 className: "text-xs text-gray-500"
             }, new Date(s.created_at).toLocaleDateString("pt-BR"), " às ", new Date(s.created_at).toLocaleTimeString("pt-BR", {
                 hour: "2-digit",
