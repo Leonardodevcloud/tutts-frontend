@@ -5,71 +5,26 @@
 (function() {
     'use strict';
 
-    // ── CodInput — input DEFINITIVAMENTE sem bug de cursor/dígito fantasma ──
-    //
-    // Por que o input controlado (value + onChange) bugava:
-    //   c() é async → faz await _fetch → o React re-renderiza com o valor antigo
-    //   no meio da digitação → cursor pula, dígito some ou duplica.
-    //
-    // Solução: input NÃO-CONTROLADO (defaultValue + ref).
-    //   O React nunca escreve no DOM durante a digitação.
-    //   Só sincronizamos o DOM quando o componente não está focado
-    //   E o valor externo realmente mudou (ex: limpeza de linha pelo servidor).
-    //
+    // ── CodInput — input controlado simples, igual ao padrão do módulo financeiro ──
+    // Funciona porque c() agora é 100% síncrono no onChange (sem await).
     const CodInput = ({ rowId, initialValue, onCommit, lojaId, rowClass, "data-cod-input": dataCodInput }) => {
-        const inputRef   = React.useRef(null);
-        const prevValue  = React.useRef(initialValue || ""); // último valor externo visto
-
-        // Sincroniza DOM ← estado externo SOMENTE quando:
-        //   1. o campo NÃO está focado (usuário não está digitando)
-        //   2. o valor externo realmente mudou
-        React.useEffect(() => {
-            const el = inputRef.current;
-            if (!el) return;
-            const incoming = initialValue || "";
-            if (incoming !== prevValue.current) {
-                prevValue.current = incoming;
-                if (document.activeElement !== el) {
-                    el.value = incoming;
-                }
-            }
-        }, [initialValue]);
-
-        const commit = (el) => {
-            const val = el.value;
-            prevValue.current = val;
-            onCommit(rowId, "cod_profissional", val);
-        };
-
-        const handleKeyDown = (e) => {
-            const lojaInputs = document.querySelectorAll(`[data-loja-id="${lojaId}"] input[data-cod-input]`);
-            const idx = Array.from(lojaInputs).findIndex(el => el === e.target);
-
-            if (e.key === "ArrowDown" || e.key === "ArrowUp") {
-                e.preventDefault();
-                const next = e.key === "ArrowDown" ? idx + 1 : idx - 1;
-                if (next >= 0 && next < lojaInputs.length) {
-                    lojaInputs[next].focus();
-                    lojaInputs[next].select();
-                }
-            }
-            if (e.key === "Enter") {
-                e.preventDefault();
-                commit(e.target);                          // salva ao Enter
-                const next = idx + 1;
-                if (next < lojaInputs.length) {
-                    lojaInputs[next].focus();
-                    lojaInputs[next].select();
-                }
-            }
-        };
-
         return React.createElement("input", {
-            ref: inputRef,
             type: "text",
-            defaultValue: initialValue || "",              // ← NÃO-CONTROLADO
-            onBlur:    e => commit(e.target),              // ← salva ao sair
-            onKeyDown: handleKeyDown,
+            value: initialValue || "",
+            onChange: e => onCommit(rowId, "cod_profissional", e.target.value),
+            onKeyDown: e => {
+                const all = document.querySelectorAll(`[data-loja-id="${lojaId}"] input[data-cod-input]`);
+                const idx = Array.from(all).findIndex(el => el === e.target);
+                if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+                    e.preventDefault();
+                    const next = e.key === "ArrowDown" ? idx + 1 : idx - 1;
+                    if (next >= 0 && next < all.length) { all[next].focus(); all[next].select(); }
+                }
+                if (e.key === "Enter") {
+                    e.preventDefault();
+                    if (idx + 1 < all.length) { all[idx + 1].focus(); all[idx + 1].select(); }
+                }
+            },
             "data-cod-input": dataCodInput,
             placeholder: "...",
             className: "w-full px-1 py-0.5 border border-gray-200 rounded text-center font-mono text-xs " + rowClass
@@ -149,51 +104,60 @@
                 } catch (e) {
                     ja(e.message, "error")
                 } else ja("Digite o nome da região", "error")
-            }, c = async (t, a, l) => {
+            }, c = (t, a, l) => {
+                // ── Atualização SÍNCRONA — igual ao padrão do módulo financeiro ──
+                // Sem await aqui: só atualiza estado + lookup em memória.
+                // A verificação de restrição e o save vão para o debounce abaixo.
                 const r = [...e.linhas || []],
                     o = r.findIndex(e => e.id === t);
                 if (-1 === o) return;
-                const c = r[o];
-                if ("cod_profissional" === a && l && "" !== l.trim()) try {
-                    const e = await _fetch(`${API_URL}/disponibilidade/restricoes/verificar?cod_profissional=${l}&loja_id=${c.loja_id}`),
-                        t = await e.json();
-                    if (t.restrito) {
-                        const e = t.todas_lojas ? "TODAS AS LOJAS" : `loja ${t.loja_codigo} - ${t.loja_nome}`;
-                        return void alert(`🚫 MOTOBOY RESTRITO!\n\nCódigo: ${l}\nRestrito em: ${e}\n\nMotivo: ${t.motivo}\n\nEste motoboy não pode ser inserido nesta loja.`)
-                    }
-                } catch (e) {
-                    console.error("Erro ao verificar restrição:", e)
-                }
-                r[o] = {
-                    ...r[o],
-                    [a]: l
-                };
+                r[o] = { ...r[o], [a]: l };
                 let s = r[o].nome_profissional;
-                if ("cod_profissional" === a)
+                if ("cod_profissional" === a) {
                     if (l && "" !== l.trim()) {
-                        if (l.length >= 1) {
-                            const e = pe.find(e => e.codigo === l.toString());
-                            if (e) s = e.nome, r[o].nome_profissional = e.nome;
-                            else {
-                                const e = A.find(e => e.codProfissional?.toLowerCase() === l.toLowerCase());
-                                e ? (s = e.fullName, r[o].nome_profissional = e.fullName) : (s = "", r[o].nome_profissional = "")
-                            }
-                        }
-                    } else s = "", r[o].nome_profissional = "";
+                        const found = pe.find(e => e.codigo === l.toString())
+                            || A.find(e => e.codProfissional?.toLowerCase() === l.toLowerCase());
+                        s = found ? (found.nome || found.fullName) : "";
+                        r[o].nome_profissional = s;
+                    } else {
+                        s = "";
+                        r[o].nome_profissional = "";
+                    }
+                }
                 x(t => ({
                     ...t,
-                    dispData: {
-                        ...e,
-                        linhas: r
-                    }
-                })), clearTimeout(window.dispDebounce), window.dispDebounce = setTimeout(async () => {
+                    dispData: { ...e, linhas: r }
+                }));
+                // ── Debounce: verificação de restrição + save na API ──
+                clearTimeout(window.dispDebounce);
+                window.dispDebounce = setTimeout(async () => {
                     try {
+                        const loja_id = r[o].loja_id;
+                        // Verifica restrição só para cod_profissional preenchido
+                        if ("cod_profissional" === a && l && "" !== l.trim()) {
+                            try {
+                                const resp = await _fetch(`${API_URL}/disponibilidade/restricoes/verificar?cod_profissional=${l}&loja_id=${loja_id}`),
+                                    data = await resp.json();
+                                if (data.restrito) {
+                                    const onde = data.todas_lojas ? "TODAS AS LOJAS" : `loja ${data.loja_codigo} - ${data.loja_nome}`;
+                                    alert(`🚫 MOTOBOY RESTRITO!\n\nCódigo: ${l}\nRestrito em: ${onde}\n\nMotivo: ${data.motivo}\n\nEste motoboy não pode ser inserido nesta loja.`);
+                                    // Limpa o campo no estado
+                                    x(prev => {
+                                        const linhas = [...prev.dispData?.linhas || []];
+                                        const i = linhas.findIndex(e => e.id === t);
+                                        if (i > -1) linhas[i] = { ...linhas[i], cod_profissional: "", nome_profissional: "" };
+                                        return { ...prev, dispData: { ...prev.dispData, linhas } };
+                                    });
+                                    return;
+                                }
+                            } catch (e) {
+                                console.error("Erro ao verificar restrição:", e);
+                            }
+                        }
                         const usuarioLogado = JSON.parse(sessionStorage.getItem("tutts_user") || "{}");
                         await _fetch(`${API_URL}/disponibilidade/linhas/${t}`, {
                             method: "PUT",
-                            headers: {
-                                "Content-Type": "application/json"
-                            },
+                            headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({
                                 cod_profissional: r[o].cod_profissional || null,
                                 nome_profissional: "cod_profissional" === a ? s || null : r[o].nome_profissional || null,
@@ -201,11 +165,11 @@
                                 observacao: r[o].observacao,
                                 observacao_usuario: usuarioLogado?.fullName || "Sistema"
                             })
-                        })
+                        });
                     } catch (e) {
-                        console.error("Erro ao salvar linha:", e)
+                        console.error("Erro ao salvar linha:", e);
                     }
-                }, 500)
+                }, 600)
             }, s = async (e, t, a = !1) => {
                 try {
                     await _fetch(`${API_URL}/disponibilidade/linhas`, {
