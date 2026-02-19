@@ -910,8 +910,11 @@ ${renderMarkdown(raioXResult.analise)}
             },
               h(HealthRing, { score: rx.score_saude, size: 36 }),
               h('div', { className: 'flex-1 min-w-0' },
-                h('p', { className: 'text-sm font-medium text-gray-900' }, `${formatDate(rx.data_inicio)} a ${formatDate(rx.data_fim)}`),
-                h('p', { className: 'text-xs text-gray-500' }, `${rx.tipo_analise} · por ${rx.gerado_por_nome || 'Sistema'}`)
+                h('p', { className: 'text-sm font-medium text-gray-900' }, 
+                  `${formatDate(rx.data_inicio)} a ${formatDate(rx.data_fim)}`,
+                  rx.nome_cliente && h('span', { className: 'text-gray-500 font-normal' }, ` · ${rx.nome_cliente}`)
+                ),
+                h('p', { className: 'text-xs text-gray-500' }, `por ${rx.gerado_por_nome || 'Sistema'}`)
               ),
               h('span', { className: 'text-xs text-gray-400' }, formatDateTime(rx.created_at))
             ),
