@@ -5,6 +5,43 @@
 (function() {
     'use strict';
 
+    // ── Componente de input de código com estado local ──────────────────────
+    // Evita o bug de cursor/dígito fantasma causado pelo re-render do async c()
+    const CodInput = ({ rowId, initialValue, onCommit, lojaId, rowClass, "data-cod-input": dataCodInput }) => {
+        const [val, setVal] = React.useState(initialValue || "");
+
+        // Sincroniza se o valor externo mudar (ex: limpar linha)
+        React.useEffect(() => {
+            setVal(initialValue || "");
+        }, [initialValue]);
+
+        return React.createElement("input", {
+            type: "text",
+            value: val,
+            onChange: e => setVal(e.target.value),          // ← só estado local, sem re-render do pai
+            onBlur: () => onCommit(rowId, "cod_profissional", val),  // ← dispara a lógica async só no blur
+            onKeyDown: e => {
+                if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+                    e.preventDefault();
+                    const all = document.querySelectorAll(`[data-loja-id="${lojaId}"] input[data-cod-input]`);
+                    const idx = Array.from(all).findIndex(el => el === e.target);
+                    const next = e.key === "ArrowDown" ? idx + 1 : idx - 1;
+                    if (next >= 0 && next < all.length) { all[next].focus(); all[next].select(); }
+                }
+                if (e.key === "Enter") {
+                    e.preventDefault();
+                    onCommit(rowId, "cod_profissional", val);   // ← salva ao pressionar Enter
+                    const all = document.querySelectorAll(`[data-loja-id="${lojaId}"] input[data-cod-input]`);
+                    const idx = Array.from(all).findIndex(el => el === e.target);
+                    if (idx + 1 < all.length) { all[idx + 1].focus(); all[idx + 1].select(); }
+                }
+            },
+            "data-cod-input": dataCodInput,
+            placeholder: "...",
+            className: "w-full px-1 py-0.5 border border-gray-200 rounded text-center font-mono text-xs " + rowClass
+        });
+    };
+
     window.ModuloDisponibilidadeContent = function(props) {
         const {
             // Estado e setters
@@ -2061,28 +2098,14 @@
                         className: "w-1 " + (e.is_reposicao ? "bg-blue-400" : e.is_excedente ? "bg-red-400" : "")
                     }), React.createElement("td", {
                         className: "px-1 py-0.5"
-                    }, React.createElement("input", {
-                        type: "text",
-                        value: e.cod_profissional || "",
-                        onChange: t => c(e.id, "cod_profissional", t.target.value),
-                        onKeyDown: e => {
-                            if ("ArrowDown" === e.key || "ArrowUp" === e.key) {
-                                e.preventDefault();
-                                const a = document.querySelectorAll(`[data-loja-id="${t.id}"] input[data-cod-input]`),
-                                    l = Array.from(a).findIndex(t => t === e.target);
-                                let r = "ArrowDown" === e.key ? l + 1 : l - 1;
-                                r >= 0 && r < a.length && (a[r].focus(), a[r].select())
-                            }
-                            if ("Enter" === e.key) {
-                                e.preventDefault();
-                                const a = document.querySelectorAll(`[data-loja-id="${t.id}"] input[data-cod-input]`),
-                                    l = Array.from(a).findIndex(t => t === e.target);
-                                l + 1 < a.length && (a[l + 1].focus(), a[l + 1].select())
-                            }
-                        },
+                    }, React.createElement(CodInput, {
+                        key: e.id,
+                        rowId: e.id,
+                        initialValue: e.cod_profissional || "",
+                        onCommit: c,
+                        lojaId: t.id,
                         "data-cod-input": e.id,
-                        placeholder: "...",
-                        className: "w-full px-1 py-0.5 border border-gray-200 rounded text-center font-mono text-xs " + (e.is_reposicao ? "bg-blue-50/50" : e.is_excedente ? "bg-red-50/50" : "bg-white")
+                        rowClass: e.is_reposicao ? "bg-blue-50/50" : e.is_excedente ? "bg-red-50/50" : "bg-white"
                     })), React.createElement("td", {
                         className: "px-1 py-0.5"
                     }, React.createElement("div", {
