@@ -495,7 +495,7 @@
                     h(HealthRing, { score: cli.health_score, size: 52 }),
                     h('div', { className: 'flex-1 min-w-0' },
                       h('div', { className: 'flex items-center gap-2 mb-1' },
-                        h('h4', { className: 'font-semibold text-gray-900 truncate' }, cli.nome_fantasia || `Cliente ${cli.cod_cliente}`),
+                        h('h4', { className: 'font-semibold text-gray-900 truncate' }, cli.mascara || cli.nome_fantasia || `Cliente ${cli.cod_cliente}`),
                         h('span', { className: 'text-xs text-gray-400' }, `#${cli.cod_cliente}`),
                         parseInt(cli.qtd_centros_custo) > 1 && h('span', { className: 'text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-medium' }, `${cli.qtd_centros_custo} centros de custo`)
                       ),
@@ -541,6 +541,9 @@
     const [showNovaOcorrencia, setShowNovaOcorrencia] = useState(false);
     const [showEmailModal, setShowEmailModal] = useState(false);
     const [emailSending, setEmailSending] = useState(false);
+    const [editandoRaioX, setEditandoRaioX] = useState(false);
+    const [raioXEditText, setRaioXEditText] = useState('');
+    const [salvandoRaioX, setSalvandoRaioX] = useState(false);
     const [interacaoForm, setInteracaoForm] = useState({ tipo: 'ligacao', titulo: '', descricao: '', resultado: '', proxima_acao: '' });
     const [ocorrenciaForm, setOcorrenciaForm] = useState({ tipo: 'problema_entrega', titulo: '', descricao: '', severidade: 'media' });
     const [periodoRaioX, setPeriodoRaioX] = useState(() => {
@@ -577,6 +580,31 @@
     }, [carregar]);
 
     const filtrarPeriodo = () => { setFiltroAplicado(true); carregar(periodoRaioX.inicio, periodoRaioX.fim); };
+
+    const iniciarEdicaoRaioX = () => {
+      setRaioXEditText(raioXResult.analise);
+      setEditandoRaioX(true);
+    };
+
+    const salvarEdicaoRaioX = async () => {
+      setSalvandoRaioX(true);
+      try {
+        if (raioXResult.id) {
+          const res = await fetchApi(`/cs/raio-x/${raioXResult.id}`, {
+            method: 'PUT',
+            body: JSON.stringify({ analise_texto: raioXEditText }),
+          });
+          if (res.success) {
+            setRaioXResult({ ...raioXResult, analise: raioXEditText });
+            setEditandoRaioX(false);
+          } else { alert('Erro ao salvar: ' + (res.error || '')); }
+        } else {
+          setRaioXResult({ ...raioXResult, analise: raioXEditText });
+          setEditandoRaioX(false);
+        }
+      } catch (e) { alert('Erro ao salvar edição'); }
+      setSalvandoRaioX(false);
+    };
 
     const gerarRaioX = async () => {
       setRaioXLoading(true);
@@ -685,8 +713,8 @@ ${renderMarkdown(raioXResult.analise)}
       h('div', { className: 'flex items-center gap-4' },
         h('button', { onClick: onVoltar, className: 'p-2 hover:bg-gray-100 rounded-lg transition-colors' }, '← Voltar'),
         h('div', { className: 'flex-1' },
-          h('h2', { className: 'text-xl font-bold text-gray-900' }, ficha.nome_fantasia || `Cliente ${codCliente}`),
-          h('p', { className: 'text-sm text-gray-500' }, `Cód: ${codCliente} · ${ficha.cidade || ''} ${ficha.estado ? '- ' + ficha.estado : ''} · ${ficha.segmento || 'Autopeças'}`)
+          h('h2', { className: 'text-xl font-bold text-gray-900' }, ficha.mascara || ficha.nome_fantasia || `Cliente ${codCliente}`),
+          h('p', { className: 'text-sm text-gray-500' }, `Cód: ${codCliente} · ${ficha.segmento || ''}`)
         ),
         h(HealthRing, { score: diag.health_score, size: 64 }),
         h('div', { className: 'text-right' },
@@ -719,8 +747,7 @@ ${renderMarkdown(raioXResult.analise)}
             onClick: () => setCcSelecionado(cc.centro_custo),
             className: `inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${ccSelecionado === cc.centro_custo ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-white text-gray-600 border-gray-200 hover:border-indigo-300 hover:bg-indigo-50'}`
           },
-            cc.centro_custo,
-            h('span', { className: ccSelecionado === cc.centro_custo ? 'text-indigo-200' : 'text-gray-400' }, `(${parseInt(cc.total_entregas).toLocaleString()})`)
+            cc.centro_custo
           )
         )
       ),
@@ -771,20 +798,38 @@ ${renderMarkdown(raioXResult.analise)}
           h('span', { className: 'text-2xl' }, '🔬'),
           h('h3', { className: 'text-lg font-bold text-indigo-900' }, 'Raio-X Inteligente'),
           h('span', { className: 'text-xs text-indigo-400 ml-auto' }, `Gerado em ${formatDateTime(raioXResult.gerado_em)} · ${raioXResult.tokens} tokens`),
-          h('button', { onClick: gerarPdfRaioX,
+          !editandoRaioX && h('button', { onClick: iniciarEdicaoRaioX,
+            className: 'ml-2 px-4 py-1.5 bg-white border border-amber-300 text-amber-700 rounded-lg text-xs font-bold hover:bg-amber-50 shadow-sm' },
+            '✏️ Editar'
+          ),
+          !editandoRaioX && h('button', { onClick: gerarPdfRaioX,
             className: 'ml-2 px-4 py-1.5 bg-white border border-indigo-300 text-indigo-700 rounded-lg text-xs font-bold hover:bg-indigo-50 shadow-sm' },
             '📄 Gerar PDF'
           ),
-          h('button', { onClick: () => setShowEmailModal(true),
+          !editandoRaioX && h('button', { onClick: () => setShowEmailModal(true),
             className: 'ml-2 px-4 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-bold hover:bg-indigo-700 shadow-sm' },
             '📧 Enviar por Email'
+          ),
+          editandoRaioX && h('button', { onClick: salvarEdicaoRaioX, disabled: salvandoRaioX,
+            className: 'ml-2 px-4 py-1.5 bg-green-600 text-white rounded-lg text-xs font-bold hover:bg-green-700 shadow-sm disabled:opacity-50' },
+            salvandoRaioX ? '💾 Salvando...' : '💾 Salvar'
+          ),
+          editandoRaioX && h('button', { onClick: () => setEditandoRaioX(false),
+            className: 'ml-2 px-4 py-1.5 bg-white border border-gray-300 text-gray-600 rounded-lg text-xs font-bold hover:bg-gray-50 shadow-sm' },
+            '✖ Cancelar'
           )
         ),
-        h('div', {
-          className: 'prose prose-sm prose-indigo max-w-none',
-          dangerouslySetInnerHTML: { __html: renderMarkdown(raioXResult.analise) }
-        }),
-        // Gráficos agora estão embutidos no texto como SVG inline
+        editandoRaioX
+          ? h('textarea', {
+              value: raioXEditText,
+              onChange: (e) => setRaioXEditText(e.target.value),
+              className: 'w-full min-h-[500px] p-4 bg-white border border-indigo-200 rounded-xl text-sm font-mono text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-y',
+              placeholder: 'Edite o conteúdo do Raio-X em Markdown...'
+            })
+          : h('div', {
+              className: 'prose prose-sm prose-indigo max-w-none',
+              dangerouslySetInnerHTML: { __html: renderMarkdown(raioXResult.analise) }
+            }),
       ),
 
       // Timeline Interações + Ocorrências
@@ -859,7 +904,7 @@ ${renderMarkdown(raioXResult.analise)}
               onClick: async () => {
                 try {
                   const res = await fetchApi(`/cs/raio-x/${rx.id}`);
-                  if (res.success) setRaioXResult({ analise: res.raio_x.analise_texto, gerado_em: res.raio_x.created_at, tokens: res.raio_x.tokens_utilizados, health_score: rx.score_saude });
+                  if (res.success) setRaioXResult({ id: rx.id, analise: res.raio_x.analise_texto, gerado_em: res.raio_x.created_at, tokens: res.raio_x.tokens_utilizados, health_score: rx.score_saude });
                 } catch (e) { console.error(e); }
               }
             },
