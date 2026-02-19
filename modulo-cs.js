@@ -488,15 +488,16 @@
               ...clientes.map(cli =>
                 h('div', {
                   key: cli.cod_cliente,
-                  onClick: () => onSelectCliente(cli.cod_cliente, cli.centro_custo),
+                  onClick: () => onSelectCliente(cli.cod_cliente),
                   className: 'bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md hover:border-blue-300 transition-all cursor-pointer'
                 },
                   h('div', { className: 'flex items-center gap-4' },
                     h(HealthRing, { score: cli.health_score, size: 52 }),
                     h('div', { className: 'flex-1 min-w-0' },
                       h('div', { className: 'flex items-center gap-2 mb-1' },
-                        h('h4', { className: 'font-semibold text-gray-900 truncate' }, cli.centro_custo || cli.nome_fantasia || `Cliente ${cli.cod_cliente}`),
-                        h('span', { className: 'text-xs text-gray-400' }, `#${cli.cod_cliente}`)
+                        h('h4', { className: 'font-semibold text-gray-900 truncate' }, cli.nome_fantasia || `Cliente ${cli.cod_cliente}`),
+                        h('span', { className: 'text-xs text-gray-400' }, `#${cli.cod_cliente}`),
+                        parseInt(cli.qtd_centros_custo) > 1 && h('span', { className: 'text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-medium' }, `${cli.qtd_centros_custo} centros de custo`)
                       ),
                       h('div', { className: 'flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500' },
                         h('span', null, `🚚 ${cli.total_entregas_30d || 0} entregas/30d`),
@@ -530,11 +531,12 @@
   // ══════════════════════════════════════════════════
   // SUB-TELA: DETALHE DO CLIENTE (com Raio-X)
   // ══════════════════════════════════════════════════
-  function ClienteDetalheView({ codCliente, centroCusto, fetchApi, apiUrl, getToken, onVoltar }) {
+  function ClienteDetalheView({ codCliente, centroCusto: ccInicial, fetchApi, apiUrl, getToken, onVoltar }) {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [raioXLoading, setRaioXLoading] = useState(false);
     const [raioXResult, setRaioXResult] = useState(null);
+    const [ccSelecionado, setCcSelecionado] = useState(ccInicial || null);
     const [showNovaInteracao, setShowNovaInteracao] = useState(false);
     const [showNovaOcorrencia, setShowNovaOcorrencia] = useState(false);
     const [showEmailModal, setShowEmailModal] = useState(false);
@@ -555,25 +557,27 @@
         let url = `/cs/clientes/${codCliente}`;
         const params = [];
         if (filtroInicio && filtroFim) { params.push(`data_inicio=${filtroInicio}`, `data_fim=${filtroFim}`); }
-        if (centroCusto) { params.push(`centro_custo=${encodeURIComponent(centroCusto)}`); }
+        if (ccSelecionado) { params.push(`centro_custo=${encodeURIComponent(ccSelecionado)}`); }
         if (params.length > 0) url += '?' + params.join('&');
         const res = await fetchApi(url);
         if (res.success) setData(res);
       } catch (e) { console.error(e); }
       setLoading(false);
-    }, [fetchApi, codCliente, centroCusto]);
+    }, [fetchApi, codCliente, ccSelecionado]);
 
-    // Carregar uma vez ao abrir (sem filtro = histórico completo)
-    useEffect(() => { carregar(); }, [carregar]);
+    // Carregar ao abrir e quando CC mudar
+    useEffect(() => { carregar(); setRaioXResult(null); }, [carregar]);
 
     const filtrarPeriodo = () => { carregar(periodoRaioX.inicio, periodoRaioX.fim); };
 
     const gerarRaioX = async () => {
       setRaioXLoading(true);
       try {
+        const body = { cod_cliente: codCliente, data_inicio: periodoRaioX.inicio, data_fim: periodoRaioX.fim };
+        if (ccSelecionado) body.centro_custo = ccSelecionado;
         const res = await fetchApi('/cs/raio-x', {
           method: 'POST',
-          body: JSON.stringify({ cod_cliente: codCliente, data_inicio: periodoRaioX.inicio, data_fim: periodoRaioX.fim }),
+          body: JSON.stringify(body),
         });
         if (res.success) setRaioXResult(res.raio_x);
         else alert('Erro: ' + (res.error || 'Falha ao gerar'));
@@ -582,7 +586,8 @@
     };
 
     const abrirMapaCalor = () => {
-      const url = `${apiUrl}/cs/mapa-calor/${codCliente}?data_inicio=${periodoRaioX.inicio}&data_fim=${periodoRaioX.fim}`;
+      let url = `${apiUrl}/cs/mapa-calor/${codCliente}?data_inicio=${periodoRaioX.inicio}&data_fim=${periodoRaioX.fim}`;
+      if (ccSelecionado) url += `&centro_custo=${encodeURIComponent(ccSelecionado)}`;
       // Abrir popup com loading enquanto backend processa
       const w = window.open('', '_blank');
       if (w) {
@@ -693,13 +698,21 @@ ${renderMarkdown(raioXResult.analise)}
         h(KpiCard, { titulo: 'Taxa Retorno', valor: `${m.taxa_retorno || 0}%`, icone: '⚠️', cor: parseFloat(m.taxa_retorno || 0) > 5 ? 'red' : parseFloat(m.taxa_retorno || 0) > 3 ? 'amber' : 'green' })
       ),
 
-      // Centros de Custo (quando existem)
+      // Centros de Custo (botões clicáveis para filtrar)
       data.centros_custo && data.centros_custo.length > 1 && h('div', { className: 'flex flex-wrap items-center gap-2 px-1' },
-        h('span', { className: 'text-xs font-semibold text-gray-500 uppercase tracking-wider' }, '📋 Centros de Custo:'),
+        h('span', { className: 'text-xs font-semibold text-gray-500 uppercase tracking-wider' }, '📋 Centro de Custo:'),
+        h('button', { 
+          onClick: () => setCcSelecionado(null),
+          className: `inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${!ccSelecionado ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-white text-gray-600 border-gray-200 hover:border-indigo-300 hover:bg-indigo-50'}`
+        }, '🏢 Todos'),
         ...data.centros_custo.map((cc, i) =>
-          h('span', { key: i, className: 'inline-flex items-center gap-1 px-3 py-1 bg-indigo-50 text-indigo-700 rounded-full text-xs font-medium border border-indigo-100' },
+          h('button', { 
+            key: i, 
+            onClick: () => setCcSelecionado(cc.centro_custo),
+            className: `inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${ccSelecionado === cc.centro_custo ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-white text-gray-600 border-gray-200 hover:border-indigo-300 hover:bg-indigo-50'}`
+          },
             cc.centro_custo,
-            h('span', { className: 'text-indigo-400' }, `(${parseInt(cc.total_entregas).toLocaleString()})`)
+            h('span', { className: ccSelecionado === cc.centro_custo ? 'text-indigo-200' : 'text-gray-400' }, `(${parseInt(cc.total_entregas).toLocaleString()})`)
           )
         )
       ),
@@ -1536,8 +1549,8 @@ ${renderMarkdown(raioXResult.analise)}
     };
 
     // Abrir detalhe do cliente
-    const handleSelectCliente = (cod, centroCusto) => {
-      setClienteDetalhe({ cod, centro_custo: centroCusto || null });
+    const handleSelectCliente = (cod) => {
+      setClienteDetalhe({ cod });
     };
 
     // Renderizar conteúdo ativo
