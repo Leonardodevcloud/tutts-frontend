@@ -461,41 +461,42 @@ const OverflowNav = ({ items, activeId, onSelect, theme = "dark" }) => {
     );
 
     return React.createElement("div", { className: "relative flex-1 flex items-center min-w-0" },
-        // Container principal
+        // Container dos itens visíveis (overflow-hidden só aqui, não no dropdown)
         React.createElement("div", {
             ref: containerRef,
             className: "flex-1 flex items-center gap-1 min-w-0 overflow-hidden"
         },
-            visible.map(renderItem),
-            overflow.length > 0 && React.createElement("div", { ref: dropdownRef, className: "relative flex-shrink-0 ml-0.5" },
-                React.createElement("button", {
-                    onClick: () => setDropdownOpen(o => !o),
-                    className: btnBase + (overflowHasActive ? moreActiveClass : moreInactiveClass) + " flex items-center gap-1"
+            visible.map(renderItem)
+        ),
+        // Botão +N e dropdown FORA do overflow-hidden para não ser cortado
+        overflow.length > 0 && React.createElement("div", { ref: dropdownRef, className: "relative flex-shrink-0 ml-0.5" },
+            React.createElement("button", {
+                onClick: () => setDropdownOpen(o => !o),
+                className: btnBase + (overflowHasActive ? moreActiveClass : moreInactiveClass) + " flex items-center gap-1"
+            },
+                overflowHasActive && React.createElement("span", {
+                    className: "w-1.5 h-1.5 rounded-full " + (isDark ? "bg-white" : "bg-purple-600")
+                }),
+                "+" + overflow.length + " ▾"
+            ),
+            dropdownOpen && React.createElement("div", {
+                className: "absolute top-full mt-1 right-0 z-[9999] min-w-[180px] rounded-xl shadow-2xl border overflow-hidden " +
+                    (isDark ? "bg-indigo-900 border-white/10" : "bg-white border-gray-200")
+            },
+                overflow.map(item => React.createElement("button", {
+                    key: item.id,
+                    onClick: () => { onSelect(item); setDropdownOpen(false); },
+                    className: "w-full flex items-center gap-2 px-4 py-2.5 text-sm text-left transition-colors " +
+                        (item.id === activeId
+                            ? (isDark ? "bg-white/20 text-white font-semibold" : "bg-purple-50 text-purple-800 font-semibold")
+                            : (isDark ? "text-white/80 hover:bg-white/10" : "text-gray-700 hover:bg-gray-50"))
                 },
-                    overflowHasActive && React.createElement("span", {
-                        className: "w-1.5 h-1.5 rounded-full " + (isDark ? "bg-white" : "bg-purple-600")
-                    }),
-                    `+${overflow.length} ▾`
-                ),
-                dropdownOpen && React.createElement("div", {
-                    className: "absolute top-full mt-1 right-0 z-50 min-w-[160px] rounded-xl shadow-2xl border overflow-hidden " +
-                        (isDark ? "bg-indigo-900 border-white/10" : "bg-white border-gray-200")
-                },
-                    overflow.map(item => React.createElement("button", {
-                        key: item.id,
-                        onClick: () => { onSelect(item); setDropdownOpen(false); },
-                        className: "w-full flex items-center gap-2 px-4 py-2.5 text-sm text-left transition-colors " +
-                            (item.id === activeId
-                                ? (isDark ? "bg-white/20 text-white font-semibold" : "bg-purple-50 text-purple-800 font-semibold")
-                                : (isDark ? "text-white/80 hover:bg-white/10" : "text-gray-700 hover:bg-gray-50"))
-                    },
-                        item.icon && React.createElement("span", { className: "text-base" }, item.icon),
-                        React.createElement("span", null, item.label),
-                        item.id === activeId && React.createElement("span", {
-                            className: "ml-auto w-2 h-2 rounded-full " + (isDark ? "bg-white" : "bg-purple-600")
-                        })
-                    ))
-                )
+                    item.icon && React.createElement("span", { className: "text-base" }, item.icon),
+                    React.createElement("span", null, item.label),
+                    item.id === activeId && React.createElement("span", {
+                        className: "ml-auto w-2 h-2 rounded-full " + (isDark ? "bg-white" : "bg-purple-600")
+                    })
+                ))
             )
         ),
 
