@@ -565,10 +565,18 @@
       setLoading(false);
     }, [fetchApi, codCliente, ccSelecionado]);
 
-    // Carregar ao abrir e quando CC mudar
-    useEffect(() => { carregar(); setRaioXResult(null); }, [carregar]);
+    // Carregar ao abrir e quando CC mudar (mantendo filtro de data se aplicado)
+    const [filtroAplicado, setFiltroAplicado] = useState(false);
+    useEffect(() => { 
+      if (filtroAplicado) {
+        carregar(periodoRaioX.inicio, periodoRaioX.fim);
+      } else {
+        carregar();
+      }
+      setRaioXResult(null); 
+    }, [carregar]);
 
-    const filtrarPeriodo = () => { carregar(periodoRaioX.inicio, periodoRaioX.fim); };
+    const filtrarPeriodo = () => { setFiltroAplicado(true); carregar(periodoRaioX.inicio, periodoRaioX.fim); };
 
     const gerarRaioX = async () => {
       setRaioXLoading(true);
