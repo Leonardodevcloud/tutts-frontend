@@ -388,6 +388,134 @@ const SISTEMA_MODULOS_CONFIG = [
     { id: "crm-whatsapp", label: "CRM WhatsApp", icon: "💬", abas: [] }
 ];
 
+// ==================== COMPONENTE OVERFLOW NAV (módulos + abas com dropdown inteligente) ====================
+const OverflowNav = ({ items, activeId, onSelect, theme = "dark" }) => {
+    const containerRef = React.useRef(null);
+    const measureRef = React.useRef(null);
+    const dropdownRef = React.useRef(null);
+    const [visibleCount, setVisibleCount] = React.useState(items.length);
+    const [dropdownOpen, setDropdownOpen] = React.useState(false);
+
+    const isDark = theme === "dark";
+
+    // Recalcula quantos itens cabem
+    const recalc = React.useCallback(() => {
+        const container = containerRef.current;
+        const measure = measureRef.current;
+        if (!container || !measure) return;
+
+        const moreBtn = 72; // largura reservada para botão "+N mais"
+        const available = container.clientWidth - moreBtn;
+        const children = Array.from(measure.children);
+        let total = 0, count = 0;
+        for (const child of children) {
+            total += child.offsetWidth + 4; // 4 = gap-1
+            if (total <= available) count++;
+            else break;
+        }
+        setVisibleCount(Math.max(1, count));
+    }, [items]);
+
+    React.useLayoutEffect(() => {
+        recalc();
+        const ro = new ResizeObserver(recalc);
+        if (containerRef.current) ro.observe(containerRef.current);
+        return () => ro.disconnect();
+    }, [recalc]);
+
+    // Fecha dropdown ao clicar fora
+    React.useEffect(() => {
+        const handler = (e) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+                setDropdownOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handler);
+        document.addEventListener("touchstart", handler);
+        return () => {
+            document.removeEventListener("mousedown", handler);
+            document.removeEventListener("touchstart", handler);
+        };
+    }, []);
+
+    const visible = items.slice(0, visibleCount);
+    const overflow = items.slice(visibleCount);
+    const overflowHasActive = overflow.some(i => i.id === activeId);
+
+    const btnBase = isDark
+        ? "flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap "
+        : "px-3 sm:px-4 py-2 text-sm font-medium rounded-lg transition-all whitespace-nowrap ";
+
+    const activeClass = isDark ? "bg-white text-purple-900 shadow" : "bg-purple-100 text-purple-800 shadow-sm";
+    const inactiveClass = isDark ? "text-white/80 hover:bg-white/10" : "text-gray-600 hover:bg-gray-100 hover:text-gray-900";
+    const moreActiveClass = isDark ? "bg-white/20 text-white shadow" : "bg-purple-100 text-purple-800 shadow-sm";
+    const moreInactiveClass = isDark ? "text-white/80 hover:bg-white/10" : "text-gray-600 hover:bg-gray-100";
+
+    const renderItem = (item) => React.createElement("button", {
+        key: item.id,
+        onClick: () => { onSelect(item); setDropdownOpen(false); },
+        className: btnBase + (item.id === activeId ? activeClass : inactiveClass)
+    },
+        item.icon && React.createElement("span", null, item.icon),
+        React.createElement("span", { className: isDark ? "hidden sm:inline" : "" }, item.label)
+    );
+
+    return React.createElement("div", { className: "relative flex-1 flex items-center min-w-0" },
+        // Container principal
+        React.createElement("div", {
+            ref: containerRef,
+            className: "flex-1 flex items-center gap-1 min-w-0 overflow-hidden"
+        },
+            visible.map(renderItem),
+            overflow.length > 0 && React.createElement("div", { ref: dropdownRef, className: "relative flex-shrink-0 ml-0.5" },
+                React.createElement("button", {
+                    onClick: () => setDropdownOpen(o => !o),
+                    className: btnBase + (overflowHasActive ? moreActiveClass : moreInactiveClass) + " flex items-center gap-1"
+                },
+                    overflowHasActive && React.createElement("span", {
+                        className: "w-1.5 h-1.5 rounded-full " + (isDark ? "bg-white" : "bg-purple-600")
+                    }),
+                    `+${overflow.length} ▾`
+                ),
+                dropdownOpen && React.createElement("div", {
+                    className: "absolute top-full mt-1 right-0 z-50 min-w-[160px] rounded-xl shadow-2xl border overflow-hidden " +
+                        (isDark ? "bg-indigo-900 border-white/10" : "bg-white border-gray-200")
+                },
+                    overflow.map(item => React.createElement("button", {
+                        key: item.id,
+                        onClick: () => { onSelect(item); setDropdownOpen(false); },
+                        className: "w-full flex items-center gap-2 px-4 py-2.5 text-sm text-left transition-colors " +
+                            (item.id === activeId
+                                ? (isDark ? "bg-white/20 text-white font-semibold" : "bg-purple-50 text-purple-800 font-semibold")
+                                : (isDark ? "text-white/80 hover:bg-white/10" : "text-gray-700 hover:bg-gray-50"))
+                    },
+                        item.icon && React.createElement("span", { className: "text-base" }, item.icon),
+                        React.createElement("span", null, item.label),
+                        item.id === activeId && React.createElement("span", {
+                            className: "ml-auto w-2 h-2 rounded-full " + (isDark ? "bg-white" : "bg-purple-600")
+                        })
+                    ))
+                )
+            )
+        ),
+
+        // Linha de medição oculta (absoluta, fora do fluxo)
+        React.createElement("div", {
+            ref: measureRef,
+            className: "absolute inset-0 flex items-center gap-1 pointer-events-none opacity-0",
+            "aria-hidden": "true"
+        },
+            items.map(item => React.createElement("div", {
+                key: item.id,
+                className: btnBase + inactiveClass
+            },
+                item.icon && React.createElement("span", null, item.icon),
+                React.createElement("span", { className: isDark ? "hidden sm:inline" : "" }, item.label)
+            ))
+        )
+    );
+};
+
 // ==================== COMPONENTE NAVEGAÇÃO HORIZONTAL ====================
 const NavegacaoHorizontal = ({ usuario, moduloAtivo, abaAtiva, onNavigate, hasModuleAccess, socialProfile, onLogout, isLoading, lastUpdate, onRefresh }) => {
     const moduloConfig = SISTEMA_MODULOS_CONFIG.find(m => m.id === moduloAtivo);
@@ -414,30 +542,18 @@ const NavegacaoHorizontal = ({ usuario, moduloAtivo, abaAtiva, onNavigate, hasMo
                     ),
                     
                     // Navegação de Módulos
-                    React.createElement("nav", { className: "flex-1 flex items-center justify-center gap-1 overflow-x-auto px-2 scrollbar-hide" },
-                        // Botão Home
-                        React.createElement("button", {
-                            onClick: () => onNavigate("home", null),
-                            className: "flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap " +
-                                (moduloAtivo === "home" ? "bg-white text-purple-900 shadow-lg" : "text-white/80 hover:bg-white/10 hover:text-white")
+                    React.createElement(OverflowNav, {
+                        items: [
+                            { id: "__home__", label: "Início", icon: "🏠" },
+                            ...SISTEMA_MODULOS_CONFIG.filter(m => hasModuleAccess(usuario, m.id)).map(m => ({ id: m.id, label: m.label, icon: m.icon, _modulo: m }))
+                        ],
+                        activeId: moduloAtivo === "home" ? "__home__" : moduloAtivo,
+                        onSelect: (item) => {
+                            if (item.id === "__home__") onNavigate("home", null);
+                            else onNavigate(item.id, item._modulo?.abas?.[0]?.id || null);
                         },
-                            React.createElement("span", { className: "text-lg" }, "🏠"),
-                            React.createElement("span", { className: "hidden sm:inline" }, "Início")
-                        ),
-                        
-                        // Módulos
-                        SISTEMA_MODULOS_CONFIG.filter(m => hasModuleAccess(usuario, m.id)).map(modulo =>
-                            React.createElement("button", {
-                                key: modulo.id,
-                                onClick: () => onNavigate(modulo.id, modulo.abas?.[0]?.id || null),
-                                className: "flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap " +
-                                    (moduloAtivo === modulo.id ? "bg-white text-purple-900 shadow-lg" : "text-white/80 hover:bg-white/10 hover:text-white")
-                            },
-                                React.createElement("span", { className: "text-lg" }, modulo.icon),
-                                React.createElement("span", { className: "hidden md:inline" }, modulo.label)
-                            )
-                        )
-                    ),
+                        theme: "dark"
+                    }),
                     
                     // Lado direito: Status + Usuário
                     React.createElement("div", { className: "flex items-center gap-2 flex-shrink-0" },
@@ -486,19 +602,13 @@ const NavegacaoHorizontal = ({ usuario, moduloAtivo, abaAtiva, onNavigate, hasMo
         
         // Barra de abas do módulo (se houver abas)
         abas.length > 0 && React.createElement("div", { className: "bg-white shadow border-b" },
-            React.createElement("div", { className: "max-w-full mx-auto px-4" },
-                React.createElement("nav", { className: "flex items-center gap-1 overflow-x-auto py-1 scrollbar-hide" },
-                    abas.map(aba =>
-                        React.createElement("button", {
-                            key: aba.id,
-                            onClick: () => onNavigate(moduloAtivo, aba.id),
-                            className: "px-4 py-2 text-sm font-medium rounded-lg transition-all whitespace-nowrap " +
-                                (abaAtiva === aba.id ? 
-                                    "bg-purple-100 text-purple-800 shadow-sm" : 
-                                    "text-gray-600 hover:bg-gray-100 hover:text-gray-900")
-                        }, aba.label)
-                    )
-                )
+            React.createElement("div", { className: "max-w-full mx-auto px-3 sm:px-4 py-1" },
+                React.createElement(OverflowNav, {
+                    items: abas.map(a => ({ id: a.id, label: a.label })),
+                    activeId: abaAtiva,
+                    onSelect: (item) => onNavigate(moduloAtivo, item.id),
+                    theme: "light"
+                })
             )
         )
     );
@@ -631,30 +741,18 @@ const HeaderCompacto = ({ usuario, moduloAtivo, abaAtiva, socialProfile, isLoadi
                     ),
                     
                     // Navegação de Módulos - Centro
-                    React.createElement("nav", { className: "flex-1 flex items-center justify-center gap-1 overflow-x-auto px-2" },
-                        // Botão Home
-                        React.createElement("button", {
-                            onClick: onGoHome,
-                            className: "flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap " +
-                                (moduloAtivo === "home" ? "bg-white text-purple-900 shadow" : "text-white/80 hover:bg-white/10")
+                    React.createElement(OverflowNav, {
+                        items: [
+                            { id: "__home__", label: "Início", icon: "🏠" },
+                            ...SISTEMA_MODULOS_CONFIG.filter(m => hasModuleAccess(usuario, m.id)).map(m => ({ id: m.id, label: m.label, icon: m.icon, _modulo: m }))
+                        ],
+                        activeId: moduloAtivo === "home" ? "__home__" : moduloAtivo,
+                        onSelect: (item) => {
+                            if (item.id === "__home__") { if (onGoHome) onGoHome(); }
+                            else if (onNavigate) onNavigate(item.id, item._modulo?.abas?.[0]?.id || null);
                         },
-                            React.createElement("span", null, "🏠"),
-                            React.createElement("span", { className: "hidden sm:inline" }, "Início")
-                        ),
-                        
-                        // Todos os módulos
-                        SISTEMA_MODULOS_CONFIG.filter(m => hasModuleAccess(usuario, m.id)).map(modulo =>
-                            React.createElement("button", {
-                                key: modulo.id,
-                                onClick: () => onNavigate ? onNavigate(modulo.id, modulo.abas?.[0]?.id) : null,
-                                className: "flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap " +
-                                    (moduloAtivo === modulo.id ? "bg-white text-purple-900 shadow" : "text-white/80 hover:bg-white/10")
-                            },
-                                React.createElement("span", null, modulo.icon),
-                                React.createElement("span", { className: "hidden md:inline" }, modulo.label)
-                            )
-                        )
-                    ),
+                        theme: "dark"
+                    }),
                     
                     // Lado direito: Status + Usuário
                     React.createElement("div", { className: "flex items-center gap-2 flex-shrink-0" },
@@ -703,19 +801,13 @@ const HeaderCompacto = ({ usuario, moduloAtivo, abaAtiva, socialProfile, isLoadi
         moduloAtivo !== "home" && moduloAtivo !== "disponibilidade" && abas.length > 0 && onChangeTab && React.createElement("div", { 
             className: "bg-white shadow-sm border-b"
         },
-            React.createElement("div", { className: "max-w-full mx-auto px-4" },
-                React.createElement("nav", { className: "flex items-center gap-1 overflow-x-auto py-2" },
-                    abas.map(aba =>
-                        React.createElement("button", {
-                            key: aba.id,
-                            onClick: () => onChangeTab ? onChangeTab(aba.id) : null,
-                            className: "px-4 py-2 text-sm font-medium rounded-lg transition-all whitespace-nowrap " +
-                                (abaAtiva === aba.id ? 
-                                    "bg-purple-100 text-purple-800 shadow-sm" : 
-                                    "text-gray-600 hover:bg-gray-100 hover:text-gray-900")
-                        }, aba.label)
-                    )
-                )
+            React.createElement("div", { className: "max-w-full mx-auto px-3 sm:px-4 py-1" },
+                React.createElement(OverflowNav, {
+                    items: abas.map(a => ({ id: a.id, label: a.label })),
+                    activeId: abaAtiva,
+                    onSelect: (item) => { if (onChangeTab) onChangeTab(item.id); },
+                    theme: "light"
+                })
             )
         )
     );
