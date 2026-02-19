@@ -5,15 +5,31 @@
 (function() {
     'use strict';
 
-    // ── CodInput — input controlado simples, igual ao padrão do módulo financeiro ──
-    // Funciona porque c() agora é 100% síncrono no onChange (sem await).
-    const CodInput = ({ rowId, initialValue, onCommit, lojaId, rowClass, "data-cod-input": dataCodInput }) => {
+    // CodInput: estado local isolado do estado global do app.
+    // onChange só atualiza localVal (sem re-render do pai).
+    // Commit (blur/Enter) envia para o pai e dispara save na API.
+    // useEffect sincroniza pai->local SOMENTE quando o campo nao esta focado
+    // (ex: servidor limpou o campo apos restricao).
+    const CodInput = ({ rowId, initialValue, onCommit, lojaId, rowClass }) => {
+        const [localVal, setLocalVal] = React.useState(initialValue || "");
+        const inputRef = React.useRef(null);
+
+        React.useEffect(() => {
+            if (document.activeElement !== inputRef.current) {
+                setLocalVal(initialValue || "");
+            }
+        }, [initialValue]);
+
+        const commit = () => onCommit(rowId, "cod_profissional", localVal);
+
         return React.createElement("input", {
+            ref: inputRef,
             type: "text",
-            value: initialValue || "",
-            onChange: e => onCommit(rowId, "cod_profissional", e.target.value),
+            value: localVal,
+            onChange: e => setLocalVal(e.target.value),
+            onBlur: commit,
             onKeyDown: e => {
-                const all = document.querySelectorAll(`[data-loja-id="${lojaId}"] input[data-cod-input]`);
+                const all = document.querySelectorAll("[data-loja-id=\"" + lojaId + "\"] input[data-cod-input]");
                 const idx = Array.from(all).findIndex(el => el === e.target);
                 if (e.key === "ArrowDown" || e.key === "ArrowUp") {
                     e.preventDefault();
@@ -22,10 +38,11 @@
                 }
                 if (e.key === "Enter") {
                     e.preventDefault();
+                    commit();
                     if (idx + 1 < all.length) { all[idx + 1].focus(); all[idx + 1].select(); }
                 }
             },
-            "data-cod-input": dataCodInput,
+            "data-cod-input": rowId,
             placeholder: "...",
             className: "w-full px-1 py-0.5 border border-gray-200 rounded text-center font-mono text-xs " + rowClass
         });
