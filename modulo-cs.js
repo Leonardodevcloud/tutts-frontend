@@ -699,7 +699,7 @@ ${renderMarkdown(raioXResult.analise)}
       ),
 
       // Centros de Custo (botões clicáveis para filtrar)
-      data.centros_custo && data.centros_custo.length > 1 && h('div', { className: 'flex flex-wrap items-center gap-2 px-1' },
+      data.centros_custo && data.centros_custo.length >= 1 && h('div', { className: 'flex flex-wrap items-center gap-2 px-1' },
         h('span', { className: 'text-xs font-semibold text-gray-500 uppercase tracking-wider' }, '📋 Centro de Custo:'),
         h('button', { 
           onClick: () => setCcSelecionado(null),
