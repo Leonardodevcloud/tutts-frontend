@@ -5,37 +5,71 @@
 (function() {
     'use strict';
 
-    // ── Componente de input de código com estado local ──────────────────────
-    // Evita o bug de cursor/dígito fantasma causado pelo re-render do async c()
+    // ── CodInput — input DEFINITIVAMENTE sem bug de cursor/dígito fantasma ──
+    //
+    // Por que o input controlado (value + onChange) bugava:
+    //   c() é async → faz await _fetch → o React re-renderiza com o valor antigo
+    //   no meio da digitação → cursor pula, dígito some ou duplica.
+    //
+    // Solução: input NÃO-CONTROLADO (defaultValue + ref).
+    //   O React nunca escreve no DOM durante a digitação.
+    //   Só sincronizamos o DOM quando o componente não está focado
+    //   E o valor externo realmente mudou (ex: limpeza de linha pelo servidor).
+    //
     const CodInput = ({ rowId, initialValue, onCommit, lojaId, rowClass, "data-cod-input": dataCodInput }) => {
-        const [val, setVal] = React.useState(initialValue || "");
+        const inputRef   = React.useRef(null);
+        const prevValue  = React.useRef(initialValue || ""); // último valor externo visto
 
-        // Sincroniza se o valor externo mudar (ex: limpar linha)
+        // Sincroniza DOM ← estado externo SOMENTE quando:
+        //   1. o campo NÃO está focado (usuário não está digitando)
+        //   2. o valor externo realmente mudou
         React.useEffect(() => {
-            setVal(initialValue || "");
+            const el = inputRef.current;
+            if (!el) return;
+            const incoming = initialValue || "";
+            if (incoming !== prevValue.current) {
+                prevValue.current = incoming;
+                if (document.activeElement !== el) {
+                    el.value = incoming;
+                }
+            }
         }, [initialValue]);
 
+        const commit = (el) => {
+            const val = el.value;
+            prevValue.current = val;
+            onCommit(rowId, "cod_profissional", val);
+        };
+
+        const handleKeyDown = (e) => {
+            const lojaInputs = document.querySelectorAll(`[data-loja-id="${lojaId}"] input[data-cod-input]`);
+            const idx = Array.from(lojaInputs).findIndex(el => el === e.target);
+
+            if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+                e.preventDefault();
+                const next = e.key === "ArrowDown" ? idx + 1 : idx - 1;
+                if (next >= 0 && next < lojaInputs.length) {
+                    lojaInputs[next].focus();
+                    lojaInputs[next].select();
+                }
+            }
+            if (e.key === "Enter") {
+                e.preventDefault();
+                commit(e.target);                          // salva ao Enter
+                const next = idx + 1;
+                if (next < lojaInputs.length) {
+                    lojaInputs[next].focus();
+                    lojaInputs[next].select();
+                }
+            }
+        };
+
         return React.createElement("input", {
+            ref: inputRef,
             type: "text",
-            value: val,
-            onChange: e => setVal(e.target.value),          // ← só estado local, sem re-render do pai
-            onBlur: () => onCommit(rowId, "cod_profissional", val),  // ← dispara a lógica async só no blur
-            onKeyDown: e => {
-                if (e.key === "ArrowDown" || e.key === "ArrowUp") {
-                    e.preventDefault();
-                    const all = document.querySelectorAll(`[data-loja-id="${lojaId}"] input[data-cod-input]`);
-                    const idx = Array.from(all).findIndex(el => el === e.target);
-                    const next = e.key === "ArrowDown" ? idx + 1 : idx - 1;
-                    if (next >= 0 && next < all.length) { all[next].focus(); all[next].select(); }
-                }
-                if (e.key === "Enter") {
-                    e.preventDefault();
-                    onCommit(rowId, "cod_profissional", val);   // ← salva ao pressionar Enter
-                    const all = document.querySelectorAll(`[data-loja-id="${lojaId}"] input[data-cod-input]`);
-                    const idx = Array.from(all).findIndex(el => el === e.target);
-                    if (idx + 1 < all.length) { all[idx + 1].focus(); all[idx + 1].select(); }
-                }
-            },
+            defaultValue: initialValue || "",              // ← NÃO-CONTROLADO
+            onBlur:    e => commit(e.target),              // ← salva ao sair
+            onKeyDown: handleKeyDown,
             "data-cod-input": dataCodInput,
             placeholder: "...",
             className: "w-full px-1 py-0.5 border border-gray-200 rounded text-center font-mono text-xs " + rowClass
