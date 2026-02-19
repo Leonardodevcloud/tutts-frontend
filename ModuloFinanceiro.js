@@ -684,7 +684,7 @@
                     n = o <= 30 ? 100 : o <= 60 ? 80 : o <= 120 ? 60 : 40,
                     m = Math.round((s + n) / 2);
                 return React.createElement(React.Fragment, null, React.createElement("div", {
-                    className: "bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl shadow-lg p-6 mb-6 text-white"
+                    className: "bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl shadow-lg p-4 sm:p-6 mb-4 sm:mb-6 text-white"
                 }, React.createElement("div", {
                     className: "flex flex-col md:flex-row items-center gap-6"
                 }, React.createElement("div", {
@@ -714,7 +714,7 @@
                 }, m), React.createElement("span", {
                     className: "text-xs opacity-70"
                 }, "SCORE"))), React.createElement("div", {
-                    className: "flex-1 grid grid-cols-2 md:grid-cols-4 gap-4"
+                    className: "flex-1 grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4"
                 }, React.createElement("div", {
                     className: "bg-white/10 rounded-lg p-3 text-center"
                 }, React.createElement("p", {
@@ -775,9 +775,9 @@
             })(), React.createElement("div", {
                 className: "bg-white rounded-xl shadow overflow-hidden"
             }, React.createElement("div", {
-                className: "p-4 border-b"
+                className: "p-3 sm:p-4 border-b"
             }, React.createElement("div", {
-                className: "flex flex-wrap gap-2"
+                className: "flex gap-2 overflow-x-auto pb-1 sm:pb-0 flex-nowrap sm:flex-wrap"
             }, React.createElement("button", {
                 onClick: () => { setSolicitacoesPagina(1); x({
                     ...p,
@@ -883,7 +883,7 @@
             }, "✕ Limpar seleção"))), React.createElement("div", {
                 className: "overflow-x-auto"
             }, React.createElement("table", {
-                className: "w-full text-sm table-fixed"
+                className: "w-full text-sm table-fixed min-w-[680px]"
             }, React.createElement("thead", {
                 className: "bg-gray-50"
             }, React.createElement("tr", null, React.createElement("th", {
@@ -1378,7 +1378,7 @@
                     const totalGratuidades = dadosFiltrados.filter(e => e.has_gratuity).length;
                     
                     return React.createElement("div", {
-                        className: "grid grid-cols-2 md:grid-cols-4 gap-4 mb-6"
+                        className: "grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-6"
                     }, 
                         React.createElement("div", {
                             className: "bg-white rounded-xl shadow p-4"
@@ -1411,9 +1411,9 @@
                     );
                 })(),
                 React.createElement("div", {
-                className: "bg-white rounded-xl shadow overflow-hidden"
+                className: "bg-white rounded-xl shadow overflow-x-auto"
             }, React.createElement("table", {
-                className: "w-full text-sm"
+                className: "w-full text-sm min-w-[600px]"
             }, React.createElement("thead", {
                 className: "bg-gray-50"
             }, React.createElement("tr", null, React.createElement("th", {
@@ -1794,7 +1794,7 @@
             }, React.createElement("h3", {
                 className: "text-lg font-semibold mb-4"
             }, "➕ Cadastrar Gratuidade"), React.createElement("div", {
-                className: "grid md:grid-cols-2 lg:grid-cols-6 gap-4"
+                className: "grid sm:grid-cols-2 lg:grid-cols-6 gap-4"
             }, React.createElement("div", null, React.createElement("label", {
                 className: "block text-xs font-semibold mb-1 text-gray-600"
             }, "Código *"), React.createElement("input", {
@@ -1869,9 +1869,9 @@
             }, "⚠️ Usuário não encontrado com este código"), p.gratUserName && React.createElement("p", {
                 className: "text-green-600 text-xs mt-2"
             }, "✅ Usuário encontrado: ", p.gratUserName)), React.createElement("div", {
-                className: "bg-white rounded-xl shadow overflow-hidden"
+                className: "bg-white rounded-xl shadow overflow-x-auto"
             }, React.createElement("table", {
-                className: "w-full text-sm"
+                className: "w-full text-sm min-w-[750px]"
             }, React.createElement("thead", {
                 className: "bg-gray-50"
             }, React.createElement("tr", null, React.createElement("th", {
