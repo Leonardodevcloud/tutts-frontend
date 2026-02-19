@@ -388,122 +388,6 @@ const SISTEMA_MODULOS_CONFIG = [
     { id: "crm-whatsapp", label: "CRM WhatsApp", icon: "💬", abas: [] }
 ];
 
-// ==================== COMPONENTE OVERFLOW TABS ====================
-const OverflowTabsNav = ({ items, activeId, onSelect, activeClass, inactiveClass, moreActiveClass, moreInactiveClass, dropdownAlign = 'left' }) => {
-    const [visibleCount, setVisibleCount] = React.useState(items.length);
-    const [open, setOpen] = React.useState(false);
-    const outerRef = React.useRef(null);
-    const measureRef = React.useRef(null);
-
-    React.useLayoutEffect(() => {
-        const calc = () => {
-            const outer = outerRef.current;
-            const measure = measureRef.current;
-            if (!outer || !measure) return;
-
-            const containerW = outer.parentElement ? outer.parentElement.clientWidth : outer.clientWidth;
-            const moreBtnW = 68;
-            const gap = 4;
-
-            const children = Array.from(measure.children);
-            if (!children.length) return;
-
-            let used = 0, count = 0;
-            for (let i = 0; i < children.length; i++) {
-                const w = children[i].scrollWidth + gap;
-                const remaining = children.length - i - 1;
-                const needed = used + w + (remaining > 0 ? moreBtnW : 0);
-                if (needed > containerW) break;
-                used += w;
-                count++;
-            }
-            setVisibleCount(Math.max(1, count));
-        };
-
-        calc();
-        const ro = new ResizeObserver(calc);
-        const target = outerRef.current?.parentElement || outerRef.current;
-        if (target) ro.observe(target);
-        return () => ro.disconnect();
-    }, [items]);
-
-    React.useEffect(() => {
-        if (!open) return;
-        const handler = (e) => {
-            if (outerRef.current && !outerRef.current.contains(e.target)) setOpen(false);
-        };
-        document.addEventListener('mousedown', handler);
-        return () => document.removeEventListener('mousedown', handler);
-    }, [open]);
-
-    const visible = items.slice(0, visibleCount);
-    const overflow = items.slice(visibleCount);
-    const hasOverflow = overflow.length > 0;
-    const overflowHasActive = overflow.some(i => i.id === activeId);
-
-    return React.createElement('div', { ref: outerRef, className: 'flex items-center gap-1 flex-1 min-w-0 relative' },
-        // Hidden measurement row (invisible, collapsed, off-screen)
-        React.createElement('div', {
-            ref: measureRef,
-            className: 'flex gap-1 absolute opacity-0 pointer-events-none',
-            style: { top: '-9999px', left: '-9999px', visibility: 'hidden' }
-        },
-            items.map(item =>
-                React.createElement('button', {
-                    key: 'measure-' + item.id,
-                    className: 'px-3 py-1.5 text-sm font-medium rounded-lg whitespace-nowrap'
-                }, item.label)
-            )
-        ),
-
-        // Visible tabs
-        visible.map(item =>
-            React.createElement('button', {
-                key: item.id,
-                onClick: () => onSelect(item.id),
-                className: 'flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-lg transition-all whitespace-nowrap flex-shrink-0 ' +
-                    (activeId === item.id ? activeClass : inactiveClass)
-            }, item.label)
-        ),
-
-        // Overflow "more" button + dropdown
-        hasOverflow && React.createElement('div', { className: 'relative flex-shrink-0' },
-            React.createElement('button', {
-                onClick: () => setOpen(!open),
-                className: 'flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-lg transition-all whitespace-nowrap ' +
-                    ((overflowHasActive || open) ? moreActiveClass || activeClass : moreInactiveClass || inactiveClass)
-            },
-                overflowHasActive && React.createElement('span', {
-                    className: 'inline-block w-1.5 h-1.5 rounded-full bg-purple-500 mr-0.5 flex-shrink-0'
-                }),
-                `+${overflow.length} mais`,
-                React.createElement('span', { className: 'text-xs ml-0.5', style: { lineHeight: 1 } }, open ? '▲' : '▾')
-            ),
-
-            open && React.createElement('div', {
-                className: 'absolute top-full mt-1.5 bg-white rounded-xl shadow-xl border border-gray-100 py-1.5 z-[200] min-w-[180px] ' +
-                    (dropdownAlign === 'right' ? 'right-0' : 'left-0')
-            },
-                overflow.map(item =>
-                    React.createElement('button', {
-                        key: item.id,
-                        onClick: () => { onSelect(item.id); setOpen(false); },
-                        className: 'w-full text-left px-4 py-2 text-sm transition-colors whitespace-nowrap flex items-center gap-2 ' +
-                            (activeId === item.id
-                                ? 'bg-purple-50 text-purple-800 font-semibold'
-                                : 'text-gray-700 hover:bg-gray-50')
-                    },
-                        activeId === item.id && React.createElement('span', {
-                            className: 'w-1.5 h-1.5 rounded-full bg-purple-500 flex-shrink-0'
-                        }),
-                        item.label
-                    )
-                )
-            )
-        )
-    );
-};
-
 // ==================== COMPONENTE NAVEGAÇÃO HORIZONTAL ====================
 const NavegacaoHorizontal = ({ usuario, moduloAtivo, abaAtiva, onNavigate, hasModuleAccess, socialProfile, onLogout, isLoading, lastUpdate, onRefresh }) => {
     const moduloConfig = SISTEMA_MODULOS_CONFIG.find(m => m.id === moduloAtivo);
@@ -530,26 +414,29 @@ const NavegacaoHorizontal = ({ usuario, moduloAtivo, abaAtiva, onNavigate, hasMo
                     ),
                     
                     // Navegação de Módulos
-                    React.createElement("nav", { className: "flex-1 flex items-center justify-center px-2 min-w-0" },
-                        React.createElement(OverflowTabsNav, {
-                            items: [
-                                { id: "__home__", label: "🏠 Início" },
-                                ...SISTEMA_MODULOS_CONFIG
-                                    .filter(m => hasModuleAccess(usuario, m.id))
-                                    .map(m => ({ id: m.id, label: m.icon + " " + m.label }))
-                            ],
-                            activeId: moduloAtivo === "home" ? "__home__" : moduloAtivo,
-                            onSelect: (id) => {
-                                if (id === "__home__") { onNavigate("home", null); return; }
-                                const m = SISTEMA_MODULOS_CONFIG.find(x => x.id === id);
-                                onNavigate(id, m?.abas?.[0]?.id || null);
+                    React.createElement("nav", { className: "flex-1 flex items-center justify-center gap-1 overflow-x-auto px-2 scrollbar-hide" },
+                        // Botão Home
+                        React.createElement("button", {
+                            onClick: () => onNavigate("home", null),
+                            className: "flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap " +
+                                (moduloAtivo === "home" ? "bg-white text-purple-900 shadow-lg" : "text-white/80 hover:bg-white/10 hover:text-white")
+                        },
+                            React.createElement("span", { className: "text-lg" }, "🏠"),
+                            React.createElement("span", { className: "hidden sm:inline" }, "Início")
+                        ),
+                        
+                        // Módulos
+                        SISTEMA_MODULOS_CONFIG.filter(m => hasModuleAccess(usuario, m.id)).map(modulo =>
+                            React.createElement("button", {
+                                key: modulo.id,
+                                onClick: () => onNavigate(modulo.id, modulo.abas?.[0]?.id || null),
+                                className: "flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap " +
+                                    (moduloAtivo === modulo.id ? "bg-white text-purple-900 shadow-lg" : "text-white/80 hover:bg-white/10 hover:text-white")
                             },
-                            activeClass: "bg-white text-purple-900 shadow-lg",
-                            inactiveClass: "text-white/80 hover:bg-white/10 hover:text-white",
-                            moreActiveClass: "bg-white text-purple-900 shadow-lg",
-                            moreInactiveClass: "text-white/80 hover:bg-white/10 hover:text-white",
-                            dropdownAlign: "right"
-                        })
+                                React.createElement("span", { className: "text-lg" }, modulo.icon),
+                                React.createElement("span", { className: "hidden md:inline" }, modulo.label)
+                            )
+                        )
                     ),
                     
                     // Lado direito: Status + Usuário
@@ -599,15 +486,19 @@ const NavegacaoHorizontal = ({ usuario, moduloAtivo, abaAtiva, onNavigate, hasMo
         
         // Barra de abas do módulo (se houver abas)
         abas.length > 0 && React.createElement("div", { className: "bg-white shadow border-b" },
-            React.createElement("div", { className: "max-w-full mx-auto px-4 py-1 flex items-center" },
-                React.createElement(OverflowTabsNav, {
-                    items: abas,
-                    activeId: abaAtiva,
-                    onSelect: (abaId) => onNavigate(moduloAtivo, abaId),
-                    activeClass: "bg-purple-100 text-purple-800 shadow-sm",
-                    inactiveClass: "text-gray-600 hover:bg-gray-100 hover:text-gray-900",
-                    dropdownAlign: "left"
-                })
+            React.createElement("div", { className: "max-w-full mx-auto px-4" },
+                React.createElement("nav", { className: "flex items-center gap-1 overflow-x-auto py-1 scrollbar-hide" },
+                    abas.map(aba =>
+                        React.createElement("button", {
+                            key: aba.id,
+                            onClick: () => onNavigate(moduloAtivo, aba.id),
+                            className: "px-4 py-2 text-sm font-medium rounded-lg transition-all whitespace-nowrap " +
+                                (abaAtiva === aba.id ? 
+                                    "bg-purple-100 text-purple-800 shadow-sm" : 
+                                    "text-gray-600 hover:bg-gray-100 hover:text-gray-900")
+                        }, aba.label)
+                    )
+                )
             )
         )
     );
@@ -740,26 +631,29 @@ const HeaderCompacto = ({ usuario, moduloAtivo, abaAtiva, socialProfile, isLoadi
                     ),
                     
                     // Navegação de Módulos - Centro
-                    React.createElement("nav", { className: "flex-1 flex items-center justify-center px-2 min-w-0" },
-                        React.createElement(OverflowTabsNav, {
-                            items: [
-                                { id: "__home__", label: "🏠 Início" },
-                                ...SISTEMA_MODULOS_CONFIG
-                                    .filter(m => hasModuleAccess(usuario, m.id))
-                                    .map(m => ({ id: m.id, label: m.icon + " " + m.label }))
-                            ],
-                            activeId: moduloAtivo === "home" ? "__home__" : moduloAtivo,
-                            onSelect: (id) => {
-                                if (id === "__home__") { onGoHome(); return; }
-                                const m = SISTEMA_MODULOS_CONFIG.find(x => x.id === id);
-                                if (onNavigate) onNavigate(id, m?.abas?.[0]?.id || null);
+                    React.createElement("nav", { className: "flex-1 flex items-center justify-center gap-1 overflow-x-auto px-2" },
+                        // Botão Home
+                        React.createElement("button", {
+                            onClick: onGoHome,
+                            className: "flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap " +
+                                (moduloAtivo === "home" ? "bg-white text-purple-900 shadow" : "text-white/80 hover:bg-white/10")
+                        },
+                            React.createElement("span", null, "🏠"),
+                            React.createElement("span", { className: "hidden sm:inline" }, "Início")
+                        ),
+                        
+                        // Todos os módulos
+                        SISTEMA_MODULOS_CONFIG.filter(m => hasModuleAccess(usuario, m.id)).map(modulo =>
+                            React.createElement("button", {
+                                key: modulo.id,
+                                onClick: () => onNavigate ? onNavigate(modulo.id, modulo.abas?.[0]?.id) : null,
+                                className: "flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap " +
+                                    (moduloAtivo === modulo.id ? "bg-white text-purple-900 shadow" : "text-white/80 hover:bg-white/10")
                             },
-                            activeClass: "bg-white text-purple-900 shadow",
-                            inactiveClass: "text-white/80 hover:bg-white/10",
-                            moreActiveClass: "bg-white text-purple-900 shadow",
-                            moreInactiveClass: "text-white/80 hover:bg-white/10",
-                            dropdownAlign: "right"
-                        })
+                                React.createElement("span", null, modulo.icon),
+                                React.createElement("span", { className: "hidden md:inline" }, modulo.label)
+                            )
+                        )
                     ),
                     
                     // Lado direito: Status + Usuário
@@ -809,15 +703,19 @@ const HeaderCompacto = ({ usuario, moduloAtivo, abaAtiva, socialProfile, isLoadi
         moduloAtivo !== "home" && moduloAtivo !== "disponibilidade" && abas.length > 0 && onChangeTab && React.createElement("div", { 
             className: "bg-white shadow-sm border-b"
         },
-            React.createElement("div", { className: "max-w-full mx-auto px-4 py-1 flex items-center" },
-                React.createElement(OverflowTabsNav, {
-                    items: abas,
-                    activeId: abaAtiva,
-                    onSelect: (abaId) => onChangeTab ? onChangeTab(abaId) : null,
-                    activeClass: "bg-purple-100 text-purple-800 shadow-sm",
-                    inactiveClass: "text-gray-600 hover:bg-gray-100 hover:text-gray-900",
-                    dropdownAlign: "left"
-                })
+            React.createElement("div", { className: "max-w-full mx-auto px-4" },
+                React.createElement("nav", { className: "flex items-center gap-1 overflow-x-auto py-2" },
+                    abas.map(aba =>
+                        React.createElement("button", {
+                            key: aba.id,
+                            onClick: () => onChangeTab ? onChangeTab(aba.id) : null,
+                            className: "px-4 py-2 text-sm font-medium rounded-lg transition-all whitespace-nowrap " +
+                                (abaAtiva === aba.id ? 
+                                    "bg-purple-100 text-purple-800 shadow-sm" : 
+                                    "text-gray-600 hover:bg-gray-100 hover:text-gray-900")
+                        }, aba.label)
+                    )
+                )
             )
         )
     );
@@ -7596,15 +7494,6 @@ const hideLoadingScreen = () => {
                 }, o.onerror = r, o.src = e.target.result
             }, o.onerror = r, o.readAsDataURL(e)
         }), Yl = async () => {
-            // Verificar OS duplicada com status pendente
-            const osDuplicada = j.find(sub => 
-                String(sub.ordemServico) === String(p.os) && 
-                sub.status === "pendente"
-            );
-            if (osDuplicada) {
-                ja("⚠️ Você já tem uma solicitação pendente com esta OS. Aguarde a análise ou solicite novamente após a recusa.", "error");
-                return;
-            }
             s(!0);
             try {
                 const e = p.imagens?.length > 0 ? p.imagens.join("|||") : null;
@@ -8259,7 +8148,7 @@ const hideLoadingScreen = () => {
         React.createElement("nav", {
             className: "bg-gradient-to-r from-purple-800 to-purple-900 shadow-lg"
         }, React.createElement("div", {
-            className: "max-w-7xl mx-auto px-4 py-4 flex justify-between items-center"
+            className: "max-w-7xl mx-auto px-3 sm:px-4 py-3 flex justify-between items-center gap-2"
         }, React.createElement("div", {className: "flex items-center gap-3"}, 
             // Foto de perfil
             socialProfile?.profile_photo ? React.createElement("img", {
@@ -8291,12 +8180,12 @@ const hideLoadingScreen = () => {
             onClick: () => o(null),
             className: "px-4 py-2 bg-white/10 text-white hover:bg-white/20 rounded-lg"
         }, "Sair")))), !p.userTab && React.createElement("div", {
-            className: "max-w-2xl mx-auto p-6"
+            className: "max-w-2xl mx-auto px-3 py-4 sm:p-6"
         }, 
         // ========== BOTÃO CONHEÇA A TUTTS ==========
         React.createElement("button", {
             onClick: () => setSobreTuttsAberto(true),
-            className: "w-full mb-6 rounded-2xl p-5 flex items-center gap-4 shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] group",
+            className: "w-full mb-4 sm:mb-6 rounded-2xl p-4 sm:p-5 flex items-center gap-3 sm:gap-4 shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] group",
             style: { background: "linear-gradient(135deg, #550976 0%, #6b1190 50%, #550976 100%)" }
         },
             React.createElement("div", {
@@ -8680,9 +8569,9 @@ const hideLoadingScreen = () => {
             className: "space-y-4"
         }, React.createElement("button", {
             onClick: function() { if(typeof window._tuttsSetModulo === 'function') window._tuttsSetModulo("filas"); },
-            className: "w-full bg-gradient-to-r from-cyan-500 to-teal-500 rounded-2xl shadow-lg p-6 flex items-center gap-4 hover:shadow-xl transition-all hover:scale-[1.02]"
+            className: "w-full bg-gradient-to-r from-cyan-500 to-teal-500 rounded-2xl shadow-lg p-4 sm:p-6 flex items-center gap-3 sm:gap-4 hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98]"
         }, React.createElement("div", {
-            className: "w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center text-3xl"
+            className: "w-12 h-12 sm:w-16 sm:h-16 bg-white/20 rounded-xl flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0"
         }, "👥"), React.createElement("div", {
             className: "text-left flex-1"
         }, React.createElement("h3", {
@@ -8704,9 +8593,9 @@ const hideLoadingScreen = () => {
                 ...p,
                 userTab: "promo-novatos"
             })},
-            className: "w-full bg-white rounded-2xl shadow-lg p-6 flex items-center gap-4 hover:shadow-xl transition-all hover:scale-[1.02] border-l-4 border-orange-500"
+            className: "w-full bg-white rounded-2xl shadow-lg p-4 sm:p-6 flex items-center gap-3 sm:gap-4 hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98] border-l-4 border-orange-500"
         }, React.createElement("div", {
-            className: "w-16 h-16 bg-orange-100 rounded-xl flex items-center justify-center text-3xl"
+            className: "w-12 h-12 sm:w-16 sm:h-16 bg-orange-100 rounded-xl flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0"
         }, "🚀"), React.createElement("div", {
             className: "text-left flex-1"
         }, React.createElement("h3", {
@@ -8726,9 +8615,9 @@ const hideLoadingScreen = () => {
                 ...p,
                 userTab: "solicitacoes"
             }),
-            className: "w-full bg-white rounded-2xl shadow-lg p-6 flex items-center gap-4 hover:shadow-xl transition-all hover:scale-[1.02] border-l-4 border-purple-600"
+            className: "w-full bg-white rounded-2xl shadow-lg p-4 sm:p-6 flex items-center gap-3 sm:gap-4 hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98] border-l-4 border-purple-600"
         }, React.createElement("div", {
-            className: "w-16 h-16 bg-purple-100 rounded-xl flex items-center justify-center text-3xl"
+            className: "w-12 h-12 sm:w-16 sm:h-16 bg-purple-100 rounded-xl flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0"
         }, "📋"), React.createElement("div", {
             className: "text-left flex-1"
         }, React.createElement("h3", {
@@ -8742,9 +8631,9 @@ const hideLoadingScreen = () => {
                 ...p,
                 userTab: "saque"
             }),
-            className: "w-full bg-white rounded-2xl shadow-lg p-6 flex items-center gap-4 hover:shadow-xl transition-all hover:scale-[1.02] border-l-4 border-green-600"
+            className: "w-full bg-white rounded-2xl shadow-lg p-4 sm:p-6 flex items-center gap-3 sm:gap-4 hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98] border-l-4 border-green-600"
         }, React.createElement("div", {
-            className: "w-16 h-16 bg-green-100 rounded-xl flex items-center justify-center text-3xl"
+            className: "w-12 h-12 sm:w-16 sm:h-16 bg-green-100 rounded-xl flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0"
         }, "💰"), React.createElement("div", {
             className: "text-left flex-1"
         }, React.createElement("h3", {
@@ -8758,9 +8647,9 @@ const hideLoadingScreen = () => {
                 ...p,
                 userTab: "indicacoes"
             }),
-            className: "w-full bg-white rounded-2xl shadow-lg p-6 flex items-center gap-4 hover:shadow-xl transition-all hover:scale-[1.02] border-l-4 border-blue-600"
+            className: "w-full bg-white rounded-2xl shadow-lg p-4 sm:p-6 flex items-center gap-3 sm:gap-4 hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98] border-l-4 border-blue-600"
         }, React.createElement("div", {
-            className: "w-16 h-16 bg-blue-100 rounded-xl flex items-center justify-center text-3xl"
+            className: "w-12 h-12 sm:w-16 sm:h-16 bg-blue-100 rounded-xl flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0"
         }, "👥"), React.createElement("div", {
             className: "text-left flex-1"
         }, React.createElement("h3", {
@@ -8776,9 +8665,9 @@ const hideLoadingScreen = () => {
                 ...p,
                 userTab: "seguro-iza"
             }),
-            className: "w-full bg-white rounded-2xl shadow-lg p-6 flex items-center gap-4 hover:shadow-xl transition-all hover:scale-[1.02] border-l-4 border-cyan-500"
+            className: "w-full bg-white rounded-2xl shadow-lg p-4 sm:p-6 flex items-center gap-3 sm:gap-4 hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98] border-l-4 border-cyan-500"
         }, React.createElement("div", {
-            className: "w-16 h-16 bg-cyan-100 rounded-xl flex items-center justify-center text-3xl"
+            className: "w-12 h-12 sm:w-16 sm:h-16 bg-cyan-100 rounded-xl flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0"
         }, "🛡️"), React.createElement("div", {
             className: "text-left flex-1"
         }, React.createElement("h3", {
@@ -8794,9 +8683,9 @@ const hideLoadingScreen = () => {
                     userTab: "loja"
                 })
             },
-            className: "w-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl shadow-lg p-6 flex items-center gap-4 hover:shadow-xl transition-all hover:scale-[1.02]"
+            className: "w-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl shadow-lg p-4 sm:p-6 flex items-center gap-3 sm:gap-4 hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98]"
         }, React.createElement("div", {
-            className: "w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center text-3xl"
+            className: "w-12 h-12 sm:w-16 sm:h-16 bg-white/20 rounded-xl flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0"
         }, "🛒"), React.createElement("div", {
             className: "text-left flex-1"
         }, React.createElement("h3", {
@@ -8806,7 +8695,7 @@ const hideLoadingScreen = () => {
         }, "Ofertas exclusivas com abatimento no saldo!")), React.createElement("span", {
             className: "text-white/60 text-2xl"
         }, "›"))), React.createElement("div", {
-            className: "mt-8 grid grid-cols-3 gap-4"
+            className: "mt-6 sm:mt-8 grid grid-cols-3 gap-2 sm:gap-4"
         }, React.createElement("div", {
             className: "bg-white rounded-xl p-4 text-center shadow"
         }, React.createElement("p", {
@@ -8826,9 +8715,9 @@ const hideLoadingScreen = () => {
         }, re.filter(e => "pendente" === e.status).length), React.createElement("p", {
             className: "text-xs text-gray-500"
         }, "Indicações Pendentes")))), p.userTab && React.createElement("div", {
-            className: "max-w-4xl mx-auto p-6"
+            className: "max-w-4xl mx-auto px-3 py-4 sm:p-6"
         }, React.createElement("div", {
-            className: "flex items-center gap-4 mb-6"
+            className: "flex items-center gap-3 mb-4 sm:mb-6"
         }, React.createElement("button", {
             onClick: () => x({
                 ...p,
@@ -8836,9 +8725,9 @@ const hideLoadingScreen = () => {
             }),
             className: "p-2 bg-white rounded-lg shadow hover:bg-gray-50"
         }, "← Voltar"), React.createElement("h1", {
-            className: "text-xl font-bold text-gray-800"
+            className: "text-base sm:text-xl font-bold text-gray-800"
         }, "solicitacoes" === p.userTab && "📋 Solicitar Ajuste", "saque" === p.userTab && "💰 Saque Emergencial", "indicacoes" === p.userTab && "👥 Promoção de Indicação", "promo-novatos" === p.userTab && "🚀 Promoções Novatos", "seguro-iza" === p.userTab && "🛡️ Seguro de Vida - IZA", "loja" === p.userTab && "🛒 Lojinha Tutts")), "solicitacoes" === p.userTab && React.createElement(React.Fragment, null, React.createElement("div", {
-            className: "bg-white rounded-xl shadow p-6 mb-6"
+            className: "bg-white rounded-xl shadow p-4 sm:p-6 mb-4 sm:mb-6"
         }, React.createElement("h2", {
             className: "text-lg font-semibold mb-4"
         }, "📝 Enviar OS"), React.createElement("div", {
@@ -8932,11 +8821,9 @@ const hideLoadingScreen = () => {
             className: "border rounded-lg p-4"
         }, React.createElement("div", {
             className: "flex justify-between items-start"
-        }, React.createElement("div", null, React.createElement("button", {
-            className: "font-mono text-lg font-bold flex items-center gap-1.5 group hover:text-purple-700 transition-colors cursor-pointer",
-            title: "Clique para copiar o número da OS",
-            onClick: () => { navigator.clipboard.writeText(String(e.ordemServico)); ja("📋 OS " + e.ordemServico + " copiada!", "success"); }
-        }, "OS: ", e.ordemServico, React.createElement("span", { className: "opacity-0 group-hover:opacity-100 transition-opacity text-sm text-purple-400" }, "📋")), React.createElement("p", {
+        }, React.createElement("div", null, React.createElement("p", {
+            className: "font-mono text-lg font-bold"
+        }, "OS: ", e.ordemServico), React.createElement("p", {
             className: "text-sm text-gray-600"
         }, e.motivo)), React.createElement("span", {
             className: "px-3 py-1 rounded-full text-xs font-bold " + ("aprovado" === e.status ? "bg-green-500 text-white" : "rejeitado" === e.status ? "bg-red-500 text-white" : "bg-yellow-500 text-white")
@@ -18543,13 +18430,9 @@ const hideLoadingScreen = () => {
                 className: "text-lg"
             }, "⚠️"), React.createElement("span", null, "ATENÇÃO: ", rtnW > 3 ? `${rtnW} retornos na semana (máx 3)` : "", " ", rtnM > 5 ? `| ${rtnM} retornos no mês (máx 5)` : "")), React.createElement("div", {
                 className: "flex justify-between items-start mb-2"
-            }, React.createElement("button", {
-                className: "font-mono text-lg font-bold flex items-center gap-1.5 group hover:text-purple-700 transition-colors cursor-pointer",
-                title: "Clique para copiar o número da OS",
-                onClick: () => { navigator.clipboard.writeText(String(e.ordemServico)); ja("📋 OS " + e.ordemServico + " copiada!", "success"); }
-            }, "OS: ", e.ordemServico,
-                React.createElement("span", { className: "opacity-0 group-hover:opacity-100 transition-opacity text-sm text-purple-400" }, "📋")
-            ), React.createElement("span", {
+            }, React.createElement("p", {
+                className: "font-mono text-lg font-bold"
+            }, "OS: ", e.ordemServico), React.createElement("span", {
                 className: "px-2 py-0.5 rounded text-xs font-bold " + (r ? "bg-red-500 text-white animate-pulse" : o ? "bg-orange-400 text-white" : "bg-gray-100 text-gray-600")
             }, r ? "🚨" : o ? "⚠️" : "⏱️", a > 0 ? `${a}h ${l}m` : `${l}min`)), React.createElement("p", {
                 className: "text-xs text-gray-700"
@@ -18686,11 +18569,9 @@ const hideLoadingScreen = () => {
             className: "border rounded-lg p-3 text-sm " + ("aprovado" === e.status ? "bg-green-50" : "rejeitado" === e.status ? "bg-red-50" : "bg-yellow-50")
         }, React.createElement("div", {
             className: "flex justify-between items-start mb-1"
-        }, React.createElement("div", null, React.createElement("button", {
-            className: "font-mono font-bold flex items-center gap-1 group hover:text-purple-700 transition-colors cursor-pointer",
-            title: "Clique para copiar o número da OS",
-            onClick: () => { navigator.clipboard.writeText(String(e.ordemServico)); ja("📋 OS " + e.ordemServico + " copiada!", "success"); }
-        }, "OS: ", e.ordemServico, React.createElement("span", { className: "opacity-0 group-hover:opacity-100 transition-opacity text-xs text-purple-400" }, "📋")), React.createElement("p", {
+        }, React.createElement("div", null, React.createElement("p", {
+            className: "font-mono font-bold"
+        }, "OS: ", e.ordemServico), React.createElement("p", {
             className: "text-xs text-gray-700"
         }, e.fullName)), React.createElement("div", {
             className: "flex items-center gap-1"
@@ -18803,11 +18684,9 @@ const hideLoadingScreen = () => {
                 className: "p-3 hover:bg-gray-50"
             }, React.createElement("div", {
                 className: "flex justify-between items-center"
-            }, React.createElement("div", null, React.createElement("button", {
-                className: "font-mono font-semibold text-sm flex items-center gap-1 group hover:text-purple-700 transition-colors cursor-pointer",
-                title: "Clique para copiar o número da OS",
-                onClick: (ev) => { ev.stopPropagation(); navigator.clipboard.writeText(String(s.ordemServico)); ja("📋 OS " + s.ordemServico + " copiada!", "success"); }
-            }, "OS: ", s.ordemServico, React.createElement("span", { className: "opacity-0 group-hover:opacity-100 transition-opacity text-xs text-purple-400" }, "📋")), React.createElement("p", {
+            }, React.createElement("div", null, React.createElement("p", {
+                className: "font-mono font-semibold text-sm"
+            }, "OS: ", s.ordemServico), React.createElement("p", {
                 className: "text-xs text-gray-500"
             }, new Date(s.created_at).toLocaleDateString("pt-BR"), " às ", new Date(s.created_at).toLocaleTimeString("pt-BR", {
                 hour: "2-digit",
