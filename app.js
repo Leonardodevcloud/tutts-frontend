@@ -500,10 +500,10 @@ const OverflowNav = ({ items, activeId, onSelect, theme = "dark" }) => {
             )
         ),
 
-        // Linha de medição oculta (absoluta, fora do fluxo)
+        // Linha de medição oculta (absoluta, fora do fluxo) — overflow-hidden para não vazar na página
         React.createElement("div", {
             ref: measureRef,
-            className: "absolute inset-0 flex items-center gap-1 pointer-events-none opacity-0",
+            className: "absolute inset-0 flex items-center gap-1 pointer-events-none opacity-0 overflow-hidden",
             "aria-hidden": "true"
         },
             items.map(item => React.createElement("div", {
