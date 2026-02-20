@@ -444,12 +444,12 @@ const OverflowNav = ({ items, activeId, onSelect, theme = "dark" }) => {
 
     const btnBase = isDark
         ? "flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap "
-        : "px-3 sm:px-4 py-2 text-sm font-medium rounded-lg transition-all whitespace-nowrap ";
+        : "px-3 sm:px-4 py-2.5 text-sm font-medium transition-all whitespace-nowrap border-b-2 -mb-px ";
 
-    const activeClass = isDark ? "bg-white text-purple-900 shadow" : "bg-purple-100 text-purple-800 shadow-sm";
-    const inactiveClass = isDark ? "text-white/80 hover:bg-white/10" : "text-gray-600 hover:bg-gray-100 hover:text-gray-900";
-    const moreActiveClass = isDark ? "bg-white/20 text-white shadow" : "bg-purple-100 text-purple-800 shadow-sm";
-    const moreInactiveClass = isDark ? "text-white/80 hover:bg-white/10" : "text-gray-600 hover:bg-gray-100";
+    const activeClass = isDark ? "bg-white text-purple-900 shadow" : "border-purple-600 text-purple-700 font-semibold";
+    const inactiveClass = isDark ? "text-white/80 hover:bg-white/10" : "border-transparent text-gray-500 hover:text-gray-800 hover:border-gray-300";
+    const moreActiveClass = isDark ? "bg-white/20 text-white shadow" : "border-purple-600 text-purple-700 font-semibold";
+    const moreInactiveClass = isDark ? "text-white/80 hover:bg-white/10" : "border-transparent text-gray-500 hover:text-gray-800 hover:border-gray-300";
 
     const renderItem = (item) => React.createElement("button", {
         key: item.id,
@@ -602,8 +602,8 @@ const NavegacaoHorizontal = ({ usuario, moduloAtivo, abaAtiva, onNavigate, hasMo
         ),
         
         // Barra de abas do módulo (se houver abas)
-        abas.length > 0 && React.createElement("div", { className: "bg-white shadow border-b" },
-            React.createElement("div", { className: "max-w-full mx-auto px-3 sm:px-4 py-1" },
+        abas.length > 0 && React.createElement("div", { className: "bg-white border-b border-gray-200 shadow-sm" },
+            React.createElement("div", { className: "max-w-full mx-auto px-2 sm:px-4 flex items-end" },
                 React.createElement(OverflowNav, {
                     items: abas.map(a => ({ id: a.id, label: a.label })),
                     activeId: abaAtiva,
@@ -800,9 +800,9 @@ const HeaderCompacto = ({ usuario, moduloAtivo, abaAtiva, socialProfile, isLoadi
         
         // Barra de abas do módulo (se houver abas, não for home, e não for disponibilidade que tem suas próprias abas internas)
         moduloAtivo !== "home" && moduloAtivo !== "disponibilidade" && abas.length > 0 && onChangeTab && React.createElement("div", { 
-            className: "bg-white shadow-sm border-b"
+            className: "bg-white border-b border-gray-200 shadow-sm"
         },
-            React.createElement("div", { className: "max-w-full mx-auto px-3 sm:px-4 py-1" },
+            React.createElement("div", { className: "max-w-full mx-auto px-2 sm:px-4 flex items-end" },
                 React.createElement(OverflowNav, {
                     items: abas.map(a => ({ id: a.id, label: a.label })),
                     activeId: abaAtiva,
