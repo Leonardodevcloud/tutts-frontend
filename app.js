@@ -5496,7 +5496,7 @@ const hideLoadingScreen = () => {
             if (!dataInicio || !dataFim) { setValidacaoData(null); return; }
             setValidacaoLoading(true);
             try {
-                const params = new URLSearchParams({ dataInicio, dataFim, tipoFiltro: tipoFiltro || 'solicitacao', limit: '500' });
+                const params = new URLSearchParams({ dataInicio, dataFim, tipoFiltro: tipoFiltro || 'solicitacao', limit: '999999' });
                 const resp = await fetchAuth(`${API_URL}/withdrawals?${params}`);
                 if (resp.ok) setValidacaoData(await resp.json());
             } catch (e) { console.error('Erro validação:', e); }
@@ -5505,7 +5505,7 @@ const hideLoadingScreen = () => {
             if (!dataInicio) { setConciliacaoData(null); return; }
             setConciliacaoLoading(true);
             try {
-                const params = new URLSearchParams({ dataInicio, dataFim: dataFim || dataInicio, tipoFiltro: tipoFiltro || 'solicitacao', limit: '500' });
+                const params = new URLSearchParams({ dataInicio, dataFim: dataFim || dataInicio, tipoFiltro: tipoFiltro || 'solicitacao', limit: '999999' });
                 const resp = await fetchAuth(`${API_URL}/withdrawals?${params}`);
                 if (resp.ok) {
                     const data = await resp.json();
