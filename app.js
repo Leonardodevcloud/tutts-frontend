@@ -3268,8 +3268,10 @@ const hideLoadingScreen = () => {
                                     v(prev => ({ ...prev, solicitacoes: Math.max(0, (prev.solicitacoes || 0) - 1), validacao: Math.max(0, (prev.validacao || 0) - 1) }));
                                 }
                             } else if (data.event === 'MY_WITHDRAWAL_UPDATE') {
-                                if (data.data.status === 'aprovado' || data.data.status === 'aprovado_gratuidade') { Ca(); ja('✅ Seu saque foi aprovado!', 'success'); }
-                                else if (data.data.status === 'rejeitado') { ja(`❌ Saque rejeitado: ${data.data.reject_reason || 'Sem motivo'}`, 'error'); }
+                                // Atualizar status do saque em M para liberar/bloquear cooldown em tempo real
+                                O(prev => prev.map(w => w.id === data.data.id ? { ...w, status: data.data.status, reject_reason: data.data.reject_reason } : w));
+                                if (data.data.status === 'aprovado' || data.data.status === 'aprovado_gratuidade') { Ca(); ja('✅ Seu saque foi aprovado! Você já pode solicitar um novo.', 'success'); }
+                                else if (data.data.status === 'rejeitado') { ja(`❌ Saque rejeitado: ${data.data.reject_reason || 'Sem motivo'}. Você já pode solicitar novamente.`, 'error'); }
                             } else if (data.event === 'AUTH_SUCCESS') { console.log('✅ [WS] Autenticado:', data.role); }
                             else if (data.event === 'AUTH_ERROR') { console.error('❌ [WS] Erro de autenticação:', data.error); setWsConnected(false); }
                         } catch (err) { console.error('❌ [WS] Erro:', err); }
@@ -7331,12 +7333,13 @@ const hideLoadingScreen = () => {
             }
             const t = new Date,
                 a = new Date(t.getTime() - 36e5),
-                // Filtrar apenas saques não rejeitados na última hora
-                r = M.filter(e => new Date(e.created_at) >= a && e.status !== "rejeitado");
+                // Só bloqueia se tiver saque aguardando aprovação (pendente) na última hora
+                // Aprovado ou rejeitado = libera para nova solicitação
+                r = M.filter(e => new Date(e.created_at) >= a && (e.status === "pending" || e.status === "aguardando_aprovacao"));
             if (r.length >= 1) {
                 const e = new Date(new Date(r[0].created_at).getTime() + 36e5),
                     a = Math.ceil((e - t) / 6e4);
-                return void ja(`⚠️ Permitido apenas 1 saque por hora! Aguarde ${a} minutos para solicitar novamente.`, "error")
+                return void ja(`⚠️ Você já possui um saque aguardando aprovação! Aguarde a aprovação ou rejeição antes de solicitar novamente.`, "error")
             }
             // Com 1 saque por hora, não precisa verificar valor repetido
             s(!0);
@@ -7351,7 +7354,9 @@ const hideLoadingScreen = () => {
                         userName: T.full_name,
                         cpf: T.cpf,
                         pixKey: T.pix_key,
-                        requestedAmount: e
+                        requestedAmount: e,
+                        // Passar a gratuidade escolhida pelo motoboy (se houver)
+                        selectedGratuityId: p.selectedGratuityId || null
                     })
                 });
                 if (!response.ok) {
@@ -7363,7 +7368,8 @@ const hideLoadingScreen = () => {
                 ja("✅ Saque solicitado!", "success"), 
                 x({
                     ...p,
-                    withdrawAmount: ""
+                    withdrawAmount: "",
+                    selectedGratuityId: null
                 }), 
                 // Recarrega saques e saldo (o cálculo automático subtrai pendentes)
                 Oa(), 
@@ -9123,16 +9129,20 @@ const hideLoadingScreen = () => {
                 className: "font-semibold text-red-600"
             }, l.filter(e => "rejeitado" === e.status).length)))))
         })()), (!p.saqueTab || "solicitar" === p.saqueTab) && React.createElement(React.Fragment, null, (() => {
-            const e = G.find(e => "ativa" === e.status && e.remaining > 0),
+            // Lista de gratuidades ativas disponíveis
+            const gratuidadesAtivas = G.filter(e => "ativa" === e.status && e.remaining > 0),
+                // Gratuidade selecionada (usa a do state ou a primeira disponível)
+                e = gratuidadesAtivas.find(g => g.id === p.selectedGratuityId) || gratuidadesAtivas[0] || null,
                 t = !!e,
                 a = e ? parseFloat(e.value) : 0,
                 l = parseFloat(p.withdrawAmount) || 0,
                 r = t && l > a,
                 o = new Date,
                 s = new Date(o.getTime() - 36e5),
-                // Filtrar apenas saques pendentes ou aprovados na última hora (excluir rejeitados)
-                n = M.filter(e => new Date(e.created_at) >= s && e.status !== "rejeitado"),
-                // Limite de 1 saque por hora
+                // Bloquear apenas se houver saque ainda aguardando aprovação (pendente)
+                // Aprovado ou rejeitado = libera imediatamente para nova solicitação
+                n = M.filter(e => new Date(e.created_at) >= s && (e.status === "pending" || e.status === "aguardando_aprovacao")),
+                // Limite de 1 saque por hora (apenas pendentes bloqueiam)
                 m = Math.max(0, 1 - n.length),
                 i = n.map(e => parseFloat(e.requested_amount)),
                 d = i.includes(l) && l > 0;
@@ -9207,7 +9217,18 @@ const hideLoadingScreen = () => {
                 className: "bg-green-50 border border-green-300 rounded-lg p-4"
             }, React.createElement("p", {
                 className: "text-green-800 font-semibold"
-            }, "🎁 Você possui gratuidade ativa!"), React.createElement("p", {
+            }, "🎁 Você possui gratuidade ativa!"),
+            gratuidadesAtivas.length > 1 && React.createElement("div", { className: "mt-2 mb-1" },
+                React.createElement("label", { className: "block text-xs text-green-700 font-semibold mb-1" }, "Escolher qual usar:"),
+                React.createElement("select", {
+                    value: p.selectedGratuityId || e?.id || "",
+                    onChange: ev => x({ ...p, selectedGratuityId: parseInt(ev.target.value) }),
+                    className: "w-full border border-green-400 rounded-lg px-3 py-2 text-sm bg-white text-green-800 font-medium"
+                }, gratuidadesAtivas.map(g => React.createElement("option", { key: g.id, value: g.id },
+                    `R$ ${parseFloat(g.value).toFixed(2).replace(".", ",")} — ${g.remaining} uso(s)${g.descricao ? ` — ${g.descricao}` : ""}`
+                )))
+            ),
+            React.createElement("p", {
                 className: "text-green-700 text-sm mt-1"
             }, "Valor máximo permitido: ", React.createElement("strong", null, er(a))), React.createElement("p", {
                 className: "text-green-600 text-xs mt-1"
