@@ -3257,7 +3257,13 @@ const hideLoadingScreen = () => {
                                 v(prev => ({ ...prev, solicitacoes: (prev.solicitacoes || 0) + 1, validacao: (prev.validacao || 0) + 1 }));
                                 Ca(); ja(`🔔 Novo saque de ${data.data.user_name || data.data.user_cod}!`, "info");
                             } else if (data.event === 'WITHDRAWAL_UPDATE') {
-                                U(prev => prev.map(w => w.id === data.data.id ? { ...w, status: data.data.status } : w));
+                                U(prev => prev.map(w => w.id === data.data.id ? { 
+                                    ...w, 
+                                    status: data.data.status,
+                                    admin_name: data.data.admin_name || w.admin_name,
+                                    approved_at: data.data.approved_at || w.approved_at,
+                                    reject_reason: data.data.reject_reason || w.reject_reason,
+                                } : w));
                                 if (['aprovado', 'aprovado_gratuidade', 'rejeitado'].includes(data.data.status)) {
                                     v(prev => ({ ...prev, solicitacoes: Math.max(0, (prev.solicitacoes || 0) - 1), validacao: Math.max(0, (prev.validacao || 0) - 1) }));
                                 }
@@ -7388,6 +7394,10 @@ const hideLoadingScreen = () => {
             }));
             
             try {
+                // =============== OPTIMISTIC UPDATE: Atualizar UI instantaneamente ===============
+                const statusAnterior = q.find(w => w.id === e)?.status;
+                U(prev => prev.map(w => w.id === e ? { ...w, status: t } : w));
+                
                 // Calcular data do débito baseado no toggle de acerto
                 let dataDebito = null;
                 console.log("🔍 Toggle acertoRealizado:", acertoRealizado);
@@ -7431,6 +7441,10 @@ const hideLoadingScreen = () => {
                 const data = await response.json();
                 
                 if (!response.ok) {
+                    // =============== REVERTER OPTIMISTIC UPDATE EM CASO DE ERRO ===============
+                    if (statusAnterior !== undefined) {
+                        U(prev => prev.map(w => w.id === e ? { ...w, status: statusAnterior } : w));
+                    }
                     // =============== TRATAMENTO DE ERROS ESPECÍFICOS ===============
                     if (response.status === 400 && data.error?.includes('já foi aprovado')) {
                         ja("⚠️ Este saque já foi aprovado anteriormente!", "warning");
@@ -7481,6 +7495,10 @@ const hideLoadingScreen = () => {
                 
             } catch (err) {
                 console.error("❌ Erro ao atualizar status:", err);
+                // Reverter optimistic update em caso de erro de conexão
+                if (statusAnterior !== undefined) {
+                    U(prev => prev.map(w => w.id === e ? { ...w, status: statusAnterior } : w));
+                }
                 ja("Erro de conexão. Tente novamente.", "error");
                 
                 // Limpar estado de processamento em caso de erro
