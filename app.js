@@ -368,7 +368,7 @@ const SISTEMA_MODULOS_CONFIG = [
       abas: [{id: "panorama", label: "Panorama"}, {id: "principal", label: "Principal"}, {id: "faltosos", label: "Faltosos"}, {id: "espelho", label: "Espelho"}, {id: "relatorios", label: "Relatórios"}, {id: "motoboys", label: "Motoboys"}, {id: "restricoes", label: "Restrições"}, {id: "config", label: "Configurações"}]
     },
     { id: "bi", label: "BI", icon: "📊",
-      abas: [{id: "home-bi", label: "🏠 Home"}, {id: "dashboard", label: "Dashboard"}, {id: "acompanhamento", label: "Acompanhamento"}, {id: "profissionais", label: "Por Profissional"}, {id: "garantido", label: "Garantido"}, {id: "os", label: "Análise por OS"}, {id: "upload", label: "Upload"}, {id: "config", label: "Configurações"}]
+      abas: [{id: "home-bi", label: "🏠 Home"}, {id: "dashboard", label: "Dashboard"}, {id: "acompanhamento", label: "Acompanhamento"}, {id: "profissionais", label: "Por Profissional"}, {id: "garantido", label: "Garantido"}, {id: "os", label: "Análise por OS"}, {id: "chat-ia", label: "💬 Chat IA"}, {id: "upload", label: "Upload"}, {id: "config", label: "Configurações"}]
     },
     { id: "todo", label: "TO-DO", icon: "📝",
       abas: [{id: "tarefas", label: "Tarefas"}, {id: "metricas", label: "Métricas"}]
@@ -1990,7 +1990,7 @@ const hideLoadingScreen = () => {
         }), [qe, Ue] = useState({
             avisos: [],
             loading: !0
-        }), [ze, Be] = useState(null), [Ve, Je] = useState(0), [Qe, He] = useState([]), [Ge, We] = useState(!1), [Ze, Ye] = useState([]), [Ke, Xe] = useState([]), [et, tt] = useState([]), [at, lt] = useState([]), [rt, ot] = useState(!0), [ct, st] = useState(0), [nt, mt] = useState("produtos"), [it, dt] = useState([]), [pt, xt] = useState("lista"), [ut, gt] = useState([]), [bt, Rt] = useState([]), [Et, ht] = useState("home-bi"), [ft, Nt] = useState(null), [yt, vt] = useState([]), [wt, _t] = useState([{
+        }), [ze, Be] = useState(null), [Ve, Je] = useState(0), [Qe, He] = useState([]), [Ge, We] = useState(!1), [Ze, Ye] = useState([]), [Ke, Xe] = useState([]), [et, tt] = useState([]), [at, lt] = useState([]), [rt, ot] = useState(!0), [ct, st] = useState(0), [nt, mt] = useState("produtos"), [it, dt] = useState([]), [pt, xt] = useState("lista"), [ut, gt] = useState([]), [bt, Rt] = useState([]), [Et, ht] = useState("home-bi"), [chatIaMsgs, setChatIaMsgs] = useState([]), [chatIaInput, setChatIaInput] = useState(""), [chatIaLoading, setChatIaLoading] = useState(false), [chatIaSql, setChatIaSql] = useState(null), [ft, Nt] = useState(null), [yt, vt] = useState([]), [wt, _t] = useState([{
             km_min: 0,
             km_max: 15,
             prazo_minutos: 45
@@ -18053,6 +18053,210 @@ const hideLoadingScreen = () => {
                             className: "px-6 py-3 bg-orange-600 text-white rounded-lg font-bold hover:bg-orange-700 shadow-lg hover:shadow-xl transition-all flex items-center gap-2"
                         }, "🔄 Recalcular Agora")
                     )
+                )
+            ),
+            
+            // ========== ABA CHAT IA ==========
+            "chat-ia" === Et && React.createElement("div", {className: "space-y-4"},
+                // Header
+                React.createElement("div", {className: "bg-gradient-to-r from-emerald-600 to-teal-600 rounded-xl p-6 text-white"},
+                    React.createElement("div", {className: "flex items-center gap-4"},
+                        React.createElement("div", {className: "w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center text-3xl"}, "💬"),
+                        React.createElement("div", null,
+                            React.createElement("h2", {className: "text-2xl font-bold"}, "Chat IA — Consulta Livre"),
+                            React.createElement("p", {className: "text-emerald-100 mt-1"}, "Faça perguntas em linguagem natural sobre seus dados")
+                        )
+                    )
+                ),
+
+                // Exemplos de prompts (só mostra se não tem mensagens)
+                chatIaMsgs.length === 0 && React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-6"},
+                    React.createElement("h3", {className: "text-sm font-bold text-gray-500 mb-3"}, "💡 EXEMPLOS DE PERGUNTAS"),
+                    React.createElement("div", {className: "grid grid-cols-1 md:grid-cols-2 gap-2"},
+                        ["Qual o top 10 clientes com mais entregas este mês?",
+                         "Quais profissionais tiveram taxa de prazo abaixo de 80%?",
+                         "Compare entregas de janeiro vs fevereiro por cliente",
+                         "Qual o tempo médio de entrega por cidade?",
+                         "Quais clientes tiveram mais retornos na última semana?",
+                         "Quanto cada motoboy faturou nos últimos 7 dias?"
+                        ].map(function(exemplo, i) {
+                            return React.createElement("button", {
+                                key: i,
+                                onClick: function() { setChatIaInput(exemplo); },
+                                className: "text-left p-3 border border-gray-200 rounded-lg hover:border-emerald-400 hover:bg-emerald-50 transition-all text-sm text-gray-700"
+                            }, "→ " + exemplo);
+                        })
+                    )
+                ),
+
+                // Área de mensagens
+                chatIaMsgs.length > 0 && React.createElement("div", {className: "space-y-4"},
+                    chatIaMsgs.map(function(msg, i) {
+                        return React.createElement("div", {key: i, className: "space-y-2"},
+                            // Mensagem do usuário
+                            React.createElement("div", {className: "flex justify-end"},
+                                React.createElement("div", {className: "bg-emerald-600 text-white rounded-xl rounded-br-sm px-4 py-3 max-w-[80%] shadow"},
+                                    React.createElement("p", {className: "text-sm"}, msg.prompt)
+                                )
+                            ),
+                            // Resposta da IA
+                            msg.resposta && React.createElement("div", {className: "flex justify-start"},
+                                React.createElement("div", {className: "bg-white rounded-xl rounded-bl-sm px-5 py-4 max-w-[90%] shadow-lg border border-gray-100"},
+                                    // SQL executada (colapsável)
+                                    msg.sql && React.createElement("details", {className: "mb-3"},
+                                        React.createElement("summary", {className: "text-xs text-gray-400 cursor-pointer hover:text-emerald-600"}, "🔍 Ver SQL executada"),
+                                        React.createElement("pre", {className: "mt-2 bg-gray-900 text-green-400 text-xs p-3 rounded-lg overflow-x-auto"}, msg.sql)
+                                    ),
+                                    // Resposta formatada
+                                    React.createElement("div", {
+                                        className: "prose prose-sm max-w-none text-gray-700 chat-ia-resposta",
+                                        dangerouslySetInnerHTML: { __html: (function(text) {
+                                            // Converter markdown básico para HTML
+                                            var html = text
+                                                .replace(/```[\s\S]*?```/g, function(m) {
+                                                    return '<pre class="bg-gray-100 p-3 rounded-lg text-xs overflow-x-auto my-2">' + m.replace(/```\w*\n?/g, '').replace(/```/g, '') + '</pre>';
+                                                })
+                                                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                                                .replace(/\n\|(.+)\|/g, function(m) { return '\n' + m; })
+                                                .replace(/#{3}\s(.+)/g, '<h4 class="font-bold text-gray-800 mt-3 mb-1">$1</h4>')
+                                                .replace(/#{2}\s(.+)/g, '<h3 class="font-bold text-gray-800 text-lg mt-4 mb-2">$1</h3>')
+                                                .replace(/#{1}\s(.+)/g, '<h2 class="font-bold text-gray-900 text-xl mt-4 mb-2">$1</h2>')
+                                                .replace(/\n- (.+)/g, '<li class="ml-4">$1</li>')
+                                                .replace(/(<li.*<\/li>)/gs, '<ul class="list-disc my-2">$1</ul>')
+                                                .replace(/\n{2,}/g, '<br><br>')
+                                                .replace(/\n/g, '<br>');
+                                            return html;
+                                        })(msg.resposta) }
+                                    }),
+                                    // Dados brutos (se houver)
+                                    msg.dados && msg.dados.total > 0 && React.createElement("div", {className: "mt-3 pt-3 border-t border-gray-100"},
+                                        React.createElement("p", {className: "text-xs text-gray-400"}, "📊 " + msg.dados.total + " registros retornados" + (msg.dados.total > 100 ? " (mostrando 100)" : ""))
+                                    )
+                                )
+                            ),
+                            // Loading
+                            msg.loading && React.createElement("div", {className: "flex justify-start"},
+                                React.createElement("div", {className: "bg-white rounded-xl px-5 py-4 shadow-lg border border-gray-100 flex items-center gap-3"},
+                                    React.createElement("div", {className: "flex gap-1"},
+                                        React.createElement("div", {className: "w-2 h-2 bg-emerald-400 rounded-full animate-bounce", style: {animationDelay: "0ms"}}),
+                                        React.createElement("div", {className: "w-2 h-2 bg-emerald-400 rounded-full animate-bounce", style: {animationDelay: "150ms"}}),
+                                        React.createElement("div", {className: "w-2 h-2 bg-emerald-400 rounded-full animate-bounce", style: {animationDelay: "300ms"}})
+                                    ),
+                                    React.createElement("span", {className: "text-sm text-gray-500"}, "Analisando seus dados...")
+                                )
+                            )
+                        );
+                    })
+                ),
+
+                // Input de mensagem
+                React.createElement("div", {className: "sticky bottom-0 bg-gradient-to-t from-gray-50 pt-4 pb-2"},
+                    React.createElement("div", {className: "bg-white rounded-xl shadow-lg border border-gray-200 p-3 flex gap-3 items-end"},
+                        React.createElement("textarea", {
+                            value: chatIaInput,
+                            onChange: function(e) { setChatIaInput(e.target.value); },
+                            onKeyDown: function(e) {
+                                if (e.key === "Enter" && !e.shiftKey) {
+                                    e.preventDefault();
+                                    if (chatIaInput.trim() && !chatIaLoading) {
+                                        // Enviar mensagem
+                                        var prompt = chatIaInput.trim();
+                                        setChatIaInput("");
+                                        setChatIaLoading(true);
+                                        var novaMsgs = [].concat(chatIaMsgs, [{ prompt: prompt, resposta: null, sql: null, dados: null, loading: true }]);
+                                        setChatIaMsgs(novaMsgs);
+                                        var historico = chatIaMsgs.map(function(m) { return { prompt: m.prompt, resposta: m.resposta }; });
+                                        fetchAuth(API_URL + "/bi/chat-ia", {
+                                            method: "POST",
+                                            body: JSON.stringify({ prompt: prompt, historico: historico })
+                                        }).then(function(r) { return r.json(); }).then(function(data) {
+                                            setChatIaMsgs(function(prev) {
+                                                var updated = prev.slice();
+                                                updated[updated.length - 1] = {
+                                                    prompt: prompt,
+                                                    resposta: data.resposta || "Erro ao processar",
+                                                    sql: data.sql || null,
+                                                    dados: data.dados || null,
+                                                    loading: false
+                                                };
+                                                return updated;
+                                            });
+                                            setChatIaSql(data.sql || null);
+                                            setChatIaLoading(false);
+                                        }).catch(function(err) {
+                                            setChatIaMsgs(function(prev) {
+                                                var updated = prev.slice();
+                                                updated[updated.length - 1] = {
+                                                    prompt: prompt,
+                                                    resposta: "❌ Erro de conexão: " + err.message,
+                                                    sql: null, dados: null, loading: false
+                                                };
+                                                return updated;
+                                            });
+                                            setChatIaLoading(false);
+                                        });
+                                    }
+                                }
+                            },
+                            placeholder: "Faça uma pergunta sobre seus dados... (Enter para enviar)",
+                            rows: 2,
+                            className: "flex-1 resize-none border-0 focus:ring-0 text-sm text-gray-700 placeholder-gray-400",
+                            style: {outline: "none"}
+                        }),
+                        React.createElement("button", {
+                            onClick: function() {
+                                if (chatIaInput.trim() && !chatIaLoading) {
+                                    // Disparar mesmo evento do Enter
+                                    var ev = new KeyboardEvent("keydown", {key: "Enter", shiftKey: false});
+                                    // Simular o envio direto
+                                    var prompt = chatIaInput.trim();
+                                    setChatIaInput("");
+                                    setChatIaLoading(true);
+                                    var novaMsgs = [].concat(chatIaMsgs, [{ prompt: prompt, resposta: null, sql: null, dados: null, loading: true }]);
+                                    setChatIaMsgs(novaMsgs);
+                                    var historico = chatIaMsgs.map(function(m) { return { prompt: m.prompt, resposta: m.resposta }; });
+                                    fetchAuth(API_URL + "/bi/chat-ia", {
+                                        method: "POST",
+                                        body: JSON.stringify({ prompt: prompt, historico: historico })
+                                    }).then(function(r) { return r.json(); }).then(function(data) {
+                                        setChatIaMsgs(function(prev) {
+                                            var updated = prev.slice();
+                                            updated[updated.length - 1] = {
+                                                prompt: prompt,
+                                                resposta: data.resposta || "Erro ao processar",
+                                                sql: data.sql || null,
+                                                dados: data.dados || null,
+                                                loading: false
+                                            };
+                                            return updated;
+                                        });
+                                        setChatIaSql(data.sql || null);
+                                        setChatIaLoading(false);
+                                    }).catch(function(err) {
+                                        setChatIaMsgs(function(prev) {
+                                            var updated = prev.slice();
+                                            updated[updated.length - 1] = {
+                                                prompt: prompt,
+                                                resposta: "❌ Erro de conexão: " + err.message,
+                                                sql: null, dados: null, loading: false
+                                            };
+                                            return updated;
+                                        });
+                                        setChatIaLoading(false);
+                                    });
+                                }
+                            },
+                            disabled: !chatIaInput.trim() || chatIaLoading,
+                            className: "px-4 py-2 rounded-lg font-bold text-sm transition-all " + (chatIaInput.trim() && !chatIaLoading ? "bg-emerald-600 text-white hover:bg-emerald-700 shadow" : "bg-gray-200 text-gray-400 cursor-not-allowed")
+                        }, chatIaLoading ? "⏳" : "Enviar ➤"),
+                        // Botão limpar conversa
+                        chatIaMsgs.length > 0 && React.createElement("button", {
+                            onClick: function() { setChatIaMsgs([]); setChatIaSql(null); },
+                            className: "px-3 py-2 rounded-lg text-xs text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all",
+                            title: "Limpar conversa"
+                        }, "🗑️")
+                    ),
+                    React.createElement("p", {className: "text-xs text-gray-400 text-center mt-2"}, "Powered by Gemini 2.0 Flash · Apenas consultas de leitura · Seus dados estão seguros")
                 )
             ),
             
