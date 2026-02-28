@@ -309,7 +309,7 @@ function hasModuleAccess(user, moduleId) {
         
         // CORREÇÃO: Módulos novos que não existem nas permissões antigas
         // Dar acesso por padrão ao CRM WhatsApp e CS se não foi configurado
-        if (perm === undefined && (moduleId === "crm-whatsapp" || moduleId === "cs")) {
+        if (perm === undefined && (moduleId === "crm-whatsapp" || moduleId === "cs" || moduleId === "agente")) {
             return true;
         }
         
@@ -385,7 +385,10 @@ const SISTEMA_MODULOS_CONFIG = [
     { id: "config", label: "Configurações", icon: "🔧",
       abas: [{id: "usuarios", label: "Usuários"}, {id: "permissoes", label: "Permissões ADM"}, {id: "clientes-api", label: "Clientes API"}, {id: "auditoria", label: "Auditoria"}, {id: "sistema", label: "Sistema"}]
     },
-    { id: "crm-whatsapp", label: "CRM WhatsApp", icon: "💬", abas: [] }
+    { id: "crm-whatsapp", label: "CRM WhatsApp", icon: "💬", abas: [] },
+    { id: "agente", label: "Agente RPA", icon: "🤖",
+      abas: [{id: "formulario", label: "Correção"}, {id: "historico", label: "Histórico"}]
+    }
 ];
 
 // ==================== COMPONENTE OVERFLOW NAV (módulos + abas com dropdown inteligente) ====================
@@ -13004,6 +13007,33 @@ const hideLoadingScreen = () => {
             }
         }
 
+
+        // ========== MÓDULO AGENTE RPA (CARREGAMENTO EXTERNO) ==========
+        const canAccessAgente = hasModuleAccess(l, "agente");
+        if (canAccessAgente && "agente" === Ee) {
+            if (typeof window.ModuloAgenteComponent !== 'undefined') {
+                return React.createElement(window.ModuloAgenteComponent, {
+                    usuario: l,
+                    API_URL: API_URL,
+                    fetchAuth: fetchAuth,
+                    HeaderCompacto: HeaderCompacto,
+                    showToast: ja,
+                    he: he,
+                    Ee: Ee,
+                    f: f,
+                    E: E,
+                    n: n,
+                    i: i,
+                });
+            } else {
+                return React.createElement("div", { className: "min-h-screen bg-gray-50 flex items-center justify-center" },
+                    React.createElement("div", { className: "text-center" },
+                        React.createElement("div", { className: "animate-spin w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4" }),
+                        React.createElement("p", { className: "text-gray-600" }, "Carregando módulo Agente RPA...")
+                    )
+                );
+            }
+        }
         // ========== MÓDULO CONFIGURAÇÕES (CARREGAMENTO EXTERNO) ==========
         const canAccessConfig = hasModuleAccess(l, "config");
         if (canAccessConfig && "config" === Ee) {
