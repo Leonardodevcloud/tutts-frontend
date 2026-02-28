@@ -18221,97 +18221,74 @@ const hideLoadingScreen = () => {
                                     )
                                 ),
                                 // Resposta da IA
-                                msg.resposta && React.createElement("div", {className: "flex justify-start"},
+                                msg.resposta && !msg.loading && React.createElement("div", {className: "flex justify-start", key: "resp-" + i},
                                     React.createElement("div", {className: "bg-white rounded-xl rounded-bl-sm px-5 py-4 max-w-[90%] shadow-lg border border-gray-100"},
                                         msg.sql && React.createElement("details", {className: "mb-3"},
                                             React.createElement("summary", {className: "text-xs text-gray-400 cursor-pointer hover:text-emerald-600"}, "🔍 Ver SQL executada"),
                                             React.createElement("pre", {className: "mt-2 bg-gray-900 text-green-400 text-xs p-3 rounded-lg overflow-x-auto"}, msg.sql)
                                         ),
-                                        React.createElement("div", {
-                                            className: "prose prose-sm max-w-none text-gray-700",
-                                            dangerouslySetInnerHTML: { __html: (function(text) {
-                                                // Extrair blocos [CHART] antes do processamento markdown
-                                                var chartIndex = 0;
-                                                var charts = [];
-                                                text = text.replace(/\[CHART\]\s*\n?([\s\S]*?)\n?\[\/CHART\]/g, function(match, json) {
-                                                    var id = 'chatia-chart-' + Date.now() + '-' + chartIndex++;
-                                                    charts.push({id: id, json: json.trim()});
-                                                    return '<div class="my-4 bg-white rounded-lg p-3 border border-gray-200" style="position:relative;height:280px;"><canvas id="' + id + '"></canvas></div>';
-                                                });
-                                                
-                                                var html = text
-                                                    .replace(/```[\s\S]*?```/g, function(m) {
-                                                        return '<pre class="bg-gray-100 p-3 rounded-lg text-xs overflow-x-auto my-2">' + m.replace(/```\w*\n?/g, '').replace(/```/g, '') + '</pre>';
-                                                    })
-                                                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                                                    .replace(/#{3}\s(.+)/g, '<h4 class="font-bold text-gray-800 mt-3 mb-1">$1</h4>')
-                                                    .replace(/#{2}\s(.+)/g, '<h3 class="font-bold text-gray-800 text-lg mt-4 mb-2">$1</h3>')
-                                                    .replace(/#{1}\s(.+)/g, '<h2 class="font-bold text-gray-900 text-xl mt-4 mb-2">$1</h2>')
-                                                    .replace(/\n- (.+)/g, '<li class="ml-4">$1</li>')
-                                                    .replace(/(<li.*<\/li>)/gs, '<ul class="list-disc my-2">$1</ul>')
-                                                    .replace(/\|(.+)\|/g, function(row) {
-                                                        var cells = row.split('|').filter(function(c) { return c.trim(); });
-                                                        if (cells.every(function(c) { return /^[\s-:]+$/.test(c); })) return '';
-                                                        var tag = row.indexOf('---') > -1 ? '' : cells.map(function(c) { return '<td class="border px-2 py-1 text-xs">' + c.trim() + '</td>'; }).join('');
-                                                        return tag ? '<tr>' + tag + '</tr>' : '';
-                                                    })
-                                                    .replace(/(<tr>.*<\/tr>)/gs, '<table class="border-collapse border border-gray-200 my-2 w-full">$1</table>')
-                                                    .replace(/\n{2,}/g, '<br><br>')
-                                                    .replace(/\n/g, '<br>');
-                                                
-                                                // Renderizar charts após o DOM atualizar
-                                                if (charts.length > 0) {
-                                                    setTimeout(function() {
-                                                        charts.forEach(function(c) {
+                                        // Renderizar partes de texto e gráficos intercalados
+                                        React.createElement("div", {key: "content-" + (msg._msgId || i)},
+                                            (function() {
+                                                var textParts = msg._textParts || [msg.resposta];
+                                                var chartConfigs = msg._charts || [];
+                                                var formatMd = function(text) {
+                                                    return text
+                                                        .replace(/```[\s\S]*?```/g, function(m) { return '<pre class="bg-gray-100 p-3 rounded-lg text-xs overflow-x-auto my-2">' + m.replace(/```\w*\n?/g, '').replace(/```/g, '') + '</pre>'; })
+                                                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                                                        .replace(/#{3}\s(.+)/g, '<h4 class="font-bold text-gray-800 mt-3 mb-1">$1</h4>')
+                                                        .replace(/#{2}\s(.+)/g, '<h3 class="font-bold text-gray-800 text-lg mt-4 mb-2">$1</h3>')
+                                                        .replace(/#{1}\s(.+)/g, '<h2 class="font-bold text-gray-900 text-xl mt-4 mb-2">$1</h2>')
+                                                        .replace(/\n- (.+)/g, '<li class="ml-4">$1</li>')
+                                                        .replace(/(<li.*<\/li>)/gs, '<ul class="list-disc my-2">$1</ul>')
+                                                        .replace(/\|(.+)\|/g, function(row) {
+                                                            var cells = row.split('|').filter(function(c) { return c.trim(); });
+                                                            if (cells.every(function(c) { return /^[\s-:]+$/.test(c); })) return '';
+                                                            var tag = row.indexOf('---') > -1 ? '' : cells.map(function(c) { return '<td class="border px-2 py-1 text-xs">' + c.trim() + '</td>'; }).join('');
+                                                            return tag ? '<tr>' + tag + '</tr>' : '';
+                                                        })
+                                                        .replace(/(<tr>.*<\/tr>)/gs, '<table class="border-collapse border border-gray-200 my-2 w-full">$1</table>')
+                                                        .replace(/\n{2,}/g, '<br><br>')
+                                                        .replace(/\n/g, '<br>');
+                                                };
+                                                var els = [];
+                                                for (var pi = 0; pi < textParts.length; pi++) {
+                                                    if (textParts[pi].trim()) {
+                                                        els.push(React.createElement("div", { key: "t" + pi, className: "prose prose-sm max-w-none text-gray-700", dangerouslySetInnerHTML: { __html: formatMd(textParts[pi]) } }));
+                                                    }
+                                                    if (pi < chartConfigs.length) {
+                                                        els.push(React.createElement("div", { key: "c" + pi, className: "my-4", "data-chart-idx": pi, "data-msg-id": msg._msgId || i, ref: (function(chartCfg, msgId, chartIdx) { return function(container) {
+                                                            if (!container || container.dataset.chartDone || !window.Chart) return;
+                                                            container.dataset.chartDone = "1";
+                                                            var wrap = document.createElement("div");
+                                                            wrap.style.cssText = "background:#f9fafb;border-radius:8px;padding:16px;border:1px solid #e5e7eb;height:300px;position:relative;";
+                                                            var cvs = document.createElement("canvas");
+                                                            wrap.appendChild(cvs);
+                                                            container.appendChild(wrap);
                                                             try {
-                                                                var canvas = document.getElementById(c.id);
-                                                                if (!canvas || canvas.dataset.rendered) return;
-                                                                canvas.dataset.rendered = 'true';
-                                                                var cfg = JSON.parse(c.json);
-                                                                var chartType = cfg.type === 'horizontalBar' ? 'bar' : cfg.type;
-                                                                var isHorizontal = cfg.type === 'horizontalBar';
-                                                                
-                                                                var datasets = (cfg.datasets || []).map(function(ds, idx) {
-                                                                    var colors = ds.colors || [ds.color || ['#10b981','#3b82f6','#f59e0b','#ef4444','#8b5cf6','#6b7280'][idx % 6]];
-                                                                    return {
-                                                                        label: ds.label || '',
-                                                                        data: ds.data || [],
-                                                                        backgroundColor: Array.isArray(colors) ? colors : colors,
-                                                                        borderColor: Array.isArray(colors) ? colors : colors,
-                                                                        borderWidth: (chartType === 'line') ? 2 : 0,
-                                                                        fill: chartType === 'line' ? false : undefined,
-                                                                        tension: 0.3,
-                                                                        borderRadius: (chartType === 'bar') ? 4 : 0,
-                                                                        pointRadius: (chartType === 'line') ? 4 : 0,
-                                                                        pointBackgroundColor: Array.isArray(colors) ? colors[0] : colors
-                                                                    };
+                                                                var chartType = chartCfg.type === 'horizontalBar' ? 'bar' : chartCfg.type;
+                                                                var isHz = chartCfg.type === 'horizontalBar';
+                                                                var datasets = (chartCfg.datasets || []).map(function(ds, idx) {
+                                                                    var bc = ds.color || ['#10b981','#3b82f6','#f59e0b','#ef4444','#8b5cf6','#6b7280'][idx % 6];
+                                                                    var bg = ds.colors || ((chartType === 'pie' || chartType === 'doughnut') ? ['#10b981','#3b82f6','#f59e0b','#ef4444','#8b5cf6','#6b7280','#14b8a6','#f97316','#a855f7','#ec4899'] : bc);
+                                                                    return { label: ds.label || '', data: ds.data || [], backgroundColor: bg, borderColor: chartType === 'line' ? bc : (chartType === 'pie' || chartType === 'doughnut') ? '#fff' : bg, borderWidth: chartType === 'line' ? 2.5 : (chartType === 'pie' || chartType === 'doughnut') ? 2 : 0, fill: false, tension: 0.35, borderRadius: chartType === 'bar' ? 6 : 0, pointRadius: chartType === 'line' ? 5 : 0, pointBackgroundColor: bc, pointBorderColor: '#fff', pointBorderWidth: 2 };
                                                                 });
-                                                                
-                                                                new Chart(canvas, {
+                                                                new Chart(cvs, {
                                                                     type: chartType,
-                                                                    data: { labels: cfg.labels || [], datasets: datasets },
-                                                                    options: {
-                                                                        responsive: true,
-                                                                        maintainAspectRatio: false,
-                                                                        indexAxis: isHorizontal ? 'y' : 'x',
-                                                                        plugins: {
-                                                                            title: { display: !!cfg.title, text: cfg.title || '', font: { size: 14, weight: 'bold' }, color: '#374151', padding: { bottom: 12 } },
-                                                                            legend: { display: datasets.length > 1 || chartType === 'pie' || chartType === 'doughnut', position: 'bottom', labels: { padding: 12, usePointStyle: true, font: { size: 11 } } }
-                                                                        },
-                                                                        scales: (chartType === 'pie' || chartType === 'doughnut') ? {} : {
-                                                                            x: { grid: { display: false }, ticks: { font: { size: 10 }, maxRotation: 45 } },
-                                                                            y: { grid: { color: '#f3f4f6' }, ticks: { font: { size: 10 } }, beginAtZero: true }
-                                                                        }
+                                                                    data: { labels: chartCfg.labels || [], datasets: datasets },
+                                                                    options: { responsive: true, maintainAspectRatio: false, animation: { duration: 600, easing: 'easeOutQuart' }, indexAxis: isHz ? 'y' : 'x',
+                                                                        plugins: { title: { display: !!chartCfg.title, text: chartCfg.title || '', font: { size: 14, weight: 'bold' }, color: '#1f2937', padding: { bottom: 16 } }, legend: { display: datasets.length > 1 || chartType === 'pie' || chartType === 'doughnut', position: 'bottom', labels: { padding: 16, usePointStyle: true, pointStyle: 'circle', font: { size: 11 } } }, tooltip: { backgroundColor: '#1f2937', titleFont: { size: 12 }, bodyFont: { size: 11 }, padding: 10, cornerRadius: 8 } },
+                                                                        scales: (chartType === 'pie' || chartType === 'doughnut') ? {} : { x: { grid: { display: false }, ticks: { font: { size: 10 }, maxRotation: 45, color: '#6b7280' }, border: { display: false } }, y: { grid: { color: '#f3f4f6', drawBorder: false }, ticks: { font: { size: 10 }, color: '#6b7280' }, beginAtZero: true, border: { display: false } } }
                                                                     }
                                                                 });
-                                                            } catch(e) { console.error('Chart render error:', e); }
-                                                        });
-                                                    }, 100);
+                                                            } catch(e) { console.error('Chart error:', e); }
+                                                        }; })(chartConfigs[pi], msg._msgId || i, pi)
+                                                        }));
+                                                    }
                                                 }
-                                                
-                                                return html;
-                                            })(msg.resposta) }
-                                        }),
+                                                return els;
+                                            })()
+                                        ),
                                         msg.dados && msg.dados.total > 0 && React.createElement("div", {className: "mt-3 pt-3 border-t border-gray-100"},
                                             React.createElement("p", {className: "text-xs text-gray-400"}, "📊 " + msg.dados.total + " registros" + (msg.dados.total > 100 ? " (mostrando 100)" : ""))
                                         )
@@ -18352,9 +18329,21 @@ const hideLoadingScreen = () => {
                                                 method: "POST",
                                                 body: JSON.stringify({ prompt: userPrompt, historico: hist, filtros: chatIaFiltros })
                                             }).then(function(r) { return r.json(); }).then(function(data) {
+                                                // Pré-processar resposta: separar texto e gráficos
+                                                var resposta = data.resposta || "Erro ao processar";
+                                                var _charts = [];
+                                                var _textParts = [];
+                                                var chartRegex = /\[CHART\]\s*\n?([\s\S]*?)\n?\[\/CHART\]/g;
+                                                var cm;
+                                                while ((cm = chartRegex.exec(resposta)) !== null) {
+                                                    try { _charts.push(JSON.parse(cm[1].trim())); } catch(e) {}
+                                                }
+                                                var cleanText = resposta.replace(/\[CHART\]\s*\n?[\s\S]*?\n?\[\/CHART\]/g, '\n__CHART__\n');
+                                                _textParts = cleanText.split('__CHART__');
+                                                
                                                 setChatIaMsgs(function(prev) {
                                                     var u = prev.slice();
-                                                    u[u.length - 1] = { prompt: userPrompt, resposta: data.resposta || "Erro ao processar", sql: data.sql || null, dados: data.dados || null, loading: false };
+                                                    u[u.length - 1] = { prompt: userPrompt, resposta: resposta, sql: data.sql || null, dados: data.dados || null, loading: false, _charts: _charts, _textParts: _textParts, _msgId: Date.now() };
                                                     return u;
                                                 });
                                                 setChatIaLoading(false);
@@ -18387,9 +18376,19 @@ const hideLoadingScreen = () => {
                                             method: "POST",
                                             body: JSON.stringify({ prompt: userPrompt, historico: hist, filtros: chatIaFiltros })
                                         }).then(function(r) { return r.json(); }).then(function(data) {
+                                                var resposta = data.resposta || "Erro ao processar";
+                                                var _charts = [];
+                                                var _textParts = [];
+                                                var chartRegex = /\[CHART\]\s*\n?([\s\S]*?)\n?\[\/CHART\]/g;
+                                                var cm;
+                                                while ((cm = chartRegex.exec(resposta)) !== null) {
+                                                    try { _charts.push(JSON.parse(cm[1].trim())); } catch(e) {}
+                                                }
+                                                var cleanText = resposta.replace(/\[CHART\]\s*\n?[\s\S]*?\n?\[\/CHART\]/g, '\n__CHART__\n');
+                                                _textParts = cleanText.split('__CHART__');
                                             setChatIaMsgs(function(prev) {
                                                 var u = prev.slice();
-                                                u[u.length - 1] = { prompt: userPrompt, resposta: data.resposta || "Erro ao processar", sql: data.sql || null, dados: data.dados || null, loading: false };
+                                                u[u.length - 1] = { prompt: userPrompt, resposta: resposta, sql: data.sql || null, dados: data.dados || null, loading: false, _charts: _charts, _textParts: _textParts, _msgId: Date.now() };
                                                 return u;
                                             });
                                             setChatIaLoading(false);
