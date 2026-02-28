@@ -18168,6 +18168,14 @@ const hideLoadingScreen = () => {
                                 setChatIaClientes(data.clientes || []);
                                 setChatIaFiltrosLoading(false);
                             }).catch(function() { setChatIaFiltrosLoading(false); });
+                            // Carregar Chart.js se ainda não carregou
+                            if (!window.Chart && !document.getElementById('chartjs-cdn')) {
+                                var script = document.createElement('script');
+                                script.id = 'chartjs-cdn';
+                                script.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js';
+                                script.onload = function() { console.log('✅ Chart.js carregado'); };
+                                document.head.appendChild(script);
+                            }
                         }
                     }
                 }),
@@ -18222,7 +18230,16 @@ const hideLoadingScreen = () => {
                                         React.createElement("div", {
                                             className: "prose prose-sm max-w-none text-gray-700",
                                             dangerouslySetInnerHTML: { __html: (function(text) {
-                                                return text
+                                                // Extrair blocos [CHART] antes do processamento markdown
+                                                var chartIndex = 0;
+                                                var charts = [];
+                                                text = text.replace(/\[CHART\]\s*\n?([\s\S]*?)\n?\[\/CHART\]/g, function(match, json) {
+                                                    var id = 'chatia-chart-' + Date.now() + '-' + chartIndex++;
+                                                    charts.push({id: id, json: json.trim()});
+                                                    return '<div class="my-4 bg-white rounded-lg p-3 border border-gray-200" style="position:relative;height:280px;"><canvas id="' + id + '"></canvas></div>';
+                                                });
+                                                
+                                                var html = text
                                                     .replace(/```[\s\S]*?```/g, function(m) {
                                                         return '<pre class="bg-gray-100 p-3 rounded-lg text-xs overflow-x-auto my-2">' + m.replace(/```\w*\n?/g, '').replace(/```/g, '') + '</pre>';
                                                     })
@@ -18241,6 +18258,58 @@ const hideLoadingScreen = () => {
                                                     .replace(/(<tr>.*<\/tr>)/gs, '<table class="border-collapse border border-gray-200 my-2 w-full">$1</table>')
                                                     .replace(/\n{2,}/g, '<br><br>')
                                                     .replace(/\n/g, '<br>');
+                                                
+                                                // Renderizar charts após o DOM atualizar
+                                                if (charts.length > 0) {
+                                                    setTimeout(function() {
+                                                        charts.forEach(function(c) {
+                                                            try {
+                                                                var canvas = document.getElementById(c.id);
+                                                                if (!canvas || canvas.dataset.rendered) return;
+                                                                canvas.dataset.rendered = 'true';
+                                                                var cfg = JSON.parse(c.json);
+                                                                var chartType = cfg.type === 'horizontalBar' ? 'bar' : cfg.type;
+                                                                var isHorizontal = cfg.type === 'horizontalBar';
+                                                                
+                                                                var datasets = (cfg.datasets || []).map(function(ds, idx) {
+                                                                    var colors = ds.colors || [ds.color || ['#10b981','#3b82f6','#f59e0b','#ef4444','#8b5cf6','#6b7280'][idx % 6]];
+                                                                    return {
+                                                                        label: ds.label || '',
+                                                                        data: ds.data || [],
+                                                                        backgroundColor: Array.isArray(colors) ? colors : colors,
+                                                                        borderColor: Array.isArray(colors) ? colors : colors,
+                                                                        borderWidth: (chartType === 'line') ? 2 : 0,
+                                                                        fill: chartType === 'line' ? false : undefined,
+                                                                        tension: 0.3,
+                                                                        borderRadius: (chartType === 'bar') ? 4 : 0,
+                                                                        pointRadius: (chartType === 'line') ? 4 : 0,
+                                                                        pointBackgroundColor: Array.isArray(colors) ? colors[0] : colors
+                                                                    };
+                                                                });
+                                                                
+                                                                new Chart(canvas, {
+                                                                    type: chartType,
+                                                                    data: { labels: cfg.labels || [], datasets: datasets },
+                                                                    options: {
+                                                                        responsive: true,
+                                                                        maintainAspectRatio: false,
+                                                                        indexAxis: isHorizontal ? 'y' : 'x',
+                                                                        plugins: {
+                                                                            title: { display: !!cfg.title, text: cfg.title || '', font: { size: 14, weight: 'bold' }, color: '#374151', padding: { bottom: 12 } },
+                                                                            legend: { display: datasets.length > 1 || chartType === 'pie' || chartType === 'doughnut', position: 'bottom', labels: { padding: 12, usePointStyle: true, font: { size: 11 } } }
+                                                                        },
+                                                                        scales: (chartType === 'pie' || chartType === 'doughnut') ? {} : {
+                                                                            x: { grid: { display: false }, ticks: { font: { size: 10 }, maxRotation: 45 } },
+                                                                            y: { grid: { color: '#f3f4f6' }, ticks: { font: { size: 10 } }, beginAtZero: true }
+                                                                        }
+                                                                    }
+                                                                });
+                                                            } catch(e) { console.error('Chart render error:', e); }
+                                                        });
+                                                    }, 100);
+                                                }
+                                                
+                                                return html;
                                             })(msg.resposta) }
                                         }),
                                         msg.dados && msg.dados.total > 0 && React.createElement("div", {className: "mt-3 pt-3 border-t border-gray-100"},
