@@ -10963,22 +10963,7 @@ const hideLoadingScreen = () => {
                     else ja("Selecione um tamanho", "error")
             },
             className: "flex-1 px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-xl font-semibold hover:opacity-90"
-        }, "✅ Confirmar Pedido"))))))));
-        }
-        // ========== CORREÇÃO DE ENDEREÇO (userTab inline) ==========
-        if ("user" === l.role && "correcao-endereco" === p.userTab) {
-            return React.createElement("div", { className: "min-h-screen bg-gray-50" },
-                i && React.createElement(Toast, i),
-                n && React.createElement(LoadingOverlay, null),
-                React.createElement("div", { className: "bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4 flex items-center gap-4" },
-                    React.createElement("button", {
-                        onClick: () => x({ ...p, userTab: null }),
-                        className: "p-2 bg-white/20 rounded-lg hover:bg-white/30"
-                    }, "← Voltar"),
-                    React.createElement("h1", { className: "text-xl font-bold" }, "📍 Correção de Endereço")
-                ),
-                React.createElement(window._CorrecaoEnderecoInline, { usuario: l, API_URL: API_URL, fetchAuth: fetchAuth, showToast: ja })
-            );
+        }, "✅ Confirmar Pedido"))))))), "correcao-endereco" === p.userTab && React.createElement(window._CorrecaoEnderecoInline, { usuario: l, API_URL: API_URL, fetchAuth: fetchAuth, showToast: ja }));
         }
         // Verificar permissão para Financeiro (admin comum)
         const canAccessFinanceiro = hasModuleAccess(l, "financeiro");
