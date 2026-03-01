@@ -902,5 +902,5 @@
     );
   };
 
-  console.log('✅ Módulo Agente RPA carregado');
+  console.log('✅ Módulo Agente RPA carregado — BUILD 2025-03-01T15:00 — COM sub-tabs meu-historico');
 })();
