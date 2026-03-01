@@ -284,8 +284,24 @@
           style: { background: 'linear-gradient(135deg, #550776, #7c3aed)' } },
           h('span', { className: 'text-3xl' }, '📍')
         ),
-        h('h1', { className: 'text-2xl font-bold text-gray-900' }, 'Correção de Endereço'),
-        h('p', { className: 'text-gray-500 text-sm mt-1' }, 'Informe os dados e tire foto da fachada')
+        h('h1', { className: 'text-2xl font-bold text-gray-900' }, 'Correção de Endereço')
+      ),
+
+      // Alerta de aviso
+      h('div', { className: 'mb-5 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-xl' },
+        h('div', { className: 'flex items-start gap-3' },
+          h('span', { className: 'text-red-500 text-lg mt-0.5 flex-shrink-0' }, '🚨'),
+          h('div', null,
+            h('p', { className: 'text-sm text-red-800 leading-relaxed' },
+              'Todas as solicitações são revisadas posteriormente por um de nossos especialistas. ',
+              h('strong', null, 'NÃO SERÁ TOLERADO'),
+              ' nenhuma solicitação de má-fé ou tentativas de burlar o sistema.'
+            ),
+            h('p', { className: 'text-sm text-red-700 font-semibold mt-1' },
+              'Caso seja identificado, o profissional perderá o acesso ao aplicativo.'
+            )
+          )
+        )
       ),
 
       // Card do formulário
@@ -415,20 +431,6 @@
                 'Processando...'
               )
             : h(React.Fragment, null, h('span', null, '🚀'), 'Enviar Correção')
-        )
-      ),
-
-      // Avisos
-      h('div', { className: 'mt-4 space-y-2' },
-        h('div', { className: 'flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl' },
-          h('span', { className: 'text-amber-500 text-sm mt-0.5' }, '⚠️'),
-          h('p', { className: 'text-xs text-amber-700' },
-            'O Ponto 1 (coleta) nunca pode ser alterado. Apenas pontos de entrega (2 a 7) são corrigíveis.')
-        ),
-        h('div', { className: 'flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-xl' },
-          h('span', { className: 'text-blue-500 text-sm mt-0.5' }, '📏'),
-          h('p', { className: 'text-xs text-blue-700' },
-            'Sua localização GPS será validada. Você precisa estar a no máximo 2 km do ponto informado.')
         )
       ),
 
@@ -671,6 +673,174 @@
     );
   }
 
+  // ── ABA: Meu Histórico (Motoboy) ──────────────────────────────────────────
+  function TabMeuHistorico({ API_URL, fetchAuth, showToast }) {
+    const [dados, setDados]        = useState([]);
+    const [total, setTotal]        = useState(0);
+    const [loading, setLoading]    = useState(false);
+    const [page, setPage]          = useState(1);
+    const [fotoModal, setFotoModal] = useState(null);
+    const PER_PAGE = 15;
+
+    const carregar = useCallback(async (pg = 1) => {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams({ page: pg, per_page: PER_PAGE });
+        const res  = await fetchAuth(`${API_URL}/agent/meu-historico?${params}`);
+        const data = await res.json();
+        setDados(data.registros || []);
+        setTotal(data.total || 0);
+        setPage(pg);
+      } catch {
+        showToast('Erro ao carregar histórico', 'error');
+      } finally {
+        setLoading(false);
+      }
+    }, [fetchAuth, API_URL, showToast]);
+
+    useEffect(() => { carregar(); }, []);
+
+    const totalPaginas = Math.ceil(total / PER_PAGE);
+
+    const abrirFoto = async (id) => {
+      try {
+        const res = await fetchAuth(`${API_URL}/agent/meu-historico/${id}/foto`);
+        const data = await res.json();
+        if (data.foto) {
+          setFotoModal(data.foto);
+        } else {
+          showToast('Foto não encontrada', 'error');
+        }
+      } catch { showToast('Erro ao carregar foto', 'error'); }
+    };
+
+    function formatCoord(r) {
+      if (r.latitude && r.longitude) return `${Number(r.latitude).toFixed(6)}, ${Number(r.longitude).toFixed(6)}`;
+      if (r.localizacao_raw) return r.localizacao_raw;
+      return '—';
+    }
+
+    return h('div', { className: 'max-w-2xl mx-auto px-4 py-6' },
+
+      // Header
+      h('div', { className: 'flex items-center justify-between mb-5' },
+        h('div', null,
+          h('h2', { className: 'text-lg font-bold text-gray-900' }, '📋 Minhas Solicitações'),
+          h('p', { className: 'text-xs text-gray-400 mt-0.5' }, `${total} solicitação(ões) no total`)
+        ),
+        h('button', {
+          onClick: () => carregar(page),
+          className: 'text-xs px-3 py-1.5 rounded-lg font-semibold text-purple-700 bg-purple-50 border border-purple-200 hover:bg-purple-100 transition',
+        }, '🔄 Atualizar')
+      ),
+
+      // Loading
+      loading && h('div', { className: 'flex items-center justify-center py-12 gap-3 text-gray-400' },
+        h('div', { className: 'w-5 h-5 border-2 border-purple-500 border-t-transparent rounded-full animate-spin' }),
+        'Carregando...'
+      ),
+
+      // Lista vazia
+      !loading && dados.length === 0 && h('div', { className: 'text-center py-16' },
+        h('div', { className: 'w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4' },
+          h('span', { className: 'text-3xl' }, '📭')
+        ),
+        h('p', { className: 'text-gray-500 font-medium' }, 'Nenhuma solicitação ainda'),
+        h('p', { className: 'text-gray-400 text-sm mt-1' }, 'Suas correções de endereço aparecerão aqui.')
+      ),
+
+      // Cards de solicitações
+      !loading && dados.length > 0 && h('div', { className: 'space-y-3' },
+        dados.map(r => h('div', {
+          key: r.id,
+          className: 'bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden',
+        },
+          // Header do card
+          h('div', { className: 'flex items-center justify-between px-4 py-3 border-b border-gray-50' },
+            h('div', { className: 'flex items-center gap-2' },
+              h('span', { className: 'font-bold text-gray-900' }, `OS ${r.os_numero}`),
+              h('span', { className: 'text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full' }, `Ponto ${r.ponto}`)
+            ),
+            h(BadgeStatus, { status: r.status })
+          ),
+
+          // Corpo do card
+          h('div', { className: 'px-4 py-3 space-y-2' },
+
+            // Coordenada
+            h('div', { className: 'flex items-start gap-2' },
+              h('span', { className: 'text-gray-400 text-xs mt-0.5 flex-shrink-0' }, '📍'),
+              h('div', null,
+                h('p', { className: 'text-xs font-medium text-gray-500' }, 'Coordenada enviada'),
+                h('p', { className: 'text-xs text-gray-700 font-mono' }, formatCoord(r))
+              )
+            ),
+
+            // Endereço corrigido (se disponível)
+            r.endereco_corrigido && h('div', { className: 'flex items-start gap-2' },
+              h('span', { className: 'text-green-500 text-xs mt-0.5 flex-shrink-0' }, '✅'),
+              h('div', null,
+                h('p', { className: 'text-xs font-medium text-gray-500' }, 'Endereço ajustado'),
+                h('p', { className: 'text-xs text-green-700 font-medium' }, r.endereco_corrigido)
+              )
+            ),
+
+            // Erro (se existir)
+            r.status === 'erro' && r.detalhe_erro && h('div', { className: 'flex items-start gap-2' },
+              h('span', { className: 'text-red-500 text-xs mt-0.5 flex-shrink-0' }, '❌'),
+              h('div', null,
+                h('p', { className: 'text-xs font-medium text-gray-500' }, 'Motivo do erro'),
+                h('p', { className: 'text-xs text-red-600' }, r.detalhe_erro)
+              )
+            ),
+
+            // Data e foto
+            h('div', { className: 'flex items-center justify-between pt-1' },
+              h('span', { className: 'text-xs text-gray-400' }, fmtDT(r.criado_em)),
+              h('button', {
+                onClick: () => abrirFoto(r.id),
+                className: 'text-xs px-3 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 font-semibold transition',
+              }, '📷 Ver foto')
+            )
+          )
+        ))
+      ),
+
+      // Paginação
+      totalPaginas > 1 && h('div', { className: 'flex items-center justify-center gap-2 mt-5' },
+        h('button', {
+          onClick: () => carregar(page - 1),
+          disabled: page <= 1,
+          className: 'px-3 py-2 rounded-lg border text-sm disabled:opacity-40 hover:bg-gray-50',
+        }, '← Anterior'),
+        h('span', { className: 'text-sm text-gray-500' }, `${page} / ${totalPaginas}`),
+        h('button', {
+          onClick: () => carregar(page + 1),
+          disabled: page >= totalPaginas,
+          className: 'px-3 py-2 rounded-lg border text-sm disabled:opacity-40 hover:bg-gray-50',
+        }, 'Próxima →')
+      ),
+
+      // Modal de foto
+      fotoModal && h('div', {
+        className: 'fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4',
+        onClick: () => setFotoModal(null),
+      },
+        h('div', { className: 'relative max-w-2xl w-full', onClick: e => e.stopPropagation() },
+          h('button', {
+            onClick: () => setFotoModal(null),
+            className: 'absolute -top-3 -right-3 w-10 h-10 bg-white text-gray-800 rounded-full flex items-center justify-center shadow-lg text-lg font-bold hover:bg-gray-100 z-10',
+          }, '✕'),
+          h('img', {
+            src: fotoModal,
+            className: 'w-full rounded-xl shadow-2xl',
+            alt: 'Foto da fachada',
+          })
+        )
+      )
+    );
+  }
+
   // ── Componente raiz do módulo ───────────────────────────────────────────────
   window.ModuloAgenteComponent = function ModuloAgente({
     usuario,
@@ -689,7 +859,10 @@
 
     const ABAS = isAdmin
       ? [{ id: 'historico',  label: '📋 Histórico', visible: true }]
-      : [{ id: 'formulario', label: '📍 Correção',  visible: true }];
+      : [
+          { id: 'formulario',    label: '📍 Correção',      visible: true },
+          { id: 'meu-historico', label: '📋 Minhas Solicitações', visible: true },
+        ];
 
     return h('div', { className: 'min-h-screen bg-gray-50 flex flex-col' },
 
@@ -722,6 +895,8 @@
       h('div', { className: 'flex-1' },
         aba === 'formulario'
           ? h(TabFormulario, { API_URL, fetchAuth, showToast })
+          : aba === 'meu-historico'
+          ? h(TabMeuHistorico, { API_URL, fetchAuth, showToast })
           : h(TabHistorico,  { API_URL, fetchAuth, showToast, usuario })
       )
     );
