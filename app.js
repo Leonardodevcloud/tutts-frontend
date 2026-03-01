@@ -8137,8 +8137,30 @@ const hideLoadingScreen = () => {
                     )
                 );
             }
-            // Módulo Agente RPA — renderizado pelo bloco principal em linha ~13230
-            // (bloco antigo removido — usava HeaderCompacto: null e impedia sub-tabs)
+            // Módulo Agente RPA para user
+            if ("agente" === Ee) {
+                if (typeof window.ModuloAgenteComponent !== 'undefined') {
+                    return React.createElement(window.ModuloAgenteComponent, {
+                        usuario: l,
+                        API_URL: API_URL,
+                        fetchAuth: fetchAuth,
+                        HeaderCompacto: HeaderCompacto,
+                        showToast: ja,
+                        he: he,
+                        Ee: Ee,
+                        f: f,
+                        E: E,
+                        n: n,
+                        i: i,
+                    });
+                }
+                return React.createElement("div", { className: "min-h-screen bg-gray-50 flex items-center justify-center" },
+                    React.createElement("div", { className: "text-center" },
+                        React.createElement("div", { className: "animate-spin w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4" }),
+                        React.createElement("p", { className: "text-gray-600" }, "Carregando módulo Agente RPA...")
+                    )
+                );
+            }
             return React.createElement("div", {
             className: "min-h-screen bg-gray-50"
         }, i && React.createElement(Toast, i), n && React.createElement(LoadingOverlay, null), 
