@@ -290,7 +290,7 @@ function hasModuleAccess(user, moduleId) {
     
     // User comum tem acesso ao módulo de filas (para check-in na fila)
     if (user.role === "user") {
-        return ["filas"].includes(moduleId);
+        return ["filas", "agente"].includes(moduleId);
     }
     
     // Admin normal - verificar permissões
