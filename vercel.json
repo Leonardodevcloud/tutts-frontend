@@ -20,9 +20,15 @@
       ]
     },
     {
-      "source": "/(ModuloFinanceiro|modulo-operacional|modulo-config|modulo-disponibilidade|filas)\\.js",
+      "source": "/(ModuloFinanceiro|modulo-operacional|modulo-config|modulo-disponibilidade|modulo-agente|modulo-cs|filas)\\.js",
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=604800, stale-while-revalidate=2592000" }
+      ]
+    },
+    {
+      "source": "/index.html",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache, must-revalidate" }
       ]
     },
     {
