@@ -864,7 +864,7 @@
           { id: 'meu-historico', label: '📋 Minhas Solicitações', visible: true },
         ];
 
-    return h('div', { className: 'min-h-screen bg-gray-50 flex flex-col' },
+    return h('div', { className: `${HeaderCompacto ? 'min-h-screen' : ''} bg-gray-50 flex flex-col` },
 
       i && h(window.__TuttsToastComponent || 'div', i),
 
