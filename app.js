@@ -8137,41 +8137,8 @@ const hideLoadingScreen = () => {
                     )
                 );
             }
-            // Se está no módulo Agente RPA, renderizar o módulo
-            if ("agente" === Ee) {
-                if (typeof window.ModuloAgenteComponent !== 'undefined') {
-                    return React.createElement("div", {
-                        className: "min-h-screen bg-gray-50"
-                    },
-                        i && React.createElement(Toast, i),
-                        n && React.createElement(LoadingOverlay, null),
-                        React.createElement("div", { className: "bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4 flex items-center gap-4" },
-                            React.createElement("button", {
-                                onClick: () => he("home"),
-                                className: "p-2 bg-white/20 rounded-lg hover:bg-white/30"
-                            }, "← Voltar"),
-                            React.createElement("h1", { className: "text-xl font-bold" }, "📍 Correção de Endereço")
-                        ),
-                        React.createElement("div", null,
-                            React.createElement(window.ModuloAgenteComponent, {
-                                usuario: l,
-                                API_URL: API_URL,
-                                fetchAuth: fetchAuth,
-                                HeaderCompacto: null,
-                                showToast: ja,
-                                he: he,
-                                Ee: Ee,
-                            })
-                        )
-                    );
-                }
-                return React.createElement("div", { className: "min-h-screen bg-gray-50 flex items-center justify-center" },
-                    React.createElement("div", { className: "text-center" },
-                        React.createElement("div", { className: "animate-spin w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4" }),
-                        React.createElement("p", { className: "text-gray-600" }, "Carregando módulo...")
-                    )
-                );
-            }
+            // Módulo Agente RPA — renderizado pelo bloco principal em linha ~13230
+            // (bloco antigo removido — usava HeaderCompacto: null e impedia sub-tabs)
             return React.createElement("div", {
             className: "min-h-screen bg-gray-50"
         }, i && React.createElement(Toast, i), n && React.createElement(LoadingOverlay, null), 
