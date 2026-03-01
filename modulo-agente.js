@@ -293,12 +293,14 @@
           h('span', { className: 'text-red-500 text-lg mt-0.5 flex-shrink-0' }, '🚨'),
           h('div', null,
             h('p', { className: 'text-sm text-red-800 leading-relaxed' },
-              'Todas as solicitações são revisadas posteriormente por um de nossos especialistas. ',
-              h('strong', null, 'NÃO SERÁ TOLERADO'),
-              ' nenhuma solicitação de má-fé ou tentativas de burlar o sistema.'
+              h('strong', null, 'Atenção ao preenchimento!'),
+              ' Nossa equipe de especialistas fará uma validação posteriormente.'
+            ),
+            h('p', { className: 'text-sm text-red-800 mt-1 leading-relaxed' },
+              'É importante informar o número da OS de forma correta, bem como a indicação de qual ponto ajustar. A foto da fachada do cliente deve ser legível.'
             ),
             h('p', { className: 'text-sm text-red-700 font-semibold mt-1' },
-              'Caso seja identificado, o profissional perderá o acesso ao aplicativo.'
+              'Caso não siga os padrões, terá a corrida invalidada pelo sistema.'
             )
           )
         )
