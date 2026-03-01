@@ -10952,7 +10952,7 @@ const hideLoadingScreen = () => {
                     else ja("Selecione um tamanho", "error")
             },
             className: "flex-1 px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-xl font-semibold hover:opacity-90"
-        }, "✅ Confirmar Pedido"))))))), "correcao-endereco" === p.userTab && React.createElement(window._CorrecaoEnderecoInline, { usuario: l, API_URL: API_URL, fetchAuth: fetchAuth, showToast: ja }));
+        }, "✅ Confirmar Pedido"))))))), "correcao-endereco" === p.userTab && (typeof window.ModuloAgenteComponent !== 'undefined' ? React.createElement(window.ModuloAgenteComponent, { usuario: l, API_URL: API_URL, fetchAuth: fetchAuth, HeaderCompacto: null, showToast: ja, he: he, Ee: Ee }) : React.createElement(window._CorrecaoEnderecoInline, { usuario: l, API_URL: API_URL, fetchAuth: fetchAuth, showToast: ja })));
         }
         // Verificar permissão para Financeiro (admin comum)
         const canAccessFinanceiro = hasModuleAccess(l, "financeiro");
