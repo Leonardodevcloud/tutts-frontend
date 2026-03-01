@@ -209,6 +209,13 @@
 
         if (!res.ok) {
           const msg = data.erros ? data.erros.join(' ') : (data.erro || 'Erro ao enviar.');
+          // OS duplicada: mostrar toast e manter no formulário (não ir para tela de erro)
+          if (res.status === 409) {
+            showToast(msg, 'error');
+            setLoading(false);
+            setFase('idle');
+            return;
+          }
           setFase('erro'); setDetalhe(msg); setLoading(false);
           return;
         }
