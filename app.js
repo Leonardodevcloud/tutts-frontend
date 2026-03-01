@@ -8747,6 +8747,19 @@ const hideLoadingScreen = () => {
         }, "Retornos e Pedágios")), React.createElement("span", {
             className: "text-purple-400 text-2xl"
         }, "›")), React.createElement("button", {
+            onClick: () => he("agente"),
+            className: "w-full bg-white rounded-2xl shadow-lg p-4 sm:p-6 flex items-center gap-3 sm:gap-4 hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98] border-l-4 border-orange-500"
+        }, React.createElement("div", {
+            className: "w-12 h-12 sm:w-16 sm:h-16 bg-orange-100 rounded-xl flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0"
+        }, "📍"), React.createElement("div", {
+            className: "text-left flex-1"
+        }, React.createElement("h3", {
+            className: "text-lg font-bold text-gray-800"
+        }, "Correção de Endereço"), React.createElement("p", {
+            className: "text-sm text-gray-500"
+        }, "Corrigir localização de ponto de entrega")), React.createElement("span", {
+            className: "text-orange-400 text-2xl"
+        }, "›")), React.createElement("button", {
             onClick: () => x({
                 ...p,
                 userTab: "saque"
