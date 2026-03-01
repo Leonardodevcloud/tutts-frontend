@@ -556,33 +556,50 @@
           h('table', { className: 'w-full text-sm' },
             h('thead', null,
               h('tr', { className: 'bg-gray-50 border-b border-gray-100' },
-                ['ID','OS','Ponto','Status','Criado em','Processado em','Foto','Validado por','Ações'].map(col =>
-                  h('th', { key: col, className: 'px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide' }, col)
+                ['ID','Motoboy','OS','Ponto','Status','End. Antigo','End. Novo','Criado em','Foto','Validado por','Ações'].map(col =>
+                  h('th', { key: col, className: 'px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide' }, col)
                 )
               )
             ),
             h('tbody', null,
               dados.length === 0 && h('tr', null,
-                h('td', { colSpan: 9, className: 'text-center py-12 text-gray-400' }, 'Nenhum registro encontrado.')
+                h('td', { colSpan: 11, className: 'text-center py-12 text-gray-400' }, 'Nenhum registro encontrado.')
               ),
               dados.map(r => h(React.Fragment, { key: r.id },
                 h('tr', {
                   className: `border-b border-gray-50 hover:bg-gray-50 transition cursor-pointer ${expandido === r.id ? 'bg-purple-50' : ''}`,
                   onClick: () => setExpandido(expandido === r.id ? null : r.id),
                 },
-                  h('td', { className: 'px-4 py-3 font-mono text-gray-500 text-xs' }, `#${r.id}`),
-                  h('td', { className: 'px-4 py-3 font-semibold text-gray-900' }, r.os_numero),
-                  h('td', { className: 'px-4 py-3 text-gray-600' }, `Ponto ${r.ponto}`),
-                  h('td', { className: 'px-4 py-3' }, h(BadgeStatus, { status: r.status })),
-                  h('td', { className: 'px-4 py-3 text-gray-500 text-xs' }, fmtDT(r.criado_em)),
-                  h('td', { className: 'px-4 py-3 text-gray-500 text-xs' }, fmtDT(r.processado_em)),
-                  h('td', { className: 'px-4 py-3' },
+                  h('td', { className: 'px-3 py-3 font-mono text-gray-500 text-xs' }, `#${r.id}`),
+                  h('td', { className: 'px-3 py-3 text-xs' },
+                    r.usuario_nome
+                      ? h('div', null,
+                          h('div', { className: 'font-semibold text-gray-900' }, r.usuario_nome),
+                          h('div', { className: 'text-gray-400 font-mono' }, `ID: ${r.usuario_id || '—'}`)
+                        )
+                      : h('span', { className: 'text-gray-400' }, '—')
+                  ),
+                  h('td', { className: 'px-3 py-3 font-semibold text-gray-900' }, r.os_numero),
+                  h('td', { className: 'px-3 py-3 text-gray-600' }, `Ponto ${r.ponto}`),
+                  h('td', { className: 'px-3 py-3' }, h(BadgeStatus, { status: r.status })),
+                  h('td', { className: 'px-3 py-3 text-xs text-gray-500 max-w-[180px]' },
+                    r.endereco_antigo
+                      ? h('span', { className: 'line-clamp-2', title: r.endereco_antigo }, r.endereco_antigo)
+                      : '—'
+                  ),
+                  h('td', { className: 'px-3 py-3 text-xs max-w-[180px]' },
+                    r.endereco_corrigido
+                      ? h('span', { className: 'text-green-700 font-medium line-clamp-2', title: r.endereco_corrigido }, r.endereco_corrigido)
+                      : '—'
+                  ),
+                  h('td', { className: 'px-3 py-3 text-gray-500 text-xs' }, fmtDT(r.criado_em)),
+                  h('td', { className: 'px-3 py-3' },
                     h('button', {
                       onClick: (e) => { e.stopPropagation(); abrirFoto(r.id); },
                       className: 'text-xs px-2 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 font-semibold transition',
                     }, '📷 Ver')
                   ),
-                  h('td', { className: 'px-4 py-3 text-gray-500 text-xs' },
+                  h('td', { className: 'px-3 py-3 text-gray-500 text-xs' },
                     r.validado_por
                       ? h('div', null,
                           h('div', { className: 'font-medium text-gray-700' }, r.validado_por),
@@ -590,7 +607,7 @@
                         )
                       : '—'
                   ),
-                  h('td', { className: 'px-4 py-3' },
+                  h('td', { className: 'px-3 py-3' },
                     !r.validado_por && h('button', {
                       onClick: (e) => { e.stopPropagation(); validar(r.id); },
                       className: 'px-3 py-1 text-xs font-semibold rounded-lg text-white transition hover:opacity-80',
@@ -598,10 +615,25 @@
                     }, '✓ Validar')
                   )
                 ),
-                expandido === r.id && r.detalhe_erro && h('tr', { key: `exp-${r.id}` },
-                  h('td', { colSpan: 9, className: 'px-6 py-3 bg-red-50 border-b border-red-100' },
-                    h('p', { className: 'text-xs font-semibold text-red-700 mb-1' }, '🔍 Detalhe do erro:'),
-                    h('pre', { className: 'text-xs text-red-600 whitespace-pre-wrap font-mono' }, r.detalhe_erro)
+                expandido === r.id && h('tr', { key: `exp-${r.id}` },
+                  h('td', { colSpan: 11, className: 'px-6 py-3 bg-gray-50 border-b border-gray-200' },
+                    h('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-3 text-xs' },
+                      // Endereço antigo detalhado
+                      h('div', { className: 'p-2 bg-orange-50 rounded-lg' },
+                        h('p', { className: 'font-semibold text-orange-700 mb-1' }, '📍 Endereço Antigo'),
+                        h('p', { className: 'text-orange-600' }, r.endereco_antigo || 'Não capturado')
+                      ),
+                      // Endereço novo detalhado
+                      h('div', { className: 'p-2 bg-green-50 rounded-lg' },
+                        h('p', { className: 'font-semibold text-green-700 mb-1' }, '✅ Endereço Corrigido'),
+                        h('p', { className: 'text-green-600' }, r.endereco_corrigido || 'Não disponível')
+                      ),
+                      // Erro se existir
+                      r.detalhe_erro && h('div', { className: 'p-2 bg-red-50 rounded-lg col-span-2' },
+                        h('p', { className: 'font-semibold text-red-700 mb-1' }, '🔍 Detalhe do erro'),
+                        h('pre', { className: 'text-red-600 whitespace-pre-wrap font-mono' }, r.detalhe_erro)
+                      )
+                    )
                   )
                 )
               ))
@@ -613,12 +645,26 @@
         h('div', { className: 'md:hidden divide-y divide-gray-100' },
           dados.length === 0 && h('div', { className: 'text-center py-12 text-gray-400 text-sm' }, 'Nenhum registro encontrado.'),
           dados.map(r => h('div', { key: r.id, className: 'p-4' },
+            // Header: OS + Status
             h('div', { className: 'flex items-start justify-between mb-2' },
               h('div', null,
                 h('span', { className: 'font-semibold text-gray-900' }, `OS ${r.os_numero}`),
                 h('span', { className: 'ml-2 text-gray-400 text-xs' }, `Ponto ${r.ponto}`)
               ),
               h(BadgeStatus, { status: r.status })
+            ),
+            // Motoboy
+            r.usuario_nome && h('div', { className: 'text-xs text-gray-600 mb-1' },
+              h('span', { className: 'font-semibold' }, '🏍️ '),
+              r.usuario_nome,
+              h('span', { className: 'text-gray-400 ml-1' }, `(ID: ${r.usuario_id || '—'})`)
+            ),
+            // Endereços
+            r.endereco_antigo && h('div', { className: 'text-xs text-orange-600 bg-orange-50 p-2 rounded-lg mb-1' },
+              h('span', { className: 'font-semibold' }, 'Antigo: '), r.endereco_antigo
+            ),
+            r.endereco_corrigido && h('div', { className: 'text-xs text-green-600 bg-green-50 p-2 rounded-lg mb-1' },
+              h('span', { className: 'font-semibold' }, 'Novo: '), r.endereco_corrigido
             ),
             h('div', { className: 'text-xs text-gray-400 mb-2' }, fmtDT(r.criado_em)),
             h('div', { className: 'flex gap-2 mb-2' },
