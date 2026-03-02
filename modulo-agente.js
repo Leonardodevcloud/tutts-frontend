@@ -592,7 +592,13 @@
                   ),
                   h('td', { className: 'px-3 py-3 font-semibold text-gray-900' }, r.os_numero),
                   h('td', { className: 'px-3 py-3 text-gray-600' }, `Ponto ${r.ponto}`),
-                  h('td', { className: 'px-3 py-3' }, h(BadgeStatus, { status: r.status })),
+                  h('td', { className: 'px-3 py-3' },
+                    h(BadgeStatus, { status: r.status }),
+                    r.status === 'sucesso' && r.frete_recalculado === false && h('div', {
+                      className: 'mt-1 text-[10px] font-bold text-orange-600 bg-orange-50 border border-orange-200 rounded px-1.5 py-0.5 text-center',
+                      title: 'Endereço corrigido, mas o frete NÃO foi recalculado automaticamente. Necessário recalcular manualmente.',
+                    }, '⚠️ Frete pendente')
+                  ),
                   h('td', { className: 'px-3 py-3 text-xs text-gray-500 max-w-[180px]' },
                     r.endereco_antigo
                       ? h('span', { className: 'line-clamp-2', title: r.endereco_antigo }, r.endereco_antigo)
@@ -662,9 +668,13 @@
                 h('span', { className: 'font-semibold text-gray-900' }, `OS ${r.os_numero}`),
                 h('span', { className: 'ml-2 text-gray-400 text-xs' }, `Ponto ${r.ponto}`)
               ),
-              h(BadgeStatus, { status: r.status })
+              h('div', { className: 'flex items-center gap-1' },
+                h(BadgeStatus, { status: r.status }),
+                r.status === 'sucesso' && r.frete_recalculado === false && h('span', {
+                  className: 'text-[10px] font-bold text-orange-600 bg-orange-50 border border-orange-200 rounded px-1 py-0.5',
+                }, '⚠️')
+              )
             ),
-            // Motoboy
             r.usuario_nome && h('div', { className: 'text-xs text-gray-600 mb-1' },
               h('span', { className: 'font-semibold' }, '🏍️ '),
               r.usuario_nome,
