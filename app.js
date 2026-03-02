@@ -8152,6 +8152,12 @@ const hideLoadingScreen = () => {
                         E: E,
                         n: n,
                         i: i,
+                        onLogout: () => o(null),
+                        socialProfile: socialProfile,
+                        isLoading: n,
+                        lastUpdate: E,
+                        onRefresh: ul,
+                        onNavigate: navegarSidebar,
                     });
                 }
                 return React.createElement("div", { className: "min-h-screen bg-gray-50 flex items-center justify-center" },
@@ -13230,6 +13236,12 @@ const hideLoadingScreen = () => {
                     E: E,
                     n: n,
                     i: i,
+                    onLogout: () => o(null),
+                    socialProfile: socialProfile,
+                    isLoading: n,
+                    lastUpdate: E,
+                    onRefresh: ul,
+                    onNavigate: navegarSidebar,
                 });
             } else {
                 return React.createElement("div", { className: "min-h-screen bg-gray-50 flex items-center justify-center" },
@@ -18915,6 +18927,22 @@ const hideLoadingScreen = () => {
                             ),
                             React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "CRM WhatsApp"),
                             React.createElement("p", {className: "text-sm text-gray-500"}, "Leads e conversas")
+                        )
+                    ),
+                    
+                    // Agente RPA
+                    hasModuleAccess(l, "agente") &&
+                    React.createElement("div", {
+                        onClick: () => he("agente"),
+                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-purple-300"
+                    },
+                        React.createElement("div", {className: "h-2 bg-gradient-to-r from-purple-500 to-pink-600"}),
+                        React.createElement("div", {className: "p-6"},
+                            React.createElement("div", {className: "w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
+                                React.createElement("span", {className: "text-3xl"}, "🤖")
+                            ),
+                            React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Agente RPA"),
+                            React.createElement("p", {className: "text-sm text-gray-500"}, "Correção de endereços")
                         )
                     )
                 )
