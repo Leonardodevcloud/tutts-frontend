@@ -387,7 +387,7 @@ const SISTEMA_MODULOS_CONFIG = [
     },
     { id: "crm-whatsapp", label: "CRM WhatsApp", icon: "💬", abas: [] },
     { id: "agente", label: "Agente RPA", icon: "🤖",
-      abas: [{id: "formulario", label: "Correção"}, {id: "historico", label: "Histórico"}]
+      abas: []
     }
 ];
 
