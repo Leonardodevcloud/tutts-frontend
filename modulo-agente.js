@@ -929,6 +929,7 @@
         moduloAtivo: 'agente',
         abaAtiva: aba,
         onGoHome: () => he && he('home'),
+        onNavigate: (moduloId, abaId) => he && he(moduloId),
         onLogout: () => {},
         onChangeTab: (id) => setAba(id),
       }),
