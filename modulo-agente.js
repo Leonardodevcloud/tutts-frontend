@@ -462,8 +462,11 @@
     const [fotoModal, setFotoModal] = useState(null);
     const PER_PAGE = 20;
 
+    const filtrosRef = useRef(filtros);
+    filtrosRef.current = filtros;
+
     const carregar = useCallback(async (pg = 1, f) => {
-      const filtrosAtivos = f || filtros;
+      const filtrosAtivos = f || filtrosRef.current;
       setLoading(true);
       try {
         const params = new URLSearchParams({ page: pg, per_page: PER_PAGE });
@@ -482,7 +485,7 @@
       } finally {
         setLoading(false);
       }
-    }, [fetchAuth, API_URL, showToast, filtros]);
+    }, [fetchAuth, API_URL, showToast]);
 
     useEffect(() => { carregar(); }, []);
 
@@ -901,8 +904,11 @@
   function TabAnalytics({ API_URL, fetchAuth, showToast }) {
     const [data, setData]       = useState(null);
     const [loading, setLoading] = useState(true);
+    const loaded = useRef(false);
 
     useEffect(() => {
+      if (loaded.current) return;
+      loaded.current = true;
       (async () => {
         try {
           const res = await fetchAuth(`${API_URL}/agent/analytics`);
@@ -911,7 +917,7 @@
         } catch { showToast('Erro ao carregar analytics', 'error'); }
         finally { setLoading(false); }
       })();
-    }, []);
+    }, [API_URL]);
 
     if (loading) return h('div', { className: 'flex items-center justify-center py-16' },
       h('div', { className: 'animate-spin w-10 h-10 border-4 border-purple-500 border-t-transparent rounded-full' })
