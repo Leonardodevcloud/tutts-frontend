@@ -462,14 +462,15 @@
     const [fotoModal, setFotoModal] = useState(null);
     const PER_PAGE = 20;
 
-    const carregar = useCallback(async (pg = 1, f = filtros) => {
+    const carregar = useCallback(async (pg = 1, f) => {
+      const filtrosAtivos = f || filtros;
       setLoading(true);
       try {
         const params = new URLSearchParams({ page: pg, per_page: PER_PAGE });
-        if (f.status)    params.set('status',    f.status);
-        if (f.os_numero) params.set('os_numero', f.os_numero);
-        if (f.de)        params.set('de',        f.de);
-        if (f.ate)       params.set('ate',       f.ate);
+        if (filtrosAtivos.status)    params.set('status',    filtrosAtivos.status);
+        if (filtrosAtivos.os_numero) params.set('os_numero', filtrosAtivos.os_numero);
+        if (filtrosAtivos.de)        params.set('de',        filtrosAtivos.de);
+        if (filtrosAtivos.ate)       params.set('ate',       filtrosAtivos.ate);
 
         const res  = await fetchAuth(`${API_URL}/agent/historico?${params}`);
         const data = await res.json();
@@ -481,7 +482,7 @@
       } finally {
         setLoading(false);
       }
-    }, [fetchAuth, API_URL, showToast]);
+    }, [fetchAuth, API_URL, showToast, filtros]);
 
     useEffect(() => { carregar(); }, []);
 
@@ -495,7 +496,7 @@
 
     const validar = async (id) => {
       try {
-        const res = await fetchAuth(`${API_URL}/agent/historico/${id}/validar`, { method: 'PATCH' });
+        const res = await fetchAuth(`${API_URL}/agent/validar/${id}`, { method: 'PATCH' });
         if (res.ok) {
           showToast('Registro validado!', 'success');
           carregar(page, filtros);
@@ -582,7 +583,7 @@
                     r.usuario_nome
                       ? h('div', null,
                           h('div', { className: 'font-semibold text-gray-900' }, r.usuario_nome),
-                          h('div', { className: 'text-gray-400 font-mono' }, `ID: ${r.usuario_id || '—'}`)
+                          h('div', { className: 'text-gray-400 font-mono' }, `Cód: ${r.cod_profissional || '—'}`)
                         )
                       : h('span', { className: 'text-gray-400' }, '—')
                   ),
@@ -664,7 +665,7 @@
             r.usuario_nome && h('div', { className: 'text-xs text-gray-600 mb-1' },
               h('span', { className: 'font-semibold' }, '🏍️ '),
               r.usuario_nome,
-              h('span', { className: 'text-gray-400 ml-1' }, `(ID: ${r.usuario_id || '—'})`)
+              h('span', { className: 'text-gray-400 ml-1' }, `(Cód: ${r.cod_profissional || '—'})`)
             ),
             // Endereços
             r.endereco_antigo && h('div', { className: 'text-xs text-orange-600 bg-orange-50 p-2 rounded-lg mb-1' },
