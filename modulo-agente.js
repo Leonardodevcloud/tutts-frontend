@@ -907,17 +907,25 @@
     he,
     Ee,
     f, E, n, i,
+    onLogout,
+    socialProfile,
+    isLoading,
+    lastUpdate,
+    onRefresh,
+    onNavigate,
   }) {
     const isAdmin = usuario && (usuario.role === 'admin' || usuario.role === 'admin_master');
 
-    // Admin: só histórico  |  User: só formulário
     const [aba, setAba] = useState(isAdmin ? 'historico' : 'formulario');
 
     const ABAS = isAdmin
-      ? [{ id: 'historico',  label: '📋 Histórico', visible: true }]
+      ? [
+          { id: 'historico',  label: '📋 Histórico' },
+          { id: 'analytics',  label: '📊 Analytics' },
+        ]
       : [
-          { id: 'formulario',    label: '📍 Correção',      visible: true },
-          { id: 'meu-historico', label: '📋 Minhas Solicitações', visible: true },
+          { id: 'formulario',    label: '📍 Correção' },
+          { id: 'meu-historico', label: '📋 Minhas Solicitações' },
         ];
 
     return h('div', { className: `${HeaderCompacto ? 'min-h-screen' : ''} bg-gray-50 flex flex-col` },
@@ -929,12 +937,16 @@
         moduloAtivo: 'agente',
         abaAtiva: aba,
         onGoHome: () => he && he('home'),
-        onNavigate: (moduloId, abaId) => he && he(moduloId),
-        onLogout: () => {},
+        onNavigate: onNavigate || ((moduloId) => he && he(moduloId)),
+        onLogout: onLogout || (() => {}),
         onChangeTab: (id) => setAba(id),
+        socialProfile,
+        isLoading: isLoading !== undefined ? isLoading : n,
+        lastUpdate: lastUpdate !== undefined ? lastUpdate : E,
+        onRefresh,
       }),
 
-      // Sub-tabs (só se mais de 1 aba)
+      // Sub-tabs
       ABAS.length > 1 && h('div', { className: 'bg-white border-b border-gray-200 shadow-sm' },
         h('div', { className: 'max-w-6xl mx-auto px-4 flex' },
           ABAS.map(a => h('button', {
@@ -954,6 +966,8 @@
           ? h(TabFormulario, { API_URL, fetchAuth, showToast })
           : aba === 'meu-historico'
           ? h(TabMeuHistorico, { API_URL, fetchAuth, showToast })
+          : aba === 'analytics'
+          ? h(TabAnalytics, { API_URL, fetchAuth, showToast })
           : h(TabHistorico,  { API_URL, fetchAuth, showToast, usuario })
       )
     );
