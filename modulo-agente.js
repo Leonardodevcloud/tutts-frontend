@@ -911,47 +911,45 @@
   }
 
   // ── ABA: Analytics (admin) ────────────────────────────────────────────────
-  // Cache global para analytics — sobrevive a remounts do componente
-  let _analyticsCache = null;
+  // Cache global para analytics — sobrevive a qualquer remount
+  let _analyticsData = null;
   let _analyticsFetching = false;
+  let _analyticsError = false;
 
   function TabAnalytics({ API_URL, fetchAuth, showToast }) {
-    const [data, setData]       = useState(_analyticsCache);
-    const [loading, setLoading] = useState(!_analyticsCache);
+    const containerRef = useRef(null);
+    const [, forceUpdate] = useState(0);
 
     useEffect(() => {
-      // Se já tem cache, usa direto
-      if (_analyticsCache) {
-        setData(_analyticsCache);
-        setLoading(false);
+      if (_analyticsData) {
+        forceUpdate(n => n + 1);
         return;
       }
-      // Se já está buscando, aguarda
       if (_analyticsFetching) return;
       _analyticsFetching = true;
 
       (async () => {
         try {
           const res = await fetchAuth(`${API_URL}/agent/analytics`);
-          const json = await res.json();
-          _analyticsCache = json;
-          setData(json);
-        } catch { showToast('Erro ao carregar analytics', 'error'); }
-        finally {
-          setLoading(false);
-          _analyticsFetching = false;
+          _analyticsData = await res.json();
+        } catch {
+          _analyticsError = true;
         }
+        _analyticsFetching = false;
+        forceUpdate(n => n + 1);
       })();
-    }, [API_URL]);
+    }, []);
 
-    if (loading) return h('div', { className: 'flex items-center justify-center py-16' },
+    if (_analyticsFetching && !_analyticsData) return h('div', { className: 'flex items-center justify-center py-16' },
       h('div', { className: 'animate-spin w-10 h-10 border-4 border-purple-500 border-t-transparent rounded-full' })
     );
-    if (!data) return h('div', { className: 'text-center py-16 text-gray-400' }, 'Sem dados disponíveis.');
+    if (_analyticsError && !_analyticsData) return h('div', { className: 'text-center py-16 text-gray-400' }, 'Erro ao carregar.');
+    if (!_analyticsData) return null;
 
+    const data = _analyticsData;
     const t = data.totais || {};
-    const meses = (data.por_mes || []).reverse();
-    const semanas = (data.por_semana || []).reverse();
+    const meses = [...(data.por_mes || [])].reverse();
+    const semanas = [...(data.por_semana || [])].reverse();
     const maxMes = Math.max(...meses.map(m => parseInt(m.total) || 0), 1);
     const maxSemana = Math.max(...semanas.map(s => parseInt(s.total) || 0), 1);
 
@@ -983,22 +981,26 @@
         meses.length === 0
           ? h('p', { className: 'text-gray-400 text-sm' }, 'Sem dados')
           : h('div', { className: 'space-y-2' },
-              meses.map(m => h('div', { key: m.mes, className: 'flex items-center gap-3' },
-                h('span', { className: 'w-16 text-xs font-mono text-gray-500 flex-shrink-0' }, m.mes),
-                h('div', { className: 'flex-1 h-6 bg-gray-100 rounded-full overflow-hidden flex' },
-                  h('div', {
-                    className: 'h-full bg-green-500 transition-all',
-                    style: { width: `${(parseInt(m.sucesso) / maxMes) * 100}%` },
-                    title: `Sucesso: ${m.sucesso}`,
-                  }),
-                  h('div', {
-                    className: 'h-full bg-red-400 transition-all',
-                    style: { width: `${(parseInt(m.erro) / maxMes) * 100}%` },
-                    title: `Erro: ${m.erro}`,
-                  })
-                ),
-                h('span', { className: 'w-10 text-right text-xs font-bold text-gray-700' }, m.total)
-              ))
+              meses.map(m => {
+                const sucPct = (parseInt(m.sucesso) / maxMes) * 100;
+                const errPct = (parseInt(m.erro) / maxMes) * 100;
+                return h('div', { key: m.mes, className: 'flex items-center gap-3' },
+                  h('span', { className: 'w-16 text-xs font-mono text-gray-500 flex-shrink-0' }, m.mes),
+                  h('div', { className: 'flex-1 h-6 bg-gray-100 rounded-full overflow-hidden flex' },
+                    sucPct > 0 && h('div', {
+                      className: 'h-full bg-green-500',
+                      style: { width: sucPct + '%', minWidth: sucPct > 0 ? '2px' : 0 },
+                      title: `Sucesso: ${m.sucesso}`,
+                    }),
+                    errPct > 0 && h('div', {
+                      className: 'h-full bg-red-400',
+                      style: { width: errPct + '%', minWidth: errPct > 0 ? '2px' : 0 },
+                      title: `Erro: ${m.erro}`,
+                    })
+                  ),
+                  h('span', { className: 'w-10 text-right text-xs font-bold text-gray-700' }, m.total)
+                );
+              })
             ),
         h('div', { className: 'flex items-center gap-4 mt-3 text-xs text-gray-400' },
           h('span', { className: 'flex items-center gap-1' }, h('span', { className: 'w-3 h-3 rounded bg-green-500 inline-block' }), 'Sucesso'),
@@ -1016,7 +1018,7 @@
                 const pct = (parseInt(s.total) / maxSemana) * 100;
                 return h('div', { key: s.semana_inicio, className: 'flex-1 flex flex-col items-center gap-1' },
                   h('span', { className: 'text-xs font-bold text-gray-600' }, s.total),
-                  h('div', { className: 'w-full rounded-t-lg bg-purple-500', style: { height: `${Math.max(pct, 4)}%` } }),
+                  h('div', { className: 'w-full rounded-t-lg bg-purple-500', style: { height: Math.max(pct, 4) + '%' } }),
                   h('span', { className: 'text-[10px] text-gray-400 mt-1' }, s.semana_inicio)
                 );
               })
@@ -1095,57 +1097,44 @@
   }
 
   // ── Componente raiz do módulo ───────────────────────────────────────────────
-  window.ModuloAgenteComponent = function ModuloAgente({
-    usuario,
-    API_URL,
-    fetchAuth,
-    HeaderCompacto,
-    showToast,
-    he,
-    Ee,
-    f, E, n, i,
-    onLogout,
-    socialProfile,
-    isLoading,
-    lastUpdate,
-    onRefresh,
-    onNavigate,
-  }) {
+  // Usa um portal DOM isolado para que re-renders do App pai não afetem este módulo.
+  // O wrapper externo é o que o app.js renderiza — ele cria um div e monta o módulo real via ReactDOM.render uma única vez.
+
+  // Componente interno REAL (montado uma única vez)
+  function ModuloAgenteInterno({ initialProps }) {
+    const propsRef = useRef(initialProps);
+    const { usuario, API_URL, fetchAuth, HeaderCompacto, showToast, he, onLogout, socialProfile, onNavigate } = propsRef.current;
+
     const isAdmin = usuario && (usuario.role === 'admin' || usuario.role === 'admin_master');
-
     const [aba, setAba] = useState(isAdmin ? 'historico' : 'formulario');
+    
+    // Props voláteis via ref global (atualizadas pelo wrapper sem re-render)
+    const volatileRef = useRef({ isLoading: false, lastUpdate: null, onRefresh: null, i: null });
 
-    const ABAS = React.useMemo(() => isAdmin
-      ? [
-          { id: 'historico',  label: '📋 Histórico' },
-          { id: 'analytics',  label: '📊 Analytics' },
-        ]
-      : [
-          { id: 'formulario',    label: '📍 Correção' },
-          { id: 'meu-historico', label: '📋 Minhas Solicitações' },
-        ],
-    [isAdmin]);
+    // Expor setter para o wrapper atualizar props voláteis
+    useEffect(() => {
+      window.__agenteVolatileRef = volatileRef;
+      return () => { delete window.__agenteVolatileRef; };
+    }, []);
 
-    const goHome = useCallback(() => he && he('home'), [he]);
-    const doNavigate = useCallback((moduloId) => he && he(moduloId), [he]);
-    const doLogout = useCallback(() => onLogout ? onLogout() : null, [onLogout]);
+    const ABAS = isAdmin
+      ? [{ id: 'historico', label: '📋 Histórico' }, { id: 'analytics', label: '📊 Analytics' }]
+      : [{ id: 'formulario', label: '📍 Correção' }, { id: 'meu-historico', label: '📋 Minhas Solicitações' }];
 
     return h('div', { className: `${HeaderCompacto ? 'min-h-screen' : ''} bg-gray-50 flex flex-col` },
-
-      i && h(window.__TuttsToastComponent || 'div', i),
 
       HeaderCompacto && h(HeaderCompacto, {
         usuario,
         moduloAtivo: 'agente',
         abaAtiva: aba,
-        onGoHome: goHome,
-        onNavigate: onNavigate || doNavigate,
-        onLogout: doLogout,
+        onGoHome: () => he && he('home'),
+        onNavigate: onNavigate || ((m) => he && he(m)),
+        onLogout: onLogout || (() => {}),
         onChangeTab: setAba,
         socialProfile,
-        isLoading: isLoading !== undefined ? isLoading : n,
-        lastUpdate: lastUpdate !== undefined ? lastUpdate : E,
-        onRefresh,
+        isLoading: volatileRef.current.isLoading,
+        lastUpdate: volatileRef.current.lastUpdate,
+        onRefresh: volatileRef.current.onRefresh,
       }),
 
       // Sub-tabs
@@ -1163,7 +1152,7 @@
         )
       ),
 
-      // Tabs — todas montadas sempre, visibilidade controlada por CSS
+      // Tabs — display:none para evitar remount
       h('div', { className: 'flex-1' },
         isAdmin
           ? h(React.Fragment, null,
@@ -1184,6 +1173,47 @@
             )
       )
     );
+  }
+
+  // Wrapper externo — este é o que o app.js monta/desmonta.
+  // Ele cria um container DOM e renderiza o módulo real UMA ÚNICA VEZ.
+  window.ModuloAgenteComponent = function ModuloAgenteWrapper(props) {
+    const containerRef = useRef(null);
+    const mountedRef = useRef(false);
+    const divRef = useRef(null);
+
+    // Atualizar props voláteis sem causar re-render
+    useEffect(() => {
+      if (window.__agenteVolatileRef) {
+        window.__agenteVolatileRef.current = {
+          isLoading: props.isLoading || props.n,
+          lastUpdate: props.lastUpdate || props.E,
+          onRefresh: props.onRefresh,
+          i: props.i,
+        };
+      }
+    });
+
+    useEffect(() => {
+      if (mountedRef.current || !containerRef.current) return;
+      mountedRef.current = true;
+
+      // Montar o módulo real uma única vez
+      ReactDOM.render(
+        h(ModuloAgenteInterno, { initialProps: props }),
+        containerRef.current
+      );
+
+      return () => {
+        // Limpar quando o módulo é realmente desmontado (navegar para outro módulo)
+        if (containerRef.current) {
+          ReactDOM.unmountComponentAtNode(containerRef.current);
+        }
+        mountedRef.current = false;
+      };
+    }, []);
+
+    return h('div', { ref: containerRef, className: 'agente-portal-root', style: { minHeight: '100vh' } });
   };
 
   console.log('✅ Módulo Agente RPA carregado — BUILD 2025-03-01T15:00 — COM sub-tabs meu-historico');
