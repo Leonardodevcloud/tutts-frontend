@@ -911,21 +911,36 @@
   }
 
   // ── ABA: Analytics (admin) ────────────────────────────────────────────────
+  // Cache global para analytics — sobrevive a remounts do componente
+  let _analyticsCache = null;
+  let _analyticsFetching = false;
+
   function TabAnalytics({ API_URL, fetchAuth, showToast }) {
-    const [data, setData]       = useState(null);
-    const [loading, setLoading] = useState(true);
-    const loaded = useRef(false);
+    const [data, setData]       = useState(_analyticsCache);
+    const [loading, setLoading] = useState(!_analyticsCache);
 
     useEffect(() => {
-      if (loaded.current) return;
-      loaded.current = true;
+      // Se já tem cache, usa direto
+      if (_analyticsCache) {
+        setData(_analyticsCache);
+        setLoading(false);
+        return;
+      }
+      // Se já está buscando, aguarda
+      if (_analyticsFetching) return;
+      _analyticsFetching = true;
+
       (async () => {
         try {
           const res = await fetchAuth(`${API_URL}/agent/analytics`);
           const json = await res.json();
+          _analyticsCache = json;
           setData(json);
         } catch { showToast('Erro ao carregar analytics', 'error'); }
-        finally { setLoading(false); }
+        finally {
+          setLoading(false);
+          _analyticsFetching = false;
+        }
       })();
     }, [API_URL]);
 
@@ -1100,7 +1115,7 @@
 
     const [aba, setAba] = useState(isAdmin ? 'historico' : 'formulario');
 
-    const ABAS = isAdmin
+    const ABAS = React.useMemo(() => isAdmin
       ? [
           { id: 'historico',  label: '📋 Histórico' },
           { id: 'analytics',  label: '📊 Analytics' },
@@ -1108,7 +1123,12 @@
       : [
           { id: 'formulario',    label: '📍 Correção' },
           { id: 'meu-historico', label: '📋 Minhas Solicitações' },
-        ];
+        ],
+    [isAdmin]);
+
+    const goHome = useCallback(() => he && he('home'), [he]);
+    const doNavigate = useCallback((moduloId) => he && he(moduloId), [he]);
+    const doLogout = useCallback(() => onLogout ? onLogout() : null, [onLogout]);
 
     return h('div', { className: `${HeaderCompacto ? 'min-h-screen' : ''} bg-gray-50 flex flex-col` },
 
@@ -1118,10 +1138,10 @@
         usuario,
         moduloAtivo: 'agente',
         abaAtiva: aba,
-        onGoHome: () => he && he('home'),
-        onNavigate: onNavigate || ((moduloId) => he && he(moduloId)),
-        onLogout: onLogout || (() => {}),
-        onChangeTab: (id) => setAba(id),
+        onGoHome: goHome,
+        onNavigate: onNavigate || doNavigate,
+        onLogout: doLogout,
+        onChangeTab: setAba,
         socialProfile,
         isLoading: isLoading !== undefined ? isLoading : n,
         lastUpdate: lastUpdate !== undefined ? lastUpdate : E,
