@@ -1143,14 +1143,25 @@
         )
       ),
 
+      // Tabs — todas montadas sempre, visibilidade controlada por CSS
       h('div', { className: 'flex-1' },
-        aba === 'formulario'
-          ? h(TabFormulario, { API_URL, fetchAuth, showToast })
-          : aba === 'meu-historico'
-          ? h(TabMeuHistorico, { API_URL, fetchAuth, showToast })
-          : aba === 'analytics'
-          ? h(TabAnalytics, { API_URL, fetchAuth, showToast })
-          : h(TabHistorico,  { API_URL, fetchAuth, showToast, usuario })
+        isAdmin
+          ? h(React.Fragment, null,
+              h('div', { style: { display: aba === 'historico' ? 'block' : 'none' } },
+                h(TabHistorico, { API_URL, fetchAuth, showToast, usuario })
+              ),
+              h('div', { style: { display: aba === 'analytics' ? 'block' : 'none' } },
+                h(TabAnalytics, { API_URL, fetchAuth, showToast })
+              )
+            )
+          : h(React.Fragment, null,
+              h('div', { style: { display: aba === 'formulario' ? 'block' : 'none' } },
+                h(TabFormulario, { API_URL, fetchAuth, showToast })
+              ),
+              h('div', { style: { display: aba === 'meu-historico' ? 'block' : 'none' } },
+                h(TabMeuHistorico, { API_URL, fetchAuth, showToast })
+              )
+            )
       )
     );
   };
