@@ -897,6 +897,172 @@
     );
   }
 
+  // ── ABA: Analytics (admin) ────────────────────────────────────────────────
+  function TabAnalytics({ API_URL, fetchAuth, showToast }) {
+    const [data, setData]       = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+      (async () => {
+        try {
+          const res = await fetchAuth(`${API_URL}/agent/analytics`);
+          const json = await res.json();
+          setData(json);
+        } catch { showToast('Erro ao carregar analytics', 'error'); }
+        finally { setLoading(false); }
+      })();
+    }, []);
+
+    if (loading) return h('div', { className: 'flex items-center justify-center py-16' },
+      h('div', { className: 'animate-spin w-10 h-10 border-4 border-purple-500 border-t-transparent rounded-full' })
+    );
+    if (!data) return h('div', { className: 'text-center py-16 text-gray-400' }, 'Sem dados disponíveis.');
+
+    const t = data.totais || {};
+    const meses = (data.por_mes || []).reverse();
+    const semanas = (data.por_semana || []).reverse();
+    const maxMes = Math.max(...meses.map(m => parseInt(m.total) || 0), 1);
+    const maxSemana = Math.max(...semanas.map(s => parseInt(s.total) || 0), 1);
+
+    return h('div', { className: 'max-w-7xl mx-auto p-4 sm:p-6 space-y-6' },
+
+      // KPI Cards
+      h('div', { className: 'grid grid-cols-2 md:grid-cols-5 gap-4' },
+        [
+          { label: 'Total Ajustes',  value: t.total,     bg: 'bg-purple-50',  tc: 'text-purple-600', icon: '📊' },
+          { label: 'Sucesso',        value: t.sucesso,   bg: 'bg-green-50',   tc: 'text-green-600',  icon: '✅' },
+          { label: 'Erros',          value: t.erro,      bg: 'bg-red-50',     tc: 'text-red-600',    icon: '❌' },
+          { label: 'Pendentes',      value: t.pendentes, bg: 'bg-yellow-50',  tc: 'text-yellow-600', icon: '⏳' },
+          { label: 'Validados',      value: t.validados, bg: 'bg-blue-50',    tc: 'text-blue-600',   icon: '✓' },
+        ].map(k => h('div', {
+          key: k.label,
+          className: `${k.bg} rounded-xl border border-gray-100 shadow-sm p-4`,
+        },
+          h('div', { className: 'flex items-center gap-2 mb-2' },
+            h('span', { className: 'text-xl' }, k.icon),
+            h('span', { className: 'text-xs font-semibold text-gray-500 uppercase' }, k.label)
+          ),
+          h('p', { className: `text-3xl font-bold ${k.tc}` }, k.value || 0)
+        ))
+      ),
+
+      // Gráfico por mês
+      h('div', { className: 'bg-white rounded-xl border border-gray-100 shadow-sm p-5' },
+        h('h3', { className: 'text-sm font-bold text-gray-700 mb-4 uppercase tracking-wide' }, '📈 Ajustes por Mês (últimos 6 meses)'),
+        meses.length === 0
+          ? h('p', { className: 'text-gray-400 text-sm' }, 'Sem dados')
+          : h('div', { className: 'space-y-2' },
+              meses.map(m => h('div', { key: m.mes, className: 'flex items-center gap-3' },
+                h('span', { className: 'w-16 text-xs font-mono text-gray-500 flex-shrink-0' }, m.mes),
+                h('div', { className: 'flex-1 h-6 bg-gray-100 rounded-full overflow-hidden flex' },
+                  h('div', {
+                    className: 'h-full bg-green-500 transition-all',
+                    style: { width: `${(parseInt(m.sucesso) / maxMes) * 100}%` },
+                    title: `Sucesso: ${m.sucesso}`,
+                  }),
+                  h('div', {
+                    className: 'h-full bg-red-400 transition-all',
+                    style: { width: `${(parseInt(m.erro) / maxMes) * 100}%` },
+                    title: `Erro: ${m.erro}`,
+                  })
+                ),
+                h('span', { className: 'w-10 text-right text-xs font-bold text-gray-700' }, m.total)
+              ))
+            ),
+        h('div', { className: 'flex items-center gap-4 mt-3 text-xs text-gray-400' },
+          h('span', { className: 'flex items-center gap-1' }, h('span', { className: 'w-3 h-3 rounded bg-green-500 inline-block' }), 'Sucesso'),
+          h('span', { className: 'flex items-center gap-1' }, h('span', { className: 'w-3 h-3 rounded bg-red-400 inline-block' }), 'Erro')
+        )
+      ),
+
+      // Gráfico por semana
+      h('div', { className: 'bg-white rounded-xl border border-gray-100 shadow-sm p-5' },
+        h('h3', { className: 'text-sm font-bold text-gray-700 mb-4 uppercase tracking-wide' }, '📅 Ajustes por Semana (últimas 8 semanas)'),
+        semanas.length === 0
+          ? h('p', { className: 'text-gray-400 text-sm' }, 'Sem dados')
+          : h('div', { className: 'flex items-end gap-2 h-40' },
+              semanas.map(s => {
+                const pct = (parseInt(s.total) / maxSemana) * 100;
+                return h('div', { key: s.semana_inicio, className: 'flex-1 flex flex-col items-center gap-1' },
+                  h('span', { className: 'text-xs font-bold text-gray-600' }, s.total),
+                  h('div', { className: 'w-full rounded-t-lg bg-purple-500', style: { height: `${Math.max(pct, 4)}%` } }),
+                  h('span', { className: 'text-[10px] text-gray-400 mt-1' }, s.semana_inicio)
+                );
+              })
+            )
+      ),
+
+      // Red Flags
+      h('div', { className: 'bg-white rounded-xl border shadow-sm overflow-hidden' },
+        h('div', { className: 'p-4 border-b bg-red-50 flex items-center gap-2' },
+          h('span', { className: 'text-xl' }, '🚩'),
+          h('h3', { className: 'text-sm font-bold text-red-700 uppercase tracking-wide' }, 'Red Flags — Profissionais com +10 solicitações na semana'),
+        ),
+        (data.red_flags || []).length === 0
+          ? h('div', { className: 'p-6 text-center text-gray-400 text-sm' }, '✅ Nenhum profissional com volume anormal esta semana.')
+          : h('div', { className: 'divide-y divide-gray-100' },
+              data.red_flags.map((rf, i) => h('div', {
+                key: i,
+                className: 'flex items-center justify-between p-4 hover:bg-red-50 transition',
+              },
+                h('div', null,
+                  h('p', { className: 'font-semibold text-gray-800' }, rf.usuario_nome || '—'),
+                  h('p', { className: 'text-xs text-gray-400 font-mono' }, `Cód: ${rf.cod_profissional || '—'}`)
+                ),
+                h('div', { className: 'text-right' },
+                  h('p', { className: 'text-2xl font-bold text-red-600' }, rf.total_semana),
+                  h('p', { className: 'text-xs text-gray-400' }, `✅ ${rf.sucesso} | ❌ ${rf.erro}`)
+                )
+              ))
+            )
+      ),
+
+      // Top Profissionais + Top Validadores
+      h('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-6' },
+        h('div', { className: 'bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden' },
+          h('div', { className: 'p-4 border-b bg-purple-50' },
+            h('h3', { className: 'text-sm font-bold text-purple-700 uppercase tracking-wide' }, '🏍️ Top Profissionais (mais solicitações)')
+          ),
+          h('div', { className: 'divide-y divide-gray-100 max-h-96 overflow-y-auto' },
+            (data.top_profissionais || []).map((p, i) => h('div', {
+              key: i,
+              className: 'flex items-center justify-between px-4 py-3 hover:bg-gray-50',
+            },
+              h('div', { className: 'flex items-center gap-3' },
+                h('span', { className: `w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${i < 3 ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-500'}` }, i + 1),
+                h('div', null,
+                  h('p', { className: 'text-sm font-semibold text-gray-800' }, p.usuario_nome || '—'),
+                  h('p', { className: 'text-xs text-gray-400 font-mono' }, `Cód: ${p.cod_profissional || '—'}`)
+                )
+              ),
+              h('div', { className: 'text-right' },
+                h('span', { className: 'text-lg font-bold text-gray-700' }, p.total),
+                h('div', { className: 'text-[10px] text-gray-400' }, `✅${p.sucesso} ❌${p.erro}`)
+              )
+            ))
+          )
+        ),
+        h('div', { className: 'bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden' },
+          h('div', { className: 'p-4 border-b bg-blue-50' },
+            h('h3', { className: 'text-sm font-bold text-blue-700 uppercase tracking-wide' }, '👤 Top Validadores')
+          ),
+          h('div', { className: 'divide-y divide-gray-100' },
+            (data.top_validadores || []).map((v, i) => h('div', {
+              key: i,
+              className: 'flex items-center justify-between px-4 py-3 hover:bg-gray-50',
+            },
+              h('div', { className: 'flex items-center gap-3' },
+                h('span', { className: `w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${i < 3 ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'}` }, i + 1),
+                h('p', { className: 'text-sm font-semibold text-gray-800' }, v.validado_por)
+              ),
+              h('span', { className: 'text-lg font-bold text-gray-700' }, v.total)
+            ))
+          )
+        )
+      )
+    );
+  }
+
   // ── Componente raiz do módulo ───────────────────────────────────────────────
   window.ModuloAgenteComponent = function ModuloAgente({
     usuario,
