@@ -1113,7 +1113,7 @@
       }),
 
       // Sub-tabs
-      ABAS.length > 1 && h('div', { className: 'bg-white border-b border-gray-200 shadow-sm' },
+      ABAS.length > 1 && h('div', { className: 'bg-white border-b border-gray-200 shadow-sm sticky top-[52px] z-20' },
         h('div', { className: 'max-w-6xl mx-auto px-4 flex' },
           ABAS.map(a => h('button', {
             key: a.id,
