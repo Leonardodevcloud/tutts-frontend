@@ -325,8 +325,8 @@
 
     // ── Render: polling — tela cheia com robô animado ──────────────────
     if (fase === 'polling') return h('div', {
-      className: 'fixed inset-0 z-50 flex flex-col items-center justify-center px-6',
-      style: { background: 'linear-gradient(135deg, #550776 0%, #7c3aed 50%, #550776 100%)', backgroundSize: '200% 200%', animation: 'gradientShift 4s ease infinite' }
+      className: 'fixed inset-0 z-50 flex flex-col items-center justify-center px-6 overflow-hidden',
+      style: { background: 'linear-gradient(135deg, #550776 0%, #7c3aed 50%, #550776 100%)', backgroundSize: '200% 200%', animation: 'gradientShift 4s ease infinite', overflowX: 'hidden', overflowY: 'auto', width: '100vw', maxWidth: '100%' }
     },
       h('style', null, `
         @keyframes gradientShift { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
