@@ -1308,39 +1308,6 @@
         }, 'Próxima →')
       ),
 
-      // Modal de Mapa — traçados vermelho (errado) e verde (corrigido)
-      mapaModal && h('div', {
-        className: 'fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4',
-        onClick: () => setMapaModal(null),
-      },
-        h('div', {
-          className: 'relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden',
-          style: { height: '80vh' },
-          onClick: e => e.stopPropagation(),
-        },
-          h('div', { className: 'flex items-center justify-between px-4 py-3 bg-gray-50 border-b' },
-            h('div', null,
-              h('span', { className: 'font-bold text-gray-900' }, `OS ${mapaModal.os_numero} — Ponto ${mapaModal.ponto}`),
-              h('div', { className: 'flex gap-3 mt-1 text-xs' },
-                h('span', { className: 'flex items-center gap-1' },
-                  h('span', { className: 'inline-block w-3 h-3 rounded-full', style: { background: '#dc2626' } }),
-                  'Endereço errado (motoboy GPS)'
-                ),
-                h('span', { className: 'flex items-center gap-1' },
-                  h('span', { className: 'inline-block w-3 h-3 rounded-full', style: { background: '#16a34a' } }),
-                  'Endereço corrigido'
-                )
-              )
-            ),
-            h('button', {
-              onClick: () => setMapaModal(null),
-              className: 'w-10 h-10 bg-gray-200 text-gray-800 rounded-full flex items-center justify-center text-lg font-bold hover:bg-gray-300',
-            }, '✕')
-          ),
-          h(MapaTracado, { registro: mapaModal })
-        )
-      ),
-
       // Modal de foto
       fotoModal && h('div', {
         className: 'fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4',
