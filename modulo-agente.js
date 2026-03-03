@@ -323,6 +323,69 @@
       }, '+ Nova Correção')
     );
 
+    // ── Render: polling — tela cheia com robô animado ──────────────────
+    if (fase === 'polling') return h('div', {
+      className: 'fixed inset-0 z-50 flex flex-col items-center justify-center px-6',
+      style: { background: 'linear-gradient(135deg, #550776 0%, #7c3aed 50%, #550776 100%)', backgroundSize: '200% 200%', animation: 'gradientShift 4s ease infinite' }
+    },
+      h('style', null, `
+        @keyframes gradientShift { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+        @keyframes robotFloat { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-12px); } }
+        @keyframes robotWave { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(20deg); } 75% { transform: rotate(-10deg); } }
+        @keyframes robotBlink { 0%, 42%, 58%, 100% { transform: scaleY(1); } 45%, 55% { transform: scaleY(0.1); } }
+        @keyframes gearSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes pulseRing { 0% { transform: scale(0.8); opacity: 0.5; } 50% { transform: scale(1.2); opacity: 0; } 100% { transform: scale(0.8); opacity: 0; } }
+        @keyframes dotPulse { 0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); } 40% { opacity: 1; transform: scale(1.2); } }
+        @keyframes progressBar { 0% { width: 5%; } 20% { width: 25%; } 50% { width: 55%; } 80% { width: 80%; } 100% { width: 95%; } }
+      `),
+      h('div', { style: { position: 'relative', width: '180px', height: '180px', marginBottom: '24px' } },
+        h('div', { style: { position: 'absolute', inset: 0, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.2)', animation: 'pulseRing 2s ease-in-out infinite' } }),
+        h('div', { style: { position: 'absolute', inset: '-10px', borderRadius: '50%', border: '2px solid rgba(255,255,255,0.1)', animation: 'pulseRing 2s ease-in-out 0.5s infinite' } }),
+        h('div', { style: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'robotFloat 3s ease-in-out infinite' } },
+          h('svg', { width: '120', height: '140', viewBox: '0 0 120 140', fill: 'none' },
+            h('line', { x1: '60', y1: '8', x2: '60', y2: '25', stroke: 'white', strokeWidth: '3', strokeLinecap: 'round' }),
+            h('circle', { cx: '60', cy: '6', r: '5', fill: '#fbbf24', style: { animation: 'robotBlink 3s ease infinite' } }),
+            h('rect', { x: '25', y: '25', width: '70', height: '50', rx: '16', fill: 'white', opacity: '0.95' }),
+            h('circle', { cx: '43', cy: '48', r: '7', fill: '#550776' }),
+            h('circle', { cx: '77', cy: '48', r: '7', fill: '#550776' }),
+            h('circle', { cx: '45', cy: '46', r: '2.5', fill: 'white' }),
+            h('circle', { cx: '79', cy: '46', r: '2.5', fill: 'white' }),
+            h('path', { d: 'M 45 58 Q 60 68 75 58', stroke: '#550776', strokeWidth: '2.5', fill: 'none', strokeLinecap: 'round' }),
+            h('rect', { x: '30', y: '80', width: '60', height: '40', rx: '12', fill: 'white', opacity: '0.9' }),
+            h('circle', { cx: '60', cy: '100', r: '8', fill: 'none', stroke: '#7c3aed', strokeWidth: '2', style: { transformOrigin: '60px 100px', animation: 'gearSpin 3s linear infinite' } }),
+            h('circle', { cx: '60', cy: '100', r: '3', fill: '#7c3aed' }),
+            h('g', { style: { transformOrigin: '25px 85px', animation: 'robotWave 1.5s ease-in-out infinite' } },
+              h('rect', { x: '5', y: '82', width: '22', height: '12', rx: '6', fill: 'white', opacity: '0.85' }),
+              h('circle', { cx: '8', cy: '88', r: '6', fill: '#fbbf24' })
+            ),
+            h('rect', { x: '93', y: '88', width: '22', height: '12', rx: '6', fill: 'white', opacity: '0.85' }),
+            h('rect', { x: '35', y: '122', width: '16', height: '10', rx: '5', fill: 'white', opacity: '0.8' }),
+            h('rect', { x: '69', y: '122', width: '16', height: '10', rx: '5', fill: 'white', opacity: '0.8' })
+          )
+        )
+      ),
+      h('h2', { className: 'text-2xl font-bold text-white mb-3 text-center', style: { textShadow: '0 2px 8px rgba(0,0,0,0.3)' } },
+        'Aguarde...'
+      ),
+      h('p', { className: 'text-base text-purple-100 text-center mb-2 leading-relaxed max-w-xs' },
+        'O robô está executando sua solicitação.'
+      ),
+      h('p', { className: 'text-sm text-purple-200 text-center mb-8 max-w-xs' },
+        'Em menos de 1 minuto seu serviço será atualizado e você conseguirá finalizar a corrida!'
+      ),
+      h('div', { className: 'w-64 h-2 rounded-full overflow-hidden', style: { background: 'rgba(255,255,255,0.15)' } },
+        h('div', { style: { height: '100%', borderRadius: '9999px', background: 'linear-gradient(90deg, #fbbf24, #f59e0b)', animation: 'progressBar 60s ease-out forwards' } })
+      ),
+      h('div', { className: 'flex gap-2 mt-6' },
+        h('div', { className: 'w-2.5 h-2.5 rounded-full bg-white', style: { animation: 'dotPulse 1.4s ease-in-out infinite' } }),
+        h('div', { className: 'w-2.5 h-2.5 rounded-full bg-white', style: { animation: 'dotPulse 1.4s ease-in-out 0.2s infinite' } }),
+        h('div', { className: 'w-2.5 h-2.5 rounded-full bg-white', style: { animation: 'dotPulse 1.4s ease-in-out 0.4s infinite' } })
+      ),
+      h('div', { className: 'mt-8 px-4 py-2 rounded-full text-xs font-semibold text-purple-200', style: { background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(4px)' } },
+        `OS ${form.os_numero || '—'} • Ponto ${form.ponto || '—'}`
+      )
+    );
+
     // ── Render: formulário ────────────────────────────────────────────────
     const disabled = loading;
 
@@ -510,12 +573,7 @@
         )
       ),
 
-      // Status do polling
-      fase === 'polling' && h('div', { className: 'mt-6 flex items-center gap-3 justify-center text-gray-500 text-sm' },
-        h('div', { className: 'w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full animate-spin' }),
-        'Aguardando confirmação do robô...'
-      )
-    );
+        );
   }
 
   // ── ABA: Histórico Admin ────────────────────────────────────────────────────
