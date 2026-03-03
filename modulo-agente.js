@@ -199,7 +199,7 @@
       setEnderecoGeo('');
 
       try {
-        const res = await fetchAuth(`${API_URL}/api/geocode/reverse?lat=${gps.lat}&lng=${gps.lng}`);
+        const res = await fetchAuth(`${API_URL}/geocode/reverse?lat=${gps.lat}&lng=${gps.lng}`);
         const data = await res.json();
         if (res.ok && data.endereco) {
           setEnderecoGeo(data.endereco);
