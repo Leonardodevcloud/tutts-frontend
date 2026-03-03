@@ -78,6 +78,11 @@
     const [fotoBase64, setFotoB64]  = useState(null);
     const [fotoPreview, setFotoPre] = useState(null);
 
+    // Estados da localização do ponto (coordenada + endereço geocodificado)
+    const [pontoCoords, setPontoCoords]     = useState(null); // { lat, lng }
+    const [enderecoGeo, setEnderecoGeo]     = useState('');
+    const [geoLoading, setGeoLoading]       = useState(false);
+
     const pararPolling = useCallback(() => {
       if (pollingRef.current)  clearInterval(pollingRef.current);
       if (timeoutRef.current)  clearTimeout(timeoutRef.current);
@@ -87,21 +92,32 @@
 
     useEffect(() => () => pararPolling(), [pararPolling]);
 
-    // Capturar GPS automaticamente ao montar
+    // GPS em tempo real com watchPosition (atualização contínua)
+    const watchIdRef = useRef(null);
+
     useEffect(() => {
-      capturarGPS();
+      iniciarWatchGPS();
+      return () => {
+        if (watchIdRef.current !== null) {
+          navigator.geolocation.clearWatch(watchIdRef.current);
+          watchIdRef.current = null;
+        }
+      };
     }, []);
 
-    function capturarGPS() {
+    function iniciarWatchGPS() {
       if (!navigator.geolocation) {
         setGpsErro('Geolocalização não suportada neste navegador.');
         return;
       }
+      if (watchIdRef.current !== null) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+      }
       setGpsLoad(true);
       setGpsErro('');
-      navigator.geolocation.getCurrentPosition(
+      watchIdRef.current = navigator.geolocation.watchPosition(
         (pos) => {
-          setGps({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+          setGps({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy });
           setGpsLoad(false);
           setGpsErro('');
         },
@@ -114,8 +130,12 @@
           setGpsErro(msgs[err.code] || 'Erro ao obter localização.');
           setGpsLoad(false);
         },
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+        { enableHighAccuracy: true, timeout: 20000, maximumAge: 5000 }
       );
+    }
+
+    function capturarGPS() {
+      iniciarWatchGPS();
     }
 
     async function handleFoto(e) {
@@ -166,11 +186,32 @@
       setForm(f => ({ ...f, [name]: value }));
     };
 
-    // Usar localização GPS nativa como coordenadas do ponto
-    function usarGPSComoLocalizacao() {
-      if (!gps) return;
-      setForm(f => ({ ...f, localizacao_raw: `${gps.lat}, ${gps.lng}` }));
-      showToast('Localização GPS inserida!', 'success');
+    // Enviar localização atual do motoboy como coordenada do ponto + geocodificação reversa
+    async function enviarLocalizacao() {
+      if (!gps) {
+        showToast('Aguarde o GPS capturar sua localização.', 'error');
+        return;
+      }
+      const coordStr = `${gps.lat}, ${gps.lng}`;
+      setForm(f => ({ ...f, localizacao_raw: coordStr }));
+      setPontoCoords({ lat: gps.lat, lng: gps.lng });
+      setGeoLoading(true);
+      setEnderecoGeo('');
+
+      try {
+        const res = await fetchAuth(`${API_URL}/api/geocode/reverse?lat=${gps.lat}&lng=${gps.lng}`);
+        const data = await res.json();
+        if (res.ok && data.endereco) {
+          setEnderecoGeo(data.endereco);
+        } else {
+          setEnderecoGeo('Endereço não encontrado');
+        }
+      } catch {
+        setEnderecoGeo('Erro ao buscar endereço');
+      } finally {
+        setGeoLoading(false);
+      }
+      showToast('Localização enviada com sucesso!', 'success');
     }
 
     const handleSubmit = async () => {
@@ -237,6 +278,8 @@
       setLoading(false);
       setFotoB64(null);
       setFotoPre(null);
+      setPontoCoords(null);
+      setEnderecoGeo('');
       capturarGPS();
     };
 
@@ -324,7 +367,7 @@
               h('div', null,
                 h('p', { className: `text-sm font-semibold ${gps ? 'text-green-700' : gpsErro ? 'text-red-700' : 'text-blue-700'}` },
                   gpsLoading ? 'Obtendo localização...' :
-                  gps ? 'GPS capturado' :
+                  gps ? ('GPS ao vivo ' + (gps.accuracy ? '(±' + Math.round(gps.accuracy) + 'm)' : '')) :
                   'GPS não disponível'
                 ),
                 gps && h('p', { className: 'text-xs text-green-600 font-mono' }, `${gps.lat.toFixed(6)}, ${gps.lng.toFixed(6)}`),
@@ -354,7 +397,7 @@
 
         // Ponto
         h('div', null,
-          h('label', { className: 'block text-sm font-semibold text-gray-700 mb-1.5' }, 'Ponto a corrigir *'),
+          h('label', { className: 'block text-sm font-semibold text-gray-700 mb-1.5' }, 'Ponto de coleta a corrigir *'),
           h('select', {
             name: 'ponto', value: form.ponto, onChange: handleChange, disabled,
             className: `w-full rounded-xl border px-4 py-3 text-gray-900 transition
@@ -366,26 +409,57 @@
           )
         ),
 
-        // Localização
+        // Localização do ponto
         h('div', null,
           h('label', { className: 'block text-sm font-semibold text-gray-700 mb-1.5' }, 'Localização do ponto *'),
-          h('div', { className: 'relative' },
-            h('textarea', {
-              name: 'localizacao_raw', rows: 3,
-              placeholder: 'Cole o link do Maps ou as coordenadas\nEx: https://maps.app.goo.gl/Xxx ou -16.738952, -49.293811',
-              value: form.localizacao_raw, onChange: handleChange, disabled,
-              className: `w-full rounded-xl border px-4 py-3 text-gray-900 text-sm resize-none transition
-                ${disabled ? 'bg-gray-50 text-gray-400 cursor-not-allowed' : 'border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200'}
-                outline-none`,
-            })
+
+          h('p', { className: 'text-xs text-gray-500 mb-3 leading-relaxed' },
+            'Vá até o local exato do ponto que precisa ser corrigido e clique no botão abaixo para enviar sua localização.'
           ),
-          h('div', { className: 'flex items-center justify-between mt-1.5' },
-            h('p', { className: 'text-xs text-gray-400' }, 'Link do Maps ou coordenadas'),
-            gps && h('button', {
-              onClick: usarGPSComoLocalizacao, disabled,
-              className: 'text-xs px-3 py-1 rounded-lg font-semibold text-purple-700 bg-purple-50 border border-purple-200 hover:bg-purple-100 transition',
-            }, '📍 Usar minha localização')
-          )
+
+          !pontoCoords
+            ? h('button', {
+                onClick: enviarLocalizacao,
+                disabled: disabled || !gps || geoLoading,
+                className: `w-full py-4 rounded-xl font-bold text-lg transition flex items-center justify-center gap-3 border-2
+                  ${!gps || disabled
+                    ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed'
+                    : 'bg-green-50 border-green-400 text-green-700 hover:bg-green-100 hover:border-green-500 active:scale-[0.98] shadow-md'}`,
+              },
+                geoLoading
+                  ? h(React.Fragment, null,
+                      h('div', { className: 'w-5 h-5 border-2 border-green-500 border-t-transparent rounded-full animate-spin' }),
+                      'Obtendo endereço...'
+                    )
+                  : h(React.Fragment, null,
+                      h('span', { className: 'text-2xl' }, String.fromCodePoint(0x1F4CD)),
+                      'Enviar minha localização atual'
+                    )
+              )
+            : h('div', { className: 'bg-green-50 border border-green-200 rounded-xl p-4 space-y-2' },
+                h('div', { className: 'flex items-center justify-between' },
+                  h('div', { className: 'flex items-center gap-2' },
+                    h('span', { className: 'text-green-600 text-lg' }, String.fromCodePoint(0x2705)),
+                    h('span', { className: 'text-sm font-semibold text-green-700' }, 'Localização enviada')
+                  ),
+                  h('button', {
+                    onClick: () => { setPontoCoords(null); setEnderecoGeo(''); setForm(f => ({ ...f, localizacao_raw: '' })); },
+                    disabled,
+                    className: 'text-xs px-3 py-1 rounded-lg font-semibold text-orange-700 bg-orange-50 border border-orange-200 hover:bg-orange-100 transition',
+                  }, String.fromCodePoint(0x1F504) + ' Reenviar')
+                ),
+                h('p', { className: 'text-xs font-mono text-green-800' },
+                  `${String.fromCodePoint(0x1F4CD)} ${pontoCoords.lat.toFixed(6)}, ${pontoCoords.lng.toFixed(6)}`
+                ),
+                geoLoading
+                  ? h('p', { className: 'text-xs text-gray-500 flex items-center gap-1' },
+                      h('span', { className: 'inline-block w-3 h-3 border-2 border-purple-400 border-t-transparent rounded-full animate-spin' }),
+                      'Buscando endereço...'
+                    )
+                  : enderecoGeo && h('p', { className: 'text-xs text-green-700' },
+                      `${String.fromCodePoint(0x1F3E0)} ${enderecoGeo}`
+                    )
+              )
         ),
 
         // ── Foto da fachada ──────────────────────────────────────────────
