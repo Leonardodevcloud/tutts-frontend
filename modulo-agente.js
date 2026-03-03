@@ -576,24 +576,28 @@
         );
   }
 
-  // ── COMPONENTE: Mapa com traçados (Google Maps embed via Directions) ──────
+  // ── COMPONENTE: Mapa com traçados (Leaflet/OpenStreetMap) ──────────────────
   function MapaTracado({ registro }) {
     const mapRef = useRef(null);
+    const mapInstanceRef = useRef(null);
     const [mapError, setMapError] = useState('');
     const [mapLoaded, setMapLoaded] = useState(false);
 
     useEffect(() => {
-      if (!registro) return;
+      if (!registro || !mapRef.current) return;
+      // Limpar mapa anterior
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
+      }
 
       const r = registro;
-      // Coordenadas do motoboy (ponto de GPS capturado = onde o motoboy estava)
       const motoboyLat = parseFloat(r.motoboy_lat);
       const motoboyLng = parseFloat(r.motoboy_lng);
-      // Coordenadas corrigidas (novo endereço)
       const corrLat = parseFloat(r.latitude);
       const corrLng = parseFloat(r.longitude);
 
-      const temMotoboy  = !isNaN(motoboyLat) && !isNaN(motoboyLng);
+      const temMotoboy = !isNaN(motoboyLat) && !isNaN(motoboyLng);
       const temCorrigido = !isNaN(corrLat) && !isNaN(corrLng);
 
       if (!temMotoboy && !temCorrigido) {
@@ -601,162 +605,125 @@
         return;
       }
 
-      // Carregar Google Maps API se não estiver carregada
-      const loadGMaps = () => {
-        return new Promise((resolve, reject) => {
-          if (window.google && window.google.maps) {
-            resolve(window.google.maps);
-            return;
-          }
-          // Tentar buscar a key do backend ou usar fallback
-          const existingScript = document.querySelector('script[src*="maps.googleapis.com"]');
-          if (existingScript) {
-            existingScript.addEventListener('load', () => resolve(window.google.maps));
-            return;
-          }
-          // Buscar key do ambiente ou usar a que já existe no app
-          const key = window.GOOGLE_MAPS_KEY || '';
-          if (!key) {
-            reject(new Error('Google Maps API key não disponível. Configure window.GOOGLE_MAPS_KEY.'));
-            return;
-          }
-          const script = document.createElement('script');
-          script.src = `https://maps.googleapis.com/maps/api/js?key=${key}&libraries=geometry`;
-          script.async = true;
-          script.defer = true;
-          script.onload = () => resolve(window.google.maps);
-          script.onerror = () => reject(new Error('Falha ao carregar Google Maps'));
-          document.head.appendChild(script);
-        });
-      };
+      try {
+        if (typeof L === 'undefined') {
+          setMapError('Leaflet não carregado. Recarregue a página.');
+          return;
+        }
 
-      loadGMaps().then((maps) => {
-        if (!mapRef.current) return;
+        // Limpar container leaflet anterior
+        if (mapRef.current._leaflet_id) {
+          mapRef.current._leaflet_id = null;
+          mapRef.current.innerHTML = '';
+        }
 
-        // Centro do mapa: média das coordenadas disponíveis
         const points = [];
-        if (temMotoboy) points.push({ lat: motoboyLat, lng: motoboyLng });
-        if (temCorrigido) points.push({ lat: corrLat, lng: corrLng });
-        const centerLat = points.reduce((s, p) => s + p.lat, 0) / points.length;
-        const centerLng = points.reduce((s, p) => s + p.lng, 0) / points.length;
+        if (temMotoboy) points.push([motoboyLat, motoboyLng]);
+        if (temCorrigido) points.push([corrLat, corrLng]);
 
-        const map = new maps.Map(mapRef.current, {
-          center: { lat: centerLat, lng: centerLng },
-          zoom: 14,
-          mapTypeControl: false,
-          streetViewControl: false,
-          fullscreenControl: true,
+        const centerLat = points.reduce((s, p) => s + p[0], 0) / points.length;
+        const centerLng = points.reduce((s, p) => s + p[1], 0) / points.length;
+
+        const map = L.map(mapRef.current, {
+          zoomControl: true,
+          attributionControl: true,
+        }).setView([centerLat, centerLng], 15);
+
+        mapInstanceRef.current = map;
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap',
+          maxZoom: 19,
+        }).addTo(map);
+
+        // Ícone vermelho (endereço errado / GPS motoboy)
+        const iconVermelho = L.divIcon({
+          className: '',
+          html: '<div style="width:28px;height:28px;border-radius:50%;background:#dc2626;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:bold;font-size:14px;">✕</div>',
+          iconSize: [28, 28],
+          iconAnchor: [14, 14],
+          popupAnchor: [0, -18],
         });
 
-        const bounds = new maps.LatLngBounds();
+        // Ícone verde (endereço corrigido)
+        const iconVerde = L.divIcon({
+          className: '',
+          html: '<div style="width:28px;height:28px;border-radius:50%;background:#16a34a;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:bold;font-size:14px;">✓</div>',
+          iconSize: [28, 28],
+          iconAnchor: [14, 14],
+          popupAnchor: [0, -18],
+        });
 
-        // Marker do motoboy (vermelho — endereço errado/GPS capturado)
+        const bounds = L.latLngBounds([]);
+
         if (temMotoboy) {
-          const pos = { lat: motoboyLat, lng: motoboyLng };
-          new maps.Marker({
-            position: pos,
-            map,
-            title: 'GPS Motoboy (endereço errado)',
-            icon: {
-              path: maps.SymbolPath.CIRCLE,
-              scale: 10,
-              fillColor: '#dc2626',
-              fillOpacity: 1,
-              strokeColor: '#fff',
-              strokeWeight: 2,
-            },
-            label: { text: '✕', color: '#fff', fontSize: '12px', fontWeight: 'bold' },
-          });
-          bounds.extend(pos);
+          L.marker([motoboyLat, motoboyLng], { icon: iconVermelho })
+            .addTo(map)
+            .bindPopup('<div style="text-align:center"><strong style="color:#dc2626">📍 GPS Motoboy</strong><br><span style="font-size:11px;color:#666">(Endereço errado)</span><br><code style="font-size:10px">' + motoboyLat.toFixed(6) + ', ' + motoboyLng.toFixed(6) + '</code>' + (r.endereco_antigo ? '<br><span style="font-size:11px;color:#ea580c">' + r.endereco_antigo + '</span>' : '') + '</div>');
+          bounds.extend([motoboyLat, motoboyLng]);
         }
 
-        // Marker do corrigido (verde)
         if (temCorrigido) {
-          const pos = { lat: corrLat, lng: corrLng };
-          new maps.Marker({
-            position: pos,
-            map,
-            title: 'Endereço corrigido',
-            icon: {
-              path: maps.SymbolPath.CIRCLE,
-              scale: 10,
-              fillColor: '#16a34a',
-              fillOpacity: 1,
-              strokeColor: '#fff',
-              strokeWeight: 2,
-            },
-            label: { text: '✓', color: '#fff', fontSize: '12px', fontWeight: 'bold' },
-          });
-          bounds.extend(pos);
+          L.marker([corrLat, corrLng], { icon: iconVerde })
+            .addTo(map)
+            .bindPopup('<div style="text-align:center"><strong style="color:#16a34a">✅ Endereço Corrigido</strong><br><code style="font-size:10px">' + corrLat.toFixed(6) + ', ' + corrLng.toFixed(6) + '</code>' + (r.endereco_corrigido ? '<br><span style="font-size:11px;color:#16a34a">' + r.endereco_corrigido + '</span>' : '') + '</div>');
+          bounds.extend([corrLat, corrLng]);
         }
 
-        // Se tem ambos os pontos, desenhar linhas e Directions
+        // Se tem ambos, desenhar linhas
         if (temMotoboy && temCorrigido) {
-          const directionsService = new maps.DirectionsService();
-          const directionsRendererErrado = new maps.DirectionsRenderer({
-            map,
-            suppressMarkers: true,
-            polylineOptions: {
-              strokeColor: '#dc2626',
-              strokeWeight: 5,
-              strokeOpacity: 0.7,
-            },
-          });
-          const directionsRendererCorreto = new maps.DirectionsRenderer({
-            map,
-            suppressMarkers: true,
-            polylineOptions: {
-              strokeColor: '#16a34a',
-              strokeWeight: 5,
-              strokeOpacity: 0.8,
-            },
-          });
+          // Linha vermelha tracejada do motoboy (errado)
+          L.polyline([[motoboyLat, motoboyLng], [corrLat, corrLng]], {
+            color: '#dc2626',
+            weight: 4,
+            opacity: 0.6,
+            dashArray: '10, 8',
+          }).addTo(map);
 
-          // Desenhar linha reta pontilhada entre os dois pontos
-          new maps.Polyline({
-            path: [
-              { lat: motoboyLat, lng: motoboyLng },
-              { lat: corrLat, lng: corrLng },
-            ],
-            map,
-            strokeColor: '#9333ea',
-            strokeWeight: 2,
-            strokeOpacity: 0.5,
-            icons: [{
-              icon: { path: 'M 0,-1 0,1', strokeOpacity: 1, scale: 3 },
-              offset: '0',
-              repeat: '15px',
-            }],
-          });
+          // Linha verde sólida do corrigido
+          L.polyline([[motoboyLat, motoboyLng], [corrLat, corrLng]], {
+            color: '#16a34a',
+            weight: 3,
+            opacity: 0.8,
+          }).addTo(map);
 
-          // InfoWindow com distância
-          if (maps.geometry && maps.geometry.spherical) {
-            const dist = maps.geometry.spherical.computeDistanceBetween(
-              new maps.LatLng(motoboyLat, motoboyLng),
-              new maps.LatLng(corrLat, corrLng)
-            );
-            const midLat = (motoboyLat + corrLat) / 2;
-            const midLng = (motoboyLng + corrLng) / 2;
-            const distStr = dist >= 1000 ? `${(dist / 1000).toFixed(2)} km` : `${Math.round(dist)} m`;
-            new maps.InfoWindow({
-              content: `<div style="font-size:12px;font-weight:bold;color:#7c3aed">Diferença: ${distStr}</div>`,
-              position: { lat: midLat, lng: midLng },
-            }).open(map);
-          }
+          // Calcular distância
+          const dist = map.distance([motoboyLat, motoboyLng], [corrLat, corrLng]);
+          const distStr = dist >= 1000 ? (dist / 1000).toFixed(2) + ' km' : Math.round(dist) + ' m';
+
+          // Popup no meio com a distância
+          const midLat = (motoboyLat + corrLat) / 2;
+          const midLng = (motoboyLng + corrLng) / 2;
+          L.popup({ closeButton: false, autoClose: false, closeOnClick: false, className: 'dist-popup' })
+            .setLatLng([midLat, midLng])
+            .setContent('<div style="font-size:13px;font-weight:bold;color:#7c3aed;text-align:center;white-space:nowrap">↔ ' + distStr + '</div>')
+            .openOn(map);
         }
 
-        // Ajustar zoom para mostrar todos os pontos
+        // Ajustar zoom
         if (points.length > 1) {
-          map.fitBounds(bounds, 80);
+          map.fitBounds(bounds, { padding: [60, 60] });
         } else {
-          map.setZoom(16);
+          map.setZoom(17);
         }
 
-        setMapLoaded(true);
-      }).catch(err => {
-        console.error('Erro ao carregar mapa:', err);
-        setMapError(err.message || 'Erro ao carregar Google Maps');
-      });
+        // Forçar resize após render
+        setTimeout(() => {
+          if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize();
+          setMapLoaded(true);
+        }, 200);
+
+      } catch (err) {
+        console.error('Erro ao criar mapa:', err);
+        setMapError(err.message || 'Erro ao carregar mapa');
+      }
+
+      return () => {
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.remove();
+          mapInstanceRef.current = null;
+        }
+      };
     }, [registro]);
 
     if (mapError) {
@@ -766,8 +733,8 @@
           h('p', { className: 'font-semibold' }, 'Não foi possível carregar o mapa'),
           h('p', { className: 'text-gray-400 mt-1' }, mapError),
           registro && h('div', { className: 'mt-4 text-left bg-gray-50 rounded-lg p-3 text-xs' },
-            h('p', null, h('strong', null, 'GPS Motoboy: '), registro.motoboy_lat ? `${registro.motoboy_lat}, ${registro.motoboy_lng}` : 'N/A'),
-            h('p', null, h('strong', null, 'Corrigido: '), registro.latitude ? `${registro.latitude}, ${registro.longitude}` : 'N/A'),
+            h('p', null, h('strong', null, 'GPS Motoboy: '), registro.motoboy_lat ? registro.motoboy_lat + ', ' + registro.motoboy_lng : 'N/A'),
+            h('p', null, h('strong', null, 'Corrigido: '), registro.latitude ? registro.latitude + ', ' + registro.longitude : 'N/A'),
             h('p', { className: 'mt-1 text-orange-600' }, h('strong', null, 'End. antigo: '), registro.endereco_antigo || 'N/A'),
             h('p', { className: 'text-green-600' }, h('strong', null, 'End. novo: '), registro.endereco_corrigido || 'N/A')
           )
@@ -776,17 +743,17 @@
     }
 
     return h('div', { className: 'relative w-full h-full' },
-      !mapLoaded && h('div', { className: 'absolute inset-0 flex items-center justify-center bg-gray-100' },
+      !mapLoaded && h('div', { className: 'absolute inset-0 flex items-center justify-center bg-gray-100 z-10' },
         h('div', { className: 'text-center' },
           h('div', { className: 'w-8 h-8 border-3 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-2' }),
           h('p', { className: 'text-sm text-gray-500' }, 'Carregando mapa...')
         )
       ),
-      h('div', { ref: mapRef, className: 'w-full h-full' })
+      h('div', { ref: mapRef, style: { width: '100%', height: '100%', minHeight: '400px' } })
     );
   }
 
-  // ── ABA: Histórico Admin ────────────────────────────────────────────────────
+    // ── ABA: Histórico Admin ────────────────────────────────────────────────────
   function TabHistorico({ API_URL, fetchAuth, showToast, usuario }) {
     const [dados, setDados]        = useState([]);
     const [total, setTotal]        = useState(0);
@@ -1539,7 +1506,7 @@
       ? [{ id: 'historico', label: '📋 Histórico' }, { id: 'analytics', label: '📊 Analytics' }]
       : [{ id: 'formulario', label: '📍 Correção' }, { id: 'meu-historico', label: '📋 Minhas Solicitações' }];
 
-    return h('div', { className: `${HeaderCompacto ? 'min-h-screen' : ''} bg-gray-50 flex flex-col` },
+    return h('div', { className: `${HeaderCompacto ? 'min-h-screen' : 'overflow-y-auto'} bg-gray-50 flex flex-col` },
 
       HeaderCompacto && h(HeaderCompacto, {
         usuario,
@@ -1556,7 +1523,7 @@
       }),
 
       // Sub-tabs
-      ABAS.length > 1 && h('div', { className: 'bg-white border-b border-gray-200 shadow-sm sticky top-[52px] z-20' },
+      ABAS.length > 1 && h('div', { className: `bg-white border-b border-gray-200 shadow-sm ${HeaderCompacto ? 'sticky top-[52px] z-20' : ''}` },
         h('div', { className: 'max-w-6xl mx-auto px-4 flex' },
           ABAS.map(a => h('button', {
             key: a.id,
