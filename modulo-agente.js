@@ -576,168 +576,131 @@
         );
   }
 
-  // ── COMPONENTE: Mapa com traçados (Leaflet/OpenStreetMap) ──────────────────
-  function MapaTracado({ registro }) {
+  // ── COMPONENTE: Mapa com rotas (Leaflet + OSRM) ──────────────────────────
+  // Mostra Ponto 1 (origem) -> End. antigo (vermelho) e Ponto 1 -> End. corrigido (verde)
+  function MapaTracado({ registro, API_URL, fetchAuth }) {
     const mapRef = useRef(null);
     const mapInstanceRef = useRef(null);
     const [mapError, setMapError] = useState('');
     const [mapLoaded, setMapLoaded] = useState(false);
+    const [statusMsg, setStatusMsg] = useState('Buscando Ponto 1 da OS...');
 
     useEffect(() => {
       if (!registro || !mapRef.current) return;
-      // Limpar mapa anterior
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
-        mapInstanceRef.current = null;
-      }
+      if (mapInstanceRef.current) { mapInstanceRef.current.remove(); mapInstanceRef.current = null; }
 
       const r = registro;
       const motoboyLat = parseFloat(r.motoboy_lat);
       const motoboyLng = parseFloat(r.motoboy_lng);
       const corrLat = parseFloat(r.latitude);
       const corrLng = parseFloat(r.longitude);
-
       const temMotoboy = !isNaN(motoboyLat) && !isNaN(motoboyLng);
       const temCorrigido = !isNaN(corrLat) && !isNaN(corrLng);
 
-      if (!temMotoboy && !temCorrigido) {
-        setMapError('Sem coordenadas disponíveis para exibir no mapa.');
+      if (!temCorrigido && !temMotoboy) {
+        setMapError('Sem coordenadas disponiveis.');
         return;
       }
 
-      try {
-        if (typeof L === 'undefined') {
-          setMapError('Leaflet não carregado. Recarregue a página.');
-          return;
-        }
+      const iniciar = async () => {
+        let ponto1 = null;
+        try {
+          setStatusMsg('Buscando Ponto 1 da OS ' + r.os_numero + '...');
+          const res = await fetchAuth(API_URL + '/agent/historico/ponto1/' + r.os_numero);
+          const data = await res.json();
+          if (data.encontrado && data.ponto1 && data.ponto1.latitude && data.ponto1.longitude) {
+            ponto1 = { lat: data.ponto1.latitude, lng: data.ponto1.longitude, endereco: data.ponto1.endereco };
+          }
+        } catch (err) { console.warn('Ponto 1 nao encontrado:', err); }
 
-        // Limpar container leaflet anterior
-        if (mapRef.current._leaflet_id) {
-          mapRef.current._leaflet_id = null;
-          mapRef.current.innerHTML = '';
-        }
+        if (typeof L === 'undefined') { setMapError('Leaflet nao carregado.'); return; }
+        if (mapRef.current._leaflet_id) { mapRef.current._leaflet_id = null; mapRef.current.innerHTML = ''; }
 
-        const points = [];
-        if (temMotoboy) points.push([motoboyLat, motoboyLng]);
-        if (temCorrigido) points.push([corrLat, corrLng]);
-
-        const centerLat = points.reduce((s, p) => s + p[0], 0) / points.length;
-        const centerLng = points.reduce((s, p) => s + p[1], 0) / points.length;
-
-        const map = L.map(mapRef.current, {
-          zoomControl: true,
-          attributionControl: true,
-        }).setView([centerLat, centerLng], 15);
-
+        setStatusMsg('Renderizando mapa...');
+        const map = L.map(mapRef.current, { zoomControl: true }).setView([-15.7, -47.9], 5);
         mapInstanceRef.current = map;
-
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '© OpenStreetMap',
-          maxZoom: 19,
-        }).addTo(map);
-
-        // Ícone vermelho (endereço errado / GPS motoboy)
-        const iconVermelho = L.divIcon({
-          className: '',
-          html: '<div style="width:28px;height:28px;border-radius:50%;background:#dc2626;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:bold;font-size:14px;">✕</div>',
-          iconSize: [28, 28],
-          iconAnchor: [14, 14],
-          popupAnchor: [0, -18],
-        });
-
-        // Ícone verde (endereço corrigido)
-        const iconVerde = L.divIcon({
-          className: '',
-          html: '<div style="width:28px;height:28px;border-radius:50%;background:#16a34a;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:bold;font-size:14px;">✓</div>',
-          iconSize: [28, 28],
-          iconAnchor: [14, 14],
-          popupAnchor: [0, -18],
-        });
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '\u00a9 OSM', maxZoom: 19 }).addTo(map);
 
         const bounds = L.latLngBounds([]);
+        const mkIcon = (cor, simbolo) => L.divIcon({
+          className: '',
+          html: '<div style="width:32px;height:32px;border-radius:50%;background:' + cor + ';border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:bold;font-size:16px">' + simbolo + '</div>',
+          iconSize: [32, 32], iconAnchor: [16, 16], popupAnchor: [0, -20],
+        });
+
+        if (ponto1) {
+          L.marker([ponto1.lat, ponto1.lng], { icon: mkIcon('#2563eb', '1') })
+            .addTo(map).bindPopup('<div style="text-align:center"><strong style="color:#2563eb">Ponto 1 (Origem)</strong><br><span style="font-size:11px">' + (ponto1.endereco || '') + '</span></div>');
+          bounds.extend([ponto1.lat, ponto1.lng]);
+        }
 
         if (temMotoboy) {
-          L.marker([motoboyLat, motoboyLng], { icon: iconVermelho })
-            .addTo(map)
-            .bindPopup('<div style="text-align:center"><strong style="color:#dc2626">📍 GPS Motoboy</strong><br><span style="font-size:11px;color:#666">(Endereço errado)</span><br><code style="font-size:10px">' + motoboyLat.toFixed(6) + ', ' + motoboyLng.toFixed(6) + '</code>' + (r.endereco_antigo ? '<br><span style="font-size:11px;color:#ea580c">' + r.endereco_antigo + '</span>' : '') + '</div>');
+          L.marker([motoboyLat, motoboyLng], { icon: mkIcon('#dc2626', '\u2715') })
+            .addTo(map).bindPopup('<div style="text-align:center"><strong style="color:#dc2626">End. Errado (GPS)</strong><br><span style="font-size:11px">' + (r.endereco_antigo || motoboyLat.toFixed(6) + ', ' + motoboyLng.toFixed(6)) + '</span></div>');
           bounds.extend([motoboyLat, motoboyLng]);
         }
 
         if (temCorrigido) {
-          L.marker([corrLat, corrLng], { icon: iconVerde })
-            .addTo(map)
-            .bindPopup('<div style="text-align:center"><strong style="color:#16a34a">✅ Endereço Corrigido</strong><br><code style="font-size:10px">' + corrLat.toFixed(6) + ', ' + corrLng.toFixed(6) + '</code>' + (r.endereco_corrigido ? '<br><span style="font-size:11px;color:#16a34a">' + r.endereco_corrigido + '</span>' : '') + '</div>');
+          L.marker([corrLat, corrLng], { icon: mkIcon('#16a34a', '\u2713') })
+            .addTo(map).bindPopup('<div style="text-align:center"><strong style="color:#16a34a">End. Corrigido</strong><br><span style="font-size:11px">' + (r.endereco_corrigido || corrLat.toFixed(6) + ', ' + corrLng.toFixed(6)) + '</span></div>');
           bounds.extend([corrLat, corrLng]);
         }
 
-        // Se tem ambos, desenhar linhas
-        if (temMotoboy && temCorrigido) {
-          // Linha vermelha tracejada do motoboy (errado)
-          L.polyline([[motoboyLat, motoboyLng], [corrLat, corrLng]], {
-            color: '#dc2626',
-            weight: 4,
-            opacity: 0.6,
-            dashArray: '10, 8',
-          }).addTo(map);
+        const buscarRota = async (oLat, oLng, dLat, dLng) => {
+          try {
+            const url = 'https://router.project-osrm.org/route/v1/driving/' + oLng + ',' + oLat + ';' + dLng + ',' + dLat + '?overview=full&geometries=geojson';
+            const resp = await fetch(url);
+            const data = await resp.json();
+            if (data.routes && data.routes[0]) return data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+          } catch (err) { console.warn('OSRM erro:', err); }
+          return null;
+        };
 
-          // Linha verde sólida do corrigido
-          L.polyline([[motoboyLat, motoboyLng], [corrLat, corrLng]], {
-            color: '#16a34a',
-            weight: 3,
-            opacity: 0.8,
-          }).addTo(map);
-
-          // Calcular distância
-          const dist = map.distance([motoboyLat, motoboyLng], [corrLat, corrLng]);
-          const distStr = dist >= 1000 ? (dist / 1000).toFixed(2) + ' km' : Math.round(dist) + ' m';
-
-          // Popup no meio com a distância
-          const midLat = (motoboyLat + corrLat) / 2;
-          const midLng = (motoboyLng + corrLng) / 2;
-          L.popup({ closeButton: false, autoClose: false, closeOnClick: false, className: 'dist-popup' })
-            .setLatLng([midLat, midLng])
-            .setContent('<div style="font-size:13px;font-weight:bold;color:#7c3aed;text-align:center;white-space:nowrap">↔ ' + distStr + '</div>')
-            .openOn(map);
-        }
-
-        // Ajustar zoom
-        if (points.length > 1) {
-          map.fitBounds(bounds, { padding: [60, 60] });
+        if (ponto1) {
+          if (temMotoboy) {
+            setStatusMsg('Tracando rota ate endereco errado...');
+            const rota = await buscarRota(ponto1.lat, ponto1.lng, motoboyLat, motoboyLng);
+            if (rota) {
+              L.polyline(rota, { color: '#dc2626', weight: 5, opacity: 0.7, dashArray: '12, 8' }).addTo(map).bindPopup('<strong style="color:#dc2626">Rota ate endereco ERRADO</strong>');
+            } else {
+              L.polyline([[ponto1.lat, ponto1.lng], [motoboyLat, motoboyLng]], { color: '#dc2626', weight: 3, opacity: 0.5, dashArray: '8, 6' }).addTo(map);
+            }
+          }
+          if (temCorrigido) {
+            setStatusMsg('Tracando rota ate endereco corrigido...');
+            const rota = await buscarRota(ponto1.lat, ponto1.lng, corrLat, corrLng);
+            if (rota) {
+              L.polyline(rota, { color: '#16a34a', weight: 5, opacity: 0.85 }).addTo(map).bindPopup('<strong style="color:#16a34a">Rota ate endereco CORRIGIDO</strong>');
+            } else {
+              L.polyline([[ponto1.lat, ponto1.lng], [corrLat, corrLng]], { color: '#16a34a', weight: 3, opacity: 0.6 }).addTo(map);
+            }
+          }
         } else {
-          map.setZoom(17);
+          if (temMotoboy && temCorrigido) {
+            L.polyline([[motoboyLat, motoboyLng], [corrLat, corrLng]], { color: '#9333ea', weight: 3, dashArray: '6, 6', opacity: 0.6 }).addTo(map);
+            const dist = map.distance([motoboyLat, motoboyLng], [corrLat, corrLng]);
+            const distStr = dist >= 1000 ? (dist / 1000).toFixed(2) + ' km' : Math.round(dist) + ' m';
+            L.popup({ closeButton: false, autoClose: false, closeOnClick: false })
+              .setLatLng([(motoboyLat + corrLat) / 2, (motoboyLng + corrLng) / 2])
+              .setContent('<div style="font-weight:bold;color:#7c3aed">\u2194 ' + distStr + '</div>')
+              .openOn(map);
+          }
         }
 
-        // Forçar resize após render
-        setTimeout(() => {
-          if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize();
-          setMapLoaded(true);
-        }, 200);
-
-      } catch (err) {
-        console.error('Erro ao criar mapa:', err);
-        setMapError(err.message || 'Erro ao carregar mapa');
-      }
-
-      return () => {
-        if (mapInstanceRef.current) {
-          mapInstanceRef.current.remove();
-          mapInstanceRef.current = null;
-        }
+        if (bounds.isValid()) map.fitBounds(bounds, { padding: [50, 50] });
+        setTimeout(() => { if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize(); setMapLoaded(true); }, 300);
       };
+
+      iniciar();
+      return () => { if (mapInstanceRef.current) { mapInstanceRef.current.remove(); mapInstanceRef.current = null; } };
     }, [registro]);
 
     if (mapError) {
       return h('div', { className: 'flex items-center justify-center h-full text-red-500 text-sm p-8' },
         h('div', { className: 'text-center' },
-          h('p', { className: 'text-4xl mb-3' }, '🗺️'),
-          h('p', { className: 'font-semibold' }, 'Não foi possível carregar o mapa'),
-          h('p', { className: 'text-gray-400 mt-1' }, mapError),
-          registro && h('div', { className: 'mt-4 text-left bg-gray-50 rounded-lg p-3 text-xs' },
-            h('p', null, h('strong', null, 'GPS Motoboy: '), registro.motoboy_lat ? registro.motoboy_lat + ', ' + registro.motoboy_lng : 'N/A'),
-            h('p', null, h('strong', null, 'Corrigido: '), registro.latitude ? registro.latitude + ', ' + registro.longitude : 'N/A'),
-            h('p', { className: 'mt-1 text-orange-600' }, h('strong', null, 'End. antigo: '), registro.endereco_antigo || 'N/A'),
-            h('p', { className: 'text-green-600' }, h('strong', null, 'End. novo: '), registro.endereco_corrigido || 'N/A')
-          )
+          h('p', { className: 'text-4xl mb-3' }, '\ud83d\uddfa\ufe0f'),
+          h('p', { className: 'font-semibold' }, 'Nao foi possivel carregar o mapa'),
+          h('p', { className: 'text-gray-400 mt-1' }, mapError)
         )
       );
     }
@@ -746,14 +709,14 @@
       !mapLoaded && h('div', { className: 'absolute inset-0 flex items-center justify-center bg-gray-100 z-10' },
         h('div', { className: 'text-center' },
           h('div', { className: 'w-8 h-8 border-3 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-2' }),
-          h('p', { className: 'text-sm text-gray-500' }, 'Carregando mapa...')
+          h('p', { className: 'text-sm text-gray-500' }, statusMsg)
         )
       ),
       h('div', { ref: mapRef, style: { width: '100%', height: '100%', minHeight: '400px' } })
     );
   }
 
-    // ── ABA: Histórico Admin ────────────────────────────────────────────────────
+  // ── ABA: Histórico Admin ────────────────────────────────────────────────────
   function TabHistorico({ API_URL, fetchAuth, showToast, usuario }) {
     const [dados, setDados]        = useState([]);
     const [total, setTotal]        = useState(0);
@@ -1103,7 +1066,7 @@
               className: 'w-10 h-10 bg-gray-200 text-gray-800 rounded-full flex items-center justify-center text-lg font-bold hover:bg-gray-300',
             }, '✕')
           ),
-          h(MapaTracado, { registro: mapaModal })
+          h(MapaTracado, { registro: mapaModal, API_URL, fetchAuth })
         )
       ),
 
