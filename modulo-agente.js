@@ -604,14 +604,23 @@
 
       const iniciar = async () => {
         let ponto1 = null;
-        try {
-          setStatusMsg('Buscando Ponto 1 da OS ' + r.os_numero + '...');
-          const res = await fetchAuth(API_URL + '/agent/historico/ponto1/' + r.os_numero);
-          const data = await res.json();
-          if (data.encontrado && data.ponto1 && data.ponto1.latitude && data.ponto1.longitude) {
-            ponto1 = { lat: data.ponto1.latitude, lng: data.ponto1.longitude, endereco: data.ponto1.endereco };
-          }
-        } catch (err) { console.warn('Ponto 1 nao encontrado:', err); }
+
+        // Tentar coordenadas do ponto1 ja no registro (capturadas pelo playwright)
+        if (r.ponto1_lat && r.ponto1_lng) {
+          ponto1 = { lat: parseFloat(r.ponto1_lat), lng: parseFloat(r.ponto1_lng), endereco: r.ponto1_endereco || '' };
+        }
+
+        // Se nao tem, buscar no backend
+        if (!ponto1) {
+          try {
+            setStatusMsg('Buscando Ponto 1 da OS ' + r.os_numero + '...');
+            const res = await fetchAuth(API_URL + '/agent/historico/ponto1/' + r.os_numero);
+            const data = await res.json();
+            if (data.encontrado && data.ponto1 && data.ponto1.latitude && data.ponto1.longitude) {
+              ponto1 = { lat: data.ponto1.latitude, lng: data.ponto1.longitude, endereco: data.ponto1.endereco || '' };
+            }
+          } catch (err) { console.warn('Ponto 1 nao encontrado:', err); }
+        }
 
         if (typeof L === 'undefined') { setMapError('Leaflet nao carregado.'); return; }
         if (mapRef.current._leaflet_id) { mapRef.current._leaflet_id = null; mapRef.current.innerHTML = ''; }
