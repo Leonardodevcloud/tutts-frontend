@@ -576,6 +576,216 @@
         );
   }
 
+  // ── COMPONENTE: Mapa com traçados (Google Maps embed via Directions) ──────
+  function MapaTracado({ registro }) {
+    const mapRef = useRef(null);
+    const [mapError, setMapError] = useState('');
+    const [mapLoaded, setMapLoaded] = useState(false);
+
+    useEffect(() => {
+      if (!registro) return;
+
+      const r = registro;
+      // Coordenadas do motoboy (ponto de GPS capturado = onde o motoboy estava)
+      const motoboyLat = parseFloat(r.motoboy_lat);
+      const motoboyLng = parseFloat(r.motoboy_lng);
+      // Coordenadas corrigidas (novo endereço)
+      const corrLat = parseFloat(r.latitude);
+      const corrLng = parseFloat(r.longitude);
+
+      const temMotoboy  = !isNaN(motoboyLat) && !isNaN(motoboyLng);
+      const temCorrigido = !isNaN(corrLat) && !isNaN(corrLng);
+
+      if (!temMotoboy && !temCorrigido) {
+        setMapError('Sem coordenadas disponíveis para exibir no mapa.');
+        return;
+      }
+
+      // Carregar Google Maps API se não estiver carregada
+      const loadGMaps = () => {
+        return new Promise((resolve, reject) => {
+          if (window.google && window.google.maps) {
+            resolve(window.google.maps);
+            return;
+          }
+          // Tentar buscar a key do backend ou usar fallback
+          const existingScript = document.querySelector('script[src*="maps.googleapis.com"]');
+          if (existingScript) {
+            existingScript.addEventListener('load', () => resolve(window.google.maps));
+            return;
+          }
+          // Buscar key do ambiente ou usar a que já existe no app
+          const key = window.GOOGLE_MAPS_KEY || '';
+          if (!key) {
+            reject(new Error('Google Maps API key não disponível. Configure window.GOOGLE_MAPS_KEY.'));
+            return;
+          }
+          const script = document.createElement('script');
+          script.src = `https://maps.googleapis.com/maps/api/js?key=${key}&libraries=geometry`;
+          script.async = true;
+          script.defer = true;
+          script.onload = () => resolve(window.google.maps);
+          script.onerror = () => reject(new Error('Falha ao carregar Google Maps'));
+          document.head.appendChild(script);
+        });
+      };
+
+      loadGMaps().then((maps) => {
+        if (!mapRef.current) return;
+
+        // Centro do mapa: média das coordenadas disponíveis
+        const points = [];
+        if (temMotoboy) points.push({ lat: motoboyLat, lng: motoboyLng });
+        if (temCorrigido) points.push({ lat: corrLat, lng: corrLng });
+        const centerLat = points.reduce((s, p) => s + p.lat, 0) / points.length;
+        const centerLng = points.reduce((s, p) => s + p.lng, 0) / points.length;
+
+        const map = new maps.Map(mapRef.current, {
+          center: { lat: centerLat, lng: centerLng },
+          zoom: 14,
+          mapTypeControl: false,
+          streetViewControl: false,
+          fullscreenControl: true,
+        });
+
+        const bounds = new maps.LatLngBounds();
+
+        // Marker do motoboy (vermelho — endereço errado/GPS capturado)
+        if (temMotoboy) {
+          const pos = { lat: motoboyLat, lng: motoboyLng };
+          new maps.Marker({
+            position: pos,
+            map,
+            title: 'GPS Motoboy (endereço errado)',
+            icon: {
+              path: maps.SymbolPath.CIRCLE,
+              scale: 10,
+              fillColor: '#dc2626',
+              fillOpacity: 1,
+              strokeColor: '#fff',
+              strokeWeight: 2,
+            },
+            label: { text: '✕', color: '#fff', fontSize: '12px', fontWeight: 'bold' },
+          });
+          bounds.extend(pos);
+        }
+
+        // Marker do corrigido (verde)
+        if (temCorrigido) {
+          const pos = { lat: corrLat, lng: corrLng };
+          new maps.Marker({
+            position: pos,
+            map,
+            title: 'Endereço corrigido',
+            icon: {
+              path: maps.SymbolPath.CIRCLE,
+              scale: 10,
+              fillColor: '#16a34a',
+              fillOpacity: 1,
+              strokeColor: '#fff',
+              strokeWeight: 2,
+            },
+            label: { text: '✓', color: '#fff', fontSize: '12px', fontWeight: 'bold' },
+          });
+          bounds.extend(pos);
+        }
+
+        // Se tem ambos os pontos, desenhar linhas e Directions
+        if (temMotoboy && temCorrigido) {
+          const directionsService = new maps.DirectionsService();
+          const directionsRendererErrado = new maps.DirectionsRenderer({
+            map,
+            suppressMarkers: true,
+            polylineOptions: {
+              strokeColor: '#dc2626',
+              strokeWeight: 5,
+              strokeOpacity: 0.7,
+            },
+          });
+          const directionsRendererCorreto = new maps.DirectionsRenderer({
+            map,
+            suppressMarkers: true,
+            polylineOptions: {
+              strokeColor: '#16a34a',
+              strokeWeight: 5,
+              strokeOpacity: 0.8,
+            },
+          });
+
+          // Desenhar linha reta pontilhada entre os dois pontos
+          new maps.Polyline({
+            path: [
+              { lat: motoboyLat, lng: motoboyLng },
+              { lat: corrLat, lng: corrLng },
+            ],
+            map,
+            strokeColor: '#9333ea',
+            strokeWeight: 2,
+            strokeOpacity: 0.5,
+            icons: [{
+              icon: { path: 'M 0,-1 0,1', strokeOpacity: 1, scale: 3 },
+              offset: '0',
+              repeat: '15px',
+            }],
+          });
+
+          // InfoWindow com distância
+          if (maps.geometry && maps.geometry.spherical) {
+            const dist = maps.geometry.spherical.computeDistanceBetween(
+              new maps.LatLng(motoboyLat, motoboyLng),
+              new maps.LatLng(corrLat, corrLng)
+            );
+            const midLat = (motoboyLat + corrLat) / 2;
+            const midLng = (motoboyLng + corrLng) / 2;
+            const distStr = dist >= 1000 ? `${(dist / 1000).toFixed(2)} km` : `${Math.round(dist)} m`;
+            new maps.InfoWindow({
+              content: `<div style="font-size:12px;font-weight:bold;color:#7c3aed">Diferença: ${distStr}</div>`,
+              position: { lat: midLat, lng: midLng },
+            }).open(map);
+          }
+        }
+
+        // Ajustar zoom para mostrar todos os pontos
+        if (points.length > 1) {
+          map.fitBounds(bounds, 80);
+        } else {
+          map.setZoom(16);
+        }
+
+        setMapLoaded(true);
+      }).catch(err => {
+        console.error('Erro ao carregar mapa:', err);
+        setMapError(err.message || 'Erro ao carregar Google Maps');
+      });
+    }, [registro]);
+
+    if (mapError) {
+      return h('div', { className: 'flex items-center justify-center h-full text-red-500 text-sm p-8' },
+        h('div', { className: 'text-center' },
+          h('p', { className: 'text-4xl mb-3' }, '🗺️'),
+          h('p', { className: 'font-semibold' }, 'Não foi possível carregar o mapa'),
+          h('p', { className: 'text-gray-400 mt-1' }, mapError),
+          registro && h('div', { className: 'mt-4 text-left bg-gray-50 rounded-lg p-3 text-xs' },
+            h('p', null, h('strong', null, 'GPS Motoboy: '), registro.motoboy_lat ? `${registro.motoboy_lat}, ${registro.motoboy_lng}` : 'N/A'),
+            h('p', null, h('strong', null, 'Corrigido: '), registro.latitude ? `${registro.latitude}, ${registro.longitude}` : 'N/A'),
+            h('p', { className: 'mt-1 text-orange-600' }, h('strong', null, 'End. antigo: '), registro.endereco_antigo || 'N/A'),
+            h('p', { className: 'text-green-600' }, h('strong', null, 'End. novo: '), registro.endereco_corrigido || 'N/A')
+          )
+        )
+      );
+    }
+
+    return h('div', { className: 'relative w-full h-full' },
+      !mapLoaded && h('div', { className: 'absolute inset-0 flex items-center justify-center bg-gray-100' },
+        h('div', { className: 'text-center' },
+          h('div', { className: 'w-8 h-8 border-3 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-2' }),
+          h('p', { className: 'text-sm text-gray-500' }, 'Carregando mapa...')
+        )
+      ),
+      h('div', { ref: mapRef, className: 'w-full h-full' })
+    );
+  }
+
   // ── ABA: Histórico Admin ────────────────────────────────────────────────────
   function TabHistorico({ API_URL, fetchAuth, showToast, usuario }) {
     const [dados, setDados]        = useState([]);
@@ -644,6 +854,32 @@
           showToast('Foto não encontrada', 'error');
         }
       } catch { showToast('Erro ao carregar foto', 'error'); }
+    };
+
+    // Estado do modal de mapa
+    const [mapaModal, setMapaModal] = useState(null); // { r } registro completo
+
+    const excluir = async (id) => {
+      if (!confirm('Tem certeza que deseja excluir esta solicitação? Esta ação não pode ser desfeita.')) return;
+      try {
+        const res = await fetchAuth(`${API_URL}/agent/historico/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+          showToast('Solicitação excluída!', 'success');
+          carregar(page, filtros);
+        } else {
+          const data = await res.json().catch(() => ({}));
+          showToast(data.erro || 'Erro ao excluir', 'error');
+        }
+      } catch { showToast('Erro de conexão', 'error'); }
+    };
+
+    const abrirMapa = (r) => {
+      // Precisa de pelo menos as coordenadas corrigidas
+      if (!r.latitude && !r.longitude && !r.motoboy_lat && !r.motoboy_lng) {
+        showToast('Sem coordenadas disponíveis para este registro', 'error');
+        return;
+      }
+      setMapaModal(r);
     };
 
     return h('div', { className: 'max-w-6xl mx-auto px-4 py-6' },
@@ -750,11 +986,23 @@
                       : '—'
                   ),
                   h('td', { className: 'px-3 py-3' },
-                    !r.validado_por && h('button', {
-                      onClick: (e) => { e.stopPropagation(); validar(r.id); },
-                      className: 'px-3 py-1 text-xs font-semibold rounded-lg text-white transition hover:opacity-80',
-                      style: { background: '#f37601' },
-                    }, '✓ Validar')
+                    h('div', { className: 'flex flex-col gap-1' },
+                      !r.validado_por && h('button', {
+                        onClick: (e) => { e.stopPropagation(); validar(r.id); },
+                        className: 'px-3 py-1 text-xs font-semibold rounded-lg text-white transition hover:opacity-80',
+                        style: { background: '#f37601' },
+                      }, '✓ Validar'),
+                      (r.latitude || r.motoboy_lat) && h('button', {
+                        onClick: (e) => { e.stopPropagation(); abrirMapa(r); },
+                        className: 'px-3 py-1 text-xs font-semibold rounded-lg text-white transition hover:opacity-80',
+                        style: { background: '#2563eb' },
+                      }, '🗺️ Mapa'),
+                      h('button', {
+                        onClick: (e) => { e.stopPropagation(); excluir(r.id); },
+                        className: 'px-3 py-1 text-xs font-semibold rounded-lg text-white transition hover:opacity-80',
+                        style: { background: '#dc2626' },
+                      }, '🗑️ Excluir')
+                    )
                   )
                 ),
                 expandido === r.id && h('tr', { key: `exp-${r.id}` },
@@ -823,11 +1071,23 @@
               className: 'mt-2 p-2 bg-red-50 rounded-lg text-xs text-red-600 cursor-pointer',
               onClick: () => setExpandido(expandido === r.id ? null : r.id),
             }, expandido === r.id ? r.detalhe_erro : '🔴 Ver detalhe do erro'),
-            !r.validado_por && h('button', {
-              onClick: () => validar(r.id),
-              className: 'mt-3 w-full py-2 text-sm font-semibold rounded-xl text-white',
-              style: { background: '#f37601' },
-            }, '✓ Marcar como validado')
+            h('div', { className: 'flex gap-2 mt-3' },
+              !r.validado_por && h('button', {
+                onClick: () => validar(r.id),
+                className: 'flex-1 py-2 text-sm font-semibold rounded-xl text-white',
+                style: { background: '#f37601' },
+              }, '✓ Validar'),
+              (r.latitude || r.motoboy_lat) && h('button', {
+                onClick: () => abrirMapa(r),
+                className: 'flex-1 py-2 text-sm font-semibold rounded-xl text-white',
+                style: { background: '#2563eb' },
+              }, '🗺️ Mapa'),
+              h('button', {
+                onClick: () => excluir(r.id),
+                className: 'flex-1 py-2 text-sm font-semibold rounded-xl text-white',
+                style: { background: '#dc2626' },
+              }, '🗑️ Excluir')
+            )
           ))
         )
       ),
@@ -845,6 +1105,39 @@
           disabled: page >= totalPaginas,
           className: 'px-3 py-2 rounded-lg border text-sm disabled:opacity-40 hover:bg-gray-50',
         }, 'Próxima →')
+      ),
+
+      // Modal de Mapa — traçados vermelho (errado) e verde (corrigido)
+      mapaModal && h('div', {
+        className: 'fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4',
+        onClick: () => setMapaModal(null),
+      },
+        h('div', {
+          className: 'relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden',
+          style: { height: '80vh' },
+          onClick: e => e.stopPropagation(),
+        },
+          h('div', { className: 'flex items-center justify-between px-4 py-3 bg-gray-50 border-b' },
+            h('div', null,
+              h('span', { className: 'font-bold text-gray-900' }, `OS ${mapaModal.os_numero} — Ponto ${mapaModal.ponto}`),
+              h('div', { className: 'flex gap-3 mt-1 text-xs' },
+                h('span', { className: 'flex items-center gap-1' },
+                  h('span', { className: 'inline-block w-3 h-3 rounded-full', style: { background: '#dc2626' } }),
+                  'Endereço errado (motoboy GPS)'
+                ),
+                h('span', { className: 'flex items-center gap-1' },
+                  h('span', { className: 'inline-block w-3 h-3 rounded-full', style: { background: '#16a34a' } }),
+                  'Endereço corrigido'
+                )
+              )
+            ),
+            h('button', {
+              onClick: () => setMapaModal(null),
+              className: 'w-10 h-10 bg-gray-200 text-gray-800 rounded-full flex items-center justify-center text-lg font-bold hover:bg-gray-300',
+            }, '✕')
+          ),
+          h(MapaTracado, { registro: mapaModal })
+        )
       ),
 
       // Modal de foto
@@ -1013,6 +1306,39 @@
           disabled: page >= totalPaginas,
           className: 'px-3 py-2 rounded-lg border text-sm disabled:opacity-40 hover:bg-gray-50',
         }, 'Próxima →')
+      ),
+
+      // Modal de Mapa — traçados vermelho (errado) e verde (corrigido)
+      mapaModal && h('div', {
+        className: 'fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4',
+        onClick: () => setMapaModal(null),
+      },
+        h('div', {
+          className: 'relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden',
+          style: { height: '80vh' },
+          onClick: e => e.stopPropagation(),
+        },
+          h('div', { className: 'flex items-center justify-between px-4 py-3 bg-gray-50 border-b' },
+            h('div', null,
+              h('span', { className: 'font-bold text-gray-900' }, `OS ${mapaModal.os_numero} — Ponto ${mapaModal.ponto}`),
+              h('div', { className: 'flex gap-3 mt-1 text-xs' },
+                h('span', { className: 'flex items-center gap-1' },
+                  h('span', { className: 'inline-block w-3 h-3 rounded-full', style: { background: '#dc2626' } }),
+                  'Endereço errado (motoboy GPS)'
+                ),
+                h('span', { className: 'flex items-center gap-1' },
+                  h('span', { className: 'inline-block w-3 h-3 rounded-full', style: { background: '#16a34a' } }),
+                  'Endereço corrigido'
+                )
+              )
+            ),
+            h('button', {
+              onClick: () => setMapaModal(null),
+              className: 'w-10 h-10 bg-gray-200 text-gray-800 rounded-full flex items-center justify-center text-lg font-bold hover:bg-gray-300',
+            }, '✕')
+          ),
+          h(MapaTracado, { registro: mapaModal })
+        )
       ),
 
       // Modal de foto
