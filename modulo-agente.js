@@ -199,7 +199,7 @@
       setEnderecoGeo('');
 
       try {
-        const res = await fetchAuth(`${API_URL}/geocode/reverse?lat=${gps.lat}&lng=${gps.lng}`);
+        const res = await fetchAuth(`${API_URL}/api/geocode/reverse?lat=${gps.lat}&lng=${gps.lng}`);
         const data = await res.json();
         if (res.ok && data.endereco) {
           setEnderecoGeo(data.endereco);
@@ -451,14 +451,7 @@
                 h('p', { className: 'text-xs font-mono text-green-800' },
                   `${String.fromCodePoint(0x1F4CD)} ${pontoCoords.lat.toFixed(6)}, ${pontoCoords.lng.toFixed(6)}`
                 ),
-                geoLoading
-                  ? h('p', { className: 'text-xs text-gray-500 flex items-center gap-1' },
-                      h('span', { className: 'inline-block w-3 h-3 border-2 border-purple-400 border-t-transparent rounded-full animate-spin' }),
-                      'Buscando endereço...'
-                    )
-                  : enderecoGeo && h('p', { className: 'text-xs text-green-700' },
-                      `${String.fromCodePoint(0x1F3E0)} ${enderecoGeo}`
-                    )
+                null
               )
         ),
 
