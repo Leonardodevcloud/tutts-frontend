@@ -1993,7 +1993,7 @@ const hideLoadingScreen = () => {
         }), [qe, Ue] = useState({
             avisos: [],
             loading: !0
-        }), [ze, Be] = useState(null), [Ve, Je] = useState(0), [Qe, He] = useState([]), [Ge, We] = useState(!1), [Ze, Ye] = useState([]), [Ke, Xe] = useState([]), [et, tt] = useState([]), [at, lt] = useState([]), [rt, ot] = useState(!0), [ct, st] = useState(0), [nt, mt] = useState("produtos"), [it, dt] = useState([]), [pt, xt] = useState("lista"), [ut, gt] = useState([]), [bt, Rt] = useState([]), [Et, ht] = useState("home-bi"), [chatIaMsgs, setChatIaMsgs] = useState([]), [chatIaInput, setChatIaInput] = useState(""), [chatIaLoading, setChatIaLoading] = useState(false), [chatIaSql, setChatIaSql] = useState(null), [chatIaFiltros, setChatIaFiltros] = useState({ cod_cliente: "", nome_fantasia: "", centro_custo: "", data_inicio: "", data_fim: "" }), [chatIaIniciado, setChatIaIniciado] = useState(false), [chatIaClientes, setChatIaClientes] = useState([]), [chatIaCentros, setChatIaCentros] = useState([]), [chatIaFiltrosLoading, setChatIaFiltrosLoading] = useState(false), [ft, Nt] = useState(null), [yt, vt] = useState([]), [wt, _t] = useState([{
+        }), [ze, Be] = useState(null), [Ve, Je] = useState(0), [Qe, He] = useState([]), [Ge, We] = useState(!1), [Ze, Ye] = useState([]), [Ke, Xe] = useState([]), [et, tt] = useState([]), [at, lt] = useState([]), [rt, ot] = useState(!0), [ct, st] = useState(0), [nt, mt] = useState("produtos"), [it, dt] = useState([]), [pt, xt] = useState("lista"), [ut, gt] = useState([]), [bt, Rt] = useState([]), [Et, ht] = useState("home-bi"), [chatIaMsgs, setChatIaMsgs] = useState([]), [chatIaInput, setChatIaInput] = useState(""), [chatIaLoading, setChatIaLoading] = useState(false), [chatIaSql, setChatIaSql] = useState(null), [chatIaFiltros, setChatIaFiltros] = useState({ cod_cliente: [], nomes_clientes: [], centro_custo: [], data_inicio: "", data_fim: "" }), [chatIaIniciado, setChatIaIniciado] = useState(false), [chatIaClientes, setChatIaClientes] = useState([]), [chatIaCentros, setChatIaCentros] = useState([]), [chatIaFiltrosLoading, setChatIaFiltrosLoading] = useState(false), [chatIaDropAberto, setChatIaDropAberto] = useState(null), [chatIaBuscaCliente, setChatIaBuscaCliente] = useState(""), [ft, Nt] = useState(null), [yt, vt] = useState([]), [wt, _t] = useState([{
             km_min: 0,
             km_max: 15,
             prazo_minutos: 45
@@ -18306,7 +18306,7 @@ const hideLoadingScreen = () => {
             
             // ========== ABA CHAT IA ==========
             // ========== ABA CHAT IA ==========
-            "chat-ia" === Et && React.createElement("div", {className: "space-y-4"},
+            "chat-ia" === Et && React.createElement("div", {className: "space-y-4", onClick: function(e) { if (!e.target.closest('[class*="relative"]') && chatIaDropAberto) setChatIaDropAberto(null); }},
                 // Header
                 React.createElement("div", {className: "bg-gradient-to-r from-emerald-600 to-teal-600 rounded-xl p-6 text-white"},
                     React.createElement("div", {className: "flex items-center justify-between"},
@@ -18315,13 +18315,13 @@ const hideLoadingScreen = () => {
                             React.createElement("div", null,
                                 React.createElement("h2", {className: "text-2xl font-bold"}, "Chat IA — Consulta Livre"),
                                 React.createElement("p", {className: "text-emerald-100 mt-1"}, chatIaIniciado 
-                                    ? (chatIaFiltros.nome_fantasia ? "📌 " + chatIaFiltros.nome_fantasia : "📌 Todos os clientes") + (chatIaFiltros.centro_custo ? " · " + chatIaFiltros.centro_custo : "") + (chatIaFiltros.data_inicio ? " · " + chatIaFiltros.data_inicio + " a " + chatIaFiltros.data_fim : "")
+                                    ? (chatIaFiltros.nomes_clientes && chatIaFiltros.nomes_clientes.length > 0 ? "📌 " + (chatIaFiltros.nomes_clientes.length <= 2 ? chatIaFiltros.nomes_clientes.join(", ") : chatIaFiltros.nomes_clientes.length + " clientes") : "📌 Todos os clientes") + (chatIaFiltros.centro_custo && chatIaFiltros.centro_custo.length > 0 ? " · " + (chatIaFiltros.centro_custo.length <= 2 ? chatIaFiltros.centro_custo.join(", ") : chatIaFiltros.centro_custo.length + " centros") : "") + (chatIaFiltros.data_inicio ? " · " + chatIaFiltros.data_inicio + " a " + chatIaFiltros.data_fim : "")
                                     : "Selecione os filtros para iniciar a conversa"
                                 )
                             )
                         ),
                         chatIaIniciado && React.createElement("button", {
-                            onClick: function() { setChatIaIniciado(false); setChatIaMsgs([]); setChatIaSql(null); setChatIaFiltros({ cod_cliente: "", nome_fantasia: "", centro_custo: "", data_inicio: "", data_fim: "" }); },
+                            onClick: function() { setChatIaIniciado(false); setChatIaMsgs([]); setChatIaSql(null); setChatIaFiltros({ cod_cliente: [], nomes_clientes: [], centro_custo: [], data_inicio: "", data_fim: "" }); setChatIaDropAberto(null); setChatIaBuscaCliente(""); },
                             className: "px-4 py-2 bg-white/20 rounded-lg text-sm hover:bg-white/30 transition-all flex items-center gap-2"
                         }, "🔄 Nova Conversa")
                     )
@@ -18334,48 +18334,166 @@ const hideLoadingScreen = () => {
 
                     // Grid de filtros
                     React.createElement("div", {className: "grid grid-cols-1 md:grid-cols-2 gap-4"},
-                        // Cliente
-                        React.createElement("div", null,
-                            React.createElement("label", {className: "block text-sm font-medium text-gray-700 mb-1"}, "👤 Cliente"),
-                            React.createElement("select", {
-                                value: chatIaFiltros.cod_cliente,
-                                onChange: function(e) {
-                                    var sel = e.target.value;
-                                    var nome = "";
-                                    if (sel) {
-                                        var cl = chatIaClientes.find(function(c) { return String(c.cod_cliente) === sel; });
-                                        nome = cl ? cl.nome_fantasia : "";
-                                    }
-                                    setChatIaFiltros(function(prev) { return Object.assign({}, prev, { cod_cliente: sel, nome_fantasia: nome, centro_custo: "" }); });
-                                    if (sel) {
-                                        fetchAuth(API_URL + "/bi/chat-ia/filtros?cod_cliente=" + sel).then(function(r) { return r.json(); }).then(function(data) {
-                                            setChatIaCentros(data.centros_do_cliente || []);
-                                        }).catch(function() {});
-                                    } else {
-                                        setChatIaCentros([]);
-                                    }
-                                },
-                                className: "w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                        // === MULTI-SELECT CLIENTES ===
+                        React.createElement("div", {className: "relative"},
+                            React.createElement("label", {className: "block text-sm font-medium text-gray-700 mb-1"}, "👤 Clientes"),
+                            React.createElement("div", {
+                                onClick: function() { setChatIaDropAberto(chatIaDropAberto === "cliente" ? null : "cliente"); },
+                                className: "w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm cursor-pointer flex items-center justify-between hover:border-emerald-400 transition-colors " + (chatIaDropAberto === "cliente" ? "ring-2 ring-emerald-500 border-emerald-500" : "")
                             },
-                                React.createElement("option", {value: ""}, "Todos os clientes"),
-                                chatIaClientes.map(function(c) {
-                                    return React.createElement("option", {key: c.cod_cliente, value: c.cod_cliente}, c.nome_fantasia);
+                                React.createElement("span", {className: chatIaFiltros.cod_cliente.length === 0 ? "text-gray-400" : "text-gray-800 truncate"},
+                                    chatIaFiltros.cod_cliente.length === 0 ? "Todos os clientes" :
+                                    chatIaFiltros.nomes_clientes.length <= 2 ? chatIaFiltros.nomes_clientes.join(", ") :
+                                    chatIaFiltros.nomes_clientes.length + " clientes selecionados"
+                                ),
+                                React.createElement("span", {className: "text-gray-400 ml-2 flex-shrink-0"}, chatIaDropAberto === "cliente" ? "▲" : "▼")
+                            ),
+                            // Tags dos selecionados
+                            chatIaFiltros.cod_cliente.length > 0 && React.createElement("div", {className: "flex flex-wrap gap-1 mt-1.5"},
+                                chatIaFiltros.nomes_clientes.map(function(nome, i) {
+                                    return React.createElement("span", {key: i, className: "inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs rounded-full"},
+                                        nome.length > 20 ? nome.substring(0, 20) + "..." : nome,
+                                        React.createElement("button", {
+                                            onClick: function(e) {
+                                                e.stopPropagation();
+                                                var codRemover = chatIaFiltros.cod_cliente[i];
+                                                var novosCods = chatIaFiltros.cod_cliente.filter(function(_, idx) { return idx !== i; });
+                                                var novosNomes = chatIaFiltros.nomes_clientes.filter(function(_, idx) { return idx !== i; });
+                                                setChatIaFiltros(function(prev) { return Object.assign({}, prev, { cod_cliente: novosCods, nomes_clientes: novosNomes, centro_custo: [] }); });
+                                                if (novosCods.length > 0) {
+                                                    fetchAuth(API_URL + "/bi/chat-ia/filtros?cod_cliente=" + novosCods.join(",")).then(function(r) { return r.json(); }).then(function(data) { setChatIaCentros(data.centros_do_cliente || []); }).catch(function() {});
+                                                } else { setChatIaCentros([]); }
+                                            },
+                                            className: "text-emerald-500 hover:text-emerald-800 font-bold"
+                                        }, "×")
+                                    );
                                 })
+                            ),
+                            // Dropdown
+                            chatIaDropAberto === "cliente" && React.createElement("div", {className: "absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-64 overflow-hidden", style: {top: "100%"}},
+                                // Busca
+                                React.createElement("div", {className: "p-2 border-b border-gray-100 sticky top-0 bg-white"},
+                                    React.createElement("input", {
+                                        type: "text",
+                                        placeholder: "Buscar cliente...",
+                                        value: chatIaBuscaCliente,
+                                        onChange: function(e) { setChatIaBuscaCliente(e.target.value); },
+                                        onClick: function(e) { e.stopPropagation(); },
+                                        className: "w-full px-3 py-1.5 text-sm border border-gray-200 rounded focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500",
+                                        autoFocus: true
+                                    })
+                                ),
+                                // Lista de opções
+                                React.createElement("div", {className: "overflow-y-auto", style: {maxHeight: "200px"}},
+                                    chatIaClientes.filter(function(c) {
+                                        if (!chatIaBuscaCliente) return true;
+                                        return c.nome_fantasia.toLowerCase().includes(chatIaBuscaCliente.toLowerCase()) || String(c.cod_cliente).includes(chatIaBuscaCliente);
+                                    }).map(function(c) {
+                                        var selecionado = chatIaFiltros.cod_cliente.indexOf(parseInt(c.cod_cliente)) !== -1 || chatIaFiltros.cod_cliente.indexOf(String(c.cod_cliente)) !== -1;
+                                        return React.createElement("label", {
+                                            key: c.cod_cliente,
+                                            className: "flex items-center gap-2.5 px-3 py-2 hover:bg-emerald-50 cursor-pointer transition-colors text-sm " + (selecionado ? "bg-emerald-50" : ""),
+                                            onClick: function(e) { e.stopPropagation(); }
+                                        },
+                                            React.createElement("input", {
+                                                type: "checkbox",
+                                                checked: selecionado,
+                                                onChange: function() {
+                                                    var cod = parseInt(c.cod_cliente);
+                                                    var novosCods, novosNomes;
+                                                    if (selecionado) {
+                                                        novosCods = chatIaFiltros.cod_cliente.filter(function(x) { return parseInt(x) !== cod; });
+                                                        novosNomes = chatIaFiltros.nomes_clientes.filter(function(_, idx) { return parseInt(chatIaFiltros.cod_cliente[idx]) !== cod; });
+                                                    } else {
+                                                        novosCods = [].concat(chatIaFiltros.cod_cliente, [cod]);
+                                                        novosNomes = [].concat(chatIaFiltros.nomes_clientes, [c.nome_fantasia]);
+                                                    }
+                                                    setChatIaFiltros(function(prev) { return Object.assign({}, prev, { cod_cliente: novosCods, nomes_clientes: novosNomes, centro_custo: [] }); });
+                                                    if (novosCods.length > 0) {
+                                                        fetchAuth(API_URL + "/bi/chat-ia/filtros?cod_cliente=" + novosCods.join(",")).then(function(r) { return r.json(); }).then(function(data) { setChatIaCentros(data.centros_do_cliente || []); }).catch(function() {});
+                                                    } else { setChatIaCentros([]); }
+                                                },
+                                                className: "rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                                            }),
+                                            React.createElement("span", {className: "truncate"}, c.nome_fantasia),
+                                            React.createElement("span", {className: "text-gray-400 text-xs ml-auto flex-shrink-0"}, "#" + c.cod_cliente)
+                                        );
+                                    }),
+                                    chatIaClientes.filter(function(c) {
+                                        if (!chatIaBuscaCliente) return true;
+                                        return c.nome_fantasia.toLowerCase().includes(chatIaBuscaCliente.toLowerCase()) || String(c.cod_cliente).includes(chatIaBuscaCliente);
+                                    }).length === 0 && React.createElement("div", {className: "px-3 py-4 text-sm text-gray-400 text-center"}, "Nenhum cliente encontrado")
+                                ),
+                                // Rodapé com ações
+                                chatIaFiltros.cod_cliente.length > 0 && React.createElement("div", {className: "p-2 border-t border-gray-100 bg-gray-50 flex justify-between items-center"},
+                                    React.createElement("span", {className: "text-xs text-gray-500"}, chatIaFiltros.cod_cliente.length + " selecionado(s)"),
+                                    React.createElement("button", {
+                                        onClick: function(e) {
+                                            e.stopPropagation();
+                                            setChatIaFiltros(function(prev) { return Object.assign({}, prev, { cod_cliente: [], nomes_clientes: [], centro_custo: [] }); });
+                                            setChatIaCentros([]);
+                                        },
+                                        className: "text-xs text-red-500 hover:text-red-700 font-medium"
+                                    }, "Limpar tudo")
+                                )
                             )
                         ),
-                        // Centro de custo
-                        React.createElement("div", null,
+                        // === MULTI-SELECT CENTROS DE CUSTO ===
+                        React.createElement("div", {className: "relative"},
                             React.createElement("label", {className: "block text-sm font-medium text-gray-700 mb-1"}, "🏢 Centro de Custo"),
-                            React.createElement("select", {
-                                value: chatIaFiltros.centro_custo,
-                                onChange: function(e) { setChatIaFiltros(function(prev) { return Object.assign({}, prev, { centro_custo: e.target.value }); }); },
-                                className: "w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500",
-                                disabled: !chatIaFiltros.cod_cliente
+                            React.createElement("div", {
+                                onClick: function() {
+                                    if (chatIaFiltros.cod_cliente.length > 0) setChatIaDropAberto(chatIaDropAberto === "centro" ? null : "centro");
+                                },
+                                className: "w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm flex items-center justify-between transition-colors " + (chatIaFiltros.cod_cliente.length === 0 ? "bg-gray-50 cursor-not-allowed" : "cursor-pointer hover:border-emerald-400") + (chatIaDropAberto === "centro" ? " ring-2 ring-emerald-500 border-emerald-500" : "")
                             },
-                                React.createElement("option", {value: ""}, chatIaFiltros.cod_cliente ? "Todos os centros" : "Selecione um cliente primeiro"),
-                                chatIaCentros.map(function(cc) {
-                                    return React.createElement("option", {key: cc, value: cc}, cc);
+                                React.createElement("span", {className: chatIaFiltros.centro_custo.length === 0 ? "text-gray-400" : "text-gray-800 truncate"},
+                                    chatIaFiltros.cod_cliente.length === 0 ? "Selecione um cliente primeiro" :
+                                    chatIaFiltros.centro_custo.length === 0 ? "Todos os centros" :
+                                    chatIaFiltros.centro_custo.length <= 2 ? chatIaFiltros.centro_custo.join(", ") :
+                                    chatIaFiltros.centro_custo.length + " centros selecionados"
+                                ),
+                                React.createElement("span", {className: "text-gray-400 ml-2 flex-shrink-0"}, chatIaFiltros.cod_cliente.length === 0 ? "" : chatIaDropAberto === "centro" ? "▲" : "▼")
+                            ),
+                            // Tags centros
+                            chatIaFiltros.centro_custo.length > 0 && React.createElement("div", {className: "flex flex-wrap gap-1 mt-1.5"},
+                                chatIaFiltros.centro_custo.map(function(cc, i) {
+                                    return React.createElement("span", {key: i, className: "inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full"},
+                                        cc.length > 25 ? cc.substring(0, 25) + "..." : cc,
+                                        React.createElement("button", {
+                                            onClick: function(e) {
+                                                e.stopPropagation();
+                                                setChatIaFiltros(function(prev) { return Object.assign({}, prev, { centro_custo: prev.centro_custo.filter(function(_, idx) { return idx !== i; }) }); });
+                                            },
+                                            className: "text-blue-500 hover:text-blue-800 font-bold"
+                                        }, "×")
+                                    );
                                 })
+                            ),
+                            // Dropdown centros
+                            chatIaDropAberto === "centro" && React.createElement("div", {className: "absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-52 overflow-y-auto", style: {top: "100%"}},
+                                chatIaCentros.map(function(cc) {
+                                    var sel = chatIaFiltros.centro_custo.indexOf(cc) !== -1;
+                                    return React.createElement("label", {
+                                        key: cc,
+                                        className: "flex items-center gap-2.5 px-3 py-2 hover:bg-blue-50 cursor-pointer transition-colors text-sm " + (sel ? "bg-blue-50" : ""),
+                                        onClick: function(e) { e.stopPropagation(); }
+                                    },
+                                        React.createElement("input", {
+                                            type: "checkbox",
+                                            checked: sel,
+                                            onChange: function() {
+                                                setChatIaFiltros(function(prev) {
+                                                    var novos = sel ? prev.centro_custo.filter(function(x) { return x !== cc; }) : [].concat(prev.centro_custo, [cc]);
+                                                    return Object.assign({}, prev, { centro_custo: novos });
+                                                });
+                                            },
+                                            className: "rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                        }),
+                                        React.createElement("span", {className: "truncate"}, cc)
+                                    );
+                                }),
+                                chatIaCentros.length === 0 && React.createElement("div", {className: "px-3 py-4 text-sm text-gray-400 text-center"}, "Nenhum centro de custo disponível")
                             )
                         ),
                         // Data início
@@ -18402,7 +18520,7 @@ const hideLoadingScreen = () => {
 
                     // Botão iniciar
                     React.createElement("button", {
-                        onClick: function() { setChatIaIniciado(true); },
+                        onClick: function() { setChatIaDropAberto(null); setChatIaIniciado(true); },
                         className: "w-full py-3 bg-emerald-600 text-white rounded-xl font-bold text-lg hover:bg-emerald-700 shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2"
                     }, "💬 Iniciar Conversa com a IA")
                 ),
@@ -18434,7 +18552,7 @@ const hideLoadingScreen = () => {
                     chatIaMsgs.length === 0 && React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-6"},
                         React.createElement("h3", {className: "text-sm font-bold text-gray-500 mb-3"}, "💡 EXEMPLOS DE PERGUNTAS"),
                         React.createElement("div", {className: "grid grid-cols-1 md:grid-cols-2 gap-2"},
-                            (chatIaFiltros.cod_cliente ? [
+                            (chatIaFiltros.cod_cliente.length > 0 ? [
                                 "Qual o resumo de performance desse cliente?",
                                 "Quais profissionais mais entregaram pra esse cliente?",
                                 "Qual a taxa de prazo por centro de custo?",
