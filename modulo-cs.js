@@ -769,11 +769,108 @@ ${renderMarkdown(raioXResult.analise)}
         ),
         h('button', { onClick: gerarRaioX, disabled: raioXLoading,
           className: 'px-5 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg text-sm font-bold hover:from-purple-700 hover:to-indigo-700 disabled:opacity-50 shadow-lg' },
-          raioXLoading ? '🔬 Gerando análise...' : '🔬 Gerar Raio-X IA'
+          raioXLoading ? '🤖 Analisando...' : '🔬 Gerar Raio-X IA'
         ),
         h('button', { onClick: abrirMapaCalor,
           className: 'px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-lg text-sm font-bold hover:from-emerald-600 hover:to-teal-700 shadow-lg' },
           '🗺️ Mapa de Calor'
+        )
+      ),
+
+      // Loading robô animado
+      raioXLoading && h('div', {
+        style: {
+          position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.75)', backdropFilter: 'blur(6px)',
+          zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }
+      },
+        h('div', {
+          style: {
+            background: 'linear-gradient(135deg,#1e1b4b,#312e81,#1e1b4b)',
+            border: '1px solid rgba(139,92,246,0.4)',
+            borderRadius: '24px', padding: '48px 56px', textAlign: 'center',
+            boxShadow: '0 0 60px rgba(139,92,246,0.3)', maxWidth: '420px', width: '90%',
+          }
+        },
+          // Robô SVG animado
+          h('div', { style: { marginBottom: '28px', position: 'relative', display: 'inline-block' } },
+            h('svg', {
+              width: '96', height: '96', viewBox: '0 0 96 96',
+              style: { filter: 'drop-shadow(0 0 16px rgba(139,92,246,0.6))' }
+            },
+              // Antena
+              h('rect', { x: '45', y: '2', width: '6', height: '12', rx: '3', fill: '#a78bfa' }),
+              h('circle', { cx: '48', cy: '2', r: '4', fill: '#c4b5fd',
+                style: { animation: 'robotBlink 1.2s ease-in-out infinite' } }),
+              // Cabeça
+              h('rect', { x: '22', y: '14', width: '52', height: '38', rx: '10', fill: '#4c1d95',
+                stroke: '#7c3aed', strokeWidth: '2' }),
+              // Olhos piscando
+              h('rect', { x: '31', y: '24', width: '14', height: '10', rx: '3', fill: '#7c3aed',
+                style: { animation: 'robotBlink 1.8s ease-in-out infinite' } }),
+              h('rect', { x: '51', y: '24', width: '14', height: '10', rx: '3', fill: '#7c3aed',
+                style: { animation: 'robotBlink 1.8s ease-in-out infinite 0.3s' } }),
+              h('div', {},
+                h('rect', { x: '31', y: '24', width: '14', height: '10', rx: '3', fill: '#c4b5fd',
+                  style: { animation: 'robotEye 1.8s ease-in-out infinite' } }),
+                h('rect', { x: '51', y: '24', width: '14', height: '10', rx: '3', fill: '#c4b5fd',
+                  style: { animation: 'robotEye 1.8s ease-in-out infinite 0.3s' } })
+              ),
+              // Boca / teclado
+              h('rect', { x: '33', y: '40', width: '30', height: '6', rx: '3', fill: '#6d28d9' }),
+              h('rect', { x: '36', y: '41', width: '6', height: '4', rx: '2', fill: '#a78bfa',
+                style: { animation: 'robotType 0.4s ease infinite' } }),
+              h('rect', { x: '45', y: '41', width: '6', height: '4', rx: '2', fill: '#a78bfa',
+                style: { animation: 'robotType 0.4s ease infinite 0.15s' } }),
+              h('rect', { x: '54', y: '41', width: '6', height: '4', rx: '2', fill: '#a78bfa',
+                style: { animation: 'robotType 0.4s ease infinite 0.3s' } }),
+              // Pescoço
+              h('rect', { x: '42', y: '52', width: '12', height: '8', rx: '4', fill: '#5b21b6' }),
+              // Corpo
+              h('rect', { x: '18', y: '60', width: '60', height: '32', rx: '10', fill: '#4c1d95',
+                stroke: '#7c3aed', strokeWidth: '2' }),
+              // Painel do peito
+              h('rect', { x: '28', y: '68', width: '40', height: '16', rx: '6', fill: '#3b0764' }),
+              h('circle', { cx: '36', cy: '76', r: '4', fill: '#10b981',
+                style: { animation: 'robotBlink 0.8s ease-in-out infinite' } }),
+              h('circle', { cx: '48', cy: '76', r: '4', fill: '#a78bfa',
+                style: { animation: 'robotBlink 0.8s ease-in-out infinite 0.4s' } }),
+              h('circle', { cx: '60', cy: '76', r: '4', fill: '#f59e0b',
+                style: { animation: 'robotBlink 0.8s ease-in-out infinite 0.8s' } }),
+              // Braços digitando
+              h('rect', { x: '2', y: '62', width: '16', height: '8', rx: '4', fill: '#5b21b6',
+                style: { animation: 'robotArmL 0.6s ease-in-out infinite', transformOrigin: '18px 66px' } }),
+              h('rect', { x: '78', y: '62', width: '16', height: '8', rx: '4', fill: '#5b21b6',
+                style: { animation: 'robotArmR 0.6s ease-in-out infinite 0.3s', transformOrigin: '78px 66px' } })
+            ),
+            // Keyframes via style tag injection workaround — usando elemento style
+            h('style', {}, `
+              @keyframes robotBlink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+              @keyframes robotEye   { 0%,100%{opacity:1;transform:scaleY(1)} 45%,55%{opacity:0;transform:scaleY(0)} }
+              @keyframes robotType  { 0%,100%{transform:translateY(0);opacity:1} 50%{transform:translateY(-2px);opacity:0.4} }
+              @keyframes robotArmL  { 0%,100%{transform:rotate(0deg)} 50%{transform:rotate(-12deg)} }
+              @keyframes robotArmR  { 0%,100%{transform:rotate(0deg)} 50%{transform:rotate(12deg)} }
+              @keyframes robotPulse { 0%,100%{box-shadow:0 0 60px rgba(139,92,246,0.3)} 50%{box-shadow:0 0 90px rgba(139,92,246,0.6)} }
+            `)
+          ),
+          h('h2', { style: { color: '#e2e8f0', fontSize: '20px', fontWeight: '700', marginBottom: '10px' } },
+            '🤖 Analisando operação...'
+          ),
+          h('p', { style: { color: '#94a3b8', fontSize: '14px', lineHeight: '1.7', marginBottom: '20px' } },
+            'Nosso agente de IA está processando todos os dados operacionais, métricas, ocorrências e benchmarks para gerar o relatório Raio-X.'
+          ),
+          // Barra de progresso indeterminada
+          h('div', { style: { background: 'rgba(255,255,255,0.08)', borderRadius: '99px', height: '6px', overflow: 'hidden' } },
+            h('div', {
+              style: {
+                height: '100%', width: '40%', borderRadius: '99px',
+                background: 'linear-gradient(90deg,#7c3aed,#a78bfa,#7c3aed)',
+                backgroundSize: '200% 100%',
+                animation: 'shimmer 1.5s linear infinite',
+              }
+            }),
+            h('style', {}, '@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}')
+          )
         )
       ),
 
