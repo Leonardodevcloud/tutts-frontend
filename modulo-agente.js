@@ -1307,8 +1307,10 @@
     const t = data.totais || {};
     const meses = [...(data.por_mes || [])].reverse();
     const semanas = [...(data.por_semana || [])].reverse();
+    const dias = data.por_dia || [];
     const maxMes = Math.max(...meses.map(m => parseInt(m.total) || 0), 1);
     const maxSemana = Math.max(...semanas.map(s => parseInt(s.total) || 0), 1);
+    const maxDia = Math.max(...dias.map(d => parseInt(d.total) || 0), 1);
 
     return h('div', { className: 'max-w-7xl mx-auto p-4 sm:p-6 space-y-6' },
 
@@ -1379,6 +1381,48 @@
                   h('span', { className: 'text-[10px] text-gray-400 mt-1' }, s.semana_inicio)
                 );
               })
+            )
+      ),
+
+      // Gráfico por dia (últimos 7 dias)
+      h('div', { className: 'bg-white rounded-xl border border-gray-100 shadow-sm p-5' },
+        h('h3', { className: 'text-sm font-bold text-gray-700 mb-4 uppercase tracking-wide' }, '📆 Solicitações por Dia (últimos 7 dias)'),
+        dias.length === 0
+          ? h('p', { className: 'text-gray-400 text-sm' }, 'Sem dados nos últimos 7 dias')
+          : h('div', { className: 'space-y-2' },
+              dias.map(d => {
+                const sucPct = (parseInt(d.sucesso) / maxDia) * 100;
+                const errPct = (parseInt(d.erro) / maxDia) * 100;
+                const total = parseInt(d.total) || 0;
+                const sucesso = parseInt(d.sucesso) || 0;
+                const erro = parseInt(d.erro) || 0;
+                return h('div', { key: d.dia, className: 'flex items-center gap-3' },
+                  h('span', { className: 'w-12 text-xs font-mono font-semibold text-gray-600 flex-shrink-0' }, d.dia),
+                  h('div', { className: 'flex-1 h-7 bg-gray-100 rounded-lg overflow-hidden flex relative' },
+                    sucPct > 0 && h('div', {
+                      className: 'h-full bg-green-500 transition-all',
+                      style: { width: sucPct + '%', minWidth: sucPct > 0 ? '2px' : 0 },
+                      title: `Sucesso: ${sucesso}`,
+                    }),
+                    errPct > 0 && h('div', {
+                      className: 'h-full bg-red-400 transition-all',
+                      style: { width: errPct + '%', minWidth: errPct > 0 ? '2px' : 0 },
+                      title: `Erro: ${erro}`,
+                    })
+                  ),
+                  h('div', { className: 'w-28 flex-shrink-0 flex items-center gap-1.5 text-xs' },
+                    h('span', { className: 'font-bold text-gray-800 w-6 text-right' }, total),
+                    h('span', { className: 'text-green-600 font-medium' }, `✅${sucesso}`),
+                    erro > 0 && h('span', { className: 'text-red-500 font-medium' }, `❌${erro}`)
+                  )
+                );
+              }),
+              h('div', { className: 'flex items-center gap-4 mt-3 text-xs text-gray-400' },
+                h('span', { className: 'flex items-center gap-1' },
+                  h('span', { className: 'w-3 h-3 rounded bg-green-500 inline-block' }), 'Sucesso'),
+                h('span', { className: 'flex items-center gap-1' },
+                  h('span', { className: 'w-3 h-3 rounded bg-red-400 inline-block' }), 'Erro')
+              )
             )
       ),
 
