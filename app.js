@@ -523,7 +523,7 @@ const OverflowNav = ({ items, activeId, onSelect, theme = "dark" }) => {
 // ==================== COMPONENTE NAVEGAÇÃO HORIZONTAL ====================
 const NavegacaoHorizontal = ({ usuario, moduloAtivo, abaAtiva, onNavigate, hasModuleAccess, socialProfile, onLogout, isLoading, lastUpdate, onRefresh }) => {
     const moduloConfig = SISTEMA_MODULOS_CONFIG.find(m => m.id === moduloAtivo);
-    const abas = (moduloConfig?.abas || []).filter(a => {
+    const abas = (moduloConfig?.abas || []).filter(function(a) {
         if (a.id === "permissoes" && usuario?.role !== "admin_master") return false;
         return true;
     });
@@ -723,8 +723,7 @@ const Sidebar = ({ usuario, moduloAtivo, setModulo, menuAberto, setMenuAberto, s
 // ==================== HEADER COMPACTO GLOBAL ====================
 const HeaderCompacto = ({ usuario, moduloAtivo, abaAtiva, socialProfile, isLoading, lastUpdate, onRefresh, onLogout, onGoHome, onNavigate, onChangeTab }) => {
     const moduloConfig = SISTEMA_MODULOS_CONFIG.find(m => m.id === moduloAtivo);
-    const abas = (moduloConfig?.abas || []).filter(a => {
-        // Aba permissões é exclusiva do admin_master
+    const abas = (moduloConfig?.abas || []).filter(function(a) {
         if (a.id === "permissoes" && usuario?.role !== "admin_master") return false;
         return true;
     });
