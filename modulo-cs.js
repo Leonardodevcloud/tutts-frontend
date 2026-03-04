@@ -624,23 +624,8 @@
     const abrirMapaCalor = () => {
       let url = `${apiUrl}/cs/mapa-calor/${codCliente}?data_inicio=${periodoRaioX.inicio}&data_fim=${periodoRaioX.fim}`;
       if (ccSelecionado) url += `&centro_custo=${encodeURIComponent(ccSelecionado)}`;
-      // Abrir popup com loading enquanto backend processa
-      const w = window.open('', '_blank');
-      if (w) {
-        w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Mapa de Calor</title>
-<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Segoe UI',sans-serif;background:#0f172a;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;color:white}
-.spinner{width:60px;height:60px;border:4px solid rgba(255,255,255,0.2);border-top:4px solid #a78bfa;border-radius:50%;animation:spin 1s linear infinite;margin-bottom:24px}
-@keyframes spin{to{transform:rotate(360deg)}}
-h2{font-size:20px;font-weight:700;margin-bottom:8px}p{font-size:14px;opacity:0.7;max-width:400px;text-align:center;line-height:1.6}
-.dots::after{content:'';animation:dots 1.5s infinite}@keyframes dots{0%{content:''}33%{content:'.'}66%{content:'..'}100%{content:'...'}}
-</style></head><body><div class="spinner"></div><h2>🗺️ Preparando seu Mapa de Calor</h2>
-<p>Estamos geocodificando os endereços da operação<span class="dots"></span></p>
-<p style="margin-top:12px;font-size:12px;opacity:0.5">Na primeira vez pode levar alguns segundos. Acessos futuros serão instantâneos.</p>
-</body></html>`);
-        w.document.close();
-        // Redirecionar para URL real
-        w.location.href = url;
-      }
+      // Abrir nova aba diretamente na URL — evita conflito entre document.write e location.href
+      window.open(url, '_blank');
     };
 
     const gerarPdfRaioX = () => {
@@ -1313,7 +1298,7 @@ ${renderMarkdown(raioXResult.analise)}
 
   function RaioXCharts({ dadosUtilizados }) {
     if (!dadosUtilizados || !window.Chart) return null;
-    const { evolucao_semanal, padroes_horario, corridas_por_motoboy, faixas_km, mapa_calor_bairros, metricas_atuais, metricas_periodo_anterior } = dadosUtilizados;
+    const { evolucao_semanal, padroes_horario, corridas_por_motoboy, faixas_km, mapa_calor_bairros, metricas_atuais, metricas_periodo_anterior, motos_por_dia, media_motos_dia } = dadosUtilizados;
 
     return h('div', { className: 'grid md:grid-cols-2 gap-4 mt-4' },
 
@@ -1483,6 +1468,60 @@ ${renderMarkdown(raioXResult.analise)}
             scales: { y: { beginAtZero: true } },
           },
         })
+      ),
+
+      // 7. Motos por Dia (Barras)
+      motos_por_dia && motos_por_dia.length > 0 && h('div', { className: 'bg-white rounded-xl border border-gray-200 p-4' },
+        h('h4', { className: 'text-sm font-semibold text-gray-700 mb-2' }, `🏍️ Motos por Dia (média: ${media_motos_dia || '—'})`),
+        h(ChartCanvas, {
+          type: 'bar',
+          height: 200,
+          data: {
+            labels: motos_por_dia.map(d => {
+              const dt = new Date(d.dia);
+              return `${dt.getDate()}/${dt.getMonth() + 1}`;
+            }),
+            datasets: [{
+              label: 'Motos',
+              data: motos_por_dia.map(d => parseInt(d.motos) || 0),
+              backgroundColor: 'rgba(139, 92, 246, 0.7)',
+              borderRadius: 4,
+            }],
+          },
+          options: {
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, title: { display: true, text: 'Profissionais' } } },
+          },
+        })
+      ),
+
+      // 8. Taxa de Retorno (gauge visual com barra)
+      metricas_atuais && h('div', { className: 'bg-white rounded-xl border border-gray-200 p-4' },
+        h('h4', { className: 'text-sm font-semibold text-gray-700 mb-3' }, '🔄 Taxa de Retorno'),
+        (() => {
+          const taxa = parseFloat(metricas_atuais.taxa_retorno) || 0;
+          const cor = taxa <= 2 ? '#10b981' : taxa <= 5 ? '#f59e0b' : '#ef4444';
+          const label = taxa <= 2 ? '✅ Saudável (até 2%)' : taxa <= 5 ? '⚠️ Atenção (2-5%)' : '🔴 Crítico (acima 5%)';
+          const pct = Math.min(taxa / 10 * 100, 100); // escala 0-10%
+          return h('div', { className: 'space-y-3' },
+            h('div', { className: 'flex items-end gap-3' },
+              h('span', { style: { fontSize: '36px', fontWeight: '800', color: cor, lineHeight: 1 } }, `${taxa}%`),
+              h('span', { style: { fontSize: '13px', color: cor, fontWeight: '600', marginBottom: '4px' } }, label)
+            ),
+            h('div', { style: { background: '#e2e8f0', borderRadius: '8px', height: '12px', overflow: 'hidden' } },
+              h('div', { style: { width: `${pct}%`, background: cor, height: '100%', borderRadius: '8px', transition: 'width .5s' } })
+            ),
+            h('div', { style: { display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#94a3b8' } },
+              h('span', {}, '0%'),
+              h('span', { style: { color: '#10b981', fontWeight: '600' } }, '2% (ideal)'),
+              h('span', { style: { color: '#f59e0b' } }, '5%'),
+              h('span', {}, '10%+')
+            ),
+            h('p', { style: { fontSize: '12px', color: '#64748b', marginTop: '4px' } },
+              `${parseInt(metricas_atuais.total_retornos) || 0} retorno(s) em ${parseInt(metricas_atuais.total_entregas) || 0} entregas`
+            )
+          );
+        })()
       )
     );
   }
