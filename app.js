@@ -523,7 +523,10 @@ const OverflowNav = ({ items, activeId, onSelect, theme = "dark" }) => {
 // ==================== COMPONENTE NAVEGAÇÃO HORIZONTAL ====================
 const NavegacaoHorizontal = ({ usuario, moduloAtivo, abaAtiva, onNavigate, hasModuleAccess, socialProfile, onLogout, isLoading, lastUpdate, onRefresh }) => {
     const moduloConfig = SISTEMA_MODULOS_CONFIG.find(m => m.id === moduloAtivo);
-    const abas = moduloConfig?.abas || [];
+    const abas = (moduloConfig?.abas || []).filter(a => {
+        if (a.id === "permissoes" && usuario?.role !== "admin_master") return false;
+        return true;
+    });
     
     return React.createElement("div", { className: "sticky top-0 z-40" },
         // Header principal
@@ -720,7 +723,11 @@ const Sidebar = ({ usuario, moduloAtivo, setModulo, menuAberto, setMenuAberto, s
 // ==================== HEADER COMPACTO GLOBAL ====================
 const HeaderCompacto = ({ usuario, moduloAtivo, abaAtiva, socialProfile, isLoading, lastUpdate, onRefresh, onLogout, onGoHome, onNavigate, onChangeTab }) => {
     const moduloConfig = SISTEMA_MODULOS_CONFIG.find(m => m.id === moduloAtivo);
-    const abas = moduloConfig?.abas || [];
+    const abas = (moduloConfig?.abas || []).filter(a => {
+        // Aba permissões é exclusiva do admin_master
+        if (a.id === "permissoes" && usuario?.role !== "admin_master") return false;
+        return true;
+    });
     
     return React.createElement("div", { className: "sticky top-0 z-30" },
         // Header principal
