@@ -66,6 +66,8 @@
 
         // Verificar permissão de aba
         const verificarPermissaoAba = function(abaId) {
+            // Aba de permissões é exclusiva do admin_master
+            if (abaId === "permissoes" && l.role !== "admin_master") return false;
             if ("admin_master" === l.role) return true;
             const abas = l.permissions && l.permissions.abas ? l.permissions.abas : {};
             if (Object.keys(abas).length === 0) return true;
