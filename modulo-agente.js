@@ -590,16 +590,26 @@
       if (mapInstanceRef.current) { mapInstanceRef.current.remove(); mapInstanceRef.current = null; }
 
       const r = registro;
-      const motoboyLat = parseFloat(r.motoboy_lat);
-      const motoboyLng = parseFloat(r.motoboy_lng);
       const corrLat = parseFloat(r.latitude);
       const corrLng = parseFloat(r.longitude);
-      let temMotoboy = !isNaN(motoboyLat) && !isNaN(motoboyLng) && motoboyLat !== 0 && motoboyLng !== 0;
       const temCorrigido = !isNaN(corrLat) && !isNaN(corrLng) && corrLat !== 0 && corrLng !== 0;
 
-      console.log('[Mapa Debug]', { motoboy_lat: r.motoboy_lat, motoboy_lng: r.motoboy_lng, latitude: r.latitude, longitude: r.longitude, temMotoboy, temCorrigido, endereco_antigo: r.endereco_antigo });
+      // Coordenadas do endereço antigo — 3 fontes em ordem de prioridade:
+      // 1) endereco_antigo_lat/lng (geocodificado pelo backend via Google)
+      // 2) motoboy_lat/lng (GPS do motoboy no momento da solicitação)
+      // 3) Geocoding Nominatim do texto endereco_antigo (fallback frontend)
+      let antigoLat = parseFloat(r.endereco_antigo_lat) || parseFloat(r.motoboy_lat);
+      let antigoLng = parseFloat(r.endereco_antigo_lng) || parseFloat(r.motoboy_lng);
+      let temAntigo = !isNaN(antigoLat) && !isNaN(antigoLng) && antigoLat !== 0 && antigoLng !== 0;
 
-      if (!temCorrigido && !temMotoboy) {
+      console.log('[Mapa Debug]', {
+        endereco_antigo_lat: r.endereco_antigo_lat, endereco_antigo_lng: r.endereco_antigo_lng,
+        motoboy_lat: r.motoboy_lat, motoboy_lng: r.motoboy_lng,
+        latitude: r.latitude, longitude: r.longitude,
+        temAntigo, temCorrigido, endereco_antigo: r.endereco_antigo
+      });
+
+      if (!temCorrigido && !temAntigo && !r.endereco_antigo) {
         setMapError('Sem coordenadas disponiveis.');
         return;
       }
@@ -607,21 +617,20 @@
       const iniciar = async () => {
         let ponto1 = null;
 
-        // Fallback: se não tem coordenadas do motoboy mas tem endereço antigo, geocodificar
-        let antigoLat = motoboyLat, antigoLng = motoboyLng;
-        if (!temMotoboy && r.endereco_antigo) {
+        // Fallback 3: geocodificar texto do endereço antigo via Nominatim
+        if (!temAntigo && r.endereco_antigo) {
           try {
             setStatusMsg('Geocodificando endereço antigo...');
-            const geoUrl = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(r.endereco_antigo);
+            const geoUrl = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=br&q=' + encodeURIComponent(r.endereco_antigo);
             const geoResp = await fetch(geoUrl);
             const geoData = await geoResp.json();
             if (geoData && geoData[0]) {
               antigoLat = parseFloat(geoData[0].lat);
               antigoLng = parseFloat(geoData[0].lon);
-              temMotoboy = true;
-              console.log('[Mapa] Endereço antigo geocodificado:', antigoLat, antigoLng);
+              temAntigo = true;
+              console.log('[Mapa] Endereço antigo geocodificado via Nominatim:', antigoLat, antigoLng);
             }
-          } catch (err) { console.warn('[Mapa] Falha ao geocodificar endereço antigo:', err); }
+          } catch (err) { console.warn('[Mapa] Falha geocoding Nominatim:', err); }
         }
 
         // Tentar coordenadas do ponto1 ja no registro (capturadas pelo playwright)
@@ -662,7 +671,7 @@
           bounds.extend([ponto1.lat, ponto1.lng]);
         }
 
-        if (temMotoboy) {
+        if (temAntigo) {
           L.marker([antigoLat, antigoLng], { icon: mkIcon('#dc2626', '\u2715') })
             .addTo(map).bindPopup('<div style="text-align:center"><strong style="color:#dc2626">End. Errado (GPS)</strong><br><span style="font-size:11px">' + (r.endereco_antigo || antigoLat.toFixed(6) + ', ' + antigoLng.toFixed(6)) + '</span></div>');
           bounds.extend([antigoLat, antigoLng]);
@@ -685,7 +694,7 @@
         };
 
         if (ponto1) {
-          if (temMotoboy) {
+          if (temAntigo) {
             setStatusMsg('Tracando rota ate endereco errado...');
             const rota = await buscarRota(ponto1.lat, ponto1.lng, antigoLat, antigoLng);
             if (rota) {
@@ -704,7 +713,7 @@
             }
           }
         } else {
-          if (temMotoboy && temCorrigido) {
+          if (temAntigo && temCorrigido) {
             L.polyline([[antigoLat, antigoLng], [corrLat, corrLng]], { color: '#9333ea', weight: 3, dashArray: '6, 6', opacity: 0.6 }).addTo(map);
             const dist = map.distance([antigoLat, antigoLng], [corrLat, corrLng]);
             const distStr = dist >= 1000 ? (dist / 1000).toFixed(2) + ' km' : Math.round(dist) + ' m';
@@ -833,7 +842,7 @@
 
     const abrirMapa = (r) => {
       // Precisa de pelo menos as coordenadas corrigidas
-      if (!r.latitude && !r.longitude && !r.motoboy_lat && !r.motoboy_lng) {
+      if (!r.latitude && !r.longitude && !r.motoboy_lat && !r.motoboy_lng && !r.endereco_antigo_lat && !r.endereco_antigo) {
         showToast('Sem coordenadas disponíveis para este registro', 'error');
         return;
       }
@@ -937,7 +946,7 @@
                   ),
                   h('td', { className: 'px-3 py-3' },
                     h('div', { className: 'flex flex-col gap-1' },
-                      (r.latitude || r.motoboy_lat) && h('button', {
+                      (r.latitude || r.motoboy_lat || r.endereco_antigo_lat || r.endereco_antigo) && h('button', {
                         onClick: (e) => { e.stopPropagation(); abrirMapa(r); },
                         className: 'px-3 py-1 text-xs font-semibold rounded-lg text-white transition hover:opacity-80',
                         style: { background: '#2563eb' },
@@ -1017,7 +1026,7 @@
               onClick: () => setExpandido(expandido === r.id ? null : r.id),
             }, expandido === r.id ? r.detalhe_erro : '🔴 Ver detalhe do erro'),
             h('div', { className: 'flex gap-2 mt-3' },
-              (r.latitude || r.motoboy_lat) && h('button', {
+              (r.latitude || r.motoboy_lat || r.endereco_antigo_lat || r.endereco_antigo) && h('button', {
                 onClick: () => abrirMapa(r),
                 className: 'flex-1 py-2 text-sm font-semibold rounded-xl text-white',
                 style: { background: '#2563eb' },
