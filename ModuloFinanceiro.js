@@ -880,7 +880,24 @@
             }, er(q.filter(e => z.includes(e.id)).reduce((e, t) => e + parseFloat(t.final_amount || 0), 0))))), React.createElement("button", {
                 onClick: () => B([]),
                 className: "bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-            }, "✕ Limpar seleção"))), React.createElement("div", {
+            }, "✕ Limpar seleção"), React.createElement("button", {
+                onClick: () => {
+                    const selecionados = q.filter(e => z.includes(e.id));
+                    const qtd = selecionados.length;
+                    const totalSolicitado = selecionados.reduce((acc, e) => acc + parseFloat(e.requested_amount || 0), 0);
+                    const acima500 = selecionados.filter(e => parseFloat(e.requested_amount || 0) > 500);
+                    let texto = "💰 *Aprovar saque, por favor!*\n\n";
+                    texto += "📊 *Quantidade realizada:* " + qtd + "\n";
+                    texto += "💵 *Valor total em saques:* R$ " + totalSolicitado.toFixed(2).replace(".", ",") + "\n";
+                    if (acima500.length > 0) {
+                        texto += "\n⚠️ *Motoboys que solicitaram valor superior a R$500:*\n\n";
+                        acima500.forEach(e => { texto += "🏍️ " + (e.user_name || "Cód: " + e.user_cod) + " — *R$ " + parseFloat(e.requested_amount).toFixed(2).replace(".", ",") + "*\n"; });
+                    }
+                    navigator.clipboard.writeText(texto.trim());
+                    ja("✅ Resumo copiado!", "success");
+                },
+                className: "bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            }, "📋 Copiar Resumo"))), React.createElement("div", {
                 className: "overflow-x-auto"
             }, React.createElement("table", {
                 className: "w-full text-sm table-fixed min-w-[680px]"
