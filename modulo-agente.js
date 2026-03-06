@@ -594,8 +594,10 @@
       const motoboyLng = parseFloat(r.motoboy_lng);
       const corrLat = parseFloat(r.latitude);
       const corrLng = parseFloat(r.longitude);
-      const temMotoboy = !isNaN(motoboyLat) && !isNaN(motoboyLng);
-      const temCorrigido = !isNaN(corrLat) && !isNaN(corrLng);
+      let temMotoboy = !isNaN(motoboyLat) && !isNaN(motoboyLng) && motoboyLat !== 0 && motoboyLng !== 0;
+      const temCorrigido = !isNaN(corrLat) && !isNaN(corrLng) && corrLat !== 0 && corrLng !== 0;
+
+      console.log('[Mapa Debug]', { motoboy_lat: r.motoboy_lat, motoboy_lng: r.motoboy_lng, latitude: r.latitude, longitude: r.longitude, temMotoboy, temCorrigido, endereco_antigo: r.endereco_antigo });
 
       if (!temCorrigido && !temMotoboy) {
         setMapError('Sem coordenadas disponiveis.');
@@ -604,6 +606,23 @@
 
       const iniciar = async () => {
         let ponto1 = null;
+
+        // Fallback: se não tem coordenadas do motoboy mas tem endereço antigo, geocodificar
+        let antigoLat = motoboyLat, antigoLng = motoboyLng;
+        if (!temMotoboy && r.endereco_antigo) {
+          try {
+            setStatusMsg('Geocodificando endereço antigo...');
+            const geoUrl = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(r.endereco_antigo);
+            const geoResp = await fetch(geoUrl);
+            const geoData = await geoResp.json();
+            if (geoData && geoData[0]) {
+              antigoLat = parseFloat(geoData[0].lat);
+              antigoLng = parseFloat(geoData[0].lon);
+              temMotoboy = true;
+              console.log('[Mapa] Endereço antigo geocodificado:', antigoLat, antigoLng);
+            }
+          } catch (err) { console.warn('[Mapa] Falha ao geocodificar endereço antigo:', err); }
+        }
 
         // Tentar coordenadas do ponto1 ja no registro (capturadas pelo playwright)
         if (r.ponto1_lat && r.ponto1_lng) {
@@ -644,9 +663,9 @@
         }
 
         if (temMotoboy) {
-          L.marker([motoboyLat, motoboyLng], { icon: mkIcon('#dc2626', '\u2715') })
-            .addTo(map).bindPopup('<div style="text-align:center"><strong style="color:#dc2626">End. Errado (GPS)</strong><br><span style="font-size:11px">' + (r.endereco_antigo || motoboyLat.toFixed(6) + ', ' + motoboyLng.toFixed(6)) + '</span></div>');
-          bounds.extend([motoboyLat, motoboyLng]);
+          L.marker([antigoLat, antigoLng], { icon: mkIcon('#dc2626', '\u2715') })
+            .addTo(map).bindPopup('<div style="text-align:center"><strong style="color:#dc2626">End. Errado (GPS)</strong><br><span style="font-size:11px">' + (r.endereco_antigo || antigoLat.toFixed(6) + ', ' + antigoLng.toFixed(6)) + '</span></div>');
+          bounds.extend([antigoLat, antigoLng]);
         }
 
         if (temCorrigido) {
@@ -668,11 +687,11 @@
         if (ponto1) {
           if (temMotoboy) {
             setStatusMsg('Tracando rota ate endereco errado...');
-            const rota = await buscarRota(ponto1.lat, ponto1.lng, motoboyLat, motoboyLng);
+            const rota = await buscarRota(ponto1.lat, ponto1.lng, antigoLat, antigoLng);
             if (rota) {
               L.polyline(rota, { color: '#dc2626', weight: 5, opacity: 0.7, dashArray: '12, 8' }).addTo(map).bindPopup('<strong style="color:#dc2626">Rota ate endereco ERRADO</strong>');
             } else {
-              L.polyline([[ponto1.lat, ponto1.lng], [motoboyLat, motoboyLng]], { color: '#dc2626', weight: 3, opacity: 0.5, dashArray: '8, 6' }).addTo(map);
+              L.polyline([[ponto1.lat, ponto1.lng], [antigoLat, antigoLng]], { color: '#dc2626', weight: 3, opacity: 0.5, dashArray: '8, 6' }).addTo(map);
             }
           }
           if (temCorrigido) {
@@ -686,11 +705,11 @@
           }
         } else {
           if (temMotoboy && temCorrigido) {
-            L.polyline([[motoboyLat, motoboyLng], [corrLat, corrLng]], { color: '#9333ea', weight: 3, dashArray: '6, 6', opacity: 0.6 }).addTo(map);
-            const dist = map.distance([motoboyLat, motoboyLng], [corrLat, corrLng]);
+            L.polyline([[antigoLat, antigoLng], [corrLat, corrLng]], { color: '#9333ea', weight: 3, dashArray: '6, 6', opacity: 0.6 }).addTo(map);
+            const dist = map.distance([antigoLat, antigoLng], [corrLat, corrLng]);
             const distStr = dist >= 1000 ? (dist / 1000).toFixed(2) + ' km' : Math.round(dist) + ' m';
             L.popup({ closeButton: false, autoClose: false, closeOnClick: false })
-              .setLatLng([(motoboyLat + corrLat) / 2, (motoboyLng + corrLng) / 2])
+              .setLatLng([(antigoLat + corrLat) / 2, (antigoLng + corrLng) / 2])
               .setContent('<div style="font-weight:bold;color:#7c3aed">\u2194 ' + distStr + '</div>')
               .openOn(map);
           }
