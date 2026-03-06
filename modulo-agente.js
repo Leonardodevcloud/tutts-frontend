@@ -867,7 +867,7 @@
           h('table', { className: 'w-full text-sm' },
             h('thead', null,
               h('tr', { className: 'bg-gray-50 border-b border-gray-100' },
-                ['ID','Motoboy','OS','Ponto','Status','End. Antigo','End. Novo','Criado em','Foto','Validado por','Ações'].map(col =>
+                ['ID','Motoboy','OS','Ponto','Status','End. Antigo','End. Novo','Criado em','Foto','Ações'].map(col =>
                   h('th', { key: col, className: 'px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide' }, col)
                 )
               )
@@ -916,21 +916,8 @@
                       className: 'text-xs px-2 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 font-semibold transition',
                     }, '📷 Ver')
                   ),
-                  h('td', { className: 'px-3 py-3 text-gray-500 text-xs' },
-                    r.validado_por
-                      ? h('div', null,
-                          h('div', { className: 'font-medium text-gray-700' }, r.validado_por),
-                          h('div', { className: 'text-gray-400' }, fmtDT(r.validado_em))
-                        )
-                      : '—'
-                  ),
                   h('td', { className: 'px-3 py-3' },
                     h('div', { className: 'flex flex-col gap-1' },
-                      !r.validado_por && h('button', {
-                        onClick: (e) => { e.stopPropagation(); validar(r.id); },
-                        className: 'px-3 py-1 text-xs font-semibold rounded-lg text-white transition hover:opacity-80',
-                        style: { background: '#f37601' },
-                      }, '✓ Validar'),
                       (r.latitude || r.motoboy_lat) && h('button', {
                         onClick: (e) => { e.stopPropagation(); abrirMapa(r); },
                         className: 'px-3 py-1 text-xs font-semibold rounded-lg text-white transition hover:opacity-80',
@@ -945,7 +932,7 @@
                   )
                 ),
                 expandido === r.id && h('tr', { key: `exp-${r.id}` },
-                  h('td', { colSpan: 11, className: 'px-6 py-3 bg-gray-50 border-b border-gray-200' },
+                  h('td', { colSpan: 10, className: 'px-6 py-3 bg-gray-50 border-b border-gray-200' },
                     h('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-3 text-xs' },
                       // Endereço antigo detalhado
                       h('div', { className: 'p-2 bg-orange-50 rounded-lg' },
@@ -1011,11 +998,6 @@
               onClick: () => setExpandido(expandido === r.id ? null : r.id),
             }, expandido === r.id ? r.detalhe_erro : '🔴 Ver detalhe do erro'),
             h('div', { className: 'flex gap-2 mt-3' },
-              !r.validado_por && h('button', {
-                onClick: () => validar(r.id),
-                className: 'flex-1 py-2 text-sm font-semibold rounded-xl text-white',
-                style: { background: '#f37601' },
-              }, '✓ Validar'),
               (r.latitude || r.motoboy_lat) && h('button', {
                 onClick: () => abrirMapa(r),
                 className: 'flex-1 py-2 text-sm font-semibold rounded-xl text-white',
@@ -1059,7 +1041,11 @@
           h('div', { className: 'flex items-center justify-between px-4 py-3 bg-gray-50 border-b' },
             h('div', null,
               h('span', { className: 'font-bold text-gray-900' }, `OS ${mapaModal.os_numero} — Ponto ${mapaModal.ponto}`),
-              h('div', { className: 'flex gap-3 mt-1 text-xs' },
+              h('div', { className: 'flex gap-3 mt-1 text-xs flex-wrap' },
+                h('span', { className: 'flex items-center gap-1' },
+                  h('span', { className: 'inline-block w-3 h-3 rounded-full', style: { background: '#2563eb' } }),
+                  'Ponto 1 (origem)'
+                ),
                 h('span', { className: 'flex items-center gap-1' },
                   h('span', { className: 'inline-block w-3 h-3 rounded-full', style: { background: '#dc2626' } }),
                   'Endereço errado (motoboy GPS)'
@@ -1315,13 +1301,12 @@
     return h('div', { className: 'max-w-7xl mx-auto p-4 sm:p-6 space-y-6' },
 
       // KPI Cards
-      h('div', { className: 'grid grid-cols-2 md:grid-cols-5 gap-4' },
+      h('div', { className: 'grid grid-cols-2 md:grid-cols-4 gap-4' },
         [
           { label: 'Total Ajustes',  value: t.total,     bg: 'bg-purple-50',  tc: 'text-purple-600', icon: '📊' },
           { label: 'Sucesso',        value: t.sucesso,   bg: 'bg-green-50',   tc: 'text-green-600',  icon: '✅' },
           { label: 'Erros',          value: t.erro,      bg: 'bg-red-50',     tc: 'text-red-600',    icon: '❌' },
           { label: 'Pendentes',      value: t.pendentes, bg: 'bg-yellow-50',  tc: 'text-yellow-600', icon: '⏳' },
-          { label: 'Validados',      value: t.validados, bg: 'bg-blue-50',    tc: 'text-blue-600',   icon: '✓' },
         ].map(k => h('div', {
           key: k.label,
           className: `${k.bg} rounded-xl border border-gray-100 shadow-sm p-4`,
@@ -1451,47 +1436,28 @@
             )
       ),
 
-      // Top Profissionais + Top Validadores
-      h('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-6' },
-        h('div', { className: 'bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden' },
-          h('div', { className: 'p-4 border-b bg-purple-50' },
-            h('h3', { className: 'text-sm font-bold text-purple-700 uppercase tracking-wide' }, '🏍️ Top Profissionais (mais solicitações)')
-          ),
-          h('div', { className: 'divide-y divide-gray-100 max-h-96 overflow-y-auto' },
-            (data.top_profissionais || []).map((p, i) => h('div', {
-              key: i,
-              className: 'flex items-center justify-between px-4 py-3 hover:bg-gray-50',
-            },
-              h('div', { className: 'flex items-center gap-3' },
-                h('span', { className: `w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${i < 3 ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-500'}` }, i + 1),
-                h('div', null,
-                  h('p', { className: 'text-sm font-semibold text-gray-800' }, p.usuario_nome || '—'),
-                  h('p', { className: 'text-xs text-gray-400 font-mono' }, `Cód: ${p.cod_profissional || '—'}`)
-                )
-              ),
-              h('div', { className: 'text-right' },
-                h('span', { className: 'text-lg font-bold text-gray-700' }, p.total),
-                h('div', { className: 'text-[10px] text-gray-400' }, `✅${p.sucesso} ❌${p.erro}`)
-              )
-            ))
-          )
+      // Top Profissionais
+      h('div', { className: 'bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden' },
+        h('div', { className: 'p-4 border-b bg-purple-50' },
+          h('h3', { className: 'text-sm font-bold text-purple-700 uppercase tracking-wide' }, '🏍️ Top Profissionais (mais solicitações)')
         ),
-        h('div', { className: 'bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden' },
-          h('div', { className: 'p-4 border-b bg-blue-50' },
-            h('h3', { className: 'text-sm font-bold text-blue-700 uppercase tracking-wide' }, '👤 Top Validadores')
-          ),
-          h('div', { className: 'divide-y divide-gray-100' },
-            (data.top_validadores || []).map((v, i) => h('div', {
-              key: i,
-              className: 'flex items-center justify-between px-4 py-3 hover:bg-gray-50',
-            },
-              h('div', { className: 'flex items-center gap-3' },
-                h('span', { className: `w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${i < 3 ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'}` }, i + 1),
-                h('p', { className: 'text-sm font-semibold text-gray-800' }, v.validado_por)
-              ),
-              h('span', { className: 'text-lg font-bold text-gray-700' }, v.total)
-            ))
-          )
+        h('div', { className: 'divide-y divide-gray-100 max-h-96 overflow-y-auto' },
+          (data.top_profissionais || []).map((p, i) => h('div', {
+            key: i,
+            className: 'flex items-center justify-between px-4 py-3 hover:bg-gray-50',
+          },
+            h('div', { className: 'flex items-center gap-3' },
+              h('span', { className: `w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${i < 3 ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-500'}` }, i + 1),
+              h('div', null,
+                h('p', { className: 'text-sm font-semibold text-gray-800' }, p.usuario_nome || '—'),
+                h('p', { className: 'text-xs text-gray-400 font-mono' }, `Cód: ${p.cod_profissional || '—'}`)
+              )
+            ),
+            h('div', { className: 'text-right' },
+              h('span', { className: 'text-lg font-bold text-gray-700' }, p.total),
+              h('div', { className: 'text-[10px] text-gray-400' }, `✅${p.sucesso} ❌${p.erro}`)
+            )
+          ))
         )
       )
     );
