@@ -72,133 +72,125 @@
         const wsDispRef = React.useRef(null);
         const wsDispIdRef = React.useRef(null);
         const wsDispReconnectRef = React.useRef(null);
-        const [wsDispConnected, setWsDispConnected] = React.useState(false);
+        const wsDispConnectedRef = React.useRef(false);
+        const wsDispInitRef = React.useRef(false); // evita reconexões múltiplas
 
-        // Wrapper do fetch que envia o wsId no header para evitar echo
-        const _fetch = React.useCallback((...args) => {
+        // Wrapper do fetch que injeta x-ws-id header
+        const _fetch = (...args) => {
             const [url, opts = {}] = args;
             const headers = { ...(opts.headers || {}) };
             if (wsDispIdRef.current) {
                 headers['x-ws-id'] = wsDispIdRef.current;
             }
             return _fetchBase(url, { ...opts, headers });
-        }, [_fetchBase]);
+        };
 
-        // Conectar ao WebSocket de disponibilidade
-        const connectDispWs = React.useCallback(() => {
-            if (wsDispRef.current && wsDispRef.current.readyState === WebSocket.OPEN) return;
-            const wsUrl = API_URL.replace('https://', 'wss://').replace('http://', 'ws://').replace('/api', '') + '/ws/disponibilidade';
-            console.log('🔌 [WS-Disp] Conectando:', wsUrl);
-            try {
-                wsDispRef.current = new WebSocket(wsUrl);
-                wsDispRef.current.onopen = () => {
-                    console.log('✅ [WS-Disp] Conectado!');
-                    const token = sessionStorage.getItem('tutts_token');
-                    if (token) {
-                        wsDispRef.current.send(JSON.stringify({ type: 'AUTH', token }));
-                    }
-                    if (wsDispReconnectRef.current) { clearTimeout(wsDispReconnectRef.current); wsDispReconnectRef.current = null; }
-                };
-                wsDispRef.current.onmessage = (event) => {
-                    try {
-                        const msg = JSON.parse(event.data);
-                        console.log('📩 [WS-Disp]:', msg.event);
+        // Conectar ao WebSocket de disponibilidade (função plain, sem useCallback)
+        React.useEffect(() => {
+            if (wsDispInitRef.current) return;
+            if (!l || !['admin', 'admin_master', 'admin_financeiro'].includes(l.role)) return;
+            const token = sessionStorage.getItem('tutts_token');
+            if (!token) return;
 
-                        if (msg.event === 'AUTH_SUCCESS') {
-                            wsDispIdRef.current = msg.wsId;
-                            setWsDispConnected(true);
-                            console.log('✅ [WS-Disp] Autenticado, wsId:', msg.wsId);
-                        } else if (msg.event === 'AUTH_ERROR') {
-                            console.error('❌ [WS-Disp] Erro de autenticação:', msg.error);
-                            setWsDispConnected(false);
-                        } else if (msg.event === 'DISP_LINHA_UPDATE') {
-                            // Atualização granular de uma linha
-                            const linhaAtualizada = msg.data;
-                            x(prev => {
-                                const dispData = prev.dispData || { regioes: [], lojas: [], linhas: [] };
-                                const linhas = [...dispData.linhas];
-                                const idx = linhas.findIndex(l => l.id === linhaAtualizada.id);
-                                if (idx > -1) {
-                                    linhas[idx] = { ...linhas[idx], ...linhaAtualizada };
-                                }
-                                return { ...prev, dispData: { ...dispData, linhas } };
-                            });
-                        } else if (msg.event === 'DISP_LINHAS_ADD') {
-                            // Novas linhas adicionadas
-                            const { linhas: novasLinhas } = msg.data;
-                            x(prev => {
-                                const dispData = prev.dispData || { regioes: [], lojas: [], linhas: [] };
-                                const linhasExistentes = dispData.linhas || [];
-                                // Evitar duplicatas
-                                const idsExistentes = new Set(linhasExistentes.map(l => l.id));
-                                const linhasParaAdicionar = novasLinhas.filter(l => !idsExistentes.has(l.id));
-                                return { ...prev, dispData: { ...dispData, linhas: [...linhasExistentes, ...linhasParaAdicionar] } };
-                            });
-                        } else if (msg.event === 'DISP_LINHA_DELETE') {
-                            // Linha removida
-                            const { id: linhaId } = msg.data;
-                            x(prev => {
-                                const dispData = prev.dispData || { regioes: [], lojas: [], linhas: [] };
-                                return { ...prev, dispData: { ...dispData, linhas: dispData.linhas.filter(l => l.id !== linhaId) } };
-                            });
-                        } else if (msg.event === 'DISP_RELOAD') {
-                            // Reload completo necessário (mudança estrutural)
-                            console.log('🔄 [WS-Disp] Reload completo solicitado:', msg.data?.reason);
-                            (async () => {
-                                try {
-                                    const resp = await _fetchBase(`${API_URL}/disponibilidade`);
-                                    if (resp.ok) {
-                                        const data = await resp.json();
-                                        x(prev => ({ ...prev, dispData: data }));
+            wsDispInitRef.current = true;
+
+            function connectDispWs() {
+                if (wsDispRef.current && wsDispRef.current.readyState === WebSocket.OPEN) return;
+                const wsUrl = API_URL.replace('https://', 'wss://').replace('http://', 'ws://').replace('/api', '') + '/ws/disponibilidade';
+                console.log('🔌 [WS-Disp] Conectando:', wsUrl);
+                try {
+                    const ws = new WebSocket(wsUrl);
+                    wsDispRef.current = ws;
+
+                    ws.onopen = () => {
+                        console.log('✅ [WS-Disp] Conectado!');
+                        ws.send(JSON.stringify({ type: 'AUTH', token: sessionStorage.getItem('tutts_token') }));
+                        if (wsDispReconnectRef.current) { clearTimeout(wsDispReconnectRef.current); wsDispReconnectRef.current = null; }
+                    };
+
+                    ws.onmessage = (event) => {
+                        try {
+                            const msg = JSON.parse(event.data);
+
+                            if (msg.event === 'AUTH_SUCCESS') {
+                                wsDispIdRef.current = msg.wsId;
+                                wsDispConnectedRef.current = true;
+                                console.log('✅ [WS-Disp] Autenticado, wsId:', msg.wsId);
+                            } else if (msg.event === 'AUTH_ERROR') {
+                                console.error('❌ [WS-Disp] Erro auth:', msg.error);
+                                wsDispConnectedRef.current = false;
+                            } else if (msg.event === 'DISP_LINHA_UPDATE') {
+                                const linhaAtualizada = msg.data;
+                                x(prev => {
+                                    const dispData = prev.dispData || { regioes: [], lojas: [], linhas: [] };
+                                    const linhas = [...dispData.linhas];
+                                    const idx = linhas.findIndex(li => li.id === linhaAtualizada.id);
+                                    if (idx > -1) {
+                                        linhas[idx] = { ...linhas[idx], ...linhaAtualizada };
                                     }
-                                } catch (err) {
-                                    console.error('❌ [WS-Disp] Erro no reload:', err);
-                                }
-                            })();
+                                    return { ...prev, dispData: { ...dispData, linhas } };
+                                });
+                            } else if (msg.event === 'DISP_LINHAS_ADD') {
+                                const { linhas: novasLinhas } = msg.data;
+                                x(prev => {
+                                    const dispData = prev.dispData || { regioes: [], lojas: [], linhas: [] };
+                                    const linhasExistentes = dispData.linhas || [];
+                                    const idsExistentes = new Set(linhasExistentes.map(li => li.id));
+                                    const linhasParaAdicionar = novasLinhas.filter(li => !idsExistentes.has(li.id));
+                                    return { ...prev, dispData: { ...dispData, linhas: [...linhasExistentes, ...linhasParaAdicionar] } };
+                                });
+                            } else if (msg.event === 'DISP_LINHA_DELETE') {
+                                const { id: linhaId } = msg.data;
+                                x(prev => {
+                                    const dispData = prev.dispData || { regioes: [], lojas: [], linhas: [] };
+                                    return { ...prev, dispData: { ...dispData, linhas: dispData.linhas.filter(li => li.id !== linhaId) } };
+                                });
+                            } else if (msg.event === 'DISP_RELOAD') {
+                                console.log('🔄 [WS-Disp] Reload solicitado:', msg.data?.reason);
+                                (async () => {
+                                    try {
+                                        const resp = await _fetchBase(`${API_URL}/disponibilidade`);
+                                        if (resp.ok) {
+                                            const data = await resp.json();
+                                            x(prev => ({ ...prev, dispData: data }));
+                                        }
+                                    } catch (err) {
+                                        console.error('❌ [WS-Disp] Erro no reload:', err);
+                                    }
+                                })();
+                            }
+                        } catch (err) { console.error('❌ [WS-Disp] Erro msg:', err); }
+                    };
+
+                    ws.onclose = () => {
+                        console.log('🔌 [WS-Disp] Desconectado');
+                        wsDispConnectedRef.current = false;
+                        wsDispIdRef.current = null;
+                        if (!wsDispReconnectRef.current) {
+                            wsDispReconnectRef.current = setTimeout(connectDispWs, 5000);
                         }
-                    } catch (err) { console.error('❌ [WS-Disp] Erro ao processar msg:', err); }
-                };
-                wsDispRef.current.onclose = () => {
-                    console.log('🔌 [WS-Disp] Desconectado');
-                    setWsDispConnected(false);
-                    wsDispIdRef.current = null;
-                    if (!wsDispReconnectRef.current) {
-                        wsDispReconnectRef.current = setTimeout(connectDispWs, 5000);
-                    }
-                };
-                wsDispRef.current.onerror = () => { setWsDispConnected(false); };
-            } catch (err) { console.error('❌ [WS-Disp] Falha:', err); }
-        }, [API_URL, x, _fetchBase]);
+                    };
 
-        // Lifecycle: conectar/desconectar WS
-        React.useEffect(() => {
-            if (l && ['admin', 'admin_master', 'admin_financeiro'].includes(l.role)) {
-                const token = sessionStorage.getItem('tutts_token');
-                if (token) {
-                    connectDispWs();
-                } else {
-                    const timeout = setTimeout(() => {
-                        if (sessionStorage.getItem('tutts_token')) connectDispWs();
-                    }, 500);
-                    return () => clearTimeout(timeout);
-                }
+                    ws.onerror = () => { wsDispConnectedRef.current = false; };
+                } catch (err) { console.error('❌ [WS-Disp] Falha:', err); }
             }
-            return () => {
-                if (wsDispRef.current) wsDispRef.current.close();
-                if (wsDispReconnectRef.current) clearTimeout(wsDispReconnectRef.current);
-            };
-        }, [l, connectDispWs]);
 
-        // Ping para manter WS vivo
-        React.useEffect(() => {
-            if (!wsDispConnected) return;
+            // Ping a cada 30s
             const pingInterval = setInterval(() => {
                 if (wsDispRef.current && wsDispRef.current.readyState === WebSocket.OPEN) {
                     wsDispRef.current.send(JSON.stringify({ type: 'PING' }));
                 }
             }, 30000);
-            return () => clearInterval(pingInterval);
-        }, [wsDispConnected]);
+
+            connectDispWs();
+
+            return () => {
+                clearInterval(pingInterval);
+                wsDispInitRef.current = false;
+                if (wsDispRef.current) { wsDispRef.current.close(); wsDispRef.current = null; }
+                if (wsDispReconnectRef.current) { clearTimeout(wsDispReconnectRef.current); wsDispReconnectRef.current = null; }
+            };
+        }, []); // eslint-disable-line -- roda uma vez só na montagem
         // ===== FIM WEBSOCKET DISPONIBILIDADE =====
 
                     const e = p.dispData || {
@@ -367,8 +359,8 @@
             }, React.createElement("span", {
                 className: "flex items-center gap-1"
             }, React.createElement("span", {
-                className: wsDispConnected ? "w-2 h-2 bg-green-500 rounded-full animate-pulse" : "w-2 h-2 bg-red-400 rounded-full"
-            }), wsDispConnected ? "Sincronização em tempo real ativa" : "Sincronização offline - reconectando...")), React.createElement("div", {
+                className: "w-2 h-2 bg-green-500 rounded-full animate-pulse"
+            }), "Sincronização em tempo real ativa")), React.createElement("div", {
                 className: "bg-white rounded-xl shadow"
             }, React.createElement("div", {
                 className: "flex border-b overflow-x-auto"
