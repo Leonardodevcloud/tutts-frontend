@@ -1372,7 +1372,7 @@ const hideLoadingScreen = () => {
             if (!e || "undefined" === e || "null" === e) return c("Link inválido"), void a(!1);
             (async () => {
                 try {
-                    const t = await fetchAuth(`${API_URL}/indicacao-link/validar/${e}`);
+                    const t = await fetch(`${API_URL}/indicacao-link/validar/${e}`);
                     if (!t.ok) return c("Link inválido ou expirado"), void a(!1);
                     const l = await t.json();
                     r(l.indicador)
@@ -1438,7 +1438,7 @@ const hideLoadingScreen = () => {
                 else {
                     i(!0);
                     try {
-                        const t = await fetchAuth(`${API_URL}/indicacao-link/cadastrar`, {
+                        const t = await fetch(`${API_URL}/indicacao-link/cadastrar`, {
                             method: "POST",
                             headers: {
                                 "Content-Type": "application/json"
