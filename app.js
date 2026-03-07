@@ -309,7 +309,7 @@ function hasModuleAccess(user, moduleId) {
         
         // CORREÇÃO: Módulos novos que não existem nas permissões antigas
         // Dar acesso por padrão ao CRM WhatsApp e CS se não foi configurado
-        if (perm === undefined && (moduleId === "crm-whatsapp" || moduleId === "cs" || moduleId === "agente")) {
+        if (perm === undefined && (moduleId === "crm-whatsapp" || moduleId === "cs" || moduleId === "agente" || moduleId === "antifraude")) {
             return true;
         }
         
@@ -387,6 +387,9 @@ const SISTEMA_MODULOS_CONFIG = [
     },
     { id: "crm-whatsapp", label: "CRM WhatsApp", icon: "💬", abas: [] },
     { id: "agente", label: "Agente RPA", icon: "🤖",
+      abas: []
+    },
+    { id: "antifraude", label: "Anti-Fraude", icon: "🛡️",
       abas: []
     }
 ];
@@ -13254,6 +13257,31 @@ const hideLoadingScreen = () => {
                     React.createElement("div", { className: "text-center" },
                         React.createElement("div", { className: "animate-spin w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4" }),
                         React.createElement("p", { className: "text-gray-600" }, "Carregando módulo Agente RPA...")
+                    )
+                );
+            }
+        }
+        // ========== MÓDULO ANTI-FRAUDE (CARREGAMENTO EXTERNO) ==========
+        const canAccessAntiFraude = hasModuleAccess(l, "antifraude");
+        if (canAccessAntiFraude && "antifraude" === Ee) {
+            if (typeof window.ModuloAntiFraudeComponent !== 'undefined') {
+                return React.createElement(window.ModuloAntiFraudeComponent, {
+                    usuario: l,
+                    API_URL: API_URL,
+                    fetchAuth: fetchAuth,
+                    HeaderCompacto: HeaderCompacto,
+                    showToast: ja,
+                    he: he,
+                    Ee: Ee,
+                    onLogout: () => o(null),
+                    socialProfile: socialProfile,
+                    onNavigate: navegarSidebar,
+                });
+            } else {
+                return React.createElement("div", { className: "min-h-screen bg-gray-50 flex items-center justify-center" },
+                    React.createElement("div", { className: "text-center" },
+                        React.createElement("div", { className: "animate-spin w-12 h-12 border-4 border-red-500 border-t-transparent rounded-full mx-auto mb-4" }),
+                        React.createElement("p", { className: "text-gray-600" }, "Carregando módulo Anti-Fraude...")
                     )
                 );
             }
