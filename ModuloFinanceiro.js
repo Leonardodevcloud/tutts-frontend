@@ -884,14 +884,14 @@
                 onClick: () => {
                     const selecionados = q.filter(e => z.includes(e.id));
                     const qtd = selecionados.length;
-                    const totalSolicitado = selecionados.reduce((acc, e) => acc + parseFloat(e.requested_amount || 0), 0);
-                    const acima500 = selecionados.filter(e => parseFloat(e.requested_amount || 0) > 500);
+                    const totalProfissional = selecionados.reduce((acc, e) => acc + parseFloat(e.final_amount || 0), 0);
+                    const acima200 = selecionados.filter(e => parseFloat(e.final_amount || 0) > 200);
                     let texto = "💰 *Aprovar saque, por favor!*\n\n";
                     texto += "📊 *Quantidade realizada:* " + qtd + "\n";
-                    texto += "💵 *Valor total em saques:* R$ " + totalSolicitado.toFixed(2).replace(".", ",") + "\n";
-                    if (acima500.length > 0) {
-                        texto += "\n⚠️ *Motoboys que solicitaram valor superior a R$500:*\n\n";
-                        acima500.forEach(e => { texto += "🏍️ " + (e.user_name || "Cód: " + e.user_cod) + " — *R$ " + parseFloat(e.requested_amount).toFixed(2).replace(".", ",") + "*\n"; });
+                    texto += "💵 *Valor total em saques:* R$ " + totalProfissional.toFixed(2).replace(".", ",") + "\n";
+                    if (acima200.length > 0) {
+                        texto += "\n⚠️ *Motoboys que solicitaram valor superior a R$200:*\n\n";
+                        acima200.forEach(e => { texto += "🏍️ " + (e.user_name || "Cód: " + e.user_cod) + " — *R$ " + parseFloat(e.final_amount).toFixed(2).replace(".", ",") + "*\n"; });
                     }
                     navigator.clipboard.writeText(texto.trim());
                     ja("✅ Resumo copiado!", "success");
