@@ -345,7 +345,7 @@
         setStatus(data);
         if (data && data.status === 'executando') {
           if (!pollRef.current) {
-            pollRef.current = setInterval(buscarStatus, 5000);
+            pollRef.current = setInterval(buscarStatus, 3000);
           }
         } else {
           if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
@@ -365,7 +365,7 @@
         } else {
           showToast('🔍 Varredura iniciada!', 'success');
           setTimeout(buscarStatus, 2000);
-          pollRef.current = setInterval(buscarStatus, 5000);
+          pollRef.current = setInterval(buscarStatus, 3000);
         }
       } catch { showToast('Erro ao iniciar varredura', 'error'); }
       finally { setLoading(false); }
@@ -396,8 +396,17 @@
         h('h2', { className: 'text-xl font-bold text-gray-900 mb-2' }, 'Varredura Anti-Fraude'),
         h('p', { className: 'text-sm text-gray-500 mb-6 max-w-md mx-auto' },
           executando
-            ? 'Varredura em andamento... O agente está navegando no MAP e analisando as OSs. Aguarde.'
+            ? 'Varredura em andamento... O agente está navegando no MAP e analisando as OSs.'
             : 'Inicia o agente Playwright que navega no MAP, extrai dados das OSs em execução e concluídas, e detecta padrões de fraude.'
+        ),
+        // Progresso em tempo real
+        executando && status && status.detalhes && h('div', { className: 'mb-4 p-3 bg-purple-50 rounded-xl border border-purple-200 max-w-md mx-auto' },
+          h('div', { className: 'flex items-center gap-2 mb-1' },
+            h('div', { className: 'w-3 h-3 bg-purple-500 rounded-full animate-pulse' }),
+            h('span', { className: 'text-xs font-semibold text-purple-700' }, 'Progresso ao vivo')
+          ),
+          h('p', { className: 'text-sm text-purple-800 font-medium' }, status.detalhes),
+          status.os_analisadas > 0 && h('p', { className: 'text-xs text-purple-600 mt-1' }, '📊 ' + status.os_analisadas + ' OS(s) encontradas até agora')
         ),
         h('button', {
           onClick: iniciarVarredura,
