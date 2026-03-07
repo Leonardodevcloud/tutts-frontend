@@ -336,6 +336,8 @@
     const [status, setStatus] = useState(null);
     const [loading, setLoading] = useState(false);
     const [relatorio, setRelatorio] = useState('');
+    const [dataInicio, setDataInicio] = useState('');
+    const [dataFim, setDataFim] = useState('');
     const pollRef = useRef(null);
 
     const buscarStatus = useCallback(async () => {
@@ -358,13 +360,19 @@
     const iniciarVarredura = async () => {
       setLoading(true);
       try {
-        const res = await fetchAuth(`${API_URL}/antifraude/varredura`, { method: 'POST' });
+        const body = {};
+        if (dataInicio && dataFim) { body.data_inicio = dataInicio; body.data_fim = dataFim; }
+        const res = await fetchAuth(`${API_URL}/antifraude/varredura`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
         const data = await res.json();
         if (res.status === 409) {
           showToast('Já existe uma varredura em execução', 'error');
         } else {
           showToast('🔍 Varredura iniciada!', 'success');
-          setTimeout(buscarStatus, 2000);
+          setTimeout(buscarStatus, 1000);
           pollRef.current = setInterval(buscarStatus, 3000);
         }
       } catch { showToast('Erro ao iniciar varredura', 'error'); }
@@ -391,22 +399,42 @@
       // Card principal
       h('div', { className: 'bg-white rounded-2xl border shadow-sm p-6 text-center' },
         h('div', { className: 'w-20 h-20 rounded-2xl mx-auto mb-4 flex items-center justify-center bg-red-50' },
-          h('span', { className: 'text-4xl' }, executando ? '⏳' : '🔍')
+          h('span', { className: 'text-4xl' }, executando ? '⏳' : '🛡️')
         ),
         h('h2', { className: 'text-xl font-bold text-gray-900 mb-2' }, 'Varredura Anti-Fraude'),
-        h('p', { className: 'text-sm text-gray-500 mb-6 max-w-md mx-auto' },
+        h('p', { className: 'text-sm text-gray-500 mb-4 max-w-md mx-auto' },
           executando
-            ? 'Varredura em andamento... O agente está navegando no MAP e analisando as OSs.'
-            : 'Inicia o agente Playwright que navega no MAP, extrai dados das OSs em execução e concluídas, e detecta padrões de fraude.'
+            ? 'Analisando dados da bi_entregas...'
+            : 'Analisa os dados do BI (importados via Excel) e detecta NFs/pedidos duplicados, padrões de fraude por motoboy e cliente.'
+        ),
+        // Seletor de período
+        !executando && h('div', { className: 'flex items-center justify-center gap-3 mb-4 flex-wrap' },
+          h('div', { className: 'flex items-center gap-2' },
+            h('label', { className: 'text-xs font-semibold text-gray-600' }, 'De:'),
+            h('input', {
+              type: 'date', value: dataInicio,
+              onChange: e => setDataInicio(e.target.value),
+              className: 'px-3 py-1.5 border rounded-lg text-sm',
+            })
+          ),
+          h('div', { className: 'flex items-center gap-2' },
+            h('label', { className: 'text-xs font-semibold text-gray-600' }, 'Até:'),
+            h('input', {
+              type: 'date', value: dataFim,
+              onChange: e => setDataFim(e.target.value),
+              className: 'px-3 py-1.5 border rounded-lg text-sm',
+            })
+          ),
+          h('span', { className: 'text-xs text-gray-400' }, dataInicio && dataFim ? '' : '(vazio = usa janela padrão das configs)')
         ),
         // Progresso em tempo real
         executando && status && status.detalhes && h('div', { className: 'mb-4 p-3 bg-purple-50 rounded-xl border border-purple-200 max-w-md mx-auto' },
           h('div', { className: 'flex items-center gap-2 mb-1' },
             h('div', { className: 'w-3 h-3 bg-purple-500 rounded-full animate-pulse' }),
-            h('span', { className: 'text-xs font-semibold text-purple-700' }, 'Progresso ao vivo')
+            h('span', { className: 'text-xs font-semibold text-purple-700' }, 'Progresso')
           ),
           h('p', { className: 'text-sm text-purple-800 font-medium' }, status.detalhes),
-          status.os_analisadas > 0 && h('p', { className: 'text-xs text-purple-600 mt-1' }, '📊 ' + status.os_analisadas + ' OS(s) encontradas até agora')
+          status.os_analisadas > 0 && h('p', { className: 'text-xs text-purple-600 mt-1' }, '📊 ' + status.os_analisadas + ' OS(s) analisadas')
         ),
         h('button', {
           onClick: iniciarVarredura,
@@ -415,9 +443,10 @@
             (executando ? 'bg-gray-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'),
         }, executando
             ? h('span', { className: 'flex items-center gap-2 justify-center' },
-                h('span', { className: 'animate-spin' }, '⏳'), 'Executando...')
-            : '🚀 Executar Varredura Agora'
-        )
+                h('span', { className: 'animate-spin' }, '⏳'), 'Analisando...')
+            : '🚀 Executar Varredura'
+        ),
+        h('p', { className: 'text-xs text-gray-400 mt-3' }, '💡 A varredura também roda automaticamente a cada upload no módulo BI')
       ),
 
       // Status da última varredura
