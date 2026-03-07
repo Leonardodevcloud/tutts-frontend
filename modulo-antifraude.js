@@ -332,13 +332,14 @@
   }
 
   // ── ABA: Varredura ──
-  function TabVarredura({ API_URL, fetchAuth, showToast }) {
+  function TabVarredura({ API_URL, fetchAuth, showToast, onVarreduraConcluida }) {
     const [status, setStatus] = useState(null);
     const [loading, setLoading] = useState(false);
     const [relatorio, setRelatorio] = useState('');
     const [dataInicio, setDataInicio] = useState('');
     const [dataFim, setDataFim] = useState('');
     const pollRef = useRef(null);
+    const estavamExecutandoRef = useRef(false);
 
     const buscarStatus = useCallback(async () => {
       try {
@@ -346,14 +347,20 @@
         const data = await res.json();
         setStatus(data);
         if (data && data.status === 'executando') {
+          estavamExecutandoRef.current = true;
           if (!pollRef.current) {
             pollRef.current = setInterval(buscarStatus, 3000);
           }
         } else {
           if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+          // Se estava executando e agora terminou → atualizar dashboard/alertas
+          if (estavamExecutandoRef.current) {
+            estavamExecutandoRef.current = false;
+            if (onVarreduraConcluida) onVarreduraConcluida();
+          }
         }
       } catch {}
-    }, [fetchAuth, API_URL]);
+    }, [fetchAuth, API_URL, onVarreduraConcluida]);
 
     useEffect(() => { buscarStatus(); return () => { if (pollRef.current) clearInterval(pollRef.current); }; }, []);
 
@@ -567,6 +574,12 @@
     const { usuario, API_URL, fetchAuth, HeaderCompacto, showToast, he, onLogout, socialProfile, onNavigate } = propsRef.current;
 
     const [aba, setAba] = useState('dashboard');
+    const [refreshKey, setRefreshKey] = useState(0);
+
+    // Callback para varredura sinalizar que terminou
+    const onVarreduraConcluida = useCallback(() => {
+      setRefreshKey(k => k + 1);
+    }, []);
 
     const ABAS = [
       { id: 'dashboard', label: '📊 Dashboard' },
@@ -602,16 +615,16 @@
         )
       ),
 
-      // Conteúdo
+      // Conteúdo — refreshKey força remount do Dashboard e Alertas
       h('div', { className: 'flex-1' },
         h('div', { style: { display: aba === 'dashboard' ? 'block' : 'none' } },
-          h(TabDashboard, { API_URL, fetchAuth, showToast })
+          h(TabDashboard, { key: 'dash-' + refreshKey, API_URL, fetchAuth, showToast })
         ),
         h('div', { style: { display: aba === 'alertas' ? 'block' : 'none' } },
-          h(TabAlertas, { API_URL, fetchAuth, showToast })
+          h(TabAlertas, { key: 'alertas-' + refreshKey, API_URL, fetchAuth, showToast })
         ),
         h('div', { style: { display: aba === 'varredura' ? 'block' : 'none' } },
-          h(TabVarredura, { API_URL, fetchAuth, showToast })
+          h(TabVarredura, { API_URL, fetchAuth, showToast, onVarreduraConcluida })
         )
       )
     );
