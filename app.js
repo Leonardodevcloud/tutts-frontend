@@ -18362,7 +18362,7 @@ const hideLoadingScreen = () => {
                         React.createElement("div", {className: "flex items-center gap-4"},
                             React.createElement("div", {className: "w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center text-3xl"}, "💬"),
                             React.createElement("div", null,
-                                React.createElement("h2", {className: "text-2xl font-bold"}, "Chat IA — Consulta Livre"),
+                                React.createElement("h2", {className: "text-2xl font-bold"}, "Chat IA — Analista de Dados"),
                                 React.createElement("p", {className: "text-emerald-100 mt-1"}, chatIaIniciado 
                                     ? (chatIaFiltros.nomes_clientes && chatIaFiltros.nomes_clientes.length > 0 ? "📌 " + (chatIaFiltros.nomes_clientes.length <= 2 ? chatIaFiltros.nomes_clientes.join(", ") : chatIaFiltros.nomes_clientes.length + " clientes") : "📌 Todos os clientes") + (chatIaFiltros.centro_custo && chatIaFiltros.centro_custo.length > 0 ? " · " + (chatIaFiltros.centro_custo.length <= 2 ? chatIaFiltros.centro_custo.join(", ") : chatIaFiltros.centro_custo.length + " centros") : "") + (chatIaFiltros.data_inicio ? " · " + chatIaFiltros.data_inicio + " a " + chatIaFiltros.data_fim : "")
                                     : "Selecione os filtros para iniciar a conversa"
@@ -18602,19 +18602,19 @@ const hideLoadingScreen = () => {
                         React.createElement("h3", {className: "text-sm font-bold text-gray-500 mb-3"}, "💡 EXEMPLOS DE PERGUNTAS"),
                         React.createElement("div", {className: "grid grid-cols-1 md:grid-cols-2 gap-2"},
                             (chatIaFiltros.cod_cliente.length > 0 ? [
-                                "Qual o resumo de performance desse cliente?",
-                                "Quais profissionais mais entregaram pra esse cliente?",
-                                "Qual a taxa de prazo por centro de custo?",
-                                "Quais foram os retornos e motivos?",
-                                "Qual o horário de pico de entregas?",
-                                "Compare a performance semana a semana"
+                                "Me dá o faturamento líquido do período selecionado",
+                                "Quais motoboys fizeram mais de 20 entregas e tiveram prazo abaixo de 70%?",
+                                "Qual a evolução dia a dia da taxa de prazo?",
+                                "Quais foram os retornos e por quê aconteceram?",
+                                "Me mostra a distribuição de entregas por hora do dia",
+                                "Quanto gastamos com garantido nesse período?"
                             ] : [
-                                "Qual o top 10 clientes com mais entregas este mês?",
-                                "Quais profissionais tiveram taxa de prazo abaixo de 80%?",
-                                "Compare entregas de janeiro vs fevereiro por cliente",
-                                "Qual o tempo médio de entrega por cidade?",
-                                "Quais clientes tiveram mais retornos na última semana?",
-                                "Quanto cada motoboy faturou nos últimos 7 dias?"
+                                "Me dá um panorama geral da operação neste período",
+                                "Quais motoboys entregaram mais e com melhor taxa de prazo?",
+                                "Quais clientes estão com taxa de retorno acima de 5%?",
+                                "Me mostra o faturamento líquido por cliente, do maior pro menor",
+                                "Quantas motos rodaram por dia e qual a média de entregas por moto?",
+                                "Quais bairros têm mais entregas fora do prazo?"
                             ]).map(function(exemplo, i) {
                                 return React.createElement("button", {
                                     key: i,
@@ -18717,7 +18717,7 @@ const hideLoadingScreen = () => {
                                             React.createElement("div", {className: "w-2 h-2 bg-emerald-400 rounded-full animate-bounce", style: {animationDelay: "150ms"}}),
                                             React.createElement("div", {className: "w-2 h-2 bg-emerald-400 rounded-full animate-bounce", style: {animationDelay: "300ms"}})
                                         ),
-                                        React.createElement("span", {className: "text-sm text-gray-500"}, "Analisando seus dados...")
+                                        React.createElement("span", {className: "text-sm text-gray-500"}, "Consultando e analisando...")
                                     )
                                 )
                             );
@@ -18773,7 +18773,7 @@ const hideLoadingScreen = () => {
                                         }
                                     }
                                 },
-                                placeholder: "Faça uma pergunta sobre seus dados... (Enter para enviar)",
+                                placeholder: "Converse com seus dados... pergunte qualquer coisa (Enter para enviar)",
                                 rows: 2,
                                 className: "flex-1 resize-none border-0 focus:ring-0 text-sm text-gray-700 placeholder-gray-400",
                                 style: {outline: "none"}
@@ -18826,7 +18826,7 @@ const hideLoadingScreen = () => {
                                 title: "Limpar conversa"
                             }, "🗑️")
                         ),
-                        React.createElement("p", {className: "text-xs text-gray-400 text-center mt-2"}, "Powered by Gemini 2.0 Flash · Apenas consultas de leitura")
+                        React.createElement("p", {className: "text-xs text-gray-400 text-center mt-2"}, "Powered by Claude · Apenas consultas de leitura")
                     )
                 )
             ),
