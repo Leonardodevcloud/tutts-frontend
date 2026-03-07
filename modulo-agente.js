@@ -123,8 +123,8 @@
         },
         (err) => {
           const msgs = {
-            1: 'Permissão de localização negada. Ative nas configurações do navegador.',
-            2: 'Localização indisponível. Verifique seu GPS.',
+            1: '⚠️ Permissão de localização negada.\n\nSe aparecer "Este site não pode pedir permissões", feche apps com bolha flutuante (WhatsApp, Messenger, filtro de tela, etc) e tente novamente.',
+            2: 'Localização indisponível. Verifique se o GPS está ativado.',
             3: 'Tempo esgotado ao obter localização. Tente novamente.',
           };
           setGpsErro(msgs[err.code] || 'Erro ao obter localização.');
