@@ -2002,7 +2002,7 @@ const hideLoadingScreen = () => {
         }), [qe, Ue] = useState({
             avisos: [],
             loading: !0
-        }), [ze, Be] = useState(null), [Ve, Je] = useState(0), [Qe, He] = useState([]), [Ge, We] = useState(!1), [Ze, Ye] = useState([]), [Ke, Xe] = useState([]), [et, tt] = useState([]), [at, lt] = useState([]), [rt, ot] = useState(!0), [ct, st] = useState(0), [nt, mt] = useState("produtos"), [it, dt] = useState([]), [pt, xt] = useState("lista"), [ut, gt] = useState([]), [bt, Rt] = useState([]), [Et, ht] = useState("home-bi"), [chatIaMsgs, setChatIaMsgs] = useState([]), [chatIaInput, setChatIaInput] = useState(""), [chatIaLoading, setChatIaLoading] = useState(false), [chatIaSql, setChatIaSql] = useState(null), [chatIaFiltros, setChatIaFiltros] = useState({ cod_cliente: [], nomes_clientes: [], centro_custo: [], data_inicio: "", data_fim: "" }), [chatIaIniciado, setChatIaIniciado] = useState(false), [chatIaClientes, setChatIaClientes] = useState([]), [chatIaCentros, setChatIaCentros] = useState([]), [chatIaFiltrosLoading, setChatIaFiltrosLoading] = useState(false), [chatIaDropAberto, setChatIaDropAberto] = useState(null), [chatIaBuscaCliente, setChatIaBuscaCliente] = useState(""), [ft, Nt] = useState(null), [yt, vt] = useState([]), [wt, _t] = useState([{
+        }), [ze, Be] = useState(null), [Ve, Je] = useState(0), [Qe, He] = useState([]), [Ge, We] = useState(!1), [Ze, Ye] = useState([]), [Ke, Xe] = useState([]), [et, tt] = useState([]), [at, lt] = useState([]), [rt, ot] = useState(!0), [ct, st] = useState(0), [nt, mt] = useState("produtos"), [it, dt] = useState([]), [pt, xt] = useState("lista"), [ut, gt] = useState([]), [bt, Rt] = useState([]), [Et, ht] = useState("home-bi"), [chatIaMsgs, setChatIaMsgs] = useState([]), [chatIaInput, setChatIaInput] = useState(""), [chatIaLoading, setChatIaLoading] = useState(false), [chatIaSql, setChatIaSql] = useState(null), [chatIaFiltros, setChatIaFiltros] = useState({ cod_cliente: [], nomes_clientes: [], centro_custo: [], data_inicio: "", data_fim: "" }), [chatIaIniciado, setChatIaIniciado] = useState(false), [chatIaClientes, setChatIaClientes] = useState([]), [chatIaCentros, setChatIaCentros] = useState([]), [chatIaFiltrosLoading, setChatIaFiltrosLoading] = useState(false), [chatIaDropAberto, setChatIaDropAberto] = useState(null), [chatIaBuscaCliente, setChatIaBuscaCliente] = useState(""), [chatIaConversas, setChatIaConversas] = useState([]), [chatIaConversaAtual, setChatIaConversaAtual] = useState(null), [chatIaConversasLoading, setChatIaConversasLoading] = useState(false), [chatIaSidebarAberta, setChatIaSidebarAberta] = useState(false), [chatIaExportando, setChatIaExportando] = useState(false), [ft, Nt] = useState(null), [yt, vt] = useState([]), [wt, _t] = useState([{
             km_min: 0,
             km_max: 15,
             prazo_minutos: 45
@@ -18369,10 +18369,129 @@ const hideLoadingScreen = () => {
                                 )
                             )
                         ),
-                        chatIaIniciado && React.createElement("button", {
-                            onClick: function() { setChatIaIniciado(false); setChatIaMsgs([]); setChatIaSql(null); setChatIaFiltros({ cod_cliente: [], nomes_clientes: [], centro_custo: [], data_inicio: "", data_fim: "" }); setChatIaDropAberto(null); setChatIaBuscaCliente(""); },
-                            className: "px-4 py-2 bg-white/20 rounded-lg text-sm hover:bg-white/30 transition-all flex items-center gap-2"
-                        }, "🔄 Nova Conversa")
+                        chatIaIniciado && React.createElement("div", {className: "flex items-center gap-2"},
+                            // Botão Conversas Salvas
+                            React.createElement("button", {
+                                onClick: function() {
+                                    setChatIaSidebarAberta(!chatIaSidebarAberta);
+                                    if (!chatIaSidebarAberta && chatIaConversas.length === 0) {
+                                        setChatIaConversasLoading(true);
+                                        fetchAuth(API_URL + "/bi/chat-ia/conversas").then(function(r) { return r.json(); }).then(function(data) {
+                                            setChatIaConversas(data.conversas || []);
+                                            setChatIaConversasLoading(false);
+                                        }).catch(function() { setChatIaConversasLoading(false); });
+                                    }
+                                },
+                                className: "px-3 py-2 bg-white/20 rounded-lg text-sm hover:bg-white/30 transition-all flex items-center gap-1"
+                            }, "📂 Conversas"),
+                            // Botão Exportar DOCX
+                            chatIaMsgs.length > 0 && React.createElement("button", {
+                                onClick: function() {
+                                    setChatIaExportando(true);
+                                    fetchAuth(API_URL + "/bi/chat-ia/exportar", {
+                                        method: "POST",
+                                        body: JSON.stringify({ mensagens: chatIaMsgs.map(function(m) { return { prompt: m.prompt, resposta: m.resposta }; }), filtros: chatIaFiltros })
+                                    }).then(function(r) { return r.blob(); }).then(function(blob) {
+                                        var url = URL.createObjectURL(blob);
+                                        var a = document.createElement("a");
+                                        a.href = url;
+                                        a.download = "chat-ia-relatorio-" + new Date().toISOString().slice(0, 10) + ".docx";
+                                        a.click();
+                                        URL.revokeObjectURL(url);
+                                        setChatIaExportando(false);
+                                    }).catch(function(err) { console.error("Erro export:", err); setChatIaExportando(false); });
+                                },
+                                disabled: chatIaExportando,
+                                className: "px-3 py-2 bg-white/20 rounded-lg text-sm hover:bg-white/30 transition-all flex items-center gap-1"
+                            }, chatIaExportando ? "⏳ Gerando..." : "📄 Exportar"),
+                            // Botão Salvar Conversa
+                            chatIaMsgs.length > 0 && !chatIaConversaAtual && React.createElement("button", {
+                                onClick: function() {
+                                    var titulo = chatIaMsgs[0]?.prompt?.substring(0, 60) || "Conversa";
+                                    fetchAuth(API_URL + "/bi/chat-ia/conversas", {
+                                        method: "POST",
+                                        body: JSON.stringify({ titulo: titulo, filtros: chatIaFiltros })
+                                    }).then(function(r) { return r.json(); }).then(function(data) {
+                                        if (data.conversa) {
+                                            setChatIaConversaAtual(data.conversa.id);
+                                            // Salvar todas as mensagens existentes
+                                            var hist = chatIaMsgs.map(function(m) { return { prompt: m.prompt, resposta: m.resposta }; });
+                                            for (var i = 0; i < hist.length; i++) {
+                                                fetchAuth(API_URL + "/bi/chat-ia", {
+                                                    method: "POST",
+                                                    body: JSON.stringify({ prompt: "__save__", historico: [], filtros: chatIaFiltros, conversa_id: data.conversa.id })
+                                                }).catch(function() {});
+                                            }
+                                        }
+                                    }).catch(function() {});
+                                },
+                                className: "px-3 py-2 bg-white/20 rounded-lg text-sm hover:bg-white/30 transition-all flex items-center gap-1"
+                            }, "💾 Salvar"),
+                            // Botão Nova Conversa
+                            React.createElement("button", {
+                                onClick: function() { setChatIaIniciado(false); setChatIaMsgs([]); setChatIaSql(null); setChatIaConversaAtual(null); setChatIaFiltros({ cod_cliente: [], nomes_clientes: [], centro_custo: [], data_inicio: "", data_fim: "" }); setChatIaDropAberto(null); setChatIaBuscaCliente(""); },
+                                className: "px-3 py-2 bg-white/20 rounded-lg text-sm hover:bg-white/30 transition-all flex items-center gap-1"
+                            }, "🔄 Nova")
+                        )
+                    )
+                ),
+
+                // ===== SIDEBAR DE CONVERSAS SALVAS =====
+                chatIaSidebarAberta && React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-4 mb-4 border border-gray-200"},
+                    React.createElement("div", {className: "flex items-center justify-between mb-3"},
+                        React.createElement("h3", {className: "font-bold text-gray-700 text-sm"}, "📂 Conversas Salvas"),
+                        React.createElement("button", {
+                            onClick: function() { setChatIaSidebarAberta(false); },
+                            className: "text-gray-400 hover:text-gray-600 text-lg"
+                        }, "✕")
+                    ),
+                    chatIaConversasLoading && React.createElement("p", {className: "text-sm text-gray-400 text-center py-4"}, "Carregando..."),
+                    !chatIaConversasLoading && chatIaConversas.length === 0 && React.createElement("p", {className: "text-sm text-gray-400 text-center py-4"}, "Nenhuma conversa salva ainda"),
+                    !chatIaConversasLoading && chatIaConversas.length > 0 && React.createElement("div", {className: "space-y-2 max-h-64 overflow-y-auto"},
+                        chatIaConversas.map(function(conv) {
+                            return React.createElement("div", {
+                                key: conv.id,
+                                className: "flex items-center justify-between p-3 rounded-lg border border-gray-100 hover:border-emerald-300 hover:bg-emerald-50 transition-all cursor-pointer group " + (chatIaConversaAtual === conv.id ? "border-emerald-500 bg-emerald-50" : "")
+                            },
+                                React.createElement("div", {
+                                    className: "flex-1 min-w-0",
+                                    onClick: function() {
+                                        // Carregar conversa
+                                        fetchAuth(API_URL + "/bi/chat-ia/conversas/" + conv.id).then(function(r) { return r.json(); }).then(function(data) {
+                                            if (data.historico) {
+                                                var msgs = data.historico.map(function(h) {
+                                                    return { prompt: h.prompt, resposta: h.resposta, sql: h.sql, dados: h.dados, loading: false, _charts: [], _textParts: [h.resposta || ""], _msgId: Date.now() + Math.random() };
+                                                });
+                                                setChatIaMsgs(msgs);
+                                                setChatIaConversaAtual(conv.id);
+                                                if (data.conversa?.filtros) {
+                                                    try { var f = JSON.parse(data.conversa.filtros); setChatIaFiltros(f); } catch(e) {}
+                                                }
+                                                setChatIaIniciado(true);
+                                                setChatIaSidebarAberta(false);
+                                            }
+                                        }).catch(function() {});
+                                    }
+                                },
+                                    React.createElement("p", {className: "text-sm font-medium text-gray-700 truncate"}, conv.titulo),
+                                    React.createElement("p", {className: "text-xs text-gray-400 mt-0.5"},
+                                        (conv.total_mensagens || 0) + " mensagens · " + new Date(conv.updated_at).toLocaleDateString("pt-BR")
+                                    )
+                                ),
+                                React.createElement("button", {
+                                    onClick: function(e) {
+                                        e.stopPropagation();
+                                        if (confirm("Deletar esta conversa?")) {
+                                            fetchAuth(API_URL + "/bi/chat-ia/conversas/" + conv.id, { method: "DELETE" }).then(function() {
+                                                setChatIaConversas(function(prev) { return prev.filter(function(c) { return c.id !== conv.id; }); });
+                                                if (chatIaConversaAtual === conv.id) { setChatIaConversaAtual(null); setChatIaMsgs([]); }
+                                            }).catch(function() {});
+                                        }
+                                    },
+                                    className: "ml-2 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all flex-shrink-0"
+                                }, "🗑️")
+                            );
+                        })
                     )
                 ),
 
@@ -18742,7 +18861,7 @@ const hideLoadingScreen = () => {
                                             var hist = chatIaMsgs.map(function(m) { return { prompt: m.prompt, resposta: m.resposta }; });
                                             fetchAuth(API_URL + "/bi/chat-ia", {
                                                 method: "POST",
-                                                body: JSON.stringify({ prompt: userPrompt, historico: hist, filtros: chatIaFiltros })
+                                                body: JSON.stringify({ prompt: userPrompt, historico: hist, filtros: chatIaFiltros, conversa_id: chatIaConversaAtual })
                                             }).then(function(r) { return r.json(); }).then(function(data) {
                                                 // Pré-processar resposta: separar texto e gráficos
                                                 var resposta = data.resposta || "Erro ao processar";
@@ -18789,7 +18908,7 @@ const hideLoadingScreen = () => {
                                         var hist = chatIaMsgs.map(function(m) { return { prompt: m.prompt, resposta: m.resposta }; });
                                         fetchAuth(API_URL + "/bi/chat-ia", {
                                             method: "POST",
-                                            body: JSON.stringify({ prompt: userPrompt, historico: hist, filtros: chatIaFiltros })
+                                            body: JSON.stringify({ prompt: userPrompt, historico: hist, filtros: chatIaFiltros, conversa_id: chatIaConversaAtual })
                                         }).then(function(r) { return r.json(); }).then(function(data) {
                                                 var resposta = data.resposta || "Erro ao processar";
                                                 var _charts = [];
