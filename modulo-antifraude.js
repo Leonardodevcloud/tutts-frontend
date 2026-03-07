@@ -270,7 +270,7 @@
               // Título
               h('h4', { className: 'font-semibold text-gray-900 mb-1' }, a.titulo),
               // Descrição
-              h('p', { className: 'text-sm text-gray-600 mb-3' }, a.descricao),
+              h('pre', { className: 'text-sm text-gray-600 mb-3 whitespace-pre-wrap font-sans leading-relaxed' }, a.descricao),
               // OSs envolvidas
               a.os_codigos && a.os_codigos.length > 0 && h('div', { className: 'flex items-center gap-2 mb-2 flex-wrap' },
                 h('span', { className: 'text-xs font-semibold text-gray-500' }, 'OSs:'),
@@ -572,7 +572,6 @@
       { id: 'dashboard', label: '📊 Dashboard' },
       { id: 'alertas', label: '🚨 Alertas' },
       { id: 'varredura', label: '🔍 Varredura' },
-      { id: 'config', label: '⚙️ Config' },
     ];
 
     return h('div', { className: 'min-h-screen bg-gray-50 flex flex-col' },
@@ -613,9 +612,6 @@
         ),
         h('div', { style: { display: aba === 'varredura' ? 'block' : 'none' } },
           h(TabVarredura, { API_URL, fetchAuth, showToast })
-        ),
-        h('div', { style: { display: aba === 'config' ? 'block' : 'none' } },
-          h(TabConfig, { API_URL, fetchAuth, showToast })
         )
       )
     );
