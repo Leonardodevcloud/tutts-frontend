@@ -19096,6 +19096,22 @@ const hideLoadingScreen = () => {
                             React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Agente RPA"),
                             React.createElement("p", {className: "text-sm text-gray-500"}, "Correção de endereços")
                         )
+                    ),
+                    
+                    // Anti-Fraude
+                    hasModuleAccess(l, "antifraude") &&
+                    React.createElement("div", {
+                        onClick: () => he("antifraude"),
+                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-red-300"
+                    },
+                        React.createElement("div", {className: "h-2 bg-gradient-to-r from-red-500 to-rose-600"}),
+                        React.createElement("div", {className: "p-6"},
+                            React.createElement("div", {className: "w-14 h-14 bg-red-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
+                                React.createElement("span", {className: "text-3xl"}, "🛡️")
+                            ),
+                            React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Anti-Fraude"),
+                            React.createElement("p", {className: "text-sm text-gray-500"}, "Detecção de duplicatas")
+                        )
                     )
                 )
             ),
