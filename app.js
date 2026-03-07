@@ -3451,8 +3451,23 @@ const hideLoadingScreen = () => {
                             } else if (data.event === 'MY_WITHDRAWAL_UPDATE') {
                                 // Atualizar status do saque em M para liberar/bloquear cooldown em tempo real
                                 O(prev => prev.map(w => w.id === data.data.id ? { ...w, status: data.data.status, reject_reason: data.data.reject_reason } : w));
-                                if (data.data.status === 'aprovado' || data.data.status === 'aprovado_gratuidade') { Ca(); ja('✅ Seu saque foi aprovado! Você já pode solicitar um novo.', 'success'); }
-                                else if (data.data.status === 'rejeitado') { ja(`❌ Saque rejeitado: ${data.data.reject_reason || 'Sem motivo'}. Você já pode solicitar novamente.`, 'error'); }
+                                if (data.data.status === 'aprovado' || data.data.status === 'aprovado_gratuidade') {
+                                    Ca();
+                                    ja('✅ Seu saque foi aprovado! Você já pode solicitar um novo.', 'success');
+                                    // Recarregar dados completos para atualizar timer, saldo e histórico
+                                    setTimeout(() => {
+                                        fetchAuth(`${API_URL}/withdrawals/user/${l.cod_profissional || l.codProfissional}`).then(r => r.ok && r.json()).then(d => { if (d) O(d); }).catch(() => {});
+                                        fetchAuth(`${API_URL}/gratuities/user/${l.cod_profissional || l.codProfissional}`).then(r => r.ok && r.json()).then(d => { if (d) W(d); }).catch(() => {});
+                                        fetchAuth(`${API_URL}/financial/data/${l.cod_profissional || l.codProfissional}`).then(r => r.ok && r.json()).then(d => { if (d) I(d); }).catch(() => {});
+                                    }, 500);
+                                }
+                                else if (data.data.status === 'rejeitado') {
+                                    ja(`❌ Saque rejeitado: ${data.data.reject_reason || 'Sem motivo'}. Você já pode solicitar novamente.`, 'error');
+                                    // Recarregar dados completos para atualizar timer e histórico
+                                    setTimeout(() => {
+                                        fetchAuth(`${API_URL}/withdrawals/user/${l.cod_profissional || l.codProfissional}`).then(r => r.ok && r.json()).then(d => { if (d) O(d); }).catch(() => {});
+                                    }, 500);
+                                }
                             } else if (data.event === 'AUTH_SUCCESS') { console.log('✅ [WS] Autenticado:', data.role); }
                             else if (data.event === 'AUTH_ERROR') { console.error('❌ [WS] Erro de autenticação:', data.error); setWsConnected(false); }
                         } catch (err) { console.error('❌ [WS] Erro:', err); }
