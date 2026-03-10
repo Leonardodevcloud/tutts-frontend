@@ -6479,6 +6479,10 @@
         });
         var modalRes = _modalRes[0]; var setModalRes = _modalRes[1];
 
+        // ===== State validação DICT =====
+        var _dictResults = React.useState({}); // { cod_prof: { loading, success, dict, erro } }
+        var dictResults = _dictResults[0]; var setDictResults = _dictResults[1];
+
         // ===== Helpers de seleção =====
         var profissionaisProntos = (st.dados && st.dados.profissionais || []).filter(function(p) { return p.status === 'pronto'; });
         var profissionaisSemPix = (st.dados && st.dados.profissionais || []).filter(function(p) { return p.status === 'sem_pix'; });
@@ -6621,6 +6625,40 @@
                 setSt(function(p) { return Object.assign({}, p, { historico: d.lotes || [], historicoLoading: false }); });
             } catch (e) {
                 setSt(function(p) { return Object.assign({}, p, { historicoLoading: false }); });
+            }
+        };
+
+        // ===== Validar Pix via DICT (Stark Bank) =====
+        var validarPixDict = async function(prof) {
+            if (!prof.pix_key) { Toast('❌ Profissional sem chave Pix', 'error'); return; }
+            setDictResults(function(prev) {
+                var n = Object.assign({}, prev);
+                n[prof.cod_prof] = { loading: true, success: null, dict: null, erro: null };
+                return n;
+            });
+            try {
+                var r = await fetchAuth(API_URL + '/stark/acerto/validar-pix', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pix_key: prof.pix_key, cod_prof: prof.cod_prof })
+                });
+                var d = await r.json();
+                setDictResults(function(prev) {
+                    var n = Object.assign({}, prev);
+                    n[prof.cod_prof] = { loading: false, success: d.success, dict: d.dict, erro: d.erro || null };
+                    return n;
+                });
+                if (d.success) {
+                    Toast('✅ #' + prof.cod_prof + ': Pix válido — ' + (d.dict.nome || 'OK'), 'success');
+                } else {
+                    Toast('❌ #' + prof.cod_prof + ': ' + (d.erro || 'Chave não encontrada no DICT'), 'error');
+                }
+            } catch (e) {
+                setDictResults(function(prev) {
+                    var n = Object.assign({}, prev);
+                    n[prof.cod_prof] = { loading: false, success: false, dict: null, erro: e.message };
+                    return n;
+                });
+                Toast('❌ Erro: ' + e.message, 'error');
             }
         };
 
@@ -6791,12 +6829,12 @@
                     // Cards resumo
                     React.createElement("div", { className: "grid grid-cols-2 md:grid-cols-6 gap-3" },
                         React.createElement("div", { className: "bg-white rounded-xl p-4 shadow border-l-4 border-emerald-500 text-center" },
-                            React.createElement("p", { className: "text-2xl font-bold text-emerald-600" }, st.dados.pix_sistema || 0),
-                            React.createElement("p", { className: "text-xs text-gray-500" }, "Pix Sistema")
+                            React.createElement("p", { className: "text-2xl font-bold text-emerald-600" }, st.dados.pix_mapp || 0),
+                            React.createElement("p", { className: "text-xs text-gray-500" }, "Pix Mapp")
                         ),
                         React.createElement("div", { className: "bg-white rounded-xl p-4 shadow border-l-4 border-blue-500 text-center" },
-                            React.createElement("p", { className: "text-2xl font-bold text-blue-600" }, st.dados.pix_planilha || 0),
-                            React.createElement("p", { className: "text-xs text-gray-500" }, "Pix Planilha")
+                            React.createElement("p", { className: "text-2xl font-bold text-blue-600" }, st.dados.pix_sistema || 0),
+                            React.createElement("p", { className: "text-xs text-gray-500" }, "Pix Sistema")
                         ),
                         React.createElement("div", { className: "bg-white rounded-xl p-4 shadow border-l-4 border-red-500 text-center" },
                             React.createElement("p", { className: "text-2xl font-bold text-red-600" }, st.dados.sem_pix || 0),
@@ -6850,10 +6888,11 @@
                                         })
                                     ),
                                     React.createElement("th", { className: "px-3 py-3 text-left" }, "Código"),
-                                    React.createElement("th", { className: "px-3 py-3 text-left" }, "Nome (Planilha)"),
+                                    React.createElement("th", { className: "px-3 py-3 text-left" }, "Nome (Mapp)"),
                                     React.createElement("th", { className: "px-3 py-3 text-left" }, "Nome (Sistema)"),
                                     React.createElement("th", { className: "px-3 py-3 text-left" }, "Chave Pix"),
                                     React.createElement("th", { className: "px-3 py-3 text-center" }, "Origem"),
+                                    React.createElement("th", { className: "px-3 py-3 text-center" }, "DICT"),
                                     React.createElement("th", { className: "px-3 py-3 text-right" }, "Valor"),
                                     React.createElement("th", { className: "px-3 py-3 text-center" }, "Status")
                                 )
@@ -6861,10 +6900,10 @@
                             React.createElement("tbody", null,
                                 todosProfs.sort(function(a, b) { return b.saldo - a.saldo; }).map(function(prof, i) {
                                     var ehSemPix = prof.status === 'sem_pix';
-                                    var origemBadge = prof.pix_origem === 'sistema'
-                                        ? React.createElement("span", { className: "px-2 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700" }, "✅ Sistema")
-                                        : prof.pix_origem === 'planilha'
-                                            ? React.createElement("span", { className: "px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700" }, "📋 Planilha")
+                                    var origemBadge = prof.pix_origem === 'mapp'
+                                        ? React.createElement("span", { className: "px-2 py-1 rounded-full text-xs font-medium " + (prof.pix_formato_valido ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700") }, prof.pix_formato_valido ? "✅ Mapp" : "⚠️ Mapp")
+                                        : prof.pix_origem === 'sistema'
+                                            ? React.createElement("span", { className: "px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700" }, "🔄 Sistema")
                                             : React.createElement("span", { className: "px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700" }, "❌ Nenhuma");
 
                                     return React.createElement("tr", {
@@ -6886,6 +6925,15 @@
                                         React.createElement("td", { className: "px-3 py-2.5 " + (prof.nome_sistema ? "text-emerald-700" : "text-gray-400") }, prof.nome_sistema || '—'),
                                         React.createElement("td", { className: "px-3 py-2.5 text-xs text-gray-600 max-w-[160px] truncate" }, prof.pix_key || '—'),
                                         React.createElement("td", { className: "px-3 py-2.5 text-center" }, origemBadge),
+                                        React.createElement("td", { className: "px-3 py-2.5 text-center" },
+                                            prof.pix_key ? (function() {
+                                                var dr = dictResults[prof.cod_prof];
+                                                if (dr && dr.loading) return React.createElement("span", { className: "text-xs text-gray-400 animate-pulse" }, "⏳");
+                                                if (dr && dr.success === true) return React.createElement("span", { className: "text-xs text-emerald-600 font-medium", title: dr.dict && dr.dict.nome ? dr.dict.nome : '' }, "✅ " + (dr.dict && dr.dict.nome ? dr.dict.nome.split(' ')[0] : 'OK'));
+                                                if (dr && dr.success === false) return React.createElement("span", { className: "text-xs text-red-500 font-medium cursor-pointer", title: dr.erro || 'Inválida', onClick: function() { validarPixDict(prof); } }, "❌ Reintentar");
+                                                return React.createElement("button", { onClick: function() { validarPixDict(prof); }, className: "text-xs px-2 py-1 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 font-medium transition-colors" }, "🔍 Validar");
+                                            })() : React.createElement("span", { className: "text-xs text-gray-300" }, "—")
+                                        ),
                                         React.createElement("td", { className: "px-3 py-2.5 text-right font-bold text-emerald-700" }, formatarMoeda(prof.saldo)),
                                         React.createElement("td", { className: "px-3 py-2.5 text-center" }, badge(prof.status))
                                     );
