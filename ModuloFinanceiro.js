@@ -6548,6 +6548,20 @@
                             if (prof.status === 'pronto') selInicial[prof.cod_prof] = true;
                         });
                         setSel(selInicial);
+                        // Pre-popular validações DICT salvas (cache do banco)
+                        var dictInicial = {};
+                        (d.profissionais || []).forEach(function(prof) {
+                            if (prof.dict_validacao) {
+                                dictInicial[prof.cod_prof] = {
+                                    loading: false,
+                                    success: prof.dict_validacao.valido,
+                                    dict: prof.dict_validacao.valido ? { nome: prof.dict_validacao.nome, banco: prof.dict_validacao.banco } : null,
+                                    erro: prof.dict_validacao.erro || null,
+                                    validado_em: prof.dict_validacao.validado_em
+                                };
+                            }
+                        });
+                        setDictResults(dictInicial);
                         // Carregar saldo
                         carregarSaldo();
                         if (d.sem_pix > 0) Toast('⚠️ ' + d.sem_pix + ' profissionais sem chave Pix cadastrada', 'warning');
@@ -6929,7 +6943,7 @@
                                             prof.pix_key ? (function() {
                                                 var dr = dictResults[prof.cod_prof];
                                                 if (dr && dr.loading) return React.createElement("span", { className: "text-xs text-gray-400 animate-pulse" }, "⏳");
-                                                if (dr && dr.success === true) return React.createElement("span", { className: "text-xs text-emerald-600 font-medium", title: dr.dict && dr.dict.nome ? dr.dict.nome : '' }, "✅ " + (dr.dict && dr.dict.nome ? dr.dict.nome.split(' ')[0] : 'OK'));
+                                                if (dr && dr.success === true) return React.createElement("span", { className: "text-xs text-emerald-600 font-medium cursor-help", title: (dr.dict && dr.dict.nome ? dr.dict.nome : '') + (dr.validado_em ? ' — Validado em ' + new Date(dr.validado_em).toLocaleDateString('pt-BR') : '') }, "✅ " + (dr.dict && dr.dict.nome ? dr.dict.nome.split(' ')[0] : 'OK'));
                                                 if (dr && dr.success === false) return React.createElement("span", { className: "text-xs text-red-500 font-medium cursor-pointer", title: dr.erro || 'Inválida', onClick: function() { validarPixDict(prof); } }, "❌ Reintentar");
                                                 return React.createElement("button", { onClick: function() { validarPixDict(prof); }, className: "text-xs px-2 py-1 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 font-medium transition-colors" }, "🔍 Validar");
                                             })() : React.createElement("span", { className: "text-xs text-gray-300" }, "—")
