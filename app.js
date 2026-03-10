@@ -290,7 +290,7 @@ function hasModuleAccess(user, moduleId) {
     
     // User comum tem acesso ao módulo de filas (para check-in na fila)
     if (user.role === "user") {
-        return ["filas"].includes(moduleId);
+        return ["filas", "agente"].includes(moduleId);
     }
     
     // Admin normal - verificar permissões
@@ -307,18 +307,13 @@ function hasModuleAccess(user, moduleId) {
         // Verificar permissão específica do módulo
         const perm = user.permissions.modulos[moduleId];
         
-        // CORREÇÃO: Módulos novos que não existem nas permissões antigas
-        // Dar acesso por padrão ao CRM WhatsApp e CS se não foi configurado
-        if (perm === undefined && (moduleId === "crm-whatsapp" || moduleId === "cs")) {
-            return true;
-        }
-        
-        // CORREÇÃO: Se hasConfig é true, só permite se perm === true
+        // Se hasConfig é true (permissões foram configuradas pelo admin_master),
+        // módulo só é permitido se explicitamente true
         if (user.permissions.hasConfig === true) {
             return perm === true;
         }
         
-        // Fallback: se a permissão não é explicitamente false, tem acesso
+        // Fallback: se nunca foi configurado, tem acesso a tudo
         return perm !== false;
     }
     
@@ -359,7 +354,7 @@ const SISTEMA_MODULOS_CONFIG = [
       abas: [{id: "dashboard", label: "Dashboard"}, {id: "search", label: "Busca"}, {id: "ranking", label: "Ranking"}, {id: "relatorios", label: "Relatórios"}]
     },
     { id: "financeiro", label: "Financeiro", icon: "💰",
-      abas: [{id: "home-fin", label: "🏠 Home"}, {id: "solicitacoes", label: "Solicitações"}, {id: "validacao", label: "Validação"}, {id: "conciliacao", label: "Conciliação"}, {id: "resumo", label: "Resumo"}, {id: "gratuidades", label: "Gratuidades"}, {id: "restritos", label: "Restritos"}, {id: "indicacoes", label: "Indicações"}, {id: "promo-novatos", label: "Promo Novatos"}, {id: "loja", label: "Loja"}, {id: "relatorios", label: "Relatórios"}, {id: "horarios", label: "Horários"}, {id: "avisos", label: "Avisos"}, {id: "backup", label: "Backup"}, {id: "saldo-plific", label: "Saldo Plific"}]
+      abas: [{id: "home-fin", label: "🏠 Home"}, {id: "solicitacoes", label: "Solicitações"}, {id: "validacao", label: "Validação"}, {id: "conciliacao", label: "Conciliação"}, {id: "resumo", label: "Resumo"}, {id: "gratuidades", label: "Gratuidades"}, {id: "restritos", label: "Restritos"}, {id: "indicacoes", label: "Indicações"}, {id: "promo-novatos", label: "Promo Novatos"}, {id: "loja", label: "Loja"}, {id: "relatorios", label: "Relatórios"}, {id: "horarios", label: "Horários"}, {id: "avisos", label: "Avisos"}, {id: "backup", label: "Backup"}, {id: "saldo-plific", label: "Saldo Plific"}, {id: "stark-bank", label: "🏦 Pix Stark"}, {id: "acerto-prof", label: "📋 Acerto Prof"}]
     },
     { id: "operacional", label: "Operacional", icon: "⚙️",
       abas: [{id: "indicacoes", label: "Indicações"}, {id: "promo-novatos", label: "Promo Novatos"}, {id: "avisos", label: "Avisos"}, {id: "novas-operacoes", label: "Novas Operações"}, {id: "recrutamento", label: "Recrutamento"}, {id: "localizacao-clientes", label: "Localização Clientes"}, {id: "relatorio-diario", label: "Relatório Diário"}, {id: "score-prof", label: "Score Prof"}, {id: "incentivos", label: "Acompanhamento"}]
@@ -368,7 +363,7 @@ const SISTEMA_MODULOS_CONFIG = [
       abas: [{id: "panorama", label: "Panorama"}, {id: "principal", label: "Principal"}, {id: "faltosos", label: "Faltosos"}, {id: "espelho", label: "Espelho"}, {id: "relatorios", label: "Relatórios"}, {id: "motoboys", label: "Motoboys"}, {id: "restricoes", label: "Restrições"}, {id: "config", label: "Configurações"}]
     },
     { id: "bi", label: "BI", icon: "📊",
-      abas: [{id: "home-bi", label: "🏠 Home"}, {id: "dashboard", label: "Dashboard"}, {id: "acompanhamento", label: "Acompanhamento"}, {id: "profissionais", label: "Por Profissional"}, {id: "garantido", label: "Garantido"}, {id: "os", label: "Análise por OS"}, {id: "upload", label: "Upload"}, {id: "config", label: "Configurações"}]
+      abas: [{id: "home-bi", label: "🏠 Home"}, {id: "dashboard", label: "Dashboard"}, {id: "acompanhamento", label: "Acompanhamento"}, {id: "profissionais", label: "Por Profissional"}, {id: "garantido", label: "Garantido"}, {id: "os", label: "Análise por OS"}, {id: "chat-ia", label: "💬 Chat IA"}, {id: "upload", label: "Upload"}, {id: "config", label: "Configurações"}]
     },
     { id: "todo", label: "TO-DO", icon: "📝",
       abas: [{id: "tarefas", label: "Tarefas"}, {id: "metricas", label: "Métricas"}]
@@ -385,13 +380,151 @@ const SISTEMA_MODULOS_CONFIG = [
     { id: "config", label: "Configurações", icon: "🔧",
       abas: [{id: "usuarios", label: "Usuários"}, {id: "permissoes", label: "Permissões ADM"}, {id: "clientes-api", label: "Clientes API"}, {id: "auditoria", label: "Auditoria"}, {id: "sistema", label: "Sistema"}]
     },
-    { id: "crm-whatsapp", label: "CRM WhatsApp", icon: "💬", abas: [] }
+    { id: "crm-whatsapp", label: "CRM WhatsApp", icon: "💬", abas: [] },
+    { id: "agente", label: "Agente RPA", icon: "🤖",
+      abas: []
+    },
+    { id: "antifraude", label: "Anti-Fraude", icon: "🛡️",
+      abas: []
+    }
 ];
+
+// ==================== COMPONENTE OVERFLOW NAV (módulos + abas com dropdown inteligente) ====================
+const OverflowNav = ({ items, activeId, onSelect, theme = "dark" }) => {
+    const containerRef = React.useRef(null);
+    const measureRef = React.useRef(null);
+    const dropdownRef = React.useRef(null);
+    const [visibleCount, setVisibleCount] = React.useState(items.length);
+    const [dropdownOpen, setDropdownOpen] = React.useState(false);
+
+    const isDark = theme === "dark";
+
+    // Recalcula quantos itens cabem
+    const recalc = React.useCallback(() => {
+        const container = containerRef.current;
+        const measure = measureRef.current;
+        if (!container || !measure) return;
+
+        const moreBtn = 72; // largura reservada para botão "+N mais"
+        const available = container.clientWidth - moreBtn;
+        const children = Array.from(measure.children);
+        let total = 0, count = 0;
+        for (const child of children) {
+            total += child.offsetWidth + 4; // 4 = gap-1
+            if (total <= available) count++;
+            else break;
+        }
+        setVisibleCount(Math.max(1, count));
+    }, [items]);
+
+    React.useLayoutEffect(() => {
+        recalc();
+        const ro = new ResizeObserver(recalc);
+        if (containerRef.current) ro.observe(containerRef.current);
+        return () => ro.disconnect();
+    }, [recalc]);
+
+    // Fecha dropdown ao clicar fora
+    React.useEffect(() => {
+        const handler = (e) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+                setDropdownOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handler);
+        document.addEventListener("touchstart", handler);
+        return () => {
+            document.removeEventListener("mousedown", handler);
+            document.removeEventListener("touchstart", handler);
+        };
+    }, []);
+
+    const visible = items.slice(0, visibleCount);
+    const overflow = items.slice(visibleCount);
+    const overflowHasActive = overflow.some(i => i.id === activeId);
+
+    const btnBase = isDark
+        ? "flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap "
+        : "px-3 sm:px-4 py-2.5 text-sm font-medium transition-all whitespace-nowrap border-b-2 -mb-px ";
+
+    const activeClass = isDark ? "bg-white text-purple-900 shadow" : "border-purple-600 text-purple-700 font-semibold";
+    const inactiveClass = isDark ? "text-white/80 hover:bg-white/10" : "border-transparent text-gray-500 hover:text-gray-800 hover:border-gray-300";
+    const moreActiveClass = isDark ? "bg-white/20 text-white shadow" : "border-purple-600 text-purple-700 font-semibold";
+    const moreInactiveClass = isDark ? "text-white/80 hover:bg-white/10" : "border-transparent text-gray-500 hover:text-gray-800 hover:border-gray-300";
+
+    const renderItem = (item) => React.createElement("button", {
+        key: item.id,
+        onClick: () => { onSelect(item); setDropdownOpen(false); },
+        className: btnBase + (item.id === activeId ? activeClass : inactiveClass)
+    },
+        item.icon && React.createElement("span", null, item.icon),
+        React.createElement("span", { className: isDark ? "hidden sm:inline" : "" }, item.label)
+    );
+
+    return React.createElement("div", { className: "relative flex-1 flex items-center min-w-0" },
+        // Container dos itens visíveis (overflow-hidden só aqui, não no dropdown)
+        React.createElement("div", {
+            ref: containerRef,
+            className: "flex-1 flex items-center gap-1 min-w-0 overflow-hidden"
+        },
+            visible.map(renderItem)
+        ),
+        // Botão +N e dropdown FORA do overflow-hidden para não ser cortado
+        overflow.length > 0 && React.createElement("div", { ref: dropdownRef, className: "relative flex-shrink-0 ml-0.5" },
+            React.createElement("button", {
+                onClick: () => setDropdownOpen(o => !o),
+                className: btnBase + (overflowHasActive ? moreActiveClass : moreInactiveClass) + " flex items-center gap-1"
+            },
+                overflowHasActive && React.createElement("span", {
+                    className: "w-1.5 h-1.5 rounded-full " + (isDark ? "bg-white" : "bg-purple-600")
+                }),
+                "+" + overflow.length + " ▾"
+            ),
+            dropdownOpen && React.createElement("div", {
+                className: "absolute top-full mt-1 right-0 z-[9999] min-w-[180px] rounded-xl shadow-2xl border overflow-hidden " +
+                    (isDark ? "bg-indigo-900 border-white/10" : "bg-white border-gray-200")
+            },
+                overflow.map(item => React.createElement("button", {
+                    key: item.id,
+                    onClick: () => { onSelect(item); setDropdownOpen(false); },
+                    className: "w-full flex items-center gap-2 px-4 py-2.5 text-sm text-left transition-colors " +
+                        (item.id === activeId
+                            ? (isDark ? "bg-white/20 text-white font-semibold" : "bg-purple-50 text-purple-800 font-semibold")
+                            : (isDark ? "text-white/80 hover:bg-white/10" : "text-gray-700 hover:bg-gray-50"))
+                },
+                    item.icon && React.createElement("span", { className: "text-base" }, item.icon),
+                    React.createElement("span", null, item.label),
+                    item.id === activeId && React.createElement("span", {
+                        className: "ml-auto w-2 h-2 rounded-full " + (isDark ? "bg-white" : "bg-purple-600")
+                    })
+                ))
+            )
+        ),
+
+        // Linha de medição oculta (absoluta, fora do fluxo) — overflow-hidden para não vazar na página
+        React.createElement("div", {
+            ref: measureRef,
+            className: "absolute inset-0 flex items-center gap-1 pointer-events-none opacity-0 overflow-hidden",
+            "aria-hidden": "true"
+        },
+            items.map(item => React.createElement("div", {
+                key: item.id,
+                className: btnBase + inactiveClass
+            },
+                item.icon && React.createElement("span", null, item.icon),
+                React.createElement("span", { className: isDark ? "hidden sm:inline" : "" }, item.label)
+            ))
+        )
+    );
+};
 
 // ==================== COMPONENTE NAVEGAÇÃO HORIZONTAL ====================
 const NavegacaoHorizontal = ({ usuario, moduloAtivo, abaAtiva, onNavigate, hasModuleAccess, socialProfile, onLogout, isLoading, lastUpdate, onRefresh }) => {
     const moduloConfig = SISTEMA_MODULOS_CONFIG.find(m => m.id === moduloAtivo);
-    const abas = moduloConfig?.abas || [];
+    const abas = (moduloConfig?.abas || []).filter(function(a) {
+        if (a.id === "permissoes" && usuario?.role !== "admin_master") return false;
+        return true;
+    });
     
     return React.createElement("div", { className: "sticky top-0 z-40" },
         // Header principal
@@ -414,30 +547,18 @@ const NavegacaoHorizontal = ({ usuario, moduloAtivo, abaAtiva, onNavigate, hasMo
                     ),
                     
                     // Navegação de Módulos
-                    React.createElement("nav", { className: "flex-1 flex items-center justify-center gap-1 overflow-x-auto px-2 scrollbar-hide" },
-                        // Botão Home
-                        React.createElement("button", {
-                            onClick: () => onNavigate("home", null),
-                            className: "flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap " +
-                                (moduloAtivo === "home" ? "bg-white text-purple-900 shadow-lg" : "text-white/80 hover:bg-white/10 hover:text-white")
+                    React.createElement(OverflowNav, {
+                        items: [
+                            { id: "__home__", label: "Início", icon: "🏠" },
+                            ...SISTEMA_MODULOS_CONFIG.filter(m => hasModuleAccess(usuario, m.id)).map(m => ({ id: m.id, label: m.label, icon: m.icon, _modulo: m }))
+                        ],
+                        activeId: moduloAtivo === "home" ? "__home__" : moduloAtivo,
+                        onSelect: (item) => {
+                            if (item.id === "__home__") onNavigate("home", null);
+                            else onNavigate(item.id, item._modulo?.abas?.[0]?.id || null);
                         },
-                            React.createElement("span", { className: "text-lg" }, "🏠"),
-                            React.createElement("span", { className: "hidden sm:inline" }, "Início")
-                        ),
-                        
-                        // Módulos
-                        SISTEMA_MODULOS_CONFIG.filter(m => hasModuleAccess(usuario, m.id)).map(modulo =>
-                            React.createElement("button", {
-                                key: modulo.id,
-                                onClick: () => onNavigate(modulo.id, modulo.abas?.[0]?.id || null),
-                                className: "flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap " +
-                                    (moduloAtivo === modulo.id ? "bg-white text-purple-900 shadow-lg" : "text-white/80 hover:bg-white/10 hover:text-white")
-                            },
-                                React.createElement("span", { className: "text-lg" }, modulo.icon),
-                                React.createElement("span", { className: "hidden md:inline" }, modulo.label)
-                            )
-                        )
-                    ),
+                        theme: "dark"
+                    }),
                     
                     // Lado direito: Status + Usuário
                     React.createElement("div", { className: "flex items-center gap-2 flex-shrink-0" },
@@ -485,20 +606,14 @@ const NavegacaoHorizontal = ({ usuario, moduloAtivo, abaAtiva, onNavigate, hasMo
         ),
         
         // Barra de abas do módulo (se houver abas)
-        abas.length > 0 && React.createElement("div", { className: "bg-white shadow border-b" },
-            React.createElement("div", { className: "max-w-full mx-auto px-4" },
-                React.createElement("nav", { className: "flex items-center gap-1 overflow-x-auto py-1 scrollbar-hide" },
-                    abas.map(aba =>
-                        React.createElement("button", {
-                            key: aba.id,
-                            onClick: () => onNavigate(moduloAtivo, aba.id),
-                            className: "px-4 py-2 text-sm font-medium rounded-lg transition-all whitespace-nowrap " +
-                                (abaAtiva === aba.id ? 
-                                    "bg-purple-100 text-purple-800 shadow-sm" : 
-                                    "text-gray-600 hover:bg-gray-100 hover:text-gray-900")
-                        }, aba.label)
-                    )
-                )
+        abas.length > 0 && React.createElement("div", { className: "bg-white border-b border-gray-200 shadow-sm" },
+            React.createElement("div", { className: "max-w-full mx-auto px-2 sm:px-4 flex items-end" },
+                React.createElement(OverflowNav, {
+                    items: abas.map(a => ({ id: a.id, label: a.label })),
+                    activeId: abaAtiva,
+                    onSelect: (item) => onNavigate(moduloAtivo, item.id),
+                    theme: "light"
+                })
             )
         )
     );
@@ -606,7 +721,10 @@ const Sidebar = ({ usuario, moduloAtivo, setModulo, menuAberto, setMenuAberto, s
 // ==================== HEADER COMPACTO GLOBAL ====================
 const HeaderCompacto = ({ usuario, moduloAtivo, abaAtiva, socialProfile, isLoading, lastUpdate, onRefresh, onLogout, onGoHome, onNavigate, onChangeTab }) => {
     const moduloConfig = SISTEMA_MODULOS_CONFIG.find(m => m.id === moduloAtivo);
-    const abas = moduloConfig?.abas || [];
+    const abas = (moduloConfig?.abas || []).filter(function(a) {
+        if (a.id === "permissoes" && usuario?.role !== "admin_master") return false;
+        return true;
+    });
     
     return React.createElement("div", { className: "sticky top-0 z-30" },
         // Header principal
@@ -631,30 +749,18 @@ const HeaderCompacto = ({ usuario, moduloAtivo, abaAtiva, socialProfile, isLoadi
                     ),
                     
                     // Navegação de Módulos - Centro
-                    React.createElement("nav", { className: "flex-1 flex items-center justify-center gap-1 overflow-x-auto px-2" },
-                        // Botão Home
-                        React.createElement("button", {
-                            onClick: onGoHome,
-                            className: "flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap " +
-                                (moduloAtivo === "home" ? "bg-white text-purple-900 shadow" : "text-white/80 hover:bg-white/10")
+                    React.createElement(OverflowNav, {
+                        items: [
+                            { id: "__home__", label: "Início", icon: "🏠" },
+                            ...SISTEMA_MODULOS_CONFIG.filter(m => hasModuleAccess(usuario, m.id)).map(m => ({ id: m.id, label: m.label, icon: m.icon, _modulo: m }))
+                        ],
+                        activeId: moduloAtivo === "home" ? "__home__" : moduloAtivo,
+                        onSelect: (item) => {
+                            if (item.id === "__home__") { if (onGoHome) onGoHome(); }
+                            else if (onNavigate) onNavigate(item.id, item._modulo?.abas?.[0]?.id || null);
                         },
-                            React.createElement("span", null, "🏠"),
-                            React.createElement("span", { className: "hidden sm:inline" }, "Início")
-                        ),
-                        
-                        // Todos os módulos
-                        SISTEMA_MODULOS_CONFIG.filter(m => hasModuleAccess(usuario, m.id)).map(modulo =>
-                            React.createElement("button", {
-                                key: modulo.id,
-                                onClick: () => onNavigate ? onNavigate(modulo.id, modulo.abas?.[0]?.id) : null,
-                                className: "flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap " +
-                                    (moduloAtivo === modulo.id ? "bg-white text-purple-900 shadow" : "text-white/80 hover:bg-white/10")
-                            },
-                                React.createElement("span", null, modulo.icon),
-                                React.createElement("span", { className: "hidden md:inline" }, modulo.label)
-                            )
-                        )
-                    ),
+                        theme: "dark"
+                    }),
                     
                     // Lado direito: Status + Usuário
                     React.createElement("div", { className: "flex items-center gap-2 flex-shrink-0" },
@@ -701,21 +807,15 @@ const HeaderCompacto = ({ usuario, moduloAtivo, abaAtiva, socialProfile, isLoadi
         
         // Barra de abas do módulo (se houver abas, não for home, e não for disponibilidade que tem suas próprias abas internas)
         moduloAtivo !== "home" && moduloAtivo !== "disponibilidade" && abas.length > 0 && onChangeTab && React.createElement("div", { 
-            className: "bg-white shadow-sm border-b"
+            className: "bg-white border-b border-gray-200 shadow-sm"
         },
-            React.createElement("div", { className: "max-w-full mx-auto px-4" },
-                React.createElement("nav", { className: "flex items-center gap-1 overflow-x-auto py-2" },
-                    abas.map(aba =>
-                        React.createElement("button", {
-                            key: aba.id,
-                            onClick: () => onChangeTab ? onChangeTab(aba.id) : null,
-                            className: "px-4 py-2 text-sm font-medium rounded-lg transition-all whitespace-nowrap " +
-                                (abaAtiva === aba.id ? 
-                                    "bg-purple-100 text-purple-800 shadow-sm" : 
-                                    "text-gray-600 hover:bg-gray-100 hover:text-gray-900")
-                        }, aba.label)
-                    )
-                )
+            React.createElement("div", { className: "max-w-full mx-auto px-2 sm:px-4 flex items-end" },
+                React.createElement(OverflowNav, {
+                    items: abas.map(a => ({ id: a.id, label: a.label })),
+                    activeId: abaAtiva,
+                    onSelect: (item) => { if (onChangeTab) onChangeTab(item.id); },
+                    theme: "light"
+                })
             )
         )
     );
@@ -1267,7 +1367,7 @@ const hideLoadingScreen = () => {
             if (!e || "undefined" === e || "null" === e) return c("Link inválido"), void a(!1);
             (async () => {
                 try {
-                    const t = await fetchAuth(`${API_URL}/indicacao-link/validar/${e}`);
+                    const t = await fetch(`${API_URL}/indicacao-link/validar/${e}`);
                     if (!t.ok) return c("Link inválido ou expirado"), void a(!1);
                     const l = await t.json();
                     r(l.indicador)
@@ -1333,7 +1433,7 @@ const hideLoadingScreen = () => {
                 else {
                     i(!0);
                     try {
-                        const t = await fetchAuth(`${API_URL}/indicacao-link/cadastrar`, {
+                        const t = await fetch(`${API_URL}/indicacao-link/cadastrar`, {
                             method: "POST",
                             headers: {
                                 "Content-Type": "application/json"
@@ -1897,7 +1997,7 @@ const hideLoadingScreen = () => {
         }), [qe, Ue] = useState({
             avisos: [],
             loading: !0
-        }), [ze, Be] = useState(null), [Ve, Je] = useState(0), [Qe, He] = useState([]), [Ge, We] = useState(!1), [Ze, Ye] = useState([]), [Ke, Xe] = useState([]), [et, tt] = useState([]), [at, lt] = useState([]), [rt, ot] = useState(!0), [ct, st] = useState(0), [nt, mt] = useState("produtos"), [it, dt] = useState([]), [pt, xt] = useState("lista"), [ut, gt] = useState([]), [bt, Rt] = useState([]), [Et, ht] = useState("home-bi"), [ft, Nt] = useState(null), [yt, vt] = useState([]), [wt, _t] = useState([{
+        }), [ze, Be] = useState(null), [Ve, Je] = useState(0), [Qe, He] = useState([]), [Ge, We] = useState(!1), [Ze, Ye] = useState([]), [Ke, Xe] = useState([]), [et, tt] = useState([]), [at, lt] = useState([]), [rt, ot] = useState(!0), [ct, st] = useState(0), [nt, mt] = useState("produtos"), [it, dt] = useState([]), [pt, xt] = useState("lista"), [ut, gt] = useState([]), [bt, Rt] = useState([]), [Et, ht] = useState("home-bi"), [chatIaMsgs, setChatIaMsgs] = useState([]), [chatIaInput, setChatIaInput] = useState(""), [chatIaLoading, setChatIaLoading] = useState(false), [chatIaSql, setChatIaSql] = useState(null), [chatIaFiltros, setChatIaFiltros] = useState({ cod_cliente: [], nomes_clientes: [], centro_custo: [], data_inicio: "", data_fim: "" }), [chatIaIniciado, setChatIaIniciado] = useState(false), [chatIaClientes, setChatIaClientes] = useState([]), [chatIaCentros, setChatIaCentros] = useState([]), [chatIaFiltrosLoading, setChatIaFiltrosLoading] = useState(false), [chatIaDropAberto, setChatIaDropAberto] = useState(null), [chatIaBuscaCliente, setChatIaBuscaCliente] = useState(""), [chatIaConversas, setChatIaConversas] = useState([]), [chatIaConversaAtual, setChatIaConversaAtual] = useState(null), [chatIaConversasLoading, setChatIaConversasLoading] = useState(false), [chatIaSidebarAberta, setChatIaSidebarAberta] = useState(false), [chatIaExportando, setChatIaExportando] = useState(false), [ft, Nt] = useState(null), [yt, vt] = useState([]), [wt, _t] = useState([{
             km_min: 0,
             km_max: 15,
             prazo_minutos: 45
@@ -2203,6 +2303,175 @@ const hideLoadingScreen = () => {
         
         // Expor função de navegação globalmente para o card de Filas do usuário
         window._tuttsSetModulo = he;
+
+        // ========== COMPONENTE INLINE: Correção de Endereço (fallback se modulo-agente.js não carregar) ==========
+        if (!window._CorrecaoEnderecoInline) {
+            window._CorrecaoEnderecoInline = function CorrecaoEnderecoInline({ usuario, API_URL, fetchAuth, showToast }) {
+                const [form, setForm] = React.useState({ os_numero: '', ponto: '', localizacao_raw: '' });
+                const [gps, setGps] = React.useState(null);
+                const [gpsLoading, setGpsLoading] = React.useState(false);
+                const [gpsErro, setGpsErro] = React.useState('');
+                const [fotoBase64, setFotoBase64] = React.useState(null);
+                const [fotoPreview, setFotoPreview] = React.useState(null);
+                const [loading, setLoading] = React.useState(false);
+                const [fase, setFase] = React.useState('idle');
+                const [detalheErro, setDetalheErro] = React.useState('');
+                const fotoRef = React.useRef(null);
+                const pollingRef = React.useRef(null);
+                const timeoutRef = React.useRef(null);
+
+                function capturarGPS() {
+                    if (!navigator.geolocation) { setGpsErro('GPS não suportado'); return; }
+                    setGpsLoading(true); setGpsErro('');
+                    navigator.geolocation.getCurrentPosition(
+                        (pos) => { setGps({ lat: pos.coords.latitude, lng: pos.coords.longitude }); setGpsLoading(false); },
+                        (err) => { setGpsErro(err.code === 1 ? 'Permissão negada. Ative o GPS.' : err.code === 2 ? 'GPS indisponível.' : 'Timeout. Tente novamente.'); setGpsLoading(false); },
+                        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+                    );
+                }
+                React.useEffect(() => { capturarGPS(); }, []);
+
+                function compressImg(file) {
+                    return new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = (e) => { const img = new Image(); img.onload = () => { const c = document.createElement('canvas'); let w = img.width, h = img.height; if (w > 1200) { h = (h * 1200) / w; w = 1200; } c.width = w; c.height = h; c.getContext('2d').drawImage(img, 0, 0, w, h); resolve(c.toDataURL('image/jpeg', 0.7)); }; img.onerror = reject; img.src = e.target.result; };
+                        reader.onerror = reject; reader.readAsDataURL(file);
+                    });
+                }
+                async function handleFoto(e) {
+                    const file = e.target.files?.[0]; if (!file) return;
+                    if (!file.type.startsWith('image/')) { showToast('Selecione uma imagem', 'error'); return; }
+                    try { const b64 = await compressImg(file); setFotoBase64(b64); setFotoPreview(b64); } catch { showToast('Erro ao processar imagem', 'error'); }
+                }
+
+                function pararPolling() {
+                    if (pollingRef.current) clearInterval(pollingRef.current);
+                    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+                    pollingRef.current = null; timeoutRef.current = null;
+                }
+                React.useEffect(() => () => pararPolling(), []);
+
+                async function handleSubmit() {
+                    if (!form.os_numero.trim() || !form.ponto || !form.localizacao_raw.trim()) { showToast('Preencha todos os campos', 'error'); return; }
+                    if (!gps) { showToast('GPS obrigatório! Ative e clique Atualizar GPS.', 'error'); return; }
+                    if (!fotoBase64) { showToast('Foto da fachada obrigatória!', 'error'); return; }
+                    setLoading(true); setFase('polling'); setDetalheErro('');
+                    try {
+                        const res = await fetchAuth(API_URL + '/agent/corrigir-endereco', {
+                            method: 'POST', headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ os_numero: form.os_numero.trim(), ponto: parseInt(form.ponto, 10), localizacao_raw: form.localizacao_raw.trim(), motoboy_lat: gps.lat, motoboy_lng: gps.lng, foto_fachada: fotoBase64 })
+                        });
+                        const data = await res.json();
+                        if (!res.ok) { setFase('erro'); setDetalheErro(data.erros ? data.erros.join(' ') : (data.erro || 'Erro')); setLoading(false); return; }
+                        // Polling
+                        const solId = data.id;
+                        timeoutRef.current = setTimeout(() => { pararPolling(); setFase('timeout'); setLoading(false); }, 180000);
+                        pollingRef.current = setInterval(async () => {
+                            try {
+                                const r = await fetchAuth(API_URL + '/agent/status/' + solId);
+                                const d = await r.json();
+                                if (d.status === 'sucesso') { pararPolling(); setFase('sucesso'); setLoading(false); }
+                                else if (d.status === 'erro') { pararPolling(); setDetalheErro(d.detalhe_erro || 'Erro'); setFase('erro'); setLoading(false); }
+                            } catch {}
+                        }, 5000);
+                    } catch { setFase('erro'); setDetalheErro('Falha de conexão'); setLoading(false); }
+                }
+
+                function resetar() { pararPolling(); setForm({ os_numero: '', ponto: '', localizacao_raw: '' }); setFase('idle'); setDetalheErro(''); setLoading(false); setFotoBase64(null); setFotoPreview(null); capturarGPS(); }
+
+                const h = React.createElement;
+                if (fase === 'sucesso') return h('div', { className: 'flex flex-col items-center justify-center py-16 px-6 text-center' },
+                    h('div', { className: 'w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mb-6' }, h('span', { className: 'text-4xl' }, '✅')),
+                    h('h2', { className: 'text-2xl font-bold text-green-700 mb-2' }, 'Endereço corrigido!'),
+                    h('p', { className: 'text-gray-500 mb-8' }, 'OS ' + form.os_numero + ' — Ponto ' + form.ponto),
+                    h('button', { onClick: resetar, className: 'px-8 py-3 rounded-xl font-semibold text-white', style: { background: 'linear-gradient(135deg, #550776, #7c3aed)' } }, '+ Nova Correção')
+                );
+                if (fase === 'erro' && !loading) return h('div', { className: 'flex flex-col items-center justify-center py-16 px-6 text-center' },
+                    h('div', { className: 'w-20 h-20 rounded-full bg-red-100 flex items-center justify-center mb-6' }, h('span', { className: 'text-4xl' }, '❌')),
+                    h('h2', { className: 'text-xl font-bold text-red-700 mb-2' }, 'Erro na correção'),
+                    h('p', { className: 'text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-4 mb-8 max-w-md' }, detalheErro),
+                    h('button', { onClick: resetar, className: 'px-8 py-3 rounded-xl font-semibold text-white', style: { background: 'linear-gradient(135deg, #f37601, #ea580c)' } }, '↩ Tentar Novamente')
+                );
+                if (fase === 'timeout') return h('div', { className: 'flex flex-col items-center justify-center py-16 px-6 text-center' },
+                    h('div', { className: 'w-20 h-20 rounded-full bg-yellow-100 flex items-center justify-center mb-6' }, h('span', { className: 'text-4xl' }, '⏱️')),
+                    h('h2', { className: 'text-xl font-bold text-yellow-700 mb-2' }, 'Processamento em andamento'),
+                    h('p', { className: 'text-gray-500 mb-8' }, 'Verifique o histórico em breve.'),
+                    h('button', { onClick: resetar, className: 'px-8 py-3 rounded-xl font-semibold text-white', style: { background: 'linear-gradient(135deg, #550776, #7c3aed)' } }, '+ Nova Correção')
+                );
+
+                const disabled = loading;
+                return h('div', { className: 'max-w-lg mx-auto px-4 py-8' },
+                    h('div', { className: 'text-center mb-6' },
+                        h('p', { className: 'text-gray-500 text-sm' }, 'Informe os dados e tire foto da fachada')
+                    ),
+                    h('div', { className: 'bg-white rounded-2xl shadow-lg border border-gray-100 p-6 space-y-5' },
+                        // GPS
+                        h('div', { className: 'p-3 rounded-xl border ' + (gps ? 'bg-green-50 border-green-200' : gpsErro ? 'bg-red-50 border-red-200' : 'bg-blue-50 border-blue-200') },
+                            h('div', { className: 'flex items-center justify-between' },
+                                h('div', { className: 'flex items-center gap-2' },
+                                    h('span', null, gps ? '📡' : gpsLoading ? '⏳' : '⚠️'),
+                                    h('div', null,
+                                        h('p', { className: 'text-sm font-semibold ' + (gps ? 'text-green-700' : gpsErro ? 'text-red-700' : 'text-blue-700') },
+                                            gpsLoading ? 'Obtendo localização...' : gps ? 'GPS capturado' : 'GPS não disponível'
+                                        ),
+                                        gps && h('p', { className: 'text-xs text-green-600 font-mono' }, gps.lat.toFixed(6) + ', ' + gps.lng.toFixed(6)),
+                                        gpsErro && h('p', { className: 'text-xs text-red-600' }, gpsErro)
+                                    )
+                                ),
+                                h('button', { onClick: capturarGPS, disabled: gpsLoading, className: 'text-xs px-3 py-1.5 rounded-lg font-semibold text-white', style: { background: gps ? '#16a34a' : '#2563eb' } }, gpsLoading ? '...' : '🔄 Atualizar GPS')
+                            )
+                        ),
+                        // OS
+                        h('div', null,
+                            h('label', { className: 'block text-sm font-semibold text-gray-700 mb-1.5' }, 'Número da OS *'),
+                            h('input', { type: 'tel', inputMode: 'numeric', placeholder: 'Ex: 1071614', value: form.os_numero, onChange: (e) => setForm(f => ({ ...f, os_numero: e.target.value })), disabled, className: 'w-full rounded-xl border px-4 py-3 text-gray-900 text-lg font-mono outline-none ' + (disabled ? 'bg-gray-50' : 'border-gray-200 focus:border-purple-500') })
+                        ),
+                        // Ponto
+                        h('div', null,
+                            h('label', { className: 'block text-sm font-semibold text-gray-700 mb-1.5' }, 'Ponto a corrigir *'),
+                            h('select', { value: form.ponto, onChange: (e) => setForm(f => ({ ...f, ponto: e.target.value })), disabled, className: 'w-full rounded-xl border px-4 py-3 text-gray-900 outline-none appearance-none ' + (disabled ? 'bg-gray-50' : 'border-gray-200 focus:border-purple-500') },
+                                h('option', { value: '' }, '— Selecione —'),
+                                [2,3,4,5,6,7].map(p => h('option', { key: p, value: p }, 'Ponto ' + p))
+                            )
+                        ),
+                        // Localização
+                        h('div', null,
+                            h('label', { className: 'block text-sm font-semibold text-gray-700 mb-1.5' }, 'Localização do ponto *'),
+                            h('textarea', { rows: 3, placeholder: 'Cole o link do Maps ou coordenadas\nEx: -16.738952, -49.293811', value: form.localizacao_raw, onChange: (e) => setForm(f => ({ ...f, localizacao_raw: e.target.value })), disabled, className: 'w-full rounded-xl border px-4 py-3 text-sm resize-none outline-none ' + (disabled ? 'bg-gray-50' : 'border-gray-200 focus:border-purple-500') }),
+                            h('div', { className: 'flex items-center justify-between mt-1.5' },
+                                h('p', { className: 'text-xs text-gray-400' }, 'Link do Maps ou coordenadas'),
+                                gps && h('button', { onClick: () => { setForm(f => ({ ...f, localizacao_raw: gps.lat + ', ' + gps.lng })); showToast('Localização GPS inserida!', 'success'); }, disabled, className: 'text-xs px-3 py-1 rounded-lg font-semibold text-purple-700 bg-purple-50 border border-purple-200 hover:bg-purple-100' }, '📍 Usar minha localização')
+                            )
+                        ),
+                        // Foto
+                        h('div', null,
+                            h('label', { className: 'block text-sm font-semibold text-gray-700 mb-1.5' }, '📸 Foto da fachada *'),
+                            h('input', { ref: fotoRef, type: 'file', accept: 'image/*', capture: 'environment', onChange: handleFoto, className: 'hidden' }),
+                            fotoPreview
+                                ? h('div', { className: 'relative' },
+                                    h('img', { src: fotoPreview, className: 'w-full h-48 object-cover rounded-xl border-2 border-green-300' }),
+                                    h('button', { onClick: () => { setFotoBase64(null); setFotoPreview(null); }, className: 'absolute top-2 right-2 w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-lg' }, '✕'),
+                                    h('div', { className: 'absolute bottom-2 left-2 px-2 py-1 bg-green-500 text-white text-xs rounded-lg font-semibold' }, '✓ Foto capturada')
+                                )
+                                : h('button', { onClick: () => fotoRef.current?.click(), disabled, className: 'w-full h-32 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-2 ' + (disabled ? 'border-gray-200 bg-gray-50' : 'border-purple-300 bg-purple-50 hover:bg-purple-100 cursor-pointer') },
+                                    h('span', { className: 'text-3xl' }, '📷'),
+                                    h('span', { className: 'text-sm font-semibold text-purple-700' }, 'Tirar foto da fachada'),
+                                    h('span', { className: 'text-xs text-purple-500' }, 'Obrigatório')
+                                )
+                        ),
+                        // Botão enviar
+                        h('button', { onClick: handleSubmit, disabled, className: 'w-full py-4 rounded-xl font-bold text-white text-lg flex items-center justify-center gap-3 ' + (disabled ? 'opacity-60' : 'hover:opacity-90 active:scale-[0.98]'), style: { background: 'linear-gradient(135deg, #550776, #7c3aed)' } },
+                            loading ? h(React.Fragment, null, h('div', { className: 'w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin' }), 'Processando...') : h(React.Fragment, null, '🚀 Enviar Correção')
+                        )
+                    ),
+                    h('div', { className: 'mt-4 space-y-2' },
+                        h('div', { className: 'flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl' }, h('span', { className: 'text-sm' }, '⚠️'), h('p', { className: 'text-xs text-amber-700' }, 'Ponto 1 (coleta) não pode ser alterado. Apenas pontos 2 a 7.')),
+                        h('div', { className: 'flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-xl' }, h('span', { className: 'text-sm' }, '📏'), h('p', { className: 'text-xs text-blue-700' }, 'Seu GPS será validado. Máximo 2 km do ponto.'))
+                    ),
+                    fase === 'polling' && h('div', { className: 'mt-6 flex items-center gap-3 justify-center text-gray-500 text-sm' }, h('div', { className: 'w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full animate-spin' }), 'Aguardando confirmação do robô...')
+                );
+            };
+        }
         
         // ==================== FUNÇÃO DE NAVEGAÇÃO DO SIDEBAR ====================
         const navegarSidebar = (moduloId, abaId) => {
@@ -3164,13 +3433,36 @@ const hideLoadingScreen = () => {
                                 v(prev => ({ ...prev, solicitacoes: (prev.solicitacoes || 0) + 1, validacao: (prev.validacao || 0) + 1 }));
                                 Ca(); ja(`🔔 Novo saque de ${data.data.user_name || data.data.user_cod}!`, "info");
                             } else if (data.event === 'WITHDRAWAL_UPDATE') {
-                                U(prev => prev.map(w => w.id === data.data.id ? { ...w, status: data.data.status } : w));
+                                U(prev => prev.map(w => w.id === data.data.id ? { 
+                                    ...w, 
+                                    status: data.data.status,
+                                    admin_name: data.data.admin_name || w.admin_name,
+                                    approved_at: data.data.approved_at || w.approved_at,
+                                    reject_reason: data.data.reject_reason || w.reject_reason,
+                                } : w));
                                 if (['aprovado', 'aprovado_gratuidade', 'rejeitado'].includes(data.data.status)) {
                                     v(prev => ({ ...prev, solicitacoes: Math.max(0, (prev.solicitacoes || 0) - 1), validacao: Math.max(0, (prev.validacao || 0) - 1) }));
                                 }
                             } else if (data.event === 'MY_WITHDRAWAL_UPDATE') {
-                                if (data.data.status === 'aprovado' || data.data.status === 'aprovado_gratuidade') { Ca(); ja('✅ Seu saque foi aprovado!', 'success'); }
-                                else if (data.data.status === 'rejeitado') { ja(`❌ Saque rejeitado: ${data.data.reject_reason || 'Sem motivo'}`, 'error'); }
+                                // Atualizar status do saque em M para liberar/bloquear cooldown em tempo real
+                                O(prev => prev.map(w => w.id === data.data.id ? { ...w, status: data.data.status, reject_reason: data.data.reject_reason } : w));
+                                if (data.data.status === 'aprovado' || data.data.status === 'aprovado_gratuidade') {
+                                    Ca();
+                                    ja('✅ Seu saque foi aprovado! Você já pode solicitar um novo.', 'success');
+                                    // Recarregar dados completos para atualizar timer, saldo e histórico
+                                    setTimeout(() => {
+                                        fetchAuth(`${API_URL}/withdrawals/user/${l.cod_profissional || l.codProfissional}`).then(r => r.ok && r.json()).then(d => { if (d) O(d); }).catch(() => {});
+                                        fetchAuth(`${API_URL}/gratuities/user/${l.cod_profissional || l.codProfissional}`).then(r => r.ok && r.json()).then(d => { if (d) W(d); }).catch(() => {});
+                                        fetchAuth(`${API_URL}/financial/data/${l.cod_profissional || l.codProfissional}`).then(r => r.ok && r.json()).then(d => { if (d) I(d); }).catch(() => {});
+                                    }, 500);
+                                }
+                                else if (data.data.status === 'rejeitado') {
+                                    ja(`❌ Saque rejeitado: ${data.data.reject_reason || 'Sem motivo'}. Você já pode solicitar novamente.`, 'error');
+                                    // Recarregar dados completos para atualizar timer e histórico
+                                    setTimeout(() => {
+                                        fetchAuth(`${API_URL}/withdrawals/user/${l.cod_profissional || l.codProfissional}`).then(r => r.ok && r.json()).then(d => { if (d) O(d); }).catch(() => {});
+                                    }, 500);
+                                }
                             } else if (data.event === 'AUTH_SUCCESS') { console.log('✅ [WS] Autenticado:', data.role); }
                             else if (data.event === 'AUTH_ERROR') { console.error('❌ [WS] Erro de autenticação:', data.error); setWsConnected(false); }
                         } catch (err) { console.error('❌ [WS] Erro:', err); }
@@ -5395,7 +5687,7 @@ const hideLoadingScreen = () => {
             if (!dataInicio || !dataFim) { setValidacaoData(null); return; }
             setValidacaoLoading(true);
             try {
-                const params = new URLSearchParams({ dataInicio, dataFim, tipoFiltro: tipoFiltro || 'solicitacao', limit: '500' });
+                const params = new URLSearchParams({ dataInicio, dataFim, tipoFiltro: tipoFiltro || 'solicitacao', limit: '999999' });
                 const resp = await fetchAuth(`${API_URL}/withdrawals?${params}`);
                 if (resp.ok) setValidacaoData(await resp.json());
             } catch (e) { console.error('Erro validação:', e); }
@@ -5404,7 +5696,7 @@ const hideLoadingScreen = () => {
             if (!dataInicio) { setConciliacaoData(null); return; }
             setConciliacaoLoading(true);
             try {
-                const params = new URLSearchParams({ dataInicio, dataFim: dataFim || dataInicio, tipoFiltro: tipoFiltro || 'solicitacao', limit: '500' });
+                const params = new URLSearchParams({ dataInicio, dataFim: dataFim || dataInicio, tipoFiltro: tipoFiltro || 'solicitacao', limit: '999999' });
                 const resp = await fetchAuth(`${API_URL}/withdrawals?${params}`);
                 if (resp.ok) {
                     const data = await resp.json();
@@ -7098,7 +7390,11 @@ const hideLoadingScreen = () => {
                                     todo: !hasConfig || allowedMods.includes("todo"),
                                     filas: !hasConfig || allowedMods.includes("filas"),
                                     social: !hasConfig || allowedMods.includes("social"),
-                                    config: !hasConfig || allowedMods.includes("config")
+                                    cs: !hasConfig || allowedMods.includes("cs"),
+                                    config: !hasConfig || allowedMods.includes("config"),
+                                    "crm-whatsapp": !hasConfig || allowedMods.includes("crm-whatsapp"),
+                                    agente: !hasConfig || allowedMods.includes("agente"),
+                                    antifraude: !hasConfig || allowedMods.includes("antifraude")
                                 },
                                 abas: allowedTabs
                             };
@@ -7232,12 +7528,13 @@ const hideLoadingScreen = () => {
             }
             const t = new Date,
                 a = new Date(t.getTime() - 36e5),
-                // Filtrar apenas saques não rejeitados na última hora
-                r = M.filter(e => new Date(e.created_at) >= a && e.status !== "rejeitado");
+                // Só bloqueia se tiver saque aguardando aprovação (pendente) na última hora
+                // Aprovado ou rejeitado = libera para nova solicitação
+                r = M.filter(e => new Date(e.created_at) >= a && (e.status === "pending" || e.status === "aguardando_aprovacao"));
             if (r.length >= 1) {
                 const e = new Date(new Date(r[0].created_at).getTime() + 36e5),
                     a = Math.ceil((e - t) / 6e4);
-                return void ja(`⚠️ Permitido apenas 1 saque por hora! Aguarde ${a} minutos para solicitar novamente.`, "error")
+                return void ja(`⚠️ Você já possui um saque aguardando aprovação! Aguarde a aprovação ou rejeição antes de solicitar novamente.`, "error")
             }
             // Com 1 saque por hora, não precisa verificar valor repetido
             s(!0);
@@ -7252,7 +7549,9 @@ const hideLoadingScreen = () => {
                         userName: T.full_name,
                         cpf: T.cpf,
                         pixKey: T.pix_key,
-                        requestedAmount: e
+                        requestedAmount: e,
+                        // Passar a gratuidade escolhida pelo motoboy (se houver)
+                        selectedGratuityId: p.selectedGratuityId || null
                     })
                 });
                 if (!response.ok) {
@@ -7264,7 +7563,8 @@ const hideLoadingScreen = () => {
                 ja("✅ Saque solicitado!", "success"), 
                 x({
                     ...p,
-                    withdrawAmount: ""
+                    withdrawAmount: "",
+                    selectedGratuityId: null
                 }), 
                 // Recarrega saques e saldo (o cálculo automático subtrai pendentes)
                 Oa(), 
@@ -7295,6 +7595,10 @@ const hideLoadingScreen = () => {
             }));
             
             try {
+                // =============== OPTIMISTIC UPDATE: Atualizar UI instantaneamente ===============
+                const statusAnterior = q.find(w => w.id === e)?.status;
+                U(prev => prev.map(w => w.id === e ? { ...w, status: t } : w));
+                
                 // Calcular data do débito baseado no toggle de acerto
                 let dataDebito = null;
                 console.log("🔍 Toggle acertoRealizado:", acertoRealizado);
@@ -7338,6 +7642,10 @@ const hideLoadingScreen = () => {
                 const data = await response.json();
                 
                 if (!response.ok) {
+                    // =============== REVERTER OPTIMISTIC UPDATE EM CASO DE ERRO ===============
+                    if (statusAnterior !== undefined) {
+                        U(prev => prev.map(w => w.id === e ? { ...w, status: statusAnterior } : w));
+                    }
                     // =============== TRATAMENTO DE ERROS ESPECÍFICOS ===============
                     if (response.status === 400 && data.error?.includes('já foi aprovado')) {
                         ja("⚠️ Este saque já foi aprovado anteriormente!", "warning");
@@ -7388,6 +7696,10 @@ const hideLoadingScreen = () => {
                 
             } catch (err) {
                 console.error("❌ Erro ao atualizar status:", err);
+                // Reverter optimistic update em caso de erro de conexão
+                if (statusAnterior !== undefined) {
+                    U(prev => prev.map(w => w.id === e ? { ...w, status: statusAnterior } : w));
+                }
                 ja("Erro de conexão. Tente novamente.", "error");
                 
                 // Limpar estado de processamento em caso de erro
@@ -7848,6 +8160,36 @@ const hideLoadingScreen = () => {
                     )
                 );
             }
+            // Módulo Agente RPA para user
+            if ("agente" === Ee) {
+                if (typeof window.ModuloAgenteComponent !== 'undefined') {
+                    return React.createElement(window.ModuloAgenteComponent, {
+                        usuario: l,
+                        API_URL: API_URL,
+                        fetchAuth: fetchAuth,
+                        HeaderCompacto: HeaderCompacto,
+                        showToast: ja,
+                        he: he,
+                        Ee: Ee,
+                        f: f,
+                        E: E,
+                        n: n,
+                        i: i,
+                        onLogout: () => o(null),
+                        socialProfile: socialProfile,
+                        isLoading: n,
+                        lastUpdate: E,
+                        onRefresh: ul,
+                        onNavigate: navegarSidebar,
+                    });
+                }
+                return React.createElement("div", { className: "min-h-screen bg-gray-50 flex items-center justify-center" },
+                    React.createElement("div", { className: "text-center" },
+                        React.createElement("div", { className: "animate-spin w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4" }),
+                        React.createElement("p", { className: "text-gray-600" }, "Carregando módulo Agente RPA...")
+                    )
+                );
+            }
             return React.createElement("div", {
             className: "min-h-screen bg-gray-50"
         }, i && React.createElement(Toast, i), n && React.createElement(LoadingOverlay, null), 
@@ -8148,7 +8490,7 @@ const hideLoadingScreen = () => {
         React.createElement("nav", {
             className: "bg-gradient-to-r from-purple-800 to-purple-900 shadow-lg"
         }, React.createElement("div", {
-            className: "max-w-7xl mx-auto px-4 py-4 flex justify-between items-center"
+            className: "max-w-7xl mx-auto px-3 sm:px-4 py-3 flex justify-between items-center gap-2"
         }, React.createElement("div", {className: "flex items-center gap-3"}, 
             // Foto de perfil
             socialProfile?.profile_photo ? React.createElement("img", {
@@ -8180,12 +8522,12 @@ const hideLoadingScreen = () => {
             onClick: () => o(null),
             className: "px-4 py-2 bg-white/10 text-white hover:bg-white/20 rounded-lg"
         }, "Sair")))), !p.userTab && React.createElement("div", {
-            className: "max-w-2xl mx-auto p-6"
+            className: "max-w-2xl mx-auto px-3 py-4 sm:p-6"
         }, 
         // ========== BOTÃO CONHEÇA A TUTTS ==========
         React.createElement("button", {
             onClick: () => setSobreTuttsAberto(true),
-            className: "w-full mb-6 rounded-2xl p-5 flex items-center gap-4 shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] group",
+            className: "w-full mb-4 sm:mb-6 rounded-2xl p-4 sm:p-5 flex items-center gap-3 sm:gap-4 shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] group",
             style: { background: "linear-gradient(135deg, #550976 0%, #6b1190 50%, #550976 100%)" }
         },
             React.createElement("div", {
@@ -8569,9 +8911,9 @@ const hideLoadingScreen = () => {
             className: "space-y-4"
         }, React.createElement("button", {
             onClick: function() { if(typeof window._tuttsSetModulo === 'function') window._tuttsSetModulo("filas"); },
-            className: "w-full bg-gradient-to-r from-cyan-500 to-teal-500 rounded-2xl shadow-lg p-6 flex items-center gap-4 hover:shadow-xl transition-all hover:scale-[1.02]"
+            className: "w-full bg-gradient-to-r from-cyan-500 to-teal-500 rounded-2xl shadow-lg p-4 sm:p-6 flex items-center gap-3 sm:gap-4 hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98]"
         }, React.createElement("div", {
-            className: "w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center text-3xl"
+            className: "w-12 h-12 sm:w-16 sm:h-16 bg-white/20 rounded-xl flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0"
         }, "👥"), React.createElement("div", {
             className: "text-left flex-1"
         }, React.createElement("h3", {
@@ -8593,9 +8935,9 @@ const hideLoadingScreen = () => {
                 ...p,
                 userTab: "promo-novatos"
             })},
-            className: "w-full bg-white rounded-2xl shadow-lg p-6 flex items-center gap-4 hover:shadow-xl transition-all hover:scale-[1.02] border-l-4 border-orange-500"
+            className: "w-full bg-white rounded-2xl shadow-lg p-4 sm:p-6 flex items-center gap-3 sm:gap-4 hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98] border-l-4 border-orange-500"
         }, React.createElement("div", {
-            className: "w-16 h-16 bg-orange-100 rounded-xl flex items-center justify-center text-3xl"
+            className: "w-12 h-12 sm:w-16 sm:h-16 bg-orange-100 rounded-xl flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0"
         }, "🚀"), React.createElement("div", {
             className: "text-left flex-1"
         }, React.createElement("h3", {
@@ -8615,9 +8957,9 @@ const hideLoadingScreen = () => {
                 ...p,
                 userTab: "solicitacoes"
             }),
-            className: "w-full bg-white rounded-2xl shadow-lg p-6 flex items-center gap-4 hover:shadow-xl transition-all hover:scale-[1.02] border-l-4 border-purple-600"
+            className: "w-full bg-white rounded-2xl shadow-lg p-4 sm:p-6 flex items-center gap-3 sm:gap-4 hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98] border-l-4 border-purple-600"
         }, React.createElement("div", {
-            className: "w-16 h-16 bg-purple-100 rounded-xl flex items-center justify-center text-3xl"
+            className: "w-12 h-12 sm:w-16 sm:h-16 bg-purple-100 rounded-xl flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0"
         }, "📋"), React.createElement("div", {
             className: "text-left flex-1"
         }, React.createElement("h3", {
@@ -8627,13 +8969,26 @@ const hideLoadingScreen = () => {
         }, "Retornos e Pedágios")), React.createElement("span", {
             className: "text-purple-400 text-2xl"
         }, "›")), React.createElement("button", {
+            onClick: () => x({ ...p, userTab: "correcao-endereco" }),
+            className: "w-full bg-white rounded-2xl shadow-lg p-4 sm:p-6 flex items-center gap-3 sm:gap-4 hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98] border-l-4 border-orange-500"
+        }, React.createElement("div", {
+            className: "w-12 h-12 sm:w-16 sm:h-16 bg-orange-100 rounded-xl flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0"
+        }, "📍"), React.createElement("div", {
+            className: "text-left flex-1"
+        }, React.createElement("h3", {
+            className: "text-lg font-bold text-gray-800"
+        }, "Correção de Endereço"), React.createElement("p", {
+            className: "text-sm text-gray-500"
+        }, "Corrigir localização de ponto de entrega")), React.createElement("span", {
+            className: "text-orange-400 text-2xl"
+        }, "›")), React.createElement("button", {
             onClick: () => x({
                 ...p,
                 userTab: "saque"
             }),
-            className: "w-full bg-white rounded-2xl shadow-lg p-6 flex items-center gap-4 hover:shadow-xl transition-all hover:scale-[1.02] border-l-4 border-green-600"
+            className: "w-full bg-white rounded-2xl shadow-lg p-4 sm:p-6 flex items-center gap-3 sm:gap-4 hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98] border-l-4 border-green-600"
         }, React.createElement("div", {
-            className: "w-16 h-16 bg-green-100 rounded-xl flex items-center justify-center text-3xl"
+            className: "w-12 h-12 sm:w-16 sm:h-16 bg-green-100 rounded-xl flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0"
         }, "💰"), React.createElement("div", {
             className: "text-left flex-1"
         }, React.createElement("h3", {
@@ -8647,9 +9002,9 @@ const hideLoadingScreen = () => {
                 ...p,
                 userTab: "indicacoes"
             }),
-            className: "w-full bg-white rounded-2xl shadow-lg p-6 flex items-center gap-4 hover:shadow-xl transition-all hover:scale-[1.02] border-l-4 border-blue-600"
+            className: "w-full bg-white rounded-2xl shadow-lg p-4 sm:p-6 flex items-center gap-3 sm:gap-4 hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98] border-l-4 border-blue-600"
         }, React.createElement("div", {
-            className: "w-16 h-16 bg-blue-100 rounded-xl flex items-center justify-center text-3xl"
+            className: "w-12 h-12 sm:w-16 sm:h-16 bg-blue-100 rounded-xl flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0"
         }, "👥"), React.createElement("div", {
             className: "text-left flex-1"
         }, React.createElement("h3", {
@@ -8665,9 +9020,9 @@ const hideLoadingScreen = () => {
                 ...p,
                 userTab: "seguro-iza"
             }),
-            className: "w-full bg-white rounded-2xl shadow-lg p-6 flex items-center gap-4 hover:shadow-xl transition-all hover:scale-[1.02] border-l-4 border-cyan-500"
+            className: "w-full bg-white rounded-2xl shadow-lg p-4 sm:p-6 flex items-center gap-3 sm:gap-4 hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98] border-l-4 border-cyan-500"
         }, React.createElement("div", {
-            className: "w-16 h-16 bg-cyan-100 rounded-xl flex items-center justify-center text-3xl"
+            className: "w-12 h-12 sm:w-16 sm:h-16 bg-cyan-100 rounded-xl flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0"
         }, "🛡️"), React.createElement("div", {
             className: "text-left flex-1"
         }, React.createElement("h3", {
@@ -8683,9 +9038,9 @@ const hideLoadingScreen = () => {
                     userTab: "loja"
                 })
             },
-            className: "w-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl shadow-lg p-6 flex items-center gap-4 hover:shadow-xl transition-all hover:scale-[1.02]"
+            className: "w-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl shadow-lg p-4 sm:p-6 flex items-center gap-3 sm:gap-4 hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98]"
         }, React.createElement("div", {
-            className: "w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center text-3xl"
+            className: "w-12 h-12 sm:w-16 sm:h-16 bg-white/20 rounded-xl flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0"
         }, "🛒"), React.createElement("div", {
             className: "text-left flex-1"
         }, React.createElement("h3", {
@@ -8695,7 +9050,7 @@ const hideLoadingScreen = () => {
         }, "Ofertas exclusivas com abatimento no saldo!")), React.createElement("span", {
             className: "text-white/60 text-2xl"
         }, "›"))), React.createElement("div", {
-            className: "mt-8 grid grid-cols-3 gap-4"
+            className: "mt-6 sm:mt-8 grid grid-cols-3 gap-2 sm:gap-4"
         }, React.createElement("div", {
             className: "bg-white rounded-xl p-4 text-center shadow"
         }, React.createElement("p", {
@@ -8715,9 +9070,9 @@ const hideLoadingScreen = () => {
         }, re.filter(e => "pendente" === e.status).length), React.createElement("p", {
             className: "text-xs text-gray-500"
         }, "Indicações Pendentes")))), p.userTab && React.createElement("div", {
-            className: "max-w-4xl mx-auto p-6"
+            className: "max-w-4xl mx-auto px-3 py-4 sm:p-6"
         }, React.createElement("div", {
-            className: "flex items-center gap-4 mb-6"
+            className: "flex items-center gap-3 mb-4 sm:mb-6"
         }, React.createElement("button", {
             onClick: () => x({
                 ...p,
@@ -8725,9 +9080,9 @@ const hideLoadingScreen = () => {
             }),
             className: "p-2 bg-white rounded-lg shadow hover:bg-gray-50"
         }, "← Voltar"), React.createElement("h1", {
-            className: "text-xl font-bold text-gray-800"
-        }, "solicitacoes" === p.userTab && "📋 Solicitar Ajuste", "saque" === p.userTab && "💰 Saque Emergencial", "indicacoes" === p.userTab && "👥 Promoção de Indicação", "promo-novatos" === p.userTab && "🚀 Promoções Novatos", "seguro-iza" === p.userTab && "🛡️ Seguro de Vida - IZA", "loja" === p.userTab && "🛒 Lojinha Tutts")), "solicitacoes" === p.userTab && React.createElement(React.Fragment, null, React.createElement("div", {
-            className: "bg-white rounded-xl shadow p-6 mb-6"
+            className: "text-base sm:text-xl font-bold text-gray-800"
+        }, "solicitacoes" === p.userTab && "📋 Solicitar Ajuste", "saque" === p.userTab && "💰 Saque Emergencial", "indicacoes" === p.userTab && "👥 Promoção de Indicação", "promo-novatos" === p.userTab && "🚀 Promoções Novatos", "seguro-iza" === p.userTab && "🛡️ Seguro de Vida - IZA", "loja" === p.userTab && "🛒 Lojinha Tutts", "correcao-endereco" === p.userTab && "📍 Correção de Endereço")), "solicitacoes" === p.userTab && React.createElement(React.Fragment, null, React.createElement("div", {
+            className: "bg-white rounded-xl shadow p-4 sm:p-6 mb-4 sm:mb-6"
         }, React.createElement("h2", {
             className: "text-lg font-semibold mb-4"
         }, "📝 Enviar OS"), React.createElement("div", {
@@ -8821,9 +9176,11 @@ const hideLoadingScreen = () => {
             className: "border rounded-lg p-4"
         }, React.createElement("div", {
             className: "flex justify-between items-start"
-        }, React.createElement("div", null, React.createElement("p", {
-            className: "font-mono text-lg font-bold"
-        }, "OS: ", e.ordemServico), React.createElement("p", {
+        }, React.createElement("div", null, React.createElement("button", {
+            className: "font-mono text-lg font-bold flex items-center gap-1.5 group hover:text-purple-700 transition-colors cursor-pointer text-left",
+            title: "Clique para copiar o número da OS",
+            onClick: () => { navigator.clipboard.writeText(String(e.ordemServico)); ja("📋 OS " + e.ordemServico + " copiada!", "success"); }
+        }, "OS: ", e.ordemServico, React.createElement("span", { className: "opacity-0 group-hover:opacity-100 transition-opacity text-sm text-purple-400" }, "📋")), React.createElement("p", {
             className: "text-sm text-gray-600"
         }, e.motivo)), React.createElement("span", {
             className: "px-3 py-1 rounded-full text-xs font-bold " + ("aprovado" === e.status ? "bg-green-500 text-white" : "rejeitado" === e.status ? "bg-red-500 text-white" : "bg-yellow-500 text-white")
@@ -9010,16 +9367,20 @@ const hideLoadingScreen = () => {
                 className: "font-semibold text-red-600"
             }, l.filter(e => "rejeitado" === e.status).length)))))
         })()), (!p.saqueTab || "solicitar" === p.saqueTab) && React.createElement(React.Fragment, null, (() => {
-            const e = G.find(e => "ativa" === e.status && e.remaining > 0),
+            // Lista de gratuidades ativas disponíveis
+            const gratuidadesAtivas = G.filter(e => "ativa" === e.status && e.remaining > 0),
+                // Gratuidade selecionada (usa a do state ou a primeira disponível)
+                e = gratuidadesAtivas.find(g => g.id === p.selectedGratuityId) || gratuidadesAtivas[0] || null,
                 t = !!e,
                 a = e ? parseFloat(e.value) : 0,
                 l = parseFloat(p.withdrawAmount) || 0,
                 r = t && l > a,
                 o = new Date,
                 s = new Date(o.getTime() - 36e5),
-                // Filtrar apenas saques pendentes ou aprovados na última hora (excluir rejeitados)
-                n = M.filter(e => new Date(e.created_at) >= s && e.status !== "rejeitado"),
-                // Limite de 1 saque por hora
+                // Bloquear apenas se houver saque ainda aguardando aprovação (pendente)
+                // Aprovado ou rejeitado = libera imediatamente para nova solicitação
+                n = M.filter(e => new Date(e.created_at) >= s && (e.status === "pending" || e.status === "aguardando_aprovacao")),
+                // Limite de 1 saque por hora (apenas pendentes bloqueiam)
                 m = Math.max(0, 1 - n.length),
                 i = n.map(e => parseFloat(e.requested_amount)),
                 d = i.includes(l) && l > 0;
@@ -9094,7 +9455,18 @@ const hideLoadingScreen = () => {
                 className: "bg-green-50 border border-green-300 rounded-lg p-4"
             }, React.createElement("p", {
                 className: "text-green-800 font-semibold"
-            }, "🎁 Você possui gratuidade ativa!"), React.createElement("p", {
+            }, "🎁 Você possui gratuidade ativa!"),
+            gratuidadesAtivas.length > 1 && React.createElement("div", { className: "mt-2 mb-1" },
+                React.createElement("label", { className: "block text-xs text-green-700 font-semibold mb-1" }, "Escolher qual usar:"),
+                React.createElement("select", {
+                    value: p.selectedGratuityId || e?.id || "",
+                    onChange: ev => x({ ...p, selectedGratuityId: parseInt(ev.target.value) }),
+                    className: "w-full border border-green-400 rounded-lg px-3 py-2 text-sm bg-white text-green-800 font-medium"
+                }, gratuidadesAtivas.map(g => React.createElement("option", { key: g.id, value: g.id },
+                    `R$ ${parseFloat(g.value).toFixed(2).replace(".", ",")} — ${g.remaining} uso(s)${g.descricao ? ` — ${g.descricao}` : ""}`
+                )))
+            ),
+            React.createElement("p", {
                 className: "text-green-700 text-sm mt-1"
             }, "Valor máximo permitido: ", React.createElement("strong", null, er(a))), React.createElement("p", {
                 className: "text-green-600 text-xs mt-1"
@@ -10609,7 +10981,7 @@ const hideLoadingScreen = () => {
                     else ja("Selecione um tamanho", "error")
             },
             className: "flex-1 px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-xl font-semibold hover:opacity-90"
-        }, "✅ Confirmar Pedido"))))))));
+        }, "✅ Confirmar Pedido"))))))), "correcao-endereco" === p.userTab && (typeof window.ModuloAgenteComponent !== 'undefined' ? React.createElement(window.ModuloAgenteComponent, { usuario: l, API_URL: API_URL, fetchAuth: fetchAuth, HeaderCompacto: null, showToast: ja, he: he, Ee: Ee }) : React.createElement(window._CorrecaoEnderecoInline, { usuario: l, API_URL: API_URL, fetchAuth: fetchAuth, showToast: ja })));
         }
         // Verificar permissão para Financeiro (admin comum)
         const canAccessFinanceiro = hasModuleAccess(l, "financeiro");
@@ -12870,6 +13242,64 @@ const hideLoadingScreen = () => {
             }
         }
 
+
+        // ========== MÓDULO AGENTE RPA (CARREGAMENTO EXTERNO) ==========
+        const canAccessAgente = hasModuleAccess(l, "agente");
+        if (canAccessAgente && "agente" === Ee) {
+            if (typeof window.ModuloAgenteComponent !== 'undefined') {
+                return React.createElement(window.ModuloAgenteComponent, {
+                    usuario: l,
+                    API_URL: API_URL,
+                    fetchAuth: fetchAuth,
+                    HeaderCompacto: HeaderCompacto,
+                    showToast: ja,
+                    he: he,
+                    Ee: Ee,
+                    f: f,
+                    E: E,
+                    n: n,
+                    i: i,
+                    onLogout: () => o(null),
+                    socialProfile: socialProfile,
+                    isLoading: n,
+                    lastUpdate: E,
+                    onRefresh: ul,
+                    onNavigate: navegarSidebar,
+                });
+            } else {
+                return React.createElement("div", { className: "min-h-screen bg-gray-50 flex items-center justify-center" },
+                    React.createElement("div", { className: "text-center" },
+                        React.createElement("div", { className: "animate-spin w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4" }),
+                        React.createElement("p", { className: "text-gray-600" }, "Carregando módulo Agente RPA...")
+                    )
+                );
+            }
+        }
+        // ========== MÓDULO ANTI-FRAUDE (CARREGAMENTO EXTERNO) ==========
+        const canAccessAntiFraude = hasModuleAccess(l, "antifraude");
+        if (canAccessAntiFraude && "antifraude" === Ee) {
+            if (typeof window.ModuloAntiFraudeComponent !== 'undefined') {
+                return React.createElement(window.ModuloAntiFraudeComponent, {
+                    usuario: l,
+                    API_URL: API_URL,
+                    fetchAuth: fetchAuth,
+                    HeaderCompacto: HeaderCompacto,
+                    showToast: ja,
+                    he: he,
+                    Ee: Ee,
+                    onLogout: () => o(null),
+                    socialProfile: socialProfile,
+                    onNavigate: navegarSidebar,
+                });
+            } else {
+                return React.createElement("div", { className: "min-h-screen bg-gray-50 flex items-center justify-center" },
+                    React.createElement("div", { className: "text-center" },
+                        React.createElement("div", { className: "animate-spin w-12 h-12 border-4 border-red-500 border-t-transparent rounded-full mx-auto mb-4" }),
+                        React.createElement("p", { className: "text-gray-600" }, "Carregando módulo Anti-Fraude...")
+                    )
+                );
+            }
+        }
         // ========== MÓDULO CONFIGURAÇÕES (CARREGAMENTO EXTERNO) ==========
         const canAccessConfig = hasModuleAccess(l, "config");
         if (canAccessConfig && "config" === Ee) {
@@ -16311,10 +16741,16 @@ const hideLoadingScreen = () => {
                                 nome_cliente: e["Nome cliente"],
                                 empresa: e.Empresa,
                                 nome_fantasia: e["Nome fantasia"],
+                                cpf_cnpj: e["CPF/CNPJ"],
+                                solicitante: e.Solicitante,
+                                filial: e.Filial,
                                 centro_custo: e["Centro custo"],
                                 cidade_p1: e["Cidade P1"],
                                 endereco: e["Endereço"],
+                                obs_endereco: e["Obs endereço"] || e["Obs Endereço"],
                                 bairro: e.Bairro,
+                                num_nota: e["Nº nota"] || e["Nº Nota"] || e["N nota"],
+                                valor_nota: e["Valor nota"] || e["Valor Nota"],
                                 cidade: e.Cidade,
                                 estado: e.Estado,
                                 cod_prof: e["Cód. prof."],
@@ -16323,19 +16759,30 @@ const hideLoadingScreen = () => {
                                 data_hora_alocado: e["Data/Hora Alocado"],
                                 data_solicitado: e["Data solicitado"],
                                 hora_solicitado: e["Hora solicitado"],
+                                agendado: e.Agendado,
+                                info: e.Info,
+                                obs_os: e["Obs O.S"] || e["Obs OS"],
                                 data_chegada: e["Data Chegada"],
                                 hora_chegada: e["Hora Chegada"],
                                 data_saida: e["Data Saida"],
                                 hora_saida: e["Hora Saida"],
+                                assinatura_nome: e["Assinatura - Nome"],
+                                assinatura_rg: e["Assinatura - RG"],
                                 latitude: e.Latitude || e.latitude || e.Lat || e.lat,
                                 longitude: e.Longitude || e.longitude || e.Long || e.lng,
                                 categoria: e.Categoria,
                                 valor: e.Valor,
                                 distancia: e["Distância"],
                                 valor_prof: e["Valor prof."],
+                                valor_liquido: e["Valor liquido"] || e["Valor Liquido"] || e["Valor líquido"],
                                 finalizado: e.Finalizado,
+                                tempo_espera_minutos: e["Tempo de espera (minutos)"] || e["Tempo espera"],
+                                valor_espera: e["Valor da espera"] || e["Valor espera"],
                                 execucao_comp: e["Execução Comp."],
                                 execucao_espera: e["Execução - Espera"],
+                                execucao_espera_p1: e["Execução - Espera P1"],
+                                nota: e.Nota,
+                                tipo_pagamento: e["Tipo de Pagamento"] || e["Tipo Pagamento"],
                                 status: e.Status,
                                 motivo: e.Motivo,
                                 ocorrencia: e["Ocorrência"],
@@ -17922,6 +18369,557 @@ const hideLoadingScreen = () => {
                 )
             ),
             
+            // ========== ABA CHAT IA ==========
+            // ========== ABA CHAT IA ==========
+            "chat-ia" === Et && React.createElement("div", {className: "space-y-4", onClick: function(e) { if (!e.target.closest('[class*="relative"]') && chatIaDropAberto) setChatIaDropAberto(null); }},
+                // Header
+                React.createElement("div", {className: "bg-gradient-to-r from-emerald-600 to-teal-600 rounded-xl p-6 text-white"},
+                    React.createElement("div", {className: "flex items-center justify-between"},
+                        React.createElement("div", {className: "flex items-center gap-4"},
+                            React.createElement("div", {className: "w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center text-3xl"}, "💬"),
+                            React.createElement("div", null,
+                                React.createElement("h2", {className: "text-2xl font-bold"}, "Chat IA — Analista de Dados"),
+                                React.createElement("p", {className: "text-emerald-100 mt-1"}, chatIaIniciado 
+                                    ? (chatIaFiltros.nomes_clientes && chatIaFiltros.nomes_clientes.length > 0 ? "📌 " + (chatIaFiltros.nomes_clientes.length <= 2 ? chatIaFiltros.nomes_clientes.join(", ") : chatIaFiltros.nomes_clientes.length + " clientes") : "📌 Todos os clientes") + (chatIaFiltros.centro_custo && chatIaFiltros.centro_custo.length > 0 ? " · " + (chatIaFiltros.centro_custo.length <= 2 ? chatIaFiltros.centro_custo.join(", ") : chatIaFiltros.centro_custo.length + " centros") : "") + (chatIaFiltros.data_inicio ? " · " + chatIaFiltros.data_inicio + " a " + chatIaFiltros.data_fim : "")
+                                    : "Selecione os filtros para iniciar a conversa"
+                                )
+                            )
+                        ),
+                        chatIaIniciado && React.createElement("div", {className: "flex items-center gap-2"},
+                            React.createElement("button", {
+                                onClick: function() {
+                                    setChatIaSidebarAberta(!chatIaSidebarAberta);
+                                    if (!chatIaSidebarAberta) {
+                                        setChatIaConversasLoading(true);
+                                        fetchAuth(API_URL + "/bi/chat-ia/conversas").then(function(r) { return r.json(); }).then(function(data) {
+                                            setChatIaConversas(data.conversas || []);
+                                            setChatIaConversasLoading(false);
+                                        }).catch(function() { setChatIaConversasLoading(false); });
+                                    }
+                                },
+                                className: "px-3 py-2 bg-white/20 rounded-lg text-sm hover:bg-white/30 transition-all"
+                            }, "📂 Conversas"),
+                            chatIaMsgs.length > 0 && React.createElement("button", {
+                                onClick: function() {
+                                    setChatIaExportando(true);
+                                    fetchAuth(API_URL + "/bi/chat-ia/exportar", {
+                                        method: "POST",
+                                        body: JSON.stringify({ mensagens: chatIaMsgs.map(function(m) { return { prompt: m.prompt, resposta: m.resposta }; }), filtros: chatIaFiltros })
+                                    }).then(function(r) { return r.blob(); }).then(function(blob) {
+                                        var url = URL.createObjectURL(blob);
+                                        var a = document.createElement("a"); a.href = url; a.download = "chat-ia-relatorio-" + new Date().toISOString().slice(0, 10) + ".docx"; a.click();
+                                        URL.revokeObjectURL(url); setChatIaExportando(false);
+                                    }).catch(function() { setChatIaExportando(false); });
+                                },
+                                disabled: chatIaExportando,
+                                className: "px-3 py-2 bg-white/20 rounded-lg text-sm hover:bg-white/30 transition-all"
+                            }, chatIaExportando ? "⏳ Gerando..." : "📄 Exportar"),
+                            chatIaMsgs.length > 0 && !chatIaConversaAtual && React.createElement("button", {
+                                onClick: function() {
+                                    var titulo = chatIaMsgs[0]?.prompt?.substring(0, 60) || "Conversa";
+                                    fetchAuth(API_URL + "/bi/chat-ia/conversas", {
+                                        method: "POST",
+                                        body: JSON.stringify({ titulo: titulo, filtros: chatIaFiltros })
+                                    }).then(function(r) { return r.json(); }).then(function(data) {
+                                        if (data.conversa) setChatIaConversaAtual(data.conversa.id);
+                                    }).catch(function() {});
+                                },
+                                className: "px-3 py-2 bg-white/20 rounded-lg text-sm hover:bg-white/30 transition-all"
+                            }, "💾 Salvar"),
+                            React.createElement("button", {
+                                onClick: function() { setChatIaIniciado(false); setChatIaMsgs([]); setChatIaSql(null); setChatIaConversaAtual(null); setChatIaFiltros({ cod_cliente: [], nomes_clientes: [], centro_custo: [], data_inicio: "", data_fim: "" }); setChatIaDropAberto(null); setChatIaBuscaCliente(""); },
+                                className: "px-3 py-2 bg-white/20 rounded-lg text-sm hover:bg-white/30 transition-all"
+                            }, "🔄 Nova")
+                        )
+                    )
+                ),
+
+                // Sidebar conversas
+                chatIaSidebarAberta && React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-4 mb-4 border border-gray-200"},
+                    React.createElement("div", {className: "flex items-center justify-between mb-3"},
+                        React.createElement("h3", {className: "font-bold text-gray-700 text-sm"}, "📂 Conversas Salvas"),
+                        React.createElement("button", { onClick: function() { setChatIaSidebarAberta(false); }, className: "text-gray-400 hover:text-gray-600 text-lg" }, "✕")
+                    ),
+                    chatIaConversasLoading && React.createElement("p", {className: "text-sm text-gray-400 text-center py-4"}, "Carregando..."),
+                    !chatIaConversasLoading && chatIaConversas.length === 0 && React.createElement("p", {className: "text-sm text-gray-400 text-center py-4"}, "Nenhuma conversa salva"),
+                    !chatIaConversasLoading && chatIaConversas.length > 0 && React.createElement("div", {className: "space-y-2 max-h-64 overflow-y-auto"},
+                        chatIaConversas.map(function(conv) {
+                            return React.createElement("div", { key: conv.id, className: "flex items-center justify-between p-3 rounded-lg border hover:border-emerald-300 hover:bg-emerald-50 cursor-pointer group " + (chatIaConversaAtual === conv.id ? "border-emerald-500 bg-emerald-50" : "border-gray-100") },
+                                React.createElement("div", { className: "flex-1 min-w-0", onClick: function() {
+                                    fetchAuth(API_URL + "/bi/chat-ia/conversas/" + conv.id).then(function(r) { return r.json(); }).then(function(data) {
+                                        if (data.historico) {
+                                            setChatIaMsgs(data.historico.map(function(h) { return { prompt: h.prompt, resposta: h.resposta, sql: h.sql, dados: h.dados, loading: false, _charts: [], _textParts: [h.resposta || ""], _msgId: Date.now() + Math.random() }; }));
+                                            setChatIaConversaAtual(conv.id);
+                                            if (data.conversa?.filtros) { try { setChatIaFiltros(JSON.parse(data.conversa.filtros)); } catch(e) {} }
+                                            setChatIaIniciado(true); setChatIaSidebarAberta(false);
+                                        }
+                                    }).catch(function() {});
+                                }},
+                                    React.createElement("p", {className: "text-sm font-medium text-gray-700 truncate"}, conv.titulo),
+                                    React.createElement("p", {className: "text-xs text-gray-400 mt-0.5"}, (conv.total_mensagens || 0) + " msgs · " + new Date(conv.updated_at).toLocaleDateString("pt-BR"))
+                                ),
+                                React.createElement("button", { onClick: function(e) { e.stopPropagation(); if(confirm("Deletar conversa?")) { fetchAuth(API_URL + "/bi/chat-ia/conversas/" + conv.id, {method:"DELETE"}).then(function() { setChatIaConversas(function(p){return p.filter(function(c){return c.id!==conv.id})}); if(chatIaConversaAtual===conv.id){setChatIaConversaAtual(null);setChatIaMsgs([]);} }).catch(function(){}); } }, className: "ml-2 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all" }, "🗑️")
+                            );
+                        })
+                    )
+                ),
+
+                // ===== TELA DE FILTROS (antes de iniciar) =====
+                !chatIaIniciado && React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-6 space-y-5"},
+                    React.createElement("h3", {className: "text-lg font-bold text-gray-800 flex items-center gap-2"}, "🎯 Configurar Contexto da Conversa"),
+                    React.createElement("p", {className: "text-sm text-gray-500"}, "A IA vai responder TODAS as perguntas com base nesses filtros. Deixe em branco para consultar todos os dados."),
+
+                    // Grid de filtros
+                    React.createElement("div", {className: "grid grid-cols-1 md:grid-cols-2 gap-4"},
+                        // === MULTI-SELECT CLIENTES ===
+                        React.createElement("div", {className: "relative"},
+                            React.createElement("label", {className: "block text-sm font-medium text-gray-700 mb-1"}, "👤 Clientes"),
+                            React.createElement("div", {
+                                onClick: function() { setChatIaDropAberto(chatIaDropAberto === "cliente" ? null : "cliente"); },
+                                className: "w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm cursor-pointer flex items-center justify-between hover:border-emerald-400 transition-colors " + (chatIaDropAberto === "cliente" ? "ring-2 ring-emerald-500 border-emerald-500" : "")
+                            },
+                                React.createElement("span", {className: chatIaFiltros.cod_cliente.length === 0 ? "text-gray-400" : "text-gray-800 truncate"},
+                                    chatIaFiltros.cod_cliente.length === 0 ? "Todos os clientes" :
+                                    chatIaFiltros.nomes_clientes.length <= 2 ? chatIaFiltros.nomes_clientes.join(", ") :
+                                    chatIaFiltros.nomes_clientes.length + " clientes selecionados"
+                                ),
+                                React.createElement("span", {className: "text-gray-400 ml-2 flex-shrink-0"}, chatIaDropAberto === "cliente" ? "▲" : "▼")
+                            ),
+                            // Tags dos selecionados
+                            chatIaFiltros.cod_cliente.length > 0 && React.createElement("div", {className: "flex flex-wrap gap-1 mt-1.5"},
+                                chatIaFiltros.nomes_clientes.map(function(nome, i) {
+                                    return React.createElement("span", {key: i, className: "inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs rounded-full"},
+                                        nome.length > 20 ? nome.substring(0, 20) + "..." : nome,
+                                        React.createElement("button", {
+                                            onClick: function(e) {
+                                                e.stopPropagation();
+                                                var codRemover = chatIaFiltros.cod_cliente[i];
+                                                var novosCods = chatIaFiltros.cod_cliente.filter(function(_, idx) { return idx !== i; });
+                                                var novosNomes = chatIaFiltros.nomes_clientes.filter(function(_, idx) { return idx !== i; });
+                                                setChatIaFiltros(function(prev) { return Object.assign({}, prev, { cod_cliente: novosCods, nomes_clientes: novosNomes, centro_custo: [] }); });
+                                                if (novosCods.length > 0) {
+                                                    fetchAuth(API_URL + "/bi/chat-ia/filtros?cod_cliente=" + novosCods.join(",")).then(function(r) { return r.json(); }).then(function(data) { setChatIaCentros(data.centros_do_cliente || []); }).catch(function() {});
+                                                } else { setChatIaCentros([]); }
+                                            },
+                                            className: "text-emerald-500 hover:text-emerald-800 font-bold"
+                                        }, "×")
+                                    );
+                                })
+                            ),
+                            // Dropdown
+                            chatIaDropAberto === "cliente" && React.createElement("div", {className: "absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-64 overflow-hidden", style: {top: "100%"}},
+                                // Busca
+                                React.createElement("div", {className: "p-2 border-b border-gray-100 sticky top-0 bg-white"},
+                                    React.createElement("input", {
+                                        type: "text",
+                                        placeholder: "Buscar cliente...",
+                                        value: chatIaBuscaCliente,
+                                        onChange: function(e) { setChatIaBuscaCliente(e.target.value); },
+                                        onClick: function(e) { e.stopPropagation(); },
+                                        className: "w-full px-3 py-1.5 text-sm border border-gray-200 rounded focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500",
+                                        autoFocus: true
+                                    })
+                                ),
+                                // Lista de opções
+                                React.createElement("div", {className: "overflow-y-auto", style: {maxHeight: "200px"}},
+                                    chatIaClientes.filter(function(c) {
+                                        if (!chatIaBuscaCliente) return true;
+                                        return c.nome_fantasia.toLowerCase().includes(chatIaBuscaCliente.toLowerCase()) || String(c.cod_cliente).includes(chatIaBuscaCliente);
+                                    }).map(function(c) {
+                                        var selecionado = chatIaFiltros.cod_cliente.indexOf(parseInt(c.cod_cliente)) !== -1 || chatIaFiltros.cod_cliente.indexOf(String(c.cod_cliente)) !== -1;
+                                        return React.createElement("label", {
+                                            key: c.cod_cliente,
+                                            className: "flex items-center gap-2.5 px-3 py-2 hover:bg-emerald-50 cursor-pointer transition-colors text-sm " + (selecionado ? "bg-emerald-50" : ""),
+                                            onClick: function(e) { e.stopPropagation(); }
+                                        },
+                                            React.createElement("input", {
+                                                type: "checkbox",
+                                                checked: selecionado,
+                                                onChange: function() {
+                                                    var cod = parseInt(c.cod_cliente);
+                                                    var novosCods, novosNomes;
+                                                    if (selecionado) {
+                                                        novosCods = chatIaFiltros.cod_cliente.filter(function(x) { return parseInt(x) !== cod; });
+                                                        novosNomes = chatIaFiltros.nomes_clientes.filter(function(_, idx) { return parseInt(chatIaFiltros.cod_cliente[idx]) !== cod; });
+                                                    } else {
+                                                        novosCods = [].concat(chatIaFiltros.cod_cliente, [cod]);
+                                                        novosNomes = [].concat(chatIaFiltros.nomes_clientes, [c.nome_fantasia]);
+                                                    }
+                                                    setChatIaFiltros(function(prev) { return Object.assign({}, prev, { cod_cliente: novosCods, nomes_clientes: novosNomes, centro_custo: [] }); });
+                                                    if (novosCods.length > 0) {
+                                                        fetchAuth(API_URL + "/bi/chat-ia/filtros?cod_cliente=" + novosCods.join(",")).then(function(r) { return r.json(); }).then(function(data) { setChatIaCentros(data.centros_do_cliente || []); }).catch(function() {});
+                                                    } else { setChatIaCentros([]); }
+                                                },
+                                                className: "rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                                            }),
+                                            React.createElement("span", {className: "truncate"}, c.nome_fantasia),
+                                            React.createElement("span", {className: "text-gray-400 text-xs ml-auto flex-shrink-0"}, "#" + c.cod_cliente)
+                                        );
+                                    }),
+                                    chatIaClientes.filter(function(c) {
+                                        if (!chatIaBuscaCliente) return true;
+                                        return c.nome_fantasia.toLowerCase().includes(chatIaBuscaCliente.toLowerCase()) || String(c.cod_cliente).includes(chatIaBuscaCliente);
+                                    }).length === 0 && React.createElement("div", {className: "px-3 py-4 text-sm text-gray-400 text-center"}, "Nenhum cliente encontrado")
+                                ),
+                                // Rodapé com ações
+                                chatIaFiltros.cod_cliente.length > 0 && React.createElement("div", {className: "p-2 border-t border-gray-100 bg-gray-50 flex justify-between items-center"},
+                                    React.createElement("span", {className: "text-xs text-gray-500"}, chatIaFiltros.cod_cliente.length + " selecionado(s)"),
+                                    React.createElement("button", {
+                                        onClick: function(e) {
+                                            e.stopPropagation();
+                                            setChatIaFiltros(function(prev) { return Object.assign({}, prev, { cod_cliente: [], nomes_clientes: [], centro_custo: [] }); });
+                                            setChatIaCentros([]);
+                                        },
+                                        className: "text-xs text-red-500 hover:text-red-700 font-medium"
+                                    }, "Limpar tudo")
+                                )
+                            )
+                        ),
+                        // === MULTI-SELECT CENTROS DE CUSTO ===
+                        React.createElement("div", {className: "relative"},
+                            React.createElement("label", {className: "block text-sm font-medium text-gray-700 mb-1"}, "🏢 Centro de Custo"),
+                            React.createElement("div", {
+                                onClick: function() {
+                                    if (chatIaFiltros.cod_cliente.length > 0) setChatIaDropAberto(chatIaDropAberto === "centro" ? null : "centro");
+                                },
+                                className: "w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm flex items-center justify-between transition-colors " + (chatIaFiltros.cod_cliente.length === 0 ? "bg-gray-50 cursor-not-allowed" : "cursor-pointer hover:border-emerald-400") + (chatIaDropAberto === "centro" ? " ring-2 ring-emerald-500 border-emerald-500" : "")
+                            },
+                                React.createElement("span", {className: chatIaFiltros.centro_custo.length === 0 ? "text-gray-400" : "text-gray-800 truncate"},
+                                    chatIaFiltros.cod_cliente.length === 0 ? "Selecione um cliente primeiro" :
+                                    chatIaFiltros.centro_custo.length === 0 ? "Todos os centros" :
+                                    chatIaFiltros.centro_custo.length <= 2 ? chatIaFiltros.centro_custo.join(", ") :
+                                    chatIaFiltros.centro_custo.length + " centros selecionados"
+                                ),
+                                React.createElement("span", {className: "text-gray-400 ml-2 flex-shrink-0"}, chatIaFiltros.cod_cliente.length === 0 ? "" : chatIaDropAberto === "centro" ? "▲" : "▼")
+                            ),
+                            // Tags centros
+                            chatIaFiltros.centro_custo.length > 0 && React.createElement("div", {className: "flex flex-wrap gap-1 mt-1.5"},
+                                chatIaFiltros.centro_custo.map(function(cc, i) {
+                                    return React.createElement("span", {key: i, className: "inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full"},
+                                        cc.length > 25 ? cc.substring(0, 25) + "..." : cc,
+                                        React.createElement("button", {
+                                            onClick: function(e) {
+                                                e.stopPropagation();
+                                                setChatIaFiltros(function(prev) { return Object.assign({}, prev, { centro_custo: prev.centro_custo.filter(function(_, idx) { return idx !== i; }) }); });
+                                            },
+                                            className: "text-blue-500 hover:text-blue-800 font-bold"
+                                        }, "×")
+                                    );
+                                })
+                            ),
+                            // Dropdown centros
+                            chatIaDropAberto === "centro" && React.createElement("div", {className: "absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-52 overflow-y-auto", style: {top: "100%"}},
+                                chatIaCentros.map(function(cc) {
+                                    var sel = chatIaFiltros.centro_custo.indexOf(cc) !== -1;
+                                    return React.createElement("label", {
+                                        key: cc,
+                                        className: "flex items-center gap-2.5 px-3 py-2 hover:bg-blue-50 cursor-pointer transition-colors text-sm " + (sel ? "bg-blue-50" : ""),
+                                        onClick: function(e) { e.stopPropagation(); }
+                                    },
+                                        React.createElement("input", {
+                                            type: "checkbox",
+                                            checked: sel,
+                                            onChange: function() {
+                                                setChatIaFiltros(function(prev) {
+                                                    var novos = sel ? prev.centro_custo.filter(function(x) { return x !== cc; }) : [].concat(prev.centro_custo, [cc]);
+                                                    return Object.assign({}, prev, { centro_custo: novos });
+                                                });
+                                            },
+                                            className: "rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                        }),
+                                        React.createElement("span", {className: "truncate"}, cc)
+                                    );
+                                }),
+                                chatIaCentros.length === 0 && React.createElement("div", {className: "px-3 py-4 text-sm text-gray-400 text-center"}, "Nenhum centro de custo disponível")
+                            )
+                        ),
+                        // Data início
+                        React.createElement("div", null,
+                            React.createElement("label", {className: "block text-sm font-medium text-gray-700 mb-1"}, "📅 Data Início"),
+                            React.createElement("input", {
+                                type: "date",
+                                value: chatIaFiltros.data_inicio,
+                                onChange: function(e) { setChatIaFiltros(function(prev) { return Object.assign({}, prev, { data_inicio: e.target.value }); }); },
+                                className: "w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                            })
+                        ),
+                        // Data fim
+                        React.createElement("div", null,
+                            React.createElement("label", {className: "block text-sm font-medium text-gray-700 mb-1"}, "📅 Data Fim"),
+                            React.createElement("input", {
+                                type: "date",
+                                value: chatIaFiltros.data_fim,
+                                onChange: function(e) { setChatIaFiltros(function(prev) { return Object.assign({}, prev, { data_fim: e.target.value }); }); },
+                                className: "w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                            })
+                        )
+                    ),
+
+                    // Botão iniciar
+                    React.createElement("button", {
+                        onClick: function() { setChatIaDropAberto(null); setChatIaIniciado(true); },
+                        className: "w-full py-3 bg-emerald-600 text-white rounded-xl font-bold text-lg hover:bg-emerald-700 shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2"
+                    }, "💬 Iniciar Conversa com a IA")
+                ),
+
+                // Carregar clientes ao abrir a aba
+                !chatIaIniciado && chatIaClientes.length === 0 && !chatIaFiltrosLoading && React.createElement("div", {
+                    ref: function() {
+                        if (chatIaClientes.length === 0 && !chatIaFiltrosLoading) {
+                            setChatIaFiltrosLoading(true);
+                            fetchAuth(API_URL + "/bi/chat-ia/filtros").then(function(r) { return r.json(); }).then(function(data) {
+                                setChatIaClientes(data.clientes || []);
+                                setChatIaFiltrosLoading(false);
+                            }).catch(function() { setChatIaFiltrosLoading(false); });
+                            // Carregar Chart.js se ainda não carregou
+                            if (!window.Chart && !document.getElementById('chartjs-cdn')) {
+                                var script = document.createElement('script');
+                                script.id = 'chartjs-cdn';
+                                script.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js';
+                                script.onload = function() { console.log('✅ Chart.js carregado'); };
+                                document.head.appendChild(script);
+                            }
+                        }
+                    }
+                }),
+
+                // ===== CONVERSA (após iniciar) =====
+                chatIaIniciado && React.createElement(React.Fragment, null,
+                    // Exemplos de prompts (só mostra se não tem mensagens)
+                    chatIaMsgs.length === 0 && React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-6"},
+                        React.createElement("h3", {className: "text-sm font-bold text-gray-500 mb-3"}, "💡 EXEMPLOS DE PERGUNTAS"),
+                        React.createElement("div", {className: "grid grid-cols-1 md:grid-cols-2 gap-2"},
+                            (chatIaFiltros.cod_cliente.length > 0 ? [
+                                "Me dá o faturamento líquido do período selecionado",
+                                "Quais motoboys fizeram mais de 20 entregas e tiveram prazo abaixo de 70%?",
+                                "Qual a evolução dia a dia da taxa de prazo?",
+                                "Quais foram os retornos e por quê aconteceram?",
+                                "Me mostra a distribuição de entregas por hora do dia",
+                                "Quanto gastamos com garantido nesse período?"
+                            ] : [
+                                "Me dá um panorama geral da operação neste período",
+                                "Quais motoboys entregaram mais e com melhor taxa de prazo?",
+                                "Quais clientes estão com taxa de retorno acima de 5%?",
+                                "Me mostra o faturamento líquido por cliente, do maior pro menor",
+                                "Quantas motos rodaram por dia e qual a média de entregas por moto?",
+                                "Quais bairros têm mais entregas fora do prazo?"
+                            ]).map(function(exemplo, i) {
+                                return React.createElement("button", {
+                                    key: i,
+                                    onClick: function() { setChatIaInput(exemplo); },
+                                    className: "text-left p-3 border border-gray-200 rounded-lg hover:border-emerald-400 hover:bg-emerald-50 transition-all text-sm text-gray-700"
+                                }, "→ " + exemplo);
+                            })
+                        )
+                    ),
+
+                    // Área de mensagens
+                    chatIaMsgs.length > 0 && React.createElement("div", {className: "space-y-4"},
+                        chatIaMsgs.map(function(msg, i) {
+                            return React.createElement("div", {key: i, className: "space-y-2"},
+                                // Mensagem do usuário
+                                React.createElement("div", {className: "flex justify-end"},
+                                    React.createElement("div", {className: "bg-emerald-600 text-white rounded-xl rounded-br-sm px-4 py-3 max-w-[80%] shadow"},
+                                        React.createElement("p", {className: "text-sm"}, msg.prompt)
+                                    )
+                                ),
+                                // Resposta da IA
+                                msg.resposta && !msg.loading && React.createElement("div", {className: "flex justify-start", key: "resp-" + i},
+                                    React.createElement("div", {className: "bg-white rounded-xl rounded-bl-sm px-5 py-4 max-w-[90%] shadow-lg border border-gray-100"},
+                                        msg.sql && React.createElement("details", {className: "mb-3"},
+                                            React.createElement("summary", {className: "text-xs text-gray-400 cursor-pointer hover:text-emerald-600"}, "🔍 Ver SQL executada"),
+                                            React.createElement("pre", {className: "mt-2 bg-gray-900 text-green-400 text-xs p-3 rounded-lg overflow-x-auto"}, msg.sql)
+                                        ),
+                                        // Renderizar partes de texto e gráficos intercalados
+                                        React.createElement("div", {key: "content-" + (msg._msgId || i)},
+                                            (function() {
+                                                var textParts = msg._textParts || [msg.resposta];
+                                                var chartConfigs = msg._charts || [];
+                                                var formatMd = function(text) {
+                                                    return text
+                                                        .replace(/```[\s\S]*?```/g, function(m) { return '<pre class="bg-gray-100 p-2 rounded-lg text-xs overflow-x-auto my-1">' + m.replace(/```\w*\n?/g, '').replace(/```/g, '') + '</pre>'; })
+                                                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                                                        .replace(/#{3}\s(.+)/g, '<h4 class="font-bold text-gray-800 text-sm mt-2 mb-0.5">$1</h4>')
+                                                        .replace(/#{2}\s(.+)/g, '<h3 class="font-bold text-gray-800 text-base mt-3 mb-0.5">$1</h3>')
+                                                        .replace(/#{1}\s(.+)/g, '<h2 class="font-bold text-gray-900 text-lg mt-3 mb-1">$1</h2>')
+                                                        .replace(/\n- (.+)/g, '<li class="ml-4 my-0">$1</li>')
+                                                        .replace(/(<li.*<\/li>)/gs, '<ul class="list-disc my-1">$1</ul>')
+                                                        .replace(/\|(.+)\|/g, function(row) {
+                                                            var cells = row.split('|').filter(function(c) { return c.trim(); });
+                                                            if (cells.every(function(c) { return /^[\s-:]+$/.test(c); })) return '';
+                                                            var tag = row.indexOf('---') > -1 ? '' : cells.map(function(c) { return '<td class="border border-gray-200 px-2 py-0.5 text-xs">' + c.trim() + '</td>'; }).join('');
+                                                            return tag ? '<tr>' + tag + '</tr>' : '';
+                                                        })
+                                                        .replace(/(<tr>.*<\/tr>)/gs, '<table class="border-collapse border border-gray-200 my-1 w-full text-xs">$1</table>')
+                                                        .replace(/\n{3,}/g, '<br>')
+                                                        .replace(/\n{2}/g, '<br>')
+                                                        .replace(/\n/g, '<br>');
+                                                };
+                                                var els = [];
+                                                for (var pi = 0; pi < textParts.length; pi++) {
+                                                    if (textParts[pi].trim()) {
+                                                        els.push(React.createElement("div", { key: "t" + pi, className: "max-w-none text-gray-700 text-sm leading-relaxed", dangerouslySetInnerHTML: { __html: formatMd(textParts[pi]) } }));
+                                                    }
+                                                    if (pi < chartConfigs.length) {
+                                                        els.push(React.createElement("div", { key: "c" + pi, className: "my-4", "data-chart-idx": pi, "data-msg-id": msg._msgId || i, ref: (function(chartCfg, msgId, chartIdx) { return function(container) {
+                                                            if (!container || container.dataset.chartDone || !window.Chart) return;
+                                                            container.dataset.chartDone = "1";
+                                                            var wrap = document.createElement("div");
+                                                            wrap.style.cssText = "background:#f9fafb;border-radius:8px;padding:16px;border:1px solid #e5e7eb;height:300px;position:relative;";
+                                                            var cvs = document.createElement("canvas");
+                                                            wrap.appendChild(cvs);
+                                                            container.appendChild(wrap);
+                                                            try {
+                                                                var chartType = chartCfg.type === 'horizontalBar' ? 'bar' : chartCfg.type;
+                                                                var isHz = chartCfg.type === 'horizontalBar';
+                                                                var datasets = (chartCfg.datasets || []).map(function(ds, idx) {
+                                                                    var bc = ds.color || ['#10b981','#3b82f6','#f59e0b','#ef4444','#8b5cf6','#6b7280'][idx % 6];
+                                                                    var bg = ds.colors || ((chartType === 'pie' || chartType === 'doughnut') ? ['#10b981','#3b82f6','#f59e0b','#ef4444','#8b5cf6','#6b7280','#14b8a6','#f97316','#a855f7','#ec4899'] : bc);
+                                                                    return { label: ds.label || '', data: ds.data || [], backgroundColor: bg, borderColor: chartType === 'line' ? bc : (chartType === 'pie' || chartType === 'doughnut') ? '#fff' : bg, borderWidth: chartType === 'line' ? 2.5 : (chartType === 'pie' || chartType === 'doughnut') ? 2 : 0, fill: false, tension: 0.35, borderRadius: chartType === 'bar' ? 6 : 0, pointRadius: chartType === 'line' ? 5 : 0, pointBackgroundColor: bc, pointBorderColor: '#fff', pointBorderWidth: 2 };
+                                                                });
+                                                                new Chart(cvs, {
+                                                                    type: chartType,
+                                                                    data: { labels: chartCfg.labels || [], datasets: datasets },
+                                                                    options: { responsive: true, maintainAspectRatio: false, animation: { duration: 600, easing: 'easeOutQuart' }, indexAxis: isHz ? 'y' : 'x',
+                                                                        plugins: { title: { display: !!chartCfg.title, text: chartCfg.title || '', font: { size: 14, weight: 'bold' }, color: '#1f2937', padding: { bottom: 16 } }, legend: { display: datasets.length > 1 || chartType === 'pie' || chartType === 'doughnut', position: 'bottom', labels: { padding: 16, usePointStyle: true, pointStyle: 'circle', font: { size: 11 } } }, tooltip: { backgroundColor: '#1f2937', titleFont: { size: 12 }, bodyFont: { size: 11 }, padding: 10, cornerRadius: 8 } },
+                                                                        scales: (chartType === 'pie' || chartType === 'doughnut') ? {} : { x: { grid: { display: false }, ticks: { font: { size: 10 }, maxRotation: 45, color: '#6b7280' }, border: { display: false } }, y: { grid: { color: '#f3f4f6', drawBorder: false }, ticks: { font: { size: 10 }, color: '#6b7280' }, beginAtZero: true, border: { display: false } } }
+                                                                    }
+                                                                });
+                                                            } catch(e) { console.error('Chart error:', e); }
+                                                        }; })(chartConfigs[pi], msg._msgId || i, pi)
+                                                        }));
+                                                    }
+                                                }
+                                                return els;
+                                            })()
+                                        ),
+                                        msg.dados && msg.dados.total > 0 && React.createElement("div", {className: "mt-3 pt-3 border-t border-gray-100"},
+                                            React.createElement("p", {className: "text-xs text-gray-400"}, "📊 " + msg.dados.total + " registros" + (msg.dados.total > 100 ? " (mostrando 100)" : ""))
+                                        )
+                                    )
+                                ),
+                                // Loading
+                                msg.loading && React.createElement("div", {className: "flex justify-start"},
+                                    React.createElement("div", {className: "bg-white rounded-xl px-5 py-4 shadow-lg border border-gray-100 flex items-center gap-3"},
+                                        React.createElement("div", {className: "flex gap-1"},
+                                            React.createElement("div", {className: "w-2 h-2 bg-emerald-400 rounded-full animate-bounce", style: {animationDelay: "0ms"}}),
+                                            React.createElement("div", {className: "w-2 h-2 bg-emerald-400 rounded-full animate-bounce", style: {animationDelay: "150ms"}}),
+                                            React.createElement("div", {className: "w-2 h-2 bg-emerald-400 rounded-full animate-bounce", style: {animationDelay: "300ms"}})
+                                        ),
+                                        React.createElement("span", {className: "text-sm text-gray-500"}, "Consultando e analisando...")
+                                    )
+                                )
+                            );
+                        })
+                    ),
+
+                    // Input de mensagem
+                    React.createElement("div", {className: "sticky bottom-0 bg-gradient-to-t from-gray-50 pt-4 pb-2"},
+                        React.createElement("div", {className: "bg-white rounded-xl shadow-lg border border-gray-200 p-3 flex gap-3 items-end"},
+                            React.createElement("textarea", {
+                                value: chatIaInput,
+                                onChange: function(e) { setChatIaInput(e.target.value); },
+                                onKeyDown: function(e) {
+                                    if (e.key === "Enter" && !e.shiftKey) {
+                                        e.preventDefault();
+                                        if (chatIaInput.trim() && !chatIaLoading) {
+                                            var userPrompt = chatIaInput.trim();
+                                            setChatIaInput("");
+                                            setChatIaLoading(true);
+                                            var novaMsgs = [].concat(chatIaMsgs, [{ prompt: userPrompt, resposta: null, sql: null, dados: null, loading: true }]);
+                                            setChatIaMsgs(novaMsgs);
+                                            var hist = chatIaMsgs.map(function(m) { return { prompt: m.prompt, resposta: m.resposta }; });
+                                            fetchAuth(API_URL + "/bi/chat-ia", {
+                                                method: "POST",
+                                                body: JSON.stringify({ prompt: userPrompt, historico: hist, filtros: chatIaFiltros, conversa_id: chatIaConversaAtual })
+                                            }).then(function(r) { return r.json(); }).then(function(data) {
+                                                // Pré-processar resposta: separar texto e gráficos
+                                                var resposta = data.resposta || "Erro ao processar";
+                                                var _charts = [];
+                                                var _textParts = [];
+                                                var chartRegex = /\[CHART\]\s*\n?([\s\S]*?)\n?\[\/CHART\]/g;
+                                                var cm;
+                                                while ((cm = chartRegex.exec(resposta)) !== null) {
+                                                    try { _charts.push(JSON.parse(cm[1].trim())); } catch(e) {}
+                                                }
+                                                var cleanText = resposta.replace(/\[CHART\]\s*\n?[\s\S]*?\n?\[\/CHART\]/g, '\n__CHART__\n');
+                                                _textParts = cleanText.split('__CHART__');
+                                                
+                                                setChatIaMsgs(function(prev) {
+                                                    var u = prev.slice();
+                                                    u[u.length - 1] = { prompt: userPrompt, resposta: resposta, sql: data.sql || null, dados: data.dados || null, loading: false, _charts: _charts, _textParts: _textParts, _msgId: Date.now() };
+                                                    return u;
+                                                });
+                                                setChatIaLoading(false);
+                                            }).catch(function(err) {
+                                                setChatIaMsgs(function(prev) {
+                                                    var u = prev.slice();
+                                                    u[u.length - 1] = { prompt: userPrompt, resposta: "❌ Erro: " + err.message, sql: null, dados: null, loading: false };
+                                                    return u;
+                                                });
+                                                setChatIaLoading(false);
+                                            });
+                                        }
+                                    }
+                                },
+                                placeholder: "Converse com seus dados... pergunte qualquer coisa (Enter para enviar)",
+                                rows: 2,
+                                className: "flex-1 resize-none border-0 focus:ring-0 text-sm text-gray-700 placeholder-gray-400",
+                                style: {outline: "none"}
+                            }),
+                            React.createElement("button", {
+                                onClick: function() {
+                                    if (chatIaInput.trim() && !chatIaLoading) {
+                                        var userPrompt = chatIaInput.trim();
+                                        setChatIaInput("");
+                                        setChatIaLoading(true);
+                                        var novaMsgs = [].concat(chatIaMsgs, [{ prompt: userPrompt, resposta: null, sql: null, dados: null, loading: true }]);
+                                        setChatIaMsgs(novaMsgs);
+                                        var hist = chatIaMsgs.map(function(m) { return { prompt: m.prompt, resposta: m.resposta }; });
+                                        fetchAuth(API_URL + "/bi/chat-ia", {
+                                            method: "POST",
+                                            body: JSON.stringify({ prompt: userPrompt, historico: hist, filtros: chatIaFiltros, conversa_id: chatIaConversaAtual })
+                                        }).then(function(r) { return r.json(); }).then(function(data) {
+                                                var resposta = data.resposta || "Erro ao processar";
+                                                var _charts = [];
+                                                var _textParts = [];
+                                                var chartRegex = /\[CHART\]\s*\n?([\s\S]*?)\n?\[\/CHART\]/g;
+                                                var cm;
+                                                while ((cm = chartRegex.exec(resposta)) !== null) {
+                                                    try { _charts.push(JSON.parse(cm[1].trim())); } catch(e) {}
+                                                }
+                                                var cleanText = resposta.replace(/\[CHART\]\s*\n?[\s\S]*?\n?\[\/CHART\]/g, '\n__CHART__\n');
+                                                _textParts = cleanText.split('__CHART__');
+                                            setChatIaMsgs(function(prev) {
+                                                var u = prev.slice();
+                                                u[u.length - 1] = { prompt: userPrompt, resposta: resposta, sql: data.sql || null, dados: data.dados || null, loading: false, _charts: _charts, _textParts: _textParts, _msgId: Date.now() };
+                                                return u;
+                                            });
+                                            setChatIaLoading(false);
+                                        }).catch(function(err) {
+                                            setChatIaMsgs(function(prev) {
+                                                var u = prev.slice();
+                                                u[u.length - 1] = { prompt: userPrompt, resposta: "❌ Erro: " + err.message, sql: null, dados: null, loading: false };
+                                                return u;
+                                            });
+                                            setChatIaLoading(false);
+                                        });
+                                    }
+                                },
+                                disabled: !chatIaInput.trim() || chatIaLoading,
+                                className: "px-4 py-2 rounded-lg font-bold text-sm transition-all " + (chatIaInput.trim() && !chatIaLoading ? "bg-emerald-600 text-white hover:bg-emerald-700 shadow" : "bg-gray-200 text-gray-400 cursor-not-allowed")
+                            }, chatIaLoading ? "⏳" : "Enviar ➤"),
+                            chatIaMsgs.length > 0 && React.createElement("button", {
+                                onClick: function() { setChatIaMsgs([]); setChatIaSql(null); },
+                                className: "px-3 py-2 rounded-lg text-xs text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all",
+                                title: "Limpar conversa"
+                            }, "🗑️")
+                        ),
+                        React.createElement("p", {className: "text-xs text-gray-400 text-center mt-2"}, "Powered by Claude · Apenas consultas de leitura")
+                    )
+                )
+            ),
+            
             !ft && "dashboard" === Et && React.createElement("div", {
                 className: "bg-white rounded-xl shadow p-10 text-center"
             }, React.createElement("p", {
@@ -18156,6 +19154,22 @@ const hideLoadingScreen = () => {
                         )
                     ),
                     
+                    // Sucesso do Cliente
+                    hasModuleAccess(l, "cs") &&
+                    React.createElement("div", {
+                        onClick: () => he("cs"),
+                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-violet-300"
+                    },
+                        React.createElement("div", {className: "h-2 bg-gradient-to-r from-violet-500 to-purple-600"}),
+                        React.createElement("div", {className: "p-6"},
+                            React.createElement("div", {className: "w-14 h-14 bg-violet-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
+                                React.createElement("span", {className: "text-3xl"}, "🤝")
+                            ),
+                            React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Sucesso do Cliente"),
+                            React.createElement("p", {className: "text-sm text-gray-500"}, "CS & Raio-X IA")
+                        )
+                    ),
+                    
                     // CRM WhatsApp
                     hasModuleAccess(l, "crm-whatsapp") &&
                     React.createElement("div", {
@@ -18169,6 +19183,38 @@ const hideLoadingScreen = () => {
                             ),
                             React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "CRM WhatsApp"),
                             React.createElement("p", {className: "text-sm text-gray-500"}, "Leads e conversas")
+                        )
+                    ),
+                    
+                    // Agente RPA
+                    hasModuleAccess(l, "agente") &&
+                    React.createElement("div", {
+                        onClick: () => he("agente"),
+                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-purple-300"
+                    },
+                        React.createElement("div", {className: "h-2 bg-gradient-to-r from-purple-500 to-pink-600"}),
+                        React.createElement("div", {className: "p-6"},
+                            React.createElement("div", {className: "w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
+                                React.createElement("span", {className: "text-3xl"}, "🤖")
+                            ),
+                            React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Agente RPA"),
+                            React.createElement("p", {className: "text-sm text-gray-500"}, "Correção de endereços")
+                        )
+                    ),
+                    
+                    // Anti-Fraude
+                    hasModuleAccess(l, "antifraude") &&
+                    React.createElement("div", {
+                        onClick: () => he("antifraude"),
+                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-red-300"
+                    },
+                        React.createElement("div", {className: "h-2 bg-gradient-to-r from-red-500 to-rose-600"}),
+                        React.createElement("div", {className: "p-6"},
+                            React.createElement("div", {className: "w-14 h-14 bg-red-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
+                                React.createElement("span", {className: "text-3xl"}, "🛡️")
+                            ),
+                            React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Anti-Fraude"),
+                            React.createElement("p", {className: "text-sm text-gray-500"}, "Detecção de duplicatas")
                         )
                     )
                 )
@@ -18414,9 +19460,11 @@ const hideLoadingScreen = () => {
                 className: "text-lg"
             }, "⚠️"), React.createElement("span", null, "ATENÇÃO: ", rtnW > 3 ? `${rtnW} retornos na semana (máx 3)` : "", " ", rtnM > 5 ? `| ${rtnM} retornos no mês (máx 5)` : "")), React.createElement("div", {
                 className: "flex justify-between items-start mb-2"
-            }, React.createElement("p", {
-                className: "font-mono text-lg font-bold"
-            }, "OS: ", e.ordemServico), React.createElement("span", {
+            }, React.createElement("button", {
+                className: "font-mono text-lg font-bold flex items-center gap-1.5 group hover:text-purple-700 transition-colors cursor-pointer text-left",
+                title: "Clique para copiar o número da OS",
+                onClick: () => { navigator.clipboard.writeText(String(e.ordemServico)); ja("📋 OS " + e.ordemServico + " copiada!", "success"); }
+            }, "OS: ", e.ordemServico, React.createElement("span", { className: "opacity-0 group-hover:opacity-100 transition-opacity text-sm text-purple-400" }, "📋")), React.createElement("span", {
                 className: "px-2 py-0.5 rounded text-xs font-bold " + (r ? "bg-red-500 text-white animate-pulse" : o ? "bg-orange-400 text-white" : "bg-gray-100 text-gray-600")
             }, r ? "🚨" : o ? "⚠️" : "⏱️", a > 0 ? `${a}h ${l}m` : `${l}min`)), React.createElement("p", {
                 className: "text-xs text-gray-700"
@@ -18553,9 +19601,11 @@ const hideLoadingScreen = () => {
             className: "border rounded-lg p-3 text-sm " + ("aprovado" === e.status ? "bg-green-50" : "rejeitado" === e.status ? "bg-red-50" : "bg-yellow-50")
         }, React.createElement("div", {
             className: "flex justify-between items-start mb-1"
-        }, React.createElement("div", null, React.createElement("p", {
-            className: "font-mono font-bold"
-        }, "OS: ", e.ordemServico), React.createElement("p", {
+        }, React.createElement("div", null, React.createElement("button", {
+            className: "font-mono font-bold flex items-center gap-1 group hover:text-purple-700 transition-colors cursor-pointer text-left",
+            title: "Clique para copiar o número da OS",
+            onClick: () => { navigator.clipboard.writeText(String(e.ordemServico)); ja("📋 OS " + e.ordemServico + " copiada!", "success"); }
+        }, "OS: ", e.ordemServico, React.createElement("span", { className: "opacity-0 group-hover:opacity-100 transition-opacity text-xs text-purple-400" }, "📋")), React.createElement("p", {
             className: "text-xs text-gray-700"
         }, e.fullName)), React.createElement("div", {
             className: "flex items-center gap-1"
@@ -18668,9 +19718,11 @@ const hideLoadingScreen = () => {
                 className: "p-3 hover:bg-gray-50"
             }, React.createElement("div", {
                 className: "flex justify-between items-center"
-            }, React.createElement("div", null, React.createElement("p", {
-                className: "font-mono font-semibold text-sm"
-            }, "OS: ", s.ordemServico), React.createElement("p", {
+            }, React.createElement("div", null, React.createElement("button", {
+                className: "font-mono font-semibold text-sm flex items-center gap-1 group hover:text-purple-700 transition-colors cursor-pointer text-left",
+                title: "Clique para copiar o número da OS",
+                onClick: () => { navigator.clipboard.writeText(String(s.ordemServico)); ja("📋 OS " + s.ordemServico + " copiada!", "success"); }
+            }, "OS: ", s.ordemServico, React.createElement("span", { className: "opacity-0 group-hover:opacity-100 transition-opacity text-xs text-purple-400" }, "📋")), React.createElement("p", {
                 className: "text-xs text-gray-500"
             }, new Date(s.created_at).toLocaleDateString("pt-BR"), " às ", new Date(s.created_at).toLocaleTimeString("pt-BR", {
                 hour: "2-digit",
