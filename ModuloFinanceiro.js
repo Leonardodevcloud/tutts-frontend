@@ -6601,22 +6601,26 @@
                 // Etapa: Preview
                 st.etapa === 'preview' && st.dados && React.createElement("div", { className: "space-y-4" },
                     // Cards resumo
-                    React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-4 gap-4" },
+                    React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-5 gap-4" },
                         React.createElement("div", { className: "bg-white rounded-xl p-4 shadow border-l-4 border-emerald-500 text-center" },
-                            React.createElement("p", { className: "text-2xl font-bold text-emerald-600" }, st.dados.prontos || 0),
-                            React.createElement("p", { className: "text-xs text-gray-500" }, "Com Pix cadastrado")
+                            React.createElement("p", { className: "text-2xl font-bold text-emerald-600" }, st.dados.pix_sistema || 0),
+                            React.createElement("p", { className: "text-xs text-gray-500" }, "Pix do Sistema")
+                        ),
+                        React.createElement("div", { className: "bg-white rounded-xl p-4 shadow border-l-4 border-blue-500 text-center" },
+                            React.createElement("p", { className: "text-2xl font-bold text-blue-600" }, st.dados.pix_planilha || 0),
+                            React.createElement("p", { className: "text-xs text-gray-500" }, "Pix da Planilha")
                         ),
                         React.createElement("div", { className: "bg-white rounded-xl p-4 shadow border-l-4 border-red-500 text-center" },
                             React.createElement("p", { className: "text-2xl font-bold text-red-600" }, st.dados.sem_pix || 0),
-                            React.createElement("p", { className: "text-xs text-gray-500" }, "Sem Pix cadastrado")
+                            React.createElement("p", { className: "text-xs text-gray-500" }, "Sem Pix")
                         ),
-                        React.createElement("div", { className: "bg-white rounded-xl p-4 shadow border-l-4 border-blue-500 text-center" },
-                            React.createElement("p", { className: "text-2xl font-bold text-blue-600" }, st.dados.total || 0),
-                            React.createElement("p", { className: "text-xs text-gray-500" }, "Total da planilha")
+                        React.createElement("div", { className: "bg-white rounded-xl p-4 shadow border-l-4 border-gray-400 text-center" },
+                            React.createElement("p", { className: "text-2xl font-bold text-gray-600" }, st.dados.total || 0),
+                            React.createElement("p", { className: "text-xs text-gray-500" }, "Total")
                         ),
                         React.createElement("div", { className: "bg-white rounded-xl p-4 shadow border-l-4 border-yellow-500 text-center" },
                             React.createElement("p", { className: "text-2xl font-bold text-yellow-600" }, formatarMoeda(st.dados.valor_total || 0)),
-                            React.createElement("p", { className: "text-xs text-gray-500" }, "Valor total a pagar")
+                            React.createElement("p", { className: "text-xs text-gray-500" }, "Valor a pagar")
                         )
                     ),
                     
@@ -6628,15 +6632,20 @@
                                 React.createElement("th", { className: "px-4 py-3 text-left" }, "Nome (Planilha)"),
                                 React.createElement("th", { className: "px-4 py-3 text-left" }, "Nome (Sistema)"),
                                 React.createElement("th", { className: "px-4 py-3 text-left" }, "Chave Pix"),
+                                React.createElement("th", { className: "px-4 py-3 text-center" }, "Origem"),
                                 React.createElement("th", { className: "px-4 py-3 text-right" }, "Valor"),
                                 React.createElement("th", { className: "px-4 py-3 text-center" }, "Status")
                             )),
                             React.createElement("tbody", null, (st.dados.profissionais || []).sort(function(a, b) { return b.saldo - a.saldo; }).map(function(prof, i) {
+                                var origemBadge = prof.pix_origem === 'sistema' ? React.createElement("span", { className: "px-2 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700" }, "✅ Sistema")
+                                    : prof.pix_origem === 'planilha' ? React.createElement("span", { className: "px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700" }, "📋 Planilha")
+                                    : React.createElement("span", { className: "px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700" }, "❌ Nenhuma");
                                 return React.createElement("tr", { key: i, className: "border-b hover:bg-gray-50 " + (prof.status === 'sem_pix' ? 'bg-red-50' : '') },
                                     React.createElement("td", { className: "px-4 py-2.5 font-mono text-gray-700" }, "#" + prof.cod_prof),
                                     React.createElement("td", { className: "px-4 py-2.5" }, prof.nome_planilha),
-                                    React.createElement("td", { className: "px-4 py-2.5 " + (prof.nome_sistema ? "text-emerald-700" : "text-red-500") }, prof.nome_sistema || '❌ Não encontrado'),
+                                    React.createElement("td", { className: "px-4 py-2.5 " + (prof.nome_sistema ? "text-emerald-700" : "text-gray-400") }, prof.nome_sistema || '—'),
                                     React.createElement("td", { className: "px-4 py-2.5 text-xs text-gray-600 max-w-[160px] truncate" }, prof.pix_key || '—'),
+                                    React.createElement("td", { className: "px-4 py-2.5 text-center" }, origemBadge),
                                     React.createElement("td", { className: "px-4 py-2.5 text-right font-bold text-emerald-700" }, formatarMoeda(prof.saldo)),
                                     React.createElement("td", { className: "px-4 py-2.5 text-center" }, badge(prof.status))
                                 );
