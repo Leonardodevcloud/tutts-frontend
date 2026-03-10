@@ -6431,41 +6431,102 @@
         );
     };
 
-    // ==================== ABA ACERTO PROFISSIONAL ====================
-    
+
+    // ==================== ACERTO PROFISSIONAL COMPONENT ====================
     window.AcertoProfComponent = function(props) {
         var fetchAuth = props.fetchAuth;
         var API_URL = props.API_URL;
         var Toast = props.Toast;
         var formatarMoeda = window.formatarMoeda;
-        
+
+        // ===== State principal (persistente entre sub-tabs) =====
         var _st = React.useState({
-            etapa: 'upload', // upload, preview, lote_criado, historico
+            subTab: 'novo', // novo, aprovacao, historico
+            // Upload / Preview
             uploading: false,
-            dados: null, // resultado do processamento
-            historico: [], historicoLoading: false,
+            dados: null, // resultado do processamento da planilha (persiste entre tabs)
+            // Aprovação
+            lotesAprovacao: [],
+            lotesAprovacaoLoading: false,
             loteDetalhe: null,
-            executando: false,
-            subTab: 'novo' // novo, historico
+            loteDetalheLoading: false,
+            // Histórico
+            historico: [],
+            historicoLoading: false,
+            // Saldo Stark
+            saldoStark: null,
+            saldoLoading: false,
+            // Execução
+            executando: false
         });
         var st = _st[0]; var setSt = _st[1];
-        
-        // State 2FA
-        var _modal2fa = React.useState({ aberto: false, etapa: 'confirmar', chaveToken: null, emailMascarado: '', tokenDigitado: '', enviando: false, validando: false, erro: '', loteId: null });
+
+        // ===== State de seleção (checkboxes) =====
+        var _sel = React.useState({}); // { "cod_prof": true }
+        var sel = _sel[0]; var setSel = _sel[1];
+
+        // ===== State 2FA =====
+        var _modal2fa = React.useState({
+            aberto: false, etapa: 'confirmar', chaveToken: null, emailMascarado: '',
+            tokenDigitado: '', enviando: false, validando: false, erro: '', loteId: null
+        });
         var modal2fa = _modal2fa[0]; var setModal2fa = _modal2fa[1];
-        
-        // Modal resultado
-        var _modalRes = React.useState({ aberto: false, enviados: 0, rejeitados: 0, valorEnviado: 0, detalhesRejeitados: [] });
+
+        // ===== Modal resultado =====
+        var _modalRes = React.useState({
+            aberto: false, enviados: 0, rejeitados: 0, valorEnviado: 0,
+            detalhesRejeitados: [], saldoAntes: null
+        });
         var modalRes = _modalRes[0]; var setModalRes = _modalRes[1];
-        
-        // Upload da planilha
+
+        // ===== Helpers de seleção =====
+        var profissionaisProntos = (st.dados && st.dados.profissionais || []).filter(function(p) { return p.status === 'pronto'; });
+        var profissionaisSemPix = (st.dados && st.dados.profissionais || []).filter(function(p) { return p.status === 'sem_pix'; });
+        var todosProfs = st.dados && st.dados.profissionais || [];
+
+        var selecionados = profissionaisProntos.filter(function(p) { return sel[p.cod_prof]; });
+        var valorSelecionado = selecionados.reduce(function(a, p) { return a + p.saldo; }, 0);
+        var qtdSelecionados = selecionados.length;
+
+        var todosEstaoSelecionados = profissionaisProntos.length > 0 && profissionaisProntos.every(function(p) { return sel[p.cod_prof]; });
+
+        var toggleSel = function(codProf) {
+            setSel(function(prev) {
+                var n = Object.assign({}, prev);
+                if (n[codProf]) { delete n[codProf]; } else { n[codProf] = true; }
+                return n;
+            });
+        };
+
+        var toggleTodos = function() {
+            if (todosEstaoSelecionados) {
+                setSel({});
+            } else {
+                var n = {};
+                profissionaisProntos.forEach(function(p) { n[p.cod_prof] = true; });
+                setSel(n);
+            }
+        };
+
+        // ===== Carregar saldo Stark Bank =====
+        var carregarSaldo = async function() {
+            setSt(function(p) { return Object.assign({}, p, { saldoLoading: true }); });
+            try {
+                var r = await fetchAuth(API_URL + '/stark/saldo');
+                var d = await r.json();
+                setSt(function(p) { return Object.assign({}, p, { saldoStark: d.saldo, saldoLoading: false }); });
+            } catch (e) {
+                setSt(function(p) { return Object.assign({}, p, { saldoLoading: false }); });
+            }
+        };
+
+        // ===== Upload da planilha =====
         var handleUpload = async function(e) {
             var file = e.target.files[0];
             if (!file) return;
-            
+
             setSt(function(p) { return Object.assign({}, p, { uploading: true }); });
-            
-            // Ler como base64
+
             var reader = new FileReader();
             reader.onload = async function(ev) {
                 var base64 = ev.target.result.split(',')[1];
@@ -6476,139 +6537,266 @@
                     });
                     var d = await r.json();
                     if (d.success) {
-                        setSt(function(p) { return Object.assign({}, p, { etapa: 'preview', dados: d, uploading: false }); });
+                        setSt(function(p) { return Object.assign({}, p, { dados: d, uploading: false }); });
+                        // Selecionar todos os prontos por padrão
+                        var selInicial = {};
+                        (d.profissionais || []).forEach(function(prof) {
+                            if (prof.status === 'pronto') selInicial[prof.cod_prof] = true;
+                        });
+                        setSel(selInicial);
+                        // Carregar saldo
+                        carregarSaldo();
                         if (d.sem_pix > 0) Toast('⚠️ ' + d.sem_pix + ' profissionais sem chave Pix cadastrada', 'warning');
                     } else {
                         Toast('❌ ' + (d.error || 'Erro ao processar'), 'error');
                         setSt(function(p) { return Object.assign({}, p, { uploading: false }); });
                     }
-                } catch (err) { Toast('❌ Erro: ' + err.message, 'error'); setSt(function(p) { return Object.assign({}, p, { uploading: false }); }); }
+                } catch (err) {
+                    Toast('❌ Erro: ' + err.message, 'error');
+                    setSt(function(p) { return Object.assign({}, p, { uploading: false }); });
+                }
             };
             reader.readAsDataURL(file);
         };
-        
-        // Criar lote de acerto
+
+        // ===== Criar lote de acerto (apenas marca, não paga) =====
         var criarLote = async function() {
-            var prontos = (st.dados.profissionais || []).filter(function(p) { return p.status === 'pronto'; });
-            if (prontos.length === 0) { Toast('⚠️ Nenhum profissional com Pix cadastrado', 'warning'); return; }
-            
+            if (qtdSelecionados === 0) {
+                Toast('⚠️ Selecione ao menos um profissional', 'warning');
+                return;
+            }
+
             try {
                 var r = await fetchAuth(API_URL + '/stark/acerto/criar-lote', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ profissionais: prontos })
+                    body: JSON.stringify({ profissionais: selecionados })
                 });
                 var d = await r.json();
                 if (d.success) {
-                    Toast('✅ Lote #' + d.lote_id + ' criado! ' + d.quantidade + ' profissionais.', 'success');
-                    setSt(function(p) { return Object.assign({}, p, { etapa: 'lote_criado', loteId: d.lote_id }); });
-                } else { Toast('❌ ' + (d.error || 'Erro'), 'error'); }
-            } catch (err) { Toast('❌ ' + err.message, 'error'); }
-        };
-        
-        // Solicitar token 2FA
-        var solicitarToken = async function(loteId) {
-            var prontos = (st.dados && st.dados.profissionais || []).filter(function(p) { return p.status === 'pronto'; });
-            setModal2fa(function(p) { return Object.assign({}, p, { enviando: true, erro: '' }); });
-            try {
-                var r = await fetchAuth(API_URL + '/stark/token/solicitar', {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ saque_ids: [], valor_total: prontos.reduce(function(a, p) { return a + p.saldo; }, 0), quantidade: prontos.length })
-                });
-                var d = await r.json();
-                if (d.success) {
-                    setModal2fa(function(p) { return Object.assign({}, p, { etapa: 'digitar', chaveToken: d.chave_token, emailMascarado: d.email_mascarado, enviando: false }); });
-                } else { setModal2fa(function(p) { return Object.assign({}, p, { erro: d.error || 'Erro', enviando: false }); }); }
-            } catch (e) { setModal2fa(function(p) { return Object.assign({}, p, { erro: e.message, enviando: false }); }); }
-        };
-        
-        // Validar token e executar acerto
-        var validarEExecutar = async function() {
-            if (modal2fa.tokenDigitado.length !== 6) { setModal2fa(function(p) { return Object.assign({}, p, { erro: 'Digite o código de 6 dígitos' }); }); return; }
-            setModal2fa(function(p) { return Object.assign({}, p, { validando: true, erro: '' }); });
-            try {
-                // Validar token
-                var rv = await fetchAuth(API_URL + '/stark/token/validar', {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ chave_token: modal2fa.chaveToken, token: modal2fa.tokenDigitado })
-                });
-                var dv = await rv.json();
-                if (!dv.success) { setModal2fa(function(p) { return Object.assign({}, p, { erro: dv.error, validando: false }); }); return; }
-                
-                // Executar acerto
-                setModal2fa(function(p) { return Object.assign({}, p, { etapa: 'executando' }); });
-                var re = await fetchAuth(API_URL + '/stark/acerto/' + modal2fa.loteId + '/executar', {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ chave_token: modal2fa.chaveToken })
-                });
-                var de = await re.json();
-                
-                if (de.success) {
-                    setModal2fa({ aberto: false, etapa: 'confirmar', chaveToken: null, emailMascarado: '', tokenDigitado: '', enviando: false, validando: false, erro: '', loteId: null });
-                    setModalRes({ aberto: true, enviados: de.enviados, rejeitados: de.rejeitados, valorEnviado: de.valor_enviado, detalhesRejeitados: de.detalhes_rejeitados || [] });
+                    Toast('✅ Lote #' + d.lote_id + ' criado com ' + d.quantidade + ' profissionais. Vá para "Em Aprovação" para executar.', 'success');
+                    // Limpar dados e ir para aprovação
+                    setSt(function(p) { return Object.assign({}, p, { dados: null, subTab: 'aprovacao' }); });
+                    setSel({});
+                    carregarLotesAprovacao();
                 } else {
-                    setModal2fa(function(p) { return Object.assign({}, p, { erro: de.error, validando: false, etapa: 'digitar' }); });
+                    Toast('❌ ' + (d.error || 'Erro'), 'error');
                 }
-            } catch (e) { setModal2fa(function(p) { return Object.assign({}, p, { erro: e.message, validando: false, etapa: 'digitar' }); }); }
+            } catch (err) {
+                Toast('❌ ' + err.message, 'error');
+            }
         };
-        
-        // Carregar histórico
+
+        // ===== Carregar lotes em aprovação =====
+        var carregarLotesAprovacao = async function() {
+            setSt(function(p) { return Object.assign({}, p, { lotesAprovacaoLoading: true }); });
+            try {
+                var r = await fetchAuth(API_URL + '/stark/acerto/em-aprovacao');
+                var d = await r.json();
+                setSt(function(p) { return Object.assign({}, p, { lotesAprovacao: d.lotes || [], lotesAprovacaoLoading: false }); });
+            } catch (e) {
+                setSt(function(p) { return Object.assign({}, p, { lotesAprovacaoLoading: false }); });
+            }
+        };
+
+        // ===== Carregar detalhe do lote =====
+        var carregarDetalheLote = async function(loteId) {
+            setSt(function(p) { return Object.assign({}, p, { loteDetalheLoading: true }); });
+            try {
+                var r = await fetchAuth(API_URL + '/stark/acerto/' + loteId);
+                var d = await r.json();
+                setSt(function(p) { return Object.assign({}, p, { loteDetalhe: d, loteDetalheLoading: false }); });
+                // Carregar saldo junto
+                carregarSaldo();
+            } catch (e) {
+                setSt(function(p) { return Object.assign({}, p, { loteDetalheLoading: false }); });
+            }
+        };
+
+        // ===== Carregar histórico =====
         var carregarHistorico = async function() {
             setSt(function(p) { return Object.assign({}, p, { historicoLoading: true }); });
             try {
                 var r = await fetchAuth(API_URL + '/stark/acerto/historico');
                 var d = await r.json();
                 setSt(function(p) { return Object.assign({}, p, { historico: d.lotes || [], historicoLoading: false }); });
-            } catch (e) { setSt(function(p) { return Object.assign({}, p, { historicoLoading: false }); }); }
+            } catch (e) {
+                setSt(function(p) { return Object.assign({}, p, { historicoLoading: false }); });
+            }
         };
-        
+
+        // ===== Solicitar token 2FA =====
+        var solicitarToken = async function(loteId) {
+            var lote = st.loteDetalhe && st.loteDetalhe.lote;
+            var qtd = lote ? lote.quantidade : 0;
+            var vlr = lote ? parseFloat(lote.valor_total) : 0;
+
+            setModal2fa(function(p) { return Object.assign({}, p, { enviando: true, erro: '' }); });
+            try {
+                var r = await fetchAuth(API_URL + '/stark/token/solicitar', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ saque_ids: [], valor_total: vlr, quantidade: qtd })
+                });
+                var d = await r.json();
+                if (d.success) {
+                    setModal2fa(function(p) {
+                        return Object.assign({}, p, {
+                            etapa: 'digitar', chaveToken: d.chave_token,
+                            emailMascarado: d.email_mascarado, enviando: false
+                        });
+                    });
+                } else {
+                    setModal2fa(function(p) { return Object.assign({}, p, { erro: d.error || 'Erro', enviando: false }); });
+                }
+            } catch (e) {
+                setModal2fa(function(p) { return Object.assign({}, p, { erro: e.message, enviando: false }); });
+            }
+        };
+
+        // ===== Validar token e executar acerto =====
+        var validarEExecutar = async function() {
+            if (modal2fa.tokenDigitado.length !== 6) {
+                setModal2fa(function(p) { return Object.assign({}, p, { erro: 'Digite o código de 6 dígitos' }); });
+                return;
+            }
+            setModal2fa(function(p) { return Object.assign({}, p, { validando: true, erro: '' }); });
+            try {
+                // 1. Validar token
+                var rv = await fetchAuth(API_URL + '/stark/token/validar', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ chave_token: modal2fa.chaveToken, token: modal2fa.tokenDigitado })
+                });
+                var dv = await rv.json();
+                if (!dv.success) {
+                    setModal2fa(function(p) { return Object.assign({}, p, { erro: dv.error, validando: false }); });
+                    return;
+                }
+
+                // 2. Executar acerto
+                setModal2fa(function(p) { return Object.assign({}, p, { etapa: 'executando' }); });
+                var re = await fetchAuth(API_URL + '/stark/acerto/' + modal2fa.loteId + '/executar', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ chave_token: modal2fa.chaveToken })
+                });
+                var de = await re.json();
+
+                if (de.success) {
+                    setModal2fa({
+                        aberto: false, etapa: 'confirmar', chaveToken: null, emailMascarado: '',
+                        tokenDigitado: '', enviando: false, validando: false, erro: '', loteId: null
+                    });
+                    setModalRes({
+                        aberto: true, enviados: de.enviados, rejeitados: de.rejeitados,
+                        valorEnviado: de.valor_enviado, detalhesRejeitados: de.detalhes_rejeitados || [],
+                        saldoAntes: de.saldo_antes
+                    });
+                    // Recarregar lista de aprovação
+                    carregarLotesAprovacao();
+                    setSt(function(p) { return Object.assign({}, p, { loteDetalhe: null }); });
+                } else {
+                    var erroMsg = de.error || 'Erro ao executar';
+                    if (de.saldo_disponivel !== undefined) {
+                        erroMsg += ' (Saldo: ' + formatarMoeda(de.saldo_disponivel) + ' | Necessário: ' + formatarMoeda(de.valor_lote) + ')';
+                    }
+                    setModal2fa(function(p) { return Object.assign({}, p, { erro: erroMsg, validando: false, etapa: 'digitar' }); });
+                }
+            } catch (e) {
+                setModal2fa(function(p) { return Object.assign({}, p, { erro: e.message, validando: false, etapa: 'digitar' }); });
+            }
+        };
+
+        // ===== Badge helper =====
         var badge = function(s) {
-            var c = { processando: 'bg-yellow-100 text-yellow-800', pago: 'bg-green-100 text-green-800', rejeitado: 'bg-red-100 text-red-800', em_lote: 'bg-blue-100 text-blue-800', erro: 'bg-red-100 text-red-800', parcial: 'bg-orange-100 text-orange-800', aguardando: 'bg-gray-100 text-gray-800', pronto: 'bg-emerald-100 text-emerald-800', sem_pix: 'bg-red-100 text-red-800' };
-            return React.createElement("span", { className: "px-2 py-1 rounded-full text-xs font-medium " + (c[s] || 'bg-gray-100 text-gray-600') }, s === 'pronto' ? '✅ Pronto' : s === 'sem_pix' ? '❌ Sem Pix' : s || '—');
+            var c = {
+                processando: 'bg-yellow-100 text-yellow-800', pago: 'bg-green-100 text-green-800',
+                concluido: 'bg-green-100 text-green-800', rejeitado: 'bg-red-100 text-red-800',
+                em_lote: 'bg-blue-100 text-blue-800', erro: 'bg-red-100 text-red-800',
+                parcial: 'bg-orange-100 text-orange-800', aguardando: 'bg-amber-100 text-amber-800',
+                pronto: 'bg-emerald-100 text-emerald-800', sem_pix: 'bg-red-100 text-red-800'
+            };
+            var labels = {
+                pronto: '✅ Pronto', sem_pix: '❌ Sem Pix', aguardando: '⏳ Aguardando',
+                processando: '⏳ Processando', pago: '✅ Pago', concluido: '✅ Concluído',
+                rejeitado: '❌ Rejeitado', em_lote: '📋 No Lote', erro: '❌ Erro',
+                parcial: '⚠️ Parcial'
+            };
+            return React.createElement("span", {
+                className: "px-2 py-1 rounded-full text-xs font-medium " + (c[s] || 'bg-gray-100 text-gray-600')
+            }, labels[s] || s || '—');
         };
-        
+
+        // ===== Init: carregar saldo =====
+        React.useEffect(function() {
+            carregarSaldo();
+        }, []);
+
+        // ==================== RENDER ====================
         return React.createElement("div", { className: "max-w-7xl mx-auto p-6 space-y-6" },
-            // Header
-            React.createElement("div", { className: "flex items-center justify-between" },
+
+            // ===== Header =====
+            React.createElement("div", { className: "flex items-center justify-between flex-wrap gap-4" },
                 React.createElement("div", null,
                     React.createElement("h2", { className: "text-2xl font-bold text-gray-800 flex items-center gap-3" }, "📋", " Acerto Profissional"),
                     React.createElement("p", { className: "text-gray-500 mt-1" }, "Upload de planilha de faturamento + pagamento via Stark Bank")
+                ),
+                // Indicador de saldo Stark Bank
+                React.createElement("div", { className: "bg-white rounded-xl shadow px-5 py-3 border-l-4 " + (st.saldoStark !== null && st.saldoStark > 0 ? "border-emerald-500" : "border-gray-300") },
+                    React.createElement("p", { className: "text-xs text-gray-500" }, "Saldo Stark Bank"),
+                    React.createElement("p", {
+                        className: "text-lg font-bold " + (st.saldoStark !== null && st.saldoStark > 0 ? "text-emerald-600" : "text-gray-400")
+                    }, st.saldoLoading ? "..." : st.saldoStark !== null ? formatarMoeda(st.saldoStark) : "N/D"),
+                    React.createElement("button", {
+                        onClick: carregarSaldo, className: "text-xs text-emerald-600 hover:underline mt-1"
+                    }, "↻ Atualizar")
                 )
             ),
-            
-            // Sub-tabs
+
+            // ===== Sub-tabs =====
             React.createElement("div", { className: "flex gap-2 border-b pb-2" },
-                React.createElement("button", { onClick: function() { setSt(function(p) { return Object.assign({}, p, { subTab: 'novo', etapa: 'upload', dados: null, loteDetalhe: null }); }); }, className: "px-4 py-2 rounded-lg text-sm font-medium " + (st.subTab === 'novo' ? "bg-emerald-100 text-emerald-700" : "text-gray-500 hover:bg-gray-100") }, "📤 Novo Acerto"),
-                React.createElement("button", { onClick: function() { setSt(function(p) { return Object.assign({}, p, { subTab: 'historico', loteDetalhe: null }); }); carregarHistorico(); }, className: "px-4 py-2 rounded-lg text-sm font-medium " + (st.subTab === 'historico' ? "bg-emerald-100 text-emerald-700" : "text-gray-500 hover:bg-gray-100") }, "📜 Histórico")
+                React.createElement("button", {
+                    onClick: function() { setSt(function(p) { return Object.assign({}, p, { subTab: 'novo', loteDetalhe: null }); }); },
+                    className: "px-4 py-2 rounded-lg text-sm font-medium transition-colors " + (st.subTab === 'novo' ? "bg-emerald-100 text-emerald-700" : "text-gray-500 hover:bg-gray-100")
+                }, "📤 Novo Acerto"),
+                React.createElement("button", {
+                    onClick: function() { setSt(function(p) { return Object.assign({}, p, { subTab: 'aprovacao', loteDetalhe: null }); }); carregarLotesAprovacao(); carregarSaldo(); },
+                    className: "px-4 py-2 rounded-lg text-sm font-medium transition-colors " + (st.subTab === 'aprovacao' ? "bg-amber-100 text-amber-700" : "text-gray-500 hover:bg-gray-100")
+                }, "⏳ Em Aprovação"),
+                React.createElement("button", {
+                    onClick: function() { setSt(function(p) { return Object.assign({}, p, { subTab: 'historico', loteDetalhe: null }); }); carregarHistorico(); },
+                    className: "px-4 py-2 rounded-lg text-sm font-medium transition-colors " + (st.subTab === 'historico' ? "bg-emerald-100 text-emerald-700" : "text-gray-500 hover:bg-gray-100")
+                }, "📜 Histórico")
             ),
-            
-            // ===== NOVO ACERTO =====
+
+            // ================== SUB-TAB: NOVO ACERTO ==================
             st.subTab === 'novo' && React.createElement("div", { className: "space-y-4" },
-                
-                // Etapa: Upload
-                st.etapa === 'upload' && React.createElement("div", { className: "bg-white rounded-xl shadow p-8 text-center space-y-4" },
+
+                // Upload (se não tem dados carregados)
+                !st.dados && React.createElement("div", { className: "bg-white rounded-xl shadow p-8 text-center space-y-4" },
                     React.createElement("div", { className: "w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto" },
                         React.createElement("span", { className: "text-4xl" }, "📤")
                     ),
                     React.createElement("h3", { className: "text-lg font-bold text-gray-800" }, "Upload da Planilha de Faturamento"),
                     React.createElement("p", { className: "text-gray-500 text-sm" }, "Envie o arquivo .xlsx com os dados dos profissionais para processar o acerto"),
-                    React.createElement("label", { className: "inline-block px-6 py-3 bg-emerald-600 text-white rounded-xl font-bold cursor-pointer hover:bg-emerald-700" },
+                    React.createElement("label", {
+                        className: "inline-block px-6 py-3 bg-emerald-600 text-white rounded-xl font-bold cursor-pointer hover:bg-emerald-700 transition-colors"
+                    },
                         st.uploading ? "⏳ Processando..." : "📎 Selecionar Planilha (.xlsx)",
                         React.createElement("input", { type: "file", accept: ".xlsx,.xls", onChange: handleUpload, className: "hidden", disabled: st.uploading })
                     ),
-                    React.createElement("p", { className: "text-xs text-gray-400" }, "Coluna F = Código e Nome do profissional | Coluna Q = Saldo a pagar")
+                    React.createElement("p", { className: "text-xs text-gray-400" }, "Coluna F = Código/Nome do profissional | Coluna Q = Saldo a pagar | Coluna M = Pix (fallback)")
                 ),
-                
-                // Etapa: Preview
-                st.etapa === 'preview' && st.dados && React.createElement("div", { className: "space-y-4" },
+
+                // Preview (quando tem dados)
+                st.dados && React.createElement("div", { className: "space-y-4" },
+
                     // Cards resumo
-                    React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-5 gap-4" },
+                    React.createElement("div", { className: "grid grid-cols-2 md:grid-cols-6 gap-3" },
                         React.createElement("div", { className: "bg-white rounded-xl p-4 shadow border-l-4 border-emerald-500 text-center" },
                             React.createElement("p", { className: "text-2xl font-bold text-emerald-600" }, st.dados.pix_sistema || 0),
-                            React.createElement("p", { className: "text-xs text-gray-500" }, "Pix do Sistema")
+                            React.createElement("p", { className: "text-xs text-gray-500" }, "Pix Sistema")
                         ),
                         React.createElement("div", { className: "bg-white rounded-xl p-4 shadow border-l-4 border-blue-500 text-center" },
                             React.createElement("p", { className: "text-2xl font-bold text-blue-600" }, st.dados.pix_planilha || 0),
-                            React.createElement("p", { className: "text-xs text-gray-500" }, "Pix da Planilha")
+                            React.createElement("p", { className: "text-xs text-gray-500" }, "Pix Planilha")
                         ),
                         React.createElement("div", { className: "bg-white rounded-xl p-4 shadow border-l-4 border-red-500 text-center" },
                             React.createElement("p", { className: "text-2xl font-bold text-red-600" }, st.dados.sem_pix || 0),
@@ -6618,133 +6806,418 @@
                             React.createElement("p", { className: "text-2xl font-bold text-gray-600" }, st.dados.total || 0),
                             React.createElement("p", { className: "text-xs text-gray-500" }, "Total")
                         ),
+                        React.createElement("div", { className: "bg-white rounded-xl p-4 shadow border-l-4 border-purple-500 text-center" },
+                            React.createElement("p", { className: "text-2xl font-bold text-purple-600" }, qtdSelecionados),
+                            React.createElement("p", { className: "text-xs text-gray-500" }, "Selecionados")
+                        ),
                         React.createElement("div", { className: "bg-white rounded-xl p-4 shadow border-l-4 border-yellow-500 text-center" },
-                            React.createElement("p", { className: "text-2xl font-bold text-yellow-600" }, formatarMoeda(st.dados.valor_total || 0)),
-                            React.createElement("p", { className: "text-xs text-gray-500" }, "Valor a pagar")
+                            React.createElement("p", { className: "text-xl font-bold text-yellow-600" }, formatarMoeda(valorSelecionado)),
+                            React.createElement("p", { className: "text-xs text-gray-500" }, "Valor selecionado")
                         )
                     ),
-                    
-                    // Tabela de preview
+
+                    // Barra de saldo vs valor selecionado
+                    st.saldoStark !== null && valorSelecionado > 0 && React.createElement("div", {
+                        className: "rounded-xl p-4 shadow " + (st.saldoStark >= valorSelecionado ? "bg-emerald-50 border border-emerald-200" : "bg-red-50 border border-red-200")
+                    },
+                        React.createElement("div", { className: "flex justify-between items-center" },
+                            React.createElement("div", null,
+                                React.createElement("span", { className: "text-sm text-gray-600" }, "Saldo Stark: "),
+                                React.createElement("span", { className: "font-bold " + (st.saldoStark >= valorSelecionado ? "text-emerald-700" : "text-red-700") }, formatarMoeda(st.saldoStark))
+                            ),
+                            React.createElement("div", null,
+                                React.createElement("span", { className: "text-sm text-gray-600" }, "Valor selecionado: "),
+                                React.createElement("span", { className: "font-bold text-gray-800" }, formatarMoeda(valorSelecionado))
+                            ),
+                            st.saldoStark >= valorSelecionado
+                                ? React.createElement("span", { className: "text-emerald-600 font-bold text-sm" }, "✅ Saldo suficiente")
+                                : React.createElement("span", { className: "text-red-600 font-bold text-sm" }, "❌ Saldo insuficiente (faltam " + formatarMoeda(valorSelecionado - st.saldoStark) + ")")
+                        )
+                    ),
+
+                    // Tabela com checkboxes
                     React.createElement("div", { className: "bg-white rounded-xl shadow overflow-x-auto" },
                         React.createElement("table", { className: "w-full text-sm" },
-                            React.createElement("thead", null, React.createElement("tr", { className: "bg-gray-50 border-b" },
-                                React.createElement("th", { className: "px-4 py-3 text-left" }, "Código"),
-                                React.createElement("th", { className: "px-4 py-3 text-left" }, "Nome (Planilha)"),
-                                React.createElement("th", { className: "px-4 py-3 text-left" }, "Nome (Sistema)"),
-                                React.createElement("th", { className: "px-4 py-3 text-left" }, "Chave Pix"),
-                                React.createElement("th", { className: "px-4 py-3 text-center" }, "Origem"),
-                                React.createElement("th", { className: "px-4 py-3 text-right" }, "Valor"),
-                                React.createElement("th", { className: "px-4 py-3 text-center" }, "Status")
-                            )),
-                            React.createElement("tbody", null, (st.dados.profissionais || []).sort(function(a, b) { return b.saldo - a.saldo; }).map(function(prof, i) {
-                                var origemBadge = prof.pix_origem === 'sistema' ? React.createElement("span", { className: "px-2 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700" }, "✅ Sistema")
-                                    : prof.pix_origem === 'planilha' ? React.createElement("span", { className: "px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700" }, "📋 Planilha")
-                                    : React.createElement("span", { className: "px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700" }, "❌ Nenhuma");
-                                return React.createElement("tr", { key: i, className: "border-b hover:bg-gray-50 " + (prof.status === 'sem_pix' ? 'bg-red-50' : '') },
-                                    React.createElement("td", { className: "px-4 py-2.5 font-mono text-gray-700" }, "#" + prof.cod_prof),
-                                    React.createElement("td", { className: "px-4 py-2.5" }, prof.nome_planilha),
-                                    React.createElement("td", { className: "px-4 py-2.5 " + (prof.nome_sistema ? "text-emerald-700" : "text-gray-400") }, prof.nome_sistema || '—'),
-                                    React.createElement("td", { className: "px-4 py-2.5 text-xs text-gray-600 max-w-[160px] truncate" }, prof.pix_key || '—'),
-                                    React.createElement("td", { className: "px-4 py-2.5 text-center" }, origemBadge),
-                                    React.createElement("td", { className: "px-4 py-2.5 text-right font-bold text-emerald-700" }, formatarMoeda(prof.saldo)),
-                                    React.createElement("td", { className: "px-4 py-2.5 text-center" }, badge(prof.status))
-                                );
-                            }))
+                            React.createElement("thead", null,
+                                React.createElement("tr", { className: "bg-gray-50 border-b" },
+                                    React.createElement("th", { className: "px-3 py-3 text-center w-10" },
+                                        React.createElement("input", {
+                                            type: "checkbox",
+                                            checked: todosEstaoSelecionados,
+                                            onChange: toggleTodos,
+                                            className: "w-4 h-4 accent-emerald-600 cursor-pointer",
+                                            title: "Selecionar todos"
+                                        })
+                                    ),
+                                    React.createElement("th", { className: "px-3 py-3 text-left" }, "Código"),
+                                    React.createElement("th", { className: "px-3 py-3 text-left" }, "Nome (Planilha)"),
+                                    React.createElement("th", { className: "px-3 py-3 text-left" }, "Nome (Sistema)"),
+                                    React.createElement("th", { className: "px-3 py-3 text-left" }, "Chave Pix"),
+                                    React.createElement("th", { className: "px-3 py-3 text-center" }, "Origem"),
+                                    React.createElement("th", { className: "px-3 py-3 text-right" }, "Valor"),
+                                    React.createElement("th", { className: "px-3 py-3 text-center" }, "Status")
+                                )
+                            ),
+                            React.createElement("tbody", null,
+                                todosProfs.sort(function(a, b) { return b.saldo - a.saldo; }).map(function(prof, i) {
+                                    var ehSemPix = prof.status === 'sem_pix';
+                                    var origemBadge = prof.pix_origem === 'sistema'
+                                        ? React.createElement("span", { className: "px-2 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700" }, "✅ Sistema")
+                                        : prof.pix_origem === 'planilha'
+                                            ? React.createElement("span", { className: "px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700" }, "📋 Planilha")
+                                            : React.createElement("span", { className: "px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700" }, "❌ Nenhuma");
+
+                                    return React.createElement("tr", {
+                                        key: prof.cod_prof + '-' + i,
+                                        className: "border-b hover:bg-gray-50 " + (ehSemPix ? 'bg-red-50 opacity-60' : sel[prof.cod_prof] ? 'bg-emerald-50' : '')
+                                    },
+                                        React.createElement("td", { className: "px-3 py-2.5 text-center" },
+                                            React.createElement("input", {
+                                                type: "checkbox",
+                                                checked: !!sel[prof.cod_prof],
+                                                onChange: function() { toggleSel(prof.cod_prof); },
+                                                disabled: ehSemPix,
+                                                className: "w-4 h-4 accent-emerald-600 " + (ehSemPix ? "cursor-not-allowed" : "cursor-pointer"),
+                                                title: ehSemPix ? "Sem chave Pix — não pode ser selecionado" : "Selecionar"
+                                            })
+                                        ),
+                                        React.createElement("td", { className: "px-3 py-2.5 font-mono text-gray-700" }, "#" + prof.cod_prof),
+                                        React.createElement("td", { className: "px-3 py-2.5" }, prof.nome_planilha),
+                                        React.createElement("td", { className: "px-3 py-2.5 " + (prof.nome_sistema ? "text-emerald-700" : "text-gray-400") }, prof.nome_sistema || '—'),
+                                        React.createElement("td", { className: "px-3 py-2.5 text-xs text-gray-600 max-w-[160px] truncate" }, prof.pix_key || '—'),
+                                        React.createElement("td", { className: "px-3 py-2.5 text-center" }, origemBadge),
+                                        React.createElement("td", { className: "px-3 py-2.5 text-right font-bold text-emerald-700" }, formatarMoeda(prof.saldo)),
+                                        React.createElement("td", { className: "px-3 py-2.5 text-center" }, badge(prof.status))
+                                    );
+                                })
+                            )
                         )
                     ),
-                    
+
                     // Botões de ação
-                    React.createElement("div", { className: "flex gap-3 justify-end" },
+                    React.createElement("div", { className: "flex gap-3 justify-between items-center flex-wrap" },
                         React.createElement("button", {
-                            onClick: function() { setSt(function(p) { return Object.assign({}, p, { etapa: 'upload', dados: null }); }); },
-                            className: "px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                            onClick: function() { setSt(function(p) { return Object.assign({}, p, { dados: null }); }); setSel({}); },
+                            className: "px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
                         }, "← Nova planilha"),
+                        React.createElement("div", { className: "flex items-center gap-3" },
+                            React.createElement("span", { className: "text-sm text-gray-500" },
+                                qtdSelecionados + " selecionados • " + formatarMoeda(valorSelecionado)
+                            ),
+                            React.createElement("button", {
+                                onClick: criarLote,
+                                disabled: qtdSelecionados === 0,
+                                className: "px-6 py-3 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 disabled:opacity-50 shadow-lg transition-colors"
+                            }, "🏦 Gerar Lote de Acerto (" + qtdSelecionados + ")")
+                        )
+                    )
+                )
+            ),
+
+            // ================== SUB-TAB: EM APROVAÇÃO ==================
+            st.subTab === 'aprovacao' && React.createElement("div", { className: "space-y-4" },
+
+                // Se tem detalhe aberto
+                st.loteDetalhe && React.createElement("div", { className: "space-y-4" },
+                    React.createElement("button", {
+                        onClick: function() { setSt(function(p) { return Object.assign({}, p, { loteDetalhe: null }); }); },
+                        className: "text-sm text-gray-500 hover:text-gray-700 mb-2"
+                    }, "← Voltar para lista"),
+
+                    // Info do lote
+                    React.createElement("div", { className: "bg-white rounded-xl shadow p-6" },
+                        React.createElement("div", { className: "flex items-center justify-between flex-wrap gap-4" },
+                            React.createElement("div", null,
+                                React.createElement("h3", { className: "text-lg font-bold text-gray-800" }, "Lote #" + st.loteDetalhe.lote.id),
+                                React.createElement("p", { className: "text-gray-500 text-sm" },
+                                    st.loteDetalhe.lote.quantidade + " profissionais • " + formatarMoeda(st.loteDetalhe.lote.valor_total) +
+                                    " • Criado por " + (st.loteDetalhe.lote.executado_por_nome || '—')
+                                ),
+                                React.createElement("p", { className: "text-xs text-gray-400 mt-1" },
+                                    st.loteDetalhe.lote.created_at ? new Date(st.loteDetalhe.lote.created_at).toLocaleString('pt-BR') : ''
+                                )
+                            ),
+                            // Comparação saldo vs valor
+                            React.createElement("div", { className: "text-right" },
+                                st.saldoStark !== null && React.createElement("div", null,
+                                    React.createElement("p", { className: "text-xs text-gray-500" }, "Saldo Stark Bank"),
+                                    React.createElement("p", {
+                                        className: "text-lg font-bold " + (st.saldoStark >= parseFloat(st.loteDetalhe.lote.valor_total) ? "text-emerald-600" : "text-red-600")
+                                    }, formatarMoeda(st.saldoStark)),
+                                    st.saldoStark >= parseFloat(st.loteDetalhe.lote.valor_total)
+                                        ? React.createElement("p", { className: "text-xs text-emerald-600" }, "✅ Suficiente")
+                                        : React.createElement("p", { className: "text-xs text-red-600" }, "❌ Insuficiente")
+                                )
+                            )
+                        )
+                    ),
+
+                    // Tabela de itens do lote
+                    React.createElement("div", { className: "bg-white rounded-xl shadow overflow-x-auto" },
+                        React.createElement("table", { className: "w-full text-sm" },
+                            React.createElement("thead", null,
+                                React.createElement("tr", { className: "bg-gray-50 border-b" },
+                                    React.createElement("th", { className: "px-4 py-3 text-left" }, "Código"),
+                                    React.createElement("th", { className: "px-4 py-3 text-left" }, "Nome"),
+                                    React.createElement("th", { className: "px-4 py-3 text-left" }, "Chave Pix"),
+                                    React.createElement("th", { className: "px-4 py-3 text-left" }, "CPF"),
+                                    React.createElement("th", { className: "px-4 py-3 text-right" }, "Valor"),
+                                    React.createElement("th", { className: "px-4 py-3 text-center" }, "Status")
+                                )
+                            ),
+                            React.createElement("tbody", null,
+                                (st.loteDetalhe.itens || []).map(function(item) {
+                                    return React.createElement("tr", { key: item.id, className: "border-b hover:bg-gray-50" },
+                                        React.createElement("td", { className: "px-4 py-2.5 font-mono text-gray-700" }, "#" + item.cod_prof),
+                                        React.createElement("td", { className: "px-4 py-2.5" }, item.nome_prof),
+                                        React.createElement("td", { className: "px-4 py-2.5 text-xs text-gray-600 max-w-[160px] truncate" }, item.pix_key || '—'),
+                                        React.createElement("td", { className: "px-4 py-2.5 text-xs text-gray-600" }, item.cpf || '—'),
+                                        React.createElement("td", { className: "px-4 py-2.5 text-right font-bold text-emerald-700" }, formatarMoeda(item.valor)),
+                                        React.createElement("td", { className: "px-4 py-2.5 text-center" }, badge(item.status))
+                                    );
+                                })
+                            )
+                        )
+                    ),
+
+                    // Botão executar pagamento
+                    st.loteDetalhe.lote.status === 'aguardando' && React.createElement("div", { className: "flex justify-end" },
                         React.createElement("button", {
-                            onClick: criarLote,
-                            disabled: !st.dados || (st.dados.prontos || 0) === 0,
-                            className: "px-6 py-3 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 disabled:opacity-50 shadow-lg"
-                        }, "🏦 Gerar Lote de Acerto (" + (st.dados ? st.dados.prontos : 0) + " profissionais)")
+                            onClick: function() {
+                                setModal2fa({
+                                    aberto: true, etapa: 'confirmar', chaveToken: null, emailMascarado: '',
+                                    tokenDigitado: '', enviando: false, validando: false, erro: '',
+                                    loteId: st.loteDetalhe.lote.id
+                                });
+                            },
+                            disabled: st.saldoStark !== null && st.saldoStark < parseFloat(st.loteDetalhe.lote.valor_total),
+                            className: "px-8 py-4 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 shadow-lg text-lg disabled:opacity-50 transition-colors"
+                        }, "🔐 Executar Pagamento (" + formatarMoeda(st.loteDetalhe.lote.valor_total) + ")")
                     )
                 ),
-                
-                // Etapa: Lote criado — executar pagamento
-                st.etapa === 'lote_criado' && React.createElement("div", { className: "bg-white rounded-xl shadow p-8 text-center space-y-4" },
-                    React.createElement("div", { className: "w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto" },
-                        React.createElement("span", { className: "text-4xl" }, "✅")
-                    ),
-                    React.createElement("h3", { className: "text-lg font-bold text-gray-800" }, "Lote #" + st.loteId + " criado com sucesso!"),
-                    React.createElement("p", { className: "text-gray-500" }, (st.dados ? st.dados.prontos : 0) + " profissionais • " + formatarMoeda(st.dados ? st.dados.valor_total : 0)),
-                    React.createElement("button", {
-                        onClick: function() { setModal2fa({ aberto: true, etapa: 'confirmar', chaveToken: null, emailMascarado: '', tokenDigitado: '', enviando: false, validando: false, erro: '', loteId: st.loteId }); },
-                        className: "px-8 py-4 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 shadow-lg text-lg"
-                    }, "🔐 Executar Pagamento do Acerto"),
-                    React.createElement("button", {
-                        onClick: function() { setSt(function(p) { return Object.assign({}, p, { etapa: 'upload', dados: null }); }); },
-                        className: "block mx-auto text-sm text-gray-500 hover:underline mt-2"
-                    }, "Fazer outro acerto")
+
+                // Lista de lotes em aprovação (quando não tem detalhe aberto)
+                !st.loteDetalhe && React.createElement("div", null,
+                    st.lotesAprovacaoLoading
+                        ? React.createElement("div", { className: "text-center py-10 text-gray-400" }, "Carregando...")
+                        : st.lotesAprovacao.length === 0
+                            ? React.createElement("div", { className: "bg-white rounded-xl shadow p-10 text-center" },
+                                React.createElement("span", { className: "text-5xl block mb-4" }, "📭"),
+                                React.createElement("p", { className: "text-gray-400 text-lg" }, "Nenhum lote aguardando aprovação"),
+                                React.createElement("p", { className: "text-gray-400 text-sm mt-2" }, "Faça upload de uma planilha na aba \"Novo Acerto\" para começar")
+                            )
+                            : React.createElement("div", { className: "space-y-3" },
+                                st.lotesAprovacao.map(function(lote) {
+                                    return React.createElement("div", {
+                                        key: lote.id,
+                                        className: "bg-white rounded-xl shadow p-5 hover:shadow-md transition-shadow cursor-pointer border-l-4 border-amber-400",
+                                        onClick: function() { carregarDetalheLote(lote.id); }
+                                    },
+                                        React.createElement("div", { className: "flex items-center justify-between" },
+                                            React.createElement("div", null,
+                                                React.createElement("h4", { className: "font-bold text-gray-800 text-lg" }, "Lote #" + lote.id),
+                                                React.createElement("p", { className: "text-sm text-gray-500" },
+                                                    lote.quantidade + " profissionais • " + formatarMoeda(lote.valor_total)
+                                                ),
+                                                React.createElement("p", { className: "text-xs text-gray-400 mt-1" },
+                                                    "Criado por " + (lote.executado_por_nome || '—') + " em " +
+                                                    (lote.created_at ? new Date(lote.created_at).toLocaleString('pt-BR') : '—')
+                                                )
+                                            ),
+                                            React.createElement("div", { className: "flex items-center gap-3" },
+                                                badge('aguardando'),
+                                                React.createElement("span", { className: "text-gray-400 text-xl" }, "→")
+                                            )
+                                        )
+                                    );
+                                })
+                            )
                 )
             ),
-            
-            // ===== HISTÓRICO =====
+
+            // ================== SUB-TAB: HISTÓRICO ==================
             st.subTab === 'historico' && React.createElement("div", { className: "space-y-4" },
-                st.historicoLoading ? React.createElement("div", { className: "text-center py-10 text-gray-400" }, "Carregando...")
-                : st.historico.length === 0 ? React.createElement("div", { className: "text-center py-10 bg-white rounded-xl shadow" }, React.createElement("p", { className: "text-gray-400" }, "Nenhum acerto realizado"))
-                : React.createElement("div", { className: "bg-white rounded-xl shadow overflow-x-auto" },
-                    React.createElement("table", { className: "w-full text-sm" },
-                        React.createElement("thead", null, React.createElement("tr", { className: "bg-gray-50 border-b" },
-                            React.createElement("th", { className: "px-4 py-3 text-left" }, "Lote"),
-                            React.createElement("th", { className: "px-4 py-3 text-center" }, "Qtd"),
-                            React.createElement("th", { className: "px-4 py-3 text-right" }, "Valor"),
-                            React.createElement("th", { className: "px-4 py-3 text-center" }, "Status"),
-                            React.createElement("th", { className: "px-4 py-3 text-center" }, "Pagos"),
-                            React.createElement("th", { className: "px-4 py-3 text-center" }, "Rejeitados"),
-                            React.createElement("th", { className: "px-4 py-3 text-left" }, "Executado por"),
-                            React.createElement("th", { className: "px-4 py-3 text-left" }, "Data")
-                        )),
-                        React.createElement("tbody", null, st.historico.map(function(l) {
-                            return React.createElement("tr", { key: l.id, className: "border-b hover:bg-gray-50" },
-                                React.createElement("td", { className: "px-4 py-3 font-bold" }, "#" + l.id),
-                                React.createElement("td", { className: "px-4 py-3 text-center" }, l.quantidade),
-                                React.createElement("td", { className: "px-4 py-3 text-right font-medium" }, formatarMoeda(l.valor_total)),
-                                React.createElement("td", { className: "px-4 py-3 text-center" }, badge(l.status)),
-                                React.createElement("td", { className: "px-4 py-3 text-center text-green-600" }, l.itens_pagos || 0),
-                                React.createElement("td", { className: "px-4 py-3 text-center text-red-600" }, l.itens_rejeitados || 0),
-                                React.createElement("td", { className: "px-4 py-3 text-gray-600" }, l.executado_por_nome || '—'),
-                                React.createElement("td", { className: "px-4 py-3 text-xs text-gray-500" }, l.created_at ? new Date(l.created_at).toLocaleString('pt-BR') : '—')
-                            );
-                        }))
+
+                // Detalhe do lote (histórico)
+                st.loteDetalhe && React.createElement("div", { className: "space-y-4" },
+                    React.createElement("button", {
+                        onClick: function() { setSt(function(p) { return Object.assign({}, p, { loteDetalhe: null }); }); },
+                        className: "text-sm text-gray-500 hover:text-gray-700"
+                    }, "← Voltar"),
+
+                    React.createElement("div", { className: "bg-white rounded-xl shadow p-6" },
+                        React.createElement("div", { className: "flex items-center justify-between flex-wrap gap-4" },
+                            React.createElement("div", null,
+                                React.createElement("h3", { className: "text-lg font-bold text-gray-800" }, "Lote #" + st.loteDetalhe.lote.id, " ", badge(st.loteDetalhe.lote.status)),
+                                React.createElement("p", { className: "text-gray-500 text-sm mt-1" },
+                                    st.loteDetalhe.lote.quantidade + " profissionais • " + formatarMoeda(st.loteDetalhe.lote.valor_total) +
+                                    " • " + (st.loteDetalhe.lote.executado_por_nome || '—')
+                                ),
+                                React.createElement("p", { className: "text-xs text-gray-400 mt-1" },
+                                    "Criado: " + (st.loteDetalhe.lote.created_at ? new Date(st.loteDetalhe.lote.created_at).toLocaleString('pt-BR') : '—') +
+                                    (st.loteDetalhe.lote.finalizado_em ? " | Finalizado: " + new Date(st.loteDetalhe.lote.finalizado_em).toLocaleString('pt-BR') : '')
+                                )
+                            ),
+                            st.loteDetalhe.lote.saldo_antes && React.createElement("div", { className: "text-right text-sm" },
+                                React.createElement("p", { className: "text-gray-400" }, "Saldo antes: " + formatarMoeda(st.loteDetalhe.lote.saldo_antes))
+                            )
+                        )
+                    ),
+
+                    React.createElement("div", { className: "bg-white rounded-xl shadow overflow-x-auto" },
+                        React.createElement("table", { className: "w-full text-sm" },
+                            React.createElement("thead", null,
+                                React.createElement("tr", { className: "bg-gray-50 border-b" },
+                                    React.createElement("th", { className: "px-4 py-3 text-left" }, "Código"),
+                                    React.createElement("th", { className: "px-4 py-3 text-left" }, "Nome"),
+                                    React.createElement("th", { className: "px-4 py-3 text-left" }, "Chave Pix"),
+                                    React.createElement("th", { className: "px-4 py-3 text-right" }, "Valor"),
+                                    React.createElement("th", { className: "px-4 py-3 text-center" }, "Status"),
+                                    React.createElement("th", { className: "px-4 py-3 text-left" }, "Erro")
+                                )
+                            ),
+                            React.createElement("tbody", null,
+                                (st.loteDetalhe.itens || []).map(function(item) {
+                                    return React.createElement("tr", {
+                                        key: item.id,
+                                        className: "border-b hover:bg-gray-50 " + (item.status === 'rejeitado' || item.status === 'erro' ? 'bg-red-50' : item.status === 'pago' ? 'bg-green-50' : '')
+                                    },
+                                        React.createElement("td", { className: "px-4 py-2.5 font-mono text-gray-700" }, "#" + item.cod_prof),
+                                        React.createElement("td", { className: "px-4 py-2.5" }, item.nome_prof),
+                                        React.createElement("td", { className: "px-4 py-2.5 text-xs text-gray-600 max-w-[140px] truncate" }, item.pix_key || '—'),
+                                        React.createElement("td", { className: "px-4 py-2.5 text-right font-bold text-emerald-700" }, formatarMoeda(item.valor)),
+                                        React.createElement("td", { className: "px-4 py-2.5 text-center" }, badge(item.status)),
+                                        React.createElement("td", { className: "px-4 py-2.5 text-xs text-red-500 max-w-[200px] truncate" }, item.erro || '—')
+                                    );
+                                })
+                            )
+                        )
                     )
+                ),
+
+                // Lista do histórico
+                !st.loteDetalhe && React.createElement("div", null,
+                    st.historicoLoading
+                        ? React.createElement("div", { className: "text-center py-10 text-gray-400" }, "Carregando...")
+                        : st.historico.length === 0
+                            ? React.createElement("div", { className: "text-center py-10 bg-white rounded-xl shadow" },
+                                React.createElement("p", { className: "text-gray-400" }, "Nenhum acerto realizado")
+                            )
+                            : React.createElement("div", { className: "bg-white rounded-xl shadow overflow-x-auto" },
+                                React.createElement("table", { className: "w-full text-sm" },
+                                    React.createElement("thead", null,
+                                        React.createElement("tr", { className: "bg-gray-50 border-b" },
+                                            React.createElement("th", { className: "px-4 py-3 text-left" }, "Lote"),
+                                            React.createElement("th", { className: "px-4 py-3 text-center" }, "Qtd"),
+                                            React.createElement("th", { className: "px-4 py-3 text-right" }, "Valor"),
+                                            React.createElement("th", { className: "px-4 py-3 text-center" }, "Status"),
+                                            React.createElement("th", { className: "px-4 py-3 text-center" }, "Pagos"),
+                                            React.createElement("th", { className: "px-4 py-3 text-center" }, "Rejeitados"),
+                                            React.createElement("th", { className: "px-4 py-3 text-left" }, "Executado por"),
+                                            React.createElement("th", { className: "px-4 py-3 text-left" }, "Data")
+                                        )
+                                    ),
+                                    React.createElement("tbody", null,
+                                        st.historico.map(function(l) {
+                                            return React.createElement("tr", {
+                                                key: l.id,
+                                                className: "border-b hover:bg-gray-50 cursor-pointer",
+                                                onClick: function() { carregarDetalheLote(l.id); }
+                                            },
+                                                React.createElement("td", { className: "px-4 py-3 font-bold" }, "#" + l.id),
+                                                React.createElement("td", { className: "px-4 py-3 text-center" }, l.quantidade),
+                                                React.createElement("td", { className: "px-4 py-3 text-right font-medium" }, formatarMoeda(l.valor_total)),
+                                                React.createElement("td", { className: "px-4 py-3 text-center" }, badge(l.status)),
+                                                React.createElement("td", { className: "px-4 py-3 text-center text-green-600" }, l.itens_pagos || 0),
+                                                React.createElement("td", { className: "px-4 py-3 text-center text-red-600" }, l.itens_rejeitados || 0),
+                                                React.createElement("td", { className: "px-4 py-3 text-gray-600" }, l.executado_por_nome || '—'),
+                                                React.createElement("td", { className: "px-4 py-3 text-xs text-gray-500" }, l.created_at ? new Date(l.created_at).toLocaleString('pt-BR') : '—')
+                                            );
+                                        })
+                                    )
+                                )
+                            )
                 )
             ),
-            
-            // ===== MODAL 2FA (reutilizado) =====
-            modal2fa.aberto && React.createElement("div", { className: "fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" },
+
+            // ================== MODAL 2FA ==================
+            modal2fa.aberto && React.createElement("div", {
+                className: "fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+            },
                 React.createElement("div", { className: "bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden" },
-                    React.createElement("div", { className: "bg-gradient-to-r from-emerald-600 to-teal-600 p-6 text-white text-center" },
+                    React.createElement("div", {
+                        className: "bg-gradient-to-r from-emerald-600 to-teal-600 p-6 text-white text-center"
+                    },
                         React.createElement("span", { className: "text-4xl" }, "🔐"),
-                        React.createElement("h3", { className: "text-xl font-bold mt-2" }, "Confirmação — Acerto Profissional")
+                        React.createElement("h3", { className: "text-xl font-bold mt-2" }, "Confirmação — Acerto Profissional"),
+                        modal2fa.loteId && React.createElement("p", { className: "text-emerald-100 text-sm mt-1" }, "Lote #" + modal2fa.loteId)
                     ),
                     React.createElement("div", { className: "p-6 space-y-4" },
+
+                        // Etapa: confirmar (enviar código)
                         modal2fa.etapa === 'confirmar' && React.createElement("div", { className: "space-y-4 text-center" },
-                            React.createElement("p", { className: "text-gray-600 text-sm" }, "Um código será enviado para o email cadastrado."),
-                            React.createElement("button", { onClick: function() { solicitarToken(modal2fa.loteId); }, disabled: modal2fa.enviando, className: "w-full py-3 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 disabled:opacity-50" }, modal2fa.enviando ? "📧 Enviando..." : "📧 Enviar código")
+                            React.createElement("p", { className: "text-gray-600 text-sm" }, "Um código de segurança será enviado para o email cadastrado para confirmar o pagamento."),
+                            React.createElement("button", {
+                                onClick: function() { solicitarToken(modal2fa.loteId); },
+                                disabled: modal2fa.enviando,
+                                className: "w-full py-3 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 disabled:opacity-50 transition-colors"
+                            }, modal2fa.enviando ? "📧 Enviando..." : "📧 Enviar código por email")
                         ),
+
+                        // Etapa: digitar código
                         modal2fa.etapa === 'digitar' && React.createElement("div", { className: "space-y-4 text-center" },
                             React.createElement("p", { className: "text-gray-600 text-sm" }, "Código enviado para ", React.createElement("strong", null, modal2fa.emailMascarado)),
-                            React.createElement("input", { type: "text", maxLength: 6, placeholder: "000000", value: modal2fa.tokenDigitado, onChange: function(e) { var v = e.target.value.replace(/\D/g, '').substring(0, 6); setModal2fa(function(p) { return Object.assign({}, p, { tokenDigitado: v, erro: '' }); }); }, className: "w-full text-center text-3xl font-bold tracking-[12px] border-2 border-gray-300 rounded-xl py-4 focus:border-emerald-500 outline-none", autoFocus: true }),
-                            React.createElement("button", { onClick: validarEExecutar, disabled: modal2fa.validando || modal2fa.tokenDigitado.length !== 6, className: "w-full py-3 bg-emerald-600 text-white rounded-xl font-bold disabled:opacity-50" }, modal2fa.validando ? "⏳ Executando..." : "✅ Confirmar e Pagar")
+                            React.createElement("input", {
+                                type: "text", maxLength: 6, placeholder: "000000",
+                                value: modal2fa.tokenDigitado,
+                                onChange: function(e) {
+                                    var v = e.target.value.replace(/\D/g, '').substring(0, 6);
+                                    setModal2fa(function(p) { return Object.assign({}, p, { tokenDigitado: v, erro: '' }); });
+                                },
+                                className: "w-full text-center text-3xl font-bold tracking-[12px] border-2 border-gray-300 rounded-xl py-4 focus:border-emerald-500 outline-none",
+                                autoFocus: true
+                            }),
+                            React.createElement("button", {
+                                onClick: validarEExecutar,
+                                disabled: modal2fa.validando || modal2fa.tokenDigitado.length !== 6,
+                                className: "w-full py-3 bg-emerald-600 text-white rounded-xl font-bold disabled:opacity-50 transition-colors"
+                            }, modal2fa.validando ? "⏳ Executando pagamentos..." : "✅ Confirmar e Pagar")
                         ),
-                        modal2fa.etapa === 'executando' && React.createElement("div", { className: "text-center py-4" }, React.createElement("p", { className: "text-gray-600" }, "⏳ Executando pagamentos...")),
-                        modal2fa.erro && React.createElement("div", { className: "bg-red-50 border border-red-200 rounded-lg p-3 text-center" }, React.createElement("p", { className: "text-red-600 text-sm" }, "❌ " + modal2fa.erro)),
-                        modal2fa.etapa !== 'executando' && React.createElement("button", { onClick: function() { setModal2fa(function(p) { return Object.assign({}, p, { aberto: false }); }); }, className: "w-full py-2 bg-gray-100 text-gray-600 rounded-xl text-sm" }, "Cancelar")
+
+                        // Etapa: executando
+                        modal2fa.etapa === 'executando' && React.createElement("div", { className: "text-center py-6" },
+                            React.createElement("div", { className: "animate-spin w-10 h-10 border-4 border-emerald-200 border-t-emerald-600 rounded-full mx-auto mb-4" }),
+                            React.createElement("p", { className: "text-gray-600" }, "Executando pagamentos via Stark Bank..."),
+                            React.createElement("p", { className: "text-gray-400 text-sm mt-2" }, "Não feche esta janela")
+                        ),
+
+                        // Erro
+                        modal2fa.erro && React.createElement("div", { className: "bg-red-50 border border-red-200 rounded-lg p-3 text-center" },
+                            React.createElement("p", { className: "text-red-600 text-sm" }, "❌ " + modal2fa.erro)
+                        ),
+
+                        // Botão cancelar
+                        modal2fa.etapa !== 'executando' && React.createElement("button", {
+                            onClick: function() {
+                                setModal2fa({
+                                    aberto: false, etapa: 'confirmar', chaveToken: null, emailMascarado: '',
+                                    tokenDigitado: '', enviando: false, validando: false, erro: '', loteId: null
+                                });
+                            },
+                            className: "w-full py-2 bg-gray-100 text-gray-600 rounded-xl text-sm hover:bg-gray-200 transition-colors"
+                        }, "Cancelar")
                     )
                 )
             ),
-            
-            // ===== MODAL RESULTADO =====
-            modalRes.aberto && React.createElement("div", { className: "fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" },
+
+            // ================== MODAL RESULTADO ==================
+            modalRes.aberto && React.createElement("div", {
+                className: "fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+            },
                 React.createElement("div", { className: "bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden" },
-                    React.createElement("div", { className: "p-6 text-white text-center " + (modalRes.rejeitados > 0 ? "bg-gradient-to-r from-amber-500 to-orange-500" : "bg-gradient-to-r from-emerald-500 to-green-500") },
+                    React.createElement("div", {
+                        className: "p-6 text-white text-center " + (modalRes.rejeitados > 0 ? "bg-gradient-to-r from-amber-500 to-orange-500" : "bg-gradient-to-r from-emerald-500 to-green-500")
+                    },
                         React.createElement("span", { className: "text-5xl" }, modalRes.rejeitados > 0 ? "⚠️" : "✅"),
                         React.createElement("h3", { className: "text-xl font-bold mt-3" }, modalRes.rejeitados > 0 ? "Acerto Parcial" : "Acerto Enviado!")
                     ),
@@ -6760,21 +7233,35 @@
                                 React.createElement("p", { className: "text-xs " + (modalRes.rejeitados > 0 ? "text-red-700" : "text-gray-400") }, "Rejeitados")
                             )
                         ),
-                        modalRes.detalhesRejeitados.length > 0 && React.createElement("div", { className: "bg-red-50 border border-red-200 rounded-xl p-4 max-h-48 overflow-y-auto" },
+                        modalRes.saldoAntes && React.createElement("p", { className: "text-center text-xs text-gray-400" },
+                            "Saldo antes: " + formatarMoeda(modalRes.saldoAntes)
+                        ),
+                        modalRes.detalhesRejeitados.length > 0 && React.createElement("div", {
+                            className: "bg-red-50 border border-red-200 rounded-xl p-4 max-h-48 overflow-y-auto"
+                        },
                             React.createElement("p", { className: "text-sm font-bold text-red-700 mb-2" }, "❌ Rejeitados:"),
                             modalRes.detalhesRejeitados.map(function(r, i) {
-                                return React.createElement("div", { key: i, className: "flex justify-between bg-white rounded-lg px-3 py-2 mb-1 border border-red-100" },
-                                    React.createElement("span", { className: "text-sm text-gray-800" }, r.nome),
-                                    React.createElement("span", { className: "text-xs text-red-500" }, "Pendente")
+                                return React.createElement("div", {
+                                    key: i,
+                                    className: "flex justify-between bg-white rounded-lg px-3 py-2 mb-1 border border-red-100"
+                                },
+                                    React.createElement("span", { className: "text-sm text-gray-800" }, "#" + (r.cod_prof || '') + " " + (r.nome || '')),
+                                    React.createElement("span", { className: "text-xs text-red-500 max-w-[200px] truncate" }, r.erro || 'Erro')
                                 );
                             })
                         ),
-                        React.createElement("button", { onClick: function() { setModalRes(function(p) { return Object.assign({}, p, { aberto: false }); }); setSt(function(p) { return Object.assign({}, p, { etapa: 'upload', dados: null }); }); }, className: "w-full py-3 bg-gray-800 text-white rounded-xl font-bold hover:bg-gray-900" }, "Entendido")
+                        React.createElement("button", {
+                            onClick: function() {
+                                setModalRes(function(p) { return Object.assign({}, p, { aberto: false }); });
+                            },
+                            className: "w-full py-3 bg-gray-800 text-white rounded-xl font-bold hover:bg-gray-900 transition-colors"
+                        }, "Entendido")
                     )
                 )
             )
         );
     };
+
     
     console.log("✅ ModuloFinanceiro.js carregado");
 })();
