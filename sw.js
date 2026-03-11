@@ -1,6 +1,6 @@
-// Service Worker - Sistema Tutts PWA v4 NUCLEAR
-// ZERO CACHE - Force fresh code until stabilized
-const CACHE_VERSION = '20250210_005';
+// Service Worker - Sistema Tutts PWA v5 CACHE BUSTER
+// ZERO CACHE - Force fresh code
+const CACHE_VERSION = '20250311_FIX';
 const CACHE_NAME = `tutts-cache-${CACHE_VERSION}`;
 
 // Install: limpar TODOS os caches antigos
