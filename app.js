@@ -7676,6 +7676,17 @@ const hideLoadingScreen = () => {
                     ja("✅ Status atualizado!" + (!acertoRealizado && (t === "aprovado" || t === "aprovado_gratuidade") ? " (Débito no último domingo)" : ""), "success");
                 }
                 
+                // Atualizar item na lista com dados reais do servidor (resposta do PATCH)
+                U(prev => prev.map(w => w.id === e ? { ...w, ...data, status: data.status || t } : w));
+                
+                // Atualizar contadores localmente (sem esperar reload)
+                v(prev => {
+                    const p = { ...prev };
+                    // Decrementar contador antigo
+                    if (statusAnterior === 'aguardando_aprovacao') p.solicitacoes = Math.max(0, (p.solicitacoes || 0) - 1);
+                    return p;
+                });
+                
                 // Limpar estados usando função para evitar stale state
                 x(prevP => ({
                     ...prevP,
@@ -7691,8 +7702,8 @@ const hideLoadingScreen = () => {
                     return newSet;
                 });
                 
-                // Recarregar lista para pegar dados atualizados do servidor
-                Ua();
+                // Recarregar lista completa com delay para garantir que o banco commitou
+                setTimeout(() => { Ua(); }, 800);
                 
             } catch (err) {
                 console.error("❌ Erro ao atualizar status:", err);
