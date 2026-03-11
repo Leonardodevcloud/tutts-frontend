@@ -439,6 +439,51 @@
                                 React.createElement("p", {className: "text-sm text-gray-500"}, "Saques emergenciais pendentes de aprovação e histórico completo.")
                             )
                         ),
+
+                        // Card Pagamento Pix (Stark Bank)
+                        React.createElement("div", {
+                            onClick: function() { x({...p, finTab: "stark-bank"}); },
+                            className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-emerald-300"
+                        },
+                            React.createElement("div", {className: "h-2 bg-gradient-to-r from-emerald-500 to-teal-600"}),
+                            React.createElement("div", {className: "p-6"},
+                                React.createElement("div", {className: "w-14 h-14 bg-emerald-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
+                                    React.createElement("span", {className: "text-3xl"}, "🏦")
+                                ),
+                                React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Pagamento Pix"),
+                                React.createElement("p", {className: "text-sm text-gray-500"}, "Pagamento automático via Stark Bank.")
+                            )
+                        ),
+
+                        // Card Acerto Profissional
+                        React.createElement("div", {
+                            onClick: function() { x({...p, finTab: "acerto-prof"}); },
+                            className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-indigo-300"
+                        },
+                            React.createElement("div", {className: "h-2 bg-gradient-to-r from-indigo-500 to-violet-600"}),
+                            React.createElement("div", {className: "p-6"},
+                                React.createElement("div", {className: "w-14 h-14 bg-indigo-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
+                                    React.createElement("span", {className: "text-3xl"}, "💼")
+                                ),
+                                React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Acerto Prof"),
+                                React.createElement("p", {className: "text-sm text-gray-500"}, "Upload de planilha de faturamento e pagamento via Stark Bank.")
+                            )
+                        ),
+
+                        // Card Conciliação Acerto
+                        React.createElement("div", {
+                            onClick: function() { x({...p, finTab: "conciliacao-acerto"}); },
+                            className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-violet-300"
+                        },
+                            React.createElement("div", {className: "h-2 bg-gradient-to-r from-violet-500 to-purple-600"}),
+                            React.createElement("div", {className: "p-6"},
+                                React.createElement("div", {className: "w-14 h-14 bg-violet-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
+                                    React.createElement("span", {className: "text-3xl"}, "📊")
+                                ),
+                                React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Conc. Acerto"),
+                                React.createElement("p", {className: "text-sm text-gray-500"}, "Conciliação e acompanhamento dos acertos profissionais.")
+                            )
+                        ),
                         
                         // Card Validação
                         React.createElement("div", {
@@ -453,7 +498,7 @@
                             React.createElement("div", {className: "h-2 bg-gradient-to-r from-blue-500 to-cyan-600"}),
                             React.createElement("div", {className: "p-6"},
                                 React.createElement("div", {className: "w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform relative"},
-                                    React.createElement("span", {className: "text-3xl"}, "📊"),
+                                    React.createElement("span", {className: "text-3xl"}, "✅"),
                                     y.validacao > 0 && React.createElement("span", {className: "absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"}, y.validacao > 9 ? "9+" : y.validacao)
                                 ),
                                 React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Validação"),
@@ -469,7 +514,7 @@
                             React.createElement("div", {className: "h-2 bg-gradient-to-r from-teal-500 to-cyan-600"}),
                             React.createElement("div", {className: "p-6"},
                                 React.createElement("div", {className: "w-14 h-14 bg-teal-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
-                                    React.createElement("span", {className: "text-3xl"}, "✅")
+                                    React.createElement("span", {className: "text-3xl"}, "🔄")
                                 ),
                                 React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Conciliação"),
                                 React.createElement("p", {className: "text-sm text-gray-500"}, "Marcar saques como efetivamente pagos e controle de pagamentos.")
@@ -484,7 +529,7 @@
                             React.createElement("div", {className: "h-2 bg-gradient-to-r from-purple-500 to-violet-600"}),
                             React.createElement("div", {className: "p-6"},
                                 React.createElement("div", {className: "w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
-                                    React.createElement("span", {className: "text-3xl"}, "🔍")
+                                    React.createElement("span", {className: "text-3xl"}, "📑")
                                 ),
                                 React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Resumo"),
                                 React.createElement("p", {className: "text-sm text-gray-500"}, "Busca detalhada por profissional com histórico completo de saques.")
@@ -627,27 +672,18 @@
                                 React.createElement("p", {className: "text-sm text-gray-500"}, "Exportar e fazer backup dos dados do sistema.")
                             )
                         ),
+                        // Card Saldo Plific
                         React.createElement("div", {
                             onClick: function() { x({...p, finTab: "saldo-plific"}); },
-                            className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all cursor-pointer group overflow-hidden border border-purple-200"
+                            className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-purple-300"
                         },
                             React.createElement("div", {className: "h-2 bg-gradient-to-r from-purple-500 to-indigo-600"}),
                             React.createElement("div", {className: "p-6"},
-                                React.createElement("span", {className: "text-3xl"}, "💳"),
-                                React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2 mt-2"}, "Saldo Plific"),
-                                React.createElement("p", {className: "text-sm text-gray-500"}, "Consultar saldos.")
-                            )
-                        ),
-                        // Card Stark Bank — Pagamento Automático
-                        React.createElement("div", {
-                            onClick: function() { x({...p, finTab: "stark-bank"}); },
-                            className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all cursor-pointer group overflow-hidden border border-emerald-200"
-                        },
-                            React.createElement("div", {className: "h-2 bg-gradient-to-r from-emerald-500 to-teal-600"}),
-                            React.createElement("div", {className: "p-6"},
-                                React.createElement("span", {className: "text-3xl"}, "🏦"),
-                                React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2 mt-2"}, "Pagamento Pix"),
-                                React.createElement("p", {className: "text-sm text-gray-500"}, "Pagamento automático via Stark Bank.")
+                                React.createElement("div", {className: "w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
+                                    React.createElement("span", {className: "text-3xl"}, "💳")
+                                ),
+                                React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Saldo Plific"),
+                                React.createElement("p", {className: "text-sm text-gray-500"}, "Consultar saldos dos profissionais.")
                             )
                         )
                     ),
