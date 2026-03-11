@@ -4,7 +4,7 @@
   "outputDirectory": ".",
   "framework": null,
   "rewrites": [
-    { "source": "/((?!app\\.js|app\\.min\\.js|sw\\.js|manifest\\.json|icon-|qrcode).*)", "destination": "/index.html" }
+    { "source": "/((?!.*\\.js|.*\\.css|.*\\.png|.*\\.jpg|.*\\.json|.*\\.ico|sw\\.js|manifest\\.json).*)", "destination": "/index.html" }
   ],
   "headers": [
     {
