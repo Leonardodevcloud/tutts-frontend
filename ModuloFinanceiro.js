@@ -6051,7 +6051,23 @@
                     React.createElement("h2", { className: "text-2xl font-bold text-gray-800 flex items-center gap-3" }, "🏦", " Pagamento Automático via Pix"),
                     React.createElement("p", { className: "text-gray-500 mt-1" }, "Stark Bank — Pagamentos em lote para motoboys")
                 ),
-                React.createElement("button", { onClick: function() { carregarSaldo(); carregarPendentes(st.pendentesPage); }, className: "px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm" }, "🔄 Atualizar")
+                React.createElement("div", { className: "flex gap-2" },
+                    React.createElement("button", { onClick: async function() {
+                        try {
+                            var r = await fetchAuth(API_URL + '/stark/sync', { method: 'POST' });
+                            var d = await r.json();
+                            if (d.atualizados > 0) {
+                                sp.showToast('✅ ' + d.atualizados + ' pagamento(s) sincronizado(s)!', 'success');
+                                carregarPendentes(st.pendentesPage);
+                                carregarHistorico(st.historicoPage);
+                                carregarSaldo();
+                            } else {
+                                sp.showToast('ℹ️ Nenhuma atualização pendente', 'info');
+                            }
+                        } catch(e) { sp.showToast('Erro ao sincronizar', 'error'); }
+                    }, className: "px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 text-sm font-medium" }, "🔄 Sincronizar Status"),
+                    React.createElement("button", { onClick: function() { carregarSaldo(); carregarPendentes(st.pendentesPage); }, className: "px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm" }, "🔄 Atualizar")
+                )
             ),
             
             // Cards resumo
