@@ -10985,7 +10985,7 @@ const hideLoadingScreen = () => {
         }
         // Verificar permissão para Financeiro (admin comum)
         const canAccessFinanceiro = hasModuleAccess(l, "financeiro");
-        if ((canAccessFinanceiro && "financeiro" === Ee) || "admin_financeiro" === l.role) {
+        if ((canAccessFinanceiro && "financeiro" === Ee) || ("admin_financeiro" === l.role && "financeiro" === Ee)) {
             const e = "admin_master" === l.role;
             // MÓDULO FINANCEIRO - CARREGADO EXTERNAMENTE (ModuloFinanceiro.js)
             if (window.renderModuloFinanceiro) {
@@ -19230,10 +19230,8 @@ const hideLoadingScreen = () => {
         const rr = "admin_master" === l.role && ("solicitacoes" === Ee || "disponibilidade" === Ee),
             or = "admin" === l.role;
         
-        // Se é módulo DISPONIBILIDADE, setar adminTab para usar o código original
-        if ("disponibilidade" === Ee && p.adminTab !== "disponibilidade") {
-            x(prev => ({...prev, adminTab: "disponibilidade"}));
-        }
+        // Determinar adminTab efetivo: se é módulo disponibilidade, forçar contexto sem setState
+        const adminTabEfetivo = "disponibilidade" === Ee ? "disponibilidade" : (p.adminTab || "dashboard");
         
         // Módulo CRM WhatsApp - Iframe
         if ("crm-whatsapp" === Ee) {
@@ -19299,7 +19297,7 @@ const hideLoadingScreen = () => {
         React.createElement(HeaderCompacto, {
             usuario: l,
             moduloAtivo: Ee,
-            abaAtiva: Ee === "disponibilidade" ? null : (p.adminTab || "dashboard"),
+            abaAtiva: Ee === "disponibilidade" ? null : (adminTabEfetivo),
             socialProfile: socialProfile,
             isLoading: f,
             lastUpdate: E,
@@ -19312,7 +19310,7 @@ const hideLoadingScreen = () => {
         // Conteúdo principal (sub-abas removidas - navegação via sidebar)
         React.createElement("div", {
             className: "max-w-7xl mx-auto p-6"
-        }, (!p.adminTab || "dashboard" === p.adminTab) && React.createElement(React.Fragment, null, (() => {
+        }, (!adminTabEfetivo || "dashboard" === adminTabEfetivo) && React.createElement(React.Fragment, null, (() => {
             const ds = dashStats || {},
                 totalCount = ds.total || j.length,
                 pendentesCount = ds.pendentes || j.filter(e => "pendente" === e.status).length,
@@ -19530,7 +19528,7 @@ const hideLoadingScreen = () => {
                 onClick: () => Kl(e.id, !1),
                 className: "flex-1 bg-red-600 text-white py-1 rounded text-xs font-semibold"
             }, "✗ Rejeitar")))
-        })))), "search" === p.adminTab && React.createElement("div", {
+        })))), "search" === adminTabEfetivo && React.createElement("div", {
             className: "bg-white rounded-xl shadow p-6"
         }, React.createElement("div", {
             className: "flex flex-wrap gap-4 mb-6"
@@ -19659,7 +19657,7 @@ const hideLoadingScreen = () => {
             className: "text-xs text-gray-400"
         }, e.timestamp), e.validated_by_name && "pendente" !== e.status && React.createElement("p", {
             className: "text-xs text-purple-600 font-semibold"
-        }, "👤 ", e.validated_by_name)))))), "ranking" === p.adminTab && React.createElement("div", {
+        }, "👤 ", e.validated_by_name)))))), "ranking" === adminTabEfetivo && React.createElement("div", {
             className: "bg-white rounded-xl shadow p-6"
         }, React.createElement("h2", {
             className: "text-lg font-semibold mb-4"
@@ -19753,7 +19751,7 @@ const hideLoadingScreen = () => {
                     g(img)
                 }
             })))))))))
-        })())), "disponibilidade" === p.adminTab && (
+        })())), "disponibilidade" === adminTabEfetivo && (
             typeof window.ModuloDisponibilidadeContent !== 'undefined' 
                 ? React.createElement(window.ModuloDisponibilidadeContent, {
                     p, x, ja, API_URL, pe, Ta, A, l, fetchAuth
@@ -19764,7 +19762,7 @@ const hideLoadingScreen = () => {
                         React.createElement("p", {className: "mt-4 text-gray-600"}, "Carregando módulo...")
                     )
                 )
-        ), "relatorios" === p.adminTab && (() => {
+        ), "relatorios" === adminTabEfetivo && (() => {
             const e = void 0 !== p.relMes ? parseInt(p.relMes) : (new Date).getMonth(),
                 t = void 0 !== p.relAno ? parseInt(p.relAno) : (new Date).getFullYear();
             if (!relatorioData && !relatorioLoading) { carregarRelatorio(e, t); }
@@ -20025,7 +20023,7 @@ const hideLoadingScreen = () => {
             }, React.createElement("span", {
                 className: "px-2 py-1 rounded text-xs font-bold " + (parseInt(e.taxa) >= 70 ? "bg-green-100 text-green-700" : parseInt(e.taxa) >= 40 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700")
             }, e.taxa, "%")))))))))
-        })(), "users" === p.adminTab && React.createElement("div", {
+        })(), "users" === adminTabEfetivo && React.createElement("div", {
             className: "bg-white rounded-xl shadow p-6"
         }, React.createElement("h2", {
             className: "text-lg font-semibold mb-4"
