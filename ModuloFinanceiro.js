@@ -5918,6 +5918,31 @@
                 setSt(function(p) { return Object.assign({}, p, { status: d }); });
             } catch (e) {}
         }, []);
+
+        // Sincronizar status das transfers pendentes consultando a Stark Bank
+        var sincronizarStatus = async function() {
+            try {
+                Toast('🔄 Sincronizando...', 'info');
+                var r = await fetchAuth(API_URL + '/stark/sync', { method: 'POST' });
+                if (!r.ok) {
+                    var err = await r.json().catch(function() { return {}; });
+                    Toast('❌ ' + (err.error || 'Erro ' + r.status), 'error');
+                    return;
+                }
+                var d = await r.json();
+                if (d.atualizados > 0) {
+                    Toast('✅ ' + d.atualizados + ' pagamento(s) sincronizado(s)!', 'success');
+                    carregarPendentes(st.pendentesPage);
+                    carregarHistorico();
+                    carregarSaldo();
+                } else {
+                    Toast('ℹ️ Nenhuma atualização pendente', 'info');
+                }
+            } catch(e) {
+                console.error('Erro sync:', e);
+                Toast('❌ Erro ao sincronizar: ' + e.message, 'error');
+            }
+        };
         
         // Init
         React.useEffect(function() { carregarSaldo(); carregarPendentes(1); carregarHistorico(); carregarStatus(); }, []);
@@ -6052,20 +6077,7 @@
                     React.createElement("p", { className: "text-gray-500 mt-1" }, "Stark Bank — Pagamentos em lote para motoboys")
                 ),
                 React.createElement("div", { className: "flex gap-2" },
-                    React.createElement("button", { onClick: async function() {
-                        try {
-                            var r = await fetchAuth(API_URL + '/stark/sync', { method: 'POST' });
-                            var d = await r.json();
-                            if (d.atualizados > 0) {
-                                Toast('✅ ' + d.atualizados + ' pagamento(s) sincronizado(s)!', 'success');
-                                carregarPendentes(st.pendentesPage);
-                                carregarHistorico(st.historicoPage);
-                                carregarSaldo();
-                            } else {
-                                Toast('ℹ️ Nenhuma atualização pendente', 'info');
-                            }
-                        } catch(e) { console.error('Erro sync:', e); Toast('Erro ao sincronizar', 'error'); }
-                    }, className: "px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 text-sm font-medium" }, "🔄 Sincronizar Status"),
+                    React.createElement("button", { onClick: sincronizarStatus, className: "px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 text-sm font-medium" }, "🔄 Sincronizar Status"),
                     React.createElement("button", { onClick: function() { carregarSaldo(); carregarPendentes(st.pendentesPage); }, className: "px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm" }, "🔄 Atualizar")
                 )
             ),
