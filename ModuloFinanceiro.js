@@ -5623,7 +5623,8 @@
                 window.StarkBankComponent && React.createElement(window.StarkBankComponent, {
                     fetchAuth: fetchAuth,
                     API_URL: API_URL,
-                    Toast: Toast
+                    Toast: Toast,
+                    showToast: ja
                 })
             ), "acerto-prof" === p.finTab && React.createElement(React.Fragment, null,
                 window.AcertoProfComponent && React.createElement(window.AcertoProfComponent, {
@@ -5848,6 +5849,7 @@
         var fetchAuth = sp.fetchAuth;
         var API_URL = sp.API_URL;
         var Toast = sp.Toast;
+        var showToast = sp.showToast || function(msg, type) { console.log('[Toast]', type, msg); };
         var formatarMoeda = window.formatarMoeda;
         
         // State principal
@@ -5922,25 +5924,25 @@
         // Sincronizar status das transfers pendentes consultando a Stark Bank
         var sincronizarStatus = async function() {
             try {
-                Toast('🔄 Sincronizando...', 'info');
+                showToast('🔄 Sincronizando...', 'info');
                 var r = await fetchAuth(API_URL + '/stark/sync', { method: 'POST' });
                 if (!r.ok) {
                     var err = await r.json().catch(function() { return {}; });
-                    Toast('❌ ' + (err.error || 'Erro ' + r.status), 'error');
+                    showToast('❌ ' + (err.error || 'Erro ' + r.status), 'error');
                     return;
                 }
                 var d = await r.json();
                 if (d.atualizados > 0) {
-                    Toast('✅ ' + d.atualizados + ' pagamento(s) sincronizado(s)!', 'success');
+                    showToast('✅ ' + d.atualizados + ' pagamento(s) sincronizado(s)!', 'success');
                     carregarPendentes(st.pendentesPage);
                     carregarHistorico();
                     carregarSaldo();
                 } else {
-                    Toast('ℹ️ Nenhuma atualização pendente', 'info');
+                    showToast('ℹ️ Nenhuma atualização pendente', 'info');
                 }
             } catch(e) {
                 console.error('Erro sync:', e);
-                Toast('❌ Erro ao sincronizar: ' + e.message, 'error');
+                showToast('❌ Erro ao sincronizar: ' + e.message, 'error');
             }
         };
         
@@ -6045,7 +6047,7 @@
                     carregarSaldo(); carregarPendentes(1); carregarHistorico(); setSel({});
                 } else {
                     setModal2fa(function(p) { return Object.assign({}, p, { erro: de.error || 'Erro ao executar', validando: false, etapa: 'digitar' }); });
-                    if (de.saldo_disponivel !== undefined) Toast('💰 Saldo insuficiente: ' + formatarMoeda(de.saldo_disponivel), 'warning');
+                    if (de.saldo_disponivel !== undefined) showToast('💰 Saldo insuficiente: ' + formatarMoeda(de.saldo_disponivel), 'warning');
                 }
             } catch (e) { setModal2fa(function(p) { return Object.assign({}, p, { erro: 'Erro: ' + e.message, validando: false, etapa: 'digitar' }); }); }
         };
