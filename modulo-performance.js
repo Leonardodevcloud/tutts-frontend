@@ -1,5 +1,5 @@
 // ================================================================
-// MÓDULO PERFORMANCE DIÁRIA - Tutts v1.0
+// MÓDULO PERFORMANCE DIÁRIA - Tutts v1.1
 // Arquivo: modulo-performance.js
 // Calcula SLA de entregas concluídas via RPA (Playwright)
 // ================================================================
@@ -369,7 +369,7 @@
         setJobs(d.jobs || []);
       } catch { showToast('Erro ao carregar jobs', 'error'); }
       finally { setLoading(false); }
-    }, []);
+    }, [API_URL, fetchAuth, showToast]);
 
     useEffect(() => { carregar(); }, []);
 
@@ -434,7 +434,10 @@
   // ════════════════════════════════════════════════════════════
   // COMPONENTE PRINCIPAL
   // ════════════════════════════════════════════════════════════
-  function ModuloPerformanceDiaria({ API_URL, fetchAuth, showToast }) {
+  function ModuloPerformanceDiaria({ initialProps }) {
+    // Usar initialProps para capturar as props na montagem
+    const { API_URL, fetchAuth, showToast } = initialProps;
+
     const [aba, setAba]         = useState('dashboard');
     const [filtros, setFiltros] = useState({
       dataInicio:  hoje(),
@@ -464,7 +467,7 @@
 
     useEffect(() => {
       carregarSnapshot({ data_inicio: hoje(), data_fim: hoje() });
-    }, []);
+    }, [carregarSnapshot]);
 
     // Polling enquanto job está executando
     const iniciarPolling = useCallback((jobId) => {
@@ -477,6 +480,7 @@
           setJobAtual(j => ({ ...j, status: st }));
           if (st === 'concluido' || st === 'erro') {
             clearInterval(pollingRef.current);
+            pollingRef.current = null;
             setLoading(false);
             if (st === 'concluido') {
               showToast('Performance atualizada com sucesso! ✅', 'success');
@@ -490,7 +494,11 @@
               showToast('Erro na execução. Veja o histórico de jobs.', 'error');
             }
           }
-        } catch { clearInterval(pollingRef.current); setLoading(false); }
+        } catch {
+          clearInterval(pollingRef.current);
+          pollingRef.current = null;
+          setLoading(false);
+        }
       }, 5000);  // verifica a cada 5s
     }, [API_URL, fetchAuth, filtros, carregarSnapshot, showToast]);
 
@@ -623,26 +631,42 @@
   }
 
   // ════════════════════════════════════════════════════════════
-  // WRAPPER (padrão idêntico ao modulo-antifraude.js)
+  // WRAPPER (padrão idêntico ao modulo-agente.js)
+  // Monta via ReactDOM.render uma única vez, props voláteis
+  // acessadas via ref para evitar re-render desnecessário.
   // ════════════════════════════════════════════════════════════
+  window.__perfVolatileRef = { current: {} };
+
   window.ModuloPerformanceComponent = function ModuloPerformanceWrapper(props) {
     const containerRef = useRef(null);
     const mountedRef   = useRef(false);
 
+    // Atualizar props voláteis sem causar re-render
+    useEffect(() => {
+      if (window.__perfVolatileRef) {
+        window.__perfVolatileRef.current = {
+          isLoading:  props.isLoading || props.n,
+          lastUpdate: props.lastUpdate || props.E,
+          onRefresh:  props.onRefresh,
+        };
+      }
+    });
+
     useEffect(() => {
       if (mountedRef.current || !containerRef.current) return;
       mountedRef.current = true;
+
+      // Montar o módulo real uma única vez
       ReactDOM.render(
-        h(ModuloPerformanceDiaria, {
-          API_URL:    props.API_URL,
-          fetchAuth:  props.fetchAuth,
-          showToast:  props.showToast,
-          usuario:    props.usuario,
-        }),
+        h(ModuloPerformanceDiaria, { initialProps: props }),
         containerRef.current
       );
+
       return () => {
-        if (containerRef.current) ReactDOM.unmountComponentAtNode(containerRef.current);
+        // Limpar quando o módulo é realmente desmontado (navegar para outro módulo)
+        if (containerRef.current) {
+          ReactDOM.unmountComponentAtNode(containerRef.current);
+        }
         mountedRef.current = false;
       };
     }, []);
@@ -654,5 +678,5 @@
     });
   };
 
-  console.log('✅ Módulo Performance Diária carregado');
+  console.log('✅ Módulo Performance Diária carregado — BUILD 2026-03-12');
 })();
