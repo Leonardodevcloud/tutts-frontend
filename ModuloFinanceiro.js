@@ -2566,8 +2566,8 @@
                 }), e.credito_lancado && e.lancado_por && React.createElement("span", {
                     className: "text-[9px] text-gray-500 mt-0.5"
                 }, e.lancado_por))), React.createElement("td", {
-                    className: "px-2 py-2 text-center whitespace-nowrap"
-                }, React.createElement("div", { className: "flex gap-1 justify-center flex-wrap" },
+                    className: "px-2 py-2 text-center"
+                }, React.createElement("div", { className: "inline-flex gap-1 items-center" },
                 "pendente" === e.status && React.createElement("button", {
                     onClick: () => (async e => {
                         s(!0);
@@ -2603,12 +2603,9 @@
                         } catch (err) { ja(err.message, "error"); }
                         s(!1);
                     })(e.id),
-                    className: "px-2 py-1 bg-gray-400 text-white rounded text-[10px] font-semibold hover:bg-red-600 whitespace-nowrap"
-                }, "🗑️")),
-                "rejeitada" === e.status && e.motivo_rejeicao && React.createElement("p", {
-                    className: "text-[9px] text-red-600 mt-1 text-center",
-                    title: e.motivo_rejeicao
-                }, "📝 ", e.motivo_rejeicao.substring(0, 20), "...")))
+                    className: "px-1.5 py-1 bg-gray-300 text-gray-700 rounded text-[10px] font-semibold hover:bg-red-500 hover:text-white whitespace-nowrap",
+                    title: "rejeitada" === e.status && e.motivo_rejeicao ? "Motivo: " + e.motivo_rejeicao : "Excluir"
+                }, "🗑️"))))
             })))))), "promo-novatos" === p.finTab && React.createElement(React.Fragment, null, p.modalRejeitarNovatos && React.createElement("div", {
                 className: "fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
             }, React.createElement("div", {
