@@ -13323,6 +13323,13 @@ const hideLoadingScreen = () => {
                     onLogout:   () => o(null),
                     onNavigate: navegarSidebar,
                 });
+            } else {
+                return React.createElement("div", { className: "min-h-screen bg-gray-50 flex items-center justify-center" },
+                    React.createElement("div", { className: "text-center" },
+                        React.createElement("div", { className: "animate-spin w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4" }),
+                        React.createElement("p", { className: "text-gray-600" }, "Carregando módulo Performance Diária...")
+                    )
+                );
             }
         }
         // ========== MÓDULO ANTI-FRAUDE (CARREGAMENTO EXTERNO) ==========
