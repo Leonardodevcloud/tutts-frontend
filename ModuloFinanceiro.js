@@ -5943,7 +5943,7 @@
             } catch (e) { setSt(function(p) { return Object.assign({}, p, { saldoLoading: false }); }); }
         }, []);
         
-        // Carregar pendentes com filtros e paginação
+        // Carregar pendentes com filtros e paginação + validação automática
         var carregarPendentes = React.useCallback(async function(page, filtrosOverride) {
             setSt(function(p) { return Object.assign({}, p, { pendentesLoading: true }); });
             var f = filtrosOverride || filtros;
@@ -5954,12 +5954,29 @@
                 if (f.data_fim) url += '&data_fim=' + f.data_fim;
                 var r = await fetchAuth(url);
                 var d = await r.json();
+                var saques = d.saques || [];
                 setSt(function(p) { return Object.assign({}, p, {
-                    pendentes: d.saques || [], pendentesLoading: false,
+                    pendentes: saques, pendentesLoading: false,
                     pendentesTotal: d.quantidade || 0, pendentesValorTotal: d.valor_total || 0,
                     pendentesPage: d.page || 1, pendentesTotalPages: d.totalPages || 1
                 }); });
-                setSel({}); // Limpar seleção ao trocar página/filtro
+                setSel({});
+                
+                // Validação DICT automática em background (se tem pendentes)
+                if (saques.length > 0) {
+                    try {
+                        var ids = saques.map(function(s) { return s.id; });
+                        var rv = await fetchAuth(API_URL + '/stark/lote/validar', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ saque_ids: ids })
+                        });
+                        var dv = await rv.json();
+                        var map = {};
+                        (dv.validacoes || []).forEach(function(v) { map[v.id] = v; });
+                        setValidacoes(map);
+                    } catch(e) { console.warn('Validação DICT automática falhou:', e); }
+                }
             } catch (e) { setSt(function(p) { return Object.assign({}, p, { pendentesLoading: false }); }); }
         }, [filtros]);
         
@@ -6007,6 +6024,45 @@
             }
         };
         
+        // State de validações DICT
+        var _validacoes = React.useState({}); // { saqueId: { dict_status, alertas, dict_nome, cpf_divergente } }
+        var validacoes = _validacoes[0]; var setValidacoes = _validacoes[1];
+        var _validando = React.useState(false);
+        var validando = _validando[0]; var setValidando = _validando[1];
+
+        // Validar lote antes de pagar (consulta DICT para cada saque)
+        var validarLote = async function() {
+            var ids = idsSelecionados.length > 0 ? idsSelecionados : st.pendentes.map(function(s) { return s.id; });
+            if (ids.length === 0) { showToast('⚠️ Nenhum saque para validar', 'warning'); return; }
+            
+            setValidando(true);
+            showToast('🔍 Validando ' + ids.length + ' chaves Pix...', 'info');
+            
+            try {
+                var r = await fetchAuth(API_URL + '/stark/lote/validar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ saque_ids: ids })
+                });
+                var d = await r.json();
+                
+                // Mapear validações por id do saque
+                var map = {};
+                (d.validacoes || []).forEach(function(v) { map[v.id] = v; });
+                setValidacoes(map);
+                
+                if (d.com_alerta > 0) {
+                    showToast('⚠️ ' + d.com_alerta + ' saque(s) com alertas! Verifique a coluna Validação.', 'warning');
+                } else {
+                    showToast('✅ Todas as ' + d.total + ' chaves Pix validadas com sucesso!', 'success');
+                }
+            } catch(e) {
+                console.error('Erro validação:', e);
+                showToast('❌ Erro ao validar: ' + e.message, 'error');
+            }
+            setValidando(false);
+        };
+
         // Init
         React.useEffect(function() { carregarSaldo(); carregarPendentes(1); carregarHistorico(); carregarStatus(); }, []);
         
@@ -6259,17 +6315,19 @@
                                 
                                 // Conteúdo expandido
                                 loteExpandido && React.createElement("div", { className: "border-t overflow-x-auto" },
-                                    React.createElement("table", { className: "w-full text-sm min-w-[600px]" },
+                                    React.createElement("table", { className: "w-full text-sm min-w-[700px]" },
                                         React.createElement("thead", null, React.createElement("tr", { className: "bg-gray-50 border-b" },
                                             React.createElement("th", { className: "px-4 py-2 text-left w-10" }, ""),
                                             React.createElement("th", { className: "px-4 py-2 text-left" }, "Profissional"),
                                             React.createElement("th", { className: "px-4 py-2 text-left" }, "Chave Pix"),
                                             React.createElement("th", { className: "px-4 py-2 text-right" }, "Valor"),
                                             React.createElement("th", { className: "px-4 py-2 text-center" }, "Status"),
+                                            React.createElement("th", { className: "px-4 py-2 text-center" }, "Validação"),
                                             React.createElement("th", { className: "px-4 py-2 text-left" }, "Aprovado em")
                                         )),
                                         React.createElement("tbody", null, loteSaques.map(function(s, sIdx) {
-                                            return React.createElement("tr", { key: s.id, className: "border-b hover:bg-gray-50 " + (sel[s.id] ? "bg-emerald-50" : "") + (sIdx === 0 ? " bg-emerald-25" : "") },
+                                            var v = validacoes[s.id];
+                                            return React.createElement("tr", { key: s.id, className: "border-b hover:bg-gray-50 " + (sel[s.id] ? "bg-emerald-50" : "") + (v && v.alertas && v.alertas.length > 0 ? " bg-yellow-50" : "") },
                                                 React.createElement("td", { className: "px-4 py-2.5" }, React.createElement("input", { type: "checkbox", checked: !!sel[s.id], onChange: function() { toggleSel(s.id); }, className: "w-4 h-4 rounded border-gray-300 accent-emerald-600" })),
                                                 React.createElement("td", { className: "px-4 py-2.5" },
                                                     React.createElement("div", { className: "font-medium text-gray-800" }, s.user_name),
@@ -6278,6 +6336,13 @@
                                                 React.createElement("td", { className: "px-4 py-2.5 text-gray-600 text-xs max-w-[180px] truncate" }, s.pix_key),
                                                 React.createElement("td", { className: "px-4 py-2.5 text-right font-bold " + (parseFloat(s.final_amount) >= 200 ? "text-emerald-700 text-base" : "text-gray-700") }, formatarMoeda(s.final_amount)),
                                                 React.createElement("td", { className: "px-4 py-2.5 text-center" }, s.stark_status ? badge(s.stark_status) : React.createElement("span", { className: "px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800" }, "Aguardando")),
+                                                React.createElement("td", { className: "px-4 py-2.5 text-center" },
+                                                    !v ? React.createElement("span", { className: "text-xs text-gray-400" }, "—") :
+                                                    v.dict_status === 'ok' && v.alertas.length === 0 ? React.createElement("span", { className: "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-700", title: v.dict_nome ? "Titular: " + v.dict_nome + (v.dict_banco ? " | Banco: " + v.dict_banco : "") : "" }, "✅ OK") :
+                                                    v.dict_status === 'ok' && v.cpf_divergente ? React.createElement("span", { className: "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-yellow-100 text-yellow-700 cursor-help", title: v.alertas.join('\n') }, "⚠️ CPF Div.") :
+                                                    v.dict_status === 'ok' && v.alertas.length > 0 ? React.createElement("span", { className: "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-yellow-100 text-yellow-700 cursor-help", title: v.alertas.join('\n') }, "⚠️ Alerta") :
+                                                    React.createElement("span", { className: "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700 cursor-help", title: v.alertas.join('\n') }, "❌ Erro")
+                                                ),
                                                 React.createElement("td", { className: "px-4 py-2.5 text-xs text-gray-500" }, s.approved_at ? new Date(s.approved_at).toLocaleString('pt-BR') : '—')
                                             );
                                         }))
