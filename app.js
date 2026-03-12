@@ -5651,6 +5651,12 @@ const hideLoadingScreen = () => {
                         t = await e.json();
                     D(t.data), Ma()
                 }
+                // Verificar se profissional está restrito
+                try {
+                    const r = await fetchAuth(`${API_URL}/restricted/check/${l.cod_profissional}`),
+                        d = await r.json();
+                    x(prev => ({ ...prev, _userRestrito: d.isRestricted }));
+                } catch(e) {}
             } catch (e) {
                 console.error(e)
             }
@@ -9378,6 +9384,21 @@ const hideLoadingScreen = () => {
                 className: "font-semibold text-red-600"
             }, l.filter(e => "rejeitado" === e.status).length)))))
         })()), (!p.saqueTab || "solicitar" === p.saqueTab) && React.createElement(React.Fragment, null, (() => {
+            // Verificar se profissional está restrito
+            if (p._userRestrito) {
+                return React.createElement("div", { className: "flex flex-col items-center justify-center py-16 px-6 text-center" },
+                    React.createElement("div", { className: "w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mb-6" },
+                        React.createElement("span", { className: "text-4xl" }, "🚫")
+                    ),
+                    React.createElement("h3", { className: "text-xl font-bold text-red-700 mb-3" }, "Saque Indisponível"),
+                    React.createElement("p", { className: "text-gray-600 max-w-md leading-relaxed" }, "Infelizmente o saque emergencial está temporariamente fora do ar!"),
+                    React.createElement("p", { className: "text-gray-500 mt-2" }, "Aguarde a normalização."),
+                    React.createElement("div", { className: "mt-6 bg-yellow-50 border border-yellow-200 rounded-xl p-4 max-w-md" },
+                        React.createElement("p", { className: "text-sm text-yellow-800" }, "📞 Em caso de dúvidas, entre em contato com o suporte.")
+                    )
+                );
+            }
+            
             // Lista de gratuidades ativas disponíveis
             const gratuidadesAtivas = G.filter(e => "ativa" === e.status && e.remaining > 0),
                 // Gratuidade selecionada (usa a do state ou a primeira disponível)
