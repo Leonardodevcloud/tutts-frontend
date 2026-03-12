@@ -2567,60 +2567,48 @@
                     className: "text-[9px] text-gray-500 mt-0.5"
                 }, e.lancado_por))), React.createElement("td", {
                     className: "px-2 py-2 text-center whitespace-nowrap"
-                }, "pendente" === e.status && React.createElement("div", {
-                    className: "flex gap-1 justify-center"
-                }, React.createElement("button", {
+                }, React.createElement("div", { className: "flex gap-1 justify-center flex-wrap" },
+                "pendente" === e.status && React.createElement("button", {
                     onClick: () => (async e => {
                         s(!0);
                         try {
                             const resp = await fetchAuth(`${API_URL}/indicacoes/${e}/aprovar`, {
                                     method: "PATCH",
-                                    headers: {
-                                        "Content-Type": "application/json"
-                                    },
-                                    body: JSON.stringify({
-                                        resolved_by: l.fullName
-                                    })
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({ resolved_by: l.fullName })
                                 });
                             if (!resp.ok) throw new Error("Erro ao aprovar");
                             const updated = await resp.json();
-                            // Optimistic update: atualizar a indicação no array local
                             le(prev => prev.map(i => i.id === e ? { ...i, ...updated, status: 'aprovada' } : i));
                             ja("✅ Indicação aprovada!", "success");
-                            // Reload em background para sincronizar
                             setTimeout(() => wl(), 500);
-                        } catch (e) {
-                            ja(e.message, "error")
-                        }
+                        } catch (e) { ja(e.message, "error") }
                         s(!1)
                     })(e.id),
                     className: "px-2 py-1 bg-green-600 text-white rounded text-[10px] font-semibold hover:bg-green-700 whitespace-nowrap"
-                }, "Aprovar"), React.createElement("button", {
-                    onClick: () => x({
-                        ...p,
-                        modalRejeitar: e
-                    }),
+                }, "Aprovar"),
+                "pendente" === e.status && React.createElement("button", {
+                    onClick: () => x({ ...p, modalRejeitar: e }),
                     className: "px-2 py-1 bg-red-600 text-white rounded text-[10px] font-semibold hover:bg-red-700 whitespace-nowrap"
-                }, "Rejeitar")), "rejeitada" === e.status && e.motivo_rejeicao && React.createElement("span", {
-                    className: "text-[9px] text-red-600",
-                    title: e.motivo_rejeicao
-                }, "📝 ", e.motivo_rejeicao.substring(0, 20), "..."),
-                // Botão Excluir — sempre visível
+                }, "Rejeitar"),
                 React.createElement("button", {
                     onClick: () => (async id => {
-                        if (!confirm("Excluir indicação de " + e.indicado_nome + "?\n\nEsta ação não pode ser desfeita.")) return;
+                        if (!confirm("Excluir indicação de " + e.indicado_nome + "?")) return;
                         s(!0);
                         try {
                             const resp = await fetchAuth(`${API_URL}/indicacoes/${id}`, { method: "DELETE" });
                             if (!resp.ok) throw new Error("Erro ao excluir");
                             le(prev => prev.filter(i => i.id !== id));
-                            ja("🗑️ Indicação excluída!", "success");
+                            ja("🗑️ Excluída!", "success");
                         } catch (err) { ja(err.message, "error"); }
                         s(!1);
                     })(e.id),
-                    className: "px-2 py-1 bg-gray-400 text-white rounded text-[10px] font-semibold hover:bg-red-600 whitespace-nowrap",
-                    title: "Excluir indicação"
-                }, "🗑️")))
+                    className: "px-2 py-1 bg-gray-400 text-white rounded text-[10px] font-semibold hover:bg-red-600 whitespace-nowrap"
+                }, "🗑️")),
+                "rejeitada" === e.status && e.motivo_rejeicao && React.createElement("p", {
+                    className: "text-[9px] text-red-600 mt-1 text-center",
+                    title: e.motivo_rejeicao
+                }, "📝 ", e.motivo_rejeicao.substring(0, 20), "...")))
             })))))), "promo-novatos" === p.finTab && React.createElement(React.Fragment, null, p.modalRejeitarNovatos && React.createElement("div", {
                 className: "fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
             }, React.createElement("div", {
