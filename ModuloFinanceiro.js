@@ -6107,40 +6107,40 @@
             return React.createElement("span", { className: "px-2 py-1 rounded-full text-xs font-medium " + (c[s] || 'bg-gray-100 text-gray-800') }, s || '—');
         };
         
-        return React.createElement("div", { className: "max-w-7xl mx-auto p-6 space-y-6" },
+        return React.createElement("div", { className: "max-w-7xl mx-auto p-4 md:p-6 space-y-4 md:space-y-6" },
             // Header
-            React.createElement("div", { className: "flex items-center justify-between" },
+            React.createElement("div", { className: "flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3" },
                 React.createElement("div", null,
-                    React.createElement("h2", { className: "text-2xl font-bold text-gray-800 flex items-center gap-3" }, "🏦", " Pagamento Automático via Pix"),
-                    React.createElement("p", { className: "text-gray-500 mt-1" }, "Stark Bank — Pagamentos em lote para motoboys")
+                    React.createElement("h2", { className: "text-xl md:text-2xl font-bold text-gray-800 flex items-center gap-2" }, "🏦", " Pagamento Automático via Pix"),
+                    React.createElement("p", { className: "text-gray-500 mt-1 text-sm" }, "Stark Bank — Pagamentos em lote para motoboys")
                 ),
                 React.createElement("div", { className: "flex gap-2" },
-                    React.createElement("button", { onClick: sincronizarStatus, className: "px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 text-sm font-medium" }, "🔄 Sincronizar Status"),
-                    React.createElement("button", { onClick: function() { carregarSaldo(); carregarPendentes(st.pendentesPage); }, className: "px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm" }, "🔄 Atualizar")
+                    React.createElement("button", { onClick: sincronizarStatus, className: "px-3 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 text-xs md:text-sm font-medium" }, "🔄 Sincronizar"),
+                    React.createElement("button", { onClick: function() { carregarSaldo(); carregarPendentes(st.pendentesPage); }, className: "px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-xs md:text-sm" }, "🔄 Atualizar")
                 )
             ),
             
             // Cards resumo
-            React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-4 gap-4" },
-                React.createElement("div", { className: "bg-white rounded-xl p-5 shadow border-l-4 " + (saldoDisp > 0 ? "border-emerald-500" : "border-gray-300") },
-                    React.createElement("p", { className: "text-xs text-gray-500 uppercase tracking-wide" }, "Saldo Stark Bank"),
-                    React.createElement("p", { className: "text-2xl font-bold " + (saldoDisp > 0 ? "text-emerald-600" : "text-gray-400") }, st.saldoLoading ? "..." : saldoDisp !== null ? formatarMoeda(saldoDisp) : "N/D"),
-                    React.createElement("p", { className: "text-xs text-gray-400 mt-1" }, st.status ? "Ambiente: " + (st.status.ambiente || '') : "")
+            React.createElement("div", { className: "grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4" },
+                React.createElement("div", { className: "bg-white rounded-xl p-3 md:p-5 shadow border-l-4 " + (saldoDisp > 0 ? "border-emerald-500" : "border-gray-300") },
+                    React.createElement("p", { className: "text-[10px] md:text-xs text-gray-500 uppercase tracking-wide" }, "Saldo Stark Bank"),
+                    React.createElement("p", { className: "text-lg md:text-2xl font-bold " + (saldoDisp > 0 ? "text-emerald-600" : "text-gray-400") }, st.saldoLoading ? "..." : saldoDisp !== null ? formatarMoeda(saldoDisp) : "N/D"),
+                    React.createElement("p", { className: "text-[10px] md:text-xs text-gray-400 mt-1" }, st.status ? "Ambiente: " + (st.status.ambiente || '') : "")
                 ),
-                React.createElement("div", { className: "bg-white rounded-xl p-5 shadow border-l-4 border-yellow-500" },
-                    React.createElement("p", { className: "text-xs text-gray-500 uppercase tracking-wide" }, "Aguardando Pagamento"),
-                    React.createElement("p", { className: "text-2xl font-bold text-yellow-600" }, st.pendentesTotal),
-                    React.createElement("p", { className: "text-xs text-gray-400 mt-1" }, formatarMoeda(st.pendentesValorTotal))
+                React.createElement("div", { className: "bg-white rounded-xl p-3 md:p-5 shadow border-l-4 border-yellow-500" },
+                    React.createElement("p", { className: "text-[10px] md:text-xs text-gray-500 uppercase tracking-wide" }, "Aguardando Pgto"),
+                    React.createElement("p", { className: "text-lg md:text-2xl font-bold text-yellow-600" }, st.pendentesTotal),
+                    React.createElement("p", { className: "text-[10px] md:text-xs text-gray-400 mt-1" }, formatarMoeda(st.pendentesValorTotal))
                 ),
-                React.createElement("div", { className: "bg-white rounded-xl p-5 shadow border-l-4 " + (st.status && st.status.sdk_operacional ? "border-green-500" : "border-red-500") },
-                    React.createElement("p", { className: "text-xs text-gray-500 uppercase tracking-wide" }, "Status SDK"),
-                    React.createElement("p", { className: "text-2xl font-bold " + (st.status && st.status.sdk_operacional ? "text-green-600" : "text-red-600") }, st.status ? (st.status.sdk_operacional ? "✅ Online" : "❌ Offline") : "..."),
-                    React.createElement("p", { className: "text-xs text-gray-400 mt-1" }, st.status && st.status.estatisticas ? "Total pagos: " + (st.status.estatisticas.pagos || 0) : "")
+                React.createElement("div", { className: "bg-white rounded-xl p-3 md:p-5 shadow border-l-4 " + (st.status && st.status.sdk_operacional ? "border-green-500" : "border-red-500") },
+                    React.createElement("p", { className: "text-[10px] md:text-xs text-gray-500 uppercase tracking-wide" }, "Status SDK"),
+                    React.createElement("p", { className: "text-lg md:text-2xl font-bold " + (st.status && st.status.sdk_operacional ? "text-green-600" : "text-red-600") }, st.status ? (st.status.sdk_operacional ? "✅ Online" : "❌ Offline") : "..."),
+                    React.createElement("p", { className: "text-[10px] md:text-xs text-gray-400 mt-1" }, st.status && st.status.estatisticas ? "Total pagos: " + (st.status.estatisticas.pagos || 0) : "")
                 ),
-                React.createElement("div", { className: "bg-white rounded-xl p-5 shadow border-l-4 " + (st.pendentesTotal === 0 ? "border-gray-300" : saldoOk ? "border-emerald-500" : "border-red-500") },
-                    React.createElement("p", { className: "text-xs text-gray-500 uppercase tracking-wide" }, "Cobertura do Lote"),
-                    React.createElement("p", { className: "text-2xl font-bold " + (st.pendentesTotal === 0 ? "text-gray-400" : saldoOk ? "text-emerald-600" : "text-red-600") }, st.pendentesTotal === 0 ? "—" : saldoOk ? "✅ OK" : "⚠️ Insuficiente"),
-                    !saldoOk && st.pendentesTotal > 0 && saldoDisp !== null ? React.createElement("p", { className: "text-xs text-red-500 mt-1" }, "Faltam " + formatarMoeda(st.pendentesValorTotal - saldoDisp)) : null
+                React.createElement("div", { className: "bg-white rounded-xl p-3 md:p-5 shadow border-l-4 " + (st.pendentesTotal === 0 ? "border-gray-300" : saldoOk ? "border-emerald-500" : "border-red-500") },
+                    React.createElement("p", { className: "text-[10px] md:text-xs text-gray-500 uppercase tracking-wide" }, "Cobertura do Lote"),
+                    React.createElement("p", { className: "text-lg md:text-2xl font-bold " + (st.pendentesTotal === 0 ? "text-gray-400" : saldoOk ? "text-emerald-600" : "text-red-600") }, st.pendentesTotal === 0 ? "—" : saldoOk ? "✅ OK" : "⚠️ Insuf."),
+                    !saldoOk && st.pendentesTotal > 0 && saldoDisp !== null ? React.createElement("p", { className: "text-[10px] md:text-xs text-red-500 mt-1" }, "Faltam " + formatarMoeda(st.pendentesValorTotal - saldoDisp)) : null
                 )
             ),
             
@@ -6153,26 +6153,26 @@
             // ===== TAB PENDENTES =====
             st.subTab === 'pendentes' && React.createElement("div", { className: "space-y-4" },
                 // Filtros de data
-                React.createElement("div", { className: "flex items-end gap-3 bg-white rounded-xl p-4 shadow" },
-                    React.createElement("div", null,
+                React.createElement("div", { className: "flex flex-wrap items-end gap-2 md:gap-3 bg-white rounded-xl p-3 md:p-4 shadow" },
+                    React.createElement("div", { className: "flex-1 min-w-[130px]" },
                         React.createElement("label", { className: "block text-xs text-gray-500 mb-1" }, "Data Início"),
-                        React.createElement("input", { type: "date", value: filtros.data_inicio, onChange: function(e) { setFiltros(function(p) { return Object.assign({}, p, { data_inicio: e.target.value }); }); }, className: "border border-gray-300 rounded-lg px-3 py-2 text-sm" })
+                        React.createElement("input", { type: "date", value: filtros.data_inicio, onChange: function(e) { setFiltros(function(p) { return Object.assign({}, p, { data_inicio: e.target.value }); }); }, className: "border border-gray-300 rounded-lg px-3 py-2 text-sm w-full" })
                     ),
-                    React.createElement("div", null,
+                    React.createElement("div", { className: "flex-1 min-w-[130px]" },
                         React.createElement("label", { className: "block text-xs text-gray-500 mb-1" }, "Data Fim"),
-                        React.createElement("input", { type: "date", value: filtros.data_fim, onChange: function(e) { setFiltros(function(p) { return Object.assign({}, p, { data_fim: e.target.value }); }); }, className: "border border-gray-300 rounded-lg px-3 py-2 text-sm" })
+                        React.createElement("input", { type: "date", value: filtros.data_fim, onChange: function(e) { setFiltros(function(p) { return Object.assign({}, p, { data_fim: e.target.value }); }); }, className: "border border-gray-300 rounded-lg px-3 py-2 text-sm w-full" })
                     ),
                     React.createElement("button", { onClick: function() { carregarPendentes(1); }, className: "px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-medium" }, "🔍 Filtrar"),
-                    React.createElement("button", { onClick: function() { var f = { data_inicio: '', data_fim: '' }; setFiltros(f); carregarPendentes(1, f); }, className: "px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 text-sm" }, "Limpar filtros (últimos 30 dias)")
+                    React.createElement("button", { onClick: function() { var f = { data_inicio: '', data_fim: '' }; setFiltros(f); carregarPendentes(1, f); }, className: "px-3 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 text-xs md:text-sm whitespace-nowrap" }, "Limpar filtros (últimos 30 dias)")
                 ),
                 
                 // Barra de ação global
-                st.pendentes.length > 0 && React.createElement("div", { className: "flex items-center justify-between bg-white rounded-xl p-4 shadow" },
+                st.pendentes.length > 0 && React.createElement("div", { className: "flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-white rounded-xl p-3 md:p-4 shadow" },
                     React.createElement("div", { className: "flex items-center gap-3" },
                         React.createElement("input", { type: "checkbox", checked: st.pendentes.length > 0 && st.pendentes.every(function(s) { return sel[s.id]; }), onChange: toggleTodos, className: "w-5 h-5 rounded border-gray-300 accent-emerald-600" }),
-                        React.createElement("span", { className: "text-sm text-gray-600" }, idsSelecionados.length > 0 ? idsSelecionados.length + " selecionado(s) — " + formatarMoeda(valorSelecionado) : "Selecionar todos da página (" + st.pendentes.length + ")")
+                        React.createElement("span", { className: "text-xs md:text-sm text-gray-600" }, idsSelecionados.length > 0 ? idsSelecionados.length + " selecionado(s) — " + formatarMoeda(valorSelecionado) : "Selecionar todos (" + st.pendentes.length + ")")
                     ),
-                    React.createElement("button", { onClick: iniciarPagamento, disabled: st.executando || !(st.status && st.status.sdk_operacional), className: "px-6 py-3 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-lg" }, "🔐 Executar Pagamento")
+                    React.createElement("button", { onClick: iniciarPagamento, disabled: st.executando || !(st.status && st.status.sdk_operacional), className: "w-full sm:w-auto px-4 md:px-6 py-3 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg text-sm md:text-base" }, "🔐 Executar Pagamento")
                 ),
                 
                 // Lotes em accordion
@@ -6199,9 +6199,9 @@
                                 // Header do lote (clicável)
                                 React.createElement("div", {
                                     onClick: function() { setSt(function(p) { var k = 'loteExp_' + idx; var n = Object.assign({}, p); n[k] = !n[k]; return n; }); },
-                                    className: "flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                                    className: "flex items-center justify-between p-3 md:p-4 cursor-pointer hover:bg-gray-50 transition-colors"
                                 },
-                                    React.createElement("div", { className: "flex items-center gap-4" },
+                                    React.createElement("div", { className: "flex items-center gap-2 md:gap-4 flex-1 min-w-0" },
                                         // Checkbox do lote inteiro
                                         React.createElement("input", {
                                             type: "checkbox",
@@ -6216,25 +6216,25 @@
                                                 });
                                             },
                                             onClick: function(e) { e.stopPropagation(); },
-                                            className: "w-5 h-5 rounded border-gray-300 accent-emerald-600"
+                                            className: "w-5 h-5 rounded border-gray-300 accent-emerald-600 flex-shrink-0"
                                         }),
                                         // Info do lote
-                                        React.createElement("div", null,
-                                            React.createElement("div", { className: "flex items-center gap-3" },
-                                                React.createElement("span", { className: "bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-sm font-bold" }, "Lote " + loteNum),
-                                                React.createElement("span", { className: "text-gray-700 font-medium" }, loteSaques.length + " solicitações"),
-                                                React.createElement("span", { className: "text-emerald-700 font-bold text-lg" }, formatarMoeda(loteValorTotal))
+                                        React.createElement("div", { className: "min-w-0" },
+                                            React.createElement("div", { className: "flex flex-wrap items-center gap-2" },
+                                                React.createElement("span", { className: "bg-emerald-100 text-emerald-700 px-2 md:px-3 py-1 rounded-full text-xs md:text-sm font-bold" }, "Lote " + loteNum),
+                                                React.createElement("span", { className: "text-gray-700 font-medium text-xs md:text-sm" }, loteSaques.length + " solic."),
+                                                React.createElement("span", { className: "text-emerald-700 font-bold text-sm md:text-lg" }, formatarMoeda(loteValorTotal))
                                             ),
-                                            React.createElement("p", { className: "text-xs text-gray-400 mt-1" }, loteSelecionados > 0 ? "✅ " + loteSelecionados + " selecionado(s)" : "Clique para expandir")
+                                            React.createElement("p", { className: "text-xs text-gray-400 mt-1 truncate" }, loteSelecionados > 0 ? "✅ " + loteSelecionados + " selecionado(s)" : "Clique para expandir")
                                         )
                                     ),
                                     // Seta de expandir
-                                    React.createElement("span", { className: "text-gray-400 text-xl transition-transform " + (loteExpandido ? "rotate-180" : "") }, "▼")
+                                    React.createElement("span", { className: "text-gray-400 text-xl transition-transform flex-shrink-0 ml-2 " + (loteExpandido ? "rotate-180" : "") }, "▼")
                                 ),
                                 
                                 // Conteúdo expandido
-                                loteExpandido && React.createElement("div", { className: "border-t" },
-                                    React.createElement("table", { className: "w-full text-sm" },
+                                loteExpandido && React.createElement("div", { className: "border-t overflow-x-auto" },
+                                    React.createElement("table", { className: "w-full text-sm min-w-[600px]" },
                                         React.createElement("thead", null, React.createElement("tr", { className: "bg-gray-50 border-b" },
                                             React.createElement("th", { className: "px-4 py-2 text-left w-10" }, ""),
                                             React.createElement("th", { className: "px-4 py-2 text-left" }, "Profissional"),
@@ -6414,8 +6414,8 @@
             ),
 
             // ===== MODAL 2FA =====
-            modal2fa.aberto && React.createElement("div", { className: "fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" },
-                React.createElement("div", { className: "bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden" },
+            modal2fa.aberto && React.createElement("div", { className: "fixed inset-0 bg-black bg-opacity-50 z-50 flex items-end sm:items-center justify-center sm:p-4" },
+                React.createElement("div", { className: "bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-md overflow-hidden max-h-[90vh] overflow-y-auto" },
                     // Header do modal
                     React.createElement("div", { className: "bg-gradient-to-r from-emerald-600 to-teal-600 p-6 text-white text-center" },
                         React.createElement("span", { className: "text-4xl" }, "🔐"),
