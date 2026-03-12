@@ -2257,7 +2257,7 @@
                     if (p.motivoRejeicao) {
                         s(!0);
                         try {
-                            if (!(await fetchAuth(`${API_URL}/indicacoes/${e}/rejeitar`, {
+                            const resp = await fetchAuth(`${API_URL}/indicacoes/${e}/rejeitar`, {
                                     method: "PATCH",
                                     headers: {
                                         "Content-Type": "application/json"
@@ -2266,12 +2266,18 @@
                                         motivo_rejeicao: p.motivoRejeicao,
                                         resolved_by: l.fullName
                                     })
-                                })).ok) throw new Error("Erro ao rejeitar");
+                                });
+                            if (!resp.ok) throw new Error("Erro ao rejeitar");
+                            const updated = await resp.json();
+                            // Optimistic update: atualizar a indicação no array local
+                            le(prev => prev.map(i => i.id === e ? { ...i, ...updated, status: 'rejeitada' } : i));
                             ja("❌ Indicação rejeitada", "success"), x({
                                 ...p,
                                 modalRejeitar: null,
                                 motivoRejeicao: ""
-                            }), await wl()
+                            });
+                            // Reload em background
+                            setTimeout(() => wl(), 500);
                         } catch (e) {
                             ja(e.message, "error")
                         }
@@ -2567,7 +2573,7 @@
                     onClick: () => (async e => {
                         s(!0);
                         try {
-                            if (!(await fetchAuth(`${API_URL}/indicacoes/${e}/aprovar`, {
+                            const resp = await fetchAuth(`${API_URL}/indicacoes/${e}/aprovar`, {
                                     method: "PATCH",
                                     headers: {
                                         "Content-Type": "application/json"
@@ -2575,8 +2581,14 @@
                                     body: JSON.stringify({
                                         resolved_by: l.fullName
                                     })
-                                })).ok) throw new Error("Erro ao aprovar");
-                            ja("✅ Indicação aprovada!", "success"), await wl()
+                                });
+                            if (!resp.ok) throw new Error("Erro ao aprovar");
+                            const updated = await resp.json();
+                            // Optimistic update: atualizar a indicação no array local
+                            le(prev => prev.map(i => i.id === e ? { ...i, ...updated, status: 'aprovada' } : i));
+                            ja("✅ Indicação aprovada!", "success");
+                            // Reload em background para sincronizar
+                            setTimeout(() => wl(), 500);
                         } catch (e) {
                             ja(e.message, "error")
                         }
