@@ -385,9 +385,9 @@ const SISTEMA_MODULOS_CONFIG = [
       abas: []
     },
     { id: "antifraude", label: "Anti-Fraude", icon: "🛡️",
-    { id: "performance", label: "Performance Diária", icon: "📈", abas: [] },
       abas: []
-    }
+    },
+    { id: "performance", label: "Performance Diária", icon: "📈", abas: [] }
 ];
 
 // ==================== COMPONENTE OVERFLOW NAV (módulos + abas com dropdown inteligente) ====================
