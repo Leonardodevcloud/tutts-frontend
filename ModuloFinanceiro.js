@@ -1591,6 +1591,8 @@
                 className: "px-4 py-3 text-center"
             }, "Gratuidade"), React.createElement("th", {
                 className: "px-4 py-3 text-center"
+            }, "Pagamento"), React.createElement("th", {
+                className: "px-4 py-3 text-center"
             }, "OMIE"))), React.createElement("tbody", null, (() => {
                 // Filtrar dados - usar servidor quando disponível
                 const fonte = conciliacaoData || q;
@@ -1668,6 +1670,16 @@
                 }, "SIM") : React.createElement("span", {
                     className: "text-xs text-gray-400"
                 }, "-")), React.createElement("td", {
+                    className: "px-4 py-3 text-center"
+                }, e.stark_status === 'pago' ? React.createElement("span", {
+                    className: "inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-1 rounded-full"
+                }, "🏦 Stark Bank") : e.stark_status === 'processando' ? React.createElement("span", {
+                    className: "inline-flex items-center gap-1 text-[10px] font-bold text-yellow-700 bg-yellow-100 px-2 py-1 rounded-full"
+                }, "⏳ Processando") : e.stark_status === 'erro' ? React.createElement("span", {
+                    className: "inline-flex items-center gap-1 text-[10px] font-bold text-red-700 bg-red-100 px-2 py-1 rounded-full"
+                }, "❌ Erro Pix") : React.createElement("span", {
+                    className: "text-xs text-gray-400"
+                }, "Manual")), React.createElement("td", {
                     className: "px-4 py-3 text-center"
                 }, React.createElement("input", {
                     type: "checkbox",
