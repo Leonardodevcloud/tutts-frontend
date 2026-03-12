@@ -2531,9 +2531,9 @@
                     className: "px-2 py-2 text-center font-bold text-green-600 text-xs whitespace-nowrap"
                 }, er(e.valor_bonus)), React.createElement("td", {
                     className: "px-2 py-2 text-center whitespace-nowrap"
-                }, "pendente" === e.status ? React.createElement("span", {
+                }, e.expires_at ? React.createElement("span", {
                     className: "text-xs font-bold " + (t <= 0 ? "text-red-600" : t <= 5 ? "text-orange-600" : "text-gray-600")
-                }, t > 0 ? `${t}d` : "Exp!") : "-"), React.createElement("td", {
+                }, t > 0 ? t + "d" : "Vencida") : React.createElement("span", { className: "text-xs text-gray-400" }, "—")), React.createElement("td", {
                     className: "px-2 py-2 text-center whitespace-nowrap"
                 }, React.createElement("span", {
                     className: "px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap " + ("pendente" === e.status ? "bg-yellow-500 text-white" : "aprovada" === e.status ? "bg-green-500 text-white" : "rejeitada" === e.status ? "bg-red-500 text-white" : "bg-gray-400 text-white")
@@ -2604,7 +2604,23 @@
                 }, "Rejeitar")), "rejeitada" === e.status && e.motivo_rejeicao && React.createElement("span", {
                     className: "text-[9px] text-red-600",
                     title: e.motivo_rejeicao
-                }, "📝 ", e.motivo_rejeicao.substring(0, 20), "...")))
+                }, "📝 ", e.motivo_rejeicao.substring(0, 20), "..."),
+                // Botão Excluir — sempre visível
+                React.createElement("button", {
+                    onClick: () => (async id => {
+                        if (!confirm("Excluir indicação de " + e.indicado_nome + "?\n\nEsta ação não pode ser desfeita.")) return;
+                        s(!0);
+                        try {
+                            const resp = await fetchAuth(`${API_URL}/indicacoes/${id}`, { method: "DELETE" });
+                            if (!resp.ok) throw new Error("Erro ao excluir");
+                            le(prev => prev.filter(i => i.id !== id));
+                            ja("🗑️ Indicação excluída!", "success");
+                        } catch (err) { ja(err.message, "error"); }
+                        s(!1);
+                    })(e.id),
+                    className: "px-2 py-1 bg-gray-400 text-white rounded text-[10px] font-semibold hover:bg-red-600 whitespace-nowrap",
+                    title: "Excluir indicação"
+                }, "🗑️")))
             })))))), "promo-novatos" === p.finTab && React.createElement(React.Fragment, null, p.modalRejeitarNovatos && React.createElement("div", {
                 className: "fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
             }, React.createElement("div", {
