@@ -7517,7 +7517,7 @@ const hideLoadingScreen = () => {
         }, Vl = async () => {
             const e = parseFloat(p.withdrawAmount);
             if (!e || e <= 0) return void ja("Valor inválido", "error");
-            if (e < 10) return void ja("⚠️ Valor mínimo é R$ 10,00", "error");
+            if (e < 15) return void ja("⚠️ Valor mínimo é R$ 15,00", "error");
             // Verificar saldo Plific (considerando saques pendentes)
             const saldoDisp = calcularSaldoDisponivel();
             if (saldoDisp !== null && e > saldoDisp) {
@@ -9493,7 +9493,7 @@ const hideLoadingScreen = () => {
                 className: "text-green-600 text-xs"
             }, "(máx: ", er(a), ")"), React.createElement("span", {
                 className: "text-gray-500 text-xs ml-1"
-            }, "(mín: R$ 10,00)")), React.createElement("input", {
+            }, "(mín: R$ 15,00)")), React.createElement("input", {
                 type: "text",
                 inputMode: "decimal",
                 value: p.withdrawAmount || "",
@@ -9516,11 +9516,11 @@ const hideLoadingScreen = () => {
                     x({...p, withdrawAmount: val});
                 },
                 placeholder: "Ex: 50,00",
-                className: "w-full px-4 py-3 border rounded-lg text-lg " + (r || (p.withdrawAmount && parseFloat(p.withdrawAmount) < 10) ? "border-red-500 bg-red-50" : ""),
+                className: "w-full px-4 py-3 border rounded-lg text-lg " + (r || (p.withdrawAmount && parseFloat(p.withdrawAmount) < 15) ? "border-red-500 bg-red-50" : ""),
                 disabled: 0 === m || (saldoDisp !== null && saldoDisp <= 0)
-            }), p.withdrawAmount && parseFloat(p.withdrawAmount) > 0 && parseFloat(p.withdrawAmount) < 10 && React.createElement("p", {
+            }), p.withdrawAmount && parseFloat(p.withdrawAmount) > 0 && parseFloat(p.withdrawAmount) < 15 && React.createElement("p", {
                 className: "text-red-600 text-sm mt-1 font-semibold"
-            }, "❌ Valor mínimo é R$ 10,00"), r && React.createElement("p", {
+            }, "❌ Valor mínimo é R$ 15,00"), r && React.createElement("p", {
                 className: "text-red-600 text-sm mt-1 font-semibold"
             }, "❌ Valor excede o limite da gratuidade (", er(a), ")")), saldoDisp !== null && parseFloat(p.withdrawAmount || 0) > saldoDisp && React.createElement("p", {
                 className: "text-red-600 text-sm mt-1 font-semibold"
@@ -9556,9 +9556,9 @@ const hideLoadingScreen = () => {
                 }, er(e.final))))
             })(), React.createElement("button", {
                 onClick: Vl,
-                disabled: c || !p.withdrawAmount || parseFloat(p.withdrawAmount) < 10 || r || 0 === m || (saldoDisp !== null && saldoDisp <= 0) || (saldoDisp !== null && parseFloat(p.withdrawAmount || 0) > saldoDisp),
+                disabled: c || !p.withdrawAmount || parseFloat(p.withdrawAmount) < 15 || r || 0 === m || (saldoDisp !== null && saldoDisp <= 0) || (saldoDisp !== null && parseFloat(p.withdrawAmount || 0) > saldoDisp),
                 className: "w-full bg-green-600 text-white py-3 rounded-lg font-bold disabled:opacity-50"
-            }, c ? "..." : 0 === m ? "🚫 Limite Atingido" : parseFloat(p.withdrawAmount || 0) < 10 ? "⚠️ Mínimo R$ 10" : "💸 Solicitar"))
+            }, c ? "..." : 0 === m ? "🚫 Limite Atingido" : parseFloat(p.withdrawAmount || 0) < 15 ? "⚠️ Mínimo R$ 15" : "💸 Solicitar"))
         })(), React.createElement("h3", {
             className: "text-lg font-semibold mt-8 mb-4"
         }, "📋 Histórico"), 0 === M.length ? React.createElement("p", {
