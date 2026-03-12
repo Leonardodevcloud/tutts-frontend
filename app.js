@@ -385,6 +385,7 @@ const SISTEMA_MODULOS_CONFIG = [
       abas: []
     },
     { id: "antifraude", label: "Anti-Fraude", icon: "🛡️",
+    { id: "performance", label: "Performance Diária", icon: "📈", abas: [] },
       abas: []
     }
 ];
@@ -7400,7 +7401,8 @@ const hideLoadingScreen = () => {
                                     config: !hasConfig || allowedMods.includes("config"),
                                     "crm-whatsapp": !hasConfig || allowedMods.includes("crm-whatsapp"),
                                     agente: !hasConfig || allowedMods.includes("agente"),
-                                    antifraude: !hasConfig || allowedMods.includes("antifraude")
+                                    antifraude: !hasConfig || allowedMods.includes("antifraude"),
+                                    performance: !hasConfig || allowedMods.includes("performance")
                                 },
                                 abas: allowedTabs
                             };
@@ -13305,6 +13307,22 @@ const hideLoadingScreen = () => {
                         React.createElement("p", { className: "text-gray-600" }, "Carregando módulo Agente RPA...")
                     )
                 );
+            }
+        }
+        // ========== MÓDULO PERFORMANCE DIÁRIA (CARREGAMENTO EXTERNO) ==========
+        const canAccessPerformance = hasModuleAccess(l, "performance");
+        if (canAccessPerformance && "performance" === Ee) {
+            if (typeof window.ModuloPerformanceComponent !== 'undefined') {
+                return React.createElement(window.ModuloPerformanceComponent, {
+                    usuario:    l,
+                    API_URL:    API_URL,
+                    fetchAuth:  fetchAuth,
+                    showToast:  ja,
+                    he:         he,
+                    Ee:         Ee,
+                    onLogout:   () => o(null),
+                    onNavigate: navegarSidebar,
+                });
             }
         }
         // ========== MÓDULO ANTI-FRAUDE (CARREGAMENTO EXTERNO) ==========
