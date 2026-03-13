@@ -269,7 +269,60 @@
   // ════════════════════════════════════════════════════════════
   // COMPONENTE: Painel de controle (filtros)
   // ════════════════════════════════════════════════════════════
-  function PainelFiltros({ filtros, setFiltros, onExecutar, loading, jobStatus }) {
+  function PainelFiltros({ filtros, setFiltros, onExecutar, loading, jobStatus, API_URL, fetchAuth }) {
+    const [clientes, setClientes] = useState([]);
+    const [centrosCusto, setCentrosCusto] = useState([]);
+    const [buscaCliente, setBuscaCliente] = useState('');
+    const [dropAberto, setDropAberto] = useState(false);
+    const [ccLoading, setCcLoading] = useState(false);
+    const dropRef = useRef(null);
+
+    // Carregar lista de clientes com máscaras ao montar
+    useEffect(() => {
+      (async () => {
+        try {
+          const r = await fetchAuth(`${API_URL}/bi/clientes-por-regiao`);
+          const data = await r.json();
+          if (Array.isArray(data)) setClientes(data);
+        } catch (e) { console.error('Erro ao carregar clientes:', e); }
+      })();
+    }, [API_URL, fetchAuth]);
+
+    // Carregar centros de custo quando seleciona cliente
+    useEffect(() => {
+      if (!filtros.codCliente) { setCentrosCusto([]); return; }
+      (async () => {
+        setCcLoading(true);
+        try {
+          const r = await fetchAuth(`${API_URL}/bi/centros-custo/${filtros.codCliente}`);
+          const data = await r.json();
+          if (Array.isArray(data)) setCentrosCusto(data);
+          else setCentrosCusto([]);
+        } catch (e) { setCentrosCusto([]); }
+        setCcLoading(false);
+      })();
+    }, [filtros.codCliente, API_URL, fetchAuth]);
+
+    // Fechar dropdown ao clicar fora
+    useEffect(() => {
+      const handler = (e) => {
+        if (dropRef.current && !dropRef.current.contains(e.target)) setDropAberto(false);
+      };
+      document.addEventListener('mousedown', handler);
+      return () => document.removeEventListener('mousedown', handler);
+    }, []);
+
+    // Filtro de clientes pela busca
+    const clientesFiltrados = buscaCliente.length > 0
+      ? clientes.filter(c =>
+          String(c.cod_cliente).includes(buscaCliente) ||
+          (c.nome_display || '').toLowerCase().includes(buscaCliente.toLowerCase())
+        )
+      : clientes;
+
+    // Cliente selecionado atualmente
+    const clienteSel = clientes.find(c => String(c.cod_cliente) === String(filtros.codCliente));
+
     return h('div', { className: 'bg-white border rounded-xl shadow-sm p-5' },
       h('div', { className: 'flex flex-wrap gap-4 items-end' },
 
@@ -295,28 +348,81 @@
           }),
         ),
 
-        // Código cliente
-        h('div', { className: 'flex flex-col gap-1' },
-          h('label', { className: 'text-xs font-semibold text-gray-600 uppercase' }, 'Cód. Cliente'),
-          h('input', {
-            type: 'number',
-            placeholder: 'Ex: 949',
-            value: filtros.codCliente,
-            onChange: e => setFiltros(f => ({ ...f, codCliente: e.target.value })),
-            className: 'border rounded-lg px-3 py-2 text-sm w-28 focus:outline-none focus:ring-2 focus:ring-purple-400',
-          }),
+        // ── CLIENTE (searchable dropdown com máscaras) ──
+        h('div', { className: 'flex flex-col gap-1 relative', ref: dropRef, style: { minWidth: '280px' } },
+          h('label', { className: 'text-xs font-semibold text-gray-600 uppercase' }, 'Cliente'),
+          // Input de busca / display
+          h('div', { className: 'relative' },
+            h('input', {
+              type: 'text',
+              placeholder: clientes.length > 0 ? 'Buscar cliente...' : 'Carregando...',
+              value: dropAberto ? buscaCliente : (clienteSel ? `${clienteSel.cod_cliente} — ${clienteSel.nome_display}` : buscaCliente),
+              onFocus: () => { setDropAberto(true); setBuscaCliente(''); },
+              onChange: e => { setBuscaCliente(e.target.value); setDropAberto(true); },
+              className: 'border rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-purple-400 pr-8',
+            }),
+            // Botão limpar
+            filtros.codCliente && h('button', {
+              onClick: (e) => {
+                e.stopPropagation();
+                setFiltros(f => ({ ...f, codCliente: '', centroCusto: '' }));
+                setBuscaCliente('');
+                setCentrosCusto([]);
+              },
+              className: 'absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 text-sm',
+              title: 'Limpar'
+            }, '✕'),
+          ),
+          // Dropdown
+          dropAberto && h('div', {
+            className: 'absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto z-50',
+          },
+            clientesFiltrados.length === 0
+              ? h('div', { className: 'px-4 py-3 text-sm text-gray-400 text-center' },
+                  clientes.length === 0 ? 'Carregando clientes...' : 'Nenhum cliente encontrado'
+                )
+              : clientesFiltrados.slice(0, 50).map(c =>
+                  h('div', {
+                    key: c.cod_cliente,
+                    onClick: () => {
+                      setFiltros(f => ({ ...f, codCliente: String(c.cod_cliente), centroCusto: '' }));
+                      setBuscaCliente('');
+                      setDropAberto(false);
+                    },
+                    className: `px-4 py-2.5 cursor-pointer hover:bg-purple-50 flex items-center gap-2 text-sm ${
+                      String(filtros.codCliente) === String(c.cod_cliente) ? 'bg-purple-50 font-semibold' : ''
+                    }`,
+                  },
+                    h('span', { className: 'text-xs font-mono text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded min-w-[42px] text-center' }, c.cod_cliente),
+                    h('span', { className: 'text-gray-700 truncate' }, c.nome_display),
+                    c.mascara && c.mascara !== c.nome_original && h('span', { className: 'text-xs text-gray-400 ml-auto' }, '(máscara)'),
+                  )
+                ),
+          ),
         ),
 
-        // Centro de custo
-        h('div', { className: 'flex flex-col gap-1' },
+        // ── CENTRO DE CUSTO (dropdown dinâmico) ──
+        h('div', { className: 'flex flex-col gap-1', style: { minWidth: '200px' } },
           h('label', { className: 'text-xs font-semibold text-gray-600 uppercase' }, 'Centro de Custo'),
-          h('input', {
-            type: 'text',
-            placeholder: 'Opcional',
-            value: filtros.centroCusto,
-            onChange: e => setFiltros(f => ({ ...f, centroCusto: e.target.value })),
-            className: 'border rounded-lg px-3 py-2 text-sm w-40 focus:outline-none focus:ring-2 focus:ring-purple-400',
-          }),
+          !filtros.codCliente
+            ? h('select', {
+                disabled: true,
+                className: 'border rounded-lg px-3 py-2 text-sm bg-gray-50 text-gray-400 cursor-not-allowed',
+              }, h('option', {}, 'Selecione um cliente'))
+            : ccLoading
+              ? h('div', { className: 'border rounded-lg px-3 py-2 text-sm text-gray-400 bg-gray-50' }, '⏳ Carregando...')
+              : h('select', {
+                  value: filtros.centroCusto,
+                  onChange: e => setFiltros(f => ({ ...f, centroCusto: e.target.value })),
+                  className: 'border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400',
+                },
+                  h('option', { value: '' }, centrosCusto.length > 0 ? 'Todos os centros' : 'Sem centros de custo'),
+                  ...centrosCusto.map(cc =>
+                    h('option', { key: cc.centro_custo, value: cc.centro_custo },
+                      `${cc.centro_custo} (${cc.total_entregas} ent.)`
+                    )
+                  ),
+                ),
         ),
 
         // Botão executar
@@ -573,6 +679,7 @@
           onExecutar,
           loading,
           jobStatus: jobAtual?.status,
+          API_URL, fetchAuth,
         }),
 
         // ── ABA DASHBOARD ───────────────────────────────────
