@@ -22,7 +22,12 @@
     if (!iso) return '—';
     return new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
   }
-  function corPct(pct) {
+  function corPct(pct, codCliente) {
+    // Cliente 767 (Comollati): SLA contratual 95%
+    if (codCliente == 767) {
+      if (pct >= 95) return { text: 'text-green-600', bg: 'bg-green-50', bar: '#22c55e', ring: 'border-green-400' };
+      return { text: 'text-yellow-600', bg: 'bg-yellow-50', bar: '#eab308', ring: 'border-yellow-400' };
+    }
     if (pct >= 90) return { text: 'text-green-600', bg: 'bg-green-50', bar: '#22c55e', ring: 'border-green-400' };
     if (pct >= 75) return { text: 'text-yellow-600', bg: 'bg-yellow-50', bar: '#eab308', ring: 'border-yellow-400' };
     return { text: 'text-red-600', bg: 'bg-red-50', bar: '#ef4444', ring: 'border-red-400' };
@@ -40,7 +45,7 @@
   function ClienteCard({ card, onClick, processando }) {
     const snap = card.snapshot;
     const pct = snap ? parseFloat(snap.pct_no_prazo || 0) : 0;
-    const c = corPct(pct);
+    const c = corPct(pct, card.cod_cliente);
     const total = snap ? snap.total_os : 0;
 
     return h('div', {
@@ -116,7 +121,7 @@
 
     const snap = card.snapshot;
     const pct = snap ? parseFloat(snap.pct_no_prazo || 0) : 0;
-    const c = corPct(pct);
+    const c = corPct(pct, card.cod_cliente);
 
     return h('div', { className: 'space-y-4' },
       // Voltar + Header
