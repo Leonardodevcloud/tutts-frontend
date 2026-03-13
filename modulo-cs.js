@@ -924,7 +924,18 @@
   // ══════════════════════════════════════════════════
   function renderMarkdown(text) {
     if (!text) return '';
-    return text
+
+    // 1. Extrair blocos de gráficos SVG injetados pelo backend antes de escapar
+    // Todos os gráficos usam o wrapper: <div style="margin:16px 0;background:#f8fafc;...">...</div>
+    const htmlBlocks = [];
+    let processed = text.replace(/<div style="margin:16px 0;background:#f8fafc[^"]*"[^>]*>[\s\S]*?<\/div>\n\n/g, (match) => {
+      const idx = htmlBlocks.length;
+      htmlBlocks.push(match);
+      return `\n%%GRAFICO_${idx}%%\n`;
+    });
+
+    // 2. Escapar HTML do texto markdown restante
+    processed = processed
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
       .replace(/^### (.+)$/gm, '<h3 class="text-base font-bold text-indigo-800 mt-6 mb-2">$1</h3>')
       .replace(/^## (.+)$/gm, '<h2 class="text-lg font-bold text-indigo-900 mt-6 mb-2">$1</h2>')
@@ -934,6 +945,13 @@
       .replace(/^\d+\. (.+)$/gm, '<li class="ml-4 text-sm text-gray-700 mb-1">$1</li>')
       .replace(/\n\n/g, '<br/><br/>')
       .replace(/\n/g, '<br/>');
+
+    // 3. Reinjetar blocos de gráficos preservados
+    htmlBlocks.forEach((block, idx) => {
+      processed = processed.replace(`%%GRAFICO_${idx}%%`, block);
+    });
+
+    return processed;
   }
 
   // ══════════════════════════════════════════════════
