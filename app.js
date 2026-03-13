@@ -387,7 +387,7 @@ const SISTEMA_MODULOS_CONFIG = [
     { id: "antifraude", label: "Anti-Fraude", icon: "🛡️",
       abas: []
     },
-    { id: "performance", label: "Performance Diária", icon: "📈", abas: [] }
+    { id: "performance", label: "Performance Diária", icon: "📈", abas: [{id:"dashboard",label:"📊 Dashboard"},{id:"busca",label:"🔍 Busca"},{id:"config",label:"⚙️ Configurações"},{id:"jobs",label:"🗂️ Jobs"}] }
 ];
 
 // ==================== COMPONENTE OVERFLOW NAV (módulos + abas com dropdown inteligente) ====================
@@ -2055,6 +2055,7 @@ const hideLoadingScreen = () => {
         [wa, _a] = useState(!1), [todoGrupos, setTodoGrupos] = useState([]), [todoTarefas, setTodoTarefas] = useState([]), [todoGrupoAtivo, setTodoGrupoAtivo] = useState(null), [todoMetricas, setTodoMetricas] = useState(null), [todoTab, setTodoTab] = useState("tarefas"), [todoFiltroStatus, setTodoFiltroStatus] = useState("todas"), [todoModal, setTodoModal] = useState(null), [todoLoading, setTodoLoading] = useState(false), [todoAdmins, setTodoAdmins] = useState([]),
         // Estado do módulo de Filas
         [filasTab, setFilasTab] = useState("monitoramento"),
+        [perfTab, setPerfTab] = useState("dashboard"),
         // Novos estados para TODO melhorado
         [todoMeuDia, setTodoMeuDia] = useState([]),
         [todoViewMode, setTodoViewMode] = useState("meudia"), // "meudia" ou "grupo"
@@ -2495,6 +2496,8 @@ const hideLoadingScreen = () => {
                 if (abaId) setTodoTab(abaId);
             } else if (moduloId === "filas") {
                 if (abaId) setFilasTab(abaId);
+            } else if (moduloId === "performance") {
+                if (abaId) setPerfTab(abaId);
             }
         };
         
@@ -13313,16 +13316,39 @@ const hideLoadingScreen = () => {
         const canAccessPerformance = hasModuleAccess(l, "performance");
         if (canAccessPerformance && "performance" === Ee) {
             if (typeof window.ModuloPerformanceComponent !== 'undefined') {
-                return React.createElement(window.ModuloPerformanceComponent, {
-                    usuario:    l,
-                    API_URL:    API_URL,
-                    fetchAuth:  fetchAuth,
-                    showToast:  ja,
-                    he:         he,
-                    Ee:         Ee,
-                    onLogout:   () => o(null),
-                    onNavigate: navegarSidebar,
-                });
+                return React.createElement("div", {
+                    className: "min-h-screen bg-gray-50"
+                },
+                    i && React.createElement(Toast, i),
+                    n && React.createElement(LoadingOverlay, null),
+                    React.createElement(HeaderCompacto, {
+                        usuario: l,
+                        moduloAtivo: Ee,
+                        abaAtiva: perfTab,
+                        socialProfile: socialProfile,
+                        isLoading: f,
+                        lastUpdate: E,
+                        onRefresh: () => window.location.reload(),
+                        onLogout: () => o(null),
+                        onGoHome: () => he("home"),
+                        onNavigate: navegarSidebar,
+                        onChangeTab: (abaId) => setPerfTab(abaId)
+                    }),
+                    React.createElement("div", { className: "max-w-7xl mx-auto p-4 md:p-6" },
+                        React.createElement(window.ModuloPerformanceComponent, {
+                            usuario:    l,
+                            API_URL:    API_URL,
+                            fetchAuth:  fetchAuth,
+                            showToast:  ja,
+                            he:         he,
+                            Ee:         Ee,
+                            perfTab:    perfTab,
+                            setPerfTab: setPerfTab,
+                            onLogout:   () => o(null),
+                            onNavigate: navegarSidebar,
+                        })
+                    )
+                );
             } else {
                 return React.createElement("div", { className: "min-h-screen bg-gray-50 flex items-center justify-center" },
                     React.createElement("div", { className: "text-center" },
