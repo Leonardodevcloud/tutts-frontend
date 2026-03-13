@@ -441,7 +441,7 @@
   // ══════════════════════════════════════════════════
   // SUB-TELA: DETALHE DO CLIENTE (com Raio-X)
   // ══════════════════════════════════════════════════
-  function ClienteDetalheView({ codCliente, fetchApi, onVoltar }) {
+  function ClienteDetalheView({ codCliente, fetchApi, apiUrl, getToken, onVoltar }) {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [raioXLoading, setRaioXLoading] = useState(false);
@@ -558,9 +558,34 @@
 
       // Raio-X IA (quando gerado)
       raioXResult && h('div', { className: 'bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl border border-indigo-200 p-6 shadow-inner' },
-        h('div', { className: 'flex items-center gap-2 mb-4' },
+        h('div', { className: 'flex items-center gap-2 mb-4 flex-wrap' },
           h('span', { className: 'text-2xl' }, '🔬'),
           h('h3', { className: 'text-lg font-bold text-indigo-900' }, 'Raio-X Inteligente'),
+          // Botão PDF Apresentação
+          raioXResult.id && h('button', {
+            className: 'ml-2 px-4 py-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg text-xs font-bold hover:from-purple-700 hover:to-indigo-700 shadow-md flex items-center gap-1.5 transition-all',
+            onClick: () => {
+              const token = getToken();
+              const url = `${apiUrl}/cs/raio-x/pdf/${raioXResult.id}`;
+              fetch(url, {
+                headers: { 'Authorization': `Bearer ${token}` },
+                credentials: 'include',
+              })
+              .then(res => {
+                if (!res.ok) throw new Error('Erro ao gerar PDF');
+                return res.blob();
+              })
+              .then(blob => {
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = `RaioX_${codCliente}_${periodoRaioX.inicio}_${periodoRaioX.fim}.pdf`;
+                a.click();
+                URL.revokeObjectURL(a.href);
+              })
+              .catch(err => alert('Erro ao baixar PDF: ' + err.message));
+            }
+          }, '📊 Baixar PDF Apresentação'),
+          // Botão Email (existente se houver)
           h('span', { className: 'text-xs text-indigo-400 ml-auto' }, `Gerado em ${formatDateTime(raioXResult.gerado_em)} · ${raioXResult.tokens} tokens`)
         ),
         h('div', {
@@ -618,7 +643,7 @@
             onClick: async () => {
               try {
                 const res = await fetchApi(`/cs/raio-x/${rx.id}`);
-                if (res.success) setRaioXResult({ analise: res.raio_x.analise_texto, gerado_em: res.raio_x.created_at, tokens: res.raio_x.tokens_utilizados });
+                if (res.success) setRaioXResult({ id: rx.id, analise: res.raio_x.analise_texto, gerado_em: res.raio_x.created_at, tokens: res.raio_x.tokens_utilizados });
               } catch (e) { console.error(e); }
             }
           },
@@ -958,7 +983,7 @@
     const renderContent = () => {
       // Se tiver cliente selecionado, mostra detalhe
       if (clienteDetalhe) {
-        return h(ClienteDetalheView, { codCliente: clienteDetalhe, fetchApi, onVoltar: () => setClienteDetalhe(null) });
+        return h(ClienteDetalheView, { codCliente: clienteDetalhe, fetchApi, apiUrl, getToken, onVoltar: () => setClienteDetalhe(null) });
       }
 
       switch (activeTab) {
