@@ -37,7 +37,7 @@
   // ════════════════════════════════════════════════════════════
   // COMPONENTE: Card de cliente no Dashboard
   // ════════════════════════════════════════════════════════════
-  function ClienteCard({ card, onClick }) {
+  function ClienteCard({ card, onClick, processando }) {
     const snap = card.snapshot;
     const pct = snap ? parseFloat(snap.pct_no_prazo || 0) : 0;
     const c = corPct(pct);
@@ -45,42 +45,52 @@
 
     return h('div', {
       onClick,
-      className: `bg-white border rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer overflow-hidden ${snap ? '' : 'opacity-60'}`,
+      className: `bg-white border rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer overflow-hidden ${snap ? '' : 'opacity-60'} ${processando ? 'ring-2 ring-purple-400 ring-offset-1' : ''}`,
     },
-      // Barra de cor no topo
-      h('div', { className: 'h-1.5', style: { background: snap ? c.bar : '#d1d5db' } }),
+      // Barra de cor no topo (animada se processando)
+      processando
+        ? h('div', { className: 'h-1.5 overflow-hidden bg-gray-200' },
+            h('div', { style: { width: '40%', height: '100%', background: 'linear-gradient(90deg, #7c3aed, #a78bfa, #7c3aed)', animation: 'shimmer 1.5s infinite', borderRadius: '4px' } })
+          )
+        : h('div', { className: 'h-1.5', style: { background: snap ? c.bar : '#d1d5db' } }),
       h('div', { className: 'p-4' },
-        // Nome + CC
+        // Nome + CC + status
         h('div', { className: 'mb-3' },
-          h('p', { className: 'text-sm font-bold text-gray-900 truncate' }, card.nome_display),
+          h('div', { className: 'flex items-center gap-2' },
+            h('p', { className: 'text-sm font-bold text-gray-900 truncate flex-1' }, card.nome_display),
+            processando && h('span', { className: 'flex items-center gap-1 text-xs text-purple-600 font-semibold animate-pulse' }, '⏳'),
+          ),
           card.centro_custo
             ? h('p', { className: 'text-xs text-purple-600 font-medium truncate' }, card.centro_custo)
             : h('p', { className: 'text-xs text-gray-400' }, 'Todos os centros'),
         ),
 
-        snap ? h('div', {},
-          // SLA grande
-          h('div', { className: 'flex items-end justify-between mb-3' },
-            h('span', { className: `text-3xl font-black ${c.text}` }, `${pct}%`),
-            h('span', { className: 'text-xs text-gray-400' }, `${total} OS`),
-          ),
-          // Mini barra
-          h('div', { className: 'w-full h-2 rounded-full overflow-hidden bg-gray-100 flex mb-3' },
-            total > 0 && h('div', { style: { width: `${(snap.no_prazo / total) * 100}%`, background: '#22c55e' } }),
-            total > 0 && h('div', { style: { width: `${(snap.fora_prazo / total) * 100}%`, background: '#ef4444' } }),
-            total > 0 && h('div', { style: { width: `${(snap.sem_dados / total) * 100}%`, background: '#d1d5db' } }),
-          ),
-          // Números
-          h('div', { className: 'flex justify-between text-xs' },
-            h('span', { className: 'text-green-600 font-semibold' }, `✓ ${snap.no_prazo}`),
-            h('span', { className: 'text-red-500 font-semibold' }, `✗ ${snap.fora_prazo}`),
-            h('span', { className: 'text-gray-400' }, `⬜ ${snap.sem_dados}`),
-          ),
-        )
-        : h('div', { className: 'text-center py-4' },
-            h('p', { className: 'text-gray-400 text-sm' }, 'Sem dados'),
-            h('p', { className: 'text-xs text-gray-300' }, 'Execute a busca'),
-          ),
+        processando && !snap
+          ? h('div', { className: 'text-center py-4' },
+              h('div', { className: 'inline-block w-8 h-8 border-3 border-purple-400 border-t-transparent rounded-full', style: { animation: 'spin 1s linear infinite', borderWidth: '3px' } }),
+              h('p', { className: 'text-xs text-purple-500 mt-2 font-medium' }, 'Processando...'),
+            )
+          : snap ? h('div', {},
+              h('div', { className: 'flex items-end justify-between mb-3' },
+                h('span', { className: `text-3xl font-black ${c.text} ${processando ? 'opacity-60' : ''}` }, `${pct}%`),
+                h('span', { className: 'text-xs text-gray-400' }, `${total} OS`),
+              ),
+              h('div', { className: 'w-full h-2 rounded-full overflow-hidden bg-gray-100 flex mb-3' },
+                total > 0 && h('div', { style: { width: `${(snap.no_prazo / total) * 100}%`, background: '#22c55e' } }),
+                total > 0 && h('div', { style: { width: `${(snap.fora_prazo / total) * 100}%`, background: '#ef4444' } }),
+                total > 0 && h('div', { style: { width: `${(snap.sem_dados / total) * 100}%`, background: '#d1d5db' } }),
+              ),
+              h('div', { className: 'flex justify-between text-xs' },
+                h('span', { className: 'text-green-600 font-semibold' }, `✓ ${snap.no_prazo}`),
+                h('span', { className: 'text-red-500 font-semibold' }, `✗ ${snap.fora_prazo}`),
+                h('span', { className: 'text-gray-400' }, `⬜ ${snap.sem_dados}`),
+              ),
+              processando && h('p', { className: 'text-xs text-purple-500 mt-2 text-center animate-pulse font-medium' }, '🔄 Atualizando...'),
+            )
+          : h('div', { className: 'text-center py-4' },
+              h('p', { className: 'text-gray-400 text-sm' }, 'Sem dados'),
+              h('p', { className: 'text-xs text-gray-300' }, 'Execute a busca'),
+            ),
       ),
     );
   }
@@ -224,10 +234,11 @@
     const [loading, setLoading] = useState(true);
     const [periodo, setPeriodo] = useState({ inicio: hoje(), fim: hoje() });
     const [detalhe, setDetalhe] = useState(null);
-    const [executando, setExecutando] = useState({});
+    const [jobsAtivos, setJobsAtivos] = useState({}); // { "cod_cc": jobId }
+    const pollingRef = useRef(null);
+    const cronRef = useRef(null);
 
     const carregar = useCallback(async () => {
-      setLoading(true);
       try {
         const r = await fetchAuth(`${API_URL}/performance/dashboard?data_inicio=${periodo.inicio}&data_fim=${periodo.fim}`);
         const d = await r.json();
@@ -236,12 +247,99 @@
       setLoading(false);
     }, [API_URL, fetchAuth, periodo]);
 
-    useEffect(() => { carregar(); }, [carregar]);
+    useEffect(() => { setLoading(true); carregar(); }, [carregar]);
 
-    // Executar busca para um card específico
+    // ── POLLING: verifica jobs ativos e atualiza dashboard ao concluir ──
+    useEffect(() => {
+      const ativos = Object.keys(jobsAtivos);
+      if (ativos.length === 0) {
+        if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
+        return;
+      }
+      if (pollingRef.current) return; // já tem polling rodando
+
+      pollingRef.current = setInterval(async () => {
+        let algumConcluiu = false;
+        const novosAtivos = { ...jobsAtivos };
+
+        for (const [key, jobId] of Object.entries(novosAtivos)) {
+          try {
+            const r = await fetchAuth(`${API_URL}/performance/jobs/${jobId}`);
+            const d = await r.json();
+            const st = d.job?.status;
+            if (st === 'concluido' || st === 'erro') {
+              delete novosAtivos[key];
+              algumConcluiu = true;
+              if (st === 'concluido') console.log(`✅ Job #${jobId} concluído (${key})`);
+            }
+          } catch (e) { /* ignora erro de polling */ }
+        }
+
+        if (algumConcluiu || Object.keys(novosAtivos).length !== Object.keys(jobsAtivos).length) {
+          setJobsAtivos(novosAtivos);
+          if (algumConcluiu) {
+            showToast('✅ Dados atualizados!', 'success');
+            carregar(); // refresh imediato
+          }
+        }
+      }, 5000);
+
+      return () => { if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; } };
+    }, [jobsAtivos, API_URL, fetchAuth, carregar, showToast]);
+
+    // Limpar polling ao desmontar
+    useEffect(() => () => { if (pollingRef.current) clearInterval(pollingRef.current); if (cronRef.current) clearInterval(cronRef.current); }, []);
+
+    // ── CRON: execução automática a cada 1h em horário comercial (8h-19h) ──
+    useEffect(() => {
+      if (cronRef.current) clearInterval(cronRef.current);
+
+      const verificarCron = async () => {
+        const agora = new Date();
+        const hora = agora.getHours();
+        const diaSemana = agora.getDay(); // 0=dom, 6=sab
+
+        // Só dias úteis (seg-sáb) entre 8h e 19h
+        if (diaSemana === 0 || hora < 8 || hora >= 19) return;
+
+        console.log(`🕐 Cron Performance: ${agora.toLocaleTimeString('pt-BR')} — executando atualização automática`);
+        await executarTodosInterno(false); // sem toast de início
+      };
+
+      // Verificar a cada 60min
+      cronRef.current = setInterval(verificarCron, 60 * 60 * 1000);
+
+      // Verificar na montagem se deve executar (se última atualização > 1h)
+      const checkInicial = async () => {
+        try {
+          const r = await fetchAuth(`${API_URL}/performance/dashboard?data_inicio=${hoje()}&data_fim=${hoje()}`);
+          const d = await r.json();
+          const cardsData = d.cards || [];
+          // Se algum card não tem snapshot ou snapshot > 1h atrás, executar
+          const agora = new Date();
+          const hora = agora.getHours();
+          const diaSemana = agora.getDay();
+          if (diaSemana === 0 || hora < 8 || hora >= 19) return;
+
+          const algumDesatualizado = cardsData.some(c => {
+            if (!c.snapshot) return true;
+            const diff = agora - new Date(c.snapshot.criado_em);
+            return diff > 60 * 60 * 1000; // > 1h
+          });
+          if (algumDesatualizado && cardsData.length > 0) {
+            console.log('🕐 Cron inicial: dados desatualizados, executando...');
+            setTimeout(() => executarTodosInterno(false), 3000);
+          }
+        } catch (e) {}
+      };
+      checkInicial();
+
+      return () => { if (cronRef.current) clearInterval(cronRef.current); };
+    }, [API_URL, fetchAuth]);
+
+    // Executar busca para um card
     const executarCard = async (card) => {
       const key = `${card.cod_cliente}_${card.centro_custo || ''}`;
-      setExecutando(prev => ({ ...prev, [key]: true }));
       try {
         const r = await fetchAuth(`${API_URL}/performance/executar`, {
           method: 'POST',
@@ -254,24 +352,43 @@
           }),
         });
         const d = await r.json();
-        showToast(d.ja_existia ? 'Job já em andamento...' : 'Job criado! Aguarde...', 'info');
-      } catch (e) { showToast('Erro ao executar', 'error'); }
-      setExecutando(prev => ({ ...prev, [key]: false }));
+        const jobId = d.job_id;
+        if (jobId) {
+          setJobsAtivos(prev => ({ ...prev, [key]: jobId }));
+        }
+        return d;
+      } catch (e) { return null; }
     };
 
-    // Executar TODOS
-    const executarTodos = async () => {
-      showToast(`Criando jobs para ${cards.length} clientes...`, 'info');
-      for (const card of cards) {
+    // Executar todos (com ou sem toast)
+    const executarTodosInterno = async (comToast = true) => {
+      if (comToast) showToast(`🚀 Criando jobs para ${cards.length} clientes...`, 'info');
+      // Usar cards atuais ou buscar configs se cards vazio
+      let alvo = cards;
+      if (alvo.length === 0) {
+        try {
+          const r = await fetchAuth(`${API_URL}/performance/config`);
+          const d = await r.json();
+          alvo = (d.configs || []).map(c => ({ cod_cliente: c.cod_cliente, centro_custo: c.centro_custo, nome_display: c.nome_display }));
+        } catch (e) { return; }
+      }
+      for (const card of alvo) {
         await executarCard(card);
       }
-      showToast('Todos os jobs criados! Aguarde conclusão.', 'success');
-      setTimeout(carregar, 10000);
+      if (comToast) showToast('Jobs criados! Atualizando automaticamente...', 'success');
     };
 
     if (detalhe) return h(DetalheCliente, { card: detalhe, onVoltar: () => { setDetalhe(null); carregar(); } });
 
+    const totalAtivos = Object.keys(jobsAtivos).length;
+
     return h('div', { className: 'space-y-5' },
+      // CSS keyframes para animações
+      h('style', {}, `
+        @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(350%); } }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+      `),
+
       // Filtro de data + ações
       h('div', { className: 'bg-white border rounded-xl shadow-sm p-4 flex flex-wrap items-end gap-4' },
         h('div', { className: 'flex flex-col gap-1' },
@@ -285,8 +402,11 @@
             className: 'border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400' }),
         ),
         h('button', { onClick: carregar, className: 'px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-semibold hover:bg-purple-700' }, '🔄 Atualizar'),
-        cards.length > 0 && h('button', { onClick: executarTodos,
-          className: 'px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-semibold hover:bg-green-700' }, `🚀 Executar Todos (${cards.length})`),
+        cards.length > 0 && h('button', { onClick: () => executarTodosInterno(true), disabled: totalAtivos > 0,
+          className: `px-4 py-2 rounded-lg text-sm font-semibold ${totalAtivos > 0 ? 'bg-gray-200 text-gray-400' : 'bg-green-600 hover:bg-green-700 text-white'}` },
+          totalAtivos > 0 ? `⏳ Processando (${totalAtivos})...` : `🚀 Executar Todos (${cards.length})`),
+        // Info cron
+        h('span', { className: 'text-xs text-gray-400 ml-2' }, '⏰ Cron: 1h (8h-19h)'),
       ),
 
       // Cards
@@ -299,12 +419,14 @@
               h('p', { className: 'text-gray-400 text-sm mt-1' }, 'Vá na aba "Configurações" para adicionar clientes ao monitoramento'),
             )
           : h('div', { className: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4' },
-              ...cards.map((card, i) =>
-                h(ClienteCard, {
+              ...cards.map((card, i) => {
+                const key = `${card.cod_cliente}_${card.centro_custo || ''}`;
+                return h(ClienteCard, {
                   key: i, card,
+                  processando: !!jobsAtivos[key],
                   onClick: () => setDetalhe(card),
-                })
-              )
+                });
+              })
             ),
     );
   }
