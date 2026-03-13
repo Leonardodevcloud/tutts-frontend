@@ -419,7 +419,7 @@
                   h('option', { value: '' }, centrosCusto.length > 0 ? 'Todos os centros' : 'Sem centros de custo'),
                   ...centrosCusto.map(cc =>
                     h('option', { key: cc.centro_custo, value: cc.centro_custo },
-                      `${cc.centro_custo} (${cc.total_entregas} ent.)`
+                      cc.centro_custo
                     )
                   ),
                 ),
