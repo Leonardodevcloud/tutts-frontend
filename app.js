@@ -3582,7 +3582,7 @@ const hideLoadingScreen = () => {
                     }
                     
                     // Filtrar pendentes para contadores
-                    const pendentes = saques.filter(e => e.status === "pending" || e.status === "aguardando_aprovacao");
+                    const pendentes = saques.filter(e => e.status === "pending" || e.status === "aguardando_aprovacao" || e.status === "aguardando_pagamento_stark");
                     const novosSaques = pendentes.filter(e => !ka.current.solicitacoes.has(e.id));
                     const novosPedidos = pedidos.filter(e => "pendente" === e.status && !ka.current.loja.has(e.id));
                     const novasGratuidades = gratuidades.filter(e => "pending" === e.status && !ka.current.gratuidades.has(e.id));
@@ -7541,11 +7541,11 @@ const hideLoadingScreen = () => {
                 a = new Date(t.getTime() - 36e5),
                 // Só bloqueia se tiver saque aguardando aprovação (pendente) na última hora
                 // Aprovado ou rejeitado = libera para nova solicitação
-                r = M.filter(e => new Date(e.created_at) >= a && (e.status === "pending" || e.status === "aguardando_aprovacao"));
+                r = M.filter(e => new Date(e.created_at) >= a && (e.status === "pending" || e.status === "aguardando_aprovacao" || e.status === "aguardando_pagamento_stark"));
             if (r.length >= 1) {
                 const e = new Date(new Date(r[0].created_at).getTime() + 36e5),
                     a = Math.ceil((e - t) / 6e4);
-                return void ja(`⚠️ Você já possui um saque aguardando aprovação! Aguarde a aprovação ou rejeição antes de solicitar novamente.`, "error")
+                return void ja(`⚠️ Você já possui um saque em processamento! Aguarde a conclusão antes de solicitar novamente.`, "error")
             }
             // Com 1 saque por hora, não precisa verificar valor repetido
             s(!0);
@@ -9083,7 +9083,7 @@ const hideLoadingScreen = () => {
             className: "bg-white rounded-xl p-4 text-center shadow"
         }, React.createElement("p", {
             className: "text-2xl font-bold text-green-600"
-        }, M.filter(e => "aguardando_aprovacao" === e.status).length), React.createElement("p", {
+        }, M.filter(e => "aguardando_aprovacao" === e.status || "aguardando_pagamento_stark" === e.status).length), React.createElement("p", {
             className: "text-xs text-gray-500"
         }, "Saques Pendentes")), React.createElement("div", {
             className: "bg-white rounded-xl p-4 text-center shadow"
@@ -9375,7 +9375,7 @@ const hideLoadingScreen = () => {
                 className: "text-gray-600"
             }, "Pendentes:"), React.createElement("span", {
                 className: "font-semibold text-yellow-600"
-            }, l.filter(e => "aguardando_aprovacao" === e.status).length)), React.createElement("div", {
+            }, l.filter(e => "aguardando_aprovacao" === e.status || "aguardando_pagamento_stark" === e.status).length)), React.createElement("div", {
                 className: "flex justify-between"
             }, React.createElement("span", {
                 className: "text-gray-600"
@@ -9416,7 +9416,7 @@ const hideLoadingScreen = () => {
                 s = new Date(o.getTime() - 36e5),
                 // Bloquear apenas se houver saque ainda aguardando aprovação (pendente)
                 // Aprovado ou rejeitado = libera imediatamente para nova solicitação
-                n = M.filter(e => new Date(e.created_at) >= s && (e.status === "pending" || e.status === "aguardando_aprovacao")),
+                n = M.filter(e => new Date(e.created_at) >= s && (e.status === "pending" || e.status === "aguardando_aprovacao" || e.status === "aguardando_pagamento_stark")),
                 // Limite de 1 saque por hora (apenas pendentes bloqueiam)
                 m = Math.max(0, 1 - n.length),
                 i = n.map(e => parseFloat(e.requested_amount)),
@@ -9593,10 +9593,10 @@ const hideLoadingScreen = () => {
             className: "space-y-3"
         }, M.map(e => {
             const t = "aguardando_aprovacao" === e.status && Date.now() - new Date(e.created_at) > 36e5,
-                a = "aprovado" === e.status || "aprovado_gratuidade" === e.status ? "Saque aprovado, em instantes será feito a transferência para o seu banco!" : "inativo" === e.status ? "Saque temporariamente inativo por questões técnicas" : "rejeitado" === e.status && e.reject_reason ? `Motivo: ${e.reject_reason}` : null;
+                a = "pago_stark" === e.status ? "O seu saque já foi realizado, por favor verifique a conta bancária cadastrada!" : "aguardando_pagamento_stark" === e.status ? "O seu saldo já foi debitado, em até uma hora, o valor cairá na conta bancária sinalizada." : "aprovado" === e.status || "aprovado_gratuidade" === e.status ? "Saque aprovado, em instantes será feito a transferência para o seu banco!" : "inativo" === e.status ? "Saque temporariamente inativo por questões técnicas" : "rejeitado" === e.status && e.reject_reason ? `Motivo: ${e.reject_reason}` : null;
             return React.createElement("div", {
                 key: e.id,
-                className: "border rounded-lg p-4 " + (t ? "border-red-400 bg-red-50" : e.status?.includes("aprovado") ? "border-green-400 bg-green-50" : "rejeitado" === e.status ? "border-red-300 bg-red-50" : "inativo" === e.status ? "border-orange-300 bg-orange-50" : "")
+                className: "border rounded-lg p-4 " + (t ? "border-red-400 bg-red-50" : "pago_stark" === e.status ? "border-green-400 bg-green-50" : "aguardando_pagamento_stark" === e.status ? "border-blue-400 bg-blue-50" : e.status?.includes("aprovado") ? "border-green-400 bg-green-50" : "rejeitado" === e.status ? "border-red-300 bg-red-50" : "inativo" === e.status ? "border-orange-300 bg-orange-50" : "")
             }, React.createElement("div", {
                 className: "flex justify-between"
             }, React.createElement("div", null, React.createElement("p", {
@@ -9604,9 +9604,9 @@ const hideLoadingScreen = () => {
             }, er(e.requested_amount)), React.createElement("p", {
                 className: "text-sm text-gray-600"
             }, "Receber: ", er(e.final_amount))), React.createElement("span", {
-                className: "px-3 py-1 rounded-full text-xs font-bold h-fit " + (e.status?.includes("aprovado") ? "bg-green-500 text-white" : "rejeitado" === e.status ? "bg-red-500 text-white" : "inativo" === e.status ? "bg-orange-500 text-white" : "bg-yellow-500 text-white")
-            }, t ? "⚠️ ATRASADO" : "aprovado" === e.status || "aprovado_gratuidade" === e.status ? "✅ Aprovado" : "rejeitado" === e.status ? "❌ Rejeitado" : "inativo" === e.status ? "⚠️ Inativo" : "⏳ Aguardando")), a && React.createElement("p", {
-                className: "text-sm mt-2 font-semibold " + (e.status?.includes("aprovado") ? "text-green-700" : "rejeitado" === e.status ? "text-red-600" : "text-orange-600")
+                className: "px-3 py-1 rounded-full text-xs font-bold h-fit " + ("pago_stark" === e.status ? "bg-green-600 text-white" : "aguardando_pagamento_stark" === e.status ? "bg-blue-500 text-white" : e.status?.includes("aprovado") ? "bg-green-500 text-white" : "rejeitado" === e.status ? "bg-red-500 text-white" : "inativo" === e.status ? "bg-orange-500 text-white" : "bg-yellow-500 text-white")
+            }, t ? "⚠️ ATRASADO" : "pago_stark" === e.status ? "✅ Saque Concluído" : "aguardando_pagamento_stark" === e.status ? "⏳ Em Processamento" : "aprovado" === e.status || "aprovado_gratuidade" === e.status ? "✅ Aprovado" : "rejeitado" === e.status ? "❌ Rejeitado" : "inativo" === e.status ? "⚠️ Inativo" : "⏳ Aguardando")), a && React.createElement("p", {
+                className: "text-sm mt-2 font-semibold " + ("pago_stark" === e.status ? "text-green-700" : "aguardando_pagamento_stark" === e.status ? "text-blue-700" : e.status?.includes("aprovado") ? "text-green-700" : "rejeitado" === e.status ? "text-red-600" : "text-orange-600")
             }, a), t && React.createElement("p", {
                 className: "text-red-600 text-sm mt-2 font-semibold"
             }, "Entre em contato com o suporte"), React.createElement("p", {
