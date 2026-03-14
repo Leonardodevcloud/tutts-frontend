@@ -1061,15 +1061,15 @@
             }, "Nome"), React.createElement("th", {
                 className: "px-2 py-3 text-left w-[110px]"
             }, "CPF"), React.createElement("th", {
-                className: "px-2 py-3 text-left w-[70px]"
+                className: "px-2 py-3 text-left w-[50px]"
             }, "Código"), React.createElement("th", {
-                className: "px-2 py-3 text-right w-[90px]"
+                className: "px-2 py-3 text-right w-[75px]"
             }, "Solicitado"), React.createElement("th", {
-                className: "px-2 py-3 text-right w-[90px]"
+                className: "px-2 py-3 text-right w-[75px]"
             }, "Valor Prof."), React.createElement("th", {
                 className: "px-2 py-3 text-left w-[120px]"
             }, "PIX"), React.createElement("th", {
-                className: "px-2 py-3 text-center w-[160px]"
+                className: "px-2 py-3 text-center w-[220px]"
             }, "Status"), React.createElement("th", {
                 className: "px-2 py-3 text-center w-[100px]"
             }, "Débito"), React.createElement("th", {
@@ -1090,7 +1090,10 @@
                     o = "aprovado" === e.status,
                     c = "aprovado_gratuidade" === e.status,
                     s = "rejeitado" === e.status,
-                    n = s ? "font-bold text-red-800 bg-red-100" : c ? "font-bold text-blue-800 bg-blue-100 border-l-4 border-l-blue-500" : o ? "font-bold bg-green-100" : "",
+                    isPagoStark = "pago_stark" === e.status || e.stark_status === "pago",
+                    isEmLote = e.stark_status === "em_lote",
+                    isProcessandoPix = e.stark_status === "processando",
+                    n = s ? "font-bold text-red-800 bg-red-100" : isPagoStark ? "font-bold text-green-800 bg-green-100 border-l-4 border-l-green-500" : isEmLote ? "font-bold text-amber-800 bg-amber-50 border-l-4 border-l-amber-400" : isProcessandoPix ? "font-bold text-yellow-800 bg-yellow-50 border-l-4 border-l-yellow-400" : c ? "font-bold text-blue-800 bg-blue-100 border-l-4 border-l-blue-500" : o ? "font-bold bg-green-100" : "",
                     m = new Date(e.created_at),
                     i = m.toLocaleDateString("pt-BR"),
                     d = m.toLocaleTimeString("pt-BR", {
@@ -1099,7 +1102,7 @@
                     });
                 return React.createElement("tr", {
                     key: e.id,
-                    className: `border-t hover:bg-gray-50 ${z.includes(e.id)?"bg-purple-50":""} ${!t||s||o||c?"":"bg-red-50 border-l-4 border-l-red-500"} ${n} ${!e.has_gratuity||o||s||c?"":"row-blue"} ${e.is_restricted&&!s?"row-red":""}`
+                    className: `border-t hover:bg-gray-50 ${z.includes(e.id)&&!isPagoStark&&!isEmLote&&!isProcessandoPix?"bg-purple-50":""} ${!t||s||o||c||isPagoStark||isEmLote||isProcessandoPix?"":"bg-red-50 border-l-4 border-l-red-500"} ${n} ${!e.has_gratuity||o||s||c||isPagoStark||isEmLote||isProcessandoPix?"":"row-blue"} ${e.is_restricted&&!s&&!isPagoStark?"row-red":""}`
                 }, React.createElement("td", {
                     className: "px-2 py-3 text-center"
                 }, React.createElement("input", {
@@ -1194,11 +1197,11 @@
                     },
                     // =============== DESABILITAR DURANTE PROCESSAMENTO OU JÁ APROVADO OU EM LOTE ===============
                     disabled: p[`processing_${e.id}`] || e.status === "aprovado" || e.status === "aprovado_gratuidade" || e.status === "pago_stark" || e.stark_status === "em_lote" || e.stark_status === "processando" || e.stark_status === "pago",
-                    className: "px-1 py-1 border rounded text-xs w-full " + 
+                    className: "px-1 py-1 border rounded text-xs w-full whitespace-nowrap " + 
                         (p[`processing_${e.id}`] ? "opacity-50 cursor-not-allowed bg-yellow-50 animate-pulse" : "") +
-                        (e.stark_status === "em_lote" ? "bg-blue-50 cursor-not-allowed text-blue-700 font-semibold" : "") +
+                        (e.stark_status === "em_lote" ? "bg-amber-50 cursor-not-allowed text-amber-700 font-semibold border-amber-300" : "") +
                         (e.stark_status === "processando" ? "bg-yellow-50 cursor-not-allowed text-yellow-700 font-semibold" : "") +
-                        (e.stark_status === "pago" || e.status === "pago_stark" ? "bg-green-50 cursor-not-allowed text-green-700 font-semibold" : "") +
+                        (e.stark_status === "pago" || e.status === "pago_stark" ? "bg-green-100 cursor-not-allowed text-green-700 font-semibold border-green-300" : "") +
                         (!e.stark_status && (e.status === "aprovado" || e.status === "aprovado_gratuidade") ? "bg-green-50 cursor-not-allowed text-green-700" : "")
                 }, 
                 // Mostrar status fixo baseado no stark_status (não permite edição)
@@ -1257,9 +1260,9 @@
                     className: "px-2 py-1 bg-gray-400 text-white rounded text-xs"
                 }, "✕"))), e.reject_reason && "rejeitado" === e.status && React.createElement("p", {
                     className: "text-[10px] text-red-600 mt-1 truncate"
-                }, "Motivo: ", e.reject_reason), e.admin_name && "aguardando_aprovacao" !== e.status && React.createElement("p", {
-                    className: "text-[10px] text-purple-600 mt-1 font-medium"
-                }, "👤 ", e.admin_name)), 
+                }, "Motivo: ", e.reject_reason), e.admin_name && "aguardando_aprovacao" !== e.status && "aguardando_pagamento_stark" !== e.status && React.createElement("p", {
+                    className: "text-[10px] mt-1 font-medium " + (isPagoStark ? "text-green-700" : isEmLote ? "text-amber-700" : "text-purple-600")
+                }, isPagoStark ? "💰 Pago por: " : isEmLote || isProcessandoPix ? "🏦 Exec: " : "👤 ", e.admin_name)), 
                 // Célula de Data do Débito
                 React.createElement("td", {
                     className: "px-2 py-3 text-center text-xs"
