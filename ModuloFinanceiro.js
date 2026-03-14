@@ -144,7 +144,7 @@
             const formatarValorExcel = (valor) => parseFloat(valor || 0).toFixed(2).replace(".", ",");
             
             const traduzirStatus = (status) => {
-                const map = { "aprovado": "Aprovado", "aprovado_gratuidade": "Aprovado c/ Gratuidade", "rejeitado": "Rejeitado", "aguardando_aprovacao": "Aguardando" };
+                const map = { "aprovado": "Aprovado", "aprovado_gratuidade": "Aprovado c/ Gratuidade", "rejeitado": "Rejeitado", "aguardando_aprovacao": "Aguardando", "aguardando_pagamento_stark": "💳 Aguard. Pgto Stark" };
                 // Sobrescrever com status Stark se existir
                 if (e && e.stark_status === 'em_lote') return "🏦 Em Lote";
                 if (e && e.stark_status === 'processando') return "⏳ Processando Pix";
@@ -956,7 +956,7 @@
                     // Filtrar apenas saques aprovados que NÃO estão em lote e NÃO são rejeitados/inativos
                     var selecionadosValidos = q.filter(function(e) { 
                         return z.includes(e.id) && 
-                               (e.status === 'aprovado' || e.status === 'aprovado_gratuidade') &&
+                               (e.status === 'aprovado' || e.status === 'aprovado_gratuidade' || e.status === 'aguardando_pagamento_stark') &&
                                e.stark_status !== 'processando' && e.stark_status !== 'pago' && e.stark_status !== 'em_lote';
                     });
                     if (selecionadosValidos.length === 0) {
@@ -1105,12 +1105,12 @@
                 }, React.createElement("input", {
                     type: "checkbox",
                     checked: z.includes(e.id),
-                    disabled: e.status === 'rejeitado' || e.status === 'aguardando_aprovacao' || e.stark_status === 'em_lote' || e.stark_status === 'processando' || e.stark_status === 'pago',
+                    disabled: e.status === 'rejeitado' || (e.status === 'aguardando_aprovacao' && !e.debito) || e.stark_status === 'em_lote' || e.stark_status === 'processando' || e.stark_status === 'pago',
                     onChange: t => {
                         t.target.checked ? B([...z, e.id]) : B(z.filter(t => t !== e.id))
                     },
-                    className: "w-4 h-4" + (e.status === 'rejeitado' || e.status === 'aguardando_aprovacao' || e.stark_status === 'em_lote' || e.stark_status === 'processando' || e.stark_status === 'pago' ? " opacity-30 cursor-not-allowed" : ""),
-                    title: e.status === 'rejeitado' ? 'Saque rejeitado' : e.status === 'aguardando_aprovacao' ? 'Aguardando aprovação' : e.stark_status === 'em_lote' ? 'Já está em lote' : e.stark_status === 'processando' ? 'Pagamento em processamento' : e.stark_status === 'pago' ? 'Já pago' : ''
+                    className: "w-4 h-4" + (e.status === 'rejeitado' || (e.status === 'aguardando_aprovacao' && !e.debito) || e.stark_status === 'em_lote' || e.stark_status === 'processando' || e.stark_status === 'pago' ? " opacity-30 cursor-not-allowed" : ""),
+                    title: e.status === 'rejeitado' ? 'Saque rejeitado' : (e.status === 'aguardando_aprovacao' && !e.debito) ? 'Aguardando aprovação' : e.stark_status === 'em_lote' ? 'Já está em lote' : e.stark_status === 'processando' ? 'Pagamento em processamento' : e.stark_status === 'pago' ? 'Já pago' : e.status === 'aguardando_pagamento_stark' ? 'Pronto para lote Stark' : ''
                 })), React.createElement("td", {
                     className: "px-2 py-3 text-xs " + (s ? "text-red-800 font-bold" : c ? "text-blue-800 font-bold" : o ? "text-green-800 font-bold" : "")
                 }, React.createElement("div", {
@@ -1119,7 +1119,7 @@
                     className: "font-medium"
                 }, i), React.createElement("span", {
                     className: "text-[10px] text-gray-500"
-                }, d)), "aguardando_aprovacao" === e.status && React.createElement("div", {
+                }, d)), ("aguardando_aprovacao" === e.status || "aguardando_pagamento_stark" === e.status) && React.createElement("div", {
                     className: "mt-1 px-2 py-0.5 rounded text-xs font-bold inline-flex items-center gap-1 " + (t ? "bg-red-500 text-white animate-pulse" : a >= 90 ? "bg-orange-100 text-orange-700" : "bg-gray-100 text-gray-600")
                 }, t ? "🚨" : a >= 90 ? "⚠️" : "⏱️", l > 0 ? `${l}h ${r}m` : `${r}min`, t && React.createElement("span", {
                     className: "text-[10px] ml-1"
@@ -1171,7 +1171,11 @@
                             }
                             
                             // Pedir confirmação antes de aprovar
-                            if (!confirm(`Confirma a aprovação do saque de ${er(e.requested_amount)} para ${e.user_name}?\n\nEsta ação realizará o DÉBITO automaticamente e não pode ser desfeita.`)) {
+                            const debitoJaFeito = e.status === 'aguardando_pagamento_stark' || e.debito === true;
+                            const msgConfirm = debitoJaFeito
+                                ? `Confirma a aprovação do saque de ${er(e.requested_amount)} para ${e.user_name}?\n\nO débito Plific já foi realizado automaticamente. O saque será aprovado e enviado para pagamento Stark.`
+                                : `Confirma a aprovação do saque de ${er(e.requested_amount)} para ${e.user_name}?\n\nEsta ação realizará o DÉBITO automaticamente e não pode ser desfeita.`;
+                            if (!confirm(msgConfirm)) {
                                 t.target.value = e.status;
                                 return;
                             }
@@ -1201,6 +1205,9 @@
                     React.createElement("option", {
                         value: "aguardando_aprovacao"
                     }, "⏳ Aguardando"), 
+                    React.createElement("option", {
+                        value: "aguardando_pagamento_stark"
+                    }, "💳 Aguard. Pgto Stark"), 
                     // Mostrar "Aprovado" apenas para saques SEM gratuidade
                     !e.has_gratuity && React.createElement("option", {
                         value: "aprovado"
@@ -1250,7 +1257,10 @@
                 }, e.debito_plific_at ? React.createElement("div", {className: "flex flex-col"},
                     React.createElement("span", {className: "font-medium text-green-600"}, new Date(e.debito_plific_at).toLocaleDateString("pt-BR")),
                     React.createElement("span", {className: "text-[10px] text-gray-500"}, new Date(e.debito_plific_at).toLocaleTimeString("pt-BR", {hour: "2-digit", minute: "2-digit"}))
-                ) : (e.status === "aprovado" || e.status === "aprovado_gratuidade") ? React.createElement("span", {className: "text-orange-500"}, "Pendente") : React.createElement("span", {className: "text-gray-400"}, "-")),
+                ) : e.debito_erro ? React.createElement("div", {className: "flex flex-col items-center"},
+                    React.createElement("span", {className: "font-medium text-red-600"}, "❌ Falha"),
+                    React.createElement("span", {className: "text-[10px] text-red-400 max-w-[120px] truncate", title: e.debito_erro}, e.debito_erro)
+                ) : (e.status === "aprovado" || e.status === "aprovado_gratuidade") ? React.createElement("span", {className: "text-orange-500"}, "Pendente") : e.status === "aguardando_pagamento_stark" ? React.createElement("span", {className: "text-green-600 font-medium"}, "✅ OK") : React.createElement("span", {className: "text-gray-400"}, "-")),
                 React.createElement("td", {
                     className: "px-2 py-3 text-center"
                 }, React.createElement("button", {
