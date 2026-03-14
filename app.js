@@ -101,7 +101,7 @@ const VERSION_KEY = "tutts_app_version";
         }
         
         // Limpar localStorage antigo (exceto dados importantes)
-        const keysToKeep = ['tutts_user', 'tutts_token', VERSION_KEY];
+        const keysToKeep = ['tutts_user', VERSION_KEY]; // 🔒 token agora é in-memory
         Object.keys(localStorage).forEach(key => {
             if (!keysToKeep.includes(key) && !key.startsWith('tutts_tutorial')) {
                 localStorage.removeItem(key);
@@ -132,9 +132,13 @@ if ('serviceWorker' in navigator) {
 
 // ==================== FUNÇÕES DE AUTENTICAÇÃO ====================
 
+// 🔒 SECURITY FIX (HIGH-01): Token em memória ao invés de sessionStorage
+// XSS não consegue ler variável de closure — só sessionStorage/localStorage
+let _accessToken = null;
+
 // Obter token JWT armazenado
 const getToken = () => {
-    return sessionStorage.getItem("tutts_token");
+    return _accessToken;
 };
 
 // Obter refresh token armazenado
@@ -144,11 +148,7 @@ const getRefreshToken = () => {
 
 // Salvar token JWT
 const setToken = (token) => {
-    if (token) {
-        sessionStorage.setItem("tutts_token", token);
-    } else {
-        sessionStorage.removeItem("tutts_token");
-    }
+    _accessToken = token || null;
 };
 
 // Salvar refresh token
@@ -161,6 +161,31 @@ const setRefreshToken = (refreshToken) => {
 // Variável para controlar se está renovando token (evitar múltiplas chamadas)
 let isRefreshingToken = false;
 let refreshPromise = null;
+
+// 🔒 SECURITY FIX (HIGH-01): Ao recarregar página, token em memória se perde.
+// Restaurar automaticamente via refresh cookie se usuário existir em sessionStorage.
+(async function restaurarTokenAoCarregar() {
+    const userSalvo = sessionStorage.getItem("tutts_user");
+    if (userSalvo && !_accessToken) {
+        try {
+            const response = await fetch(API_URL + '/users/refresh-token', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({})
+            });
+            if (response.ok) {
+                const data = await response.json();
+                if (data.token) {
+                    _accessToken = data.token;
+                    console.log('🔄 Token restaurado via refresh cookie');
+                }
+            }
+        } catch (e) {
+            console.warn('⚠️ Não foi possível restaurar token:', e.message);
+        }
+    }
+})();
 
 // Função para renovar token usando refresh token (via HttpOnly cookie)
 const renovarToken = async () => {
@@ -213,7 +238,7 @@ const renovarToken = async () => {
 // Função para fazer logout completo
 const fazerLogoutCompleto = () => {
     sessionStorage.removeItem("tutts_user");
-    sessionStorage.removeItem("tutts_token");
+    _accessToken = null; // 🔒 Limpar token em memória
     sessionStorage.removeItem("tutts_csrf");
     localStorage.removeItem("tutts_refresh_token"); // Limpar resquício antigo
     window.location.reload();
@@ -1942,7 +1967,7 @@ const hideLoadingScreen = () => {
                     body: JSON.stringify({})
                 }).catch(() => {}); // Ignorar erros no logout
                 sessionStorage.removeItem("tutts_user");
-                sessionStorage.removeItem("tutts_token");
+                _accessToken = null; // 🔒 Limpar token em memória
                 sessionStorage.removeItem("tutts_csrf");
                 localStorage.removeItem("tutts_refresh_token"); // Limpar resquício antigo
             }
@@ -3424,7 +3449,7 @@ const hideLoadingScreen = () => {
                         setWsConnected(true);
                         if (l) {
                             // Enviar token JWT para autenticação segura
-                            const token = sessionStorage.getItem('tutts_token');
+                            const token = getToken();
                             wsRef.current.send(JSON.stringify({ type: 'AUTH', token: token, role: l.role, cod_profissional: l.codProfissional }));
                         }
                         if (wsReconnectTimer.current) { clearTimeout(wsReconnectTimer.current); wsReconnectTimer.current = null; }
@@ -3469,6 +3494,15 @@ const hideLoadingScreen = () => {
                                     }, 500);
                                 }
                             } else if (data.event === 'AUTH_SUCCESS') { console.log('✅ [WS] Autenticado:', data.role); }
+                            else if (data.event === 'REAUTH_SUCCESS') { console.log('🔄 [WS] Token renovado no WS'); }
+                            else if (data.event === 'AUTH_EXPIRED') {
+                                console.log('⚠️ [WS] Token expirado, renovando...');
+                                renovarToken().then(novoToken => {
+                                    if (novoToken && wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+                                        wsRef.current.send(JSON.stringify({ type: 'REAUTH', token: novoToken }));
+                                    }
+                                });
+                            }
                             else if (data.event === 'AUTH_ERROR') { console.error('❌ [WS] Erro de autenticação:', data.error); setWsConnected(false); }
                         } catch (err) { console.error('❌ [WS] Erro:', err); }
                     };
@@ -3512,13 +3546,13 @@ const hideLoadingScreen = () => {
         useEffect(() => {
             if (l && ['admin', 'admin_master', 'admin_financeiro'].includes(l.role)) {
                 // CORREÇÃO: Verificar se o token existe antes de conectar
-                const token = sessionStorage.getItem('tutts_token');
+                const token = getToken();
                 if (token) {
                     connectWebSocket();
                 } else {
                     // Aguardar um pouco para o token ser salvo
                     const timeout = setTimeout(() => {
-                        if (sessionStorage.getItem('tutts_token')) {
+                        if (getToken()) {
                             connectWebSocket();
                         }
                     }, 500);
@@ -19365,7 +19399,7 @@ const hideLoadingScreen = () => {
         
         // Módulo CRM WhatsApp - Iframe
         if ("crm-whatsapp" === Ee) {
-            const token = sessionStorage.getItem("tutts_token");
+            const token = getToken();
             const crmUrl = token 
                 ? `https://crm-whatsapp-tawny.vercel.app/inbox?token=${encodeURIComponent(token)}&embed=true`
                 : "https://crm-whatsapp-tawny.vercel.app/login";
