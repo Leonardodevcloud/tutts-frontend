@@ -6344,12 +6344,11 @@
                                             React.createElement("th", { className: "px-4 py-2 text-left" }, "Chave Pix"),
                                             React.createElement("th", { className: "px-4 py-2 text-right" }, "Valor"),
                                             React.createElement("th", { className: "px-4 py-2 text-center" }, "Status"),
-                                            React.createElement("th", { className: "px-4 py-2 text-center" }, "Validação"),
                                             React.createElement("th", { className: "px-4 py-2 text-left" }, "Aprovado em")
                                         )),
                                         React.createElement("tbody", null, loteSaques.map(function(s, sIdx) {
                                             var v = validacoes[s.id];
-                                            return React.createElement("tr", { key: s.id, className: "border-b hover:bg-gray-50 " + (sel[s.id] ? "bg-emerald-50" : "") + (v && v.alertas && v.alertas.length > 0 ? " bg-yellow-50" : "") },
+                                            return React.createElement("tr", { key: s.id, className: "border-b hover:bg-gray-50 " + (sel[s.id] ? "bg-emerald-50" : "") },
                                                 React.createElement("td", { className: "px-4 py-2.5" }, React.createElement("input", { type: "checkbox", checked: !!sel[s.id], onChange: function() { toggleSel(s.id); }, className: "w-4 h-4 rounded border-gray-300 accent-emerald-600" })),
                                                 React.createElement("td", { className: "px-4 py-2.5" },
                                                     React.createElement("div", { className: "font-medium text-gray-800" }, s.user_name),
@@ -6358,13 +6357,6 @@
                                                 React.createElement("td", { className: "px-4 py-2.5 text-gray-600 text-xs max-w-[180px] truncate" }, s.pix_key),
                                                 React.createElement("td", { className: "px-4 py-2.5 text-right font-bold " + (parseFloat(s.final_amount) >= 200 ? "text-emerald-700 text-base" : "text-gray-700") }, formatarMoeda(s.final_amount)),
                                                 React.createElement("td", { className: "px-4 py-2.5 text-center" }, s.stark_status ? badge(s.stark_status) : React.createElement("span", { className: "px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800" }, "Aguardando")),
-                                                React.createElement("td", { className: "px-4 py-2.5 text-center" },
-                                                    !v ? React.createElement("span", { className: "text-xs text-gray-400" }, "—") :
-                                                    v.dict_status === 'ok' && v.alertas.length === 0 ? React.createElement("span", { className: "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-700", title: v.dict_nome ? "Titular: " + v.dict_nome + (v.dict_banco ? " | Banco: " + v.dict_banco : "") : "" }, "✅ OK") :
-                                                    v.dict_status === 'ok' && v.cpf_divergente ? React.createElement("span", { className: "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-yellow-100 text-yellow-700 cursor-help", title: v.alertas.join('\n') }, "⚠️ CPF Div.") :
-                                                    v.dict_status === 'ok' && v.alertas.length > 0 ? React.createElement("span", { className: "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-yellow-100 text-yellow-700 cursor-help", title: v.alertas.join('\n') }, "⚠️ Alerta") :
-                                                    React.createElement("span", { className: "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700 cursor-help", title: v.alertas.join('\n') }, "❌ Erro")
-                                                ),
                                                 React.createElement("td", { className: "px-4 py-2.5 text-xs text-gray-500" }, s.approved_at ? new Date(s.approved_at).toLocaleString('pt-BR') : '—')
                                             );
                                         }))
