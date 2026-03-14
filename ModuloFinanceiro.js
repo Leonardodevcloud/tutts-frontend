@@ -146,7 +146,7 @@
             const traduzirStatus = (status) => {
                 const map = { "aprovado": "Aprovado", "aprovado_gratuidade": "Aprovado c/ Gratuidade", "rejeitado": "Rejeitado", "aguardando_aprovacao": "Aguardando", "aguardando_pagamento_stark": "💳 Aguard. Pgto Stark", "pago_stark": "✅ PAGO VIA STARK BANK" };
                 // Sobrescrever com status Stark se existir
-                if (e && e.stark_status === 'em_lote') return "🏦 Em Lote";
+                if (e && e.stark_status === 'em_lote') return "🏦 Lote Gerado - Aguard. Pagamento";
                 if (e && e.stark_status === 'processando') return "⏳ Processando Pix";
                 if (e && e.stark_status === 'pago') return "✅ PAGO VIA STARK BANK";
                 return map[status] || status || "-";
@@ -1110,7 +1110,7 @@
                         t.target.checked ? B([...z, e.id]) : B(z.filter(t => t !== e.id))
                     },
                     className: "w-4 h-4" + (e.status === 'rejeitado' || (e.status === 'aguardando_aprovacao' && !e.debito) || e.stark_status === 'em_lote' || e.stark_status === 'processando' || e.stark_status === 'pago' ? " opacity-30 cursor-not-allowed" : ""),
-                    title: e.status === 'rejeitado' ? 'Saque rejeitado' : (e.status === 'aguardando_aprovacao' && !e.debito) ? 'Aguardando aprovação' : e.stark_status === 'em_lote' ? 'Já está em lote' : e.stark_status === 'processando' ? 'Pagamento em processamento' : e.stark_status === 'pago' ? 'Já pago' : e.status === 'aguardando_pagamento_stark' ? 'Pronto para lote Stark' : ''
+                    title: e.status === 'rejeitado' ? 'Saque rejeitado' : (e.status === 'aguardando_aprovacao' && !e.debito) ? 'Aguardando aprovação' : e.stark_status === 'em_lote' ? 'Lote gerado — aguardando pagamento' : e.stark_status === 'processando' ? 'Pagamento em processamento' : e.stark_status === 'pago' ? 'Já pago' : e.status === 'aguardando_pagamento_stark' ? 'Pronto para lote Stark' : ''
                 })), React.createElement("td", {
                     className: "px-2 py-3 text-xs " + (s ? "text-red-800 font-bold" : c ? "text-blue-800 font-bold" : o ? "text-green-800 font-bold" : "")
                 }, React.createElement("div", {
@@ -1192,16 +1192,25 @@
                             Jl(withdrawalId, novoStatus);
                         }
                     },
-                    // =============== DESABILITAR DURANTE PROCESSAMENTO OU JÁ APROVADO ===============
-                    disabled: p[`processing_${e.id}`] || e.status === "aprovado" || e.status === "aprovado_gratuidade" || e.status === "pago_stark",
+                    // =============== DESABILITAR DURANTE PROCESSAMENTO OU JÁ APROVADO OU EM LOTE ===============
+                    disabled: p[`processing_${e.id}`] || e.status === "aprovado" || e.status === "aprovado_gratuidade" || e.status === "pago_stark" || e.stark_status === "em_lote" || e.stark_status === "processando" || e.stark_status === "pago",
                     className: "px-1 py-1 border rounded text-xs w-full " + 
                         (p[`processing_${e.id}`] ? "opacity-50 cursor-not-allowed bg-yellow-50 animate-pulse" : "") +
-                        ((e.status === "aprovado" || e.status === "aprovado_gratuidade" || e.status === "pago_stark") ? "bg-green-50 cursor-not-allowed text-green-700" : "")
+                        (e.stark_status === "em_lote" ? "bg-blue-50 cursor-not-allowed text-blue-700 font-semibold" : "") +
+                        (e.stark_status === "processando" ? "bg-yellow-50 cursor-not-allowed text-yellow-700 font-semibold" : "") +
+                        (e.stark_status === "pago" || e.status === "pago_stark" ? "bg-green-50 cursor-not-allowed text-green-700 font-semibold" : "") +
+                        (!e.stark_status && (e.status === "aprovado" || e.status === "aprovado_gratuidade") ? "bg-green-50 cursor-not-allowed text-green-700" : "")
                 }, 
-                // Mostrar "Processando..." se estiver processando
+                // Mostrar status fixo baseado no stark_status (não permite edição)
                 p[`processing_${e.id}`] ? React.createElement("option", {
                     value: e.status
-                }, "⏳ Processando...") : React.createElement(React.Fragment, null,
+                }, "⏳ Processando...") : e.stark_status === "em_lote" ? React.createElement("option", {
+                    value: e.status
+                }, "🏦 Lote Gerado - Aguard. Pagamento") : e.stark_status === "processando" ? React.createElement("option", {
+                    value: e.status
+                }, "⏳ Processando Pix...") : e.stark_status === "pago" || e.status === "pago_stark" ? React.createElement("option", {
+                    value: e.status
+                }, "✅ PAGO VIA STARK BANK") : React.createElement(React.Fragment, null,
                     React.createElement("option", {
                         value: "aguardando_aprovacao"
                     }, "⏳ Aguardando"), 
@@ -1219,9 +1228,6 @@
                     React.createElement("option", {
                         value: "rejeitado"
                     }, "❌ Rejeitado"), 
-                    e.status === "pago_stark" && React.createElement("option", {
-                        value: "pago_stark"
-                    }, "✅ PAGO VIA STARK BANK"),
                     React.createElement("option", {
                         value: "inativo"
                     }, "⚠️ Inativo")
@@ -6943,7 +6949,7 @@
             var labels = {
                 pronto: '✅ Pronto', sem_pix: '❌ Sem Pix', aguardando: '⏳ Aguardando',
                 processando: '⏳ Processando', pago: '✅ Pago', concluido: '✅ Concluído',
-                rejeitado: '❌ Rejeitado', em_lote: '📋 No Lote', erro: '❌ Erro',
+                rejeitado: '❌ Rejeitado', em_lote: '🏦 Lote Gerado', erro: '❌ Erro',
                 parcial: '⚠️ Parcial'
             };
             return React.createElement("span", {
