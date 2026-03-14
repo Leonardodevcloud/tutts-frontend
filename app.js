@@ -2290,6 +2290,7 @@ const hideLoadingScreen = () => {
         [regiaoCentrosCusto, setRegiaoCentrosCusto] = useState({}), // {cod_cliente: [centros]}
         [regiaoItensAdicionados, setRegiaoItensAdicionados] = useState([]), // [{cod_cliente, nome_cliente, centro_custo}]
         [regiaoEditando, setRegiaoEditando] = useState(null), [plificState, setPlificState] = useState({ loading: false, loadingLote: false, consultaIndividual: null, consultaLote: [], idBusca: "", loadingDebito: false, pagina: 1, totalPaginas: 0, total: 0, somaTotal: 0 }), [modalDebitoPlific, setModalDebitoPlific] = useState(null), [debitoFormPlific, setDebitoFormPlific] = useState({ valor: "", descricao: "" }), [saldoPlificUser, setSaldoPlificUser] = useState({ saldo: null, loading: false, erro: null }),
+        [limitesSaque, setLimitesSaque] = useState(null),
         // Estados para dropdowns da aba Config
         [configSecaoAberta, setConfigSecaoAberta] = useState(""), // "" = todas fechadas
         // ==================== SIDEBAR STATES ====================
@@ -5679,6 +5680,13 @@ const hideLoadingScreen = () => {
             } catch (e) {
                 console.error(e)
             }
+            // Buscar limites junto com os saques
+            try {
+                const r = await fetchAuth(`${API_URL}/withdrawals/limites/${l.cod_profissional}`);
+                if (r.ok) setLimitesSaque(await r.json());
+            } catch (e) {
+                console.error('Erro ao buscar limites:', e);
+            }
         }, qa = async () => {
             try {
                 const e = await fetchAuth(`${API_URL}/gratuities/user/${l.cod_profissional}`);
@@ -7529,6 +7537,17 @@ const hideLoadingScreen = () => {
             const e = parseFloat(p.withdrawAmount);
             if (!e || e <= 0) return void ja("Valor inválido", "error");
             if (e < 15) return void ja("⚠️ Valor mínimo é R$ 15,00", "error");
+            // Validar limite por solicitação
+            if (e > 1000) return void ja("⚠️ Valor máximo por solicitação é R$ 1.000,00", "error");
+            // Validar limites diário e semanal (se já carregados)
+            if (limitesSaque) {
+                if (limitesSaque.diario && e > limitesSaque.diario.disponivel) {
+                    return void ja(`⚠️ Limite diário atingido! Você já solicitou R$ ${limitesSaque.diario.utilizado.toFixed(2).replace(".", ",")} hoje. Disponível: R$ ${limitesSaque.diario.disponivel.toFixed(2).replace(".", ",")}`, "error");
+                }
+                if (limitesSaque.semanal && e > limitesSaque.semanal.disponivel) {
+                    return void ja(`⚠️ Limite semanal atingido! Você já solicitou R$ ${limitesSaque.semanal.utilizado.toFixed(2).replace(".", ",")} esta semana. Disponível: R$ ${limitesSaque.semanal.disponivel.toFixed(2).replace(".", ",")}`, "error");
+                }
+            }
             // Verificar saldo Plific (considerando saques pendentes)
             const saldoDisp = calcularSaldoDisponivel();
             if (saldoDisp !== null && e > saldoDisp) {
@@ -9513,13 +9532,35 @@ const hideLoadingScreen = () => {
                 className: "text-yellow-800 font-semibold"
             }, "⚠️ Atenção!"), React.createElement("p", {
                 className: "text-yellow-700 text-sm mt-1"
-            }, "Conforme termo de uso do saque emergencial, será cobrado um valor de ", React.createElement("strong", null, "4,5%"), " na solicitação.")), React.createElement("div", null, React.createElement("label", {
+            }, "Conforme termo de uso do saque emergencial, será cobrado um valor de ", React.createElement("strong", null, "4,5%"), " na solicitação.")), limitesSaque && React.createElement("div", {
+                className: "bg-blue-50 border border-blue-200 rounded-lg p-3"
+            }, React.createElement("p", { className: "text-sm font-semibold text-blue-800 mb-2" }, "📊 Seus Limites de Saque"),
+            React.createElement("div", { className: "grid grid-cols-3 gap-2 text-center" },
+                React.createElement("div", { className: "bg-white rounded-lg p-2 shadow-sm" },
+                    React.createElement("p", { className: "text-xs text-gray-500" }, "Por saque"),
+                    React.createElement("p", { className: "text-sm font-bold text-blue-700" }, "R$ " + limitesSaque.por_saque.limite.toFixed(2).replace(".", ","))
+                ),
+                React.createElement("div", { className: "bg-white rounded-lg p-2 shadow-sm" },
+                    React.createElement("p", { className: "text-xs text-gray-500" }, "Hoje"),
+                    React.createElement("p", { className: "text-sm font-bold " + (limitesSaque.diario.disponivel <= 0 ? "text-red-600" : "text-green-600") }, "R$ " + limitesSaque.diario.disponivel.toFixed(2).replace(".", ",")),
+                    React.createElement("p", { className: "text-xs text-gray-400" }, "de R$ " + limitesSaque.diario.limite.toFixed(2).replace(".", ","))
+                ),
+                React.createElement("div", { className: "bg-white rounded-lg p-2 shadow-sm" },
+                    React.createElement("p", { className: "text-xs text-gray-500" }, "Semana"),
+                    React.createElement("p", { className: "text-sm font-bold " + (limitesSaque.semanal.disponivel <= 0 ? "text-red-600" : "text-green-600") }, "R$ " + limitesSaque.semanal.disponivel.toFixed(2).replace(".", ",")),
+                    React.createElement("p", { className: "text-xs text-gray-400" }, "de R$ " + limitesSaque.semanal.limite.toFixed(2).replace(".", ","))
+                )
+            ),
+            (limitesSaque.diario.disponivel <= 0 || limitesSaque.semanal.disponivel <= 0) && React.createElement("p", {
+                className: "text-red-600 text-xs mt-2 font-semibold text-center"
+            }, limitesSaque.diario.disponivel <= 0 ? "⚠️ Limite diário esgotado!" : "⚠️ Limite semanal esgotado!")
+            ), React.createElement("div", null, React.createElement("label", {
                 className: "block text-sm font-semibold mb-1"
             }, "Valor ", t && React.createElement("span", {
                 className: "text-green-600 text-xs"
             }, "(máx: ", er(a), ")"), React.createElement("span", {
                 className: "text-gray-500 text-xs ml-1"
-            }, "(mín: R$ 15,00)")), React.createElement("input", {
+            }, "(mín: R$ 15,00 • máx: R$ 1.000,00)")), React.createElement("input", {
                 type: "text",
                 inputMode: "decimal",
                 value: p.withdrawAmount || "",
@@ -9542,11 +9583,17 @@ const hideLoadingScreen = () => {
                     x({...p, withdrawAmount: val});
                 },
                 placeholder: "Ex: 50,00",
-                className: "w-full px-4 py-3 border rounded-lg text-lg " + (r || (p.withdrawAmount && parseFloat(p.withdrawAmount) < 15) ? "border-red-500 bg-red-50" : ""),
-                disabled: 0 === m || (saldoDisp !== null && saldoDisp <= 0)
+                className: "w-full px-4 py-3 border rounded-lg text-lg " + (r || (p.withdrawAmount && parseFloat(p.withdrawAmount) < 15) || (p.withdrawAmount && parseFloat(p.withdrawAmount) > 1000) || (limitesSaque && p.withdrawAmount && parseFloat(p.withdrawAmount) > limitesSaque.max_disponivel) ? "border-red-500 bg-red-50" : ""),
+                disabled: 0 === m || (saldoDisp !== null && saldoDisp <= 0) || (limitesSaque && limitesSaque.diario.disponivel <= 0) || (limitesSaque && limitesSaque.semanal.disponivel <= 0)
             }), p.withdrawAmount && parseFloat(p.withdrawAmount) > 0 && parseFloat(p.withdrawAmount) < 15 && React.createElement("p", {
                 className: "text-red-600 text-sm mt-1 font-semibold"
-            }, "❌ Valor mínimo é R$ 15,00"), r && React.createElement("p", {
+            }, "❌ Valor mínimo é R$ 15,00"), p.withdrawAmount && parseFloat(p.withdrawAmount) > 1000 && React.createElement("p", {
+                className: "text-red-600 text-sm mt-1 font-semibold"
+            }, "❌ Valor máximo por solicitação é R$ 1.000,00"), limitesSaque && p.withdrawAmount && parseFloat(p.withdrawAmount) > 0 && parseFloat(p.withdrawAmount) <= 1000 && parseFloat(p.withdrawAmount) >= 15 && limitesSaque.diario.disponivel < parseFloat(p.withdrawAmount) && React.createElement("p", {
+                className: "text-red-600 text-sm mt-1 font-semibold"
+            }, "❌ Limite diário: você já solicitou R$ " + limitesSaque.diario.utilizado.toFixed(2).replace(".", ",") + " hoje. Disponível: R$ " + limitesSaque.diario.disponivel.toFixed(2).replace(".", ",")), limitesSaque && p.withdrawAmount && parseFloat(p.withdrawAmount) > 0 && parseFloat(p.withdrawAmount) <= 1000 && parseFloat(p.withdrawAmount) >= 15 && limitesSaque.diario.disponivel >= parseFloat(p.withdrawAmount) && limitesSaque.semanal.disponivel < parseFloat(p.withdrawAmount) && React.createElement("p", {
+                className: "text-red-600 text-sm mt-1 font-semibold"
+            }, "❌ Limite semanal: você já solicitou R$ " + limitesSaque.semanal.utilizado.toFixed(2).replace(".", ",") + " esta semana. Disponível: R$ " + limitesSaque.semanal.disponivel.toFixed(2).replace(".", ",")), r && React.createElement("p", {
                 className: "text-red-600 text-sm mt-1 font-semibold"
             }, "❌ Valor excede o limite da gratuidade (", er(a), ")")), saldoDisp !== null && parseFloat(p.withdrawAmount || 0) > saldoDisp && React.createElement("p", {
                 className: "text-red-600 text-sm mt-1 font-semibold"
@@ -9582,9 +9629,9 @@ const hideLoadingScreen = () => {
                 }, er(e.final))))
             })(), React.createElement("button", {
                 onClick: Vl,
-                disabled: c || !p.withdrawAmount || parseFloat(p.withdrawAmount) < 15 || r || 0 === m || (saldoDisp !== null && saldoDisp <= 0) || (saldoDisp !== null && parseFloat(p.withdrawAmount || 0) > saldoDisp),
+                disabled: c || !p.withdrawAmount || parseFloat(p.withdrawAmount) < 15 || parseFloat(p.withdrawAmount) > 1000 || r || 0 === m || (saldoDisp !== null && saldoDisp <= 0) || (saldoDisp !== null && parseFloat(p.withdrawAmount || 0) > saldoDisp) || (limitesSaque && limitesSaque.diario.disponivel < parseFloat(p.withdrawAmount || 0)) || (limitesSaque && limitesSaque.semanal.disponivel < parseFloat(p.withdrawAmount || 0)),
                 className: "w-full bg-green-600 text-white py-3 rounded-lg font-bold disabled:opacity-50"
-            }, c ? "..." : 0 === m ? "🚫 Limite Atingido" : parseFloat(p.withdrawAmount || 0) < 15 ? "⚠️ Mínimo R$ 15" : "💸 Solicitar"))
+            }, c ? "..." : 0 === m ? "🚫 Limite Atingido" : parseFloat(p.withdrawAmount || 0) < 15 ? "⚠️ Mínimo R$ 15" : parseFloat(p.withdrawAmount || 0) > 1000 ? "⚠️ Máximo R$ 1.000" : (limitesSaque && (limitesSaque.diario.disponivel <= 0 || limitesSaque.semanal.disponivel <= 0)) ? "🚫 Limite Esgotado" : "💸 Solicitar"))
         })(), React.createElement("h3", {
             className: "text-lg font-semibold mt-8 mb-4"
         }, "📋 Histórico"), 0 === M.length ? React.createElement("p", {
