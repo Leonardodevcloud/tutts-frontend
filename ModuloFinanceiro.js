@@ -144,11 +144,11 @@
             const formatarValorExcel = (valor) => parseFloat(valor || 0).toFixed(2).replace(".", ",");
             
             const traduzirStatus = (status) => {
-                const map = { "aprovado": "Aprovado", "aprovado_gratuidade": "Aprovado c/ Gratuidade", "rejeitado": "Rejeitado", "aguardando_aprovacao": "Aguardando", "aguardando_pagamento_stark": "💳 Aguard. Pgto Stark" };
+                const map = { "aprovado": "Aprovado", "aprovado_gratuidade": "Aprovado c/ Gratuidade", "rejeitado": "Rejeitado", "aguardando_aprovacao": "Aguardando", "aguardando_pagamento_stark": "💳 Aguard. Pgto Stark", "pago_stark": "✅ PAGO VIA STARK BANK" };
                 // Sobrescrever com status Stark se existir
                 if (e && e.stark_status === 'em_lote') return "🏦 Em Lote";
                 if (e && e.stark_status === 'processando') return "⏳ Processando Pix";
-                if (e && e.stark_status === 'pago') return "✅ Pago";
+                if (e && e.stark_status === 'pago') return "✅ PAGO VIA STARK BANK";
                 return map[status] || status || "-";
             };
             
@@ -158,11 +158,11 @@
             };
             
             // Estatísticas
-            const totalAprovadas = dadosFiltrados.filter(e => e.status === "aprovado" || e.status === "aprovado_gratuidade").length;
+            const totalAprovadas = dadosFiltrados.filter(e => e.status === "aprovado" || e.status === "aprovado_gratuidade" || e.status === "pago_stark").length;
             const totalSemGrat = dadosFiltrados.filter(e => e.status === "aprovado").length;
             const totalComGrat = dadosFiltrados.filter(e => e.status === "aprovado_gratuidade").length;
             const totalRejeitadas = dadosFiltrados.filter(e => e.status === "rejeitado").length;
-            const valorTotal = dadosFiltrados.filter(e => e.status?.includes("aprovado")).reduce((a, e) => a + parseFloat(e.requested_amount || 0), 0);
+            const valorTotal = dadosFiltrados.filter(e => e.status?.includes("aprovado") || e.status === "pago_stark").reduce((a, e) => a + parseFloat(e.requested_amount || 0), 0);
             
             // Construir dados Excel
             const dadosExcel = [];
@@ -1193,10 +1193,10 @@
                         }
                     },
                     // =============== DESABILITAR DURANTE PROCESSAMENTO OU JÁ APROVADO ===============
-                    disabled: p[`processing_${e.id}`] || e.status === "aprovado" || e.status === "aprovado_gratuidade",
+                    disabled: p[`processing_${e.id}`] || e.status === "aprovado" || e.status === "aprovado_gratuidade" || e.status === "pago_stark",
                     className: "px-1 py-1 border rounded text-xs w-full " + 
                         (p[`processing_${e.id}`] ? "opacity-50 cursor-not-allowed bg-yellow-50 animate-pulse" : "") +
-                        ((e.status === "aprovado" || e.status === "aprovado_gratuidade") ? "bg-green-50 cursor-not-allowed text-green-700" : "")
+                        ((e.status === "aprovado" || e.status === "aprovado_gratuidade" || e.status === "pago_stark") ? "bg-green-50 cursor-not-allowed text-green-700" : "")
                 }, 
                 // Mostrar "Processando..." se estiver processando
                 p[`processing_${e.id}`] ? React.createElement("option", {
@@ -1219,6 +1219,9 @@
                     React.createElement("option", {
                         value: "rejeitado"
                     }, "❌ Rejeitado"), 
+                    e.status === "pago_stark" && React.createElement("option", {
+                        value: "pago_stark"
+                    }, "✅ PAGO VIA STARK BANK"),
                     React.createElement("option", {
                         value: "inativo"
                     }, "⚠️ Inativo")
@@ -1390,12 +1393,12 @@
                     }),
                     r = l.length,
                     o = l.filter(e => "rejeitado" === e.status).length,
-                    c = l.filter(e => "aprovado" === e.status || "aprovado_gratuidade" === e.status).length,
-                    s = l.filter(e => "aprovado" === e.status).length,
-                    n = l.filter(e => "aprovado_gratuidade" === e.status).length,
-                    m = l.filter(e => "aprovado" === e.status).reduce((e, t) => e + parseFloat(t.requested_amount || 0), 0),
+                    c = l.filter(e => "aprovado" === e.status || "aprovado_gratuidade" === e.status || "pago_stark" === e.status).length,
+                    s = l.filter(e => "aprovado" === e.status || ("pago_stark" === e.status && !e.has_gratuity)).length,
+                    n = l.filter(e => "aprovado_gratuidade" === e.status || ("pago_stark" === e.status && e.has_gratuity)).length,
+                    m = l.filter(e => "aprovado" === e.status || ("pago_stark" === e.status && !e.has_gratuity)).reduce((e, t) => e + parseFloat(t.requested_amount || 0), 0),
                     i = .045 * m,
-                    d = l.filter(e => "aprovado_gratuidade" === e.status).reduce((e, t) => e + parseFloat(t.requested_amount || 0), 0),
+                    d = l.filter(e => "aprovado_gratuidade" === e.status || ("pago_stark" === e.status && e.has_gratuity)).reduce((e, t) => e + parseFloat(t.requested_amount || 0), 0),
                     x = .045 * d,
                     u = m + d;
                 return React.createElement(React.Fragment, null, React.createElement("div", {
@@ -1527,7 +1530,7 @@
                             return true;
                         })
                         : fonte.filter(e => {
-                            if (!e.status?.includes("aprovado")) return false;
+                            if (!e.status?.includes("aprovado") && e.status !== "pago_stark") return false;
                             if (p.concDataSolicitacao) {
                                 const dataSolic = (() => { const d = new Date(e.created_at); return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); })();
                                 if (dataSolic !== p.concDataSolicitacao) return false;
@@ -1612,7 +1615,7 @@
                         return true;
                     })
                     : fonte.filter(e => {
-                        if (!e.status?.includes("aprovado")) return false;
+                        if (!e.status?.includes("aprovado") && e.status !== "pago_stark") return false;
                         if (p.concDataSolicitacao) {
                             const dataSolic = (() => { const d = new Date(e.created_at); return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); })();
                             if (dataSolic !== p.concDataSolicitacao) return false;
@@ -1683,7 +1686,7 @@
                     className: "px-4 py-3 text-center"
                 }, e.stark_status === 'pago' ? React.createElement("span", {
                     className: "inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-1 rounded-full"
-                }, "🏦 Stark Bank") : e.stark_status === 'processando' ? React.createElement("span", {
+                }, "✅ PAGO VIA STARK") : e.stark_status === 'processando' ? React.createElement("span", {
                     className: "inline-flex items-center gap-1 text-[10px] font-bold text-yellow-700 bg-yellow-100 px-2 py-1 rounded-full"
                 }, "⏳ Processando") : e.stark_status === 'erro' ? React.createElement("span", {
                     className: "inline-flex items-center gap-1 text-[10px] font-bold text-red-700 bg-red-100 px-2 py-1 rounded-full"
@@ -1723,7 +1726,7 @@
                         return true;
                     })
                     : fonte.filter(e => {
-                        if (!e.status?.includes("aprovado")) return false;
+                        if (!e.status?.includes("aprovado") && e.status !== "pago_stark") return false;
                         if (p.concDataSolicitacao) {
                             const dataSolic = (() => { const d = new Date(e.created_at); return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); })();
                             if (dataSolic !== p.concDataSolicitacao) return false;
@@ -1905,7 +1908,7 @@
                             hour: "2-digit",
                             minute: "2-digit"
                         }) : "",
-                        s = "aprovado" === e.status || "aprovado_gratuidade" === e.status;
+                        s = "aprovado" === e.status || "aprovado_gratuidade" === e.status || "pago_stark" === e.status;
                     return React.createElement("tr", {
                         key: e.id,
                         className: `border-t hover:bg-gray-50 ${e.has_gratuity?"bg-blue-50 border-l-4 border-l-blue-500":""} ${e.is_restricted?"row-red":""}`
@@ -1948,8 +1951,8 @@
                     }, "-")), React.createElement("td", {
                         className: "px-4 py-3"
                     }, React.createElement("span", {
-                        className: "px-2 py-1 rounded text-xs font-bold " + ("aprovado" === e.status ? "bg-green-500 text-white" : "aprovado_gratuidade" === e.status ? "bg-blue-500 text-white" : "rejeitado" === e.status ? "bg-red-500 text-white" : "inativo" === e.status ? "bg-orange-500 text-white" : "bg-yellow-500 text-white")
-                    }, "aguardando_aprovacao" === e.status ? "⏳ Aguardando" : "aprovado" === e.status ? "✅ Aprovado" : "aprovado_gratuidade" === e.status ? "🎁 c/ Gratuidade" : "rejeitado" === e.status ? "❌ Rejeitado" : "⚠️ Inativo"), e.reject_reason && "rejeitado" === e.status && React.createElement("p", {
+                        className: "px-2 py-1 rounded text-xs font-bold " + ("pago_stark" === e.status ? "bg-green-600 text-white" : "aprovado" === e.status ? "bg-green-500 text-white" : "aprovado_gratuidade" === e.status ? "bg-blue-500 text-white" : "aguardando_pagamento_stark" === e.status ? "bg-blue-400 text-white" : "rejeitado" === e.status ? "bg-red-500 text-white" : "inativo" === e.status ? "bg-orange-500 text-white" : "bg-yellow-500 text-white")
+                    }, "pago_stark" === e.status ? "✅ PAGO VIA STARK" : "aguardando_pagamento_stark" === e.status ? "💳 Aguard. Pgto Stark" : "aguardando_aprovacao" === e.status ? "⏳ Aguardando" : "aprovado" === e.status ? "✅ Aprovado" : "aprovado_gratuidade" === e.status ? "🎁 c/ Gratuidade" : "rejeitado" === e.status ? "❌ Rejeitado" : "⚠️ Inativo"), e.reject_reason && "rejeitado" === e.status && React.createElement("p", {
                         className: "text-xs text-red-600 mt-1"
                     }, "Motivo: ", e.reject_reason), e.admin_name && "aguardando_aprovacao" !== e.status && React.createElement("p", {
                         className: "text-xs text-purple-600 mt-1 font-medium"
@@ -4725,7 +4728,7 @@
                         const t = new Date(e.created_at);
                         return t.getMonth() === l && t.getFullYear() === r
                     }),
-                    s = c.filter(e => "aprovado" === e.status || "aprovado_gratuidade" === e.status),
+                    s = c.filter(e => "aprovado" === e.status || "aprovado_gratuidade" === e.status || "pago_stark" === e.status),
                     n = c.filter(e => "aprovado" === e.status),
                     m = c.filter(e => "aprovado_gratuidade" === e.status),
                     i = 2025,
@@ -4822,7 +4825,7 @@
                     I = 0 === l ? r - 1 : r,
                     F = q.filter(e => {
                         const t = new Date(e.created_at);
-                        return t.getMonth() === L && t.getFullYear() === I && ("aprovado" === e.status || "aprovado_gratuidade" === e.status)
+                        return t.getMonth() === L && t.getFullYear() === I && ("aprovado" === e.status || "aprovado_gratuidade" === e.status || "pago_stark" === e.status)
                     }).reduce((e, t) => e + parseFloat(t.final_amount || 0), 0),
                     $ = F > 0 ? (S - F) / F * 100 : 0;
                 return React.createElement(React.Fragment, null, React.createElement("div", {
