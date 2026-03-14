@@ -6282,17 +6282,35 @@
                 st.pendentesLoading ? React.createElement("div", { className: "text-center py-10 text-gray-400" }, "Carregando...")
                 : st.pendentes.length === 0 ? React.createElement("div", { className: "text-center py-10 bg-white rounded-xl shadow" }, React.createElement("p", { className: "text-5xl mb-3" }, "✅"), React.createElement("p", { className: "text-gray-500 text-lg" }, "Nenhum saque no período selecionado"))
                 : (function() {
-                    // Agrupar em lotes de 50 e ordenar por valor (maior primeiro)
+                    // Agrupar por stark_lote_id real (do banco) — fallback para lote virtual se não tiver
                     var sortedPendentes = st.pendentes.slice().sort(function(a, b) { return parseFloat(b.final_amount || 0) - parseFloat(a.final_amount || 0); });
-                    var TAMANHO_LOTE = 50;
+                    
+                    // Separar: com lote_id real vs sem lote_id
+                    var porLote = {};
+                    var semLote = [];
+                    sortedPendentes.forEach(function(s) {
+                        if (s.stark_lote_id) {
+                            if (!porLote[s.stark_lote_id]) porLote[s.stark_lote_id] = [];
+                            porLote[s.stark_lote_id].push(s);
+                        } else {
+                            semLote.push(s);
+                        }
+                    });
+                    
+                    // Montar array de lotes: primeiro os reais (por ID desc), depois os sem lote
                     var lotes = [];
-                    for (var li = 0; li < sortedPendentes.length; li += TAMANHO_LOTE) {
-                        lotes.push(sortedPendentes.slice(li, li + TAMANHO_LOTE));
+                    Object.keys(porLote).sort(function(a, b) { return parseInt(b) - parseInt(a); }).forEach(function(loteId) {
+                        lotes.push({ id: parseInt(loteId), saques: porLote[loteId] });
+                    });
+                    if (semLote.length > 0) {
+                        lotes.push({ id: null, saques: semLote });
                     }
                     
                     return React.createElement("div", { className: "space-y-3" },
-                        lotes.map(function(loteSaques, idx) {
-                            var loteNum = idx + 1;
+                        lotes.map(function(loteObj, idx) {
+                            var loteSaques = loteObj.saques;
+                            var loteNum = loteObj.id || ('temp_' + (idx + 1));
+                            var loteLabel = loteObj.id ? ('Lote #' + loteObj.id) : ('Lote ' + (idx + 1));
                             var loteValorTotal = loteSaques.reduce(function(a, s) { return a + parseFloat(s.final_amount || 0); }, 0);
                             var loteSelecionados = loteSaques.filter(function(s) { return sel[s.id]; }).length;
                             var loteExpandido = st['loteExp_' + idx];
@@ -6324,7 +6342,7 @@
                                         // Info do lote
                                         React.createElement("div", { className: "min-w-0" },
                                             React.createElement("div", { className: "flex flex-wrap items-center gap-2" },
-                                                React.createElement("span", { className: "bg-emerald-100 text-emerald-700 px-2 md:px-3 py-1 rounded-full text-xs md:text-sm font-bold" }, "Lote " + loteNum),
+                                                React.createElement("span", { className: "bg-emerald-100 text-emerald-700 px-2 md:px-3 py-1 rounded-full text-xs md:text-sm font-bold" }, loteLabel),
                                                 React.createElement("span", { className: "text-gray-700 font-medium text-xs md:text-sm" }, loteSaques.length + " solic."),
                                                 React.createElement("span", { className: "text-emerald-700 font-bold text-sm md:text-lg" }, formatarMoeda(loteValorTotal))
                                             ),
