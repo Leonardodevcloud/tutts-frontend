@@ -400,25 +400,27 @@
     var _pr = useState(function() {
       var now = new Date();
       return { inicio: new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().split('T')[0], fim: now.toISOString().split('T')[0] };
-    }), periodoRaioX = _pr[0], setPeriodoRaioX = _pr[1];
+    }), periodo = _pr[0], setPeriodo = _pr[1];
 
     var carregar = useCallback(async function() {
       setLoading(true);
       try {
         var params = new URLSearchParams();
         if (centroSel) params.set('centro_custo', centroSel);
+        if (periodo.inicio) params.set('data_inicio', periodo.inicio);
+        if (periodo.fim) params.set('data_fim', periodo.fim);
         var qs = params.toString() ? '?' + params : '';
         var res = await fetchApi('/cs/clientes/' + codCliente + qs);
         if (res.success) setData(res);
       } catch (e) { console.error(e); }
       setLoading(false);
-    }, [fetchApi, codCliente, centroSel]);
+    }, [fetchApi, codCliente, centroSel, periodo]);
     useEffect(function() { carregar(); }, [carregar]);
 
     var gerarRaioX = async function() {
       setRaioXLoading(true);
       try {
-        var body = { cod_cliente: codCliente, data_inicio: periodoRaioX.inicio, data_fim: periodoRaioX.fim };
+        var body = { cod_cliente: codCliente, data_inicio: periodo.inicio, data_fim: periodo.fim };
         if (centroSel) body.centro_custo = centroSel;
         var res = await fetchApi('/cs/raio-x', { method: 'POST', body: JSON.stringify(body) });
         if (res.success) setRaioXResult(res.raio_x); else alert('Erro: ' + (res.error || 'Falha'));
@@ -459,14 +461,30 @@
         )
       ),
 
-      // Filtro CC no detalhe
-      centrosDisp.length > 0 && h('div', { className: 'bg-blue-50 rounded-xl border border-blue-200 p-3 flex items-center gap-3 flex-wrap' },
-        h('span', { className: 'text-sm font-medium text-blue-700' }, '📁 Centro de Custo:'),
-        h('select', { value: centroSel, onChange: function(e) { setCentroSel(e.target.value); }, className: 'px-3 py-1.5 border border-blue-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500' },
-          h('option', { value: '' }, 'Todos os centros de custo'),
-          centrosDisp.map(function(cc) { return h('option', { key: cc.centro_custo, value: cc.centro_custo }, cc.centro_custo); })
-        ),
-        centroSel && h('button', { onClick: function() { setCentroSel(''); }, className: 'text-xs text-blue-500 hover:text-blue-700' }, '✕ Limpar')
+      // Filtros: Período + Centro de Custo
+      h('div', { className: 'bg-white rounded-xl border border-gray-200 p-4' },
+        h('div', { className: 'flex flex-wrap items-center gap-3' },
+          h('span', { className: 'text-sm font-semibold text-gray-700' }, '🔍 Filtros'),
+          // Período
+          h('div', { className: 'flex items-center gap-2' },
+            h('span', { className: 'text-xs text-gray-500' }, '📅'),
+            h('input', { type: 'date', value: periodo.inicio, onChange: function(e) { setPeriodo(function(p) { return Object.assign({}, p, { inicio: e.target.value }); }); }, className: 'px-2.5 py-1.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500' }),
+            h('span', { className: 'text-gray-400 text-xs' }, 'até'),
+            h('input', { type: 'date', value: periodo.fim, onChange: function(e) { setPeriodo(function(p) { return Object.assign({}, p, { fim: e.target.value }); }); }, className: 'px-2.5 py-1.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500' })
+          ),
+          // Centro de Custo (se houver)
+          centrosDisp.length > 0 && h('div', { className: 'flex items-center gap-2' },
+            h('span', { className: 'text-xs text-gray-500' }, '📁'),
+            h('select', { value: centroSel, onChange: function(e) { setCentroSel(e.target.value); }, className: 'px-2.5 py-1.5 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-purple-500' },
+              h('option', { value: '' }, 'Todos os centros de custo'),
+              centrosDisp.map(function(cc) { return h('option', { key: cc.centro_custo, value: cc.centro_custo }, cc.centro_custo); })
+            ),
+            centroSel && h('button', { onClick: function() { setCentroSel(''); }, className: 'text-xs text-gray-400 hover:text-red-500' }, '✕')
+          ),
+          // Chips
+          periodo.inicio && h('span', { className: 'text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded-full' }, formatDate(periodo.inicio) + ' a ' + formatDate(periodo.fim)),
+          centroSel && h('span', { className: 'text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full' }, '📁 ' + centroSel)
+        )
       ),
 
       // KPIs
@@ -484,8 +502,6 @@
         h('button', { onClick: function() { setShowNovaInteracao(true); }, className: 'px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700' }, '📝 Nova Interação'),
         h('button', { onClick: function() { setShowNovaOcorrencia(true); }, className: 'px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700' }, '🚨 Nova Ocorrência'),
         h('div', { className: 'flex-1' }),
-        h('input', { type: 'date', value: periodoRaioX.inicio, onChange: function(e) { setPeriodoRaioX(function(p) { return Object.assign({}, p, { inicio: e.target.value }); }); }, className: 'px-3 py-2 border border-gray-200 rounded-lg text-sm' }),
-        h('input', { type: 'date', value: periodoRaioX.fim, onChange: function(e) { setPeriodoRaioX(function(p) { return Object.assign({}, p, { fim: e.target.value }); }); }, className: 'px-3 py-2 border border-gray-200 rounded-lg text-sm' }),
         h('button', { onClick: gerarRaioX, disabled: raioXLoading, className: 'px-5 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg text-sm font-bold hover:from-purple-700 hover:to-indigo-700 disabled:opacity-50 shadow-lg' }, raioXLoading ? '🔬 Gerando...' : '🔬 Raio-X IA')
       ),
 
