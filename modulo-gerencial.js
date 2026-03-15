@@ -15,6 +15,38 @@
   function setaV(v) { return v == null ? '\u2014' : (v >= 0 ? '\u2191 ' : '\u2193 ') + fD(Math.abs(v)); }
   function ppV(v) { if (v == null) return h('span', { style: { color: '#94a3b8' } }, '\u2014'); return h('span', { style: { color: corV(v), fontWeight: 700 } }, (v >= 0 ? '+' : '') + fD(v) + ' pp'); }
 
+  // ═══ Hook de ordenação ═══
+  function useSort(defaultKey, defaultDir) {
+    var _st = useState({ key: defaultKey || null, dir: defaultDir || 'desc' }), sort = _st[0], setSort = _st[1];
+    var toggle = function(key) {
+      setSort(function(prev) {
+        if (prev.key === key) return { key: key, dir: prev.dir === 'desc' ? 'asc' : 'desc' };
+        return { key: key, dir: 'desc' };
+      });
+    };
+    return [sort, toggle];
+  }
+
+  function SortTH(label, sortKey, currentSort, onSort, align) {
+    var isActive = currentSort.key === sortKey;
+    var arrow = isActive ? (currentSort.dir === 'desc' ? ' ↓' : ' ↑') : '';
+    return h('th', {
+      onClick: function() { onSort(sortKey); },
+      className: 'px-3 py-2 text-' + (align || 'right') + ' text-xs font-bold border-b-2 border-gray-200 cursor-pointer select-none hover:bg-gray-100 transition-colors ' + (isActive ? 'text-purple-700 bg-purple-50/50' : 'text-gray-500'),
+    }, label + arrow);
+  }
+
+  function sortRows(rows, sort, getVal) {
+    if (!sort.key) return rows;
+    var sorted = rows.slice().sort(function(a, b) {
+      var va = getVal(a, sort.key), vb = getVal(b, sort.key);
+      if (va == null) return 1; if (vb == null) return -1;
+      if (typeof va === 'string') return va.localeCompare(vb);
+      return va - vb;
+    });
+    return sort.dir === 'desc' ? sorted.reverse() : sorted;
+  }
+
   // ═══ KPI Card ═══
   function KpiCard(p) {
     return h('div', { className: 'bg-white rounded-xl shadow-sm p-4', style: { borderLeft: '4px solid ' + (p.cor || '#7c3aed') } },
@@ -27,16 +59,40 @@
   // ═══ SLA Table ═══
   function SlaTable(p) {
     var rows = p.rows || [];
+    var _sort = useSort('entregas', 'desc'), sort = _sort[0], toggleSort = _sort[1];
+
     if (!rows.length) return h('div', { className: 'text-gray-400 text-center py-8 text-sm' }, p.empty || 'Sem dados. Configure os clientes na aba Configurações.');
+
     var tot = { e: 0, np: 0, fp: 0, ts: 0, tc: 0 };
     rows.forEach(function(r) { tot.e += r.entregas; tot.np += r.no_prazo; tot.fp += r.fora_prazo; if (r.tempo_medio > 0) { tot.ts += r.tempo_medio * r.entregas; tot.tc += r.entregas; } });
-    var TH = function(t, a) { return h('th', { className: 'px-3 py-2 text-' + (a||'right') + ' text-xs font-bold text-gray-500 border-b-2 border-gray-200' }, t); };
+
+    var sorted = sortRows(rows, sort, function(r, k) {
+      if (k === 'nome') return (r.nome || r.concat || '').toLowerCase();
+      if (k === 'entregas') return r.entregas;
+      if (k === 'no_prazo') return r.no_prazo;
+      if (k === 'prazo_pct') return r.prazo_pct;
+      if (k === 'fora_prazo') return r.fora_prazo;
+      if (k === 'fora_pct') return r.entregas > 0 ? r.fora_prazo / r.entregas : 0;
+      if (k === 'tempo_medio') return r.tempo_medio || 0;
+      if (k === 'var_pp') return r.var_pp != null ? r.var_pp : -999;
+      return 0;
+    });
+
     var TD = function(v, s) { return h('td', { className: 'px-3 py-2 text-right text-sm', style: s || {} }, v); };
     return h('div', { className: 'overflow-x-auto' },
       h('table', { className: 'w-full border-collapse text-sm' },
-        h('thead', null, h('tr', { className: 'bg-gray-50' }, TH('Cliente','left'), TH('Entregas'), TH('No Prazo'), TH('% Prazo'), TH('Fora'), TH('% Fora'), TH('T. Médio'), TH('Var. pp'))),
+        h('thead', null, h('tr', { className: 'bg-gray-50' },
+          SortTH('Cliente', 'nome', sort, toggleSort, 'left'),
+          SortTH('Entregas', 'entregas', sort, toggleSort),
+          SortTH('No Prazo', 'no_prazo', sort, toggleSort),
+          SortTH('% Prazo', 'prazo_pct', sort, toggleSort),
+          SortTH('Fora', 'fora_prazo', sort, toggleSort),
+          SortTH('% Fora', 'fora_pct', sort, toggleSort),
+          SortTH('T. Médio', 'tempo_medio', sort, toggleSort),
+          SortTH('Var. pp', 'var_pp', sort, toggleSort)
+        )),
         h('tbody', null,
-          rows.map(function(r, i) {
+          sorted.map(function(r, i) {
             var pc = r.prazo_pct >= 90 ? '#10b981' : r.prazo_pct >= 75 ? '#f59e0b' : '#ef4444';
             var fp = r.entregas > 0 ? fP(r2(r.fora_prazo / r.entregas * 100)) : '0%';
             return h('tr', { key: i, className: i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50' },
@@ -63,17 +119,29 @@
 
   // ═══ Comp Table (Ticket / Demanda) ═══
   function CompTable(p) {
-    var sl = p.semanas || [], rows = (p.clientes || []).slice(0, 30);
+    var sl = p.semanas || [], allRows = p.clientes || [];
     var fmt = p.tipo === 'ticket' ? fR : fN;
-    if (!rows.length) return h('div', { className: 'text-gray-400 text-center py-8 text-sm' }, 'Sem dados');
+    var _sort = useSort('variacao', 'desc'), sort = _sort[0], toggleSort = _sort[1];
+
+    if (!allRows.length) return h('div', { className: 'text-gray-400 text-center py-8 text-sm' }, 'Sem dados');
+
+    var sorted = sortRows(allRows, sort, function(r, k) {
+      if (k === 'nome') return (r.nome || '').toLowerCase();
+      if (k === 'variacao') return r.variacao != null ? r.variacao : -9999;
+      // sem0..sem3
+      var semIdx = parseInt(k.replace('sem', ''));
+      if (!isNaN(semIdx) && r.semanas[semIdx] != null) return r.semanas[semIdx];
+      return 0;
+    }).slice(0, 30);
+
     return h('div', { className: 'overflow-x-auto' },
       h('table', { className: 'w-full border-collapse text-sm' },
         h('thead', null, h('tr', { className: 'bg-gray-50' },
-          h('th', { className: 'px-3 py-2 text-left text-xs font-bold text-gray-500 border-b-2 border-gray-200' }, 'Cliente'),
-          sl.map(function(s, i) { return h('th', { key: i, className: 'px-3 py-2 text-right text-xs font-bold text-gray-500 border-b-2 border-gray-200' }, s); }),
-          h('th', { className: 'px-3 py-2 text-right text-xs font-bold text-gray-500 border-b-2 border-gray-200' }, 'Var. %')
+          SortTH('Cliente', 'nome', sort, toggleSort, 'left'),
+          sl.map(function(s, i) { return SortTH(s, 'sem' + i, sort, toggleSort); }),
+          SortTH('Var. %', 'variacao', sort, toggleSort)
         )),
-        h('tbody', null, rows.map(function(r, i) {
+        h('tbody', null, sorted.map(function(r, i) {
           return h('tr', { key: i, className: i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50' },
             h('td', { className: 'px-3 py-2 font-semibold text-gray-900 max-w-[200px] truncate' }, r.nome),
             r.semanas.map(function(v, j) { return h('td', { key: j, className: 'px-3 py-2 text-right', style: { color: v != null ? '#1e293b' : '#cbd5e1' } }, v != null ? fmt(v) : '\u2014'); }),
@@ -87,18 +155,35 @@
   // ═══ Garantido Table ═══
   function GarantidoTable(p) {
     var rows = p.rows || [];
+    var _sort = useSort('negociado', 'desc'), sort = _sort[0], toggleSort = _sort[1];
+
     if (!rows.length) return h('div', { className: 'text-gray-400 text-center py-8 text-sm' }, 'Sem dados');
+
     var tot = { n: 0, p: 0, c: 0, f: 0, s: 0 };
     rows.forEach(function(r) { tot.n += r.negociado; tot.p += r.produzido; tot.c += r.complemento; tot.f += r.fat_liquido; tot.s += r.saldo; });
+
+    var sorted = sortRows(rows, sort, function(r, k) {
+      if (k === 'nome') return (r.nome || '').toLowerCase();
+      if (k === 'negociado') return r.negociado;
+      if (k === 'produzido') return r.produzido;
+      if (k === 'complemento') return r.complemento;
+      if (k === 'fat_liquido') return r.fat_liquido;
+      if (k === 'saldo') return r.saldo;
+      return 0;
+    });
+
     return h('div', { className: 'overflow-x-auto' },
       h('table', { className: 'w-full border-collapse text-sm' },
         h('thead', null, h('tr', { className: 'bg-gray-50' },
-          ['Cliente','Negociado','Produzido','Complemento','Fat. Líquido','Saldo'].map(function(c, i) {
-            return h('th', { key: i, className: 'px-3 py-2 text-' + (i===0?'left':'right') + ' text-xs font-bold text-gray-500 border-b-2 border-gray-200' }, c);
-          })
+          SortTH('Cliente', 'nome', sort, toggleSort, 'left'),
+          SortTH('Negociado', 'negociado', sort, toggleSort),
+          SortTH('Produzido', 'produzido', sort, toggleSort),
+          SortTH('Complemento', 'complemento', sort, toggleSort),
+          SortTH('Fat. Líquido', 'fat_liquido', sort, toggleSort),
+          SortTH('Saldo', 'saldo', sort, toggleSort)
         )),
         h('tbody', null,
-          rows.map(function(r, i) {
+          sorted.map(function(r, i) {
             return h('tr', { key: i, className: i%2===0 ? 'bg-white' : 'bg-gray-50/50' },
               h('td', { className: 'px-3 py-2 font-semibold text-gray-900' }, r.nome || ('Cliente ' + r.cod_cliente)),
               h('td', { className: 'px-3 py-2 text-right' }, fR(r.negociado)),
