@@ -510,8 +510,8 @@
     var _rr = useState(null), raioXResult = _rr[0], setRaioXResult = _rr[1];
     var _si = useState(false), showNovaInteracao = _si[0], setShowNovaInteracao = _si[1];
     var _so = useState(false), showNovaOcorrencia = _so[0], setShowNovaOcorrencia = _so[1];
-    var _if = useState({ tipo: 'ligacao', titulo: '', descricao: '', resultado: '', proxima_acao: '' }), interacaoForm = _if[0], setInteracaoForm = _if[1];
-    var _of = useState({ tipo: 'problema_entrega', titulo: '', descricao: '', severidade: 'media' }), ocorrenciaForm = _of[0], setOcorrenciaForm = _of[1];
+    var _if = useState({ tipo: 'ligacao', titulo: '', descricao: '', resultado: '', proxima_acao: '', centro_custo: '' }), interacaoForm = _if[0], setInteracaoForm = _if[1];
+    var _of = useState({ tipo: 'problema_entrega', titulo: '', descricao: '', severidade: 'media', centro_custo: '' }), ocorrenciaForm = _of[0], setOcorrenciaForm = _of[1];
     var _cs = useState(centroCustoInicial || ''), centroSel = _cs[0], setCentroSel = _cs[1];
     var _pr = useState(function() {
       var now = new Date();
@@ -546,13 +546,13 @@
     var salvarInteracao = async function() {
       try {
         var res = await fetchApi('/cs/interacoes', { method: 'POST', body: JSON.stringify(Object.assign({}, interacaoForm, { cod_cliente: codCliente })) });
-        if (res.success) { setShowNovaInteracao(false); setInteracaoForm({ tipo: 'ligacao', titulo: '', descricao: '', resultado: '', proxima_acao: '' }); carregar(); }
+        if (res.success) { setShowNovaInteracao(false); setInteracaoForm({ tipo: 'ligacao', titulo: '', descricao: '', resultado: '', proxima_acao: '', centro_custo: '' }); carregar(); }
       } catch (e) { alert('Erro ao salvar'); }
     };
     var salvarOcorrencia = async function() {
       try {
         var res = await fetchApi('/cs/ocorrencias', { method: 'POST', body: JSON.stringify(Object.assign({}, ocorrenciaForm, { cod_cliente: codCliente })) });
-        if (res.success) { setShowNovaOcorrencia(false); setOcorrenciaForm({ tipo: 'problema_entrega', titulo: '', descricao: '', severidade: 'media' }); carregar(); }
+        if (res.success) { setShowNovaOcorrencia(false); setOcorrenciaForm({ tipo: 'problema_entrega', titulo: '', descricao: '', severidade: 'media', centro_custo: '' }); carregar(); }
       } catch (e) { alert('Erro ao salvar'); }
     };
 
@@ -679,7 +679,10 @@
       // Modais
       h(Modal, { aberto: showNovaInteracao, fechar: function() { setShowNovaInteracao(false); }, titulo: '📝 Nova Interação' },
         h('div', { className: 'space-y-4' },
-          h('div', null, h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Tipo'), h('select', { value: interacaoForm.tipo, onChange: function(e) { setInteracaoForm(function(f) { return Object.assign({}, f, { tipo: e.target.value }); }); }, className: 'w-full px-3 py-2 border border-gray-200 rounded-lg' }, h('option', { value: 'visita' }, '📍 Visita'), h('option', { value: 'reuniao' }, '👥 Reunião'), h('option', { value: 'ligacao' }, '📞 Ligação'), h('option', { value: 'pos_venda' }, '✅ Pós-Venda'), h('option', { value: 'whatsapp' }, '💬 WhatsApp'), h('option', { value: 'email' }, '📧 E-mail'), h('option', { value: 'anotacao' }, '📝 Anotação'))),
+          h('div', { className: 'grid grid-cols-2 gap-4' },
+            h('div', null, h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Tipo'), h('select', { value: interacaoForm.tipo, onChange: function(e) { setInteracaoForm(function(f) { return Object.assign({}, f, { tipo: e.target.value }); }); }, className: 'w-full px-3 py-2 border border-gray-200 rounded-lg' }, h('option', { value: 'visita' }, '📍 Visita'), h('option', { value: 'reuniao' }, '👥 Reunião'), h('option', { value: 'ligacao' }, '📞 Ligação'), h('option', { value: 'pos_venda' }, '✅ Pós-Venda'), h('option', { value: 'whatsapp' }, '💬 WhatsApp'), h('option', { value: 'email' }, '📧 E-mail'), h('option', { value: 'anotacao' }, '📝 Anotação'))),
+            h('div', null, h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, '📁 Centro de Custo'), h('select', { value: interacaoForm.centro_custo, onChange: function(e) { setInteracaoForm(function(f) { return Object.assign({}, f, { centro_custo: e.target.value }); }); }, className: 'w-full px-3 py-2 border border-gray-200 rounded-lg' }, h('option', { value: '' }, 'Todos os centros'), centrosDisp.map(function(cc) { return h('option', { key: cc.centro_custo, value: cc.centro_custo }, cc.centro_custo); })))
+          ),
           h('div', null, h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Título *'), h('input', { type: 'text', value: interacaoForm.titulo, onChange: function(e) { setInteracaoForm(function(f) { return Object.assign({}, f, { titulo: e.target.value }); }); }, placeholder: 'Ex: Reunião de alinhamento', className: 'w-full px-3 py-2 border border-gray-200 rounded-lg' })),
           h('div', null, h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Descrição'), h('textarea', { value: interacaoForm.descricao, onChange: function(e) { setInteracaoForm(function(f) { return Object.assign({}, f, { descricao: e.target.value }); }); }, rows: 3, className: 'w-full px-3 py-2 border border-gray-200 rounded-lg resize-none' })),
           h('div', null, h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Resultado'), h('input', { type: 'text', value: interacaoForm.resultado, onChange: function(e) { setInteracaoForm(function(f) { return Object.assign({}, f, { resultado: e.target.value }); }); }, className: 'w-full px-3 py-2 border border-gray-200 rounded-lg' })),
@@ -689,9 +692,10 @@
       ),
       h(Modal, { aberto: showNovaOcorrencia, fechar: function() { setShowNovaOcorrencia(false); }, titulo: '🚨 Nova Ocorrência' },
         h('div', { className: 'space-y-4' },
-          h('div', { className: 'grid grid-cols-2 gap-4' },
+          h('div', { className: 'grid grid-cols-3 gap-4' },
             h('div', null, h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Tipo'), h('select', { value: ocorrenciaForm.tipo, onChange: function(e) { setOcorrenciaForm(function(f) { return Object.assign({}, f, { tipo: e.target.value }); }); }, className: 'w-full px-3 py-2 border border-gray-200 rounded-lg' }, h('option', { value: 'reclamacao' }, 'Reclamação'), h('option', { value: 'problema_entrega' }, 'Problema Entrega'), h('option', { value: 'atraso' }, 'Atraso'), h('option', { value: 'financeiro' }, 'Financeiro'), h('option', { value: 'operacional' }, 'Operacional'), h('option', { value: 'sugestao' }, 'Sugestão'), h('option', { value: 'elogio' }, 'Elogio'))),
-            h('div', null, h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Severidade'), h('select', { value: ocorrenciaForm.severidade, onChange: function(e) { setOcorrenciaForm(function(f) { return Object.assign({}, f, { severidade: e.target.value }); }); }, className: 'w-full px-3 py-2 border border-gray-200 rounded-lg' }, h('option', { value: 'baixa' }, '🟢 Baixa'), h('option', { value: 'media' }, '🟡 Média'), h('option', { value: 'alta' }, '🟠 Alta'), h('option', { value: 'critica' }, '🔴 Crítica')))
+            h('div', null, h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Severidade'), h('select', { value: ocorrenciaForm.severidade, onChange: function(e) { setOcorrenciaForm(function(f) { return Object.assign({}, f, { severidade: e.target.value }); }); }, className: 'w-full px-3 py-2 border border-gray-200 rounded-lg' }, h('option', { value: 'baixa' }, '🟢 Baixa'), h('option', { value: 'media' }, '🟡 Média'), h('option', { value: 'alta' }, '🟠 Alta'), h('option', { value: 'critica' }, '🔴 Crítica'))),
+            h('div', null, h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, '📁 Centro de Custo'), h('select', { value: ocorrenciaForm.centro_custo, onChange: function(e) { setOcorrenciaForm(function(f) { return Object.assign({}, f, { centro_custo: e.target.value }); }); }, className: 'w-full px-3 py-2 border border-gray-200 rounded-lg' }, h('option', { value: '' }, 'Todos os centros'), centrosDisp.map(function(cc) { return h('option', { key: cc.centro_custo, value: cc.centro_custo }, cc.centro_custo); })))
           ),
           h('div', null, h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Título *'), h('input', { type: 'text', value: ocorrenciaForm.titulo, onChange: function(e) { setOcorrenciaForm(function(f) { return Object.assign({}, f, { titulo: e.target.value }); }); }, className: 'w-full px-3 py-2 border border-gray-200 rounded-lg' })),
           h('div', null, h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Descrição'), h('textarea', { value: ocorrenciaForm.descricao, onChange: function(e) { setOcorrenciaForm(function(f) { return Object.assign({}, f, { descricao: e.target.value }); }); }, rows: 3, className: 'w-full px-3 py-2 border border-gray-200 rounded-lg resize-none' })),
