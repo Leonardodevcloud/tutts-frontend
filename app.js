@@ -2779,170 +2779,175 @@ const hideLoadingScreen = () => {
                 // ===== FASE MENSAGEM =====
                 if (envelopeFase === 'message') {
                     portalContent = React.createElement('div', {
-                        style: { position: 'fixed', inset: 0, zIndex: 99999 }
+                        style: {
+                            position: 'fixed', inset: 0, zIndex: 99999,
+                            background: 'rgba(0,0,0,0.75)',
+                            backdropFilter: 'blur(4px)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center'
+                        }
                     },
-                        // Backdrop
+                        // Modal card — fullscreen no mobile, card no desktop
                         React.createElement('div', {
+                            className: 'lideranca-msg-enter',
                             style: {
-                                position: 'absolute', inset: 0,
-                                background: 'rgba(0,0,0,0.75)',
-                                backdropFilter: 'blur(4px)'
-                            }
-                        }),
-                        // Modal container
-                        React.createElement('div', {
-                            style: {
-                                position: 'relative', zIndex: 1,
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                minHeight: '100vh', padding: 16
+                                background: 'white',
+                                width: '100%', height: '100%',
+                                maxWidth: window.innerWidth >= 640 ? 600 : '100%',
+                                maxHeight: window.innerWidth >= 640 ? '92vh' : '100%',
+                                borderRadius: window.innerWidth >= 640 ? 16 : 0,
+                                boxShadow: window.innerWidth >= 640 ? '0 25px 50px rgba(0,0,0,0.3)' : 'none',
+                                display: 'flex', flexDirection: 'column',
+                                overflow: 'hidden'
                             }
                         },
+                            // Header compacto (fixo)
                             React.createElement('div', {
-                                className: 'lideranca-msg-enter',
                                 style: {
-                                    background: 'white', borderRadius: 16,
-                                    boxShadow: '0 25px 50px rgba(0,0,0,0.3)',
-                                    width: '100%', maxWidth: 672, maxHeight: '90vh',
-                                    overflowY: 'auto'
+                                    background: 'linear-gradient(135deg, #f97316, #f59e0b)',
+                                    padding: '16px 20px', color: 'white',
+                                    display: 'flex', alignItems: 'center', gap: 12,
+                                    flexShrink: 0
                                 }
                             },
-                                // Header
+                                React.createElement('div', {style: {fontSize: 32}}, '📢'),
+                                React.createElement('div', {style: {flex: 1}},
+                                    React.createElement('h2', {style: {fontSize: 18, fontWeight: 700, margin: 0}}, 'Mensagem da Liderança'),
+                                    liderancaModal?.fila?.length > 1 && React.createElement('p', {
+                                        style: {fontSize: 12, color: 'rgba(255,255,255,0.8)', margin: 0}
+                                    }, '1 de ', liderancaModal.fila.length, ' mensagens')
+                                )
+                            ),
+                            // Body scrollável (cresce para preencher)
+                            React.createElement('div', {
+                                style: {
+                                    flex: 1, overflowY: 'auto', padding: '16px 20px',
+                                    WebkitOverflowScrolling: 'touch'
+                                }
+                            },
+                                // Autor
                                 React.createElement('div', {
                                     style: {
-                                        background: 'linear-gradient(135deg, #f97316, #f59e0b)',
-                                        padding: 24, color: 'white', textAlign: 'center',
-                                        borderRadius: '16px 16px 0 0'
+                                        display: 'flex', alignItems: 'center', gap: 10,
+                                        marginBottom: 14, paddingBottom: 14,
+                                        borderBottom: '1px solid #e5e7eb'
                                     }
                                 },
-                                    React.createElement('div', {style: {fontSize: 48, marginBottom: 8}}, '📢'),
-                                    React.createElement('h2', {style: {fontSize: 24, fontWeight: 700}}, 'Mensagem da Liderança'),
-                                    liderancaModal?.fila?.length > 1 && React.createElement('p', {
-                                        style: {fontSize: 14, color: 'rgba(255,255,255,0.8)', marginTop: 4}
-                                    }, '1 de ', liderancaModal.fila.length, ' mensagens')
+                                    liderancaModal?.dados?.criado_por_foto ?
+                                        React.createElement('img', {
+                                            src: liderancaModal.dados.criado_por_foto,
+                                            style: {
+                                                width: 44, height: 44, borderRadius: '50%',
+                                                objectFit: 'cover', border: '2px solid #fdba74'
+                                            }
+                                        }) :
+                                        React.createElement('div', {
+                                            style: {
+                                                width: 44, height: 44, borderRadius: '50%',
+                                                background: 'linear-gradient(135deg, #fb923c, #fbbf24)',
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                color: 'white', fontWeight: 700, fontSize: 18, flexShrink: 0
+                                            }
+                                        }, liderancaModal?.dados?.criado_por_nome?.charAt(0)?.toUpperCase() || '?'),
+                                    React.createElement('div', {style: {minWidth: 0}},
+                                        React.createElement('p', {
+                                            style: {fontWeight: 700, fontSize: 15, color: '#1f2937', margin: 0}
+                                        }, liderancaModal?.dados?.criado_por_nome),
+                                        React.createElement('p', {
+                                            style: {fontSize: 12, color: '#6b7280', margin: 0}
+                                        }, new Date(liderancaModal?.dados?.created_at).toLocaleString('pt-BR'))
+                                    )
                                 ),
-                                // Body
-                                React.createElement('div', {style: {padding: 24}},
-                                    // Autor
-                                    React.createElement('div', {
-                                        style: {
-                                            display: 'flex', alignItems: 'center', gap: 12,
-                                            marginBottom: 16, paddingBottom: 16,
-                                            borderBottom: '1px solid #e5e7eb'
+                                // Título
+                                React.createElement('h3', {
+                                    style: {fontSize: 18, fontWeight: 700, color: '#1f2937', marginBottom: 10, marginTop: 0}
+                                }, liderancaModal?.dados?.titulo),
+                                // Conteúdo
+                                React.createElement('div', {
+                                    style: {color: '#374151', whiteSpace: 'pre-wrap', marginBottom: 14, lineHeight: 1.6, fontSize: 15},
+                                    dangerouslySetInnerHTML: {__html: liderancaModal?.dados?.conteudo?.replace(/\n/g, '<br>') || ''}
+                                }),
+                                // Mídia - vídeo
+                                liderancaModal?.dados?.midia_url && liderancaModal?.dados?.midia_tipo === 'video' && React.createElement('div', {style: {marginBottom: 14}},
+                                    (liderancaModal.dados.midia_url.includes('youtube') || liderancaModal.dados.midia_url.includes('youtu.be')) ?
+                                        React.createElement('iframe', {
+                                            src: liderancaModal.dados.midia_url.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/'),
+                                            style: {width: '100%', aspectRatio: '16/9', borderRadius: 8, border: 'none'},
+                                            allowFullScreen: true
+                                        }) :
+                                        React.createElement('video', {
+                                            src: liderancaModal.dados.midia_url, controls: true,
+                                            style: {width: '100%', borderRadius: 8}
+                                        })
+                                ),
+                                // Mídia - imagem
+                                liderancaModal?.dados?.midia_url && liderancaModal?.dados?.midia_tipo === 'imagem' && React.createElement('img', {
+                                    src: liderancaModal.dados.midia_url,
+                                    onClick: function() { setLiderancaImagemExpandida(liderancaModal.dados.midia_url); },
+                                    style: {
+                                        marginBottom: 14, width: '100%', borderRadius: 8,
+                                        maxHeight: 220, objectFit: 'contain', cursor: 'pointer'
+                                    },
+                                    title: 'Clique para expandir'
+                                }),
+                                // Mídia - áudio
+                                liderancaModal?.dados?.midia_url && liderancaModal?.dados?.midia_tipo === 'audio' && React.createElement('audio', {
+                                    src: liderancaModal.dados.midia_url, controls: true,
+                                    style: {marginBottom: 14, width: '100%'}
+                                })
+                            ),
+                            // Footer fixo — reações + botão
+                            React.createElement('div', {
+                                style: {
+                                    flexShrink: 0, padding: '12px 20px 16px',
+                                    borderTop: '1px solid #f3f4f6',
+                                    background: 'white'
+                                }
+                            },
+                                // Reações
+                                React.createElement('div', {
+                                    style: {display: 'flex', justifyContent: 'center', gap: 6, marginBottom: 12}
+                                },
+                                    ['✅', '🔥', '🎉', '💜', '😍'].map(function(emoji) {
+                                        return React.createElement('button', {
+                                            key: emoji,
+                                            onClick: async function() {
+                                                await enviarReacaoLideranca(liderancaModal.dados.id, emoji);
+                                                ja(emoji + ' Reação enviada!', 'success');
+                                            },
+                                            style: {
+                                                fontSize: 26, background: 'none', border: 'none',
+                                                cursor: 'pointer', padding: 6, borderRadius: '50%',
+                                                transition: 'transform 0.2s, background 0.2s'
+                                            },
+                                            onMouseOver: function(e) { e.target.style.transform = 'scale(1.2)'; e.target.style.background = '#fff7ed'; },
+                                            onMouseOut: function(e) { e.target.style.transform = 'scale(1)'; e.target.style.background = 'none'; }
+                                        }, emoji);
+                                    })
+                                ),
+                                // Botão Entendido
+                                React.createElement('button', {
+                                    onClick: async function() {
+                                        await marcarLiderancaVisualizada(liderancaModal.dados.id);
+                                        var filaRestante = liderancaModal.fila?.slice(1) || [];
+                                        if (filaRestante.length > 0) {
+                                            setEnvelopeFase('envelope');
+                                            setLiderancaModal({tipo: 'notificacao', dados: filaRestante[0], fila: filaRestante});
+                                        } else {
+                                            setLiderancaModal(null);
+                                            setEnvelopeFase(null);
+                                            await loadLiderancaHistorico();
                                         }
                                     },
-                                        liderancaModal?.dados?.criado_por_foto ?
-                                            React.createElement('img', {
-                                                src: liderancaModal.dados.criado_por_foto,
-                                                style: {
-                                                    width: 56, height: 56, borderRadius: '50%',
-                                                    objectFit: 'cover', border: '2px solid #fdba74'
-                                                }
-                                            }) :
-                                            React.createElement('div', {
-                                                style: {
-                                                    width: 56, height: 56, borderRadius: '50%',
-                                                    background: 'linear-gradient(135deg, #fb923c, #fbbf24)',
-                                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                    color: 'white', fontWeight: 700, fontSize: 20
-                                                }
-                                            }, liderancaModal?.dados?.criado_por_nome?.charAt(0)?.toUpperCase() || '?'),
-                                        React.createElement('div', null,
-                                            React.createElement('p', {
-                                                style: {fontWeight: 700, fontSize: 18, color: '#1f2937'}
-                                            }, liderancaModal?.dados?.criado_por_nome),
-                                            React.createElement('p', {
-                                                style: {fontSize: 14, color: '#6b7280'}
-                                            }, new Date(liderancaModal?.dados?.created_at).toLocaleString('pt-BR'))
-                                        )
-                                    ),
-                                    // Título
-                                    React.createElement('h3', {
-                                        style: {fontSize: 20, fontWeight: 700, color: '#1f2937', marginBottom: 12}
-                                    }, liderancaModal?.dados?.titulo),
-                                    // Conteúdo
-                                    React.createElement('div', {
-                                        style: {color: '#374151', whiteSpace: 'pre-wrap', marginBottom: 16, lineHeight: 1.6},
-                                        dangerouslySetInnerHTML: {__html: liderancaModal?.dados?.conteudo?.replace(/\n/g, '<br>') || ''}
-                                    }),
-                                    // Mídia - vídeo
-                                    liderancaModal?.dados?.midia_url && liderancaModal?.dados?.midia_tipo === 'video' && React.createElement('div', {style: {marginBottom: 16}},
-                                        (liderancaModal.dados.midia_url.includes('youtube') || liderancaModal.dados.midia_url.includes('youtu.be')) ?
-                                            React.createElement('iframe', {
-                                                src: liderancaModal.dados.midia_url.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/'),
-                                                style: {width: '100%', aspectRatio: '16/9', borderRadius: 8, border: 'none'},
-                                                allowFullScreen: true
-                                            }) :
-                                            React.createElement('video', {
-                                                src: liderancaModal.dados.midia_url, controls: true,
-                                                style: {width: '100%', borderRadius: 8}
-                                            })
-                                    ),
-                                    // Mídia - imagem
-                                    liderancaModal?.dados?.midia_url && liderancaModal?.dados?.midia_tipo === 'imagem' && React.createElement('img', {
-                                        src: liderancaModal.dados.midia_url,
-                                        onClick: function() { setLiderancaImagemExpandida(liderancaModal.dados.midia_url); },
-                                        style: {
-                                            marginBottom: 16, width: '100%', borderRadius: 8,
-                                            maxHeight: 256, objectFit: 'contain', cursor: 'pointer'
-                                        },
-                                        title: 'Clique para expandir'
-                                    }),
-                                    // Mídia - áudio
-                                    liderancaModal?.dados?.midia_url && liderancaModal?.dados?.midia_tipo === 'audio' && React.createElement('audio', {
-                                        src: liderancaModal.dados.midia_url, controls: true,
-                                        style: {marginBottom: 16, width: '100%'}
-                                    }),
-                                    // Reações
-                                    React.createElement('div', {style: {marginBottom: 16}},
-                                        React.createElement('p', {
-                                            style: {fontSize: 14, color: '#6b7280', marginBottom: 8, textAlign: 'center'}
-                                        }, 'Deixe sua reação:'),
-                                        React.createElement('div', {
-                                            style: {display: 'flex', justifyContent: 'center', gap: 8}
-                                        },
-                                            ['✅', '🔥', '🎉', '💜', '😍'].map(function(emoji) {
-                                                return React.createElement('button', {
-                                                    key: emoji,
-                                                    onClick: async function() {
-                                                        await enviarReacaoLideranca(liderancaModal.dados.id, emoji);
-                                                        ja(emoji + ' Reação enviada!', 'success');
-                                                    },
-                                                    style: {
-                                                        fontSize: 30, background: 'none', border: 'none',
-                                                        cursor: 'pointer', padding: 8, borderRadius: '50%',
-                                                        transition: 'transform 0.2s, background 0.2s'
-                                                    },
-                                                    onMouseOver: function(e) { e.target.style.transform = 'scale(1.25)'; e.target.style.background = '#fff7ed'; },
-                                                    onMouseOut: function(e) { e.target.style.transform = 'scale(1)'; e.target.style.background = 'none'; }
-                                                }, emoji);
-                                            })
-                                        )
-                                    ),
-                                    // Botão Entendido
-                                    React.createElement('button', {
-                                        onClick: async function() {
-                                            await marcarLiderancaVisualizada(liderancaModal.dados.id);
-                                            const filaRestante = liderancaModal.fila?.slice(1) || [];
-                                            if (filaRestante.length > 0) {
-                                                setEnvelopeFase('envelope');
-                                                setLiderancaModal({tipo: 'notificacao', dados: filaRestante[0], fila: filaRestante});
-                                            } else {
-                                                setLiderancaModal(null);
-                                                setEnvelopeFase(null);
-                                                await loadLiderancaHistorico();
-                                            }
-                                        },
-                                        style: {
-                                            width: '100%', padding: '16px', border: 'none',
-                                            background: 'linear-gradient(135deg, #f97316, #f59e0b)',
-                                            color: 'white', borderRadius: 12, fontWeight: 700,
-                                            fontSize: 18, cursor: 'pointer',
-                                            transition: 'opacity 0.2s'
-                                        },
-                                        onMouseOver: function(e) { e.target.style.opacity = '0.9'; },
-                                        onMouseOut: function(e) { e.target.style.opacity = '1'; }
-                                    }, liderancaModal?.fila?.length > 1 ? '✓ Entendido - Próxima' : '✓ Entendido')
-                                )
+                                    style: {
+                                        width: '100%', padding: '14px', border: 'none',
+                                        background: 'linear-gradient(135deg, #f97316, #f59e0b)',
+                                        color: 'white', borderRadius: 12, fontWeight: 700,
+                                        fontSize: 16, cursor: 'pointer',
+                                        transition: 'opacity 0.2s'
+                                    },
+                                    onMouseOver: function(e) { e.target.style.opacity = '0.9'; },
+                                    onMouseOut: function(e) { e.target.style.opacity = '1'; }
+                                }, liderancaModal?.fila?.length > 1 ? '✓ Entendido - Próxima' : '✓ Entendido')
                             )
                         ),
                         // Modal de imagem expandida (dentro do portal)
