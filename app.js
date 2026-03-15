@@ -13471,15 +13471,25 @@ const hideLoadingScreen = () => {
             if (typeof window.ModuloGerencialComponent !== 'undefined') {
                 return React.createElement(window.ModuloGerencialComponent, {
                     usuario: l,
+                    estado: p,
+                    setEstado: x,
                     API_URL: API_URL,
                     getToken: getToken,
                     fetchAuth: fetchAuth,
                     HeaderCompacto: HeaderCompacto,
-                    showToast: ja,
-                    he: he,
+                    Toast: Toast,
+                    LoadingOverlay: LoadingOverlay,
                     Ee: Ee,
                     socialProfile: socialProfile,
-                    onNavigate: navegarSidebar,
+                    ul: ul,
+                    o: o,
+                    he: he,
+                    navegarSidebar: navegarSidebar,
+                    showToast: ja,
+                    n: n,
+                    i: i,
+                    f: f,
+                    E: E,
                 });
             } else {
                 return React.createElement("div", { className: "min-h-screen bg-gray-50 flex items-center justify-center" },
