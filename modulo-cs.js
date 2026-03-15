@@ -92,6 +92,122 @@
   }
 
   // ══════════════════════════════════════════════════
+  // RAIO-X LOADING OVERLAY (animação de escaneamento)
+  // ══════════════════════════════════════════════════
+  var RAIO_X_MSGS = [
+    { t: 'Coletando dados operacionais...', icon: '\uD83D\uDCCA', sub: 'Analisando entregas e m\u00e9tricas' },
+    { t: 'Calculando benchmark da base...', icon: '\uD83D\uDCC8', sub: 'Comparando com todos os clientes' },
+    { t: 'Processando faixas de hor\u00e1rio...', icon: '\u23F0', sub: 'Mapeando padr\u00f5es operacionais' },
+    { t: 'Analisando profissionais...', icon: '\uD83D\uDEF5', sub: 'Avaliando desempenho por motoboy' },
+    { t: 'Geocodificando mapa de calor...', icon: '\uD83D\uDDFA', sub: 'Mapeando pontos de entrega' },
+    { t: 'Intelig\u00eancia artificial gerando...', icon: '\uD83E\uDDE0', sub: 'Gemini analisando os dados' },
+    { t: 'Montando gr\u00e1ficos e relat\u00f3rio...', icon: '\uD83D\uDCDD', sub: 'Injetando visualiza\u00e7\u00f5es SVG' },
+    { t: 'Finalizando an\u00e1lise completa...', icon: '\u2728', sub: 'Quase pronto!' }
+  ];
+
+  function RaioXLoadingOverlay() {
+    var _m = useState(0), msgIdx = _m[0], setMsgIdx = _m[1];
+    var _f = useState(false), fadeOut = _f[0], setFadeOut = _f[1];
+    var containerRef = useRef(null);
+
+    useEffect(function() {
+      var interval = setInterval(function() {
+        setFadeOut(true);
+        setTimeout(function() {
+          setMsgIdx(function(prev) { return (prev + 1) % RAIO_X_MSGS.length; });
+          setFadeOut(false);
+        }, 300);
+      }, 3000);
+      return function() { clearInterval(interval); };
+    }, []);
+
+    // Injetar CSS animations no head (1 vez)
+    useEffect(function() {
+      var id = 'raio-x-anim-css';
+      if (document.getElementById(id)) return;
+      var style = document.createElement('style');
+      style.id = id;
+      style.textContent = [
+        '@keyframes rxSpin{to{transform:rotate(360deg)}}',
+        '@keyframes rxSpinR{to{transform:rotate(-360deg)}}',
+        '@keyframes rxScan{0%{transform:translateY(-50px);opacity:0}30%{opacity:1}70%{opacity:1}100%{transform:translateY(50px);opacity:0}}',
+        '@keyframes rxFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}',
+        '@keyframes rxDot{0%,100%{opacity:.3;transform:scale(.8)}50%{opacity:1;transform:scale(1.2)}}',
+        '@keyframes rxBar{0%{width:0}30%{width:45%}60%{width:70%}80%{width:85%}100%{width:95%}}',
+        '@keyframes rxParticle{0%{opacity:0;transform:translateY(15px) scale(0)}20%{opacity:.6;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-35px) scale(0)}}'
+      ].join('\n');
+      document.head.appendChild(style);
+    }, []);
+
+    // Partículas
+    useEffect(function() {
+      var el = containerRef.current;
+      if (!el) return;
+      var pBox = el.querySelector('.rx-particles');
+      if (!pBox) return;
+      var interval = setInterval(function() {
+        var p = document.createElement('div');
+        p.style.cssText = 'position:absolute;width:3px;height:3px;border-radius:50%;opacity:0;left:' + (25 + Math.random() * 90) + 'px;top:' + (25 + Math.random() * 90) + 'px;background:' + (Math.random() > 0.5 ? '#a78bfa' : '#7c3aed') + ';animation:rxParticle ' + (1.5 + Math.random()) + 's ease forwards';
+        pBox.appendChild(p);
+        setTimeout(function() { p.remove(); }, 2500);
+      }, 300);
+      return function() { clearInterval(interval); };
+    }, []);
+
+    var msg = RAIO_X_MSGS[msgIdx];
+
+    return h('div', {
+      ref: containerRef,
+      className: 'bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl border border-indigo-200 overflow-hidden',
+      style: { padding: '48px 24px' }
+    },
+      h('div', { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' } },
+
+        // Orbe com anéis
+        h('div', { style: { position: 'relative', width: '140px', height: '140px' } },
+          // Anel 1
+          h('div', { style: { position: 'absolute', inset: '0', borderRadius: '50%', border: '2px solid transparent', borderTopColor: '#7c3aed', borderRightColor: '#7c3aed', animation: 'rxSpin 2s linear infinite' } }),
+          // Anel 2
+          h('div', { style: { position: 'absolute', inset: '12px', borderRadius: '50%', border: '2px solid transparent', borderBottomColor: '#a78bfa', borderLeftColor: '#a78bfa', animation: 'rxSpinR 2.8s linear infinite' } }),
+          // Anel 3
+          h('div', { style: { position: 'absolute', inset: '24px', borderRadius: '50%', border: '2px solid transparent', borderTopColor: '#c4b5fd', borderRightColor: '#c4b5fd', animation: 'rxSpin 3.6s linear infinite' } }),
+          // Core
+          h('div', { style: { position: 'absolute', inset: '34px', borderRadius: '50%', background: 'rgba(124,58,237,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' } },
+            h('span', { style: { fontSize: '28px', animation: 'rxFloat 2s ease-in-out infinite' } }, msg.icon)
+          ),
+          // Scan line
+          h('div', { style: { position: 'absolute', left: '34px', right: '34px', height: '2px', top: '50%', background: 'linear-gradient(90deg, transparent, #7c3aed, transparent)', animation: 'rxScan 2s ease-in-out infinite', borderRadius: '1px' } }),
+          // Particles container
+          h('div', { className: 'rx-particles', style: { position: 'absolute', inset: '0', pointerEvents: 'none' } })
+        ),
+
+        // Dots
+        h('div', { style: { display: 'flex', gap: '6px', alignItems: 'center' } },
+          h('div', { style: { width: '6px', height: '6px', borderRadius: '50%', background: '#7c3aed', animation: 'rxDot 1.2s ease infinite' } }),
+          h('div', { style: { width: '6px', height: '6px', borderRadius: '50%', background: '#7c3aed', animation: 'rxDot 1.2s ease .2s infinite' } }),
+          h('div', { style: { width: '6px', height: '6px', borderRadius: '50%', background: '#7c3aed', animation: 'rxDot 1.2s ease .4s infinite' } }),
+          h('div', { style: { width: '6px', height: '6px', borderRadius: '50%', background: '#7c3aed', animation: 'rxDot 1.2s ease .6s infinite' } })
+        ),
+
+        // Mensagem principal
+        h('div', {
+          style: { fontSize: '14px', fontWeight: '500', color: '#7c3aed', textAlign: 'center', minHeight: '22px', transition: 'opacity 0.3s ease, transform 0.3s ease', opacity: fadeOut ? 0 : 1, transform: fadeOut ? 'translateY(-6px)' : 'translateY(0)' }
+        }, msg.t),
+
+        // Barra de progresso
+        h('div', { style: { width: '220px', height: '3px', background: 'rgba(124,58,237,0.1)', borderRadius: '2px', overflow: 'hidden' } },
+          h('div', { style: { height: '100%', background: '#7c3aed', borderRadius: '2px', animation: 'rxBar 20s ease-out forwards' } })
+        ),
+
+        // Sub texto
+        h('div', {
+          style: { fontSize: '12px', color: '#8b8b9e', textAlign: 'center', transition: 'opacity 0.3s ease', opacity: fadeOut ? 0 : 1 }
+        }, msg.sub)
+      )
+    );
+  }
+
+  // ══════════════════════════════════════════════════
   // DASHBOARD
   // ══════════════════════════════════════════════════
   function DashboardView({ fetchApi }) {
@@ -502,8 +618,11 @@
         h('button', { onClick: function() { setShowNovaInteracao(true); }, className: 'px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700' }, '📝 Nova Interação'),
         h('button', { onClick: function() { setShowNovaOcorrencia(true); }, className: 'px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700' }, '🚨 Nova Ocorrência'),
         h('div', { className: 'flex-1' }),
-        h('button', { onClick: gerarRaioX, disabled: raioXLoading, className: 'px-5 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg text-sm font-bold hover:from-purple-700 hover:to-indigo-700 disabled:opacity-50 shadow-lg' }, raioXLoading ? '🔬 Gerando...' : '🔬 Raio-X IA')
+        !raioXLoading && h('button', { onClick: gerarRaioX, className: 'px-5 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg text-sm font-bold hover:from-purple-700 hover:to-indigo-700 shadow-lg' }, '🔬 Raio-X IA')
       ),
+
+      // Raio-X Loading Animation
+      raioXLoading && h(RaioXLoadingOverlay),
 
       // Raio-X result
       raioXResult && h('div', { className: 'bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl border border-indigo-200 p-6 shadow-inner' },
