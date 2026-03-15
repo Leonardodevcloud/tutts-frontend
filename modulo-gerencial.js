@@ -133,11 +133,13 @@
     var fetchApi = p.fetchApi;
     var _cl = useState([]), clientes = _cl[0], setClientes = _cl[1];
     var _cfg = useState([]), config = _cfg[0], setConfig = _cfg[1];
-    var _sel = useState(''), selCod = _sel[0], setSelCod = _sel[1];
-    var _selCC = useState(''), selCC = _selCC[0], setSelCC = _selCC[1];
     var _grupo = useState('porto_seco'), grupo = _grupo[0], setGrupo = _grupo[1];
     var _loading = useState(true), loading = _loading[0], setLoading = _loading[1];
     var _search = useState(''), search = _search[0], setSearch = _search[1];
+    var _expanded = useState({}), expanded = _expanded[0], setExpanded = _expanded[1];
+    var _openPS = useState(true), openPS = _openPS[0], setOpenPS = _openPS[1];
+    var _openOut = useState(true), openOut = _openOut[0], setOpenOut = _openOut[1];
+    var _adding = useState(false), adding = _adding[0], setAdding = _adding[1];
 
     var carregar = useCallback(function() {
       setLoading(true);
@@ -151,18 +153,34 @@
 
     useEffect(function() { carregar(); }, [carregar]);
 
-    var selCliente = clientes.find(function(c) { return String(c.cod_cliente) === selCod; });
     var psItems = config.filter(function(c) { return c.grupo === 'porto_seco'; });
     var outItems = config.filter(function(c) { return c.grupo === 'outros'; });
 
-    var adicionar = function() {
-      if (!selCod) return;
-      var cl = selCliente;
-      var nome = cl ? (cl.mascara || cl.nome) + (selCC ? ' - ' + selCC : '') : 'Cliente ' + selCod;
-      fetchApi('/gerencial/config', {
-        method: 'POST',
-        body: JSON.stringify({ grupo: grupo, cod_cliente: parseInt(selCod), centro_custo: selCC, nome_display: nome }),
-      }).then(function() { carregar(); setSelCod(''); setSelCC(''); });
+    // Checar se um cliente+cc já está no grupo atual
+    function isConfigured(cod, cc) {
+      return config.some(function(c) { return c.grupo === grupo && c.cod_cliente === cod && (c.centro_custo || '') === (cc || ''); });
+    }
+
+    function getConfigId(cod, cc) {
+      var found = config.find(function(c) { return c.grupo === grupo && c.cod_cliente === cod && (c.centro_custo || '') === (cc || ''); });
+      return found ? found.id : null;
+    }
+
+    var toggleExpand = function(cod) {
+      setExpanded(function(prev) { var n = Object.assign({}, prev); n[cod] = !n[cod]; return n; });
+    };
+
+    var toggleItem = function(cod, cc, nome) {
+      var configId = getConfigId(cod, cc);
+      if (configId) {
+        fetchApi('/gerencial/config/' + configId, { method: 'DELETE' }).then(function() { carregar(); });
+      } else {
+        var displayName = nome + (cc ? ' - ' + cc : '');
+        fetchApi('/gerencial/config', {
+          method: 'POST',
+          body: JSON.stringify({ grupo: grupo, cod_cliente: parseInt(cod), centro_custo: cc || '', nome_display: displayName }),
+        }).then(function() { carregar(); });
+      }
     };
 
     var remover = function(id) {
@@ -177,65 +195,151 @@
 
     if (loading) return h('div', { className: 'text-center py-12 text-gray-400' }, 'Carregando...');
 
-    function GrupoLista(titulo, icone, items) {
-      return h('div', { className: 'bg-white rounded-xl shadow-sm p-5 mb-4' },
-        h('h3', { className: 'font-bold text-gray-900 mb-3 flex items-center gap-2' }, h('span', null, icone), titulo, h('span', { className: 'text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full ml-2' }, items.length)),
-        items.length === 0 ? h('p', { className: 'text-gray-400 text-sm' }, 'Nenhum cliente configurado') :
-        h('div', { className: 'space-y-2' }, items.map(function(item) {
-          return h('div', { key: item.id, className: 'flex items-center justify-between bg-gray-50 rounded-lg px-4 py-2' },
-            h('div', null,
-              h('span', { className: 'font-semibold text-gray-800 text-sm' }, item.nome_display || ('Cliente ' + item.cod_cliente)),
-              h('span', { className: 'text-xs text-gray-400 ml-2' }, 'cod: ' + item.cod_cliente + (item.centro_custo ? ' · CC: ' + item.centro_custo : ''))
-            ),
-            h('button', { onClick: function() { remover(item.id); }, className: 'text-red-400 hover:text-red-600 text-sm font-bold px-2' }, '✕')
-          );
-        }))
+    // ── Collapsible Group Card ──
+    function GrupoCard(titulo, icone, items, isOpen, toggle) {
+      return h('div', { className: 'bg-white rounded-xl shadow-sm mb-4 overflow-hidden' },
+        // Header clicável
+        h('div', {
+          onClick: toggle,
+          className: 'flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-gray-50 transition-colors',
+        },
+          h('div', { className: 'flex items-center gap-2' },
+            h('span', { className: 'text-lg' }, icone),
+            h('h3', { className: 'font-bold text-gray-900' }, titulo),
+            h('span', { className: 'text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-semibold' }, items.length)
+          ),
+          h('span', { className: 'text-gray-400 text-lg transition-transform ' + (isOpen ? 'rotate-180' : '') }, '▾')
+        ),
+        // Conteúdo expansível
+        isOpen ? h('div', { className: 'border-t border-gray-100 px-5 pb-4' },
+          items.length === 0 ?
+            h('p', { className: 'text-gray-400 text-sm py-3 text-center' }, 'Nenhum cliente configurado. Use o seletor acima para adicionar.') :
+            h('div', { className: 'divide-y divide-gray-100' },
+              items.map(function(item) {
+                return h('div', { key: item.id, className: 'flex items-center justify-between py-3' },
+                  h('div', { className: 'flex items-center gap-3 min-w-0' },
+                    h('div', { className: 'w-8 h-8 rounded-full bg-purple-50 flex items-center justify-center text-xs font-bold text-purple-600 flex-shrink-0' }, item.cod_cliente),
+                    h('div', { className: 'min-w-0' },
+                      h('div', { className: 'font-semibold text-gray-800 text-sm truncate' }, item.nome_display || ('Cliente ' + item.cod_cliente)),
+                      item.centro_custo ? h('div', { className: 'text-xs text-gray-400' }, 'CC: ' + item.centro_custo) : null
+                    )
+                  ),
+                  h('button', {
+                    onClick: function() { remover(item.id); },
+                    className: 'text-red-300 hover:text-red-500 hover:bg-red-50 rounded-full w-7 h-7 flex items-center justify-center transition-colors flex-shrink-0',
+                  }, '✕')
+                );
+              })
+            )
+        ) : null
       );
     }
 
     return h('div', null,
-      // Formulário de adição
+
+      // ── Seletor de Grupo + Adicionar ──
       h('div', { className: 'bg-white rounded-xl shadow-sm p-5 mb-6' },
-        h('h3', { className: 'font-bold text-gray-900 mb-4' }, '➕ Adicionar Cliente a um Grupo'),
-        h('div', { className: 'grid grid-cols-1 md:grid-cols-4 gap-3 items-end' },
-          // Grupo
-          h('div', null,
-            h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1' }, 'Grupo'),
-            h('select', { value: grupo, onChange: function(e) { setGrupo(e.target.value); }, className: 'w-full px-3 py-2 border border-gray-200 rounded-lg text-sm' },
-              h('option', { value: 'porto_seco' }, '🚚 Porto Seco'),
-              h('option', { value: 'outros' }, '📋 Outros Monitorados')
-            )
-          ),
-          // Cliente
-          h('div', null,
-            h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1' }, 'Cliente'),
-            h('input', { type: 'text', placeholder: 'Buscar por código ou nome...', value: search, onChange: function(e) { setSearch(e.target.value); setSelCod(''); setSelCC(''); }, className: 'w-full px-3 py-2 border border-gray-200 rounded-lg text-sm mb-1' }),
-            h('select', { value: selCod, onChange: function(e) { setSelCod(e.target.value); setSelCC(''); }, className: 'w-full px-3 py-2 border border-gray-200 rounded-lg text-sm', size: Math.min(6, filtrados.length + 1) },
-              h('option', { value: '' }, 'Selecione...'),
-              filtrados.slice(0, 50).map(function(c) {
-                return h('option', { key: c.cod_cliente, value: String(c.cod_cliente) },
-                  c.cod_cliente + ' - ' + (c.mascara || c.nome) + (c.centros.length > 0 ? ' (' + c.centros.length + ' CC)' : '')
-                );
-              })
-            )
-          ),
-          // Centro de Custo
-          h('div', null,
-            h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1' }, 'Centro de Custo'),
-            h('select', { value: selCC, onChange: function(e) { setSelCC(e.target.value); }, disabled: !selCliente || selCliente.centros.length === 0, className: 'w-full px-3 py-2 border border-gray-200 rounded-lg text-sm disabled:opacity-50' },
-              h('option', { value: '' }, selCliente && selCliente.centros.length > 0 ? 'Todos' : 'N/A'),
-              selCliente ? selCliente.centros.map(function(cc) { return h('option', { key: cc, value: cc }, cc); }) : null
-            )
-          ),
-          // Botão
-          h('div', null,
-            h('button', { onClick: adicionar, disabled: !selCod, className: 'w-full px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-bold hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed' }, '+ Adicionar')
+        h('div', { className: 'flex items-center justify-between mb-4' },
+          h('h3', { className: 'font-bold text-gray-900' }, '⚙️ Configurar Grupos de SLA'),
+          h('div', { className: 'flex bg-gray-100 rounded-lg p-0.5' },
+            h('button', {
+              onClick: function() { setGrupo('porto_seco'); },
+              className: 'px-4 py-1.5 text-sm font-semibold rounded-md transition-colors ' + (grupo === 'porto_seco' ? 'bg-white text-purple-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'),
+            }, '🚚 Porto Seco'),
+            h('button', {
+              onClick: function() { setGrupo('outros'); },
+              className: 'px-4 py-1.5 text-sm font-semibold rounded-md transition-colors ' + (grupo === 'outros' ? 'bg-white text-purple-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'),
+            }, '📋 Outros')
           )
+        ),
+
+        // Busca
+        h('div', { className: 'relative mb-3' },
+          h('span', { className: 'absolute left-3 top-2.5 text-gray-400 text-sm' }, '🔍'),
+          h('input', {
+            type: 'text', placeholder: 'Buscar cliente por código ou nome...',
+            value: search, onChange: function(e) { setSearch(e.target.value); },
+            className: 'w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent',
+          })
+        ),
+
+        // Lista de clientes com checkboxes
+        h('div', { className: 'border border-gray-200 rounded-lg max-h-80 overflow-y-auto' },
+          filtrados.length === 0 ?
+            h('div', { className: 'text-center py-6 text-gray-400 text-sm' }, 'Nenhum cliente encontrado') :
+            filtrados.slice(0, 80).map(function(cl) {
+              var cod = cl.cod_cliente;
+              var nome = cl.mascara || cl.nome;
+              var temCC = cl.centros.length > 0;
+              var isExp = expanded[cod];
+              // Check: cliente inteiro (sem CC) está configurado?
+              var clienteSemCC = isConfigured(cod, '');
+              // Ou algum CC está configurado?
+              var algumCCConfigurado = cl.centros.some(function(cc) { return isConfigured(cod, cc); });
+              var isChecked = clienteSemCC || algumCCConfigurado;
+
+              return h('div', { key: cod, className: 'border-b border-gray-100 last:border-b-0' },
+                // Linha do cliente
+                h('div', { className: 'flex items-center px-4 py-2.5 hover:bg-gray-50 transition-colors' },
+                  // Checkbox do cliente (sem CC)
+                  !temCC ? h('input', {
+                    type: 'checkbox',
+                    checked: clienteSemCC,
+                    onChange: function() { toggleItem(cod, '', nome); },
+                    className: 'w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500 mr-3 cursor-pointer',
+                  }) : h('div', { className: 'w-4 mr-3' }),
+                  // Info
+                  h('div', {
+                    className: 'flex-1 min-w-0 cursor-pointer',
+                    onClick: temCC ? function() { toggleExpand(cod); } : function() { toggleItem(cod, '', nome); },
+                  },
+                    h('div', { className: 'flex items-center gap-2' },
+                      h('span', { className: 'text-xs font-bold text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded' }, cod),
+                      h('span', { className: 'font-medium text-gray-800 text-sm truncate' }, nome),
+                      isChecked ? h('span', { className: 'text-xs text-green-600' }, '✓') : null
+                    )
+                  ),
+                  // Expand arrow se tem CC
+                  temCC ? h('button', {
+                    onClick: function() { toggleExpand(cod); },
+                    className: 'text-gray-400 hover:text-gray-600 px-2 py-1 text-xs',
+                  }, (cl.centros.length) + ' CC ' + (isExp ? '▴' : '▾')) : null
+                ),
+                // Centros de custo expandidos
+                isExp && temCC ? h('div', { className: 'bg-gray-50/50 pl-11 pr-4 pb-2' },
+                  // Opção "Todos (sem CC específico)"
+                  h('label', { className: 'flex items-center gap-2 py-1.5 cursor-pointer hover:bg-white rounded px-2 -ml-2' },
+                    h('input', {
+                      type: 'checkbox', checked: clienteSemCC,
+                      onChange: function() { toggleItem(cod, '', nome); },
+                      className: 'w-3.5 h-3.5 rounded border-gray-300 text-purple-600 focus:ring-purple-500 cursor-pointer',
+                    }),
+                    h('span', { className: 'text-xs text-gray-600' }, 'Todos (geral)')
+                  ),
+                  cl.centros.map(function(cc) {
+                    var ccChecked = isConfigured(cod, cc);
+                    return h('label', { key: cc, className: 'flex items-center gap-2 py-1.5 cursor-pointer hover:bg-white rounded px-2 -ml-2' },
+                      h('input', {
+                        type: 'checkbox', checked: ccChecked,
+                        onChange: function() { toggleItem(cod, cc, nome); },
+                        className: 'w-3.5 h-3.5 rounded border-gray-300 text-purple-600 focus:ring-purple-500 cursor-pointer',
+                      }),
+                      h('span', { className: 'text-xs text-gray-700 font-medium' }, cc)
+                    );
+                  })
+                ) : null
+              );
+            })
+        ),
+        // Contador
+        h('div', { className: 'mt-2 text-xs text-gray-400 text-right' },
+          grupo === 'porto_seco' ? psItems.length + ' clientes no Porto Seco' : outItems.length + ' clientes em Outros Monitorados'
         )
       ),
-      // Listas
-      GrupoLista('SLA Porto Seco', '🚚', psItems),
-      GrupoLista('SLA Outros Monitorados', '📋', outItems)
+
+      // ── Cards expansíveis dos grupos ──
+      GrupoCard('SLA Porto Seco', '🚚', psItems, openPS, function() { setOpenPS(!openPS); }),
+      GrupoCard('SLA Outros Monitorados', '📋', outItems, openOut, function() { setOpenOut(!openOut); })
     );
   }
 
