@@ -450,7 +450,7 @@
         h('button', { onClick: onVoltar, className: 'p-2 hover:bg-gray-100 rounded-lg' }, '← Voltar'),
         h('div', { className: 'flex-1' },
           h('h2', { className: 'text-xl font-bold text-gray-900' }, ficha.mascara || ficha.nome_fantasia || 'Cliente ' + codCliente),
-          h('p', { className: 'text-sm text-gray-500' }, 'Cód: ' + codCliente + ' · ' + (ficha.cidade || '') + (ficha.estado ? ' - ' + ficha.estado : '') + ' · ' + (ficha.segmento || 'Autopeças'))
+          h('p', { className: 'text-sm text-gray-500' }, 'Cód: ' + codCliente + ' · ' + (ficha.segmento || 'Autopeças'))
         ),
         h(HealthRing, { score: diag.health_score, size: 64 }),
         h('div', { className: 'text-right' },
@@ -463,8 +463,8 @@
       centrosDisp.length > 0 && h('div', { className: 'bg-blue-50 rounded-xl border border-blue-200 p-3 flex items-center gap-3 flex-wrap' },
         h('span', { className: 'text-sm font-medium text-blue-700' }, '📁 Centro de Custo:'),
         h('select', { value: centroSel, onChange: function(e) { setCentroSel(e.target.value); }, className: 'px-3 py-1.5 border border-blue-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500' },
-          h('option', { value: '' }, 'Todos (' + centrosDisp.length + ' centros)'),
-          centrosDisp.map(function(cc) { return h('option', { key: cc.centro_custo, value: cc.centro_custo }, cc.centro_custo + ' (' + cc.total_entregas + ' ent.)'); })
+          h('option', { value: '' }, 'Todos os centros de custo'),
+          centrosDisp.map(function(cc) { return h('option', { key: cc.centro_custo, value: cc.centro_custo }, cc.centro_custo); })
         ),
         centroSel && h('button', { onClick: function() { setCentroSel(''); }, className: 'text-xs text-blue-500 hover:text-blue-700' }, '✕ Limpar')
       ),
