@@ -2175,6 +2175,7 @@ const hideLoadingScreen = () => {
         [liderancaVizPorMsg, setLiderancaVizPorMsg] = useState({}), // {msg_id: [{user_cod, user_foto, user_nome}]}
         [liderancaReacoes, setLiderancaReacoes] = useState({}), // {msg_id: [{user_cod, emoji}]}
         [liderancaImagemExpandida, setLiderancaImagemExpandida] = useState(null), // URL da imagem expandida
+        [envelopeFase, setEnvelopeFase] = useState(null), // 'envelope' | 'opening' | 'message' | null
         // Estados para gravação de áudio
         [liderancaGravando, setLiderancaGravando] = useState(false),
         [liderancaMediaRecorder, setLiderancaMediaRecorder] = useState(null),
@@ -2556,6 +2557,439 @@ const hideLoadingScreen = () => {
                 }
             }
         }, [mostrarRoteirizador, localizacaoClientes]);
+
+        // ==================== PORTAL GLOBAL - NOTIFICAÇÃO LIDERANÇA COM ENVELOPE ====================
+        useEffect(() => {
+            if (liderancaModal?.tipo === 'notificacao') {
+                // Iniciar na fase envelope se ainda não começou
+                if (envelopeFase === null) {
+                    setEnvelopeFase('envelope');
+                    return; // Espera re-render com a fase correta
+                }
+
+                let portalDiv = document.getElementById('lideranca-notif-portal');
+                if (!portalDiv) {
+                    portalDiv = document.createElement('div');
+                    portalDiv.id = 'lideranca-notif-portal';
+                    document.body.appendChild(portalDiv);
+                }
+
+                // Injetar estilos de animação
+                if (!document.getElementById('lideranca-envelope-styles')) {
+                    const styleEl = document.createElement('style');
+                    styleEl.id = 'lideranca-envelope-styles';
+                    styleEl.textContent = `
+                        @keyframes envelopeFloat {
+                            0%, 100% { transform: translateY(0px) rotate(0deg); }
+                            25% { transform: translateY(-12px) rotate(-2deg); }
+                            50% { transform: translateY(-6px) rotate(1deg); }
+                            75% { transform: translateY(-14px) rotate(-1deg); }
+                        }
+                        @keyframes envelopePulse {
+                            0%, 100% { transform: scale(1); }
+                            50% { transform: scale(1.05); }
+                        }
+                        @keyframes envelopeShine {
+                            0% { left: -100%; }
+                            100% { left: 200%; }
+                        }
+                        @keyframes envelopeOpen {
+                            0% { transform: scale(1) rotateX(0deg); opacity: 1; }
+                            40% { transform: scale(1.15) rotateX(-10deg); opacity: 1; }
+                            70% { transform: scale(1.3) rotateX(-20deg); opacity: 0.7; }
+                            100% { transform: scale(2) rotateX(-40deg); opacity: 0; }
+                        }
+                        @keyframes fadeInBackdrop {
+                            from { opacity: 0; }
+                            to { opacity: 1; }
+                        }
+                        @keyframes slideUpMessage {
+                            from { opacity: 0; transform: translateY(40px) scale(0.95); }
+                            to { opacity: 1; transform: translateY(0) scale(1); }
+                        }
+                        @keyframes textFadeIn {
+                            from { opacity: 0; transform: translateY(10px); }
+                            to { opacity: 1; transform: translateY(0); }
+                        }
+                        @keyframes sparkle {
+                            0%, 100% { opacity: 0; transform: scale(0) rotate(0deg); }
+                            50% { opacity: 1; transform: scale(1) rotate(180deg); }
+                        }
+                        .lideranca-envelope-container {
+                            cursor: pointer;
+                            animation: envelopeFloat 3s ease-in-out infinite;
+                        }
+                        .lideranca-envelope-container:hover {
+                            animation: envelopePulse 0.6s ease-in-out infinite;
+                        }
+                        .lideranca-envelope-opening {
+                            animation: envelopeOpen 0.7s ease-in forwards;
+                            pointer-events: none;
+                        }
+                        .lideranca-msg-enter {
+                            animation: slideUpMessage 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                        }
+                        .lideranca-sparkle {
+                            position: absolute;
+                            width: 8px;
+                            height: 8px;
+                            border-radius: 50%;
+                            pointer-events: none;
+                        }
+                    `;
+                    document.head.appendChild(styleEl);
+                }
+
+                let portalContent = null;
+
+                // ===== FASE ENVELOPE =====
+                if (envelopeFase === 'envelope' || envelopeFase === 'opening') {
+                    const sparkles = Array.from({length: 12}, (_, idx) => {
+                        const angle = (idx / 12) * Math.PI * 2;
+                        const radius = 120 + Math.random() * 60;
+                        const x = Math.cos(angle) * radius;
+                        const y = Math.sin(angle) * radius;
+                        const delay = Math.random() * 2;
+                        const colors = ['#f59e0b', '#7c3aed', '#ec4899', '#f97316', '#a855f7'];
+                        return React.createElement('div', {
+                            key: 'sparkle-' + idx,
+                            className: 'lideranca-sparkle',
+                            style: {
+                                left: 'calc(50% + ' + x + 'px)',
+                                top: 'calc(50% + ' + y + 'px)',
+                                background: colors[idx % colors.length],
+                                animation: 'sparkle 2s ease-in-out ' + delay + 's infinite',
+                                boxShadow: '0 0 6px ' + colors[idx % colors.length]
+                            }
+                        });
+                    });
+
+                    portalContent = React.createElement('div', {
+                        style: {
+                            position: 'fixed', inset: 0, zIndex: 99999,
+                            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                            background: 'radial-gradient(ellipse at center, rgba(124,58,237,0.95) 0%, rgba(30,10,60,0.97) 100%)',
+                            animation: 'fadeInBackdrop 0.4s ease-out'
+                        },
+                        onClick: function() {
+                            if (envelopeFase === 'envelope') {
+                                setEnvelopeFase('opening');
+                                setTimeout(function() { setEnvelopeFase('message'); }, 750);
+                            }
+                        }
+                    },
+                        // Sparkles
+                        sparkles,
+                        // Envelope
+                        React.createElement('div', {
+                            className: envelopeFase === 'opening' ? 'lideranca-envelope-opening' : 'lideranca-envelope-container',
+                            style: { position: 'relative', marginBottom: '24px' }
+                        },
+                            // SVG Envelope
+                            React.createElement('svg', {
+                                width: 160, height: 120, viewBox: '0 0 160 120',
+                                style: { filter: 'drop-shadow(0 8px 24px rgba(0,0,0,0.3))' }
+                            },
+                                // Corpo do envelope
+                                React.createElement('rect', {
+                                    x: 5, y: 25, width: 150, height: 90, rx: 8,
+                                    fill: '#fbbf24', stroke: '#f59e0b', strokeWidth: 2
+                                }),
+                                // Aba traseira
+                                React.createElement('polygon', {
+                                    points: '5,25 80,70 155,25',
+                                    fill: '#f59e0b', stroke: '#e99200', strokeWidth: 1.5
+                                }),
+                                // Aba frontal
+                                React.createElement('polygon', {
+                                    points: '5,115 80,65 155,115',
+                                    fill: '#fcd34d', stroke: '#f59e0b', strokeWidth: 1
+                                }),
+                                // Coração no centro
+                                React.createElement('text', {
+                                    x: 80, y: 85, textAnchor: 'middle',
+                                    fontSize: 28, style: { filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))' }
+                                }, '💜'),
+                                // Brilho
+                                React.createElement('rect', {
+                                    x: 10, y: 30, width: 40, height: 3, rx: 1.5,
+                                    fill: 'rgba(255,255,255,0.4)', transform: 'rotate(-5 30 31)'
+                                })
+                            ),
+                            // Badge de quantidade
+                            liderancaModal?.fila?.length > 1 && React.createElement('div', {
+                                style: {
+                                    position: 'absolute', top: -8, right: -8,
+                                    background: '#ef4444', color: 'white',
+                                    width: 32, height: 32, borderRadius: '50%',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    fontWeight: 'bold', fontSize: 14,
+                                    boxShadow: '0 2px 8px rgba(239,68,68,0.5)',
+                                    border: '2px solid white'
+                                }
+                            }, liderancaModal.fila.length)
+                        ),
+                        // Texto
+                        React.createElement('p', {
+                            style: {
+                                color: 'white', fontSize: 22, fontWeight: 700,
+                                textAlign: 'center', maxWidth: 320,
+                                animation: 'textFadeIn 0.6s ease-out 0.3s both',
+                                textShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                                lineHeight: 1.4
+                            }
+                        }, 'Hey, tenho uma mensagem pra você! 💌'),
+                        // Subtexto
+                        React.createElement('p', {
+                            style: {
+                                color: 'rgba(255,255,255,0.6)', fontSize: 14, marginTop: 16,
+                                animation: 'textFadeIn 0.6s ease-out 0.6s both'
+                            }
+                        }, envelopeFase === 'opening' ? '' : 'Toque para abrir'),
+                        // Autor preview
+                        liderancaModal?.dados?.criado_por_nome && React.createElement('div', {
+                            style: {
+                                marginTop: 24, display: 'flex', alignItems: 'center', gap: 10,
+                                background: 'rgba(255,255,255,0.1)', borderRadius: 50,
+                                padding: '8px 20px 8px 8px',
+                                animation: 'textFadeIn 0.6s ease-out 0.9s both',
+                                backdropFilter: 'blur(8px)'
+                            }
+                        },
+                            liderancaModal.dados.criado_por_foto ?
+                                React.createElement('img', {
+                                    src: liderancaModal.dados.criado_por_foto,
+                                    style: { width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(255,255,255,0.3)' }
+                                }) :
+                                React.createElement('div', {
+                                    style: {
+                                        width: 36, height: 36, borderRadius: '50%',
+                                        background: 'linear-gradient(135deg, #f59e0b, #ec4899)',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        color: 'white', fontWeight: 'bold', fontSize: 16
+                                    }
+                                }, liderancaModal.dados.criado_por_nome?.charAt(0)?.toUpperCase() || '?'),
+                            React.createElement('span', {
+                                style: { color: 'rgba(255,255,255,0.8)', fontSize: 14 }
+                            }, 'De: ', React.createElement('strong', null, liderancaModal.dados.criado_por_nome))
+                        )
+                    );
+                }
+
+                // ===== FASE MENSAGEM =====
+                if (envelopeFase === 'message') {
+                    portalContent = React.createElement('div', {
+                        style: { position: 'fixed', inset: 0, zIndex: 99999 }
+                    },
+                        // Backdrop
+                        React.createElement('div', {
+                            style: {
+                                position: 'absolute', inset: 0,
+                                background: 'rgba(0,0,0,0.75)',
+                                backdropFilter: 'blur(4px)'
+                            }
+                        }),
+                        // Modal container
+                        React.createElement('div', {
+                            style: {
+                                position: 'relative', zIndex: 1,
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                minHeight: '100vh', padding: 16
+                            }
+                        },
+                            React.createElement('div', {
+                                className: 'lideranca-msg-enter',
+                                style: {
+                                    background: 'white', borderRadius: 16,
+                                    boxShadow: '0 25px 50px rgba(0,0,0,0.3)',
+                                    width: '100%', maxWidth: 672, maxHeight: '90vh',
+                                    overflowY: 'auto'
+                                }
+                            },
+                                // Header
+                                React.createElement('div', {
+                                    style: {
+                                        background: 'linear-gradient(135deg, #f97316, #f59e0b)',
+                                        padding: 24, color: 'white', textAlign: 'center',
+                                        borderRadius: '16px 16px 0 0'
+                                    }
+                                },
+                                    React.createElement('div', {style: {fontSize: 48, marginBottom: 8}}, '📢'),
+                                    React.createElement('h2', {style: {fontSize: 24, fontWeight: 700}}, 'Mensagem da Liderança'),
+                                    liderancaModal?.fila?.length > 1 && React.createElement('p', {
+                                        style: {fontSize: 14, color: 'rgba(255,255,255,0.8)', marginTop: 4}
+                                    }, '1 de ', liderancaModal.fila.length, ' mensagens')
+                                ),
+                                // Body
+                                React.createElement('div', {style: {padding: 24}},
+                                    // Autor
+                                    React.createElement('div', {
+                                        style: {
+                                            display: 'flex', alignItems: 'center', gap: 12,
+                                            marginBottom: 16, paddingBottom: 16,
+                                            borderBottom: '1px solid #e5e7eb'
+                                        }
+                                    },
+                                        liderancaModal?.dados?.criado_por_foto ?
+                                            React.createElement('img', {
+                                                src: liderancaModal.dados.criado_por_foto,
+                                                style: {
+                                                    width: 56, height: 56, borderRadius: '50%',
+                                                    objectFit: 'cover', border: '2px solid #fdba74'
+                                                }
+                                            }) :
+                                            React.createElement('div', {
+                                                style: {
+                                                    width: 56, height: 56, borderRadius: '50%',
+                                                    background: 'linear-gradient(135deg, #fb923c, #fbbf24)',
+                                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                    color: 'white', fontWeight: 700, fontSize: 20
+                                                }
+                                            }, liderancaModal?.dados?.criado_por_nome?.charAt(0)?.toUpperCase() || '?'),
+                                        React.createElement('div', null,
+                                            React.createElement('p', {
+                                                style: {fontWeight: 700, fontSize: 18, color: '#1f2937'}
+                                            }, liderancaModal?.dados?.criado_por_nome),
+                                            React.createElement('p', {
+                                                style: {fontSize: 14, color: '#6b7280'}
+                                            }, new Date(liderancaModal?.dados?.created_at).toLocaleString('pt-BR'))
+                                        )
+                                    ),
+                                    // Título
+                                    React.createElement('h3', {
+                                        style: {fontSize: 20, fontWeight: 700, color: '#1f2937', marginBottom: 12}
+                                    }, liderancaModal?.dados?.titulo),
+                                    // Conteúdo
+                                    React.createElement('div', {
+                                        style: {color: '#374151', whiteSpace: 'pre-wrap', marginBottom: 16, lineHeight: 1.6},
+                                        dangerouslySetInnerHTML: {__html: liderancaModal?.dados?.conteudo?.replace(/\n/g, '<br>') || ''}
+                                    }),
+                                    // Mídia - vídeo
+                                    liderancaModal?.dados?.midia_url && liderancaModal?.dados?.midia_tipo === 'video' && React.createElement('div', {style: {marginBottom: 16}},
+                                        (liderancaModal.dados.midia_url.includes('youtube') || liderancaModal.dados.midia_url.includes('youtu.be')) ?
+                                            React.createElement('iframe', {
+                                                src: liderancaModal.dados.midia_url.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/'),
+                                                style: {width: '100%', aspectRatio: '16/9', borderRadius: 8, border: 'none'},
+                                                allowFullScreen: true
+                                            }) :
+                                            React.createElement('video', {
+                                                src: liderancaModal.dados.midia_url, controls: true,
+                                                style: {width: '100%', borderRadius: 8}
+                                            })
+                                    ),
+                                    // Mídia - imagem
+                                    liderancaModal?.dados?.midia_url && liderancaModal?.dados?.midia_tipo === 'imagem' && React.createElement('img', {
+                                        src: liderancaModal.dados.midia_url,
+                                        onClick: function() { setLiderancaImagemExpandida(liderancaModal.dados.midia_url); },
+                                        style: {
+                                            marginBottom: 16, width: '100%', borderRadius: 8,
+                                            maxHeight: 256, objectFit: 'contain', cursor: 'pointer'
+                                        },
+                                        title: 'Clique para expandir'
+                                    }),
+                                    // Mídia - áudio
+                                    liderancaModal?.dados?.midia_url && liderancaModal?.dados?.midia_tipo === 'audio' && React.createElement('audio', {
+                                        src: liderancaModal.dados.midia_url, controls: true,
+                                        style: {marginBottom: 16, width: '100%'}
+                                    }),
+                                    // Reações
+                                    React.createElement('div', {style: {marginBottom: 16}},
+                                        React.createElement('p', {
+                                            style: {fontSize: 14, color: '#6b7280', marginBottom: 8, textAlign: 'center'}
+                                        }, 'Deixe sua reação:'),
+                                        React.createElement('div', {
+                                            style: {display: 'flex', justifyContent: 'center', gap: 8}
+                                        },
+                                            ['✅', '🔥', '🎉', '💜', '😍'].map(function(emoji) {
+                                                return React.createElement('button', {
+                                                    key: emoji,
+                                                    onClick: async function() {
+                                                        await enviarReacaoLideranca(liderancaModal.dados.id, emoji);
+                                                        ja(emoji + ' Reação enviada!', 'success');
+                                                    },
+                                                    style: {
+                                                        fontSize: 30, background: 'none', border: 'none',
+                                                        cursor: 'pointer', padding: 8, borderRadius: '50%',
+                                                        transition: 'transform 0.2s, background 0.2s'
+                                                    },
+                                                    onMouseOver: function(e) { e.target.style.transform = 'scale(1.25)'; e.target.style.background = '#fff7ed'; },
+                                                    onMouseOut: function(e) { e.target.style.transform = 'scale(1)'; e.target.style.background = 'none'; }
+                                                }, emoji);
+                                            })
+                                        )
+                                    ),
+                                    // Botão Entendido
+                                    React.createElement('button', {
+                                        onClick: async function() {
+                                            await marcarLiderancaVisualizada(liderancaModal.dados.id);
+                                            const filaRestante = liderancaModal.fila?.slice(1) || [];
+                                            if (filaRestante.length > 0) {
+                                                setEnvelopeFase('envelope');
+                                                setLiderancaModal({tipo: 'notificacao', dados: filaRestante[0], fila: filaRestante});
+                                            } else {
+                                                setLiderancaModal(null);
+                                                setEnvelopeFase(null);
+                                                await loadLiderancaHistorico();
+                                            }
+                                        },
+                                        style: {
+                                            width: '100%', padding: '16px', border: 'none',
+                                            background: 'linear-gradient(135deg, #f97316, #f59e0b)',
+                                            color: 'white', borderRadius: 12, fontWeight: 700,
+                                            fontSize: 18, cursor: 'pointer',
+                                            transition: 'opacity 0.2s'
+                                        },
+                                        onMouseOver: function(e) { e.target.style.opacity = '0.9'; },
+                                        onMouseOut: function(e) { e.target.style.opacity = '1'; }
+                                    }, liderancaModal?.fila?.length > 1 ? '✓ Entendido - Próxima' : '✓ Entendido')
+                                )
+                            )
+                        ),
+                        // Modal de imagem expandida (dentro do portal)
+                        liderancaImagemExpandida && React.createElement('div', {
+                            onClick: function() { setLiderancaImagemExpandida(null); },
+                            style: {
+                                position: 'fixed', inset: 0, zIndex: 100000,
+                                background: 'rgba(0,0,0,0.92)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                padding: 16, cursor: 'pointer'
+                            }
+                        },
+                            React.createElement('button', {
+                                onClick: function() { setLiderancaImagemExpandida(null); },
+                                style: {
+                                    position: 'absolute', top: 16, right: 16,
+                                    color: 'white', fontSize: 32, background: 'none',
+                                    border: 'none', cursor: 'pointer', zIndex: 10
+                                }
+                            }, '✕'),
+                            React.createElement('img', {
+                                src: liderancaImagemExpandida,
+                                style: {maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: 8, boxShadow: '0 20px 40px rgba(0,0,0,0.5)'},
+                                onClick: function(e) { e.stopPropagation(); }
+                            }),
+                            React.createElement('p', {
+                                style: {
+                                    position: 'absolute', bottom: 16, left: '50%',
+                                    transform: 'translateX(-50%)', color: 'rgba(255,255,255,0.5)',
+                                    fontSize: 14
+                                }
+                            }, 'Clique fora da imagem ou no ✕ para fechar')
+                        )
+                    );
+                }
+
+                if (portalContent) {
+                    ReactDOM.render(portalContent, portalDiv);
+                }
+            } else {
+                if (envelopeFase !== null) setEnvelopeFase(null);
+                const portalDiv = document.getElementById('lideranca-notif-portal');
+                if (portalDiv) {
+                    ReactDOM.unmountComponentAtNode(portalDiv);
+                }
+            }
+        }, [liderancaModal, envelopeFase, liderancaImagemExpandida]);
         
         // ==================== TUTORIAL DO USUÁRIO ====================
         const TUTORIAL_PASSOS = [
@@ -13017,95 +13451,6 @@ const hideLoadingScreen = () => {
                                     className: "flex-1 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl font-semibold hover:opacity-90"
                                 }, liderancaModal?.tipo === 'criar' ? "📢 Publicar Mensagem" : "💾 Salvar Alterações")
                             )
-                        )
-                    )
-                ),
-                
-                // ========== MODAL NOTIFICAÇÃO DE MENSAGEM ==========
-                liderancaModal?.tipo === 'notificacao' && React.createElement("div", {
-                    className: "fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4"
-                },
-                    React.createElement("div", {
-                        className: "bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-bounce-in"
-                    },
-                        React.createElement("div", {className: "bg-gradient-to-r from-orange-500 to-amber-500 p-6 text-white text-center"},
-                            React.createElement("div", {className: "text-5xl mb-2"}, "📢"),
-                            React.createElement("h2", {className: "text-2xl font-bold"}, "Mensagem da Liderança"),
-                            liderancaModal?.fila?.length > 1 && React.createElement("p", {className: "text-sm text-orange-100 mt-1"}, 
-                                "1 de ", liderancaModal.fila.length, " mensagens"
-                            )
-                        ),
-                        React.createElement("div", {className: "p-6"},
-                            // Autor
-                            React.createElement("div", {className: "flex items-center gap-3 mb-4 pb-4 border-b"},
-                                liderancaModal?.dados?.criado_por_foto ?
-                                    React.createElement("img", {src: liderancaModal.dados.criado_por_foto, className: "w-14 h-14 rounded-full object-cover border-2 border-orange-300"}) :
-                                    React.createElement("div", {className: "w-14 h-14 rounded-full bg-gradient-to-br from-orange-400 to-amber-400 flex items-center justify-center text-white font-bold text-xl"}, 
-                                        liderancaModal?.dados?.criado_por_nome?.charAt(0)?.toUpperCase() || "?"
-                                    ),
-                                React.createElement("div", null,
-                                    React.createElement("p", {className: "font-bold text-lg text-gray-800"}, liderancaModal?.dados?.criado_por_nome),
-                                    React.createElement("p", {className: "text-sm text-gray-500"}, new Date(liderancaModal?.dados?.created_at).toLocaleString("pt-BR"))
-                                )
-                            ),
-                            // Título
-                            React.createElement("h3", {className: "text-xl font-bold text-gray-800 mb-3"}, liderancaModal?.dados?.titulo),
-                            // Conteúdo
-                            React.createElement("div", {
-                                className: "text-gray-700 whitespace-pre-wrap mb-4",
-                                dangerouslySetInnerHTML: {__html: liderancaModal?.dados?.conteudo?.replace(/\n/g, '<br>') || ''}
-                            }),
-                            // Mídia
-                            liderancaModal?.dados?.midia_url && liderancaModal?.dados?.midia_tipo === 'video' && React.createElement("div", {className: "mb-4"},
-                                (liderancaModal.dados.midia_url.includes('youtube') || liderancaModal.dados.midia_url.includes('youtu.be')) ?
-                                    React.createElement("iframe", {
-                                        src: liderancaModal.dados.midia_url.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/'),
-                                        className: "w-full aspect-video rounded-lg",
-                                        allowFullScreen: true
-                                    }) :
-                                    React.createElement("video", {src: liderancaModal.dados.midia_url, controls: true, className: "w-full rounded-lg"})
-                            ),
-                            liderancaModal?.dados?.midia_url && liderancaModal?.dados?.midia_tipo === 'imagem' && React.createElement("img", {
-                                src: liderancaModal.dados.midia_url,
-                                onClick: () => setLiderancaImagemExpandida(liderancaModal.dados.midia_url),
-                                className: "mb-4 w-full rounded-lg max-h-64 object-contain cursor-pointer hover:opacity-90 transition-opacity",
-                                title: "Clique para expandir"
-                            }),
-                            liderancaModal?.dados?.midia_url && liderancaModal?.dados?.midia_tipo === 'audio' && React.createElement("audio", {
-                                src: liderancaModal.dados.midia_url,
-                                controls: true,
-                                className: "mb-4 w-full"
-                            }),
-                            // Emojis de reação
-                            React.createElement("div", {className: "mb-4"},
-                                React.createElement("p", {className: "text-sm text-gray-600 mb-2 text-center"}, "Deixe sua reação:"),
-                                React.createElement("div", {className: "flex justify-center gap-2"},
-                                    ["✅", "🔥", "🎉", "💜", "😍"].map(emoji => 
-                                        React.createElement("button", {
-                                            key: emoji,
-                                            onClick: async () => {
-                                                await enviarReacaoLideranca(liderancaModal.dados.id, emoji);
-                                                ja(`${emoji} Reação enviada!`, "success");
-                                            },
-                                            className: "text-3xl hover:scale-125 transition-transform hover:bg-orange-100 rounded-full p-2"
-                                        }, emoji)
-                                    )
-                                )
-                            ),
-                            // Botão
-                            React.createElement("button", {
-                                onClick: async () => {
-                                    await marcarLiderancaVisualizada(liderancaModal.dados.id);
-                                    const filaRestante = liderancaModal.fila?.slice(1) || [];
-                                    if (filaRestante.length > 0) {
-                                        setLiderancaModal({tipo: 'notificacao', dados: filaRestante[0], fila: filaRestante});
-                                    } else {
-                                        setLiderancaModal(null);
-                                        await loadLiderancaHistorico();
-                                    }
-                                },
-                                className: "w-full py-4 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl font-bold text-lg hover:opacity-90"
-                            }, liderancaModal?.fila?.length > 1 ? "✓ Entendido - Próxima" : "✓ Entendido")
                         )
                     )
                 ),
