@@ -412,7 +412,8 @@ const SISTEMA_MODULOS_CONFIG = [
     { id: "antifraude", label: "Anti-Fraude", icon: "🛡️",
       abas: []
     },
-    { id: "performance", label: "Performance Diária", icon: "📈", abas: [{id:"dashboard",label:"📊 Dashboard"},{id:"busca",label:"🔍 Busca"},{id:"config",label:"⚙️ Configurações"},{id:"jobs",label:"🗂️ Jobs"}] }
+    { id: "performance", label: "Performance Diária", icon: "📈", abas: [{id:"dashboard",label:"📊 Dashboard"},{id:"busca",label:"🔍 Busca"},{id:"config",label:"⚙️ Configurações"},{id:"jobs",label:"🗂️ Jobs"}] },
+    { id: "gerencial", label: "Análise Gerencial", icon: "📊", abas: [] }
 ];
 
 // ==================== COMPONENTE OVERFLOW NAV (módulos + abas com dropdown inteligente) ====================
@@ -13460,6 +13461,31 @@ const hideLoadingScreen = () => {
                     React.createElement("div", { className: "text-center" },
                         React.createElement("div", { className: "animate-spin w-12 h-12 border-4 border-red-500 border-t-transparent rounded-full mx-auto mb-4" }),
                         React.createElement("p", { className: "text-gray-600" }, "Carregando módulo Anti-Fraude...")
+                    )
+                );
+            }
+        }
+        // ========== MÓDULO ANÁLISE GERENCIAL SEMANAL (CARREGAMENTO EXTERNO) ==========
+        const canAccessGerencial = hasModuleAccess(l, "gerencial");
+        if (canAccessGerencial && "gerencial" === Ee) {
+            if (typeof window.ModuloGerencialComponent !== 'undefined') {
+                return React.createElement(window.ModuloGerencialComponent, {
+                    usuario: l,
+                    API_URL: API_URL,
+                    getToken: getToken,
+                    fetchAuth: fetchAuth,
+                    HeaderCompacto: HeaderCompacto,
+                    showToast: ja,
+                    he: he,
+                    Ee: Ee,
+                    socialProfile: socialProfile,
+                    onNavigate: navegarSidebar,
+                });
+            } else {
+                return React.createElement("div", { className: "min-h-screen bg-gray-50 flex items-center justify-center" },
+                    React.createElement("div", { className: "text-center" },
+                        React.createElement("div", { className: "animate-spin w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4" }),
+                        React.createElement("p", { className: "text-gray-600" }, "Carregando módulo Análise Gerencial...")
                     )
                 );
             }
