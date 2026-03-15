@@ -807,6 +807,14 @@
       .replace(/\*(.+?)\*/g, '<em>$1</em>')
       .replace(/^- (.+)$/gm, '<li class="ml-4 text-sm text-gray-700 mb-1">• $1</li>')
       .replace(/^\d+\. (.+)$/gm, '<li class="ml-4 text-sm text-gray-700 mb-1">$1</li>')
+      .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener" class="text-indigo-600 underline hover:text-indigo-800">$1</a>')
+      .replace(/(https?:\/\/[^\s&<]+)/g, function(url) {
+        var decoded = url.replace(/&amp;/g, '&');
+        if (decoded.indexOf('mapa-calor') !== -1) {
+          return '<a href="' + decoded + '" target="_blank" rel="noopener" style="display:inline-block;background:linear-gradient(135deg,#10b981,#059669);color:white;padding:8px 20px;border-radius:8px;text-decoration:none;font-weight:700;font-size:13px;margin:8px 0">🗺️ Abrir Mapa de Calor Interativo</a>';
+        }
+        return '<a href="' + decoded + '" target="_blank" rel="noopener" class="text-indigo-600 underline hover:text-indigo-800">' + decoded.substring(0, 50) + '...</a>';
+      })
       .replace(/\n\n/g, '<br/><br/>').replace(/\n/g, '<br/>');
     htmlBlocks.forEach(function(block, idx) { processed = processed.replace('%%GRAFICO_' + idx + '%%', block); });
     return processed;
