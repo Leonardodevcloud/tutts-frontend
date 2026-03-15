@@ -169,7 +169,11 @@
 
   // ═══ COMPONENTE PRINCIPAL ═══
   window.ModuloGerencialComponent = function(props) {
-    var apiUrl = props.API_URL, getToken = props.getToken;
+    var usuario = props.usuario, apiUrl = props.API_URL, getToken = props.getToken;
+    var HeaderCompacto = props.HeaderCompacto, Toast = props.Toast, LoadingOverlay = props.LoadingOverlay;
+    var Ee = props.Ee, socialProfile = props.socialProfile, ul = props.ul, o = props.o, he = props.he, navegarSidebar = props.navegarSidebar;
+    var isLoadingGlobal = props.n, toastData = props.i, isLoading = props.f, lastUpdate = props.E;
+
     var _s = useState([]), semanas = _s[0], setSemanas = _s[1];
     var _sel = useState(null), selSemana = _sel[0], setSelSemana = _sel[1];
     var _d = useState(null), dados = _d[0], setDados = _d[1];
@@ -182,7 +186,6 @@
       return res.json();
     }, [apiUrl, getToken]);
 
-    // Carregar semanas
     useEffect(function() {
       setLoadingSem(true);
       fetchApi('/gerencial/semanas').then(function(res) {
@@ -194,7 +197,6 @@
       }).catch(function() { setLoadingSem(false); });
     }, [fetchApi]);
 
-    // Carregar dados quando semana selecionada
     useEffect(function() {
       if (!selSemana) return;
       setLoading(true); setDados(null);
@@ -203,57 +205,51 @@
         .catch(function() { setLoading(false); });
     }, [selSemana, fetchApi]);
 
-    // Loading
-    if (loadingSem) return h('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', height: 300, color: '#7c3aed', fontSize: 16, fontWeight: 600 } }, '⏳ Carregando semanas...');
-
     var d = dados || {};
     var k = d.kpis || {};
 
-    return h('div', { style: { maxWidth: 1200, margin: '0 auto', padding: '0 16px 40px' } },
+    return h('div', { className: 'min-h-screen bg-gray-50' },
+      toastData && h(Toast, toastData),
+      isLoadingGlobal && h(LoadingOverlay),
+      h(HeaderCompacto, { usuario: usuario, moduloAtivo: Ee, socialProfile: socialProfile, isLoading: isLoading, lastUpdate: lastUpdate, onRefresh: ul, onLogout: function() { o(null); }, onGoHome: function() { he('home'); }, onNavigate: navegarSidebar }),
 
-      // Header
-      h('div', { style: {
-        background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 50%, #5b21b6 100%)',
-        borderRadius: 16, padding: '28px 32px', color: 'white', marginBottom: 24,
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16,
-      }},
-        h('div', null,
-          h('h1', { style: { fontSize: 24, fontWeight: 800, margin: 0, letterSpacing: '-0.5px' } }, '📊 Análise Gerencial Semanal'),
-          h('p', { style: { fontSize: 13, opacity: 0.7, marginTop: 4 } }, 'Relatório consolidado de operações')
-        ),
-        h('div', { style: { display: 'flex', alignItems: 'center', gap: 12 } },
+      h('div', { className: 'max-w-7xl mx-auto p-4 md:p-6' },
+
+        // Toolbar: título + seletor de semana
+        h('div', { className: 'flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6' },
+          h('div', null,
+            h('h1', { className: 'text-xl font-bold text-gray-900' }, '📊 Análise Gerencial Semanal'),
+            h('p', { className: 'text-sm text-gray-500 mt-1' }, 'Relatório consolidado de operações')
+          ),
           h('select', {
             value: selSemana ? selSemana.data_inicio : '',
             onChange: function(e) {
               var found = semanas.find(function(s) { return s.data_inicio === e.target.value; });
               if (found) setSelSemana(found);
             },
-            style: {
-              background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)',
-              borderRadius: 8, padding: '8px 14px', color: 'white', fontSize: 14, fontWeight: 600,
-              cursor: 'pointer', minWidth: 200,
-            }
+            className: 'px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium bg-white focus:ring-2 focus:ring-purple-500 focus:border-transparent cursor-pointer',
+            style: { minWidth: 220 }
           },
+            loadingSem ? h('option', null, 'Carregando...') :
             semanas.map(function(s) {
-              return h('option', { key: s.data_inicio, value: s.data_inicio, style: { color: '#1e293b' } },
+              return h('option', { key: s.data_inicio, value: s.data_inicio },
                 s.label + ' (' + fmtN(s.entregas) + ' ent.)'
               );
             })
           )
-        )
-      ),
+        ),
 
-      // Loading dados
-      loading ? h('div', { style: { textAlign: 'center', padding: 60, color: '#7c3aed', fontSize: 16 } },
-        h('div', { style: { fontSize: 32, marginBottom: 12, animation: 'spin 1s linear infinite' } }, '⏳'),
-        'Processando dados da semana...'
-      ) : !dados ? h('div', { style: { textAlign: 'center', padding: 60, color: '#94a3b8' } }, 'Selecione uma semana') :
+        // Loading
+        loading ? h('div', { className: 'flex flex-col items-center justify-center py-20' },
+          h('div', { className: 'animate-spin w-10 h-10 border-4 border-purple-500 border-t-transparent rounded-full mb-4' }),
+          h('p', { className: 'text-gray-500 text-sm' }, 'Processando dados da semana...')
+        ) : !dados ? h('div', { className: 'text-center py-20 text-gray-400' }, 'Selecione uma semana') :
 
-      h('div', null,
+        h('div', null,
 
         // ═══ SEÇÃO 1: KPI Cards ═══
         h(SecaoTitulo, { icone: '📈', titulo: 'KPIs da Semana', sub: d.semana ? d.semana.label : '' }),
-        h('div', { style: { display: 'flex', gap: 14, flexWrap: 'wrap', marginBottom: 8 } },
+        h('div', { className: 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-2' },
           h(KpiCard, { label: 'Entregas', valor: fmtN(k.entregas), cor: '#7c3aed', sub: k.var_entregas != null ? setaVar(k.var_entregas) + '% vs ant.' : null, subCor: corVar(k.var_entregas) }),
           h(KpiCard, { label: 'No Prazo', valor: fmtP(k.prazo_pct), cor: k.prazo_pct >= 85 ? '#10b981' : '#f59e0b', sub: k.var_prazo_pp != null ? (k.var_prazo_pp >= 0 ? '+' : '') + fmtD(k.var_prazo_pp) + ' pp' : null, subCor: corVar(k.var_prazo_pp) }),
           h(KpiCard, { label: 'Faturamento', valor: fmtR(k.faturamento), cor: '#3b82f6', sub: k.var_faturamento != null ? setaVar(k.var_faturamento) + '% vs ant.' : null, subCor: corVar(k.var_faturamento) }),
@@ -264,44 +260,45 @@
 
         // ═══ SEÇÃO 2: SLA Comollati 767 ═══
         h(SecaoTitulo, { icone: '🏢', titulo: 'SLA Comollati (767)', sub: 'SLA fixo de 2 horas — todas as filiais' }),
-        h('div', { style: { background: 'white', borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,.06)' } },
+        h('div', { className: 'bg-white rounded-xl overflow-hidden shadow-sm' },
           h(SlaTable, { rows: d.sla_767 || [] })
         ),
 
         // ═══ SEÇÃO 3: SLA Porto Seco ═══
         h(SecaoTitulo, { icone: '🚚', titulo: 'SLA Porto Seco', sub: 'SLA padrão por distância' }),
-        h('div', { style: { background: 'white', borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,.06)' } },
+        h('div', { className: 'bg-white rounded-xl overflow-hidden shadow-sm' },
           h(SlaTable, { rows: d.sla_porto_seco || [] })
         ),
 
         // ═══ SEÇÃO 4: SLA Outros Monitorados ═══
         h(SecaoTitulo, { icone: '📋', titulo: 'SLA Outros Monitorados', sub: 'Clientes com acompanhamento especial' }),
-        h('div', { style: { background: 'white', borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,.06)' } },
+        h('div', { className: 'bg-white rounded-xl overflow-hidden shadow-sm' },
           h(SlaTable, { rows: d.sla_outros || [] })
         ),
 
         // ═══ SEÇÃO 5: Ticket Médio Semanal ═══
         h(SecaoTitulo, { icone: '💰', titulo: 'Ticket Médio Líquido por Cliente', sub: 'Comparativo 4 semanas (Fat. Líquido / Entregas)' }),
-        h('div', { style: { background: 'white', borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,.06)' } },
+        h('div', { className: 'bg-white rounded-xl overflow-hidden shadow-sm' },
           h(CompTable, { semanas: (d.ticket_medio || {}).semanas, clientes: (d.ticket_medio || {}).clientes, tipo: 'ticket' })
         ),
 
         // ═══ SEÇÃO 6: Variação de Demanda ═══
         h(SecaoTitulo, { icone: '📦', titulo: 'Variação de Demanda por Cliente', sub: 'Entregas por cliente — 4 semanas' }),
-        h('div', { style: { background: 'white', borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,.06)' } },
+        h('div', { className: 'bg-white rounded-xl overflow-hidden shadow-sm' },
           h(CompTable, { semanas: (d.demanda || {}).semanas, clientes: (d.demanda || {}).clientes, tipo: 'demanda' })
         ),
 
         // ═══ SEÇÃO 7: Mínimo Garantido ═══
         h(SecaoTitulo, { icone: '🎯', titulo: 'Mínimo Garantido', sub: 'Apenas profissionais que RODARAM' }),
-        h('div', { style: { background: 'white', borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,.06)' } },
+        h('div', { className: 'bg-white rounded-xl overflow-hidden shadow-sm' },
           h(GarantidoTable, { rows: d.garantido || [] })
         ),
 
         // Footer
-        h('div', { style: { textAlign: 'center', marginTop: 32, fontSize: 11, color: '#94a3b8' } },
+        h('div', { className: 'text-center mt-8 text-xs text-gray-400 pb-4' },
           'Relatório gerado em ' + new Date().toLocaleString('pt-BR') + ' · Central Tutts'
         )
+      )
       )
     );
   };
