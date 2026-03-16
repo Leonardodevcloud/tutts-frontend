@@ -20336,7 +20336,7 @@ const hideLoadingScreen = () => {
         })())), "disponibilidade" === adminTabEfetivo && (
             typeof window.ModuloDisponibilidadeContent !== 'undefined' 
                 ? React.createElement(window.ModuloDisponibilidadeContent, {
-                    p, x, ja, API_URL, pe, Ta, A, l, fetchAuth
+                    p, x, ja, API_URL, pe, Ta, A, l, fetchAuth, getToken
                 })
                 : React.createElement("div", {className: "flex items-center justify-center py-12"},
                     React.createElement("div", {className: "text-center"},
