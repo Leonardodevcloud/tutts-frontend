@@ -388,7 +388,7 @@ const SISTEMA_MODULOS_CONFIG = [
       abas: [{id: "panorama", label: "Panorama"}, {id: "principal", label: "Principal"}, {id: "faltosos", label: "Faltosos"}, {id: "espelho", label: "Espelho"}, {id: "relatorios", label: "Relatórios"}, {id: "motoboys", label: "Motoboys"}, {id: "restricoes", label: "Restrições"}, {id: "config", label: "Configurações"}]
     },
     { id: "bi", label: "BI", icon: "📊",
-      abas: [{id: "home-bi", label: "🏠 Home"}, {id: "dashboard", label: "Dashboard"}, {id: "acompanhamento", label: "Acompanhamento"}, {id: "profissionais", label: "Por Profissional"}, {id: "garantido", label: "Garantido"}, {id: "os", label: "Análise por OS"}, {id: "chat-ia", label: "💬 Chat IA"}, {id: "upload", label: "Upload"}, {id: "config", label: "Configurações"}]
+      abas: [{id: "home-bi", label: "🏠 Home"}, {id: "dashboard", label: "📊 Dashboard"}, {id: "acompanhamento", label: "📈 Acompanhamento"}, {id: "profissionais", label: "👤 Por Profissional"}, {id: "garantido", label: "💰 Garantido"}, {id: "os", label: "📋 Análise por OS"}, {id: "cliente767", label: "🏢 Cliente 767"}, {id: "chat-ia", label: "💬 Chat IA"}, {id: "relatorio-ia", label: "🤖 Relatório IA"}, {id: "upload", label: "📤 Upload"}, {id: "config", label: "⚙️ Configurações"}]
     },
     { id: "todo", label: "TO-DO", icon: "📝",
       abas: [{id: "tarefas", label: "Tarefas"}, {id: "metricas", label: "Métricas"}]
@@ -14334,7 +14334,9 @@ const hideLoadingScreen = () => {
                 value: e
             }, e))))), React.createElement("div", {
                 className: "grid grid-cols-1 md:grid-cols-2 gap-4"
-            }, React.createElement("div", {
+            }, 
+            // ===== CLIENTE - CHECKBOXES =====
+            React.createElement("div", {
                 className: "border rounded-lg p-4 bg-purple-50"
             }, React.createElement("div", {
                 className: "flex justify-between items-center mb-3"
@@ -14362,23 +14364,10 @@ const hideLoadingScreen = () => {
                 onChange: e => setBuscaClienteModal(e.target.value),
                 className: "w-full px-3 py-2 border-2 border-purple-200 rounded-lg text-sm mb-2 focus:border-purple-500 focus:ring-2 focus:ring-purple-200"
             }),
-            React.createElement("select", {
-                multiple: !0,
-                size: "10",
-                value: ua.cod_cliente || [],
-                onChange: e => {
-                    const t = Array.from(e.target.selectedOptions, e => e.value),
-                        a = {
-                            ...ua,
-                            cod_cliente: t,
-                            centro_custo: [],
-                            regiao: ""
-                        };
-                    ga(a), rl(a)
-                },
-                className: "w-full px-3 py-2 border-2 border-purple-200 rounded-lg text-sm bg-white focus:border-purple-500 focus:ring-2 focus:ring-purple-200"
+            // Lista com checkboxes
+            React.createElement("div", {
+                className: "max-h-64 overflow-y-auto border-2 border-purple-200 rounded-lg bg-white"
             }, (function() {
-                // Filtrar e remover duplicatas por cod_cliente
                 var clientesUnicos = [];
                 var codigosVistos = {};
                 ia.filter(function(e) {
@@ -14394,13 +14383,35 @@ const hideLoadingScreen = () => {
                     }
                 });
                 return clientesUnicos;
-            })().map(e => React.createElement("option", {
-                key: e.cod_cliente,
-                value: String(e.cod_cliente),
-                className: "py-1"
-            }, e.cod_cliente, " - ", il(e.cod_cliente) || e.nome_cliente || "Cliente"))), React.createElement("p", {
+            })().map(function(cliente) {
+                var isChecked = (ua.cod_cliente || []).includes(String(cliente.cod_cliente));
+                return React.createElement("label", {
+                    key: cliente.cod_cliente,
+                    className: "flex items-center gap-2 px-3 py-2 hover:bg-purple-50 cursor-pointer border-b border-gray-100 last:border-b-0 " + (isChecked ? "bg-purple-100" : "")
+                },
+                    React.createElement("input", {
+                        type: "checkbox",
+                        checked: isChecked,
+                        onChange: function() {
+                            var codStr = String(cliente.cod_cliente);
+                            var current = ua.cod_cliente || [];
+                            var next = isChecked ? current.filter(function(c) { return c !== codStr; }) : current.concat([codStr]);
+                            var newUa = Object.assign({}, ua, { cod_cliente: next, regiao: "" });
+                            ga(newUa);
+                            rl(newUa);
+                        },
+                        className: "w-4 h-4 rounded border-purple-300 text-purple-600 focus:ring-purple-500"
+                    }),
+                    React.createElement("span", {className: "text-sm " + (isChecked ? "font-semibold text-purple-800" : "text-gray-700")},
+                        cliente.cod_cliente, " - ", il(cliente.cod_cliente) || cliente.nome_cliente || "Cliente"
+                    )
+                );
+            })), React.createElement("p", {
                 className: "text-xs text-purple-600 mt-2"
-            }, "💡 Ctrl+Click para multi-seleção | Sem seleção = Todas")), React.createElement("div", {
+            }, "💡 Marque os clientes desejados | Sem seleção = Todas")), 
+            
+            // ===== CENTRO DE CUSTO - CHECKBOXES =====
+            React.createElement("div", {
                 className: "border rounded-lg p-4 bg-green-50"
             }, React.createElement("div", {
                 className: "flex justify-between items-center mb-3"
@@ -14417,21 +14428,10 @@ const hideLoadingScreen = () => {
                 className: "text-xs bg-green-200 text-green-800 px-2 py-1 rounded-full font-semibold hover:bg-green-300 cursor-pointer"
             }, (ua.centro_custo || []).length, " selecionado(s) ✕") : React.createElement("span", {
                 className: "text-xs text-green-600"
-            }, "Todos")), React.createElement("select", {
-                multiple: !0,
-                size: "10",
-                value: ua.centro_custo || [],
-                onChange: e => {
-                    const t = Array.from(e.target.selectedOptions, e => e.value),
-                        a = {
-                            ...ua,
-                            centro_custo: t
-                        };
-                    ga(a), rl(a)
-                },
-                className: "w-full px-3 py-2 border-2 border-green-200 rounded-lg text-sm bg-white focus:border-green-500 focus:ring-2 focus:ring-green-200"
+            }, "Todos")), 
+            React.createElement("div", {
+                className: "max-h-64 overflow-y-auto border-2 border-green-200 rounded-lg bg-white"
             }, (function() {
-                // Remover duplicatas de centro de custo
                 var centrosUnicos = [];
                 var centrosVistos = {};
                 kt.forEach(function(e) {
@@ -14441,16 +14441,32 @@ const hideLoadingScreen = () => {
                     }
                 });
                 return centrosUnicos;
-            })().map(e => {
-                const t = Object.keys(Tt).find(t => (Tt[t] || []).includes(e.centro_custo));
-                return React.createElement("option", {
-                    key: e.centro_custo,
-                    value: e.centro_custo,
-                    className: "py-1"
-                }, t ? t + " - " : "", e.centro_custo)
+            })().map(function(cc) {
+                var isChecked = (ua.centro_custo || []).includes(cc.centro_custo);
+                var clienteDoCC = Object.keys(Tt).find(function(t) { return (Tt[t] || []).includes(cc.centro_custo); });
+                return React.createElement("label", {
+                    key: cc.centro_custo,
+                    className: "flex items-center gap-2 px-3 py-2 hover:bg-green-50 cursor-pointer border-b border-gray-100 last:border-b-0 " + (isChecked ? "bg-green-100" : "")
+                },
+                    React.createElement("input", {
+                        type: "checkbox",
+                        checked: isChecked,
+                        onChange: function() {
+                            var current = ua.centro_custo || [];
+                            var next = isChecked ? current.filter(function(c) { return c !== cc.centro_custo; }) : current.concat([cc.centro_custo]);
+                            var newUa = Object.assign({}, ua, { centro_custo: next });
+                            ga(newUa);
+                            rl(newUa);
+                        },
+                        className: "w-4 h-4 rounded border-green-300 text-green-600 focus:ring-green-500"
+                    }),
+                    React.createElement("span", {className: "text-sm " + (isChecked ? "font-semibold text-green-800" : "text-gray-700")},
+                        clienteDoCC ? clienteDoCC + " - " : "", cc.centro_custo
+                    )
+                );
             })), React.createElement("p", {
                 className: "text-xs text-green-600 mt-2"
-            }, "💡 Ctrl+Click para multi-seleção | Sem seleção = Todos")))), React.createElement("div", {
+            }, "💡 Marque os centros desejados | Sem seleção = Todos")))), React.createElement("div", {
                 className: "sticky bottom-0 bg-gray-100 px-6 py-4 flex justify-between border-t"
             }, React.createElement("button", {
                 onClick: () => {
@@ -14637,6 +14653,21 @@ const hideLoadingScreen = () => {
                                 ),
                                 React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Relatório IA"),
                                 React.createElement("p", {className: "text-sm text-gray-500"}, "Análises automáticas com Inteligência Artificial e geração de documentos.")
+                            )
+                        ),
+                        
+                        // Card Chat IA
+                        React.createElement("div", {
+                            onClick: () => { ht("chat-ia"); },
+                            className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-indigo-300"
+                        },
+                            React.createElement("div", {className: "h-2 bg-gradient-to-r from-indigo-500 to-blue-600"}),
+                            React.createElement("div", {className: "p-6"},
+                                React.createElement("div", {className: "w-14 h-14 bg-indigo-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
+                                    React.createElement("span", {className: "text-3xl"}, "💬")
+                                ),
+                                React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Chat IA"),
+                                React.createElement("p", {className: "text-sm text-gray-500"}, "Converse com a IA para consultar dados, gerar SQL e exportar relatórios.")
                             )
                         ),
                         
@@ -16503,14 +16534,14 @@ const hideLoadingScreen = () => {
                 !garantidoLoading && garantidoSubTab === 'analise' && React.createElement("div", {className: "bg-white rounded-xl shadow-lg overflow-hidden"},
                     React.createElement("div", {className: "overflow-x-auto"},
                         React.createElement("table", {className: "w-full"},
-                            React.createElement("thead", {className: "bg-gradient-to-r from-purple-100 to-purple-200"},
+                            React.createElement("thead", {className: "bg-gradient-to-r from-purple-100 to-purple-200 sticky top-0"},
                                 React.createElement("tr", null,
                                     React.createElement("th", {className: "px-3 py-3 text-left text-xs font-bold text-purple-800"}, "Data"),
                                     React.createElement("th", {className: "px-3 py-3 text-left text-xs font-bold text-purple-800"}, "Cód. Prof."),
                                     React.createElement("th", {className: "px-3 py-3 text-left text-xs font-bold text-purple-800"}, "Profissional"),
+                                    React.createElement("th", {className: "px-3 py-3 text-left text-xs font-bold text-purple-800"}, "Cliente"),
                                     React.createElement("th", {className: "px-3 py-3 text-left text-xs font-bold text-purple-800"}, "Onde Rodou?"),
                                     React.createElement("th", {className: "px-3 py-3 text-center text-xs font-bold text-purple-800"}, "Entregas"),
-                                    React.createElement("th", {className: "px-3 py-3 text-center text-xs font-bold text-purple-800"}, "Distância"),
                                     React.createElement("th", {className: "px-3 py-3 text-right text-xs font-bold text-purple-800"}, "Negociado"),
                                     React.createElement("th", {className: "px-3 py-3 text-right text-xs font-bold text-purple-800"}, "Produção"),
                                     React.createElement("th", {className: "px-3 py-3 text-right text-xs font-bold text-purple-800"}, "Complemento"),
@@ -16523,93 +16554,139 @@ const hideLoadingScreen = () => {
                                         "Nenhum dado encontrado. Ajuste os filtros ou verifique a planilha de garantido."
                                     )
                                 ),
-                                garantidoData.map((row, idx) => {
-                                    const statusKey = `${row.cod_prof}_${row.data}_${row.cod_cliente_garantido}`;
-                                    const statusInfo = garantidoStatusMap[statusKey];
-                                    const statusAtual = statusInfo?.status || 'analise';
-                                    
-                                    return React.createElement("tr", {
-                                        key: idx,
-                                        className: (row.status === 'nao_rodou' ? 'bg-gray-100' : 
-                                                   row.status === 'abaixo' ? 'bg-red-50' : 'bg-green-50') + 
-                                                  " border-b hover:bg-opacity-80"
-                                    },
-                                        React.createElement("td", {className: "px-3 py-2 text-sm"}, 
-                                            new Date(row.data + 'T12:00:00').toLocaleDateString('pt-BR')
-                                        ),
-                                        React.createElement("td", {className: "px-3 py-2 text-sm font-mono"}, row.cod_prof),
-                                        React.createElement("td", {className: "px-3 py-2 text-sm font-semibold"}, row.profissional),
-                                        React.createElement("td", {className: "px-3 py-2 text-sm"}, row.onde_rodou),
-                                        React.createElement("td", {className: "px-3 py-2 text-sm text-center"}, row.entregas),
-                                        React.createElement("td", {className: "px-3 py-2 text-sm text-center"}, 
-                                            row.distancia ? row.distancia.toFixed(2) + ' KM' : '-'
-                                        ),
-                                        React.createElement("td", {className: "px-3 py-2 text-sm text-right font-semibold"}, 
-                                            "R$", row.valor_negociado?.toFixed(2)
-                                        ),
-                                        React.createElement("td", {className: "px-3 py-2 text-sm text-right font-semibold"}, 
-                                            "R$", row.valor_produzido?.toFixed(2)
-                                        ),
-                                        React.createElement("td", {className: "px-3 py-2 text-right"},
-                                            React.createElement("span", {
-                                                className: "inline-flex items-center gap-1 px-2 py-1 rounded text-sm font-bold " +
-                                                    (row.complemento > 0 ? 'bg-red-200 text-red-800' : 'bg-green-200 text-green-800')
-                                            },
-                                                row.complemento > 0 ? '🔴' : '🟢',
-                                                " R$", row.complemento?.toFixed(2)
-                                            )
-                                        ),
-                                        // Coluna de Status com dropdown
-                                        React.createElement("td", {className: "px-3 py-2 text-center"},
-                                            React.createElement("div", {className: "flex flex-col items-center gap-1"},
-                                                React.createElement("select", {
-                                                    value: statusAtual,
-                                                    onChange: (e) => {
-                                                        const novoStatus = e.target.value;
-                                                        if (novoStatus === 'reprovado') {
-                                                            setGarantidoModalStatus(row);
-                                                            setGarantidoMotivoReprovado('');
-                                                        } else {
-                                                            salvarStatusGarantido(row, novoStatus);
-                                                        }
-                                                    },
-                                                    className: "px-2 py-1 text-xs font-semibold rounded border " +
-                                                        (statusAtual === 'lancado' ? 'bg-green-100 text-green-800 border-green-300' :
-                                                         statusAtual === 'reprovado' ? 'bg-red-100 text-red-800 border-red-300' :
-                                                         'bg-yellow-100 text-yellow-800 border-yellow-300')
+                                // Agrupar por cliente e renderizar com separadores
+                                (function() {
+                                    // Ordenar por cod_cliente_garantido, depois por profissional
+                                    var sorted = [...garantidoData].sort(function(a, b) {
+                                        var ca = String(a.cod_cliente_garantido || '');
+                                        var cb = String(b.cod_cliente_garantido || '');
+                                        if (ca !== cb) return ca.localeCompare(cb, 'pt-BR', {numeric: true});
+                                        return (a.profissional || '').localeCompare(b.profissional || '', 'pt-BR');
+                                    });
+                                    var rows = [];
+                                    var lastCliente = null;
+                                    sorted.forEach(function(row, idx) {
+                                        var clienteKey = String(row.cod_cliente_garantido || 'Sem cliente');
+                                        // Separador de grupo por cliente
+                                        if (clienteKey !== lastCliente) {
+                                            lastCliente = clienteKey;
+                                            var clienteNome = il(row.cod_cliente_garantido) || row.nome_cliente_garantido || '';
+                                            var qtdCliente = sorted.filter(function(r) { return String(r.cod_cliente_garantido || '') === clienteKey; }).length;
+                                            rows.push(React.createElement("tr", {key: 'group-' + clienteKey + '-' + idx},
+                                                React.createElement("td", {colSpan: 10, className: "px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold text-sm"},
+                                                    "🏢 Cliente ", clienteKey, clienteNome ? " — " + clienteNome : "", " (", qtdCliente, " registro", qtdCliente > 1 ? "s" : "", ")"
+                                                )
+                                            ));
+                                        }
+                                        // Determinar status automático e cor da linha
+                                        var statusKey = row.cod_prof + '_' + row.data + '_' + row.cod_cliente_garantido;
+                                        var statusInfo = garantidoStatusMap[statusKey];
+                                        var statusSalvo = statusInfo?.status || null;
+                                        var autoStatus = null;
+                                        var rowBg = '';
+                                        
+                                        if (row.status === 'nao_rodou' || (row.entregas === 0 && (!row.valor_produzido || row.valor_produzido === 0))) {
+                                            autoStatus = 'nao_rodou';
+                                        } else if (row.valor_produzido > row.valor_negociado) {
+                                            autoStatus = 'ultrapassou';
+                                        }
+                                        
+                                        // Status efetivo: salvo pelo admin tem prioridade, senão auto
+                                        var statusEfetivo = statusSalvo || autoStatus || 'analise';
+                                        
+                                        // Cores da linha
+                                        if (statusEfetivo === 'lancado') rowBg = 'bg-green-100';
+                                        else if (statusEfetivo === 'reprovado') rowBg = 'bg-red-100';
+                                        else if (statusEfetivo === 'nao_rodou') rowBg = 'bg-orange-100';
+                                        else if (statusEfetivo === 'ultrapassou') rowBg = 'bg-blue-100';
+                                        else if (row.status === 'abaixo') rowBg = 'bg-yellow-50';
+                                        else rowBg = 'bg-white';
+
+                                        rows.push(React.createElement("tr", {
+                                            key: idx,
+                                            className: rowBg + " border-b hover:brightness-95 transition-colors"
+                                        },
+                                            React.createElement("td", {className: "px-3 py-2 text-sm"}, 
+                                                new Date(row.data + 'T12:00:00').toLocaleDateString('pt-BR')
+                                            ),
+                                            React.createElement("td", {className: "px-3 py-2 text-sm font-mono"}, row.cod_prof),
+                                            React.createElement("td", {className: "px-3 py-2 text-sm font-semibold"}, row.profissional),
+                                            React.createElement("td", {className: "px-3 py-2 text-sm text-purple-700 font-medium"}, row.cod_cliente_garantido),
+                                            React.createElement("td", {className: "px-3 py-2 text-sm"}, row.onde_rodou),
+                                            React.createElement("td", {className: "px-3 py-2 text-sm text-center"}, row.entregas),
+                                            React.createElement("td", {className: "px-3 py-2 text-sm text-right font-semibold"}, 
+                                                "R$", row.valor_negociado?.toFixed(2)
+                                            ),
+                                            React.createElement("td", {className: "px-3 py-2 text-sm text-right font-semibold"}, 
+                                                "R$", row.valor_produzido?.toFixed(2)
+                                            ),
+                                            React.createElement("td", {className: "px-3 py-2 text-right"},
+                                                React.createElement("span", {
+                                                    className: "inline-flex items-center gap-1 px-2 py-1 rounded text-sm font-bold " +
+                                                        (row.complemento > 0 ? 'bg-red-200 text-red-800' : 'bg-green-200 text-green-800')
                                                 },
-                                                    React.createElement("option", {value: "analise"}, "🔍 Análise"),
-                                                    React.createElement("option", {value: "lancado"}, "✅ Lançado"),
-                                                    React.createElement("option", {value: "reprovado"}, "❌ Reprovado")
-                                                ),
-                                                // Mostrar info de quem alterou
-                                                statusInfo?.alterado_por && React.createElement("div", {className: "text-xs text-gray-500"},
-                                                    statusInfo.alterado_por
-                                                ),
-                                                statusInfo?.alterado_em && React.createElement("div", {className: "text-xs text-gray-400"},
-                                                    new Date(statusInfo.alterado_em).toLocaleString('pt-BR', {
-                                                        day: '2-digit', month: '2-digit', year: '2-digit',
-                                                        hour: '2-digit', minute: '2-digit'
-                                                    })
-                                                ),
-                                                // Mostrar motivo se reprovado
-                                                statusAtual === 'reprovado' && statusInfo?.motivo_reprovado && 
-                                                    React.createElement("div", {
-                                                        className: "text-xs text-red-600 italic max-w-32 truncate",
-                                                        title: statusInfo.motivo_reprovado
-                                                    }, "📝 ", statusInfo.motivo_reprovado)
+                                                    row.complemento > 0 ? '🔴' : '🟢',
+                                                    " R$", row.complemento?.toFixed(2)
+                                                )
+                                            ),
+                                            // Coluna de Status com dropdown
+                                            React.createElement("td", {className: "px-3 py-2 text-center"},
+                                                React.createElement("div", {className: "flex flex-col items-center gap-1"},
+                                                    React.createElement("select", {
+                                                        value: statusEfetivo,
+                                                        onChange: function(e) {
+                                                            var novoStatus = e.target.value;
+                                                            if (novoStatus === 'reprovado') {
+                                                                setGarantidoModalStatus(row);
+                                                                setGarantidoMotivoReprovado('');
+                                                            } else {
+                                                                salvarStatusGarantido(row, novoStatus);
+                                                            }
+                                                        },
+                                                        className: "px-2 py-1 text-xs font-semibold rounded border " +
+                                                            (statusEfetivo === 'lancado' ? 'bg-green-200 text-green-800 border-green-400' :
+                                                             statusEfetivo === 'reprovado' ? 'bg-red-200 text-red-800 border-red-400' :
+                                                             statusEfetivo === 'nao_rodou' ? 'bg-orange-200 text-orange-800 border-orange-400' :
+                                                             statusEfetivo === 'ultrapassou' ? 'bg-blue-200 text-blue-800 border-blue-400' :
+                                                             'bg-yellow-100 text-yellow-800 border-yellow-300')
+                                                    },
+                                                        React.createElement("option", {value: "analise"}, "🔍 Análise"),
+                                                        React.createElement("option", {value: "nao_rodou"}, "🟠 Não Rodou"),
+                                                        React.createElement("option", {value: "ultrapassou"}, "🔵 Ultrapassou Negociado"),
+                                                        React.createElement("option", {value: "lancado"}, "✅ Lançado"),
+                                                        React.createElement("option", {value: "reprovado"}, "❌ Reprovado")
+                                                    ),
+                                                    // Indicador de auto-status
+                                                    !statusSalvo && autoStatus && React.createElement("span", {
+                                                        className: "text-[10px] italic " + (autoStatus === 'nao_rodou' ? 'text-orange-600' : 'text-blue-600')
+                                                    }, "auto"),
+                                                    // Mostrar info de quem alterou
+                                                    statusInfo?.alterado_por && React.createElement("div", {className: "text-xs text-gray-500"},
+                                                        statusInfo.alterado_por
+                                                    ),
+                                                    statusInfo?.alterado_em && React.createElement("div", {className: "text-xs text-gray-400"},
+                                                        new Date(statusInfo.alterado_em).toLocaleString('pt-BR', {
+                                                            day: '2-digit', month: '2-digit', year: '2-digit',
+                                                            hour: '2-digit', minute: '2-digit'
+                                                        })
+                                                    ),
+                                                    // Mostrar motivo se reprovado
+                                                    statusEfetivo === 'reprovado' && statusInfo?.motivo_reprovado && 
+                                                        React.createElement("div", {
+                                                            className: "text-xs text-red-600 italic max-w-32 truncate",
+                                                            title: statusInfo.motivo_reprovado
+                                                        }, "📝 ", statusInfo.motivo_reprovado)
+                                                )
                                             )
-                                        )
-                                    );
-                                }),
+                                        ));
+                                    });
+                                    return rows;
+                                })(),
                                 // Linha de totais
                                 garantidoData.length > 0 && React.createElement("tr", {className: "bg-purple-200 font-bold"},
-                                    React.createElement("td", {colSpan: 4, className: "px-3 py-3 text-right text-purple-800"}, "Total"),
+                                    React.createElement("td", {colSpan: 5, className: "px-3 py-3 text-right text-purple-800"}, "Total"),
                                     React.createElement("td", {className: "px-3 py-3 text-center text-purple-800"}, 
                                         garantidoStats?.total_entregas || garantidoData.reduce((s, r) => s + r.entregas, 0)
-                                    ),
-                                    React.createElement("td", {className: "px-3 py-3 text-center text-purple-800"}, 
-                                        (garantidoStats?.total_distancia || garantidoData.reduce((s, r) => s + (r.distancia || 0), 0)).toFixed(2), " KM"
                                     ),
                                     React.createElement("td", {className: "px-3 py-3 text-right text-purple-800"}, 
                                         "R$", (garantidoStats?.total_negociado || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})
