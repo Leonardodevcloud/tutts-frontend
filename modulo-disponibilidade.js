@@ -18,12 +18,23 @@
             // Usuários
             A, l,
             // Auth
-            fetchAuth
+            fetchAuth,
+            // Token getter for WebSocket
+            getToken
         } = props;
 
         // ===== CÓDIGO DO MÓDULO DISPONIBILIDADE =====
         // Fallback: se fetchAuth não vier nas props, usa fetch normal
-        const _fetch = fetchAuth || fetch;
+        const _baseFetch = fetchAuth || fetch;
+        // Ref para wsId — atualizada pelo WebSocket onauth
+        const _dispWsIdRef = React.useRef(null);
+        const _fetch = function(url, opts) {
+            opts = opts || {};
+            if (_dispWsIdRef.current) {
+                opts.headers = Object.assign({}, opts.headers || {}, { 'x-ws-id': _dispWsIdRef.current });
+            }
+            return _baseFetch(url, opts);
+        };
                     const e = p.dispData || {
                     regioes: [],
                     lojas: [],
@@ -55,6 +66,96 @@
                     }
                 };
             p.dispLoaded || a || (r(), 0 === pe.length && Ta());
+
+            // ===== WEBSOCKET — Sincronização em tempo real entre admins =====
+            const _dispWsRef = React.useRef(null);
+            const _dispWsReconnect = React.useRef(null);
+
+            React.useEffect(function() {
+                if (!l || !API_URL) return;
+
+                function conectar() {
+                    try {
+                        var wsUrl = API_URL.replace('https://', 'wss://').replace('http://', 'ws://').replace('/api', '') + '/ws/disponibilidade';
+                        console.log('🔌 [WS-Disp] Conectando:', wsUrl);
+                        var ws = new WebSocket(wsUrl);
+
+                        ws.onopen = function() {
+                            console.log('✅ [WS-Disp] Conectado!');
+                            var token = getToken ? getToken() : null;
+                            if (token) {
+                                ws.send(JSON.stringify({ type: 'AUTH', token: token }));
+                            }
+                            if (_dispWsReconnect.current) {
+                                clearTimeout(_dispWsReconnect.current);
+                                _dispWsReconnect.current = null;
+                            }
+                        };
+
+                        ws.onmessage = function(event) {
+                            try {
+                                var data = JSON.parse(event.data);
+                                if (data.event === 'AUTH_SUCCESS') {
+                                    _dispWsIdRef.current = data.wsId;
+                                    console.log('✅ [WS-Disp] Autenticado, wsId:', data.wsId);
+                                    return;
+                                }
+                                if (data.event === 'PONG' || data.event === 'CONNECTED') return;
+                                if (data.event === 'AUTH_ERROR') {
+                                    console.error('❌ [WS-Disp] Auth error:', data.error);
+                                    return;
+                                }
+
+                                // Qualquer evento de mudança → recarregar dados
+                                console.log('📡 [WS-Disp] Evento recebido:', data.event, data.data?.reason || '');
+                                r();
+                            } catch (err) {
+                                console.error('❌ [WS-Disp] Erro parse:', err);
+                            }
+                        };
+
+                        ws.onclose = function() {
+                            console.log('🔌 [WS-Disp] Desconectado');
+                            _dispWsRef.current = null;
+                            if (!_dispWsReconnect.current) {
+                                _dispWsReconnect.current = setTimeout(conectar, 5000);
+                            }
+                        };
+
+                        ws.onerror = function() {
+                            console.error('❌ [WS-Disp] Erro na conexão');
+                        };
+
+                        _dispWsRef.current = ws;
+                    } catch (err) {
+                        console.error('❌ [WS-Disp] Falha ao criar WS:', err);
+                        if (!_dispWsReconnect.current) {
+                            _dispWsReconnect.current = setTimeout(conectar, 5000);
+                        }
+                    }
+                }
+
+                // Ping a cada 30s para manter conexão viva
+                var pingInterval = setInterval(function() {
+                    if (_dispWsRef.current && _dispWsRef.current.readyState === WebSocket.OPEN) {
+                        _dispWsRef.current.send(JSON.stringify({ type: 'PING' }));
+                    }
+                }, 30000);
+
+                conectar();
+
+                return function() {
+                    clearInterval(pingInterval);
+                    if (_dispWsReconnect.current) clearTimeout(_dispWsReconnect.current);
+                    if (_dispWsRef.current) {
+                        _dispWsRef.current.onclose = null;
+                        _dispWsRef.current.close();
+                        _dispWsRef.current = null;
+                    }
+                };
+            }, [l?.codProfissional]);
+            // ===== FIM WEBSOCKET =====
+
             const o = async () => {
                 const e = p.novaRegiao?.trim();
                 if (e) try {
@@ -78,21 +179,11 @@
                 } catch (e) {
                     ja(e.message, "error")
                 } else ja("Digite o nome da região", "error")
-            }, c = async (t, a, l) => {
+            }, c = (t, a, l) => {
                 const r = [...e.linhas || []],
                     o = r.findIndex(e => e.id === t);
                 if (-1 === o) return;
-                const c = r[o];
-                if ("cod_profissional" === a && l && "" !== l.trim()) try {
-                    const e = await _fetch(`${API_URL}/disponibilidade/restricoes/verificar?cod_profissional=${l}&loja_id=${c.loja_id}`),
-                        t = await e.json();
-                    if (t.restrito) {
-                        const e = t.todas_lojas ? "TODAS AS LOJAS" : `loja ${t.loja_codigo} - ${t.loja_nome}`;
-                        return void alert(`🚫 MOTOBOY RESTRITO!\n\nCódigo: ${l}\nRestrito em: ${e}\n\nMotivo: ${t.motivo}\n\nEste motoboy não pode ser inserido nesta loja.`)
-                    }
-                } catch (e) {
-                    console.error("Erro ao verificar restrição:", e)
-                }
+                // Atualização OTIMISTA IMEDIATA — sem await, sem travar o input
                 r[o] = {
                     ...r[o],
                     [a]: l
@@ -115,8 +206,41 @@
                         ...e,
                         linhas: r
                     }
-                })), clearTimeout(window.dispDebounce), window.dispDebounce = setTimeout(async () => {
+                }));
+                // Debounce: verificar restrição + salvar no backend
+                const debounceKey = 'dispDebounce_' + t + '_' + a;
+                clearTimeout(window[debounceKey]);
+                window[debounceKey] = setTimeout(async () => {
                     try {
+                        // Verificar restrição apenas para cod_profissional com valor
+                        if ("cod_profissional" === a && l && "" !== l.trim()) {
+                            try {
+                                const resp = await _fetch(`${API_URL}/disponibilidade/restricoes/verificar?cod_profissional=${l}&loja_id=${r[o].loja_id}`),
+                                    dados = await resp.json();
+                                if (dados.restrito) {
+                                    const lojaDesc = dados.todas_lojas ? "TODAS AS LOJAS" : `loja ${dados.loja_codigo} - ${dados.loja_nome}`;
+                                    alert(`🚫 MOTOBOY RESTRITO!\n\nCódigo: ${l}\nRestrito em: ${lojaDesc}\n\nMotivo: ${dados.motivo}\n\nEste motoboy não pode ser inserido nesta loja.`);
+                                    // Limpar o código do motoboy restrito
+                                    x(prev => {
+                                        const linhas = [...(prev.dispData?.linhas || [])];
+                                        const idx = linhas.findIndex(e => e.id === t);
+                                        if (idx !== -1) {
+                                            linhas[idx] = { ...linhas[idx], cod_profissional: "", nome_profissional: "" };
+                                        }
+                                        return { ...prev, dispData: { ...prev.dispData, linhas } };
+                                    });
+                                    // Limpar no backend também
+                                    await _fetch(`${API_URL}/disponibilidade/linhas/${t}`, {
+                                        method: "PUT",
+                                        headers: { "Content-Type": "application/json" },
+                                        body: JSON.stringify({ cod_profissional: null, nome_profissional: null, status: r[o].status, observacao: r[o].observacao })
+                                    });
+                                    return;
+                                }
+                            } catch (err) {
+                                console.error("Erro ao verificar restrição:", err);
+                            }
+                        }
                         const usuarioLogado = JSON.parse(sessionStorage.getItem("tutts_user") || "{}");
                         await _fetch(`${API_URL}/disponibilidade/linhas/${t}`, {
                             method: "PUT",
@@ -134,7 +258,7 @@
                     } catch (e) {
                         console.error("Erro ao salvar linha:", e)
                     }
-                }, 500)
+                }, 600)
             }, s = async (e, t, a = !1) => {
                 try {
                     await _fetch(`${API_URL}/disponibilidade/linhas`, {
@@ -182,7 +306,7 @@
                 className: "flex items-center gap-1"
             }, React.createElement("span", {
                 className: "w-2 h-2 bg-green-500 rounded-full animate-pulse"
-            }), "Sincronização automática ativa (10s)")), React.createElement("div", {
+            }), "Sincronização em tempo real ativa")), React.createElement("div", {
                 className: "bg-white rounded-xl shadow"
             }, React.createElement("div", {
                 className: "flex border-b overflow-x-auto"
