@@ -175,7 +175,14 @@
           if (data.status === 'sucesso') {
             pararPolling(); setFase('sucesso'); setLoading(false);
           } else if (data.status === 'erro') {
-            pararPolling(); setDetalhe(data.detalhe_erro || 'Erro desconhecido.'); setFase('erro'); setLoading(false);
+            const erro = data.detalhe_erro || 'Erro desconhecido.';
+            pararPolling();
+            if (erro.includes('ENDERECO_JA_CORRIGIDO') || erro.includes('já foi corrigido anteriormente')) {
+              setFase('ja_corrigido');
+            } else {
+              setDetalhe(erro); setFase('erro');
+            }
+            setLoading(false);
           }
         } catch {}
       }, POLLING_INTERVAL);
@@ -325,6 +332,27 @@
         h('div', { style: { width: '8px', height: '8px', borderRadius: '50%', background: '#7C3AED', animation: 'agentPulse 1s 0.2s infinite' } }),
         h('div', { style: { width: '8px', height: '8px', borderRadius: '50%', background: '#7C3AED', animation: 'agentPulse 1s 0.4s infinite' } })
       )
+    );
+
+    // Fase: endereço já corrigido anteriormente
+    if (fase === 'ja_corrigido') return h('div', { className: 'flex flex-col items-center justify-center py-10 px-6 text-center' },
+      h('div', { className: 'w-20 h-20 rounded-full bg-orange-100 flex items-center justify-center mb-6' },
+        h('span', { className: 'text-4xl' }, '🔒')
+      ),
+      h('h2', { className: 'text-xl font-bold text-orange-700 mb-4' }, 'Endereço já alterado'),
+      h('div', { className: 'bg-orange-50 border border-orange-300 rounded-xl p-5 mb-6 max-w-md' },
+        h('p', { className: 'text-sm text-orange-800 leading-relaxed font-semibold' },
+          'Esse endereço já havia sido alterado anteriormente no sistema.'
+        ),
+        h('p', { className: 'text-sm text-orange-800 leading-relaxed mt-3' },
+          'Por favor, refaça a solicitação diretamente com o suporte Tutts.'
+        )
+      ),
+      h('button', {
+        onClick: resetar,
+        className: 'px-8 py-3 rounded-xl font-semibold text-white',
+        style: { background: 'linear-gradient(135deg, #550776, #7c3aed)' },
+      }, '↩ Voltar')
     );
 
     // Fase: foto rejeitada pela IA
