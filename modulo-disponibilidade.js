@@ -329,7 +329,7 @@
                             }
                         }
                         const usuarioLogado = JSON.parse(sessionStorage.getItem("tutts_user") || "{}");
-                        await _fetch(`${API_URL}/disponibilidade/linhas/${t}`, {
+                        const putResp = await _fetch(`${API_URL}/disponibilidade/linhas/${t}`, {
                             method: "PUT",
                             headers: {
                                 "Content-Type": "application/json"
@@ -342,7 +342,20 @@
                                 observacao_usuario: usuarioLogado?.fullName || "Sistema",
                                 status_usuario: usuarioLogado?.fullName || "Sistema"
                             })
-                        })
+                        });
+                        if (putResp && putResp.ok) {
+                            try {
+                                const linhaAtualizada = await putResp.json();
+                                if (linhaAtualizada && linhaAtualizada.id) {
+                                    _dispLocalEdits.current[linhaAtualizada.id] = Date.now();
+                                    _dispSetStateRef.current(function(prev) {
+                                        var dd = prev.dispData;
+                                        if (!dd || !dd.linhas) return prev;
+                                        return Object.assign({}, prev, { dispData: Object.assign({}, dd, { linhas: dd.linhas.map(function(li) { return li.id === linhaAtualizada.id ? Object.assign({}, li, linhaAtualizada) : li; }) }) });
+                                    });
+                                }
+                            } catch(parseErr) {}
+                        }
                     } catch (e) {
                         console.error("Erro ao salvar linha:", e)
                     }
