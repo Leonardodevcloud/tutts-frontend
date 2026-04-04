@@ -344,26 +344,26 @@
       h('style', {}, `
         @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(350%); } }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        @keyframes argosWave { 0%, 100% { height: 4px; } 50% { height: 32px; } }
+        @keyframes argosWave { 0%, 100% { height: 5px; } 50% { height: 52px; } }
         @keyframes argosSlideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
       `),
 
       // ── OVERLAY ARGOS ──
       totalAtivos > 0 && h('div', {
         style: {
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999,
-          background: 'rgba(15, 14, 26, 0.85)',
+          position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 99999,
+          background: 'rgba(15, 14, 26, 0.88)',
           backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
-          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '28px',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '36px',
         }
       },
         // Wave bars
-        h('div', { style: { display: 'flex', alignItems: 'center', gap: '3px', height: '44px' },
+        h('div', { style: { display: 'flex', alignItems: 'center', gap: '4px', height: '64px' },
           ref: (el) => {
             if (el && el.childNodes.length === 0) {
-              for (let i = 0; i < 28; i++) {
+              for (let i = 0; i < 36; i++) {
                 const bar = document.createElement('div');
-                bar.style.cssText = 'width:3px;background:#7C3AED;border-radius:2px;animation:argosWave 1.2s ease-in-out infinite;animation-delay:' + (i * 0.07) + 's';
+                bar.style.cssText = 'width:4px;background:#7C3AED;border-radius:3px;animation:argosWave 1.2s ease-in-out infinite;animation-delay:' + (i * 0.06) + 's';
                 el.appendChild(bar);
               }
             }
@@ -371,9 +371,9 @@
         }),
         // Texto
         h('div', { style: { textAlign: 'center', animation: 'argosSlideUp .6s ease-out both' } },
-          h('div', { style: { fontSize: '11px', color: '#7C3AED', letterSpacing: '3px', marginBottom: '8px' } }, 'ARGOS INTELLIGENCE'),
-          h('div', { style: { fontSize: '17px', fontWeight: 500, color: '#e2e0f0' } }, 'Processando dados operacionais'),
-          h('div', { style: { fontSize: '13px', color: '#6b6890', marginTop: '8px' } },
+          h('div', { style: { fontSize: '12px', color: '#7C3AED', letterSpacing: '4px', marginBottom: '10px' } }, 'ARGOS INTELLIGENCE'),
+          h('div', { style: { fontSize: '20px', fontWeight: 500, color: '#e2e0f0' } }, 'Processando dados operacionais'),
+          h('div', { style: { fontSize: '14px', color: '#6b6890', marginTop: '10px' } },
             `Aguarde enquanto analiso o desempenho de ${totalAtivos} cliente${totalAtivos > 1 ? 's' : ''}`),
         ),
       ),
