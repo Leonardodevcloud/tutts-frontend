@@ -58,6 +58,26 @@
             incentivoClientesBi, incentivoClientesLoading, carregarClientesBiIncentivos
         } = props;
 
+        // 🔧 Centro de Custo: cache via ref (evita stale closure) + fetch por cliente
+        const [ccCache, setCcCache] = React.useState({});
+        const ccCacheRef = React.useRef({});
+        const fetchCentrosCusto = async (codCliente) => {
+            if (ccCacheRef.current[codCliente]) return;
+            console.log('🔍 Buscando centros de custo para cliente:', codCliente);
+            try {
+                const r = await fetchAuth(`${API_URL}/bi/centros-custo/${codCliente}`);
+                const d = await r.json();
+                console.log('📦 CCs recebidos para', codCliente, ':', d);
+                var ccs = Array.isArray(d) ? d : [];
+                ccCacheRef.current[codCliente] = ccs;
+                setCcCache(prev => ({ ...prev, [codCliente]: ccs }));
+            } catch(e) {
+                console.warn('❌ Erro ao buscar CCs:', codCliente, e);
+                ccCacheRef.current[codCliente] = [];
+                setCcCache(prev => ({ ...prev, [codCliente]: [] }));
+            }
+        };
+
             return React.createElement("div", {
                 className: "min-h-screen bg-gray-50"
             }, i && React.createElement(Toast, i), n && React.createElement(LoadingOverlay, null),
@@ -1895,6 +1915,7 @@
                                     valor: '',
                                     valor_incentivo: '',
                                     clientes_vinculados: [],
+                                    centros_vinculados: {},
                                     cor: '#0d9488'
                                 }); 
                                 setIncentivoModal(true); 
@@ -1930,23 +1951,28 @@
                             React.createElement("div", {className: "flex items-center justify-between"},
                                 React.createElement("div", null,
                                     React.createElement("p", {className: "text-sm text-emerald-700 font-medium"}, "💰 Total Investido no Mês"),
-                                    React.createElement("p", {className: "text-xs text-emerald-600"}, "Soma de todos os incentivos + promoções")
+                                    React.createElement("p", {className: "text-xs text-emerald-600"}, "Soma dos incentivos + promoções do mês selecionado")
                                 ),
                                 React.createElement("p", {className: "text-3xl font-bold text-emerald-700"}, 
-                                    "R$ ", ((incentivosData || []).reduce((acc, inc) => {
-                                        // Incentivos: usa o cálculo automático
-                                        if (inc.tipo === 'incentivo' && inc.calculo?.valor_total) {
-                                            return acc + inc.calculo.valor_total;
-                                        }
-                                        // Promoções: extrai valor numérico do campo valor
-                                        if (inc.tipo === 'promocao' && inc.valor) {
-                                            const valorNum = parseFloat(inc.valor.replace(/[^\d.,]/g, '').replace(',', '.'));
-                                            if (!isNaN(valorNum)) {
-                                                return acc + valorNum;
+                                    "R$ ", (() => {
+                                        const calMes = new Date(incentivosCalendarioMes);
+                                        const inicioMes = new Date(calMes.getFullYear(), calMes.getMonth(), 1).toISOString().split('T')[0];
+                                        const fimMes = new Date(calMes.getFullYear(), calMes.getMonth() + 1, 0).toISOString().split('T')[0];
+                                        return (incentivosData || []).filter(inc => {
+                                            const di = (inc.data_inicio || '').slice(0, 10);
+                                            const df = (inc.data_fim || '').slice(0, 10);
+                                            return di <= fimMes && df >= inicioMes;
+                                        }).reduce((acc, inc) => {
+                                            if (inc.tipo === 'incentivo' && inc.calculo?.valor_total) {
+                                                return acc + inc.calculo.valor_total;
                                             }
-                                        }
-                                        return acc;
-                                    }, 0)).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                                            if (inc.tipo === 'promocao' && inc.valor) {
+                                                const valorNum = parseFloat(inc.valor.replace(/[^\d.,]/g, '').replace(',', '.'));
+                                                if (!isNaN(valorNum)) return acc + valorNum;
+                                            }
+                                            return acc;
+                                        }, 0);
+                                    })().toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
                                 )
                             )
                         )
@@ -2081,8 +2107,10 @@
                                                                 valor: item.valor || '',
                                                                 valor_incentivo: item.valor_incentivo || '',
                                                                 clientes_vinculados: item.clientes_vinculados || [],
+                                                                centros_vinculados: item.centros_vinculados || {},
                                                                 cor: item.cor || '#0d9488'
                                                             });
+                                                            (item.clientes_vinculados || []).forEach(function(cod) { fetchCentrosCusto(cod); });
                                                             setIncentivoModal(true);
                                                         },
                                                         className: "text-xs px-1.5 py-0.5 rounded truncate cursor-pointer hover:opacity-80 transition-opacity",
@@ -2303,8 +2331,10 @@
                                                             valor: item.valor || '',
                                                             valor_incentivo: item.valor_incentivo || '',
                                                             clientes_vinculados: item.clientes_vinculados || [],
+                                                            centros_vinculados: item.centros_vinculados || {},
                                                             cor: item.cor || '#0d9488'
                                                         });
+                                                        (item.clientes_vinculados || []).forEach(function(cod) { fetchCentrosCusto(cod); });
                                                         setIncentivoModal(true);
                                                     },
                                                     className: "p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200"
@@ -2473,19 +2503,39 @@
                                     })
                                 ),
                                 
-                                // Clientes selecionados (badges)
-                                (incentivoForm.clientes_vinculados || []).length > 0 && React.createElement("div", {className: "flex flex-wrap gap-2 mb-2"},
+                                // Clientes selecionados (badges + CC selector)
+                                (incentivoForm.clientes_vinculados || []).length > 0 && React.createElement("div", {className: "space-y-2 mb-2"},
                                     (incentivoForm.clientes_vinculados || []).map(codCliente => {
                                         const cliente = (incentivoClientesBi || []).find(c => c.cod_cliente === codCliente);
-                                        return React.createElement("span", {
+                                        const ccs = ccCache[codCliente] || [];
+                                        const ccSelecionado = (incentivoForm.centros_vinculados || {})[String(codCliente)] || '';
+                                        return React.createElement("div", {
                                             key: codCliente,
-                                            className: "inline-flex items-center gap-1 px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm"
+                                            className: "flex items-center gap-2 bg-yellow-50 border border-yellow-200 rounded-lg p-2"
                                         },
-                                            React.createElement("span", null, cliente?.nome_display || `Cliente ${codCliente}`),
+                                            React.createElement("div", {className: "flex-1 min-w-0"},
+                                                React.createElement("span", {className: "text-sm font-semibold text-yellow-800 truncate block"}, cliente?.nome_display || ("Cliente " + codCliente)),
+                                                ccs.length > 0 && React.createElement("select", {
+                                                    value: ccSelecionado,
+                                                    onChange: e => setIncentivoForm(f => ({
+                                                        ...f,
+                                                        centros_vinculados: { ...(f.centros_vinculados || {}), [String(codCliente)]: e.target.value }
+                                                    })),
+                                                    className: "mt-1 w-full text-xs border rounded-md px-2 py-1 bg-white"
+                                                },
+                                                    React.createElement("option", {value: ""}, "Todos os centros de custo"),
+                                                    ccs.map(cc => React.createElement("option", {key: cc.centro_custo, value: cc.centro_custo}, cc.centro_custo + " (" + cc.total_entregas + ")"))
+                                                ),
+                                                ccs.length === 0 && React.createElement("span", {className: "text-[10px] text-gray-400 block mt-1"}, "Sem centros de custo")
+                                            ),
                                             React.createElement("button", {
                                                 type: "button",
-                                                onClick: () => setIncentivoForm(f => ({...f, clientes_vinculados: (f.clientes_vinculados || []).filter(c => c !== codCliente)})),
-                                                className: "ml-1 text-yellow-600 hover:text-yellow-800 font-bold"
+                                                onClick: () => setIncentivoForm(f => {
+                                                    var cv = {...(f.centros_vinculados || {})};
+                                                    delete cv[String(codCliente)];
+                                                    return {...f, clientes_vinculados: (f.clientes_vinculados || []).filter(c => c !== codCliente), centros_vinculados: cv};
+                                                }),
+                                                className: "text-red-400 hover:text-red-600 font-bold text-lg px-1"
                                             }, "×")
                                         );
                                     })
@@ -2511,6 +2561,7 @@
                                                         onChange: e => {
                                                             if (e.target.checked) {
                                                                 setIncentivoForm(f => ({...f, clientes_vinculados: [...(f.clientes_vinculados || []), cliente.cod_cliente]}));
+                                                                fetchCentrosCusto(cliente.cod_cliente);
                                                             } else {
                                                                 setIncentivoForm(f => ({...f, clientes_vinculados: (f.clientes_vinculados || []).filter(c => c !== cliente.cod_cliente)}));
                                                             }
@@ -2574,19 +2625,39 @@
                                     })
                                 ),
                                 
-                                // Clientes selecionados (badges)
-                                (incentivoForm.clientes_vinculados || []).length > 0 && React.createElement("div", {className: "flex flex-wrap gap-2 mb-2"},
+                                // Clientes selecionados (badges + CC selector)
+                                (incentivoForm.clientes_vinculados || []).length > 0 && React.createElement("div", {className: "space-y-2 mb-2"},
                                     (incentivoForm.clientes_vinculados || []).map(codCliente => {
                                         const cliente = (incentivoClientesBi || []).find(c => c.cod_cliente === codCliente);
-                                        return React.createElement("span", {
+                                        const ccs = ccCache[codCliente] || [];
+                                        const ccSelecionado = (incentivoForm.centros_vinculados || {})[String(codCliente)] || '';
+                                        return React.createElement("div", {
                                             key: codCliente,
-                                            className: "inline-flex items-center gap-1 px-3 py-1 bg-teal-100 text-teal-800 rounded-full text-sm"
+                                            className: "flex items-center gap-2 bg-teal-50 border border-teal-200 rounded-lg p-2"
                                         },
-                                            React.createElement("span", null, cliente?.nome_display || `Cliente ${codCliente}`),
+                                            React.createElement("div", {className: "flex-1 min-w-0"},
+                                                React.createElement("span", {className: "text-sm font-semibold text-teal-800 truncate block"}, cliente?.nome_display || ("Cliente " + codCliente)),
+                                                ccs.length > 0 && React.createElement("select", {
+                                                    value: ccSelecionado,
+                                                    onChange: e => setIncentivoForm(f => ({
+                                                        ...f,
+                                                        centros_vinculados: { ...(f.centros_vinculados || {}), [String(codCliente)]: e.target.value }
+                                                    })),
+                                                    className: "mt-1 w-full text-xs border rounded-md px-2 py-1 bg-white"
+                                                },
+                                                    React.createElement("option", {value: ""}, "Todos os centros de custo"),
+                                                    ccs.map(cc => React.createElement("option", {key: cc.centro_custo, value: cc.centro_custo}, cc.centro_custo + " (" + cc.total_entregas + ")"))
+                                                ),
+                                                ccs.length === 0 && React.createElement("span", {className: "text-[10px] text-gray-400 block mt-1"}, "Sem centros de custo")
+                                            ),
                                             React.createElement("button", {
                                                 type: "button",
-                                                onClick: () => setIncentivoForm(f => ({...f, clientes_vinculados: (f.clientes_vinculados || []).filter(c => c !== codCliente)})),
-                                                className: "ml-1 text-teal-600 hover:text-teal-800 font-bold"
+                                                onClick: () => setIncentivoForm(f => {
+                                                    var cv = {...(f.centros_vinculados || {})};
+                                                    delete cv[String(codCliente)];
+                                                    return {...f, clientes_vinculados: (f.clientes_vinculados || []).filter(c => c !== codCliente), centros_vinculados: cv};
+                                                }),
+                                                className: "text-red-400 hover:text-red-600 font-bold text-lg px-1"
                                             }, "×")
                                         );
                                     })
@@ -2612,6 +2683,7 @@
                                                         onChange: e => {
                                                             if (e.target.checked) {
                                                                 setIncentivoForm(f => ({...f, clientes_vinculados: [...(f.clientes_vinculados || []), cliente.cod_cliente]}));
+                                                                fetchCentrosCusto(cliente.cod_cliente);
                                                             } else {
                                                                 setIncentivoForm(f => ({...f, clientes_vinculados: (f.clientes_vinculados || []).filter(c => c !== cliente.cod_cliente)}));
                                                             }

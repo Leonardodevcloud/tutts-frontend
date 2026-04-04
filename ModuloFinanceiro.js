@@ -13,6 +13,49 @@
         return str.includes(",") ? parseFloat(str.replace(/\./g, "").replace(",", ".")) || 0 : parseFloat(str) || 0;
     };
     
+    // Traduzir erros do Stark Bank para mensagens legíveis no frontend
+    window.traduzirErroStarkFE = function(erroStr) {
+        if (!erroStr) return '';
+        var s = String(erroStr);
+        var map = {
+            'invalidPixKey': 'Chave Pix inválida ou inexistente',
+            'invalidAccountNumber': 'Conta bancária inválida',
+            'invalidBranchCode': 'Agência inválida',
+            'invalidTaxId': 'CPF/CNPJ divergente',
+            'invalidName': 'Nome divergente no banco',
+            'invalidAmount': 'Valor inválido',
+            'invalidExternalId': 'Transferência duplicada',
+            'insufficientFunds': 'Saldo insuficiente na Stark',
+            'insufficientBalance': 'Saldo insuficiente na Stark',
+            'accountClosed': 'Conta do beneficiário encerrada',
+            'accountBlocked': 'Conta do beneficiário bloqueada',
+            'timeout': 'Timeout — banco não respondeu',
+            'internalError': 'Erro interno Stark Bank',
+            'bankError': 'Banco recusou a transferência',
+            'pixKeyNotFound': 'Chave Pix não encontrada no BACEN',
+            'pixKeyInactive': 'Chave Pix inativa/excluída',
+            'transactionRefused': 'Transação recusada',
+            'limitExceeded': 'Limite Pix excedido',
+            'fraudSuspicion': 'Bloqueado por suspeita de fraude',
+            'entryNotFound': 'Chave não encontrada no DICT',
+            'entryInactive': 'Chave inativa no DICT',
+            'entryLocked': 'Chave em portabilidade'
+        };
+        // Se já é uma mensagem traduzida pelo backend, retorna direto
+        if (s.includes('Chave Pix inválida —') || s.includes('Saldo insuficiente') || s.includes('Conta do beneficiário')) return s;
+        // Tentar parsear JSON
+        try {
+            var parsed = JSON.parse(s);
+            var arr = Array.isArray(parsed) ? parsed : [parsed];
+            return arr.map(function(e) { return map[e.code] || e.message || e.code || 'Erro'; }).join(' | ');
+        } catch(_) {}
+        // Buscar código no texto
+        for (var code in map) {
+            if (map.hasOwnProperty(code) && s.includes(code)) return map[code];
+        }
+        return s.length > 80 ? s.substring(0, 77) + '...' : s;
+    };
+    
     window.renderModuloFinanceiro = function(props) {
         const {
             c, s, p, x, q, U, Q, H, Z, Y, K, X, z, B, V, J,
@@ -73,6 +116,9 @@
         
         // ⚡ Contadores do backend (precisos, sem carregar todos os registros)
         const wc = withdrawalCounts || {};
+        
+        // Referência local para traduzir erros Stark
+        const traduzirErroStarkFE = window.traduzirErroStarkFE;
         
         // Normalizar string para comparação (remove acentos, lowercase, trim)
         const normalizarTexto = (texto) => {
@@ -144,11 +190,11 @@
             const formatarValorExcel = (valor) => parseFloat(valor || 0).toFixed(2).replace(".", ",");
             
             const traduzirStatus = (status) => {
-                const map = { "aprovado": "Aprovado", "aprovado_gratuidade": "Aprovado c/ Gratuidade", "rejeitado": "Rejeitado", "aguardando_aprovacao": "Aguardando" };
+                const map = { "aprovado": "Aprovado", "aprovado_gratuidade": "Aprovado c/ Gratuidade", "rejeitado": "Rejeitado", "aguardando_aprovacao": "Aguardando", "aguardando_pagamento_stark": "💳 Aguard. Pgto Stark", "pago_stark": "✅ PAGO VIA STARK BANK" };
                 // Sobrescrever com status Stark se existir
-                if (e && e.stark_status === 'em_lote') return "🏦 Em Lote";
+                if (e && e.stark_status === 'em_lote') return "🏦 Lote Gerado - Aguard. Pagamento";
                 if (e && e.stark_status === 'processando') return "⏳ Processando Pix";
-                if (e && e.stark_status === 'pago') return "✅ Pago";
+                if (e && e.stark_status === 'pago') return "✅ PAGO VIA STARK BANK";
                 return map[status] || status || "-";
             };
             
@@ -158,11 +204,11 @@
             };
             
             // Estatísticas
-            const totalAprovadas = dadosFiltrados.filter(e => e.status === "aprovado" || e.status === "aprovado_gratuidade").length;
+            const totalAprovadas = dadosFiltrados.filter(e => e.status === "aprovado" || e.status === "aprovado_gratuidade" || e.status === "pago_stark").length;
             const totalSemGrat = dadosFiltrados.filter(e => e.status === "aprovado").length;
             const totalComGrat = dadosFiltrados.filter(e => e.status === "aprovado_gratuidade").length;
             const totalRejeitadas = dadosFiltrados.filter(e => e.status === "rejeitado").length;
-            const valorTotal = dadosFiltrados.filter(e => e.status?.includes("aprovado")).reduce((a, e) => a + parseFloat(e.requested_amount || 0), 0);
+            const valorTotal = dadosFiltrados.filter(e => e.status?.includes("aprovado") || e.status === "pago_stark").reduce((a, e) => a + parseFloat(e.requested_amount || 0), 0);
             
             // Construir dados Excel
             const dadosExcel = [];
@@ -437,6 +483,22 @@
                                 ),
                                 React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Solicitações"),
                                 React.createElement("p", {className: "text-sm text-gray-500"}, "Saques emergenciais pendentes de aprovação e histórico completo.")
+                            )
+                        ),
+
+                        // Card Limites
+                        React.createElement("div", {
+                            onClick: () => { x({...p, finTab: "limites"}); },
+                            className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-orange-300"
+                        },
+                            React.createElement("div", {className: "h-2 bg-gradient-to-r from-orange-500 to-red-600"}),
+                            React.createElement("div", {className: "p-6"},
+                                React.createElement("div", {className: "w-14 h-14 bg-orange-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform relative"},
+                                    React.createElement("span", {className: "text-3xl"}, "🔓"),
+                                    y.limites_pendentes > 0 && React.createElement("span", {className: "absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"}, y.limites_pendentes > 9 ? "9+" : y.limites_pendentes)
+                                ),
+                                React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Limites"),
+                                React.createElement("p", {className: "text-sm text-gray-500"}, "Solicitações de liberação de limite de saque.")
                             )
                         ),
 
@@ -855,7 +917,7 @@
                 }); 
                 // ⚡ Carregar aprovadas sob demanda (não vem no init)
                 if (q.filter(e => "aprovado" === e.status).length === 0) {
-                    fetchAuth(`${API_URL}/withdrawals?status=approved&limit=200`).then(r => r.json()).then(data => { if (Array.isArray(data)) U([...q, ...data]); });
+                    fetchAuth(`${API_URL}/withdrawals?status=approved`).then(r => r.json()).then(data => { if (Array.isArray(data)) U([...q, ...data]); });
                 }
                 },
                 className: "px-4 py-2 rounded-lg font-semibold text-sm " + ("aprovado" === p.filterStatus ? "bg-green-600 text-white" : "bg-gray-100 hover:bg-gray-200")
@@ -865,7 +927,7 @@
                     filterStatus: "aprovado_gratuidade"
                 }); 
                 if (q.filter(e => "aprovado_gratuidade" === e.status).length === 0) {
-                    fetchAuth(`${API_URL}/withdrawals?status=aprovado_gratuidade&limit=200`).then(r => r.json()).then(data => { if (Array.isArray(data)) U([...q, ...data]); });
+                    fetchAuth(`${API_URL}/withdrawals?status=aprovado_gratuidade`).then(r => r.json()).then(data => { if (Array.isArray(data)) U([...q, ...data]); });
                 }
                 },
                 className: "px-4 py-2 rounded-lg font-semibold text-sm " + ("aprovado_gratuidade" === p.filterStatus ? "bg-blue-600 text-white" : "bg-gray-100 hover:bg-gray-200")
@@ -875,7 +937,7 @@
                     filterStatus: "rejeitado"
                 }); 
                 if (q.filter(e => "rejeitado" === e.status).length === 0) {
-                    fetchAuth(`${API_URL}/withdrawals?status=rejected&limit=200`).then(r => r.json()).then(data => { if (Array.isArray(data)) U([...q, ...data]); });
+                    fetchAuth(`${API_URL}/withdrawals?status=rejected`).then(r => r.json()).then(data => { if (Array.isArray(data)) U([...q, ...data]); });
                 }
                 },
                 className: "px-4 py-2 rounded-lg font-semibold text-sm " + ("rejeitado" === p.filterStatus ? "bg-red-600 text-white" : "bg-gray-100 hover:bg-gray-200")
@@ -956,7 +1018,7 @@
                     // Filtrar apenas saques aprovados que NÃO estão em lote e NÃO são rejeitados/inativos
                     var selecionadosValidos = q.filter(function(e) { 
                         return z.includes(e.id) && 
-                               (e.status === 'aprovado' || e.status === 'aprovado_gratuidade') &&
+                               (e.status === 'aprovado' || e.status === 'aprovado_gratuidade' || e.status === 'aguardando_pagamento_stark') &&
                                e.stark_status !== 'processando' && e.stark_status !== 'pago' && e.stark_status !== 'em_lote';
                     });
                     if (selecionadosValidos.length === 0) {
@@ -1061,15 +1123,15 @@
             }, "Nome"), React.createElement("th", {
                 className: "px-2 py-3 text-left w-[110px]"
             }, "CPF"), React.createElement("th", {
-                className: "px-2 py-3 text-left w-[70px]"
+                className: "px-2 py-3 text-left w-[50px]"
             }, "Código"), React.createElement("th", {
-                className: "px-2 py-3 text-right w-[90px]"
+                className: "px-2 py-3 text-right w-[75px]"
             }, "Solicitado"), React.createElement("th", {
-                className: "px-2 py-3 text-right w-[90px]"
+                className: "px-2 py-3 text-right w-[75px]"
             }, "Valor Prof."), React.createElement("th", {
                 className: "px-2 py-3 text-left w-[120px]"
             }, "PIX"), React.createElement("th", {
-                className: "px-2 py-3 text-center w-[160px]"
+                className: "px-2 py-3 text-center w-[220px]"
             }, "Status"), React.createElement("th", {
                 className: "px-2 py-3 text-center w-[100px]"
             }, "Débito"), React.createElement("th", {
@@ -1090,7 +1152,10 @@
                     o = "aprovado" === e.status,
                     c = "aprovado_gratuidade" === e.status,
                     s = "rejeitado" === e.status,
-                    n = s ? "font-bold text-red-800 bg-red-100" : c ? "font-bold text-blue-800 bg-blue-100 border-l-4 border-l-blue-500" : o ? "font-bold bg-green-100" : "",
+                    isPagoStark = "pago_stark" === e.status || e.stark_status === "pago",
+                    isEmLote = e.stark_status === "em_lote",
+                    isProcessandoPix = e.stark_status === "processando",
+                    n = s ? "font-bold text-red-800 bg-red-100" : isPagoStark ? "font-bold text-green-800 bg-green-100 border-l-4 border-l-green-500" : isEmLote ? "font-bold text-amber-800 bg-amber-50 border-l-4 border-l-amber-400" : isProcessandoPix ? "font-bold text-yellow-800 bg-yellow-50 border-l-4 border-l-yellow-400" : c ? "font-bold text-blue-800 bg-blue-100 border-l-4 border-l-blue-500" : o ? "font-bold bg-green-100" : "",
                     m = new Date(e.created_at),
                     i = m.toLocaleDateString("pt-BR"),
                     d = m.toLocaleTimeString("pt-BR", {
@@ -1099,18 +1164,18 @@
                     });
                 return React.createElement("tr", {
                     key: e.id,
-                    className: `border-t hover:bg-gray-50 ${z.includes(e.id)?"bg-purple-50":""} ${!t||s||o||c?"":"bg-red-50 border-l-4 border-l-red-500"} ${n} ${!e.has_gratuity||o||s||c?"":"row-blue"} ${e.is_restricted&&!s?"row-red":""}`
+                    className: `border-t hover:bg-gray-50 ${z.includes(e.id)&&!isPagoStark&&!isEmLote&&!isProcessandoPix?"bg-purple-50":""} ${!t||s||o||c||isPagoStark||isEmLote||isProcessandoPix?"":"bg-red-50 border-l-4 border-l-red-500"} ${n} ${!e.has_gratuity||o||s||c||isPagoStark||isEmLote||isProcessandoPix?"":"row-blue"} ${e.is_restricted&&!s&&!isPagoStark?"row-red":""}`
                 }, React.createElement("td", {
                     className: "px-2 py-3 text-center"
                 }, React.createElement("input", {
                     type: "checkbox",
                     checked: z.includes(e.id),
-                    disabled: e.status === 'rejeitado' || e.status === 'aguardando_aprovacao' || e.stark_status === 'em_lote' || e.stark_status === 'processando' || e.stark_status === 'pago',
+                    disabled: e.status === 'rejeitado' || (e.status === 'aguardando_aprovacao' && !e.debito) || e.stark_status === 'em_lote' || e.stark_status === 'processando' || e.stark_status === 'pago',
                     onChange: t => {
                         t.target.checked ? B([...z, e.id]) : B(z.filter(t => t !== e.id))
                     },
-                    className: "w-4 h-4" + (e.status === 'rejeitado' || e.status === 'aguardando_aprovacao' || e.stark_status === 'em_lote' || e.stark_status === 'processando' || e.stark_status === 'pago' ? " opacity-30 cursor-not-allowed" : ""),
-                    title: e.status === 'rejeitado' ? 'Saque rejeitado' : e.status === 'aguardando_aprovacao' ? 'Aguardando aprovação' : e.stark_status === 'em_lote' ? 'Já está em lote' : e.stark_status === 'processando' ? 'Pagamento em processamento' : e.stark_status === 'pago' ? 'Já pago' : ''
+                    className: "w-4 h-4" + (e.status === 'rejeitado' || (e.status === 'aguardando_aprovacao' && !e.debito) || e.stark_status === 'em_lote' || e.stark_status === 'processando' || e.stark_status === 'pago' ? " opacity-30 cursor-not-allowed" : ""),
+                    title: e.status === 'rejeitado' ? 'Saque rejeitado' : (e.status === 'aguardando_aprovacao' && !e.debito) ? 'Aguardando aprovação' : e.stark_status === 'em_lote' ? 'Lote gerado — aguardando pagamento' : e.stark_status === 'processando' ? 'Pagamento em processamento' : e.stark_status === 'pago' ? 'Já pago' : e.status === 'aguardando_pagamento_stark' ? 'Pronto para lote Stark' : ''
                 })), React.createElement("td", {
                     className: "px-2 py-3 text-xs " + (s ? "text-red-800 font-bold" : c ? "text-blue-800 font-bold" : o ? "text-green-800 font-bold" : "")
                 }, React.createElement("div", {
@@ -1119,7 +1184,7 @@
                     className: "font-medium"
                 }, i), React.createElement("span", {
                     className: "text-[10px] text-gray-500"
-                }, d)), "aguardando_aprovacao" === e.status && React.createElement("div", {
+                }, d)), ("aguardando_aprovacao" === e.status || "aguardando_pagamento_stark" === e.status) && React.createElement("div", {
                     className: "mt-1 px-2 py-0.5 rounded text-xs font-bold inline-flex items-center gap-1 " + (t ? "bg-red-500 text-white animate-pulse" : a >= 90 ? "bg-orange-100 text-orange-700" : "bg-gray-100 text-gray-600")
                 }, t ? "🚨" : a >= 90 ? "⚠️" : "⏱️", l > 0 ? `${l}h ${r}m` : `${r}min`, t && React.createElement("span", {
                     className: "text-[10px] ml-1"
@@ -1171,7 +1236,11 @@
                             }
                             
                             // Pedir confirmação antes de aprovar
-                            if (!confirm(`Confirma a aprovação do saque de ${er(e.requested_amount)} para ${e.user_name}?\n\nEsta ação realizará o DÉBITO automaticamente e não pode ser desfeita.`)) {
+                            const debitoJaFeito = e.status === 'aguardando_pagamento_stark' || e.debito === true;
+                            const msgConfirm = debitoJaFeito
+                                ? `Confirma a aprovação do saque de ${er(e.requested_amount)} para ${e.user_name}?\n\nO débito Plific já foi realizado automaticamente. O saque será aprovado e enviado para pagamento Stark.`
+                                : `Confirma a aprovação do saque de ${er(e.requested_amount)} para ${e.user_name}?\n\nEsta ação realizará o DÉBITO automaticamente e não pode ser desfeita.`;
+                            if (!confirm(msgConfirm)) {
                                 t.target.value = e.status;
                                 return;
                             }
@@ -1188,19 +1257,31 @@
                             Jl(withdrawalId, novoStatus);
                         }
                     },
-                    // =============== DESABILITAR DURANTE PROCESSAMENTO OU JÁ APROVADO ===============
-                    disabled: p[`processing_${e.id}`] || e.status === "aprovado" || e.status === "aprovado_gratuidade",
-                    className: "px-1 py-1 border rounded text-xs w-full " + 
+                    // =============== DESABILITAR DURANTE PROCESSAMENTO OU JÁ APROVADO OU EM LOTE ===============
+                    disabled: p[`processing_${e.id}`] || e.status === "aprovado" || e.status === "aprovado_gratuidade" || e.status === "pago_stark" || e.stark_status === "em_lote" || e.stark_status === "processando" || e.stark_status === "pago",
+                    className: "px-1 py-1 border rounded text-xs w-full whitespace-nowrap " + 
                         (p[`processing_${e.id}`] ? "opacity-50 cursor-not-allowed bg-yellow-50 animate-pulse" : "") +
-                        ((e.status === "aprovado" || e.status === "aprovado_gratuidade") ? "bg-green-50 cursor-not-allowed text-green-700" : "")
+                        (e.stark_status === "em_lote" ? "bg-amber-50 cursor-not-allowed text-amber-700 font-semibold border-amber-300" : "") +
+                        (e.stark_status === "processando" ? "bg-yellow-50 cursor-not-allowed text-yellow-700 font-semibold" : "") +
+                        (e.stark_status === "pago" || e.status === "pago_stark" ? "bg-green-100 cursor-not-allowed text-green-700 font-semibold border-green-300" : "") +
+                        (!e.stark_status && (e.status === "aprovado" || e.status === "aprovado_gratuidade") ? "bg-green-50 cursor-not-allowed text-green-700" : "")
                 }, 
-                // Mostrar "Processando..." se estiver processando
+                // Mostrar status fixo baseado no stark_status (não permite edição)
                 p[`processing_${e.id}`] ? React.createElement("option", {
                     value: e.status
-                }, "⏳ Processando...") : React.createElement(React.Fragment, null,
+                }, "⏳ Processando...") : e.stark_status === "em_lote" ? React.createElement("option", {
+                    value: e.status
+                }, "🏦 Lote Gerado - Aguard. Pagamento") : e.stark_status === "processando" ? React.createElement("option", {
+                    value: e.status
+                }, "⏳ Processando Pix...") : e.stark_status === "pago" || e.status === "pago_stark" ? React.createElement("option", {
+                    value: e.status
+                }, "✅ PAGO VIA STARK BANK") : React.createElement(React.Fragment, null,
                     React.createElement("option", {
                         value: "aguardando_aprovacao"
                     }, "⏳ Aguardando"), 
+                    React.createElement("option", {
+                        value: "aguardando_pagamento_stark"
+                    }, "💳 Aguard. Pgto Stark"), 
                     // Mostrar "Aprovado" apenas para saques SEM gratuidade
                     !e.has_gratuity && React.createElement("option", {
                         value: "aprovado"
@@ -1241,16 +1322,22 @@
                     className: "px-2 py-1 bg-gray-400 text-white rounded text-xs"
                 }, "✕"))), e.reject_reason && "rejeitado" === e.status && React.createElement("p", {
                     className: "text-[10px] text-red-600 mt-1 truncate"
-                }, "Motivo: ", e.reject_reason), e.admin_name && "aguardando_aprovacao" !== e.status && React.createElement("p", {
-                    className: "text-[10px] text-purple-600 mt-1 font-medium"
-                }, "👤 ", e.admin_name)), 
+                }, "Motivo: ", e.reject_reason), e.stark_erro && e.stark_status === 'erro' && React.createElement("p", {
+                    className: "text-[10px] text-red-600 mt-1 max-w-[180px]",
+                    title: traduzirErroStarkFE(e.stark_erro)
+                }, "⚠️ ", traduzirErroStarkFE(e.stark_erro)), e.admin_name && "aguardando_aprovacao" !== e.status && "aguardando_pagamento_stark" !== e.status && React.createElement("p", {
+                    className: "text-[10px] mt-1 font-medium " + (isPagoStark ? "text-green-700" : isEmLote ? "text-amber-700" : "text-purple-600")
+                }, isPagoStark ? "💰 Pago por: " : isEmLote || isProcessandoPix ? "🏦 Exec: " : "👤 ", e.admin_name)), 
                 // Célula de Data do Débito
                 React.createElement("td", {
                     className: "px-2 py-3 text-center text-xs"
                 }, e.debito_plific_at ? React.createElement("div", {className: "flex flex-col"},
                     React.createElement("span", {className: "font-medium text-green-600"}, new Date(e.debito_plific_at).toLocaleDateString("pt-BR")),
                     React.createElement("span", {className: "text-[10px] text-gray-500"}, new Date(e.debito_plific_at).toLocaleTimeString("pt-BR", {hour: "2-digit", minute: "2-digit"}))
-                ) : (e.status === "aprovado" || e.status === "aprovado_gratuidade") ? React.createElement("span", {className: "text-orange-500"}, "Pendente") : React.createElement("span", {className: "text-gray-400"}, "-")),
+                ) : e.debito_erro ? React.createElement("div", {className: "flex flex-col items-center"},
+                    React.createElement("span", {className: "font-medium text-red-600"}, "❌ Falha"),
+                    React.createElement("span", {className: "text-[10px] text-red-400 max-w-[120px] truncate", title: e.debito_erro}, e.debito_erro)
+                ) : (e.status === "aprovado" || e.status === "aprovado_gratuidade") ? React.createElement("span", {className: "text-orange-500"}, "Pendente") : e.status === "aguardando_pagamento_stark" ? React.createElement("span", {className: "text-green-600 font-medium"}, "✅ OK") : React.createElement("span", {className: "text-gray-400"}, "-")),
                 React.createElement("td", {
                     className: "px-2 py-3 text-center"
                 }, React.createElement("button", {
@@ -1300,7 +1387,9 @@
                     )
                 );
             })()
-            ))), "validacao" === p.finTab && React.createElement(React.Fragment, null, React.createElement("div", {
+            ))), "limites" === p.finTab && window.LimitesComponent && React.createElement(window.LimitesComponent, {
+                fetchAuth: fetchAuth, API_URL: API_URL, ja: ja, er: er, v: v, y: y
+            }), "validacao" === p.finTab && React.createElement(React.Fragment, null, React.createElement("div", {
                 className: "bg-white rounded-xl shadow p-4 mb-6"
             }, React.createElement("div", {
                 className: "flex flex-wrap gap-4 items-end"
@@ -1351,8 +1440,10 @@
                 className: "px-6 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700"
             }, "📆 Hoje"), React.createElement("button", {
                 onClick: () => {
-                    x({ ...p, validacaoDataInicio: "", validacaoDataFim: "" });
-                    setValidacaoData(null);
+                    const now = new Date();
+                    const hoje = now.getFullYear() + "-" + String(now.getMonth()+1).padStart(2,"0") + "-" + String(now.getDate()).padStart(2,"0");
+                    x({ ...p, validacaoDataInicio: hoje, validacaoDataFim: hoje });
+                    carregarValidacao(p.validacaoTipo || "solicitacao", hoje, hoje);
                 },
                 className: "px-6 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300"
             }, "🔄 Limpar"), React.createElement("button", {
@@ -1362,7 +1453,7 @@
                 const e = p.validacaoTipo || "solicitacao",
                     t = p.validacaoDataInicio,
                     a = p.validacaoDataFim,
-                    l = (t && a && validacaoData) ? validacaoData : q.filter(l => {
+                    l = (t && a && validacaoData) ? validacaoData : (t && a && !validacaoData) ? [] : q.filter(l => {
                         if (!t && !a) return !0;
                         let r;
                         const toLocalDate = (dt) => { const d = new Date(dt); return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); };
@@ -1380,14 +1471,16 @@
                     }),
                     r = l.length,
                     o = l.filter(e => "rejeitado" === e.status).length,
-                    c = l.filter(e => "aprovado" === e.status || "aprovado_gratuidade" === e.status).length,
-                    s = l.filter(e => "aprovado" === e.status).length,
-                    n = l.filter(e => "aprovado_gratuidade" === e.status).length,
-                    m = l.filter(e => "aprovado" === e.status).reduce((e, t) => e + parseFloat(t.requested_amount || 0), 0),
+                    c = l.filter(e => "aprovado" === e.status || "aprovado_gratuidade" === e.status || "pago_stark" === e.status).length,
+                    s = l.filter(e => "aprovado" === e.status || ("pago_stark" === e.status && !e.has_gratuity)).length,
+                    n = l.filter(e => "aprovado_gratuidade" === e.status || ("pago_stark" === e.status && e.has_gratuity)).length,
+                    m = l.filter(e => "aprovado" === e.status || ("pago_stark" === e.status && !e.has_gratuity)).reduce((e, t) => e + parseFloat(t.requested_amount || 0), 0),
                     i = .045 * m,
-                    d = l.filter(e => "aprovado_gratuidade" === e.status).reduce((e, t) => e + parseFloat(t.requested_amount || 0), 0),
+                    d = l.filter(e => "aprovado_gratuidade" === e.status || ("pago_stark" === e.status && e.has_gratuity)).reduce((e, t) => e + parseFloat(t.requested_amount || 0), 0),
                     x = .045 * d,
-                    u = m + d;
+                    u = m + d,
+                    custoStark = c * 0.50,
+                    custoTotal = x + custoStark;
                 return React.createElement(React.Fragment, null, React.createElement("div", {
                     className: "bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6"
                 }, React.createElement("p", {
@@ -1425,7 +1518,7 @@
                 }, "❌ Rejeitadas"), React.createElement("p", {
                     className: "text-3xl font-bold text-red-600"
                 }, o))), React.createElement("div", {
-                    className: "grid grid-cols-1 md:grid-cols-3 gap-4"
+                    className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
                 }, React.createElement("div", {
                     className: "bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl shadow p-6 text-white"
                 }, React.createElement("p", {
@@ -1443,14 +1536,22 @@
                 }, er(i)), React.createElement("p", {
                     className: "text-xs opacity-75 mt-2"
                 }, "Baseado em ", s, " aprovações sem gratuidade (", er(m), ")")), React.createElement("div", {
+                    className: "bg-gradient-to-r from-gray-600 to-gray-800 rounded-xl shadow p-6 text-white"
+                }, React.createElement("p", {
+                    className: "text-sm opacity-90"
+                }, "🏦 Custo Stark Bank"), React.createElement("p", {
+                    className: "text-4xl font-bold mt-2"
+                }, er(custoStark)), React.createElement("p", {
+                    className: "text-xs opacity-75 mt-2"
+                }, "R$ 0,50 × ", c, " transferências aprovadas")), React.createElement("div", {
                     className: "bg-gradient-to-r from-red-500 to-orange-500 rounded-xl shadow p-6 text-white"
                 }, React.createElement("p", {
                     className: "text-sm opacity-90"
                 }, "📉 Deixou de Arrecadar"), React.createElement("p", {
                     className: "text-4xl font-bold mt-2"
-                }, er(x)), React.createElement("p", {
+                }, er(custoTotal)), React.createElement("p", {
                     className: "text-xs opacity-75 mt-2"
-                }, "Baseado em ", n, " aprovações com gratuidade (", er(d), ")"))))
+                }, "Gratuidades: ", er(x), " + Stark: ", er(custoStark)))))
             })()), "conciliacao" === p.finTab && React.createElement(React.Fragment, null, 
                 // Filtros de Conciliação
                 React.createElement("div", {
@@ -1517,7 +1618,7 @@
                             return true;
                         })
                         : fonte.filter(e => {
-                            if (!e.status?.includes("aprovado")) return false;
+                            if (!e.status?.includes("aprovado") && e.status !== "pago_stark") return false;
                             if (p.concDataSolicitacao) {
                                 const dataSolic = (() => { const d = new Date(e.created_at); return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); })();
                                 if (dataSolic !== p.concDataSolicitacao) return false;
@@ -1529,7 +1630,7 @@
                             }
                             if (p.concApenasGratuidade && !e.has_gratuity) return false;
                             return true;
-                        });
+                        }).sort((a, b) => parseFloat(b.requested_amount || 0) - parseFloat(a.requested_amount || 0));
                     
                     const totalAprovados = dadosFiltrados.length;
                     const totalConciliados = dadosFiltrados.filter(e => e.conciliacao_omie).length;
@@ -1602,7 +1703,7 @@
                         return true;
                     })
                     : fonte.filter(e => {
-                        if (!e.status?.includes("aprovado")) return false;
+                        if (!e.status?.includes("aprovado") && e.status !== "pago_stark") return false;
                         if (p.concDataSolicitacao) {
                             const dataSolic = (() => { const d = new Date(e.created_at); return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); })();
                             if (dataSolic !== p.concDataSolicitacao) return false;
@@ -1614,7 +1715,7 @@
                         }
                         if (p.concApenasGratuidade && !e.has_gratuity) return false;
                         return true;
-                    });
+                    }).sort((a, b) => parseFloat(b.requested_amount || 0) - parseFloat(a.requested_amount || 0));
                 
                 // Aplicar paginação
                 const inicio = (conciliacaoPagina - 1) * conciliacaoPorPagina;
@@ -1673,11 +1774,12 @@
                     className: "px-4 py-3 text-center"
                 }, e.stark_status === 'pago' ? React.createElement("span", {
                     className: "inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-1 rounded-full"
-                }, "🏦 Stark Bank") : e.stark_status === 'processando' ? React.createElement("span", {
+                }, "✅ PAGO VIA STARK") : e.stark_status === 'processando' ? React.createElement("span", {
                     className: "inline-flex items-center gap-1 text-[10px] font-bold text-yellow-700 bg-yellow-100 px-2 py-1 rounded-full"
                 }, "⏳ Processando") : e.stark_status === 'erro' ? React.createElement("span", {
-                    className: "inline-flex items-center gap-1 text-[10px] font-bold text-red-700 bg-red-100 px-2 py-1 rounded-full"
-                }, "❌ Erro Pix") : React.createElement("span", {
+                    className: "inline-flex items-center gap-1 text-[10px] font-bold text-red-700 bg-red-100 px-2 py-1 rounded-full cursor-help",
+                    title: traduzirErroStarkFE(e.stark_erro)
+                }, "❌ ", traduzirErroStarkFE(e.stark_erro).substring(0, 25) + (traduzirErroStarkFE(e.stark_erro).length > 25 ? '...' : '')) : React.createElement("span", {
                     className: "text-xs text-gray-400"
                 }, "Manual")), React.createElement("td", {
                     className: "px-4 py-3 text-center"
@@ -1713,7 +1815,7 @@
                         return true;
                     })
                     : fonte.filter(e => {
-                        if (!e.status?.includes("aprovado")) return false;
+                        if (!e.status?.includes("aprovado") && e.status !== "pago_stark") return false;
                         if (p.concDataSolicitacao) {
                             const dataSolic = (() => { const d = new Date(e.created_at); return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); })();
                             if (dataSolic !== p.concDataSolicitacao) return false;
@@ -1725,7 +1827,7 @@
                         }
                         if (p.concApenasGratuidade && !e.has_gratuity) return false;
                         return true;
-                    });
+                    }).sort((a, b) => parseFloat(b.requested_amount || 0) - parseFloat(a.requested_amount || 0));
                 const totalPaginas = Math.ceil(filtrados.length / conciliacaoPorPagina);
                 if (totalPaginas <= 1) return null;
                 return React.createElement("div", {
@@ -1895,7 +1997,7 @@
                             hour: "2-digit",
                             minute: "2-digit"
                         }) : "",
-                        s = "aprovado" === e.status || "aprovado_gratuidade" === e.status;
+                        s = "aprovado" === e.status || "aprovado_gratuidade" === e.status || "pago_stark" === e.status;
                     return React.createElement("tr", {
                         key: e.id,
                         className: `border-t hover:bg-gray-50 ${e.has_gratuity?"bg-blue-50 border-l-4 border-l-blue-500":""} ${e.is_restricted?"row-red":""}`
@@ -1938,8 +2040,8 @@
                     }, "-")), React.createElement("td", {
                         className: "px-4 py-3"
                     }, React.createElement("span", {
-                        className: "px-2 py-1 rounded text-xs font-bold " + ("aprovado" === e.status ? "bg-green-500 text-white" : "aprovado_gratuidade" === e.status ? "bg-blue-500 text-white" : "rejeitado" === e.status ? "bg-red-500 text-white" : "inativo" === e.status ? "bg-orange-500 text-white" : "bg-yellow-500 text-white")
-                    }, "aguardando_aprovacao" === e.status ? "⏳ Aguardando" : "aprovado" === e.status ? "✅ Aprovado" : "aprovado_gratuidade" === e.status ? "🎁 c/ Gratuidade" : "rejeitado" === e.status ? "❌ Rejeitado" : "⚠️ Inativo"), e.reject_reason && "rejeitado" === e.status && React.createElement("p", {
+                        className: "px-2 py-1 rounded text-xs font-bold " + ("pago_stark" === e.status ? "bg-green-600 text-white" : "aprovado" === e.status ? "bg-green-500 text-white" : "aprovado_gratuidade" === e.status ? "bg-blue-500 text-white" : "aguardando_pagamento_stark" === e.status ? "bg-blue-400 text-white" : "rejeitado" === e.status ? "bg-red-500 text-white" : "inativo" === e.status ? "bg-orange-500 text-white" : "bg-yellow-500 text-white")
+                    }, "pago_stark" === e.status ? "✅ PAGO VIA STARK" : "aguardando_pagamento_stark" === e.status ? "💳 Aguard. Pgto Stark" : "aguardando_aprovacao" === e.status ? "⏳ Aguardando" : "aprovado" === e.status ? "✅ Aprovado" : "aprovado_gratuidade" === e.status ? "🎁 c/ Gratuidade" : "rejeitado" === e.status ? "❌ Rejeitado" : "⚠️ Inativo"), e.reject_reason && "rejeitado" === e.status && React.createElement("p", {
                         className: "text-xs text-red-600 mt-1"
                     }, "Motivo: ", e.reject_reason), e.admin_name && "aguardando_aprovacao" !== e.status && React.createElement("p", {
                         className: "text-xs text-purple-600 mt-1 font-medium"
@@ -2080,7 +2182,7 @@
                 className: "px-4 py-3"
             }, e.reason || "-"), React.createElement("td", {
                 className: "px-4 py-3 text-xs text-gray-600"
-            }, e.created_by || "-"), React.createElement("td", {
+            }, React.createElement("div", null, e.created_by || "-", e.created_at && React.createElement("div", {style: {fontSize: "10px", color: "#9ca3af", marginTop: "2px"}}, new Date(e.created_at).toLocaleDateString("pt-BR") + " " + new Date(e.created_at).toLocaleTimeString("pt-BR", {hour: "2-digit", minute: "2-digit"})))), React.createElement("td", {
                 className: "px-4 py-3 text-center"
             }, React.createElement("span", {
                 className: "px-2 py-1 rounded text-xs font-bold " + ("ativa" === e.status ? "bg-green-500 text-white" : "bg-gray-400 text-white")
@@ -4715,7 +4817,7 @@
                         const t = new Date(e.created_at);
                         return t.getMonth() === l && t.getFullYear() === r
                     }),
-                    s = c.filter(e => "aprovado" === e.status || "aprovado_gratuidade" === e.status),
+                    s = c.filter(e => "aprovado" === e.status || "aprovado_gratuidade" === e.status || "pago_stark" === e.status),
                     n = c.filter(e => "aprovado" === e.status),
                     m = c.filter(e => "aprovado_gratuidade" === e.status),
                     i = 2025,
@@ -4812,7 +4914,7 @@
                     I = 0 === l ? r - 1 : r,
                     F = q.filter(e => {
                         const t = new Date(e.created_at);
-                        return t.getMonth() === L && t.getFullYear() === I && ("aprovado" === e.status || "aprovado_gratuidade" === e.status)
+                        return t.getMonth() === L && t.getFullYear() === I && ("aprovado" === e.status || "aprovado_gratuidade" === e.status || "pago_stark" === e.status)
                     }).reduce((e, t) => e + parseFloat(t.final_amount || 0), 0),
                     $ = F > 0 ? (S - F) / F * 100 : 0;
                 return React.createElement(React.Fragment, null, React.createElement("div", {
@@ -5903,6 +6005,223 @@
 ))
     };
 
+    // ==================== ABA LIMITES — LIBERAÇÃO DE LIMITES DE SAQUE ====================
+    
+    window.LimitesComponent = function(limitesProps) {
+        var fetchAuth = limitesProps.fetchAuth;
+        var API_URL = limitesProps.API_URL;
+        var ja = limitesProps.ja;
+        var er = limitesProps.er;
+        var v = limitesProps.v;
+        var y = limitesProps.y;
+        var formatarMoeda = window.formatarMoeda;
+
+        var _limitesState = React.useState({ lista: [], loading: true, contadores: null });
+        var limitesState = _limitesState[0]; var setLimitesState = _limitesState[1];
+        var _limiteFiltro = React.useState('pendente');
+        var limiteFiltro = _limiteFiltro[0]; var setLimiteFiltro = _limiteFiltro[1];
+        var _liberandoId = React.useState(null);
+        var liberandoId = _liberandoId[0]; var setLiberandoId = _liberandoId[1];
+
+        var carregarLimites = React.useCallback(async function() {
+            setLimitesState(function(prev) { return Object.assign({}, prev, { loading: true }); });
+            try {
+                var promessas = [
+                    fetchAuth(API_URL + '/withdrawals/solicitacoes-limite' + (limiteFiltro ? '?status=' + limiteFiltro : '')),
+                    fetchAuth(API_URL + '/withdrawals/solicitacoes-limite/contadores')
+                ];
+                var respostas = await Promise.all(promessas);
+                var lista = respostas[0].ok ? await respostas[0].json() : [];
+                var contadores = respostas[1].ok ? await respostas[1].json() : null;
+                setLimitesState({ lista: lista, loading: false, contadores: contadores });
+            } catch (err) {
+                console.error('Erro ao carregar limites:', err);
+                setLimitesState(function(prev) { return Object.assign({}, prev, { loading: false }); });
+            }
+        }, [limiteFiltro]);
+
+        React.useEffect(function() { carregarLimites(); }, [limiteFiltro]);
+
+        // WebSocket: escutar novas solicitações em tempo real
+        React.useEffect(function() {
+            var handler = function(event) {
+                try {
+                    var msg = JSON.parse(event.data);
+                    if (msg.event === 'NEW_LIMIT_REQUEST' || msg.event === 'LIMIT_REQUEST_UPDATE') {
+                        carregarLimites();
+                        if (msg.event === 'NEW_LIMIT_REQUEST') {
+                            v(function(prev) { return Object.assign({}, prev, { limites_pendentes: (prev.limites_pendentes || 0) + 1 }); });
+                            ja('🔓 Nova solicitação de limite: ' + msg.data.user_name, 'info');
+                        }
+                        if (msg.event === 'LIMIT_REQUEST_UPDATE' && msg.data.status !== 'pendente') {
+                            v(function(prev) { return Object.assign({}, prev, { limites_pendentes: Math.max(0, (prev.limites_pendentes || 0) - 1) }); });
+                        }
+                    }
+                } catch (e) {}
+            };
+            if (window.__wsFinanceiro) {
+                window.__wsFinanceiro.addEventListener('message', handler);
+                return function() { window.__wsFinanceiro.removeEventListener('message', handler); };
+            }
+        }, []);
+
+        var liberarLimite = async function(id) {
+            setLiberandoId(id);
+            try {
+                var resp = await fetchAuth(API_URL + '/withdrawals/solicitacoes-limite/' + id + '/liberar', {
+                    method: 'PATCH', headers: { 'Content-Type': 'application/json' }
+                });
+                var data = await resp.json();
+                if (resp.ok) { ja('✅ Limite liberado com sucesso!', 'success'); carregarLimites(); }
+                else { ja('❌ ' + (data.error || 'Erro ao liberar'), 'error'); }
+            } catch (err) { ja('❌ Erro de conexão', 'error'); }
+            setLiberandoId(null);
+        };
+
+        var rejeitarLimite = async function(id) {
+            if (!confirm('Rejeitar esta solicitação de limite?')) return;
+            setLiberandoId(id);
+            try {
+                var resp = await fetchAuth(API_URL + '/withdrawals/solicitacoes-limite/' + id + '/rejeitar', {
+                    method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ motivo: 'Rejeitado pelo financeiro' })
+                });
+                if (resp.ok) { ja('Solicitação rejeitada', 'info'); carregarLimites(); }
+            } catch (err) { ja('❌ Erro', 'error'); }
+            setLiberandoId(null);
+        };
+
+        var cont = limitesState.contadores || {};
+        
+        return React.createElement("div", { className: "max-w-7xl mx-auto p-6 space-y-6" },
+            // Header
+            React.createElement("div", { className: "bg-gradient-to-r from-orange-600 to-red-600 rounded-xl p-6 text-white" },
+                React.createElement("h2", { className: "text-2xl font-bold mb-2" }, "🔓 Liberação de Limites"),
+                React.createElement("p", { className: "text-orange-100" }, "Gerencie solicitações de limite extra de saque dos motoboys. Reset toda terça-feira.")
+            ),
+            // Contadores
+            React.createElement("div", { className: "grid grid-cols-2 md:grid-cols-4 gap-4" },
+                React.createElement("div", { className: "bg-white rounded-xl p-4 shadow text-center border-l-4 border-orange-500" },
+                    React.createElement("p", { className: "text-3xl font-bold text-orange-600" }, cont.pendentes_ciclo_atual || 0),
+                    React.createElement("p", { className: "text-xs text-gray-500" }, "Pendentes (ciclo)")
+                ),
+                React.createElement("div", { className: "bg-white rounded-xl p-4 shadow text-center border-l-4 border-green-500" },
+                    React.createElement("p", { className: "text-3xl font-bold text-green-600" }, cont.liberados_ciclo_atual || 0),
+                    React.createElement("p", { className: "text-xs text-gray-500" }, "Liberados (ciclo)")
+                ),
+                React.createElement("div", { className: "bg-white rounded-xl p-4 shadow text-center border-l-4 border-red-500" },
+                    React.createElement("p", { className: "text-3xl font-bold text-red-600" }, cont.rejeitados || 0),
+                    React.createElement("p", { className: "text-xs text-gray-500" }, "Rejeitados (total)")
+                ),
+                React.createElement("div", { className: "bg-white rounded-xl p-4 shadow text-center border-l-4 border-blue-500" },
+                    React.createElement("p", { className: "text-3xl font-bold text-blue-600" }, cont.pendentes || 0),
+                    React.createElement("p", { className: "text-xs text-gray-500" }, "Pendentes (total)")
+                )
+            ),
+            // Filtros
+            React.createElement("div", { className: "bg-white rounded-xl shadow p-4" },
+                React.createElement("div", { className: "flex gap-2 flex-wrap" },
+                    ["pendente", "liberado", "rejeitado", "expirado", ""].map(function(st) {
+                        var label = st === "pendente" ? "⏳ Pendentes" : st === "liberado" ? "✅ Liberados" : st === "rejeitado" ? "❌ Rejeitados" : st === "expirado" ? "⏰ Expirados" : "📋 Todos";
+                        var active = limiteFiltro === st;
+                        return React.createElement("button", {
+                            key: st || "all",
+                            onClick: function() { setLimiteFiltro(st); },
+                            className: "px-4 py-2 rounded-lg text-sm font-semibold transition-all " + (active ? "bg-purple-600 text-white shadow-lg" : "bg-gray-100 text-gray-600 hover:bg-gray-200")
+                        }, label, st === "pendente" && cont.pendentes > 0 && React.createElement("span", { className: "ml-1 bg-red-500 text-white text-xs rounded-full px-1.5" }, cont.pendentes));
+                    })
+                )
+            ),
+            // Lista
+            React.createElement("div", { className: "bg-white rounded-xl shadow overflow-hidden" },
+                limitesState.loading ? React.createElement("div", { className: "p-8 text-center" },
+                    React.createElement("p", { className: "text-gray-500" }, "⏳ Carregando...")
+                ) : limitesState.lista.length === 0 ? React.createElement("div", { className: "p-8 text-center" },
+                    React.createElement("p", { className: "text-gray-400 text-lg" }, "📭 Nenhuma solicitação " + (limiteFiltro || "")),
+                    React.createElement("p", { className: "text-gray-300 text-sm mt-1" }, "As solicitações aparecerão aqui em tempo real")
+                ) : React.createElement("div", { className: "divide-y divide-gray-100" },
+                    limitesState.lista.map(function(item) {
+                        var isPendente = item.status === 'pendente';
+                        var isLiberado = item.status === 'liberado';
+                        var horasAguardando = parseFloat(item.horas_aguardando || 0);
+                        var urgente = isPendente && horasAguardando > 2;
+                        var tipoLimite = item.tipo_limite || 'semanal';
+                        var isSemanal = tipoLimite === 'semanal';
+                        // Helper para formatar datas ISO sem problema de timezone
+                        var formatarDataISO = function(dateStr) {
+                            if (!dateStr) return '-';
+                            // Se for ISO date (YYYY-MM-DD), parse manual para evitar Invalid Date
+                            var parts = String(dateStr).split('T')[0].split('-');
+                            if (parts.length === 3) {
+                                return parts[2] + '/' + parts[1] + '/' + parts[0];
+                            }
+                            try { return new Date(dateStr).toLocaleDateString('pt-BR'); } catch(e) { return '-'; }
+                        };
+                        var formatarDataHora = function(dateStr) {
+                            if (!dateStr) return '-';
+                            try {
+                                var d = new Date(dateStr);
+                                if (isNaN(d.getTime())) return '-';
+                                return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                            } catch(e) { return '-'; }
+                        };
+                        return React.createElement("div", {
+                            key: item.id,
+                            className: "p-4 hover:bg-gray-50 transition-colors " + (urgente ? "bg-red-50 border-l-4 border-red-500" : isPendente ? "border-l-4 border-orange-400" : isLiberado ? "border-l-4 border-green-400" : "border-l-4 border-gray-300")
+                        },
+                            React.createElement("div", { className: "flex flex-col md:flex-row md:items-center md:justify-between gap-3" },
+                                React.createElement("div", { className: "flex-1" },
+                                    React.createElement("div", { className: "flex items-center gap-2 mb-1 flex-wrap" },
+                                        React.createElement("span", { className: "font-bold text-gray-800" }, item.user_name),
+                                        React.createElement("span", { className: "text-xs text-gray-400 font-mono" }, "#" + item.user_cod),
+                                        // Badge tipo_limite
+                                        React.createElement("span", {
+                                            className: "text-[10px] px-2 py-0.5 rounded-full font-bold " + (isSemanal ? "bg-purple-100 text-purple-700" : "bg-orange-100 text-orange-700")
+                                        }, isSemanal ? "📅 Limite Semanal" : "📆 Limite Diário"),
+                                        urgente && React.createElement("span", { className: "text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-bold animate-pulse" }, "🔴 URGENTE")
+                                    ),
+                                    React.createElement("div", { className: "flex flex-wrap gap-3 text-xs text-gray-500" },
+                                        React.createElement("span", null, "📅 Ciclo: " + formatarDataISO(item.ciclo_inicio) + " a " + formatarDataISO(item.ciclo_fim)),
+                                        React.createElement("span", null, "🕐 Solicitado: " + formatarDataHora(item.created_at)),
+                                        isPendente && horasAguardando >= 1 && React.createElement("span", { className: "text-red-600 font-semibold" }, "⏰ Há " + Math.floor(horasAguardando) + "h aguardando")
+                                    ),
+                                    item.motivo && React.createElement("p", { className: "text-xs text-gray-400 mt-1 italic" }, "Motivo: " + item.motivo)
+                                ),
+                                React.createElement("div", { className: "flex items-center gap-2" },
+                                    React.createElement("span", {
+                                        className: "px-3 py-1 rounded-full text-xs font-bold " + (isPendente ? "bg-orange-100 text-orange-700" : isLiberado ? "bg-green-100 text-green-700" : item.status === 'rejeitado' ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-600")
+                                    }, isPendente ? "⏳ Pendente" : isLiberado ? "✅ Liberado" : item.status === 'rejeitado' ? "❌ Rejeitado" : "⏰ Expirado"),
+                                    item.admin_name && React.createElement("span", { className: "text-xs text-gray-400" }, "por " + item.admin_name),
+                                    isPendente && React.createElement("button", {
+                                        onClick: function() { liberarLimite(item.id); },
+                                        disabled: liberandoId === item.id,
+                                        className: "px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-bold hover:bg-green-700 disabled:opacity-50 transition-all shadow-sm"
+                                    }, liberandoId === item.id ? "..." : "✅ Liberar"),
+                                    isPendente && React.createElement("button", {
+                                        onClick: function() { rejeitarLimite(item.id); },
+                                        disabled: liberandoId === item.id,
+                                        className: "px-3 py-2 bg-red-100 text-red-600 rounded-lg text-sm font-semibold hover:bg-red-200 disabled:opacity-50 transition-all"
+                                    }, "✗")
+                                )
+                            )
+                        );
+                    })
+                )
+            ),
+            // Info
+            React.createElement("div", { className: "bg-blue-50 border border-blue-200 rounded-lg p-4" },
+                React.createElement("p", { className: "text-sm text-blue-800 font-medium" }, "ℹ️ Como funciona"),
+                React.createElement("ul", { className: "text-xs text-blue-700 mt-2 space-y-1" },
+                    React.createElement("li", null, "• O limite semanal reseta toda terça-feira automaticamente"),
+                    React.createElement("li", null, "• Quando o motoboy esgota o limite, um botão aparece para solicitar mais"),
+                    React.createElement("li", null, "• Ao liberar, o ciclo do motoboy é renovado (limite volta ao valor original)"),
+                    React.createElement("li", null, "• A validação de saldo Plific é mantida — só solicita quem tem saldo"),
+                    React.createElement("li", null, "• Solicitações pendentes de ciclos anteriores expiram automaticamente")
+                )
+            )
+        );
+    };
+
     // ==================== ABA STARK BANK — PAGAMENTO AUTOMÁTICO VIA PIX ====================
     
     window.StarkBankComponent = function(starkProps) {
@@ -6065,6 +6384,32 @@
 
         // Init
         React.useEffect(function() { carregarSaldo(); carregarPendentes(1); carregarHistorico(); carregarStatus(); }, []);
+
+        // 🔔 Real-time: escutar pagamentos Stark Bank via WebSocket
+        React.useEffect(function() {
+            var handler = function(e) {
+                var d = e.detail;
+                console.log('💰 [Pix Stark] Atualização em tempo real:', d.stark_status, '#' + d.id);
+                // Atualizar pendentes em memória (sem reload)
+                setSt(function(prev) {
+                    var novosPendentes = prev.pendentes.map(function(s) {
+                        if (s.stark_transfer_id === d.stark_transfer_id || s.id === d.id) {
+                            return Object.assign({}, s, { stark_status: d.stark_status, stark_erro: d.stark_erro, status: d.status || s.status });
+                        }
+                        return s;
+                    });
+                    return Object.assign({}, prev, { pendentes: novosPendentes });
+                });
+                // Recarregar listas completas após breve delay (para DB estar consistente)
+                setTimeout(function() {
+                    carregarPendentes(st.pendentesPage);
+                    carregarHistorico();
+                    carregarSaldo();
+                }, 800);
+            };
+            window.addEventListener('stark-payment-update', handler);
+            return function() { window.removeEventListener('stark-payment-update', handler); };
+        }, []);
         
         // Toggle checkbox individual (state separado = rápido)
         var toggleSel = function(id) { setSel(function(p) { var n = Object.assign({}, p); if (n[id]) delete n[id]; else n[id] = true; return n; }); };
@@ -6260,17 +6605,35 @@
                 st.pendentesLoading ? React.createElement("div", { className: "text-center py-10 text-gray-400" }, "Carregando...")
                 : st.pendentes.length === 0 ? React.createElement("div", { className: "text-center py-10 bg-white rounded-xl shadow" }, React.createElement("p", { className: "text-5xl mb-3" }, "✅"), React.createElement("p", { className: "text-gray-500 text-lg" }, "Nenhum saque no período selecionado"))
                 : (function() {
-                    // Agrupar em lotes de 50 e ordenar por valor (maior primeiro)
+                    // Agrupar por stark_lote_id real (do banco) — fallback para lote virtual se não tiver
                     var sortedPendentes = st.pendentes.slice().sort(function(a, b) { return parseFloat(b.final_amount || 0) - parseFloat(a.final_amount || 0); });
-                    var TAMANHO_LOTE = 50;
+                    
+                    // Separar: com lote_id real vs sem lote_id
+                    var porLote = {};
+                    var semLote = [];
+                    sortedPendentes.forEach(function(s) {
+                        if (s.stark_lote_id) {
+                            if (!porLote[s.stark_lote_id]) porLote[s.stark_lote_id] = [];
+                            porLote[s.stark_lote_id].push(s);
+                        } else {
+                            semLote.push(s);
+                        }
+                    });
+                    
+                    // Montar array de lotes: primeiro os reais (por ID desc), depois os sem lote
                     var lotes = [];
-                    for (var li = 0; li < sortedPendentes.length; li += TAMANHO_LOTE) {
-                        lotes.push(sortedPendentes.slice(li, li + TAMANHO_LOTE));
+                    Object.keys(porLote).sort(function(a, b) { return parseInt(b) - parseInt(a); }).forEach(function(loteId) {
+                        lotes.push({ id: parseInt(loteId), saques: porLote[loteId] });
+                    });
+                    if (semLote.length > 0) {
+                        lotes.push({ id: null, saques: semLote });
                     }
                     
                     return React.createElement("div", { className: "space-y-3" },
-                        lotes.map(function(loteSaques, idx) {
-                            var loteNum = idx + 1;
+                        lotes.map(function(loteObj, idx) {
+                            var loteSaques = loteObj.saques;
+                            var loteNum = loteObj.id || ('temp_' + (idx + 1));
+                            var loteLabel = loteObj.id ? ('Lote #' + loteObj.id) : ('Lote ' + (idx + 1));
                             var loteValorTotal = loteSaques.reduce(function(a, s) { return a + parseFloat(s.final_amount || 0); }, 0);
                             var loteSelecionados = loteSaques.filter(function(s) { return sel[s.id]; }).length;
                             var loteExpandido = st['loteExp_' + idx];
@@ -6302,7 +6665,7 @@
                                         // Info do lote
                                         React.createElement("div", { className: "min-w-0" },
                                             React.createElement("div", { className: "flex flex-wrap items-center gap-2" },
-                                                React.createElement("span", { className: "bg-emerald-100 text-emerald-700 px-2 md:px-3 py-1 rounded-full text-xs md:text-sm font-bold" }, "Lote " + loteNum),
+                                                React.createElement("span", { className: "bg-emerald-100 text-emerald-700 px-2 md:px-3 py-1 rounded-full text-xs md:text-sm font-bold" }, loteLabel),
                                                 React.createElement("span", { className: "text-gray-700 font-medium text-xs md:text-sm" }, loteSaques.length + " solic."),
                                                 React.createElement("span", { className: "text-emerald-700 font-bold text-sm md:text-lg" }, formatarMoeda(loteValorTotal))
                                             ),
@@ -6322,12 +6685,11 @@
                                             React.createElement("th", { className: "px-4 py-2 text-left" }, "Chave Pix"),
                                             React.createElement("th", { className: "px-4 py-2 text-right" }, "Valor"),
                                             React.createElement("th", { className: "px-4 py-2 text-center" }, "Status"),
-                                            React.createElement("th", { className: "px-4 py-2 text-center" }, "Validação"),
                                             React.createElement("th", { className: "px-4 py-2 text-left" }, "Aprovado em")
                                         )),
                                         React.createElement("tbody", null, loteSaques.map(function(s, sIdx) {
                                             var v = validacoes[s.id];
-                                            return React.createElement("tr", { key: s.id, className: "border-b hover:bg-gray-50 " + (sel[s.id] ? "bg-emerald-50" : "") + (v && v.alertas && v.alertas.length > 0 ? " bg-yellow-50" : "") },
+                                            return React.createElement("tr", { key: s.id, className: "border-b hover:bg-gray-50 " + (sel[s.id] ? "bg-emerald-50" : "") },
                                                 React.createElement("td", { className: "px-4 py-2.5" }, React.createElement("input", { type: "checkbox", checked: !!sel[s.id], onChange: function() { toggleSel(s.id); }, className: "w-4 h-4 rounded border-gray-300 accent-emerald-600" })),
                                                 React.createElement("td", { className: "px-4 py-2.5" },
                                                     React.createElement("div", { className: "font-medium text-gray-800" }, s.user_name),
@@ -6336,13 +6698,6 @@
                                                 React.createElement("td", { className: "px-4 py-2.5 text-gray-600 text-xs max-w-[180px] truncate" }, s.pix_key),
                                                 React.createElement("td", { className: "px-4 py-2.5 text-right font-bold " + (parseFloat(s.final_amount) >= 200 ? "text-emerald-700 text-base" : "text-gray-700") }, formatarMoeda(s.final_amount)),
                                                 React.createElement("td", { className: "px-4 py-2.5 text-center" }, s.stark_status ? badge(s.stark_status) : React.createElement("span", { className: "px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800" }, "Aguardando")),
-                                                React.createElement("td", { className: "px-4 py-2.5 text-center" },
-                                                    !v ? React.createElement("span", { className: "text-xs text-gray-400" }, "—") :
-                                                    v.dict_status === 'ok' && v.alertas.length === 0 ? React.createElement("span", { className: "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-700", title: v.dict_nome ? "Titular: " + v.dict_nome + (v.dict_banco ? " | Banco: " + v.dict_banco : "") : "" }, "✅ OK") :
-                                                    v.dict_status === 'ok' && v.cpf_divergente ? React.createElement("span", { className: "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-yellow-100 text-yellow-700 cursor-help", title: v.alertas.join('\n') }, "⚠️ CPF Div.") :
-                                                    v.dict_status === 'ok' && v.alertas.length > 0 ? React.createElement("span", { className: "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-yellow-100 text-yellow-700 cursor-help", title: v.alertas.join('\n') }, "⚠️ Alerta") :
-                                                    React.createElement("span", { className: "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700 cursor-help", title: v.alertas.join('\n') }, "❌ Erro")
-                                                ),
                                                 React.createElement("td", { className: "px-4 py-2.5 text-xs text-gray-500" }, s.approved_at ? new Date(s.approved_at).toLocaleString('pt-BR') : '—')
                                             );
                                         }))
@@ -6804,6 +7159,40 @@
             }
         };
 
+        // ===== Sincronizar status dos acertos pendentes =====
+        var _sincronizando = React.useState(false);
+        var sincronizando = _sincronizando[0]; var setSincronizando = _sincronizando[1];
+
+        var sincronizarAcerto = async function() {
+            setSincronizando(true);
+            try {
+                Toast('🔄 Sincronizando status com Stark Bank...', 'info');
+                var r = await fetchAuth(API_URL + '/stark/sync', { method: 'POST' });
+                if (!r.ok) {
+                    var err = await r.json().catch(function() { return {}; });
+                    Toast('❌ ' + (err.error || 'Erro ' + r.status), 'error');
+                    setSincronizando(false);
+                    return;
+                }
+                var d = await r.json();
+                if (d.atualizados > 0) {
+                    Toast('✅ ' + d.atualizados + ' pagamento(s) atualizado(s)!', 'success');
+                } else {
+                    Toast('ℹ️ Nenhuma atualização pendente', 'info');
+                }
+                // Recarregar detalhe do lote aberto e listas
+                if (st.loteDetalhe && st.loteDetalhe.lote) {
+                    carregarDetalheLote(st.loteDetalhe.lote.id);
+                }
+                carregarHistorico();
+                carregarLotesAprovacao();
+            } catch (e) {
+                Toast('❌ Erro: ' + e.message, 'error');
+            } finally {
+                setSincronizando(false);
+            }
+        };
+
         // ===== Validar Pix via DICT (Stark Bank) =====
         var validarPixDict = async function(prof) {
             if (!prof.pix_key) { Toast('❌ Profissional sem chave Pix', 'error'); return; }
@@ -6930,7 +7319,7 @@
             var labels = {
                 pronto: '✅ Pronto', sem_pix: '❌ Sem Pix', aguardando: '⏳ Aguardando',
                 processando: '⏳ Processando', pago: '✅ Pago', concluido: '✅ Concluído',
-                rejeitado: '❌ Rejeitado', em_lote: '📋 No Lote', erro: '❌ Erro',
+                rejeitado: '❌ Rejeitado', em_lote: '🏦 Lote Gerado', erro: '❌ Erro',
                 parcial: '⚠️ Parcial'
             };
             return React.createElement("span", {
@@ -6941,6 +7330,35 @@
         // ===== Init: carregar saldo =====
         React.useEffect(function() {
             carregarSaldo();
+        }, []);
+
+        // 🔔 Real-time: escutar pagamentos Stark Bank via WebSocket
+        React.useEffect(function() {
+            var handler = function(e) {
+                var d = e.detail;
+                console.log('💰 [Acerto] Atualização em tempo real:', d.stark_status, '#' + d.id);
+                // Se tem lote aberto, atualizar itens em memória
+                setSt(function(prev) {
+                    if (!prev.loteDetalhe || !prev.loteDetalhe.itens) return prev;
+                    var novosItens = prev.loteDetalhe.itens.map(function(item) {
+                        if (item.stark_transfer_id === d.stark_transfer_id) {
+                            return Object.assign({}, item, { status: d.stark_status, erro: d.stark_erro });
+                        }
+                        return item;
+                    });
+                    return Object.assign({}, prev, { loteDetalhe: Object.assign({}, prev.loteDetalhe, { itens: novosItens }) });
+                });
+                // Recarregar dados completos após breve delay
+                setTimeout(function() {
+                    if (st.loteDetalhe && st.loteDetalhe.lote) {
+                        carregarDetalheLote(st.loteDetalhe.lote.id);
+                    }
+                    carregarLotesAprovacao();
+                    carregarHistorico();
+                }, 800);
+            };
+            window.addEventListener('stark-payment-update', handler);
+            return function() { window.removeEventListener('stark-payment-update', handler); };
         }, []);
 
         // ==================== RENDER ====================
@@ -7282,8 +7700,17 @@
                                     (st.loteDetalhe.lote.finalizado_em ? " | Finalizado: " + new Date(st.loteDetalhe.lote.finalizado_em).toLocaleString('pt-BR') : '')
                                 )
                             ),
-                            st.loteDetalhe.lote.saldo_antes && React.createElement("div", { className: "text-right text-sm" },
-                                React.createElement("p", { className: "text-gray-400" }, "Saldo antes: " + formatarMoeda(st.loteDetalhe.lote.saldo_antes))
+                            React.createElement("div", { className: "flex items-center gap-3" },
+                                // Botão Sincronizar (só aparece se tem itens processando)
+                                (st.loteDetalhe.itens || []).some(function(i) { return i.status === 'processando'; }) &&
+                                    React.createElement("button", {
+                                        onClick: sincronizarAcerto,
+                                        disabled: sincronizando,
+                                        className: "px-3 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 text-xs font-medium disabled:opacity-50"
+                                    }, sincronizando ? "⏳ Sincronizando..." : "🔄 Sincronizar"),
+                                st.loteDetalhe.lote.saldo_antes && React.createElement("div", { className: "text-right text-sm" },
+                                    React.createElement("p", { className: "text-gray-400" }, "Saldo antes: " + formatarMoeda(st.loteDetalhe.lote.saldo_antes))
+                                )
                             )
                         )
                     ),
@@ -7311,7 +7738,7 @@
                                         React.createElement("td", { className: "px-4 py-2.5 text-xs text-gray-600 max-w-[140px] truncate" }, item.pix_key || '—'),
                                         React.createElement("td", { className: "px-4 py-2.5 text-right font-bold text-emerald-700" }, formatarMoeda(item.valor)),
                                         React.createElement("td", { className: "px-4 py-2.5 text-center" }, badge(item.status)),
-                                        React.createElement("td", { className: "px-4 py-2.5 text-xs text-red-500 max-w-[200px] truncate" }, item.erro || '—')
+                                        React.createElement("td", { className: "px-4 py-2.5 text-xs text-red-500 max-w-[250px]", title: item.erro || '' }, window.traduzirErroStarkFE(item.erro) || '—')
                                     );
                                 })
                             )
@@ -7579,6 +8006,16 @@
         // Init
         React.useEffect(function() { carregarDados(); }, []);
 
+        // 🔔 Real-time: escutar pagamentos Stark Bank via WebSocket
+        React.useEffect(function() {
+            var handler = function(e) {
+                console.log('💰 [Conciliação] Atualização em tempo real:', e.detail.stark_status);
+                setTimeout(function() { carregarDados(); }, 800);
+            };
+            window.addEventListener('stark-payment-update', handler);
+            return function() { window.removeEventListener('stark-payment-update', handler); };
+        }, []);
+
         // Filtrar por busca local (nome ou código)
         var itensFiltrados = st.itens.filter(function(item) {
             if (!st.busca) return true;
@@ -7631,6 +8068,29 @@
             Toast('✅ CSV exportado!', 'success');
         };
 
+        // Sincronizar status acerto
+        var _sincConciliacao = React.useState(false);
+        var sincConciliacao = _sincConciliacao[0]; var setSincConciliacao = _sincConciliacao[1];
+
+        var sincronizarConciliacao = async function() {
+            setSincConciliacao(true);
+            try {
+                Toast('🔄 Sincronizando status com Stark Bank...', 'info');
+                var r = await fetchAuth(API_URL + '/stark/sync', { method: 'POST' });
+                var d = await r.json();
+                if (d.atualizados > 0) {
+                    Toast('✅ ' + d.atualizados + ' pagamento(s) atualizado(s)!', 'success');
+                    carregarDados();
+                } else {
+                    Toast('ℹ️ Nenhuma atualização pendente', 'info');
+                }
+            } catch (e) {
+                Toast('❌ Erro: ' + e.message, 'error');
+            } finally {
+                setSincConciliacao(false);
+            }
+        };
+
         return React.createElement("div", { className: "max-w-7xl mx-auto p-6 space-y-6" },
 
             // Header
@@ -7640,6 +8100,11 @@
                     React.createElement("p", { className: "text-gray-500 mt-1" }, "Acompanhe todos os pagamentos de acerto realizados via Stark Bank")
                 ),
                 React.createElement("div", { className: "flex gap-2" },
+                    React.createElement("button", {
+                        onClick: sincronizarConciliacao,
+                        disabled: sincConciliacao,
+                        className: "px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 text-sm font-medium disabled:opacity-50"
+                    }, sincConciliacao ? "⏳ Sincronizando..." : "🔄 Sincronizar Stark"),
                     React.createElement("button", {
                         onClick: function() { carregarDados(); },
                         className: "px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm"

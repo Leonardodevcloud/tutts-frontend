@@ -2,17 +2,15 @@
 // Arquivo: modulo-cs.js
 // Self-contained: gerencia próprio estado e fetch
 // UI inspirada no CRM WhatsApp: clean, sidebar + content
+// v2: Filtros estilo BI (cliente com máscara + centro de custo)
 // ================================================================
 
 (function() {
   'use strict';
 
   const { useState, useEffect, useCallback, useRef, useMemo } = React;
-
-  // ── Helper: React.createElement shortcut ──
   const h = React.createElement;
 
-  // ── Constantes ──
   const TABS = [
     { id: 'dashboard', label: 'Dashboard', icon: '📊' },
     { id: 'clientes', label: 'Clientes', icon: '🏢' },
@@ -36,7 +34,6 @@
     if (score >= 20) return CORES_HEALTH.critico;
     return CORES_HEALTH.urgente;
   }
-
   function getHealthLabel(score) {
     if (score >= 80) return 'Excelente';
     if (score >= 60) return 'Bom';
@@ -44,862 +41,897 @@
     if (score >= 20) return 'Crítico';
     return 'Urgente';
   }
-
-  function formatCurrency(v) {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v || 0);
-  }
-
-  function formatDate(d) {
-    if (!d) return '-';
-    return new Date(d).toLocaleDateString('pt-BR');
-  }
-
-  function formatDateTime(d) {
-    if (!d) return '-';
-    return new Date(d).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
-  }
-
+  function formatCurrency(v) { return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v || 0); }
+  function formatDate(d) { if (!d) return '-'; return new Date(d).toLocaleDateString('pt-BR'); }
+  function formatDateTime(d) { if (!d) return '-'; return new Date(d).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }); }
   function diasAtras(d) {
     if (!d) return null;
     const diff = Math.floor((Date.now() - new Date(d).getTime()) / (1000 * 60 * 60 * 24));
-    if (diff === 0) return 'Hoje';
-    if (diff === 1) return 'Ontem';
-    return `${diff}d atrás`;
+    if (diff === 0) return 'Hoje'; if (diff === 1) return 'Ontem'; return diff + 'd atrás';
   }
 
-  // ── Componente: Pill/Badge ──
   function Badge({ text, cor = '#6B7280', className = '' }) {
-    return h('span', {
-      className: `inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${className}`,
-      style: { backgroundColor: cor + '20', color: cor }
-    }, text);
+    return h('span', { className: 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ' + className, style: { backgroundColor: cor + '20', color: cor } }, text);
   }
-
-  // ── Componente: Health Score Ring ──
   function HealthRing({ score, size = 60 }) {
-    const cor = getHealthCor(score);
-    const radius = (size - 8) / 2;
-    const circumference = 2 * Math.PI * radius;
-    const progress = ((score || 0) / 100) * circumference;
-
+    const cor = getHealthCor(score), radius = (size - 8) / 2, circ = 2 * Math.PI * radius, prog = ((score || 0) / 100) * circ;
     return h('div', { className: 'relative inline-flex items-center justify-center', style: { width: size, height: size } },
       h('svg', { width: size, height: size, className: 'transform -rotate-90' },
         h('circle', { cx: size/2, cy: size/2, r: radius, fill: 'none', stroke: '#E5E7EB', strokeWidth: 4 }),
-        h('circle', { cx: size/2, cy: size/2, r: radius, fill: 'none', stroke: 'currentColor',
-          strokeWidth: 4, strokeDasharray: circumference, strokeDashoffset: circumference - progress,
-          strokeLinecap: 'round', className: cor.text, style: { transition: 'stroke-dashoffset 0.8s ease' }
-        })
+        h('circle', { cx: size/2, cy: size/2, r: radius, fill: 'none', stroke: 'currentColor', strokeWidth: 4, strokeDasharray: circ, strokeDashoffset: circ - prog, strokeLinecap: 'round', className: cor.text, style: { transition: 'stroke-dashoffset 0.8s ease' } })
       ),
-      h('span', { className: `absolute text-sm font-bold ${cor.text}` }, score || 0)
+      h('span', { className: 'absolute text-sm font-bold ' + cor.text }, score || 0)
     );
   }
-
-  // ── Componente: Card KPI ──
-  function KpiCard({ titulo, valor, subtitulo, icone, cor = 'blue', trend }) {
-    const cores = {
-      blue: 'bg-blue-50 text-blue-600 border-blue-100',
-      green: 'bg-emerald-50 text-emerald-600 border-emerald-100',
-      amber: 'bg-amber-50 text-amber-600 border-amber-100',
-      red: 'bg-red-50 text-red-600 border-red-100',
-      purple: 'bg-purple-50 text-purple-600 border-purple-100',
-      gray: 'bg-gray-50 text-gray-600 border-gray-100',
-    };
-    return h('div', { className: `bg-white rounded-xl border ${cores[cor]?.split(' ')[2] || 'border-gray-200'} p-4 hover:shadow-md transition-shadow` },
-      h('div', { className: 'flex items-start justify-between mb-2' },
-        h('span', { className: 'text-2xl' }, icone),
-        trend !== undefined && h('span', {
-          className: `text-xs font-semibold px-2 py-0.5 rounded-full ${trend >= 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`
-        }, `${trend >= 0 ? '↑' : '↓'} ${Math.abs(trend)}%`)
-      ),
-      h('p', { className: 'text-2xl font-bold text-gray-900' }, valor),
-      h('p', { className: 'text-sm text-gray-500 mt-1' }, titulo),
-      subtitulo && h('p', { className: 'text-xs text-gray-400 mt-0.5' }, subtitulo)
+  function KpiCard({ titulo, valor, subtitulo, icone, cor = 'blue' }) {
+    const cores = { blue: 'bg-blue-50 text-blue-600 border-blue-100', green: 'bg-emerald-50 text-emerald-600 border-emerald-100', amber: 'bg-amber-50 text-amber-600 border-amber-100', red: 'bg-red-50 text-red-600 border-red-100', purple: 'bg-purple-50 text-purple-600 border-purple-100', gray: 'bg-gray-50 text-gray-600 border-gray-100' };
+    return h('div', { className: 'rounded-xl border p-3 ' + (cores[cor] || cores.gray) },
+      h('div', { className: 'flex items-center gap-2 mb-1' }, icone && h('span', { className: 'text-lg' }, icone), h('span', { className: 'text-xs font-medium opacity-70 truncate' }, titulo)),
+      h('p', { className: 'text-xl font-bold' }, valor), subtitulo && h('p', { className: 'text-xs opacity-60 mt-0.5' }, subtitulo)
     );
   }
-
-  // ── Componente: Modal ──
   function Modal({ aberto, fechar, titulo, largura = 'max-w-2xl', children }) {
     if (!aberto) return null;
-    return h('div', { className: 'fixed inset-0 z-50 flex items-center justify-center p-4', onClick: fechar },
-      h('div', { className: 'fixed inset-0 bg-black/50 backdrop-blur-sm' }),
-      h('div', {
-        className: `relative bg-white rounded-2xl shadow-2xl w-full ${largura} max-h-[90vh] flex flex-col`,
-        onClick: e => e.stopPropagation()
-      },
-        h('div', { className: 'flex items-center justify-between p-5 border-b border-gray-100' },
-          h('h3', { className: 'text-lg font-bold text-gray-900' }, titulo),
-          h('button', { onClick: fechar, className: 'p-1.5 hover:bg-gray-100 rounded-lg transition-colors text-gray-400 hover:text-gray-600' }, '✕')
-        ),
-        h('div', { className: 'p-5 overflow-y-auto flex-1' }, children)
+    return h('div', { className: 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4', onClick: e => { if (e.target === e.currentTarget) fechar(); } },
+      h('div', { className: 'bg-white rounded-2xl shadow-2xl w-full ' + largura + ' max-h-[90vh] overflow-y-auto' },
+        h('div', { className: 'flex items-center justify-between p-5 border-b border-gray-100' }, h('h3', { className: 'text-lg font-bold text-gray-900' }, titulo), h('button', { onClick: fechar, className: 'p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600' }, '✕')),
+        h('div', { className: 'p-5' }, children)
       )
     );
   }
-
-  // ── Componente: Empty State ──
   function EmptyState({ icone = '📭', titulo, descricao, acao }) {
     return h('div', { className: 'flex flex-col items-center justify-center py-16 text-center' },
-      h('span', { className: 'text-5xl mb-4' }, icone),
-      h('h3', { className: 'text-lg font-semibold text-gray-700 mb-2' }, titulo),
-      descricao && h('p', { className: 'text-gray-500 mb-4 max-w-md' }, descricao),
-      acao
+      h('span', { className: 'text-5xl mb-4' }, icone), h('h3', { className: 'text-lg font-semibold text-gray-900 mb-2' }, titulo),
+      descricao && h('p', { className: 'text-sm text-gray-500 max-w-md' }, descricao), acao && h('div', { className: 'mt-4' }, acao)
+    );
+  }
+  function Skeleton({ linhas = 3 }) {
+    return h('div', { className: 'animate-pulse space-y-3' },
+      ...Array(linhas).fill(null).map(function(_, i) { return h('div', { key: i, className: 'h-4 bg-gray-200 rounded-lg', style: { width: (65 + Math.random() * 35) + '%' } }); })
     );
   }
 
-  // ── Componente: Skeleton Loader ──
-  function Skeleton({ linhas = 3 }) {
-    return h('div', { className: 'animate-pulse space-y-3' },
-      ...Array.from({ length: linhas }, (_, i) =>
-        h('div', { key: i, className: `h-4 bg-gray-200 rounded ${i === linhas - 1 ? 'w-2/3' : 'w-full'}` })
+  // ══════════════════════════════════════════════════
+  // RAIO-X LOADING OVERLAY (animação de escaneamento)
+  // ══════════════════════════════════════════════════
+  var RAIO_X_MSGS = [
+    { t: 'Coletando dados operacionais...', icon: '\uD83D\uDCCA', sub: 'Analisando entregas e m\u00e9tricas' },
+    { t: 'Calculando benchmark da base...', icon: '\uD83D\uDCC8', sub: 'Comparando com todos os clientes' },
+    { t: 'Processando faixas de hor\u00e1rio...', icon: '\u23F0', sub: 'Mapeando padr\u00f5es operacionais' },
+    { t: 'Analisando profissionais...', icon: '\uD83D\uDEF5', sub: 'Avaliando desempenho por motoboy' },
+    { t: 'Geocodificando mapa de calor...', icon: '\uD83D\uDDFA', sub: 'Mapeando pontos de entrega' },
+    { t: 'Intelig\u00eancia artificial gerando...', icon: '\uD83E\uDDE0', sub: 'Gemini analisando os dados' },
+    { t: 'Montando gr\u00e1ficos e relat\u00f3rio...', icon: '\uD83D\uDCDD', sub: 'Injetando visualiza\u00e7\u00f5es SVG' },
+    { t: 'Finalizando an\u00e1lise completa...', icon: '\u2728', sub: 'Quase pronto!' }
+  ];
+
+  function RaioXLoadingOverlay() {
+    var _m = useState(0), msgIdx = _m[0], setMsgIdx = _m[1];
+    var _f = useState(false), fadeOut = _f[0], setFadeOut = _f[1];
+    var containerRef = useRef(null);
+
+    useEffect(function() {
+      var interval = setInterval(function() {
+        setFadeOut(true);
+        setTimeout(function() {
+          setMsgIdx(function(prev) { return (prev + 1) % RAIO_X_MSGS.length; });
+          setFadeOut(false);
+        }, 300);
+      }, 3000);
+      return function() { clearInterval(interval); };
+    }, []);
+
+    // Injetar CSS animations no head (1 vez)
+    useEffect(function() {
+      var id = 'raio-x-anim-css';
+      if (document.getElementById(id)) return;
+      var style = document.createElement('style');
+      style.id = id;
+      style.textContent = [
+        '@keyframes rxSpin{to{transform:rotate(360deg)}}',
+        '@keyframes rxSpinR{to{transform:rotate(-360deg)}}',
+        '@keyframes rxScan{0%{transform:translateY(-50px);opacity:0}30%{opacity:1}70%{opacity:1}100%{transform:translateY(50px);opacity:0}}',
+        '@keyframes rxFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}',
+        '@keyframes rxDot{0%,100%{opacity:.3;transform:scale(.8)}50%{opacity:1;transform:scale(1.2)}}',
+        '@keyframes rxBar{0%{width:0}30%{width:45%}60%{width:70%}80%{width:85%}100%{width:95%}}',
+        '@keyframes rxParticle{0%{opacity:0;transform:translateY(15px) scale(0)}20%{opacity:.6;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-35px) scale(0)}}'
+      ].join('\n');
+      document.head.appendChild(style);
+    }, []);
+
+    // Partículas
+    useEffect(function() {
+      var el = containerRef.current;
+      if (!el) return;
+      var pBox = el.querySelector('.rx-particles');
+      if (!pBox) return;
+      var interval = setInterval(function() {
+        var p = document.createElement('div');
+        p.style.cssText = 'position:absolute;width:3px;height:3px;border-radius:50%;opacity:0;left:' + (25 + Math.random() * 90) + 'px;top:' + (25 + Math.random() * 90) + 'px;background:' + (Math.random() > 0.5 ? '#a78bfa' : '#7c3aed') + ';animation:rxParticle ' + (1.5 + Math.random()) + 's ease forwards';
+        pBox.appendChild(p);
+        setTimeout(function() { p.remove(); }, 2500);
+      }, 300);
+      return function() { clearInterval(interval); };
+    }, []);
+
+    var msg = RAIO_X_MSGS[msgIdx];
+
+    return h('div', {
+      ref: containerRef,
+      className: 'bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl border border-indigo-200 overflow-hidden',
+      style: { padding: '48px 24px' }
+    },
+      h('div', { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' } },
+
+        // Orbe com anéis
+        h('div', { style: { position: 'relative', width: '140px', height: '140px' } },
+          // Anel 1
+          h('div', { style: { position: 'absolute', inset: '0', borderRadius: '50%', border: '2px solid transparent', borderTopColor: '#7c3aed', borderRightColor: '#7c3aed', animation: 'rxSpin 2s linear infinite' } }),
+          // Anel 2
+          h('div', { style: { position: 'absolute', inset: '12px', borderRadius: '50%', border: '2px solid transparent', borderBottomColor: '#a78bfa', borderLeftColor: '#a78bfa', animation: 'rxSpinR 2.8s linear infinite' } }),
+          // Anel 3
+          h('div', { style: { position: 'absolute', inset: '24px', borderRadius: '50%', border: '2px solid transparent', borderTopColor: '#c4b5fd', borderRightColor: '#c4b5fd', animation: 'rxSpin 3.6s linear infinite' } }),
+          // Core
+          h('div', { style: { position: 'absolute', inset: '34px', borderRadius: '50%', background: 'rgba(124,58,237,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' } },
+            h('span', { style: { fontSize: '28px', animation: 'rxFloat 2s ease-in-out infinite' } }, msg.icon)
+          ),
+          // Scan line
+          h('div', { style: { position: 'absolute', left: '34px', right: '34px', height: '2px', top: '50%', background: 'linear-gradient(90deg, transparent, #7c3aed, transparent)', animation: 'rxScan 2s ease-in-out infinite', borderRadius: '1px' } }),
+          // Particles container
+          h('div', { className: 'rx-particles', style: { position: 'absolute', inset: '0', pointerEvents: 'none' } })
+        ),
+
+        // Dots
+        h('div', { style: { display: 'flex', gap: '6px', alignItems: 'center' } },
+          h('div', { style: { width: '6px', height: '6px', borderRadius: '50%', background: '#7c3aed', animation: 'rxDot 1.2s ease infinite' } }),
+          h('div', { style: { width: '6px', height: '6px', borderRadius: '50%', background: '#7c3aed', animation: 'rxDot 1.2s ease .2s infinite' } }),
+          h('div', { style: { width: '6px', height: '6px', borderRadius: '50%', background: '#7c3aed', animation: 'rxDot 1.2s ease .4s infinite' } }),
+          h('div', { style: { width: '6px', height: '6px', borderRadius: '50%', background: '#7c3aed', animation: 'rxDot 1.2s ease .6s infinite' } })
+        ),
+
+        // Mensagem principal
+        h('div', {
+          style: { fontSize: '14px', fontWeight: '500', color: '#7c3aed', textAlign: 'center', minHeight: '22px', transition: 'opacity 0.3s ease, transform 0.3s ease', opacity: fadeOut ? 0 : 1, transform: fadeOut ? 'translateY(-6px)' : 'translateY(0)' }
+        }, msg.t),
+
+        // Barra de progresso
+        h('div', { style: { width: '220px', height: '3px', background: 'rgba(124,58,237,0.1)', borderRadius: '2px', overflow: 'hidden' } },
+          h('div', { style: { height: '100%', background: '#7c3aed', borderRadius: '2px', animation: 'rxBar 20s ease-out forwards' } })
+        ),
+
+        // Sub texto
+        h('div', {
+          style: { fontSize: '12px', color: '#8b8b9e', textAlign: 'center', transition: 'opacity 0.3s ease', opacity: fadeOut ? 0 : 1 }
+        }, msg.sub)
       )
     );
   }
 
   // ══════════════════════════════════════════════════
-  // SUB-TELA: DASHBOARD
+  // DASHBOARD
   // ══════════════════════════════════════════════════
   function DashboardView({ fetchApi }) {
-    const [data, setData] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [periodo, setPeriodo] = useState(() => {
-      const now = new Date();
-      return {
-        inicio: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`,
-        fim: now.toISOString().split('T')[0],
-      };
-    });
+    var _s = useState(null), data = _s[0], setData = _s[1];
+    var _l = useState(true), loading = _l[0], setLoading = _l[1];
+    var _p = useState(function() {
+      var now = new Date();
+      return { inicio: now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-01', fim: now.toISOString().split('T')[0] };
+    }), periodo = _p[0], setPeriodo = _p[1];
 
-    const carregar = useCallback(async () => {
+    var carregar = useCallback(async function() {
       setLoading(true);
-      try {
-        const res = await fetchApi(`/cs/dashboard?data_inicio=${periodo.inicio}&data_fim=${periodo.fim}`);
-        if (res.success) setData(res);
-      } catch (e) { console.error('Erro dashboard CS:', e); }
+      try { var res = await fetchApi('/cs/dashboard?data_inicio=' + periodo.inicio + '&data_fim=' + periodo.fim); if (res.success) setData(res); } catch (e) { console.error(e); }
       setLoading(false);
     }, [fetchApi, periodo]);
-
-    useEffect(() => { carregar(); }, [carregar]);
+    useEffect(function() { carregar(); }, [carregar]);
 
     if (loading) return h('div', { className: 'p-6 space-y-6' }, h(Skeleton, { linhas: 8 }));
     if (!data) return h(EmptyState, { titulo: 'Erro ao carregar dashboard' });
 
-    const { kpis, clientes_risco, interacoes_recentes, distribuicao_health } = data;
-    const kc = kpis.clientes || {};
-    const ki = kpis.interacoes || {};
-    const ko = kpis.ocorrencias || {};
-    const kop = kpis.operacao || {};
+    var kc = (data.kpis || {}).clientes || {}, ki = (data.kpis || {}).interacoes || {}, ko = (data.kpis || {}).ocorrencias || {}, kop = (data.kpis || {}).operacao || {};
+    var clientes_risco = data.clientes_risco || [], interacoes_recentes = data.interacoes_recentes || [], distribuicao_health = data.distribuicao_health || [];
 
     return h('div', { className: 'space-y-6' },
-      // Filtro de período
       h('div', { className: 'flex flex-wrap items-center gap-3' },
-        h('input', { type: 'date', value: periodo.inicio, onChange: e => setPeriodo(p => ({ ...p, inicio: e.target.value })),
-          className: 'px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent' }),
+        h('input', { type: 'date', value: periodo.inicio, onChange: function(e) { setPeriodo(function(p) { return Object.assign({}, p, { inicio: e.target.value }); }); }, className: 'px-3 py-2 border border-gray-200 rounded-lg text-sm' }),
         h('span', { className: 'text-gray-400' }, 'até'),
-        h('input', { type: 'date', value: periodo.fim, onChange: e => setPeriodo(p => ({ ...p, fim: e.target.value })),
-          className: 'px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent' }),
-        h('button', { onClick: carregar, className: 'px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors' }, '🔄 Atualizar')
+        h('input', { type: 'date', value: periodo.fim, onChange: function(e) { setPeriodo(function(p) { return Object.assign({}, p, { fim: e.target.value }); }); }, className: 'px-3 py-2 border border-gray-200 rounded-lg text-sm' }),
+        h('button', { onClick: carregar, className: 'px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700' }, '🔄 Atualizar')
       ),
-
-      // KPIs Clientes
-      h('div', null,
-        h('h3', { className: 'text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3' }, '👥 Carteira de Clientes'),
+      h('div', null, h('h3', { className: 'text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3' }, '👥 Carteira de Clientes'),
         h('div', { className: 'grid grid-cols-2 md:grid-cols-4 gap-4' },
           h(KpiCard, { titulo: 'Total de Clientes', valor: kc.total_clientes || 0, icone: '🏢', cor: 'blue' }),
           h(KpiCard, { titulo: 'Ativos', valor: kc.ativos || 0, icone: '✅', cor: 'green' }),
           h(KpiCard, { titulo: 'Em Risco', valor: kc.em_risco || 0, icone: '⚠️', cor: 'amber' }),
-          h(KpiCard, { titulo: 'Health Score Médio', valor: `${kc.health_score_medio || 0}/100`, icone: '💚', cor: parseFloat(kc.health_score_medio) >= 60 ? 'green' : 'amber' })
+          h(KpiCard, { titulo: 'Health Score Médio', valor: (kc.health_score_medio || 0) + '/100', icone: '💚', cor: parseFloat(kc.health_score_medio) >= 60 ? 'green' : 'amber' })
         )
       ),
-
-      // KPIs Operação (BI)
-      h('div', null,
-        h('h3', { className: 'text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3' }, '📦 Operação (BI)'),
+      h('div', null, h('h3', { className: 'text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3' }, '📦 Operação (BI)'),
         h('div', { className: 'grid grid-cols-2 md:grid-cols-5 gap-4' },
           h(KpiCard, { titulo: 'Entregas', valor: parseInt(kop.total_entregas || 0).toLocaleString('pt-BR'), icone: '🚚', cor: 'blue' }),
-          h(KpiCard, { titulo: 'Taxa de Prazo', valor: `${kop.taxa_prazo_global || 0}%`, icone: '⏱️', cor: parseFloat(kop.taxa_prazo_global) >= 85 ? 'green' : 'amber' }),
+          h(KpiCard, { titulo: 'Taxa de Prazo', valor: (kop.taxa_prazo_global || 0) + '%', icone: '⏱️', cor: parseFloat(kop.taxa_prazo_global) >= 85 ? 'green' : 'amber' }),
           h(KpiCard, { titulo: 'Faturamento', valor: formatCurrency(kop.faturamento_total), icone: '💰', cor: 'green' }),
           h(KpiCard, { titulo: 'Clientes Ativos BI', valor: kop.clientes_ativos_bi || 0, icone: '📊', cor: 'purple' }),
-          h(KpiCard, { titulo: 'Tempo Médio', valor: `${kop.tempo_medio_entrega || 0} min`, icone: '🕐', cor: 'gray' })
+          h(KpiCard, { titulo: 'Tempo Médio', valor: (kop.tempo_medio_entrega || 0) + ' min', icone: '🕐', cor: 'gray' })
         )
       ),
-
-      // KPIs Interações + Ocorrências
+      // Distribuição + Risco
       h('div', { className: 'grid md:grid-cols-2 gap-6' },
-        // Interações
-        h('div', { className: 'bg-white rounded-xl border border-gray-200 p-5' },
-          h('h3', { className: 'text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4' }, '📝 Interações no Período'),
-          h('div', { className: 'grid grid-cols-2 gap-3' },
-            h('div', { className: 'text-center p-3 bg-gray-50 rounded-lg' },
-              h('p', { className: 'text-2xl font-bold text-gray-900' }, ki.total_interacoes || 0),
-              h('p', { className: 'text-xs text-gray-500' }, 'Total')
-            ),
-            h('div', { className: 'text-center p-3 bg-gray-50 rounded-lg' },
-              h('p', { className: 'text-2xl font-bold text-blue-600' }, ki.clientes_contatados || 0),
-              h('p', { className: 'text-xs text-gray-500' }, 'Clientes Contatados')
-            ),
-            h('div', { className: 'text-center p-3 bg-blue-50 rounded-lg' },
-              h('p', { className: 'text-2xl font-bold text-blue-700' }, ki.visitas || 0),
-              h('p', { className: 'text-xs text-gray-500' }, 'Visitas')
-            ),
-            h('div', { className: 'text-center p-3 bg-purple-50 rounded-lg' },
-              h('p', { className: 'text-2xl font-bold text-purple-700' }, ki.reunioes || 0),
-              h('p', { className: 'text-xs text-gray-500' }, 'Reuniões')
-            )
-          )
-        ),
-
-        // Ocorrências
-        h('div', { className: 'bg-white rounded-xl border border-gray-200 p-5' },
-          h('h3', { className: 'text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4' }, '🚨 Ocorrências'),
-          h('div', { className: 'grid grid-cols-2 gap-3' },
-            h('div', { className: 'text-center p-3 bg-red-50 rounded-lg' },
-              h('p', { className: 'text-2xl font-bold text-red-600' }, ko.abertas || 0),
-              h('p', { className: 'text-xs text-gray-500' }, 'Abertas')
-            ),
-            h('div', { className: 'text-center p-3 bg-orange-50 rounded-lg' },
-              h('p', { className: 'text-2xl font-bold text-orange-600' }, ko.criticas || 0),
-              h('p', { className: 'text-xs text-gray-500' }, 'Críticas')
-            ),
-            h('div', { className: 'text-center p-3 bg-emerald-50 rounded-lg' },
-              h('p', { className: 'text-2xl font-bold text-emerald-600' }, ko.resolvidas_periodo || 0),
-              h('p', { className: 'text-xs text-gray-500' }, 'Resolvidas')
-            ),
-            h('div', { className: 'text-center p-3 bg-gray-50 rounded-lg' },
-              h('p', { className: 'text-2xl font-bold text-gray-700' }, ko.tempo_medio_resolucao_horas ? `${ko.tempo_medio_resolucao_horas}h` : '-'),
-              h('p', { className: 'text-xs text-gray-500' }, 'T. Médio Resolução')
-            )
-          )
-        )
-      ),
-
-      // Distribuição Health Score + Clientes em Risco
-      h('div', { className: 'grid md:grid-cols-2 gap-6' },
-        // Health Score Distribution
         h('div', { className: 'bg-white rounded-xl border border-gray-200 p-5' },
           h('h3', { className: 'text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4' }, '💚 Distribuição Health Score'),
-          distribuicao_health && distribuicao_health.length > 0
-            ? h('div', { className: 'space-y-3' },
-                ...distribuicao_health.map((faixa, i) =>
-                  h('div', { key: i, className: 'flex items-center gap-3' },
-                    h('div', { className: 'w-3 h-3 rounded-full flex-shrink-0', style: { backgroundColor: faixa.cor } }),
-                    h('span', { className: 'text-sm text-gray-700 flex-1' }, faixa.faixa),
-                    h('span', { className: 'text-sm font-bold text-gray-900' }, faixa.quantidade),
-                    h('div', { className: 'w-24 h-2 bg-gray-100 rounded-full overflow-hidden' },
-                      h('div', { className: 'h-full rounded-full transition-all', style: { width: `${Math.min(100, (parseInt(faixa.quantidade) / Math.max(1, parseInt(kc.total_clientes))) * 100)}%`, backgroundColor: faixa.cor } })
-                    )
-                  )
-                )
-              )
-            : h('p', { className: 'text-gray-400 text-sm' }, 'Nenhum dado disponível')
+          distribuicao_health.length > 0 ? h('div', { className: 'space-y-3' }, ...distribuicao_health.map(function(f, i) {
+            return h('div', { key: i, className: 'flex items-center gap-3' },
+              h('div', { className: 'w-3 h-3 rounded-full flex-shrink-0', style: { backgroundColor: f.cor } }),
+              h('span', { className: 'text-sm text-gray-700 flex-1' }, f.faixa),
+              h('span', { className: 'text-sm font-bold text-gray-900' }, f.quantidade),
+              h('div', { className: 'w-24 h-2 bg-gray-100 rounded-full overflow-hidden' }, h('div', { className: 'h-full rounded-full', style: { width: Math.min(100, (parseInt(f.quantidade) / Math.max(1, parseInt(kc.total_clientes))) * 100) + '%', backgroundColor: f.cor } }))
+            );
+          })) : h('p', { className: 'text-gray-400 text-sm' }, 'Sem dados')
         ),
-
-        // Clientes em Risco
         h('div', { className: 'bg-white rounded-xl border border-red-100 p-5' },
           h('h3', { className: 'text-sm font-semibold text-red-500 uppercase tracking-wider mb-4' }, '⚠️ Clientes em Risco'),
-          clientes_risco && clientes_risco.length > 0
-            ? h('div', { className: 'space-y-3' },
-                ...clientes_risco.map((cli, i) =>
-                  h('div', { key: i, className: 'flex items-center gap-3 p-3 bg-red-50/50 rounded-lg' },
-                    h(HealthRing, { score: cli.health_score, size: 44 }),
-                    h('div', { className: 'flex-1 min-w-0' },
-                      h('p', { className: 'text-sm font-medium text-gray-900 truncate' }, cli.nome_fantasia || `Cliente ${cli.cod_cliente}`),
-                      h('p', { className: 'text-xs text-gray-500' }, `${cli.total_entregas_30d || 0} entregas · ${cli.taxa_prazo_30d || 0}% prazo · ${cli.ocorrencias_abertas || 0} ocorrências`)
-                    ),
-                    h(Badge, { text: cli.status, cor: cli.status === 'em_risco' ? '#F59E0B' : '#EF4444' })
-                  )
-                )
-              )
-            : h('p', { className: 'text-gray-400 text-sm text-center py-4' }, '🎉 Nenhum cliente em risco!')
+          clientes_risco.length > 0 ? h('div', { className: 'space-y-3' }, ...clientes_risco.map(function(cli, i) {
+            return h('div', { key: i, className: 'flex items-center gap-3 p-3 bg-red-50/50 rounded-lg' },
+              h(HealthRing, { score: cli.health_score, size: 44 }),
+              h('div', { className: 'flex-1 min-w-0' }, h('p', { className: 'text-sm font-medium text-gray-900 truncate' }, cli.nome_fantasia || 'Cliente ' + cli.cod_cliente), h('p', { className: 'text-xs text-gray-500' }, (cli.total_entregas_30d || 0) + ' ent · ' + (cli.taxa_prazo_30d || 0) + '% prazo')),
+              h(Badge, { text: cli.status, cor: cli.status === 'em_risco' ? '#F59E0B' : '#EF4444' })
+            );
+          })) : h('p', { className: 'text-gray-400 text-sm text-center py-4' }, '🎉 Nenhum cliente em risco!')
         )
       ),
-
-      // Interações Recentes
+      // Interações recentes
       h('div', { className: 'bg-white rounded-xl border border-gray-200 p-5' },
         h('h3', { className: 'text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4' }, '🕐 Interações Recentes'),
-        interacoes_recentes && interacoes_recentes.length > 0
-          ? h('div', { className: 'divide-y divide-gray-100' },
-              ...interacoes_recentes.map((int, i) =>
-                h('div', { key: i, className: 'flex items-center gap-3 py-3' },
-                  h('span', { className: 'text-lg' }, int.tipo === 'visita' ? '📍' : int.tipo === 'reuniao' ? '👥' : int.tipo === 'ligacao' ? '📞' : int.tipo === 'whatsapp' ? '💬' : '📝'),
-                  h('div', { className: 'flex-1 min-w-0' },
-                    h('p', { className: 'text-sm font-medium text-gray-900 truncate' }, int.titulo),
-                    h('p', { className: 'text-xs text-gray-500' }, `${int.nome_fantasia || 'Cliente'} · por ${int.criado_por_nome || 'Sistema'}`)
-                  ),
-                  h('span', { className: 'text-xs text-gray-400 whitespace-nowrap' }, diasAtras(int.data_interacao))
-                )
-              )
-            )
-          : h('p', { className: 'text-gray-400 text-sm text-center py-4' }, 'Nenhuma interação registrada')
+        interacoes_recentes.length > 0 ? h('div', { className: 'divide-y divide-gray-100' }, ...interacoes_recentes.map(function(int, i) {
+          return h('div', { key: i, className: 'flex items-center gap-3 py-3' },
+            h('span', { className: 'text-lg' }, int.tipo === 'visita' ? '📍' : int.tipo === 'reuniao' ? '👥' : int.tipo === 'ligacao' ? '📞' : int.tipo === 'whatsapp' ? '💬' : '📝'),
+            h('div', { className: 'flex-1 min-w-0' }, h('p', { className: 'text-sm font-medium text-gray-900 truncate' }, int.titulo), h('p', { className: 'text-xs text-gray-500' }, (int.nome_fantasia || 'Cliente') + ' · ' + (int.criado_por_nome || ''))),
+            h('span', { className: 'text-xs text-gray-400 whitespace-nowrap' }, diasAtras(int.data_interacao))
+          );
+        })) : h('p', { className: 'text-gray-400 text-sm text-center py-4' }, 'Sem interações')
       )
     );
   }
 
   // ══════════════════════════════════════════════════
-  // SUB-TELA: LISTA DE CLIENTES
+  // CLIENTES (v2 — filtros estilo BI com máscara + CC)
   // ══════════════════════════════════════════════════
   function ClientesView({ fetchApi, onSelectCliente }) {
-    const [clientes, setClientes] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [search, setSearch] = useState('');
-    const [filtroStatus, setFiltroStatus] = useState('');
-    const [syncing, setSyncing] = useState(false);
+    var _c = useState([]), clientes = _c[0], setClientes = _c[1];
+    var _lo = useState(true), loading = _lo[0], setLoading = _lo[1];
+    var _sy = useState(false), syncing = _sy[0], setSyncing = _sy[1];
+    var _fd = useState(null), filtrosData = _fd[0], setFiltrosData = _fd[1];
+    var _fl = useState(true), filtrosLoading = _fl[0], setFiltrosLoading = _fl[1];
+    var _fc = useState(''), filtroCliente = _fc[0], setFiltroCliente = _fc[1];
+    var _fcc = useState(''), filtroCentroCusto = _fcc[0], setFiltroCentroCusto = _fcc[1];
+    var _fs = useState(''), filtroStatus = _fs[0], setFiltroStatus = _fs[1];
+    var _bc = useState(''), buscaCliente = _bc[0], setBuscaCliente = _bc[1];
+    var _do = useState(false), dropAberto = _do[0], setDropAberto = _do[1];
+    var dropRef = useRef(null);
 
-    const carregar = useCallback(async () => {
+    // Carregar filtros (1 vez)
+    useEffect(function() {
+      (async function() {
+        setFiltrosLoading(true);
+        try { var res = await fetchApi('/cs/clientes/filtros'); if (res.success) setFiltrosData(res); } catch (e) { console.error(e); }
+        setFiltrosLoading(false);
+      })();
+    }, [fetchApi]);
+
+    // Fechar dropdown ao clicar fora
+    useEffect(function() {
+      var handler = function(e) { if (dropRef.current && !dropRef.current.contains(e.target)) setDropAberto(false); };
+      document.addEventListener('mousedown', handler);
+      return function() { document.removeEventListener('mousedown', handler); };
+    }, []);
+
+    var getMascara = useCallback(function(cod) {
+      if (!filtrosData || !filtrosData.mascaras) return null;
+      return filtrosData.mascaras[String(cod)] || null;
+    }, [filtrosData]);
+
+    var getNome = useCallback(function(cod, fallback) {
+      var m = getMascara(cod);
+      return m || (fallback && fallback.trim()) || ('Cliente ' + cod);
+    }, [getMascara]);
+
+    var centrosCusto = useMemo(function() {
+      if (!filtroCliente || !filtrosData || !filtrosData.cliente_centros) return [];
+      return filtrosData.cliente_centros[String(filtroCliente)] || [];
+    }, [filtroCliente, filtrosData]);
+
+    var clientesFiltrados = useMemo(function() {
+      if (!filtrosData || !filtrosData.clientes) return [];
+      var lista = filtrosData.clientes;
+      if (!buscaCliente) return lista;
+      var termo = buscaCliente.toLowerCase();
+      return lista.filter(function(c) {
+        var cod = String(c.cod_cliente);
+        var nome = (getMascara(c.cod_cliente) || c.nome_fantasia || c.nome_cliente || '').toLowerCase();
+        return cod.includes(termo) || nome.includes(termo);
+      });
+    }, [filtrosData, buscaCliente, getMascara]);
+
+    var carregar = useCallback(async function() {
       setLoading(true);
       try {
-        const params = new URLSearchParams({ limit: '100' });
-        if (search) params.set('search', search);
+        var params = new URLSearchParams({ limit: '200' });
+        if (filtroCliente) params.set('cod_cliente', filtroCliente);
+        if (filtroCentroCusto) params.set('centro_custo', filtroCentroCusto);
         if (filtroStatus) params.set('status', filtroStatus);
-        const res = await fetchApi(`/cs/clientes?${params}`);
+        var res = await fetchApi('/cs/clientes?' + params);
         if (res.success) setClientes(res.clientes || []);
       } catch (e) { console.error(e); }
       setLoading(false);
-    }, [fetchApi, search, filtroStatus]);
+    }, [fetchApi, filtroCliente, filtroCentroCusto, filtroStatus]);
 
-    useEffect(() => { carregar(); }, [carregar]);
+    useEffect(function() { carregar(); }, [carregar]);
 
-    const syncBi = async () => {
+    var selCliente = function(cod) {
+      setFiltroCliente(cod ? String(cod) : '');
+      setFiltroCentroCusto('');
+      setBuscaCliente('');
+      setDropAberto(false);
+    };
+
+    var syncBi = async function() {
       setSyncing(true);
-      try {
-        const res = await fetchApi('/cs/clientes/sync-bi', { method: 'POST' });
-        if (res.success) {
-          alert(`✅ ${res.importados} novos clientes importados do BI!`);
-          carregar();
-        }
-      } catch (e) { alert('Erro ao sincronizar'); }
+      try { var res = await fetchApi('/cs/clientes/sync-bi', { method: 'POST' }); if (res.success) { alert('✅ ' + res.importados + ' clientes sincronizados!'); carregar(); } } catch (e) { alert('Erro'); }
       setSyncing(false);
     };
 
+    var filtroLabel = filtroCliente ? getNome(filtroCliente, (filtrosData && filtrosData.clientes || []).find(function(c) { return String(c.cod_cliente) === String(filtroCliente); })?.nome_fantasia) : null;
+
     return h('div', { className: 'space-y-4' },
-      // Toolbar
-      h('div', { className: 'flex flex-wrap items-center gap-3' },
-        h('div', { className: 'flex-1 min-w-[200px]' },
-          h('input', {
-            type: 'text', placeholder: '🔍 Buscar cliente (nome, código, CNPJ)...',
-            value: search, onChange: e => setSearch(e.target.value),
-            className: 'w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent'
-          })
+
+      // ═══ BARRA DE FILTROS ═══
+      h('div', { className: 'bg-white rounded-xl border border-gray-200 p-4 space-y-3' },
+        // Chips ativos
+        h('div', { className: 'flex items-center gap-2 flex-wrap min-h-[28px]' },
+          h('span', { className: 'text-sm font-semibold text-gray-700' }, '🔍 Filtros'),
+          filtroLabel && h('span', { className: 'inline-flex items-center gap-1 px-2.5 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-medium cursor-pointer hover:bg-purple-200', onClick: function() { selCliente(''); } }, '🏢 ' + filtroCliente + ' - ' + filtroLabel, h('span', { className: 'ml-1 opacity-60' }, '✕')),
+          filtroCentroCusto && h('span', { className: 'inline-flex items-center gap-1 px-2.5 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium cursor-pointer hover:bg-blue-200', onClick: function() { setFiltroCentroCusto(''); } }, '📁 ' + filtroCentroCusto, h('span', { className: 'ml-1 opacity-60' }, '✕')),
+          filtroStatus && h('span', { className: 'inline-flex items-center gap-1 px-2.5 py-1 bg-amber-100 text-amber-800 rounded-full text-xs font-medium cursor-pointer hover:bg-amber-200', onClick: function() { setFiltroStatus(''); } }, filtroStatus, h('span', { className: 'ml-1 opacity-60' }, '✕')),
+          (filtroCliente || filtroCentroCusto || filtroStatus) && h('button', { className: 'text-xs text-gray-400 hover:text-red-500 ml-auto', onClick: function() { setFiltroCliente(''); setFiltroCentroCusto(''); setFiltroStatus(''); } }, '🗑️ Limpar filtros')
         ),
-        h('select', {
-          value: filtroStatus, onChange: e => setFiltroStatus(e.target.value),
-          className: 'px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white'
-        },
-          h('option', { value: '' }, 'Todos os status'),
-          h('option', { value: 'ativo' }, '✅ Ativo'),
-          h('option', { value: 'em_risco' }, '⚠️ Em Risco'),
-          h('option', { value: 'inativo' }, '🔴 Inativo'),
-          h('option', { value: 'churned' }, '⚫ Churned')
-        ),
-        h('button', { onClick: syncBi, disabled: syncing, className: 'px-4 py-2.5 bg-purple-600 text-white rounded-xl text-sm font-medium hover:bg-purple-700 transition-colors disabled:opacity-50' },
-          syncing ? '⏳ Sincronizando...' : '📥 Sync BI'
+
+        // Campos
+        h('div', { className: 'grid grid-cols-1 md:grid-cols-4 gap-3' },
+          // 1. Cliente (searchable dropdown)
+          h('div', { className: 'md:col-span-2 relative', ref: dropRef },
+            h('label', { className: 'block text-xs font-medium text-gray-500 mb-1' }, '🏢 Cliente'),
+            h('div', { className: 'relative' },
+              h('input', {
+                type: 'text',
+                placeholder: filtroCliente ? (filtroCliente + ' - ' + filtroLabel) : 'Todos os clientes...',
+                value: dropAberto ? buscaCliente : (filtroCliente ? (filtroCliente + ' - ' + filtroLabel) : ''),
+                onChange: function(e) { setBuscaCliente(e.target.value); setDropAberto(true); },
+                onFocus: function() { setDropAberto(true); },
+                className: 'w-full px-3 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent pr-8 ' + (filtroCliente ? 'border-purple-300 bg-purple-50/30' : 'border-gray-200')
+              }),
+              h('span', { className: 'absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none' }, dropAberto ? '▲' : '▼')
+            ),
+            dropAberto && h('div', { className: 'absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-xl max-h-72 overflow-y-auto' },
+              h('div', { className: 'px-3 py-2.5 text-sm cursor-pointer hover:bg-purple-50 ' + (!filtroCliente ? 'bg-purple-50 font-semibold text-purple-700' : 'text-gray-700'), onClick: function() { selCliente(''); } }, 'Todos os clientes'),
+              filtrosLoading ? h('div', { className: 'px-3 py-4 text-sm text-gray-400 text-center' }, '⏳ Carregando...') :
+              clientesFiltrados.length === 0 ? h('div', { className: 'px-3 py-4 text-sm text-gray-400 text-center' }, 'Nenhum resultado') :
+              clientesFiltrados.map(function(c) {
+                var cod = String(c.cod_cliente), nome = getNome(c.cod_cliente, c.nome_fantasia || c.nome_cliente);
+                var cs = filtrosData.cs_status[cod];
+                var temCC = filtrosData.cliente_centros[cod] && filtrosData.cliente_centros[cod].length > 0;
+                var sel = cod === String(filtroCliente);
+                return h('div', { key: cod, className: 'px-3 py-2.5 cursor-pointer hover:bg-purple-50 flex items-center gap-2 ' + (sel ? 'bg-purple-50' : ''), onClick: function() { selCliente(cod); } },
+                  cs && h('div', { className: 'w-6 h-6 rounded-full border-2 flex items-center justify-center text-[9px] font-bold flex-shrink-0', style: { borderColor: (cs.health_score || 0) >= 70 ? '#10B981' : (cs.health_score || 0) >= 40 ? '#F59E0B' : '#EF4444', color: (cs.health_score || 0) >= 70 ? '#10B981' : (cs.health_score || 0) >= 40 ? '#F59E0B' : '#EF4444' } }, cs.health_score || 0),
+                  h('div', { className: 'flex-1 min-w-0' },
+                    h('p', { className: 'text-sm truncate ' + (sel ? 'font-semibold text-purple-700' : 'text-gray-800') }, cod + ' - ' + nome),
+                    h('p', { className: 'text-[10px] text-gray-400' }, (c.total_entregas || 0) + ' entregas' + (temCC ? ' · ' + filtrosData.cliente_centros[cod].length + ' CC' : ''))
+                  ),
+                  sel && h('span', { className: 'text-purple-600 text-xs' }, '✓')
+                );
+              })
+            )
+          ),
+
+          // 2. Centro de Custo
+          h('div', null,
+            h('label', { className: 'block text-xs font-medium text-gray-500 mb-1' }, '📁 Centro de Custo'),
+            h('select', {
+              value: filtroCentroCusto,
+              onChange: function(e) { setFiltroCentroCusto(e.target.value); },
+              disabled: !filtroCliente || centrosCusto.length === 0,
+              className: 'w-full px-3 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-purple-500 ' + (!filtroCliente ? 'bg-gray-50 text-gray-400 cursor-not-allowed border-gray-200' : filtroCentroCusto ? 'border-blue-300 bg-blue-50/30' : 'border-gray-200')
+            },
+              h('option', { value: '' }, filtroCliente ? (centrosCusto.length === 0 ? 'Sem centros de custo' : 'Todos (' + centrosCusto.length + ' centros)') : 'Selecione um cliente'),
+              centrosCusto.map(function(cc) { return h('option', { key: cc, value: cc }, cc); })
+            )
+          ),
+
+          // 3. Status
+          h('div', null,
+            h('label', { className: 'block text-xs font-medium text-gray-500 mb-1' }, '📊 Status'),
+            h('select', { value: filtroStatus, onChange: function(e) { setFiltroStatus(e.target.value); }, className: 'w-full px-3 py-2.5 border rounded-lg text-sm ' + (filtroStatus ? 'border-amber-300 bg-amber-50/30' : 'border-gray-200') },
+              h('option', { value: '' }, 'Todos os status'),
+              h('option', { value: 'ativo' }, '✅ Ativo'),
+              h('option', { value: 'em_risco' }, '⚠️ Em Risco'),
+              h('option', { value: 'inativo' }, '🔴 Inativo'),
+              h('option', { value: 'churned' }, '⚫ Churned')
+            )
+          )
         )
       ),
 
-      // Contador
-      h('p', { className: 'text-sm text-gray-500' }, `${clientes.length} clientes encontrados`),
+      // Toolbar
+      h('div', { className: 'flex items-center justify-between' },
+        h('p', { className: 'text-sm text-gray-500' }, loading ? '⏳ Carregando...' : clientes.length + ' cliente' + (clientes.length !== 1 ? 's' : '') + ' encontrado' + (clientes.length !== 1 ? 's' : '')),
+        h('button', { onClick: syncBi, disabled: syncing, className: 'px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 disabled:opacity-50 flex items-center gap-1.5' }, syncing ? '⏳ Sincronizando...' : '📥 Sync BI')
+      ),
 
-      // Lista
-      loading
-        ? h(Skeleton, { linhas: 6 })
-        : clientes.length === 0
-          ? h(EmptyState, { titulo: 'Nenhum cliente encontrado', descricao: 'Clique em "Sync BI" para importar clientes das entregas.' })
-          : h('div', { className: 'space-y-2' },
-              ...clientes.map(cli =>
-                h('div', {
-                  key: cli.cod_cliente,
-                  onClick: () => onSelectCliente(cli.cod_cliente),
-                  className: 'bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md hover:border-blue-300 transition-all cursor-pointer'
-                },
-                  h('div', { className: 'flex items-center gap-4' },
-                    h(HealthRing, { score: cli.health_score, size: 52 }),
-                    h('div', { className: 'flex-1 min-w-0' },
-                      h('div', { className: 'flex items-center gap-2 mb-1' },
-                        h('h4', { className: 'font-semibold text-gray-900 truncate' }, cli.nome_fantasia || `Cliente ${cli.cod_cliente}`),
-                        h('span', { className: 'text-xs text-gray-400' }, `#${cli.cod_cliente}`)
-                      ),
-                      h('div', { className: 'flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500' },
-                        h('span', null, `🚚 ${cli.total_entregas_30d || 0} entregas/30d`),
-                        h('span', null, `⏱️ ${cli.taxa_prazo_30d || 0}% prazo`),
-                        h('span', null, `💰 ${formatCurrency(cli.valor_total_30d)}`),
-                        cli.ocorrencias_abertas > 0 && h('span', { className: 'text-red-500 font-medium' }, `🚨 ${cli.ocorrencias_abertas} ocorrências`),
-                        cli.ultima_interacao && h('span', null, `📝 Última interação: ${diasAtras(cli.ultima_interacao)}`)
-                      )
-                    ),
-                    h('div', { className: 'flex flex-col items-end gap-1' },
-                      h(Badge, {
-                        text: cli.status || 'ativo',
-                        cor: cli.status === 'ativo' ? '#10B981' : cli.status === 'em_risco' ? '#F59E0B' : cli.status === 'inativo' ? '#EF4444' : '#6B7280'
-                      }),
-                      cli.ultima_entrega && h('span', { className: 'text-xs text-gray-400' }, `Última entrega: ${diasAtras(cli.ultima_entrega)}`)
-                    )
-                  )
+      // Lista (grid 2 colunas em desktop)
+      loading ? h(Skeleton, { linhas: 6 }) :
+      clientes.length === 0 ? h(EmptyState, { titulo: 'Nenhum cliente encontrado', descricao: filtroCliente ? 'Este cliente não foi sincronizado. Clique em "Sync BI".' : 'Clique em "Sync BI" para importar.', icone: '🏢' }) :
+      h('div', { className: 'grid grid-cols-1 lg:grid-cols-2 gap-3' },
+        ...clientes.map(function(cli) {
+          var cod = cli.cod_cliente, nome = getNome(cod, cli.nome_fantasia);
+          var temCC = filtrosData && filtrosData.cliente_centros[String(cod)] && filtrosData.cliente_centros[String(cod)].length > 0;
+          return h('div', { key: cod, onClick: function() { onSelectCliente(cod, filtroCentroCusto || null); }, className: 'bg-white rounded-xl border border-gray-200 p-4 hover:shadow-lg hover:border-purple-300 transition-all cursor-pointer group' },
+            h('div', { className: 'flex items-center gap-3' },
+              h(HealthRing, { score: cli.health_score, size: 48 }),
+              h('div', { className: 'flex-1 min-w-0' },
+                h('div', { className: 'flex items-center gap-2 mb-0.5' },
+                  h('h4', { className: 'font-semibold text-gray-900 truncate group-hover:text-purple-700 transition-colors' }, nome),
+                  h('span', { className: 'text-xs text-gray-400 flex-shrink-0' }, '#' + cod)
+                ),
+                h('div', { className: 'flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-gray-500' },
+                  h('span', null, '🚚 ' + parseInt(cli.total_entregas_30d || 0).toLocaleString('pt-BR')),
+                  h('span', { className: parseFloat(cli.taxa_prazo_30d) >= 90 ? 'text-emerald-600 font-medium' : parseFloat(cli.taxa_prazo_30d) < 80 ? 'text-red-600 font-medium' : '' }, '⏱️ ' + (cli.taxa_prazo_30d || 0) + '%'),
+                  h('span', null, '💰 ' + formatCurrency(cli.valor_total_30d)),
+                  temCC && h('span', { className: 'text-blue-500' }, '📁 ' + filtrosData.cliente_centros[String(cod)].length + ' CC'),
+                  cli.ocorrencias_abertas > 0 && h('span', { className: 'text-red-500 font-medium' }, '🚨 ' + cli.ocorrencias_abertas)
                 )
+              ),
+              h('div', { className: 'flex flex-col items-end gap-1 flex-shrink-0' },
+                h(Badge, { text: cli.status || 'ativo', cor: cli.status === 'ativo' ? '#10B981' : cli.status === 'em_risco' ? '#F59E0B' : cli.status === 'inativo' ? '#EF4444' : '#6B7280' }),
+                cli.ultima_entrega && h('span', { className: 'text-[10px] text-gray-400' }, diasAtras(cli.ultima_entrega))
               )
             )
+          );
+        })
+      )
     );
   }
 
   // ══════════════════════════════════════════════════
-  // SUB-TELA: DETALHE DO CLIENTE (com Raio-X)
+  // DETALHE DO CLIENTE (com centro de custo + Raio-X)
   // ══════════════════════════════════════════════════
-  function ClienteDetalheView({ codCliente, fetchApi, onVoltar }) {
-    const [data, setData] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [raioXLoading, setRaioXLoading] = useState(false);
-    const [raioXResult, setRaioXResult] = useState(null);
-    const [showNovaInteracao, setShowNovaInteracao] = useState(false);
-    const [showNovaOcorrencia, setShowNovaOcorrencia] = useState(false);
-    const [interacaoForm, setInteracaoForm] = useState({ tipo: 'ligacao', titulo: '', descricao: '', resultado: '', proxima_acao: '' });
-    const [ocorrenciaForm, setOcorrenciaForm] = useState({ tipo: 'problema_entrega', titulo: '', descricao: '', severidade: 'media' });
-    const [periodoRaioX, setPeriodoRaioX] = useState(() => {
-      const now = new Date();
-      return {
-        inicio: new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().split('T')[0],
-        fim: now.toISOString().split('T')[0],
-      };
-    });
+  function ClienteDetalheView({ codCliente, centroCustoInicial, fetchApi, apiUrl, getToken, onVoltar }) {
+    var _d = useState(null), data = _d[0], setData = _d[1];
+    var _l = useState(true), loading = _l[0], setLoading = _l[1];
+    var _rl = useState(false), raioXLoading = _rl[0], setRaioXLoading = _rl[1];
+    var _rr = useState(null), raioXResult = _rr[0], setRaioXResult = _rr[1];
+    var _re = useState(false), raioXEditando = _re[0], setRaioXEditando = _re[1];
+    var _rs = useState(false), raioXSalvando = _rs[0], setRaioXSalvando = _rs[1];
+    var raioXEditRef = useRef(null);
+    var _si = useState(false), showNovaInteracao = _si[0], setShowNovaInteracao = _si[1];
+    var _so = useState(false), showNovaOcorrencia = _so[0], setShowNovaOcorrencia = _so[1];
+    var _if = useState({ tipo: 'ligacao', titulo: '', descricao: '', resultado: '', proxima_acao: '', centro_custo: '' }), interacaoForm = _if[0], setInteracaoForm = _if[1];
+    var _of = useState({ tipo: 'problema_entrega', titulo: '', descricao: '', severidade: 'media', centro_custo: '' }), ocorrenciaForm = _of[0], setOcorrenciaForm = _of[1];
+    var _cs = useState(centroCustoInicial || ''), centroSel = _cs[0], setCentroSel = _cs[1];
+    var _cat = useState([]), categoriasSel = _cat[0], setCategoriasSel = _cat[1];
+    var _cats = useState([]), categoriasDisp = _cats[0], setCategoriasDisp = _cats[1];
+    var _catDrop = useState(false), catDropAberto = _catDrop[0], setCatDropAberto = _catDrop[1];
+    var _pr = useState(function() {
+      var now = new Date();
+      return { inicio: new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().split('T')[0], fim: now.toISOString().split('T')[0] };
+    }), periodo = _pr[0], setPeriodo = _pr[1];
 
-    const carregar = useCallback(async () => {
+    // Carregar categorias disponíveis para o cliente
+    useEffect(function() {
+      (async function() {
+        try {
+          var res = await fetchApi('/bi/filtros-iniciais');
+          if (res.categorias && res.categorias.length > 0) setCategoriasDisp(res.categorias);
+        } catch (e) { console.warn('Categorias não disponíveis:', e.message); }
+      })();
+    }, [fetchApi]);
+
+    var carregar = useCallback(async function() {
       setLoading(true);
       try {
-        const res = await fetchApi(`/cs/clientes/${codCliente}`);
+        var params = new URLSearchParams();
+        if (centroSel) params.set('centro_custo', centroSel);
+        if (periodo.inicio) params.set('data_inicio', periodo.inicio);
+        if (periodo.fim) params.set('data_fim', periodo.fim);
+        if (categoriasSel && categoriasSel.length > 0) params.set('categorias', categoriasSel.join(','));
+        var qs = params.toString() ? '?' + params : '';
+        var res = await fetchApi('/cs/clientes/' + codCliente + qs);
         if (res.success) setData(res);
       } catch (e) { console.error(e); }
       setLoading(false);
-    }, [fetchApi, codCliente]);
+    }, [fetchApi, codCliente, centroSel, periodo, categoriasSel]);
+    useEffect(function() { carregar(); }, [carregar]);
 
-    useEffect(() => { carregar(); }, [carregar]);
-
-    const gerarRaioX = async () => {
+    var gerarRaioX = async function() {
       setRaioXLoading(true);
       try {
-        const res = await fetchApi('/cs/raio-x', {
-          method: 'POST',
-          body: JSON.stringify({ cod_cliente: codCliente, data_inicio: periodoRaioX.inicio, data_fim: periodoRaioX.fim }),
-        });
-        if (res.success) setRaioXResult(res.raio_x);
-        else alert('Erro: ' + (res.error || 'Falha ao gerar'));
+        var body = { cod_cliente: codCliente, data_inicio: periodo.inicio, data_fim: periodo.fim };
+        if (centroSel) body.centro_custo = centroSel;
+        if (categoriasSel && categoriasSel.length > 0) body.categorias = categoriasSel;
+        console.log('🔬 Raio-X body:', JSON.stringify(body));
+        var res = await fetchApi('/cs/raio-x', { method: 'POST', body: JSON.stringify(body) });
+        if (res.success) setRaioXResult(res.raio_x); else alert('Erro: ' + (res.error || 'Falha'));
       } catch (e) { alert('Erro ao gerar Raio-X'); console.error(e); }
       setRaioXLoading(false);
     };
-
-    const salvarInteracao = async () => {
+    var salvarInteracao = async function() {
       try {
-        const res = await fetchApi('/cs/interacoes', {
-          method: 'POST',
-          body: JSON.stringify({ ...interacaoForm, cod_cliente: codCliente }),
-        });
-        if (res.success) {
-          setShowNovaInteracao(false);
-          setInteracaoForm({ tipo: 'ligacao', titulo: '', descricao: '', resultado: '', proxima_acao: '' });
-          carregar();
-        }
-      } catch (e) { alert('Erro ao salvar interação'); }
+        var res = await fetchApi('/cs/interacoes', { method: 'POST', body: JSON.stringify(Object.assign({}, interacaoForm, { cod_cliente: codCliente })) });
+        if (res.success) { setShowNovaInteracao(false); setInteracaoForm({ tipo: 'ligacao', titulo: '', descricao: '', resultado: '', proxima_acao: '', centro_custo: '' }); carregar(); }
+      } catch (e) { alert('Erro ao salvar'); }
+    };
+    var salvarOcorrencia = async function() {
+      try {
+        var res = await fetchApi('/cs/ocorrencias', { method: 'POST', body: JSON.stringify(Object.assign({}, ocorrenciaForm, { cod_cliente: codCliente })) });
+        if (res.success) { setShowNovaOcorrencia(false); setOcorrenciaForm({ tipo: 'problema_entrega', titulo: '', descricao: '', severidade: 'media', centro_custo: '' }); carregar(); }
+      } catch (e) { alert('Erro ao salvar'); }
     };
 
-    const salvarOcorrencia = async () => {
+    var toggleEditarRaioX = function() {
+      if (raioXEditando) {
+        // Cancelar edição
+        setRaioXEditando(false);
+      } else {
+        setRaioXEditando(true);
+      }
+    };
+
+    // Quando entra em modo edição, popula o ref com o HTML renderizado
+    useEffect(function() {
+      if (raioXEditando && raioXEditRef.current && raioXResult) {
+        raioXEditRef.current.innerHTML = renderMarkdown(raioXResult.analise);
+        // Focar no elemento
+        raioXEditRef.current.focus();
+      }
+    }, [raioXEditando]);
+
+    var salvarEdicaoRaioX = async function() {
+      if (!raioXResult || !raioXResult.id || !raioXEditRef.current) return;
+      setRaioXSalvando(true);
       try {
-        const res = await fetchApi('/cs/ocorrencias', {
-          method: 'POST',
-          body: JSON.stringify({ ...ocorrenciaForm, cod_cliente: codCliente }),
+        var novoTexto = raioXEditRef.current.innerHTML;
+        var res = await fetchApi('/cs/raio-x/' + raioXResult.id, {
+          method: 'PUT',
+          body: JSON.stringify({ analise_texto: novoTexto })
         });
         if (res.success) {
-          setShowNovaOcorrencia(false);
-          setOcorrenciaForm({ tipo: 'problema_entrega', titulo: '', descricao: '', severidade: 'media' });
-          carregar();
+          setRaioXResult(Object.assign({}, raioXResult, { analise: novoTexto }));
+          setRaioXEditando(false);
+          alert('✅ Relatório salvo com sucesso!');
+        } else {
+          alert('Erro: ' + (res.error || 'Falha ao salvar'));
         }
-      } catch (e) { alert('Erro ao salvar ocorrência'); }
+      } catch (e) { alert('Erro ao salvar edição'); console.error(e); }
+      setRaioXSalvando(false);
     };
 
     if (loading) return h('div', { className: 'p-6' }, h(Skeleton, { linhas: 10 }));
     if (!data) return h(EmptyState, { titulo: 'Cliente não encontrado' });
 
-    const { ficha, metricas_bi: m, diagnostico: diag, interacoes, ocorrencias, evolucao_semanal, raio_x_historico } = data;
-    const cor = getHealthCor(diag.health_score);
+    var ficha = data.ficha, m = data.metricas_bi || {}, diag = data.diagnostico || {}, interacoes = data.interacoes || [], ocorrencias = data.ocorrencias || [], raio_x_historico = data.raio_x_historico || [], centrosDisp = data.centros_custo || [];
+    var cor = getHealthCor(diag.health_score);
 
     return h('div', { className: 'space-y-6' },
-      // Header com voltar
+      // Header
       h('div', { className: 'flex items-center gap-4' },
-        h('button', { onClick: onVoltar, className: 'p-2 hover:bg-gray-100 rounded-lg transition-colors' }, '← Voltar'),
+        h('button', { onClick: onVoltar, className: 'p-2 hover:bg-gray-100 rounded-lg' }, '← Voltar'),
         h('div', { className: 'flex-1' },
-          h('h2', { className: 'text-xl font-bold text-gray-900' }, ficha.nome_fantasia || `Cliente ${codCliente}`),
-          h('p', { className: 'text-sm text-gray-500' }, `Cód: ${codCliente} · ${ficha.cidade || ''} ${ficha.estado ? '- ' + ficha.estado : ''} · ${ficha.segmento || 'Autopeças'}`)
+          h('h2', { className: 'text-xl font-bold text-gray-900' }, ficha.mascara || ficha.nome_fantasia || 'Cliente ' + codCliente),
+          h('p', { className: 'text-sm text-gray-500' }, 'Cód: ' + codCliente + ' · ' + (ficha.segmento || 'Autopeças'))
         ),
         h(HealthRing, { score: diag.health_score, size: 64 }),
         h('div', { className: 'text-right' },
-          h('p', { className: `text-lg font-bold ${cor.text}` }, getHealthLabel(diag.health_score)),
-          h('p', { className: 'text-xs text-gray-400' }, diag.dias_sem_entrega < 999 ? `${diag.dias_sem_entrega}d sem entrega` : 'Sem entregas')
+          h('p', { className: 'text-lg font-bold ' + cor.text }, getHealthLabel(diag.health_score)),
+          h('p', { className: 'text-xs text-gray-400' }, diag.dias_sem_entrega < 999 ? diag.dias_sem_entrega + 'd sem entrega' : 'Sem entregas')
         )
       ),
 
-      // KPIs Rápidos
+      // Filtros: Período + Centro de Custo
+      h('div', { className: 'bg-white rounded-xl border border-gray-200 p-4' },
+        h('div', { className: 'flex flex-wrap items-center gap-3' },
+          h('span', { className: 'text-sm font-semibold text-gray-700' }, '🔍 Filtros'),
+          // Período
+          h('div', { className: 'flex items-center gap-2' },
+            h('span', { className: 'text-xs text-gray-500' }, '📅'),
+            h('input', { type: 'date', value: periodo.inicio, onChange: function(e) { setPeriodo(function(p) { return Object.assign({}, p, { inicio: e.target.value }); }); }, className: 'px-2.5 py-1.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500' }),
+            h('span', { className: 'text-gray-400 text-xs' }, 'até'),
+            h('input', { type: 'date', value: periodo.fim, onChange: function(e) { setPeriodo(function(p) { return Object.assign({}, p, { fim: e.target.value }); }); }, className: 'px-2.5 py-1.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500' })
+          ),
+          // Centro de Custo (se houver)
+          centrosDisp.length > 0 && h('div', { className: 'flex items-center gap-2' },
+            h('span', { className: 'text-xs text-gray-500' }, '📁'),
+            h('select', { value: centroSel, onChange: function(e) { setCentroSel(e.target.value); }, className: 'px-2.5 py-1.5 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-purple-500' },
+              h('option', { value: '' }, 'Todos os centros de custo'),
+              centrosDisp.map(function(cc) { return h('option', { key: cc.centro_custo, value: cc.centro_custo }, cc.centro_custo); })
+            ),
+            centroSel && h('button', { onClick: function() { setCentroSel(''); }, className: 'text-xs text-gray-400 hover:text-red-500' }, '✕')
+          ),
+          // Categoria / Veículo (multi-select checkboxes)
+          categoriasDisp.length > 0 && h('div', { className: 'flex items-center gap-2' },
+            h('span', { className: 'text-xs text-gray-500' }, '🏷️'),
+            h('div', { className: 'relative' },
+              h('button', {
+                onClick: function() { setCatDropAberto(function(v) { return !v; }); },
+                className: 'px-2.5 py-1.5 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-purple-500 flex items-center gap-1 min-w-[160px]'
+              }, categoriasSel.length > 0 ? categoriasSel.length + ' categoria' + (categoriasSel.length > 1 ? 's' : '') : 'Todas as categorias', h('span', { className: 'ml-auto text-gray-400 text-xs' }, catDropAberto ? '▲' : '▼')),
+              catDropAberto && h('div', {
+                style: { position: 'absolute', top: '100%', left: 0, zIndex: 50, marginTop: '4px', width: '240px', maxHeight: '220px', overflowY: 'auto', background: 'white', border: '1px solid #e5e7eb', borderRadius: '8px', boxShadow: '0 4px 16px rgba(0,0,0,0.12)', padding: '6px 0' }
+              },
+                categoriasDisp.map(function(cat) {
+                  var checked = categoriasSel.indexOf(cat) !== -1;
+                  return h('label', { key: cat, className: 'flex items-center gap-2 px-3 py-1.5 hover:bg-purple-50 cursor-pointer text-sm', style: { display: 'flex' } },
+                    h('input', {
+                      type: 'checkbox',
+                      checked: checked,
+                      onChange: function() {
+                        setCategoriasSel(function(prev) {
+                          return checked ? prev.filter(function(c) { return c !== cat; }) : prev.concat([cat]);
+                        });
+                      },
+                      className: 'accent-purple-600'
+                    }),
+                    h('span', { className: checked ? 'text-purple-700 font-medium' : 'text-gray-700' }, cat)
+                  );
+                })
+              )
+            ),
+            categoriasSel.length > 0 && h('button', { onClick: function() { setCategoriasSel([]); }, className: 'text-xs text-gray-400 hover:text-red-500' }, '✕')
+          ),
+          // Chips
+          periodo.inicio && h('span', { className: 'text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded-full' }, formatDate(periodo.inicio) + ' a ' + formatDate(periodo.fim)),
+          centroSel && h('span', { className: 'text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full' }, '📁 ' + centroSel),
+          categoriasSel.length > 0 && categoriasSel.map(function(cat) {
+            return h('span', { key: cat, className: 'text-xs px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full cursor-pointer hover:bg-yellow-200', onClick: function() { setCategoriasSel(function(p) { return p.filter(function(c) { return c !== cat; }); }); } }, '🏷️ ' + cat + ' ✕');
+          })
+        )
+      ),
+
+      // KPIs
       h('div', { className: 'grid grid-cols-2 md:grid-cols-6 gap-3' },
         h(KpiCard, { titulo: 'Entregas', valor: parseInt(m.total_entregas || 0).toLocaleString(), icone: '🚚', cor: 'blue' }),
-        h(KpiCard, { titulo: 'Taxa Prazo', valor: `${m.taxa_prazo || 0}%`, icone: '⏱️', cor: parseFloat(m.taxa_prazo) >= 85 ? 'green' : 'amber' }),
+        h(KpiCard, { titulo: 'Taxa Prazo', valor: (m.taxa_prazo || 0) + '%', icone: '⏱️', cor: parseFloat(m.taxa_prazo) >= 85 ? 'green' : 'amber' }),
         h(KpiCard, { titulo: 'Faturamento', valor: formatCurrency(m.valor_total), icone: '💰', cor: 'green' }),
-        h(KpiCard, { titulo: 'Tempo Médio', valor: `${m.tempo_medio || 0}min`, icone: '🕐', cor: 'gray' }),
+        h(KpiCard, { titulo: 'Tempo Médio', valor: (m.tempo_medio || 0) + 'min', icone: '🕐', cor: 'gray' }),
         h(KpiCard, { titulo: 'Profissionais', valor: m.profissionais_unicos || 0, icone: '🏍️', cor: 'purple' }),
         h(KpiCard, { titulo: 'Retornos', valor: m.total_retornos || 0, icone: '🔄', cor: parseInt(m.total_retornos) > 5 ? 'red' : 'gray' })
       ),
 
-      // Ações Rápidas
+      // Ações
       h('div', { className: 'flex flex-wrap gap-2' },
-        h('button', { onClick: () => setShowNovaInteracao(true), className: 'px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700' }, '📝 Nova Interação'),
-        h('button', { onClick: () => setShowNovaOcorrencia(true), className: 'px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700' }, '🚨 Nova Ocorrência'),
+        h('button', { onClick: function() { setShowNovaInteracao(true); }, className: 'px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700' }, '📝 Nova Interação'),
+        h('button', { onClick: function() { setShowNovaOcorrencia(true); }, className: 'px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700' }, '🚨 Nova Ocorrência'),
         h('div', { className: 'flex-1' }),
-        h('input', { type: 'date', value: periodoRaioX.inicio, onChange: e => setPeriodoRaioX(p => ({ ...p, inicio: e.target.value })),
-          className: 'px-3 py-2 border border-gray-200 rounded-lg text-sm' }),
-        h('input', { type: 'date', value: periodoRaioX.fim, onChange: e => setPeriodoRaioX(p => ({ ...p, fim: e.target.value })),
-          className: 'px-3 py-2 border border-gray-200 rounded-lg text-sm' }),
-        h('button', { onClick: gerarRaioX, disabled: raioXLoading,
-          className: 'px-5 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg text-sm font-bold hover:from-purple-700 hover:to-indigo-700 disabled:opacity-50 shadow-lg' },
-          raioXLoading ? '🔬 Gerando análise...' : '🔬 Gerar Raio-X IA'
-        )
+        !raioXLoading && h('button', { onClick: gerarRaioX, className: 'px-5 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg text-sm font-bold hover:from-purple-700 hover:to-indigo-700 shadow-lg' }, '🔬 Raio-X IA')
       ),
 
-      // Raio-X IA (quando gerado)
+      // Raio-X Loading Animation
+      raioXLoading && h(RaioXLoadingOverlay),
+
+      // Raio-X result
       raioXResult && h('div', { className: 'bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl border border-indigo-200 p-6 shadow-inner' },
-        h('div', { className: 'flex items-center gap-2 mb-4' },
-          h('span', { className: 'text-2xl' }, '🔬'),
-          h('h3', { className: 'text-lg font-bold text-indigo-900' }, 'Raio-X Inteligente'),
-          h('span', { className: 'text-xs text-indigo-400 ml-auto' }, `Gerado em ${formatDateTime(raioXResult.gerado_em)} · ${raioXResult.tokens} tokens`)
+        h('div', { className: 'flex items-center gap-2 mb-4 flex-wrap' },
+          h('span', { className: 'text-2xl' }, '🔬'), h('h3', { className: 'text-lg font-bold text-indigo-900' }, 'Raio-X Inteligente'),
+          // Botão Editar / Cancelar
+          raioXResult.id && h('button', {
+            className: 'ml-2 px-4 py-1.5 rounded-lg text-xs font-bold shadow-md ' + (raioXEditando ? 'bg-gray-500 text-white' : 'bg-amber-500 text-white hover:bg-amber-600'),
+            onClick: toggleEditarRaioX
+          }, raioXEditando ? '✕ Cancelar Edição' : '✏️ Editar Relatório'),
+          // Botão Salvar (só aparece em modo edição)
+          raioXEditando && raioXResult.id && h('button', {
+            className: 'px-4 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-bold shadow-md hover:bg-emerald-700 disabled:opacity-50',
+            onClick: salvarEdicaoRaioX,
+            disabled: raioXSalvando
+          }, raioXSalvando ? '⏳ Salvando...' : '💾 Salvar Alterações'),
+          // Botão Baixar PDF Relatório (texto editável — reflete edições) — PRINCIPAL
+          raioXResult.id && h('button', { className: 'ml-2 px-4 py-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg text-xs font-bold shadow-md', onClick: function() {
+            var token = getToken(), url = apiUrl + '/cs/raio-x/pdf-texto/' + raioXResult.id;
+            fetch(url, { headers: { Authorization: 'Bearer ' + token }, credentials: 'include' })
+              .then(function(r) { if (!r.ok) throw new Error('Erro'); return r.blob(); })
+              .then(function(blob) { var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'RaioX_Relatorio_' + codCliente + '.pdf'; a.click(); URL.revokeObjectURL(a.href); })
+              .catch(function(e) { alert('Erro: ' + e.message); });
+          } }, '📝 Baixar PDF'),
+          // Botão Baixar PDF Apresentação (slides visuais — dados brutos) — SECUNDÁRIO
+          raioXResult.id && h('button', { className: 'ml-1 px-3 py-1.5 border border-purple-300 text-purple-600 rounded-lg text-xs font-medium hover:bg-purple-50', onClick: function() {
+            var token = getToken(), url = apiUrl + '/cs/raio-x/pdf/' + raioXResult.id;
+            fetch(url, { headers: { Authorization: 'Bearer ' + token }, credentials: 'include' })
+              .then(function(r) { if (!r.ok) throw new Error('Erro'); return r.blob(); })
+              .then(function(blob) { var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'RaioX_Apresentacao_' + codCliente + '.pdf'; a.click(); URL.revokeObjectURL(a.href); })
+              .catch(function(e) { alert('Erro: ' + e.message); });
+          } }, '📊 Apresentação'),
+          h('span', { className: 'text-xs text-indigo-400 ml-auto' }, 'Gerado ' + formatDateTime(raioXResult.gerado_em) + ' · ' + raioXResult.tokens + ' tokens')
         ),
-        h('div', {
-          className: 'prose prose-sm prose-indigo max-w-none',
-          dangerouslySetInnerHTML: { __html: renderMarkdown(raioXResult.analise) }
-        })
+        // Aviso de modo edição
+        raioXEditando && h('div', { className: 'mb-3 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-2' },
+          h('span', { className: 'text-amber-600 text-sm' }, '✏️'),
+          h('span', { className: 'text-amber-800 text-sm font-medium' }, 'Modo de edição ativo — edite o texto abaixo e clique em "Salvar Alterações".')
+        ),
+        // Conteúdo: modo leitura usa dangerouslySetInnerHTML, modo edição usa ref com contentEditable
+        raioXEditando
+          ? h('div', {
+              ref: raioXEditRef,
+              className: 'prose prose-sm prose-indigo max-w-none outline-none ring-2 ring-amber-300 rounded-lg p-3 bg-white min-h-[200px]',
+              contentEditable: 'true',
+              suppressContentEditableWarning: true
+            })
+          : h('div', {
+              className: 'prose prose-sm prose-indigo max-w-none',
+              dangerouslySetInnerHTML: { __html: renderMarkdown(raioXResult.analise) }
+            })
       ),
 
-      // Timeline Interações + Ocorrências
+      // Interações + Ocorrências
       h('div', { className: 'grid md:grid-cols-2 gap-6' },
-        // Interações
         h('div', { className: 'bg-white rounded-xl border border-gray-200 p-5' },
           h('h3', { className: 'font-semibold text-gray-700 mb-4' }, '📝 Últimas Interações'),
-          interacoes && interacoes.length > 0
-            ? h('div', { className: 'space-y-3' }, ...interacoes.map((int, i) =>
-                h('div', { key: i, className: 'flex gap-3 p-3 bg-gray-50 rounded-lg' },
-                  h('span', { className: 'text-lg mt-0.5' }, int.tipo === 'visita' ? '📍' : int.tipo === 'reuniao' ? '👥' : int.tipo === 'ligacao' ? '📞' : int.tipo === 'whatsapp' ? '💬' : int.tipo === 'pos_venda' ? '✅' : '📝'),
-                  h('div', { className: 'flex-1 min-w-0' },
-                    h('p', { className: 'text-sm font-medium text-gray-900' }, int.titulo),
-                    int.descricao && h('p', { className: 'text-xs text-gray-500 mt-1 line-clamp-2' }, int.descricao),
-                    h('p', { className: 'text-xs text-gray-400 mt-1' }, `${formatDateTime(int.data_interacao)} · ${int.criado_por_nome || ''}`)
-                  )
-                )
-              ))
-            : h('p', { className: 'text-sm text-gray-400 text-center py-4' }, 'Nenhuma interação registrada')
+          interacoes.length > 0 ? h('div', { className: 'space-y-3' }, ...interacoes.map(function(int, i) {
+            return h('div', { key: i, className: 'flex gap-3 p-3 bg-gray-50 rounded-lg' },
+              h('span', { className: 'text-lg mt-0.5' }, int.tipo === 'visita' ? '📍' : int.tipo === 'reuniao' ? '👥' : int.tipo === 'ligacao' ? '📞' : int.tipo === 'whatsapp' ? '💬' : int.tipo === 'pos_venda' ? '✅' : '📝'),
+              h('div', { className: 'flex-1 min-w-0' }, h('p', { className: 'text-sm font-medium text-gray-900' }, int.titulo), int.descricao && h('p', { className: 'text-xs text-gray-500 mt-1 line-clamp-2' }, int.descricao), h('p', { className: 'text-xs text-gray-400 mt-1' }, formatDateTime(int.data_interacao) + ' · ' + (int.criado_por_nome || '')))
+            );
+          })) : h('p', { className: 'text-sm text-gray-400 text-center py-4' }, 'Nenhuma interação')
         ),
-
-        // Ocorrências
         h('div', { className: 'bg-white rounded-xl border border-gray-200 p-5' },
           h('h3', { className: 'font-semibold text-gray-700 mb-4' }, '🚨 Ocorrências Abertas'),
-          ocorrencias && ocorrencias.length > 0
-            ? h('div', { className: 'space-y-3' }, ...ocorrencias.map((oc, i) =>
-                h('div', { key: i, className: `flex gap-3 p-3 rounded-lg ${oc.severidade === 'critica' ? 'bg-red-50' : oc.severidade === 'alta' ? 'bg-orange-50' : 'bg-amber-50'}` },
-                  h('span', { className: 'text-lg mt-0.5' }, oc.severidade === 'critica' ? '🔴' : oc.severidade === 'alta' ? '🟠' : '🟡'),
-                  h('div', { className: 'flex-1 min-w-0' },
-                    h('p', { className: 'text-sm font-medium text-gray-900' }, oc.titulo),
-                    h('div', { className: 'flex items-center gap-2 mt-1' },
-                      h(Badge, { text: oc.tipo, cor: '#6B7280' }),
-                      h(Badge, { text: oc.severidade, cor: oc.severidade === 'critica' ? '#EF4444' : oc.severidade === 'alta' ? '#F97316' : '#F59E0B' }),
-                      h(Badge, { text: oc.status, cor: '#3B82F6' })
-                    ),
-                    h('p', { className: 'text-xs text-gray-400 mt-1' }, formatDateTime(oc.data_abertura))
-                  )
-                )
-              ))
-            : h('p', { className: 'text-sm text-gray-400 text-center py-4' }, '✅ Nenhuma ocorrência aberta!')
+          ocorrencias.length > 0 ? h('div', { className: 'space-y-3' }, ...ocorrencias.map(function(oc, i) {
+            return h('div', { key: i, className: 'flex gap-3 p-3 rounded-lg ' + (oc.severidade === 'critica' ? 'bg-red-50' : oc.severidade === 'alta' ? 'bg-orange-50' : 'bg-amber-50') },
+              h('span', { className: 'text-lg mt-0.5' }, oc.severidade === 'critica' ? '🔴' : oc.severidade === 'alta' ? '🟠' : '🟡'),
+              h('div', { className: 'flex-1 min-w-0' }, h('p', { className: 'text-sm font-medium text-gray-900' }, oc.titulo), h('div', { className: 'flex items-center gap-2 mt-1' }, h(Badge, { text: oc.tipo, cor: '#6B7280' }), h(Badge, { text: oc.severidade, cor: oc.severidade === 'critica' ? '#EF4444' : '#F97316' }), h(Badge, { text: oc.status, cor: '#3B82F6' })), h('p', { className: 'text-xs text-gray-400 mt-1' }, formatDateTime(oc.data_abertura)))
+            );
+          })) : h('p', { className: 'text-sm text-gray-400 text-center py-4' }, '✅ Nenhuma ocorrência!')
         )
       ),
 
       // Histórico Raio-X
-      raio_x_historico && raio_x_historico.length > 0 && h('div', { className: 'bg-white rounded-xl border border-gray-200 p-5' },
+      raio_x_historico.length > 0 && h('div', { className: 'bg-white rounded-xl border border-gray-200 p-5' },
         h('h3', { className: 'font-semibold text-gray-700 mb-4' }, '📋 Histórico de Raio-X'),
-        h('div', { className: 'space-y-2' }, ...raio_x_historico.map((rx, i) =>
-          h('div', { key: i, className: 'flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-indigo-50',
-            onClick: async () => {
-              try {
-                const res = await fetchApi(`/cs/raio-x/${rx.id}`);
-                if (res.success) setRaioXResult({ analise: res.raio_x.analise_texto, gerado_em: res.raio_x.created_at, tokens: res.raio_x.tokens_utilizados });
-              } catch (e) { console.error(e); }
-            }
-          },
+        h('div', { className: 'space-y-2' }, ...raio_x_historico.map(function(rx, i) {
+          return h('div', { key: i, className: 'flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-indigo-50', onClick: async function() {
+            try { var res = await fetchApi('/cs/raio-x/' + rx.id); if (res.success) setRaioXResult({ id: rx.id, analise: res.raio_x.analise_texto, gerado_em: res.raio_x.created_at, tokens: res.raio_x.tokens_utilizados }); } catch (e) { console.error(e); }
+          } },
             h(HealthRing, { score: rx.score_saude, size: 36 }),
-            h('div', { className: 'flex-1' },
-              h('p', { className: 'text-sm font-medium text-gray-900' }, `${formatDate(rx.data_inicio)} a ${formatDate(rx.data_fim)}`),
-              h('p', { className: 'text-xs text-gray-500' }, `${rx.tipo_analise} · por ${rx.gerado_por_nome || 'Sistema'}`)
-            ),
+            h('div', { className: 'flex-1' }, h('p', { className: 'text-sm font-medium text-gray-900' }, formatDate(rx.data_inicio) + ' a ' + formatDate(rx.data_fim)), h('p', { className: 'text-xs text-gray-500' }, rx.tipo_analise + ' · ' + (rx.gerado_por_nome || 'Sistema'))),
             h('span', { className: 'text-xs text-gray-400' }, formatDateTime(rx.created_at))
-          )
-        ))
+          );
+        }))
       ),
 
-      // Modal Nova Interação
-      h(Modal, { aberto: showNovaInteracao, fechar: () => setShowNovaInteracao(false), titulo: '📝 Nova Interação' },
-        h('div', { className: 'space-y-4' },
-          h('div', null,
-            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Tipo'),
-            h('select', { value: interacaoForm.tipo, onChange: e => setInteracaoForm(f => ({ ...f, tipo: e.target.value })),
-              className: 'w-full px-3 py-2 border border-gray-200 rounded-lg' },
-              h('option', { value: 'visita' }, '📍 Visita Presencial'),
-              h('option', { value: 'reuniao' }, '👥 Reunião'),
-              h('option', { value: 'ligacao' }, '📞 Ligação'),
-              h('option', { value: 'pos_venda' }, '✅ Pós-Venda'),
-              h('option', { value: 'whatsapp' }, '💬 WhatsApp'),
-              h('option', { value: 'email' }, '📧 E-mail'),
-              h('option', { value: 'anotacao' }, '📝 Anotação')
-            )
-          ),
-          h('div', null,
-            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Título *'),
-            h('input', { type: 'text', value: interacaoForm.titulo, onChange: e => setInteracaoForm(f => ({ ...f, titulo: e.target.value })),
-              placeholder: 'Ex: Reunião de alinhamento mensal',
-              className: 'w-full px-3 py-2 border border-gray-200 rounded-lg' })
-          ),
-          h('div', null,
-            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Descrição'),
-            h('textarea', { value: interacaoForm.descricao, onChange: e => setInteracaoForm(f => ({ ...f, descricao: e.target.value })),
-              rows: 3, placeholder: 'Detalhes da interação...',
-              className: 'w-full px-3 py-2 border border-gray-200 rounded-lg resize-none' })
-          ),
-          h('div', null,
-            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Resultado'),
-            h('input', { type: 'text', value: interacaoForm.resultado, onChange: e => setInteracaoForm(f => ({ ...f, resultado: e.target.value })),
-              placeholder: 'Ex: Cliente satisfeito, solicitou aumento de frota',
-              className: 'w-full px-3 py-2 border border-gray-200 rounded-lg' })
-          ),
-          h('div', null,
-            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Próxima Ação'),
-            h('input', { type: 'text', value: interacaoForm.proxima_acao, onChange: e => setInteracaoForm(f => ({ ...f, proxima_acao: e.target.value })),
-              placeholder: 'Ex: Enviar proposta comercial até sexta',
-              className: 'w-full px-3 py-2 border border-gray-200 rounded-lg' })
-          ),
-          h('button', { onClick: salvarInteracao, disabled: !interacaoForm.titulo,
-            className: 'w-full py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 disabled:opacity-50' }, '💾 Salvar Interação')
-        )
-      ),
-
-      // Modal Nova Ocorrência
-      h(Modal, { aberto: showNovaOcorrencia, fechar: () => setShowNovaOcorrencia(false), titulo: '🚨 Nova Ocorrência' },
+      // Modais
+      h(Modal, { aberto: showNovaInteracao, fechar: function() { setShowNovaInteracao(false); }, titulo: '📝 Nova Interação' },
         h('div', { className: 'space-y-4' },
           h('div', { className: 'grid grid-cols-2 gap-4' },
-            h('div', null,
-              h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Tipo'),
-              h('select', { value: ocorrenciaForm.tipo, onChange: e => setOcorrenciaForm(f => ({ ...f, tipo: e.target.value })),
-                className: 'w-full px-3 py-2 border border-gray-200 rounded-lg' },
-                h('option', { value: 'reclamacao' }, 'Reclamação'),
-                h('option', { value: 'problema_entrega' }, 'Problema na Entrega'),
-                h('option', { value: 'atraso' }, 'Atraso Recorrente'),
-                h('option', { value: 'financeiro' }, 'Problema Financeiro'),
-                h('option', { value: 'operacional' }, 'Problema Operacional'),
-                h('option', { value: 'sugestao' }, 'Sugestão'),
-                h('option', { value: 'elogio' }, 'Elogio')
-              )
-            ),
-            h('div', null,
-              h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Severidade'),
-              h('select', { value: ocorrenciaForm.severidade, onChange: e => setOcorrenciaForm(f => ({ ...f, severidade: e.target.value })),
-                className: 'w-full px-3 py-2 border border-gray-200 rounded-lg' },
-                h('option', { value: 'baixa' }, '🟢 Baixa'),
-                h('option', { value: 'media' }, '🟡 Média'),
-                h('option', { value: 'alta' }, '🟠 Alta'),
-                h('option', { value: 'critica' }, '🔴 Crítica')
-              )
-            )
+            h('div', null, h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Tipo'), h('select', { value: interacaoForm.tipo, onChange: function(e) { setInteracaoForm(function(f) { return Object.assign({}, f, { tipo: e.target.value }); }); }, className: 'w-full px-3 py-2 border border-gray-200 rounded-lg' }, h('option', { value: 'visita' }, '📍 Visita'), h('option', { value: 'reuniao' }, '👥 Reunião'), h('option', { value: 'ligacao' }, '📞 Ligação'), h('option', { value: 'pos_venda' }, '✅ Pós-Venda'), h('option', { value: 'whatsapp' }, '💬 WhatsApp'), h('option', { value: 'email' }, '📧 E-mail'), h('option', { value: 'anotacao' }, '📝 Anotação'))),
+            h('div', null, h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, '📁 Centro de Custo'), h('select', { value: interacaoForm.centro_custo, onChange: function(e) { setInteracaoForm(function(f) { return Object.assign({}, f, { centro_custo: e.target.value }); }); }, className: 'w-full px-3 py-2 border border-gray-200 rounded-lg' }, h('option', { value: '' }, 'Todos os centros'), centrosDisp.map(function(cc) { return h('option', { key: cc.centro_custo, value: cc.centro_custo }, cc.centro_custo); })))
           ),
-          h('div', null,
-            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Título *'),
-            h('input', { type: 'text', value: ocorrenciaForm.titulo, onChange: e => setOcorrenciaForm(f => ({ ...f, titulo: e.target.value })),
-              placeholder: 'Ex: Entregas atrasadas na região sul',
-              className: 'w-full px-3 py-2 border border-gray-200 rounded-lg' })
+          h('div', null, h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Título *'), h('input', { type: 'text', value: interacaoForm.titulo, onChange: function(e) { setInteracaoForm(function(f) { return Object.assign({}, f, { titulo: e.target.value }); }); }, placeholder: 'Ex: Reunião de alinhamento', className: 'w-full px-3 py-2 border border-gray-200 rounded-lg' })),
+          h('div', null, h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Descrição'), h('textarea', { value: interacaoForm.descricao, onChange: function(e) { setInteracaoForm(function(f) { return Object.assign({}, f, { descricao: e.target.value }); }); }, rows: 3, className: 'w-full px-3 py-2 border border-gray-200 rounded-lg resize-none' })),
+          h('div', null, h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Resultado'), h('input', { type: 'text', value: interacaoForm.resultado, onChange: function(e) { setInteracaoForm(function(f) { return Object.assign({}, f, { resultado: e.target.value }); }); }, className: 'w-full px-3 py-2 border border-gray-200 rounded-lg' })),
+          h('div', null, h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Próxima Ação'), h('input', { type: 'text', value: interacaoForm.proxima_acao, onChange: function(e) { setInteracaoForm(function(f) { return Object.assign({}, f, { proxima_acao: e.target.value }); }); }, className: 'w-full px-3 py-2 border border-gray-200 rounded-lg' })),
+          h('button', { onClick: salvarInteracao, disabled: !interacaoForm.titulo, className: 'w-full py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 disabled:opacity-50' }, '💾 Salvar')
+        )
+      ),
+      h(Modal, { aberto: showNovaOcorrencia, fechar: function() { setShowNovaOcorrencia(false); }, titulo: '🚨 Nova Ocorrência' },
+        h('div', { className: 'space-y-4' },
+          h('div', { className: 'grid grid-cols-3 gap-4' },
+            h('div', null, h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Tipo'), h('select', { value: ocorrenciaForm.tipo, onChange: function(e) { setOcorrenciaForm(function(f) { return Object.assign({}, f, { tipo: e.target.value }); }); }, className: 'w-full px-3 py-2 border border-gray-200 rounded-lg' }, h('option', { value: 'reclamacao' }, 'Reclamação'), h('option', { value: 'problema_entrega' }, 'Problema Entrega'), h('option', { value: 'atraso' }, 'Atraso'), h('option', { value: 'financeiro' }, 'Financeiro'), h('option', { value: 'operacional' }, 'Operacional'), h('option', { value: 'sugestao' }, 'Sugestão'), h('option', { value: 'elogio' }, 'Elogio'))),
+            h('div', null, h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Severidade'), h('select', { value: ocorrenciaForm.severidade, onChange: function(e) { setOcorrenciaForm(function(f) { return Object.assign({}, f, { severidade: e.target.value }); }); }, className: 'w-full px-3 py-2 border border-gray-200 rounded-lg' }, h('option', { value: 'baixa' }, '🟢 Baixa'), h('option', { value: 'media' }, '🟡 Média'), h('option', { value: 'alta' }, '🟠 Alta'), h('option', { value: 'critica' }, '🔴 Crítica'))),
+            h('div', null, h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, '📁 Centro de Custo'), h('select', { value: ocorrenciaForm.centro_custo, onChange: function(e) { setOcorrenciaForm(function(f) { return Object.assign({}, f, { centro_custo: e.target.value }); }); }, className: 'w-full px-3 py-2 border border-gray-200 rounded-lg' }, h('option', { value: '' }, 'Todos os centros'), centrosDisp.map(function(cc) { return h('option', { key: cc.centro_custo, value: cc.centro_custo }, cc.centro_custo); })))
           ),
-          h('div', null,
-            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Descrição'),
-            h('textarea', { value: ocorrenciaForm.descricao, onChange: e => setOcorrenciaForm(f => ({ ...f, descricao: e.target.value })),
-              rows: 3, placeholder: 'Descreva a ocorrência em detalhes...',
-              className: 'w-full px-3 py-2 border border-gray-200 rounded-lg resize-none' })
-          ),
-          h('button', { onClick: salvarOcorrencia, disabled: !ocorrenciaForm.titulo,
-            className: 'w-full py-3 bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700 disabled:opacity-50' }, '💾 Registrar Ocorrência')
+          h('div', null, h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Título *'), h('input', { type: 'text', value: ocorrenciaForm.titulo, onChange: function(e) { setOcorrenciaForm(function(f) { return Object.assign({}, f, { titulo: e.target.value }); }); }, className: 'w-full px-3 py-2 border border-gray-200 rounded-lg' })),
+          h('div', null, h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Descrição'), h('textarea', { value: ocorrenciaForm.descricao, onChange: function(e) { setOcorrenciaForm(function(f) { return Object.assign({}, f, { descricao: e.target.value }); }); }, rows: 3, className: 'w-full px-3 py-2 border border-gray-200 rounded-lg resize-none' })),
+          h('button', { onClick: salvarOcorrencia, disabled: !ocorrenciaForm.titulo, className: 'w-full py-3 bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700 disabled:opacity-50' }, '💾 Registrar')
         )
       )
     );
   }
 
   // ══════════════════════════════════════════════════
-  // SUB-TELA: INTERAÇÕES (visão geral)
+  // INTERAÇÕES
   // ══════════════════════════════════════════════════
   function InteracoesView({ fetchApi }) {
-    const [interacoes, setInteracoes] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [filtroTipo, setFiltroTipo] = useState('');
-
-    useEffect(() => {
-      (async () => {
-        setLoading(true);
-        try {
-          const params = new URLSearchParams({ limit: '50' });
-          if (filtroTipo) params.set('tipo', filtroTipo);
-          const res = await fetchApi(`/cs/interacoes?${params}`);
-          if (res.success) setInteracoes(res.interacoes || []);
-        } catch (e) { console.error(e); }
-        setLoading(false);
-      })();
-    }, [fetchApi, filtroTipo]);
-
+    var _i = useState([]), interacoes = _i[0], setInteracoes = _i[1];
+    var _l = useState(true), loading = _l[0], setLoading = _l[1];
+    var _f = useState(''), filtroTipo = _f[0], setFiltroTipo = _f[1];
+    useEffect(function() { (async function() { setLoading(true); try { var p = new URLSearchParams({ limit: '50' }); if (filtroTipo) p.set('tipo', filtroTipo); var r = await fetchApi('/cs/interacoes?' + p); if (r.success) setInteracoes(r.interacoes || []); } catch (e) { console.error(e); } setLoading(false); })(); }, [fetchApi, filtroTipo]);
     return h('div', { className: 'space-y-4' },
-      h('div', { className: 'flex items-center gap-3' },
-        h('h3', { className: 'text-lg font-bold text-gray-900' }, 'Todas as Interações'),
-        h('select', { value: filtroTipo, onChange: e => setFiltroTipo(e.target.value),
-          className: 'px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white ml-auto' },
-          h('option', { value: '' }, 'Todos os tipos'),
-          h('option', { value: 'visita' }, '📍 Visitas'),
-          h('option', { value: 'reuniao' }, '👥 Reuniões'),
-          h('option', { value: 'ligacao' }, '📞 Ligações'),
-          h('option', { value: 'pos_venda' }, '✅ Pós-Venda'),
-          h('option', { value: 'whatsapp' }, '💬 WhatsApp')
-        )
+      h('div', { className: 'flex items-center gap-3' }, h('h3', { className: 'text-lg font-bold text-gray-900' }, 'Todas as Interações'),
+        h('select', { value: filtroTipo, onChange: function(e) { setFiltroTipo(e.target.value); }, className: 'px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white ml-auto' }, h('option', { value: '' }, 'Todos os tipos'), h('option', { value: 'visita' }, '📍 Visitas'), h('option', { value: 'reuniao' }, '👥 Reuniões'), h('option', { value: 'ligacao' }, '📞 Ligações'), h('option', { value: 'pos_venda' }, '✅ Pós-Venda'), h('option', { value: 'whatsapp' }, '💬 WhatsApp'))
       ),
-      loading ? h(Skeleton, { linhas: 5 }) :
-      interacoes.length === 0 ? h(EmptyState, { titulo: 'Nenhuma interação encontrada', icone: '📝' }) :
-      h('div', { className: 'space-y-2' },
-        ...interacoes.map((int, i) =>
-          h('div', { key: i, className: 'bg-white rounded-xl border border-gray-200 p-4 flex gap-4 items-start' },
-            h('span', { className: 'text-2xl' }, int.tipo === 'visita' ? '📍' : int.tipo === 'reuniao' ? '👥' : int.tipo === 'ligacao' ? '📞' : int.tipo === 'whatsapp' ? '💬' : int.tipo === 'pos_venda' ? '✅' : '📝'),
-            h('div', { className: 'flex-1 min-w-0' },
-              h('div', { className: 'flex items-center gap-2 mb-1' },
-                h('h4', { className: 'font-semibold text-gray-900' }, int.titulo),
-                h(Badge, { text: int.tipo, cor: '#6366F1' })
-              ),
-              h('p', { className: 'text-sm text-gray-600 mb-1' }, int.nome_fantasia || `Cliente ${int.cod_cliente}`),
-              int.descricao && h('p', { className: 'text-sm text-gray-500 line-clamp-2' }, int.descricao),
-              int.resultado && h('p', { className: 'text-xs text-emerald-600 mt-1' }, `✅ ${int.resultado}`),
-              int.proxima_acao && h('p', { className: 'text-xs text-blue-600 mt-1' }, `📅 Próxima: ${int.proxima_acao}`)
-            ),
-            h('div', { className: 'text-right whitespace-nowrap' },
-              h('p', { className: 'text-xs text-gray-400' }, formatDateTime(int.data_interacao)),
-              h('p', { className: 'text-xs text-gray-400' }, int.criado_por_nome)
-            )
-          )
-        )
-      )
+      loading ? h(Skeleton, { linhas: 5 }) : interacoes.length === 0 ? h(EmptyState, { titulo: 'Nenhuma interação', icone: '📝' }) :
+      h('div', { className: 'space-y-2' }, ...interacoes.map(function(int, i) {
+        return h('div', { key: i, className: 'bg-white rounded-xl border border-gray-200 p-4 flex gap-4 items-start' },
+          h('span', { className: 'text-2xl' }, int.tipo === 'visita' ? '📍' : int.tipo === 'reuniao' ? '👥' : int.tipo === 'ligacao' ? '📞' : int.tipo === 'whatsapp' ? '💬' : int.tipo === 'pos_venda' ? '✅' : '📝'),
+          h('div', { className: 'flex-1 min-w-0' },
+            h('div', { className: 'flex items-center gap-2 mb-1' }, h('h4', { className: 'font-semibold text-gray-900' }, int.titulo), h(Badge, { text: int.tipo, cor: '#6366F1' })),
+            h('p', { className: 'text-sm text-gray-600 mb-1' }, int.nome_fantasia || 'Cliente ' + int.cod_cliente),
+            int.descricao && h('p', { className: 'text-sm text-gray-500 line-clamp-2' }, int.descricao),
+            int.resultado && h('p', { className: 'text-xs text-emerald-600 mt-1' }, '✅ ' + int.resultado),
+            int.proxima_acao && h('p', { className: 'text-xs text-blue-600 mt-1' }, '📅 Próxima: ' + int.proxima_acao)
+          ),
+          h('div', { className: 'text-right whitespace-nowrap' }, h('p', { className: 'text-xs text-gray-400' }, formatDateTime(int.data_interacao)), h('p', { className: 'text-xs text-gray-400' }, int.criado_por_nome))
+        );
+      }))
     );
   }
 
   // ══════════════════════════════════════════════════
-  // SUB-TELA: OCORRÊNCIAS (visão geral)
+  // OCORRÊNCIAS
   // ══════════════════════════════════════════════════
   function OcorrenciasView({ fetchApi }) {
-    const [ocorrencias, setOcorrencias] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [filtroStatus, setFiltroStatus] = useState('');
-
-    const carregar = useCallback(async () => {
-      setLoading(true);
-      try {
-        const params = new URLSearchParams({ limit: '50' });
-        if (filtroStatus) params.set('status', filtroStatus);
-        const res = await fetchApi(`/cs/ocorrencias?${params}`);
-        if (res.success) setOcorrencias(res.ocorrencias || []);
-      } catch (e) { console.error(e); }
-      setLoading(false);
-    }, [fetchApi, filtroStatus]);
-
-    useEffect(() => { carregar(); }, [carregar]);
-
-    const atualizarStatus = async (id, novoStatus) => {
-      try {
-        await fetchApi(`/cs/ocorrencias/${id}`, { method: 'PUT', body: JSON.stringify({ status: novoStatus }) });
-        carregar();
-      } catch (e) { console.error(e); }
-    };
+    var _o = useState([]), ocorrencias = _o[0], setOcorrencias = _o[1];
+    var _l = useState(true), loading = _l[0], setLoading = _l[1];
+    var _f = useState(''), filtroStatus = _f[0], setFiltroStatus = _f[1];
+    var carregar = useCallback(async function() { setLoading(true); try { var p = new URLSearchParams({ limit: '50' }); if (filtroStatus) p.set('status', filtroStatus); var r = await fetchApi('/cs/ocorrencias?' + p); if (r.success) setOcorrencias(r.ocorrencias || []); } catch (e) { console.error(e); } setLoading(false); }, [fetchApi, filtroStatus]);
+    useEffect(function() { carregar(); }, [carregar]);
+    var atualizarSt = async function(id, st) { try { await fetchApi('/cs/ocorrencias/' + id, { method: 'PUT', body: JSON.stringify({ status: st }) }); carregar(); } catch (e) { console.error(e); } };
 
     return h('div', { className: 'space-y-4' },
-      h('div', { className: 'flex items-center gap-3' },
-        h('h3', { className: 'text-lg font-bold text-gray-900' }, 'Gestão de Ocorrências'),
-        h('select', { value: filtroStatus, onChange: e => setFiltroStatus(e.target.value),
-          className: 'px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white ml-auto' },
-          h('option', { value: '' }, 'Todos os status'),
-          h('option', { value: 'aberta' }, '🔵 Abertas'),
-          h('option', { value: 'em_andamento' }, '🟡 Em Andamento'),
-          h('option', { value: 'resolvida' }, '🟢 Resolvidas'),
-          h('option', { value: 'fechada' }, '⚫ Fechadas')
-        )
+      h('div', { className: 'flex items-center gap-3' }, h('h3', { className: 'text-lg font-bold text-gray-900' }, 'Gestão de Ocorrências'),
+        h('select', { value: filtroStatus, onChange: function(e) { setFiltroStatus(e.target.value); }, className: 'px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white ml-auto' }, h('option', { value: '' }, 'Todos'), h('option', { value: 'aberta' }, '🔵 Abertas'), h('option', { value: 'em_andamento' }, '🟡 Em Andamento'), h('option', { value: 'resolvida' }, '🟢 Resolvidas'), h('option', { value: 'fechada' }, '⚫ Fechadas'))
       ),
-      loading ? h(Skeleton, { linhas: 5 }) :
-      ocorrencias.length === 0 ? h(EmptyState, { titulo: 'Nenhuma ocorrência', icone: '✅', descricao: 'Tudo limpo por aqui!' }) :
-      h('div', { className: 'space-y-2' },
-        ...ocorrencias.map((oc, i) =>
-          h('div', { key: i, className: `bg-white rounded-xl border p-4 ${oc.severidade === 'critica' ? 'border-red-300' : oc.severidade === 'alta' ? 'border-orange-200' : 'border-gray-200'}` },
-            h('div', { className: 'flex items-start gap-3' },
-              h('span', { className: 'text-2xl' }, oc.severidade === 'critica' ? '🔴' : oc.severidade === 'alta' ? '🟠' : oc.severidade === 'media' ? '🟡' : '🟢'),
-              h('div', { className: 'flex-1 min-w-0' },
-                h('div', { className: 'flex items-center gap-2 mb-1 flex-wrap' },
-                  h('h4', { className: 'font-semibold text-gray-900' }, oc.titulo),
-                  h(Badge, { text: oc.tipo, cor: '#6B7280' }),
-                  h(Badge, { text: oc.severidade, cor: oc.severidade === 'critica' ? '#EF4444' : oc.severidade === 'alta' ? '#F97316' : '#F59E0B' }),
-                  h(Badge, { text: oc.status, cor: oc.status === 'aberta' ? '#3B82F6' : oc.status === 'resolvida' ? '#10B981' : '#F59E0B' })
-                ),
-                h('p', { className: 'text-sm text-gray-600' }, oc.nome_fantasia || `Cliente ${oc.cod_cliente}`),
-                oc.descricao && h('p', { className: 'text-sm text-gray-500 mt-1' }, oc.descricao),
-                h('div', { className: 'flex items-center gap-2 mt-2' },
-                  oc.status === 'aberta' && h('button', { onClick: () => atualizarStatus(oc.id, 'em_andamento'), className: 'text-xs px-3 py-1 bg-amber-100 text-amber-700 rounded-full hover:bg-amber-200' }, '▶ Iniciar'),
-                  (oc.status === 'aberta' || oc.status === 'em_andamento') && h('button', { onClick: () => atualizarStatus(oc.id, 'resolvida'), className: 'text-xs px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full hover:bg-emerald-200' }, '✅ Resolver')
-                )
-              ),
-              h('span', { className: 'text-xs text-gray-400 whitespace-nowrap' }, formatDateTime(oc.data_abertura))
-            )
+      loading ? h(Skeleton, { linhas: 5 }) : ocorrencias.length === 0 ? h(EmptyState, { titulo: 'Nenhuma ocorrência', icone: '✅', descricao: 'Tudo limpo!' }) :
+      h('div', { className: 'space-y-2' }, ...ocorrencias.map(function(oc, i) {
+        return h('div', { key: i, className: 'bg-white rounded-xl border p-4 ' + (oc.severidade === 'critica' ? 'border-red-300' : oc.severidade === 'alta' ? 'border-orange-200' : 'border-gray-200') },
+          h('div', { className: 'flex items-start gap-3' },
+            h('span', { className: 'text-2xl' }, oc.severidade === 'critica' ? '🔴' : oc.severidade === 'alta' ? '🟠' : oc.severidade === 'media' ? '🟡' : '🟢'),
+            h('div', { className: 'flex-1 min-w-0' },
+              h('div', { className: 'flex items-center gap-2 mb-1 flex-wrap' }, h('h4', { className: 'font-semibold text-gray-900' }, oc.titulo), h(Badge, { text: oc.tipo, cor: '#6B7280' }), h(Badge, { text: oc.severidade, cor: oc.severidade === 'critica' ? '#EF4444' : '#F97316' }), h(Badge, { text: oc.status, cor: oc.status === 'aberta' ? '#3B82F6' : oc.status === 'resolvida' ? '#10B981' : '#F59E0B' })),
+              h('p', { className: 'text-sm text-gray-600' }, oc.nome_fantasia || 'Cliente ' + oc.cod_cliente),
+              oc.descricao && h('p', { className: 'text-sm text-gray-500 mt-1' }, oc.descricao),
+              h('div', { className: 'flex items-center gap-2 mt-2' },
+                oc.status === 'aberta' && h('button', { onClick: function() { atualizarSt(oc.id, 'em_andamento'); }, className: 'text-xs px-3 py-1 bg-amber-100 text-amber-700 rounded-full hover:bg-amber-200' }, '▶ Iniciar'),
+                (oc.status === 'aberta' || oc.status === 'em_andamento') && h('button', { onClick: function() { atualizarSt(oc.id, 'resolvida'); }, className: 'text-xs px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full hover:bg-emerald-200' }, '✅ Resolver')
+              )
+            ),
+            h('span', { className: 'text-xs text-gray-400 whitespace-nowrap' }, formatDateTime(oc.data_abertura))
           )
-        )
-      )
+        );
+      }))
     );
   }
 
   // ══════════════════════════════════════════════════
-  // SUB-TELA: AGENDA
+  // AGENDA
   // ══════════════════════════════════════════════════
   function AgendaView({ fetchApi }) {
-    const [agenda, setAgenda] = useState([]);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-      (async () => {
-        setLoading(true);
-        try {
-          const res = await fetchApi('/cs/interacoes/agenda?dias=30');
-          if (res.success) setAgenda(res.agenda || []);
-        } catch (e) { console.error(e); }
-        setLoading(false);
-      })();
-    }, [fetchApi]);
-
+    var _a = useState([]), agenda = _a[0], setAgenda = _a[1];
+    var _l = useState(true), loading = _l[0], setLoading = _l[1];
+    useEffect(function() { (async function() { setLoading(true); try { var r = await fetchApi('/cs/interacoes/agenda?dias=30'); if (r.success) setAgenda(r.agenda || []); } catch (e) { console.error(e); } setLoading(false); })(); }, [fetchApi]);
     return h('div', { className: 'space-y-4' },
       h('h3', { className: 'text-lg font-bold text-gray-900' }, '📅 Próximas Ações Agendadas (30 dias)'),
-      loading ? h(Skeleton, { linhas: 5 }) :
-      agenda.length === 0 ? h(EmptyState, { titulo: 'Nenhuma ação agendada', icone: '📅', descricao: 'Registre interações com próximas ações para vê-las aqui.' }) :
-      h('div', { className: 'space-y-2' },
-        ...agenda.map((a, i) =>
-          h('div', { key: i, className: 'bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-4' },
-            h('div', { className: 'text-center min-w-[60px]' },
-              h('p', { className: 'text-2xl font-bold text-blue-600' }, new Date(a.data_proxima_acao).getDate()),
-              h('p', { className: 'text-xs text-gray-500' }, new Date(a.data_proxima_acao).toLocaleDateString('pt-BR', { month: 'short' }))
-            ),
-            h('div', { className: 'flex-1 min-w-0' },
-              h('p', { className: 'font-medium text-gray-900' }, a.proxima_acao),
-              h('p', { className: 'text-sm text-gray-500' }, `${a.nome_fantasia || 'Cliente'} · Ref: ${a.titulo}`),
-              h('p', { className: 'text-xs text-gray-400' }, `Interação original: ${formatDateTime(a.data_interacao)}`)
-            ),
-            h(Badge, { text: diasAtras(a.data_proxima_acao) || formatDate(a.data_proxima_acao), cor: new Date(a.data_proxima_acao) < new Date() ? '#EF4444' : '#3B82F6' })
-          )
-        )
-      )
+      loading ? h(Skeleton, { linhas: 5 }) : agenda.length === 0 ? h(EmptyState, { titulo: 'Nenhuma ação agendada', icone: '📅', descricao: 'Registre interações com próximas ações.' }) :
+      h('div', { className: 'space-y-2' }, ...agenda.map(function(a, i) {
+        return h('div', { key: i, className: 'bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-4' },
+          h('div', { className: 'text-center min-w-[60px]' }, h('p', { className: 'text-2xl font-bold text-blue-600' }, new Date(a.data_proxima_acao).getDate()), h('p', { className: 'text-xs text-gray-500' }, new Date(a.data_proxima_acao).toLocaleDateString('pt-BR', { month: 'short' }))),
+          h('div', { className: 'flex-1 min-w-0' }, h('p', { className: 'font-medium text-gray-900' }, a.proxima_acao), h('p', { className: 'text-sm text-gray-500' }, (a.nome_fantasia || 'Cliente') + ' · Ref: ' + a.titulo), h('p', { className: 'text-xs text-gray-400' }, 'Original: ' + formatDateTime(a.data_interacao))),
+          h(Badge, { text: diasAtras(a.data_proxima_acao) || formatDate(a.data_proxima_acao), cor: new Date(a.data_proxima_acao) < new Date() ? '#EF4444' : '#3B82F6' })
+        );
+      }))
     );
   }
 
   // ══════════════════════════════════════════════════
-  // Markdown simples → HTML
+  // Markdown → HTML
   // ══════════════════════════════════════════════════
   function renderMarkdown(text) {
     if (!text) return '';
-    return text
+    // Se o texto já é HTML (salvo após edição), retornar direto sem reprocessar
+    // Detecta pela presença de tags HTML típicas do relatório renderizado
+    if (text.indexOf('<h2 class=') !== -1 || text.indexOf('<strong class="font-semibold') !== -1 || text.indexOf('<h3 class=') !== -1) {
+      return text;
+    }
+    var htmlBlocks = [];
+    var processed = text.replace(/<div style="margin:16px 0;background:#f8fafc[^"]*"[^>]*>[\s\S]*?<\/div>\n\n/g, function(match) {
+      var idx = htmlBlocks.length; htmlBlocks.push(match); return '\n%%GRAFICO_' + idx + '%%\n';
+    });
+    processed = processed
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
       .replace(/^### (.+)$/gm, '<h3 class="text-base font-bold text-indigo-800 mt-6 mb-2">$1</h3>')
       .replace(/^## (.+)$/gm, '<h2 class="text-lg font-bold text-indigo-900 mt-6 mb-2">$1</h2>')
@@ -907,106 +939,69 @@
       .replace(/\*(.+?)\*/g, '<em>$1</em>')
       .replace(/^- (.+)$/gm, '<li class="ml-4 text-sm text-gray-700 mb-1">• $1</li>')
       .replace(/^\d+\. (.+)$/gm, '<li class="ml-4 text-sm text-gray-700 mb-1">$1</li>')
-      .replace(/\n\n/g, '<br/><br/>')
-      .replace(/\n/g, '<br/>');
+      .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener" class="text-indigo-600 underline hover:text-indigo-800">$1</a>')
+      .replace(/(https?:\/\/[^\s<]+)/g, function(url) {
+        var decoded = url.replace(/&amp;/g, '&');
+        if (decoded.indexOf('mapa-calor') !== -1) {
+          return '<a href="' + decoded + '" target="_blank" rel="noopener" style="display:inline-block;background:linear-gradient(135deg,#7c3aed,#6d28d9);color:white;padding:8px 20px;border-radius:8px;text-decoration:none;font-weight:700;font-size:13px;margin:8px 0">🗺️ Abrir Mapa de Calor Interativo</a>';
+        }
+        return '<a href="' + decoded + '" target="_blank" rel="noopener" class="text-indigo-600 underline hover:text-indigo-800">' + decoded.substring(0, 60) + '...</a>';
+      })
+      .replace(/\n\n/g, '<br/><br/>').replace(/\n/g, '<br/>');
+    htmlBlocks.forEach(function(block, idx) { processed = processed.replace('%%GRAFICO_' + idx + '%%', block); });
+    return processed;
   }
 
   // ══════════════════════════════════════════════════
   // COMPONENTE PRINCIPAL
   // ══════════════════════════════════════════════════
   window.ModuloCsComponent = function(props) {
-    const {
-      usuario, estado, setEstado, API_URL: apiUrl, getToken, fetchAuth,
-      HeaderCompacto, Toast, LoadingOverlay,
-      Ee, socialProfile, ul, o, he, navegarSidebar, showToast,
-      // Flags de loading/toast do parent
-      n: isLoadingGlobal, i: toastData, f: isLoading, E: lastUpdate,
-    } = props;
+    var usuario = props.usuario, estado = props.estado, setEstado = props.setEstado, apiUrl = props.API_URL, getToken = props.getToken;
+    var HeaderCompacto = props.HeaderCompacto, Toast = props.Toast, LoadingOverlay = props.LoadingOverlay;
+    var Ee = props.Ee, socialProfile = props.socialProfile, ul = props.ul, o = props.o, he = props.he, navegarSidebar = props.navegarSidebar;
+    var isLoadingGlobal = props.n, toastData = props.i, isLoading = props.f, lastUpdate = props.E;
 
-    const [activeTab, setActiveTab] = useState('dashboard');
-    const [clienteDetalhe, setClienteDetalhe] = useState(null);
+    var _t = useState('dashboard'), activeTab = _t[0], setActiveTab = _t[1];
+    var _cd = useState(null), clienteDetalhe = _cd[0], setClienteDetalhe = _cd[1];
 
-    // Fetch wrapper que usa a autenticação existente
-    const fetchApi = useCallback(async (endpoint, options = {}) => {
-      const token = getToken();
-      const url = `${apiUrl}${endpoint}`;
-      const res = await fetch(url, {
-        ...options,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-          ...(options.headers || {}),
-        },
-        credentials: 'include',
-      });
+    var fetchApi = useCallback(async function(endpoint, options) {
+      options = options || {};
+      var token = getToken(), url = apiUrl + endpoint;
+      var res = await fetch(url, Object.assign({}, options, { headers: Object.assign({ 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, options.headers || {}), credentials: 'include' }));
       return res.json();
     }, [apiUrl, getToken]);
 
-    // Navegar para tab
-    const handleTabChange = (tabId) => {
-      setActiveTab(tabId);
-      setClienteDetalhe(null);
-      setEstado({ ...estado, csTab: tabId });
-    };
+    var handleTabChange = function(tabId) { setActiveTab(tabId); setClienteDetalhe(null); setEstado(Object.assign({}, estado, { csTab: tabId })); };
+    var handleSelectCliente = function(cod, centroCusto) { setClienteDetalhe({ cod: cod, centroCusto: centroCusto || null }); };
 
-    // Abrir detalhe do cliente
-    const handleSelectCliente = (cod) => {
-      setClienteDetalhe(cod);
-    };
-
-    // Renderizar conteúdo ativo
-    const renderContent = () => {
-      // Se tiver cliente selecionado, mostra detalhe
-      if (clienteDetalhe) {
-        return h(ClienteDetalheView, { codCliente: clienteDetalhe, fetchApi, onVoltar: () => setClienteDetalhe(null) });
-      }
-
+    var renderContent = function() {
+      if (clienteDetalhe) return h(ClienteDetalheView, { codCliente: clienteDetalhe.cod, centroCustoInicial: clienteDetalhe.centroCusto, fetchApi: fetchApi, apiUrl: apiUrl, getToken: getToken, onVoltar: function() { setClienteDetalhe(null); } });
       switch (activeTab) {
-        case 'dashboard': return h(DashboardView, { fetchApi });
-        case 'clientes': return h(ClientesView, { fetchApi, onSelectCliente: handleSelectCliente });
-        case 'interacoes': return h(InteracoesView, { fetchApi });
-        case 'ocorrencias': return h(OcorrenciasView, { fetchApi });
-        case 'agenda': return h(AgendaView, { fetchApi });
-        default: return h(DashboardView, { fetchApi });
+        case 'dashboard': return h(DashboardView, { fetchApi: fetchApi });
+        case 'clientes': return h(ClientesView, { fetchApi: fetchApi, onSelectCliente: handleSelectCliente });
+        case 'interacoes': return h(InteracoesView, { fetchApi: fetchApi });
+        case 'ocorrencias': return h(OcorrenciasView, { fetchApi: fetchApi });
+        case 'agenda': return h(AgendaView, { fetchApi: fetchApi });
+        default: return h(DashboardView, { fetchApi: fetchApi });
       }
     };
 
     return h('div', { className: 'min-h-screen bg-gray-50' },
-      // Toast
       toastData && h(Toast, toastData),
       isLoadingGlobal && h(LoadingOverlay),
-
-      // Header com navegação
-      h(HeaderCompacto, {
-        usuario: usuario,
-        moduloAtivo: Ee,
-        abaAtiva: activeTab,
-        socialProfile: socialProfile,
-        isLoading: isLoading,
-        lastUpdate: lastUpdate,
-        onRefresh: ul,
-        onLogout: () => o(null),
-        onGoHome: () => he('home'),
-        onNavigate: navegarSidebar,
-        onChangeTab: handleTabChange,
-      }),
-
-      // Conteúdo
+      h(HeaderCompacto, { usuario: usuario, moduloAtivo: Ee, abaAtiva: activeTab, socialProfile: socialProfile, isLoading: isLoading, lastUpdate: lastUpdate, onRefresh: ul, onLogout: function() { o(null); }, onGoHome: function() { he('home'); }, onNavigate: navegarSidebar, onChangeTab: handleTabChange }),
       h('div', { className: 'max-w-7xl mx-auto p-4 md:p-6' },
-        // Breadcrumb quando em detalhe
         clienteDetalhe && h('div', { className: 'mb-4' },
           h('nav', { className: 'text-sm text-gray-500' },
-            h('span', { className: 'cursor-pointer hover:text-blue-600', onClick: () => { setClienteDetalhe(null); setActiveTab('clientes'); } }, 'Clientes'),
+            h('span', { className: 'cursor-pointer hover:text-blue-600', onClick: function() { setClienteDetalhe(null); setActiveTab('clientes'); } }, 'Clientes'),
             ' → ',
-            h('span', { className: 'text-gray-900 font-medium' }, `Cliente #${clienteDetalhe}`)
+            h('span', { className: 'text-gray-900 font-medium' }, 'Cliente #' + clienteDetalhe.cod)
           )
         ),
-
-        // Conteúdo ativo
         renderContent()
       )
     );
   };
 
-  console.log('✅ Módulo Sucesso do Cliente carregado');
+  console.log('✅ Módulo Sucesso do Cliente v3 carregado (legendas + edição + logo + datas)');
 })();

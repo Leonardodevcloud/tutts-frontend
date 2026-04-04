@@ -135,7 +135,7 @@
                                 value: p.newUserPass || "",
                                 onChange: function(e) { x({...p, newUserPass: e.target.value}); },
                                 className: "w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500",
-                                placeholder: "Mínimo 4 caracteres"
+                                placeholder: "Mín 8 chars (a-z, A-Z, 0-9)"
                             })
                         ),
                         React.createElement("div", null,
@@ -158,8 +158,8 @@
                                 ja("Preencha todos os campos", "error");
                                 return;
                             }
-                            if (p.newUserPass.length < 4) {
-                                ja("Senha muito curta (mín. 4)", "error");
+                            if (p.newUserPass.length < 8) {
+                                ja("Senha deve ter no mínimo 8 caracteres com maiúscula, minúscula e número", "error");
                                 return;
                             }
                             s(true);
@@ -398,22 +398,8 @@
                                     ),
                                     React.createElement("div", {className: "flex gap-2"},
                                         React.createElement("button", {
-                                            onClick: async function() {
-                                                const newPass = prompt("Nova senha para " + user.fullName + ":");
-                                                if (newPass && newPass.length >= 6) {
-                                                    try {
-                                                        await fetchAuth(API_URL + "/users/reset-password", {
-                                                            method: "POST",
-                                                            headers: {"Content-Type": "application/json"},
-                                                            body: JSON.stringify({codProfissional: user.codProfissional, newPassword: newPass})
-                                                        });
-                                                        ja("✅ Senha alterada!", "success");
-                                                    } catch (err) {
-                                                        ja("❌ Erro ao alterar senha", "error");
-                                                    }
-                                                } else if (newPass) {
-                                                    ja("Senha muito curta (mín. 6)", "error");
-                                                }
+                                            onClick: function() {
+                                                x({...p, senhaModal: true, senhaModalUser: user, senhaModalValue: "", senhaModalConfirm: "", senhaModalShow: false, senhaModalErro: ""});
                                             },
                                             className: "px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors"
                                         }, "🔑 Senha"),
@@ -979,7 +965,161 @@
             
             // ==================== TAB AUDITORIA ====================
             p.configTab === "auditoria" && ("admin_master" === l.role || "admin" === l.role) && 
-                React.createElement(AuditLogs, { apiUrl: API_URL, showToast: ja })
+                React.createElement(AuditLogs, { apiUrl: API_URL, showToast: ja }),
+
+            // ==================== MODAL ALTERAR SENHA ====================
+            p.senhaModal && p.senhaModalUser && (function() {
+                var senha = p.senhaModalValue || "";
+                var confirmar = p.senhaModalConfirm || "";
+                var mostrar = p.senhaModalShow || false;
+                var erro = p.senhaModalErro || "";
+                var salvando = p.senhaModalSaving || false;
+                var userName = p.senhaModalUser.fullName || p.senhaModalUser.full_name || "";
+                var userCod = p.senhaModalUser.codProfissional || p.senhaModalUser.cod_profissional || "";
+
+                // Validações
+                var regras = [
+                    { id: "min8", label: "Mínimo 8 caracteres", ok: senha.length >= 8 },
+                    { id: "lower", label: "Pelo menos 1 letra minúscula (a-z)", ok: /[a-z]/.test(senha) },
+                    { id: "upper", label: "Pelo menos 1 letra maiúscula (A-Z)", ok: /[A-Z]/.test(senha) },
+                    { id: "number", label: "Pelo menos 1 número (0-9)", ok: /[0-9]/.test(senha) },
+                    { id: "match", label: "Senhas coincidem", ok: senha.length > 0 && senha === confirmar }
+                ];
+                var todasOk = regras.every(function(r) { return r.ok; });
+                var senhasComuns = ["12345678", "password", "senha123", "tutts123", "admin123"];
+                var ehComum = senhasComuns.some(function(s) { return senha.toLowerCase() === s; });
+
+                var fecharModal = function() {
+                    x({...p, senhaModal: false, senhaModalUser: null, senhaModalValue: "", senhaModalConfirm: "", senhaModalShow: false, senhaModalErro: "", senhaModalSaving: false});
+                };
+
+                var salvarSenha = async function() {
+                    if (!todasOk) return;
+                    if (ehComum) {
+                        x({...p, senhaModalErro: "Senha muito comum. Escolha uma mais segura."});
+                        return;
+                    }
+                    x({...p, senhaModalSaving: true, senhaModalErro: ""});
+                    try {
+                        var response = await fetchAuth(API_URL + "/users/reset-password", {
+                            method: "POST",
+                            headers: {"Content-Type": "application/json"},
+                            body: JSON.stringify({codProfissional: userCod, newPassword: senha})
+                        });
+                        if (response.ok) {
+                            ja("✅ Senha de " + userName + " alterada com sucesso!", "success");
+                            fecharModal();
+                        } else {
+                            var errData = await response.json().catch(function() { return {}; });
+                            x({...p, senhaModalSaving: false, senhaModalErro: errData.error || "Erro ao alterar senha"});
+                        }
+                    } catch (err) {
+                        x({...p, senhaModalSaving: false, senhaModalErro: "Erro de conexão. Tente novamente."});
+                    }
+                };
+
+                return React.createElement("div", {
+                    className: "fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4",
+                    onClick: function(e) { if (e.target === e.currentTarget) fecharModal(); }
+                },
+                    React.createElement("div", {
+                        className: "bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden",
+                        onClick: function(e) { e.stopPropagation(); }
+                    },
+                        // Header do modal
+                        React.createElement("div", {className: "bg-gradient-to-r from-purple-600 to-purple-700 px-6 py-4 text-white"},
+                            React.createElement("div", {className: "flex items-center justify-between"},
+                                React.createElement("div", null,
+                                    React.createElement("h3", {className: "text-lg font-bold"}, "🔑 Alterar Senha"),
+                                    React.createElement("p", {className: "text-purple-200 text-sm mt-0.5"}, userName, " (", userCod, ")")
+                                ),
+                                React.createElement("button", {
+                                    onClick: fecharModal,
+                                    className: "w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
+                                }, "✕")
+                            )
+                        ),
+
+                        // Body do modal
+                        React.createElement("div", {className: "px-6 py-5 space-y-4"},
+
+                            // Campo nova senha
+                            React.createElement("div", null,
+                                React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-1.5"}, "Nova Senha"),
+                                React.createElement("div", {className: "relative"},
+                                    React.createElement("input", {
+                                        type: mostrar ? "text" : "password",
+                                        value: senha,
+                                        onChange: function(e) { x({...p, senhaModalValue: e.target.value, senhaModalErro: ""}); },
+                                        onKeyDown: function(e) { if (e.key === "Enter") document.getElementById("tutts-senha-confirmar") && document.getElementById("tutts-senha-confirmar").focus(); },
+                                        className: "w-full px-4 py-2.5 border-2 rounded-lg pr-12 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors " + (senha.length > 0 && !todasOk ? "border-orange-300" : senha.length > 0 && todasOk ? "border-green-300" : "border-gray-200"),
+                                        placeholder: "Digite a nova senha",
+                                        autoFocus: true
+                                    }),
+                                    React.createElement("button", {
+                                        type: "button",
+                                        onClick: function() { x({...p, senhaModalShow: !mostrar}); },
+                                        className: "absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-sm"
+                                    }, mostrar ? "🙈" : "👁️")
+                                )
+                            ),
+
+                            // Campo confirmar senha
+                            React.createElement("div", null,
+                                React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-1.5"}, "Confirmar Senha"),
+                                React.createElement("input", {
+                                    id: "tutts-senha-confirmar",
+                                    type: mostrar ? "text" : "password",
+                                    value: confirmar,
+                                    onChange: function(e) { x({...p, senhaModalConfirm: e.target.value, senhaModalErro: ""}); },
+                                    onKeyDown: function(e) { if (e.key === "Enter" && todasOk && !ehComum) salvarSenha(); },
+                                    className: "w-full px-4 py-2.5 border-2 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors " + (confirmar.length > 0 && senha !== confirmar ? "border-red-300" : confirmar.length > 0 && senha === confirmar ? "border-green-300" : "border-gray-200"),
+                                    placeholder: "Confirme a nova senha"
+                                })
+                            ),
+
+                            // Gabarito de requisitos
+                            React.createElement("div", {className: "bg-gray-50 rounded-xl p-4"},
+                                React.createElement("p", {className: "text-xs font-bold text-gray-500 uppercase tracking-wide mb-2.5"}, "Requisitos da senha"),
+                                React.createElement("div", {className: "space-y-1.5"},
+                                    regras.map(function(regra) {
+                                        return React.createElement("div", {
+                                            key: regra.id,
+                                            className: "flex items-center gap-2 text-sm transition-all " + (senha.length === 0 && regra.id !== "match" ? "text-gray-400" : regra.ok ? "text-green-600" : "text-red-500")
+                                        },
+                                            React.createElement("span", {className: "text-base flex-shrink-0 w-5 text-center"},
+                                                senha.length === 0 && regra.id !== "match" ? "○" : regra.ok ? "✓" : "✗"
+                                            ),
+                                            React.createElement("span", {className: regra.ok ? "font-medium" : ""}, regra.label)
+                                        );
+                                    }),
+                                    // Aviso senha comum
+                                    ehComum && React.createElement("div", {className: "flex items-center gap-2 text-sm text-red-500 mt-1"},
+                                        React.createElement("span", {className: "text-base flex-shrink-0 w-5 text-center"}, "✗"),
+                                        React.createElement("span", {className: "font-medium"}, "Senha muito comum")
+                                    )
+                                )
+                            ),
+
+                            // Mensagem de erro
+                            erro && React.createElement("div", {className: "bg-red-50 border border-red-200 text-red-700 px-4 py-2.5 rounded-lg text-sm"}, "❌ ", erro)
+                        ),
+
+                        // Footer do modal
+                        React.createElement("div", {className: "px-6 py-4 bg-gray-50 border-t flex gap-3"},
+                            React.createElement("button", {
+                                onClick: fecharModal,
+                                className: "flex-1 px-4 py-2.5 border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
+                            }, "Cancelar"),
+                            React.createElement("button", {
+                                onClick: salvarSenha,
+                                disabled: !todasOk || ehComum || salvando,
+                                className: "flex-1 px-4 py-2.5 rounded-lg font-semibold transition-all " + (todasOk && !ehComum && !salvando ? "bg-purple-600 text-white hover:bg-purple-700 shadow-sm" : "bg-gray-200 text-gray-400 cursor-not-allowed")
+                            }, salvando ? "⏳ Salvando..." : "✅ Alterar Senha")
+                        )
+                    )
+                );
+            })()
         ));
     };
 

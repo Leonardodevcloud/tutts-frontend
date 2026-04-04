@@ -1,11 +1,11 @@
-// Service Worker - Sistema Tutts PWA v5 CACHE BUSTER
+// Service Worker - Sistema Tutts PWA v6 CACHE BUSTER
 // ZERO CACHE - Force fresh code
-const CACHE_VERSION = '20250311_FIX';
+const CACHE_VERSION = '20260314_STARK_v6';
 const CACHE_NAME = `tutts-cache-${CACHE_VERSION}`;
 
 // Install: limpar TODOS os caches antigos
 self.addEventListener('install', (event) => {
-  console.log('SW v4 NUCLEAR instalando...');
+  console.log('SW v6 STARK instalando...');
   event.waitUntil(
     caches.keys().then(keys => 
       Promise.all(keys.map(key => caches.delete(key)))
@@ -15,7 +15,7 @@ self.addEventListener('install', (event) => {
 
 // Activate: tomar controle imediatamente
 self.addEventListener('activate', (event) => {
-  console.log('SW v4 NUCLEAR ativado');
+  console.log('SW v6 STARK ativado');
   event.waitUntil(
     caches.keys().then(keys => 
       Promise.all(keys.map(key => caches.delete(key)))

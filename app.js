@@ -101,7 +101,7 @@ const VERSION_KEY = "tutts_app_version";
         }
         
         // Limpar localStorage antigo (exceto dados importantes)
-        const keysToKeep = ['tutts_user', 'tutts_token', VERSION_KEY];
+        const keysToKeep = ['tutts_user', VERSION_KEY]; // 🔒 token agora é in-memory
         Object.keys(localStorage).forEach(key => {
             if (!keysToKeep.includes(key) && !key.startsWith('tutts_tutorial')) {
                 localStorage.removeItem(key);
@@ -132,9 +132,16 @@ if ('serviceWorker' in navigator) {
 
 // ==================== FUNÇÕES DE AUTENTICAÇÃO ====================
 
+// 🔒 SECURITY FIX (HIGH-01): Token em memória ao invés de sessionStorage
+// XSS não consegue ler variável de closure — só sessionStorage/localStorage
+let _accessToken = null;
+
+// 🔧 FIX: Timer de refresh proativo
+let _refreshTimerId = null;
+
 // Obter token JWT armazenado
 const getToken = () => {
-    return sessionStorage.getItem("tutts_token");
+    return _accessToken;
 };
 
 // Obter refresh token armazenado
@@ -144,11 +151,7 @@ const getRefreshToken = () => {
 
 // Salvar token JWT
 const setToken = (token) => {
-    if (token) {
-        sessionStorage.setItem("tutts_token", token);
-    } else {
-        sessionStorage.removeItem("tutts_token");
-    }
+    _accessToken = token || null;
 };
 
 // Salvar refresh token
@@ -161,6 +164,74 @@ const setRefreshToken = (refreshToken) => {
 // Variável para controlar se está renovando token (evitar múltiplas chamadas)
 let isRefreshingToken = false;
 let refreshPromise = null;
+
+// 🔧 FIX: Agendar refresh proativo — renova ANTES do token/cookie expirar
+// Roda a cada 30 minutos (token dura 8h, cookie dura 8h)
+const iniciarRefreshProativo = () => {
+    // Limpar timer anterior se existir
+    if (_refreshTimerId) {
+        clearInterval(_refreshTimerId);
+    }
+    // Renovar a cada 30 minutos (1800000ms)
+    _refreshTimerId = setInterval(async () => {
+        const userSalvo = sessionStorage.getItem("tutts_user");
+        if (userSalvo && _accessToken) {
+            console.log('🔄 Refresh proativo — renovando token...');
+            await renovarToken();
+        } else {
+            // Sem sessão ativa, parar o timer
+            clearInterval(_refreshTimerId);
+            _refreshTimerId = null;
+        }
+    }, 30 * 60 * 1000); // 30 minutos
+};
+
+// Parar refresh proativo
+const pararRefreshProativo = () => {
+    if (_refreshTimerId) {
+        clearInterval(_refreshTimerId);
+        _refreshTimerId = null;
+    }
+};
+
+// 🔒 SECURITY FIX (HIGH-01): Ao recarregar página, token em memória se perde.
+// Restaurar automaticamente via refresh cookie se usuário existir em sessionStorage.
+(async function restaurarTokenAoCarregar() {
+    const userSalvo = sessionStorage.getItem("tutts_user");
+    if (userSalvo && !_accessToken) {
+        try {
+            const response = await fetch(API_URL + '/users/refresh-token', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({})
+            });
+            if (response.ok) {
+                const data = await response.json();
+                if (data.token) {
+                    _accessToken = data.token;
+                    // 🔧 FIX: Atualizar CSRF no restore também
+                    if (data.csrfToken) {
+                        sessionStorage.setItem('tutts_csrf', data.csrfToken);
+                    }
+                    if (data.user) {
+                        sessionStorage.setItem("tutts_user", JSON.stringify(data.user));
+                    }
+                    console.log('🔄 Token restaurado via refresh cookie');
+                    // 🔧 FIX: Iniciar refresh proativo após restaurar sessão
+                    iniciarRefreshProativo();
+                }
+            } else {
+                // Refresh cookie inválido/expirado — limpar sessão salva
+                console.warn('⚠️ Refresh cookie inválido — limpando sessão');
+                sessionStorage.removeItem("tutts_user");
+                sessionStorage.removeItem("tutts_csrf");
+            }
+        } catch (e) {
+            console.warn('⚠️ Não foi possível restaurar token:', e.message);
+        }
+    }
+})();
 
 // Função para renovar token usando refresh token (via HttpOnly cookie)
 const renovarToken = async () => {
@@ -212,9 +283,11 @@ const renovarToken = async () => {
 
 // Função para fazer logout completo
 const fazerLogoutCompleto = () => {
+    pararRefreshProativo(); // 🔧 FIX: Parar timer ao deslogar
     sessionStorage.removeItem("tutts_user");
-    sessionStorage.removeItem("tutts_token");
+    _accessToken = null; // 🔒 Limpar token em memória
     sessionStorage.removeItem("tutts_csrf");
+    sessionStorage.removeItem("tutts_todo_notif_shown"); // 🔒 Reset flag para próximo login
     localStorage.removeItem("tutts_refresh_token"); // Limpar resquício antigo
     window.location.reload();
 };
@@ -259,6 +332,20 @@ const fetchAuth = async (url, options = {}, retryCount = 0) => {
                 
                 if (novoToken) {
                     // Retry com novo token
+                    return fetchAuth(url, options, retryCount + 1);
+                } else {
+                    fazerLogoutCompleto();
+                }
+            }
+        }
+        
+        // 🔒 FIX: Se CSRF falhou (403), renovar token (que renova CSRF) e retry
+        if (response.status === 403 && retryCount === 0) {
+            const data = await response.clone().json().catch(() => ({}));
+            if (data.error && data.error.toLowerCase().includes('csrf')) {
+                console.log('🔄 CSRF inválido, renovando token + CSRF...');
+                const novoToken = await renovarToken();
+                if (novoToken) {
                     return fetchAuth(url, options, retryCount + 1);
                 } else {
                     fazerLogoutCompleto();
@@ -354,7 +441,7 @@ const SISTEMA_MODULOS_CONFIG = [
       abas: [{id: "dashboard", label: "Dashboard"}, {id: "search", label: "Busca"}, {id: "ranking", label: "Ranking"}, {id: "relatorios", label: "Relatórios"}]
     },
     { id: "financeiro", label: "Financeiro", icon: "💰",
-      abas: [{id: "home-fin", label: "🏠 Home"}, {id: "solicitacoes", label: "📋 Solicitações"}, {id: "stark-bank", label: "🏦 Pix Stark"}, {id: "acerto-prof", label: "💼 Acerto Prof"}, {id: "conciliacao-acerto", label: "📊 Conc. Acerto"}, {id: "validacao", label: "✅ Validação"}, {id: "conciliacao", label: "🔄 Conciliação"}, {id: "resumo", label: "📑 Resumo"}, {id: "gratuidades", label: "🎁 Gratuidades"}, {id: "restritos", label: "🚫 Restritos"}, {id: "indicacoes", label: "🤝 Indicações"}, {id: "promo-novatos", label: "🎯 Promo Novatos"}, {id: "loja", label: "🛒 Loja"}, {id: "relatorios", label: "📈 Relatórios"}, {id: "horarios", label: "🕐 Horários"}, {id: "avisos", label: "📢 Avisos"}, {id: "backup", label: "💾 Backup"}, {id: "saldo-plific", label: "💳 Saldo Plific"}]
+      abas: [{id: "home-fin", label: "🏠 Home"}, {id: "solicitacoes", label: "📋 Solicitações"}, {id: "limites", label: "🔓 Limites"}, {id: "stark-bank", label: "🏦 Pix Stark"}, {id: "acerto-prof", label: "💼 Acerto Prof"}, {id: "conciliacao-acerto", label: "📊 Conc. Acerto"}, {id: "validacao", label: "✅ Validação"}, {id: "conciliacao", label: "🔄 Conciliação"}, {id: "resumo", label: "📑 Resumo"}, {id: "gratuidades", label: "🎁 Gratuidades"}, {id: "restritos", label: "🚫 Restritos"}, {id: "indicacoes", label: "🤝 Indicações"}, {id: "promo-novatos", label: "🎯 Promo Novatos"}, {id: "loja", label: "🛒 Loja"}, {id: "relatorios", label: "📈 Relatórios"}, {id: "horarios", label: "🕐 Horários"}, {id: "avisos", label: "📢 Avisos"}, {id: "backup", label: "💾 Backup"}, {id: "saldo-plific", label: "💳 Saldo Plific"}]
     },
     { id: "operacional", label: "Operacional", icon: "⚙️",
       abas: [{id: "indicacoes", label: "Indicações"}, {id: "promo-novatos", label: "Promo Novatos"}, {id: "avisos", label: "Avisos"}, {id: "novas-operacoes", label: "Novas Operações"}, {id: "recrutamento", label: "Recrutamento"}, {id: "localizacao-clientes", label: "Localização Clientes"}, {id: "relatorio-diario", label: "Relatório Diário"}, {id: "score-prof", label: "Score Prof"}, {id: "incentivos", label: "Acompanhamento"}]
@@ -363,7 +450,7 @@ const SISTEMA_MODULOS_CONFIG = [
       abas: [{id: "panorama", label: "Panorama"}, {id: "principal", label: "Principal"}, {id: "faltosos", label: "Faltosos"}, {id: "espelho", label: "Espelho"}, {id: "relatorios", label: "Relatórios"}, {id: "motoboys", label: "Motoboys"}, {id: "restricoes", label: "Restrições"}, {id: "config", label: "Configurações"}]
     },
     { id: "bi", label: "BI", icon: "📊",
-      abas: [{id: "home-bi", label: "🏠 Home"}, {id: "dashboard", label: "Dashboard"}, {id: "acompanhamento", label: "Acompanhamento"}, {id: "profissionais", label: "Por Profissional"}, {id: "garantido", label: "Garantido"}, {id: "os", label: "Análise por OS"}, {id: "chat-ia", label: "💬 Chat IA"}, {id: "upload", label: "Upload"}, {id: "config", label: "Configurações"}]
+      abas: [{id: "home-bi", label: "🏠 Home"}, {id: "dashboard", label: "📊 Dashboard"}, {id: "acompanhamento", label: "📈 Acompanhamento"}, {id: "profissionais", label: "👤 Por Profissional"}, {id: "garantido", label: "💰 Garantido"}, {id: "os", label: "📋 Análise por OS"}, {id: "cliente767", label: "🏢 Cliente 767"}, {id: "chat-ia", label: "💬 Chat IA"}, {id: "relatorio-ia", label: "🤖 Relatório IA"}, {id: "upload", label: "📤 Upload"}, {id: "config", label: "⚙️ Configurações"}]
     },
     { id: "todo", label: "TO-DO", icon: "📝",
       abas: [{id: "tarefas", label: "Tarefas"}, {id: "metricas", label: "Métricas"}]
@@ -386,7 +473,9 @@ const SISTEMA_MODULOS_CONFIG = [
     },
     { id: "antifraude", label: "Anti-Fraude", icon: "🛡️",
       abas: []
-    }
+    },
+    { id: "performance", label: "Performance Diária", icon: "📈", abas: [{id:"dashboard",label:"📊 Dashboard"},{id:"busca",label:"🔍 Busca"},{id:"config",label:"⚙️ Configurações"},{id:"jobs",label:"🗂️ Jobs"}] },
+    { id: "gerencial", label: "Análise Gerencial", icon: "📊", abas: [] }
 ];
 
 // ==================== COMPONENTE OVERFLOW NAV (módulos + abas com dropdown inteligente) ====================
@@ -1940,8 +2029,9 @@ const hideLoadingScreen = () => {
                     method: 'POST',
                     body: JSON.stringify({})
                 }).catch(() => {}); // Ignorar erros no logout
+                pararRefreshProativo(); // 🔧 FIX: Parar timer ao deslogar
                 sessionStorage.removeItem("tutts_user");
-                sessionStorage.removeItem("tutts_token");
+                _accessToken = null; // 🔒 Limpar token em memória
                 sessionStorage.removeItem("tutts_csrf");
                 localStorage.removeItem("tutts_refresh_token"); // Limpar resquício antigo
             }
@@ -1950,7 +2040,8 @@ const hideLoadingScreen = () => {
             solicitacoes: 0,
             validacao: 0,
             loja: 0,
-            gratuidades: 0
+            gratuidades: 0,
+            limites_pendentes: 0
         }), [w, _] = useState({
             solicitacoes: [],
             validacao: [],
@@ -1997,7 +2088,7 @@ const hideLoadingScreen = () => {
         }), [qe, Ue] = useState({
             avisos: [],
             loading: !0
-        }), [ze, Be] = useState(null), [Ve, Je] = useState(0), [Qe, He] = useState([]), [Ge, We] = useState(!1), [Ze, Ye] = useState([]), [Ke, Xe] = useState([]), [et, tt] = useState([]), [at, lt] = useState([]), [rt, ot] = useState(!0), [ct, st] = useState(0), [nt, mt] = useState("produtos"), [it, dt] = useState([]), [pt, xt] = useState("lista"), [ut, gt] = useState([]), [bt, Rt] = useState([]), [Et, ht] = useState("home-bi"), [chatIaMsgs, setChatIaMsgs] = useState([]), [chatIaInput, setChatIaInput] = useState(""), [chatIaLoading, setChatIaLoading] = useState(false), [chatIaSql, setChatIaSql] = useState(null), [chatIaFiltros, setChatIaFiltros] = useState({ cod_cliente: [], nomes_clientes: [], centro_custo: [], data_inicio: "", data_fim: "" }), [chatIaIniciado, setChatIaIniciado] = useState(false), [chatIaClientes, setChatIaClientes] = useState([]), [chatIaCentros, setChatIaCentros] = useState([]), [chatIaFiltrosLoading, setChatIaFiltrosLoading] = useState(false), [chatIaDropAberto, setChatIaDropAberto] = useState(null), [chatIaBuscaCliente, setChatIaBuscaCliente] = useState(""), [chatIaConversas, setChatIaConversas] = useState([]), [chatIaConversaAtual, setChatIaConversaAtual] = useState(null), [chatIaConversasLoading, setChatIaConversasLoading] = useState(false), [chatIaSidebarAberta, setChatIaSidebarAberta] = useState(false), [chatIaExportando, setChatIaExportando] = useState(false), [ft, Nt] = useState(null), [yt, vt] = useState([]), [wt, _t] = useState([{
+        }), [ze, Be] = useState(null), [Ve, Je] = useState(0), [Qe, He] = useState([]), [Ge, We] = useState(!1), [Ze, Ye] = useState([]), [Ke, Xe] = useState([]), [et, tt] = useState([]), [at, lt] = useState([]), [rt, ot] = useState(!0), [ct, st] = useState(0), [nt, mt] = useState("produtos"), [it, dt] = useState([]), [pt, xt] = useState("lista"), [ut, gt] = useState([]), [bt, Rt] = useState([]), [Et, ht] = useState("home-bi"), [chatIaMsgs, setChatIaMsgs] = useState([]), [chatIaInput, setChatIaInput] = useState(""), [chatIaLoading, setChatIaLoading] = useState(false), [chatIaSql, setChatIaSql] = useState(null), [chatIaFiltros, setChatIaFiltros] = useState({ cod_cliente: [], nomes_clientes: [], centro_custo: [], data_inicio: "", data_fim: "", regiao: "" }), [chatIaIniciado, setChatIaIniciado] = useState(false), [chatIaClientes, setChatIaClientes] = useState([]), [chatIaCentros, setChatIaCentros] = useState([]), [chatIaFiltrosLoading, setChatIaFiltrosLoading] = useState(false), [chatIaDropAberto, setChatIaDropAberto] = useState(null), [chatIaBuscaCliente, setChatIaBuscaCliente] = useState(""), [chatIaConversas, setChatIaConversas] = useState([]), [chatIaConversaAtual, setChatIaConversaAtual] = useState(null), [chatIaConversasLoading, setChatIaConversasLoading] = useState(false), [chatIaSidebarAberta, setChatIaSidebarAberta] = useState(false), [chatIaExportando, setChatIaExportando] = useState(false), [chatIaRegioes, setChatIaRegioes] = useState([]), [ft, Nt] = useState(null), [yt, vt] = useState([]), [wt, _t] = useState([{
             km_min: 0,
             km_max: 15,
             prazo_minutos: 45
@@ -2054,6 +2145,7 @@ const hideLoadingScreen = () => {
         [wa, _a] = useState(!1), [todoGrupos, setTodoGrupos] = useState([]), [todoTarefas, setTodoTarefas] = useState([]), [todoGrupoAtivo, setTodoGrupoAtivo] = useState(null), [todoMetricas, setTodoMetricas] = useState(null), [todoTab, setTodoTab] = useState("tarefas"), [todoFiltroStatus, setTodoFiltroStatus] = useState("todas"), [todoModal, setTodoModal] = useState(null), [todoLoading, setTodoLoading] = useState(false), [todoAdmins, setTodoAdmins] = useState([]),
         // Estado do módulo de Filas
         [filasTab, setFilasTab] = useState("monitoramento"),
+        [perfTab, setPerfTab] = useState("dashboard"),
         // Novos estados para TODO melhorado
         [todoMeuDia, setTodoMeuDia] = useState([]),
         [todoViewMode, setTodoViewMode] = useState("meudia"), // "meudia" ou "grupo"
@@ -2147,6 +2239,7 @@ const hideLoadingScreen = () => {
         [liderancaVizPorMsg, setLiderancaVizPorMsg] = useState({}), // {msg_id: [{user_cod, user_foto, user_nome}]}
         [liderancaReacoes, setLiderancaReacoes] = useState({}), // {msg_id: [{user_cod, emoji}]}
         [liderancaImagemExpandida, setLiderancaImagemExpandida] = useState(null), // URL da imagem expandida
+        [envelopeFase, setEnvelopeFase] = useState(null), // 'envelope' | 'opening' | 'message' | null
         // Estados para gravação de áudio
         [liderancaGravando, setLiderancaGravando] = useState(false),
         [liderancaMediaRecorder, setLiderancaMediaRecorder] = useState(null),
@@ -2194,6 +2287,7 @@ const hideLoadingScreen = () => {
             valor: '',
             valor_incentivo: '',
             clientes_vinculados: [],
+            centros_vinculados: {},
             cor: '#0d9488'
         }),
         [incentivosCalendarioMes, setIncentivosCalendarioMes] = useState(new Date()),
@@ -2288,6 +2382,8 @@ const hideLoadingScreen = () => {
         [regiaoCentrosCusto, setRegiaoCentrosCusto] = useState({}), // {cod_cliente: [centros]}
         [regiaoItensAdicionados, setRegiaoItensAdicionados] = useState([]), // [{cod_cliente, nome_cliente, centro_custo}]
         [regiaoEditando, setRegiaoEditando] = useState(null), [plificState, setPlificState] = useState({ loading: false, loadingLote: false, consultaIndividual: null, consultaLote: [], idBusca: "", loadingDebito: false, pagina: 1, totalPaginas: 0, total: 0, somaTotal: 0 }), [modalDebitoPlific, setModalDebitoPlific] = useState(null), [debitoFormPlific, setDebitoFormPlific] = useState({ valor: "", descricao: "" }), [saldoPlificUser, setSaldoPlificUser] = useState({ saldo: null, loading: false, erro: null }),
+        [limitesSaque, setLimitesSaque] = useState(null),
+        [solicitandoLimite, setSolicitandoLimite] = useState(false),
         // Estados para dropdowns da aba Config
         [configSecaoAberta, setConfigSecaoAberta] = useState(""), // "" = todas fechadas
         // ==================== SIDEBAR STATES ====================
@@ -2494,6 +2590,8 @@ const hideLoadingScreen = () => {
                 if (abaId) setTodoTab(abaId);
             } else if (moduloId === "filas") {
                 if (abaId) setFilasTab(abaId);
+            } else if (moduloId === "performance") {
+                if (abaId) setPerfTab(abaId);
             }
         };
         
@@ -2525,6 +2623,465 @@ const hideLoadingScreen = () => {
                 }
             }
         }, [mostrarRoteirizador, localizacaoClientes]);
+
+        // ==================== PORTAL GLOBAL - NOTIFICAÇÃO LIDERANÇA COM ENVELOPE ====================
+        useEffect(() => {
+            if (liderancaModal?.tipo === 'notificacao') {
+                // Iniciar na fase envelope se ainda não começou
+                if (envelopeFase === null) {
+                    setEnvelopeFase('envelope');
+                    return; // Espera re-render com a fase correta
+                }
+
+                let portalDiv = document.getElementById('lideranca-notif-portal');
+                if (!portalDiv) {
+                    portalDiv = document.createElement('div');
+                    portalDiv.id = 'lideranca-notif-portal';
+                    document.body.appendChild(portalDiv);
+                }
+
+                // Injetar estilos de animação
+                if (!document.getElementById('lideranca-envelope-styles')) {
+                    const styleEl = document.createElement('style');
+                    styleEl.id = 'lideranca-envelope-styles';
+                    styleEl.textContent = `
+                        @keyframes envelopeFloat {
+                            0%, 100% { transform: translateY(0px) rotate(0deg); }
+                            25% { transform: translateY(-12px) rotate(-2deg); }
+                            50% { transform: translateY(-6px) rotate(1deg); }
+                            75% { transform: translateY(-14px) rotate(-1deg); }
+                        }
+                        @keyframes envelopePulse {
+                            0%, 100% { transform: scale(1); }
+                            50% { transform: scale(1.05); }
+                        }
+                        @keyframes envelopeShine {
+                            0% { left: -100%; }
+                            100% { left: 200%; }
+                        }
+                        @keyframes envelopeOpen {
+                            0% { transform: scale(1) rotateX(0deg); opacity: 1; }
+                            40% { transform: scale(1.15) rotateX(-10deg); opacity: 1; }
+                            70% { transform: scale(1.3) rotateX(-20deg); opacity: 0.7; }
+                            100% { transform: scale(2) rotateX(-40deg); opacity: 0; }
+                        }
+                        @keyframes fadeInBackdrop {
+                            from { opacity: 0; }
+                            to { opacity: 1; }
+                        }
+                        @keyframes slideUpMessage {
+                            from { opacity: 0; transform: translateY(40px) scale(0.95); }
+                            to { opacity: 1; transform: translateY(0) scale(1); }
+                        }
+                        @keyframes textFadeIn {
+                            from { opacity: 0; transform: translateY(10px); }
+                            to { opacity: 1; transform: translateY(0); }
+                        }
+                        @keyframes sparkle {
+                            0%, 100% { opacity: 0; transform: scale(0) rotate(0deg); }
+                            50% { opacity: 1; transform: scale(1) rotate(180deg); }
+                        }
+                        .lideranca-envelope-container {
+                            cursor: pointer;
+                            animation: envelopeFloat 3s ease-in-out infinite;
+                        }
+                        .lideranca-envelope-container:hover {
+                            animation: envelopePulse 0.6s ease-in-out infinite;
+                        }
+                        .lideranca-envelope-opening {
+                            animation: envelopeOpen 0.7s ease-in forwards;
+                            pointer-events: none;
+                        }
+                        .lideranca-msg-enter {
+                            animation: slideUpMessage 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                        }
+                        .lideranca-sparkle {
+                            position: absolute;
+                            width: 8px;
+                            height: 8px;
+                            border-radius: 50%;
+                            pointer-events: none;
+                        }
+                        @keyframes bounceArrowUp {
+                            0%, 100% { transform: translateY(0); }
+                            50% { transform: translateY(6px); }
+                        }
+                        .lideranca-img-hint {
+                            display: flex;
+                            align-items: center;
+                            gap: 6px;
+                            animation: bounceArrowUp 1.2s ease-in-out infinite;
+                            pointer-events: none;
+                        }
+                    `;
+                    document.head.appendChild(styleEl);
+                }
+
+                let portalContent = null;
+
+                // ===== FASE ENVELOPE =====
+                if (envelopeFase === 'envelope' || envelopeFase === 'opening') {
+                    const sparkles = Array.from({length: 12}, (_, idx) => {
+                        const angle = (idx / 12) * Math.PI * 2;
+                        const radius = 120 + Math.random() * 60;
+                        const x = Math.cos(angle) * radius;
+                        const y = Math.sin(angle) * radius;
+                        const delay = Math.random() * 2;
+                        const colors = ['#f59e0b', '#7c3aed', '#ec4899', '#f97316', '#a855f7'];
+                        return React.createElement('div', {
+                            key: 'sparkle-' + idx,
+                            className: 'lideranca-sparkle',
+                            style: {
+                                left: 'calc(50% + ' + x + 'px)',
+                                top: 'calc(50% + ' + y + 'px)',
+                                background: colors[idx % colors.length],
+                                animation: 'sparkle 2s ease-in-out ' + delay + 's infinite',
+                                boxShadow: '0 0 6px ' + colors[idx % colors.length]
+                            }
+                        });
+                    });
+
+                    portalContent = React.createElement('div', {
+                        style: {
+                            position: 'fixed', inset: 0, zIndex: 99999,
+                            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                            background: 'radial-gradient(ellipse at center, rgba(124,58,237,0.95) 0%, rgba(30,10,60,0.97) 100%)',
+                            animation: 'fadeInBackdrop 0.4s ease-out'
+                        },
+                        onClick: function() {
+                            if (envelopeFase === 'envelope') {
+                                setEnvelopeFase('opening');
+                                setTimeout(function() { setEnvelopeFase('message'); }, 750);
+                            }
+                        }
+                    },
+                        // Sparkles
+                        sparkles,
+                        // Envelope
+                        React.createElement('div', {
+                            className: envelopeFase === 'opening' ? 'lideranca-envelope-opening' : 'lideranca-envelope-container',
+                            style: { position: 'relative', marginBottom: '24px' }
+                        },
+                            // SVG Envelope
+                            React.createElement('svg', {
+                                width: 160, height: 120, viewBox: '0 0 160 120',
+                                style: { filter: 'drop-shadow(0 8px 24px rgba(0,0,0,0.3))' }
+                            },
+                                // Corpo do envelope
+                                React.createElement('rect', {
+                                    x: 5, y: 25, width: 150, height: 90, rx: 8,
+                                    fill: '#fbbf24', stroke: '#f59e0b', strokeWidth: 2
+                                }),
+                                // Aba traseira
+                                React.createElement('polygon', {
+                                    points: '5,25 80,70 155,25',
+                                    fill: '#f59e0b', stroke: '#e99200', strokeWidth: 1.5
+                                }),
+                                // Aba frontal
+                                React.createElement('polygon', {
+                                    points: '5,115 80,65 155,115',
+                                    fill: '#fcd34d', stroke: '#f59e0b', strokeWidth: 1
+                                }),
+                                // Coração no centro
+                                React.createElement('text', {
+                                    x: 80, y: 85, textAnchor: 'middle',
+                                    fontSize: 28, style: { filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))' }
+                                }, '💜'),
+                                // Brilho
+                                React.createElement('rect', {
+                                    x: 10, y: 30, width: 40, height: 3, rx: 1.5,
+                                    fill: 'rgba(255,255,255,0.4)', transform: 'rotate(-5 30 31)'
+                                })
+                            ),
+                            // Badge de quantidade
+                            liderancaModal?.fila?.length > 1 && React.createElement('div', {
+                                style: {
+                                    position: 'absolute', top: -8, right: -8,
+                                    background: '#ef4444', color: 'white',
+                                    width: 32, height: 32, borderRadius: '50%',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    fontWeight: 'bold', fontSize: 14,
+                                    boxShadow: '0 2px 8px rgba(239,68,68,0.5)',
+                                    border: '2px solid white'
+                                }
+                            }, liderancaModal.fila.length)
+                        ),
+                        // Texto
+                        React.createElement('p', {
+                            style: {
+                                color: 'white', fontSize: 22, fontWeight: 700,
+                                textAlign: 'center', maxWidth: 320,
+                                animation: 'textFadeIn 0.6s ease-out 0.3s both',
+                                textShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                                lineHeight: 1.4
+                            }
+                        }, 'Hey, tenho uma mensagem pra você! 💌'),
+                        // Subtexto
+                        React.createElement('p', {
+                            style: {
+                                color: 'rgba(255,255,255,0.6)', fontSize: 14, marginTop: 16,
+                                animation: 'textFadeIn 0.6s ease-out 0.6s both'
+                            }
+                        }, envelopeFase === 'opening' ? '' : 'Toque para abrir'),
+                        // Autor preview
+                        liderancaModal?.dados?.criado_por_nome && React.createElement('div', {
+                            style: {
+                                marginTop: 24, display: 'flex', alignItems: 'center', gap: 10,
+                                background: 'rgba(255,255,255,0.1)', borderRadius: 50,
+                                padding: '8px 20px 8px 8px',
+                                animation: 'textFadeIn 0.6s ease-out 0.9s both',
+                                backdropFilter: 'blur(8px)'
+                            }
+                        },
+                            liderancaModal.dados.criado_por_foto ?
+                                React.createElement('img', {
+                                    src: liderancaModal.dados.criado_por_foto,
+                                    style: { width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(255,255,255,0.3)' }
+                                }) :
+                                React.createElement('div', {
+                                    style: {
+                                        width: 36, height: 36, borderRadius: '50%',
+                                        background: 'linear-gradient(135deg, #f59e0b, #ec4899)',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        color: 'white', fontWeight: 'bold', fontSize: 16
+                                    }
+                                }, liderancaModal.dados.criado_por_nome?.charAt(0)?.toUpperCase() || '?'),
+                            React.createElement('span', {
+                                style: { color: 'rgba(255,255,255,0.8)', fontSize: 14 }
+                            }, 'De: ', React.createElement('strong', null, liderancaModal.dados.criado_por_nome))
+                        )
+                    );
+                }
+
+                // ===== FASE MENSAGEM =====
+                if (envelopeFase === 'message') {
+                    portalContent = React.createElement('div', {
+                        style: {
+                            position: 'fixed', inset: 0, zIndex: 99999,
+                            background: 'rgba(0,0,0,0.75)',
+                            backdropFilter: 'blur(4px)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center'
+                        }
+                    },
+                        // Modal card — fullscreen no mobile, card no desktop
+                        React.createElement('div', {
+                            className: 'lideranca-msg-enter',
+                            style: {
+                                background: 'white',
+                                width: '100%', height: '100%',
+                                maxWidth: window.innerWidth >= 640 ? 720 : '100%',
+                                maxHeight: window.innerWidth >= 640 ? '96vh' : '100%',
+                                borderRadius: window.innerWidth >= 640 ? 16 : 0,
+                                boxShadow: window.innerWidth >= 640 ? '0 25px 50px rgba(0,0,0,0.3)' : 'none',
+                                display: 'flex', flexDirection: 'column',
+                                overflow: 'hidden'
+                            }
+                        },
+                            // Header compacto (fixo)
+                            React.createElement('div', {
+                                style: {
+                                    background: 'linear-gradient(135deg, #f97316, #f59e0b)',
+                                    padding: '16px 20px', color: 'white',
+                                    display: 'flex', alignItems: 'center', gap: 12,
+                                    flexShrink: 0
+                                }
+                            },
+                                React.createElement('div', {style: {fontSize: 32}}, '📢'),
+                                React.createElement('div', {style: {flex: 1}},
+                                    React.createElement('h2', {style: {fontSize: 18, fontWeight: 700, margin: 0}}, 'Mensagem da Liderança'),
+                                    liderancaModal?.fila?.length > 1 && React.createElement('p', {
+                                        style: {fontSize: 12, color: 'rgba(255,255,255,0.8)', margin: 0}
+                                    }, '1 de ', liderancaModal.fila.length, ' mensagens')
+                                )
+                            ),
+                            // Body scrollável (cresce para preencher)
+                            React.createElement('div', {
+                                style: {
+                                    flex: 1, overflowY: 'auto', padding: '16px 20px',
+                                    WebkitOverflowScrolling: 'touch'
+                                }
+                            },
+                                // Autor
+                                React.createElement('div', {
+                                    style: {
+                                        display: 'flex', alignItems: 'center', gap: 10,
+                                        marginBottom: 14, paddingBottom: 14,
+                                        borderBottom: '1px solid #e5e7eb'
+                                    }
+                                },
+                                    liderancaModal?.dados?.criado_por_foto ?
+                                        React.createElement('img', {
+                                            src: liderancaModal.dados.criado_por_foto,
+                                            style: {
+                                                width: 44, height: 44, borderRadius: '50%',
+                                                objectFit: 'cover', border: '2px solid #fdba74'
+                                            }
+                                        }) :
+                                        React.createElement('div', {
+                                            style: {
+                                                width: 44, height: 44, borderRadius: '50%',
+                                                background: 'linear-gradient(135deg, #fb923c, #fbbf24)',
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                color: 'white', fontWeight: 700, fontSize: 18, flexShrink: 0
+                                            }
+                                        }, liderancaModal?.dados?.criado_por_nome?.charAt(0)?.toUpperCase() || '?'),
+                                    React.createElement('div', {style: {minWidth: 0}},
+                                        React.createElement('p', {
+                                            style: {fontWeight: 700, fontSize: 15, color: '#1f2937', margin: 0}
+                                        }, liderancaModal?.dados?.criado_por_nome),
+                                        React.createElement('p', {
+                                            style: {fontSize: 12, color: '#6b7280', margin: 0}
+                                        }, new Date(liderancaModal?.dados?.created_at).toLocaleString('pt-BR'))
+                                    )
+                                ),
+                                // Título
+                                React.createElement('h3', {
+                                    style: {fontSize: 18, fontWeight: 700, color: '#1f2937', marginBottom: 10, marginTop: 0}
+                                }, liderancaModal?.dados?.titulo),
+                                // Conteúdo
+                                React.createElement('div', {
+                                    style: {color: '#374151', whiteSpace: 'pre-wrap', marginBottom: 14, lineHeight: 1.6, fontSize: 15},
+                                    dangerouslySetInnerHTML: {__html: liderancaModal?.dados?.conteudo?.replace(/\n/g, '<br>') || ''}
+                                }),
+                                // Mídia - vídeo
+                                liderancaModal?.dados?.midia_url && liderancaModal?.dados?.midia_tipo === 'video' && React.createElement('div', {style: {marginBottom: 14}},
+                                    (liderancaModal.dados.midia_url.includes('youtube') || liderancaModal.dados.midia_url.includes('youtu.be')) ?
+                                        React.createElement('iframe', {
+                                            src: liderancaModal.dados.midia_url.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/'),
+                                            style: {width: '100%', aspectRatio: '16/9', borderRadius: 8, border: 'none'},
+                                            allowFullScreen: true
+                                        }) :
+                                        React.createElement('video', {
+                                            src: liderancaModal.dados.midia_url, controls: true,
+                                            style: {width: '100%', borderRadius: 8}
+                                        })
+                                ),
+                                // Mídia - imagem
+                                liderancaModal?.dados?.midia_url && liderancaModal?.dados?.midia_tipo === 'imagem' && React.createElement('div', {
+                                    style: {marginBottom: 14, cursor: 'pointer'},
+                                    onClick: function() { setLiderancaImagemExpandida(liderancaModal.dados.midia_url); }
+                                },
+                                    React.createElement('div', {
+                                        className: 'lideranca-img-hint',
+                                        style: {justifyContent: 'center', paddingBottom: 8}
+                                    },
+                                        React.createElement('span', {style: {fontSize: 18}}, '👇'),
+                                        React.createElement('span', {style: {fontSize: 12, color: '#f97316', fontWeight: 600}}, 'Clique na imagem para expandir')
+                                    ),
+                                    React.createElement('img', {
+                                        src: liderancaModal.dados.midia_url,
+                                        style: {
+                                            width: '100%', borderRadius: 8,
+                                            maxHeight: 280, objectFit: 'contain'
+                                        }
+                                    })
+                                ),
+                                // Mídia - áudio
+                                liderancaModal?.dados?.midia_url && liderancaModal?.dados?.midia_tipo === 'audio' && React.createElement('audio', {
+                                    src: liderancaModal.dados.midia_url, controls: true,
+                                    style: {marginBottom: 14, width: '100%'}
+                                })
+                            ),
+                            // Footer fixo — reações + botão
+                            React.createElement('div', {
+                                style: {
+                                    flexShrink: 0, padding: '12px 20px 16px',
+                                    borderTop: '1px solid #f3f4f6',
+                                    background: 'white'
+                                }
+                            },
+                                // Reações
+                                React.createElement('div', {
+                                    style: {display: 'flex', justifyContent: 'center', gap: 6, marginBottom: 12}
+                                },
+                                    ['✅', '🔥', '🎉', '💜', '😍'].map(function(emoji) {
+                                        return React.createElement('button', {
+                                            key: emoji,
+                                            onClick: async function() {
+                                                await enviarReacaoLideranca(liderancaModal.dados.id, emoji);
+                                                ja(emoji + ' Reação enviada!', 'success');
+                                            },
+                                            style: {
+                                                fontSize: 26, background: 'none', border: 'none',
+                                                cursor: 'pointer', padding: 6, borderRadius: '50%',
+                                                transition: 'transform 0.2s, background 0.2s'
+                                            },
+                                            onMouseOver: function(e) { e.target.style.transform = 'scale(1.2)'; e.target.style.background = '#fff7ed'; },
+                                            onMouseOut: function(e) { e.target.style.transform = 'scale(1)'; e.target.style.background = 'none'; }
+                                        }, emoji);
+                                    })
+                                ),
+                                // Botão Entendido
+                                React.createElement('button', {
+                                    onClick: async function() {
+                                        await marcarLiderancaVisualizada(liderancaModal.dados.id);
+                                        var filaRestante = liderancaModal.fila?.slice(1) || [];
+                                        if (filaRestante.length > 0) {
+                                            setEnvelopeFase('envelope');
+                                            setLiderancaModal({tipo: 'notificacao', dados: filaRestante[0], fila: filaRestante});
+                                        } else {
+                                            setLiderancaModal(null);
+                                            setEnvelopeFase(null);
+                                            await loadLiderancaHistorico();
+                                        }
+                                    },
+                                    style: {
+                                        width: '100%', padding: '14px', border: 'none',
+                                        background: 'linear-gradient(135deg, #f97316, #f59e0b)',
+                                        color: 'white', borderRadius: 12, fontWeight: 700,
+                                        fontSize: 16, cursor: 'pointer',
+                                        transition: 'opacity 0.2s'
+                                    },
+                                    onMouseOver: function(e) { e.target.style.opacity = '0.9'; },
+                                    onMouseOut: function(e) { e.target.style.opacity = '1'; }
+                                }, liderancaModal?.fila?.length > 1 ? '✓ Entendido - Próxima' : '✓ Entendido')
+                            )
+                        ),
+                        // Modal de imagem expandida (dentro do portal)
+                        liderancaImagemExpandida && React.createElement('div', {
+                            onClick: function() { setLiderancaImagemExpandida(null); },
+                            style: {
+                                position: 'fixed', inset: 0, zIndex: 100000,
+                                background: 'rgba(0,0,0,0.92)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                padding: 16, cursor: 'pointer'
+                            }
+                        },
+                            React.createElement('button', {
+                                onClick: function() { setLiderancaImagemExpandida(null); },
+                                style: {
+                                    position: 'absolute', top: 16, right: 16,
+                                    color: 'white', fontSize: 32, background: 'none',
+                                    border: 'none', cursor: 'pointer', zIndex: 10
+                                }
+                            }, '✕'),
+                            React.createElement('img', {
+                                src: liderancaImagemExpandida,
+                                style: {maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: 8, boxShadow: '0 20px 40px rgba(0,0,0,0.5)'},
+                                onClick: function(e) { e.stopPropagation(); }
+                            }),
+                            React.createElement('p', {
+                                style: {
+                                    position: 'absolute', bottom: 16, left: '50%',
+                                    transform: 'translateX(-50%)', color: 'rgba(255,255,255,0.5)',
+                                    fontSize: 14
+                                }
+                            }, 'Clique fora da imagem ou no ✕ para fechar')
+                        )
+                    );
+                }
+
+                if (portalContent) {
+                    ReactDOM.render(portalContent, portalDiv);
+                }
+            } else {
+                if (envelopeFase !== null) setEnvelopeFase(null);
+                const portalDiv = document.getElementById('lideranca-notif-portal');
+                if (portalDiv) {
+                    ReactDOM.unmountComponentAtNode(portalDiv);
+                }
+            }
+        }, [liderancaModal, envelopeFase, liderancaImagemExpandida]);
         
         // ==================== TUTORIAL DO USUÁRIO ====================
         const TUTORIAL_PASSOS = [
@@ -3112,8 +3669,8 @@ const hideLoadingScreen = () => {
         // Função para upload de imagem
         const handleLiderancaImagemUpload = (file) => {
             if (!file) return;
-            if (file.size > 5 * 1024 * 1024) {
-                ja("Imagem muito grande! Máximo 5MB", "error");
+            if (file.size > 20 * 1024 * 1024) {
+                ja("Imagem muito grande! Máximo 20MB", "error");
                 return;
             }
             const reader = new FileReader();
@@ -3298,6 +3855,18 @@ const hideLoadingScreen = () => {
             }
         }, [l?.codProfissional]);
         
+        // Listener para CRM iframe voltar ao home
+        useEffect(() => {
+            function handleCrmMessage(event) {
+                if (event.data?.type === 'VOLTAR_TUTTS') {
+                    console.log('[CRM] Recebido VOLTAR_TUTTS — voltando pro home');
+                    he("home");
+                }
+            }
+            window.addEventListener('message', handleCrmMessage);
+            return () => window.removeEventListener('message', handleCrmMessage);
+        }, []);
+        
         useEffect(() => {
             if (!l) return;
             const e = () => R(Date.now()),
@@ -3414,12 +3983,13 @@ const hideLoadingScreen = () => {
                 console.log('🔌 [WS] Conectando:', wsUrl);
                 try {
                     wsRef.current = new WebSocket(wsUrl);
+                    window.__wsFinanceiro = wsRef.current;
                     wsRef.current.onopen = () => {
                         console.log('✅ [WS] Conectado!');
                         setWsConnected(true);
                         if (l) {
                             // Enviar token JWT para autenticação segura
-                            const token = sessionStorage.getItem('tutts_token');
+                            const token = getToken();
                             wsRef.current.send(JSON.stringify({ type: 'AUTH', token: token, role: l.role, cod_profissional: l.codProfissional }));
                         }
                         if (wsReconnectTimer.current) { clearTimeout(wsReconnectTimer.current); wsReconnectTimer.current = null; }
@@ -3463,7 +4033,60 @@ const hideLoadingScreen = () => {
                                         fetchAuth(`${API_URL}/withdrawals/user/${l.cod_profissional || l.codProfissional}`).then(r => r.ok && r.json()).then(d => { if (d) O(d); }).catch(() => {});
                                     }, 500);
                                 }
+                            } else if (data.event === 'LIMIT_APPROVED') {
+                                ja('✅ Seu ciclo de limite foi renovado pelo financeiro! Você pode sacar novamente.', 'success');
+                                fetchAuth(`${API_URL}/withdrawals/limites/${l.cod_profissional || l.codProfissional}`).then(r => r.ok && r.json()).then(d => { if (d) setLimitesSaque(d); }).catch(() => {});
                             } else if (data.event === 'AUTH_SUCCESS') { console.log('✅ [WS] Autenticado:', data.role); }
+                            else if (data.event === 'STARK_PAYMENT_UPDATE') {
+                                console.log('💰 [WS] Stark payment:', data.data.stark_status, '#' + data.data.id);
+                                if (data.data.user_cod) {
+                                    U(prev => prev.map(w => w.id === data.data.id ? {
+                                        ...w,
+                                        status: data.data.status || w.status,
+                                        stark_status: data.data.stark_status,
+                                        stark_erro: data.data.stark_erro,
+                                    } : w));
+                                }
+                                window.dispatchEvent(new CustomEvent('stark-payment-update', { detail: data.data }));
+                            }
+                            else if (data.event === 'NEW_CONTESTATION') {
+                                console.log('⚡ [WS] Nova contestação:', data.data);
+                                const isAdmin = ['admin', 'admin_master', 'admin_financeiro'].includes(l && l.role);
+                                if (isAdmin) {
+                                    ja(`⚡ Nova contestação de ${data.data.user_name || data.data.user_cod} — OS ${data.data.ordem_servico}`, "info");
+                                    Ca();
+                                    // Recarregar lista de submissions se admin está na aba de solicitações
+                                    if (Ee === 'solicitacoes') { try { La(); } catch {} }
+                                }
+                            }
+                            else if (data.event === 'CONTESTATION_REPLY') {
+                                console.log('💬 [WS] Resposta na contestação:', data.data);
+                                const isAdmin = ['admin', 'admin_master', 'admin_financeiro'].includes(l && l.role);
+                                if (isAdmin) {
+                                    ja(`💬 ${data.data.user_name || 'Motoboy'} respondeu na contestação — OS ${data.data.ordem_servico}`, "info");
+                                } else {
+                                    ja(`💬 Admin respondeu sua contestação — OS ${data.data.ordem_servico}`, "info");
+                                }
+                            }
+                            else if (data.event === 'CONTESTATION_CLOSED') {
+                                console.log('📋 [WS] Contestação encerrada:', data.data);
+                                if (data.data.decisao === 'aprovar') {
+                                    ja(`✅ Sua contestação da OS ${data.data.ordem_servico} foi APROVADA!`, "success");
+                                } else {
+                                    ja(`❌ Sua contestação da OS ${data.data.ordem_servico} foi rejeitada definitivamente.`, "error");
+                                }
+                                // Recarregar lista do motoboy
+                                try { La(); } catch {}
+                            }
+                            else if (data.event === 'REAUTH_SUCCESS') { console.log('🔄 [WS] Token renovado no WS'); }
+                            else if (data.event === 'AUTH_EXPIRED') {
+                                console.log('⚠️ [WS] Token expirado, renovando...');
+                                renovarToken().then(novoToken => {
+                                    if (novoToken && wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+                                        wsRef.current.send(JSON.stringify({ type: 'REAUTH', token: novoToken }));
+                                    }
+                                });
+                            }
                             else if (data.event === 'AUTH_ERROR') { console.error('❌ [WS] Erro de autenticação:', data.error); setWsConnected(false); }
                         } catch (err) { console.error('❌ [WS] Erro:', err); }
                     };
@@ -3507,13 +4130,13 @@ const hideLoadingScreen = () => {
         useEffect(() => {
             if (l && ['admin', 'admin_master', 'admin_financeiro'].includes(l.role)) {
                 // CORREÇÃO: Verificar se o token existe antes de conectar
-                const token = sessionStorage.getItem('tutts_token');
+                const token = getToken();
                 if (token) {
                     connectWebSocket();
                 } else {
                     // Aguardar um pouco para o token ser salvo
                     const timeout = setTimeout(() => {
-                        if (sessionStorage.getItem('tutts_token')) {
+                        if (getToken()) {
                             connectWebSocket();
                         }
                     }, 500);
@@ -3578,12 +4201,12 @@ const hideLoadingScreen = () => {
                     }
                     
                     // Filtrar pendentes para contadores
-                    const pendentes = saques.filter(e => e.status === "pending" || e.status === "aguardando_aprovacao");
+                    const pendentes = saques.filter(e => e.status === "pending" || e.status === "aguardando_aprovacao" || e.status === "aguardando_pagamento_stark");
                     const novosSaques = pendentes.filter(e => !ka.current.solicitacoes.has(e.id));
                     const novosPedidos = pedidos.filter(e => "pendente" === e.status && !ka.current.loja.has(e.id));
                     const novasGratuidades = gratuidades.filter(e => "pending" === e.status && !ka.current.gratuidades.has(e.id));
                     
-                    v({ solicitacoes: novosSaques.length, validacao: novosSaques.length, loja: novosPedidos.length, gratuidades: novasGratuidades.length });
+                    v({ solicitacoes: novosSaques.length, validacao: novosSaques.length, loja: novosPedidos.length, gratuidades: novasGratuidades.length, limites_pendentes: await (async () => { try { const r = await fetchAuth(`${API_URL}/withdrawals/solicitacoes-limite/contadores`); if (r.ok) { const d = await r.json(); return parseInt(d.pendentes) || 0; } return 0; } catch(e) { return 0; } })() });
                     
                     // Detectar novos apenas se WebSocket offline
                     if (!wsConnected) {
@@ -3626,6 +4249,16 @@ const hideLoadingScreen = () => {
             const loadTabData = async () => {
                 try {
                     switch (e) {
+                        case "validacao": {
+                            // Auto-carregar dados de hoje ao acessar a aba Validação
+                            const now = new Date();
+                            const hoje = now.getFullYear() + "-" + String(now.getMonth()+1).padStart(2,"0") + "-" + String(now.getDate()).padStart(2,"0");
+                            if (!p.validacaoDataInicio) {
+                                x(prev => ({...prev, validacaoDataInicio: hoje, validacaoDataFim: hoje}));
+                            }
+                            await carregarValidacao(p.validacaoTipo || "solicitacao", p.validacaoDataInicio || hoje, p.validacaoDataFim || hoje);
+                            break;
+                        }
                         case "restritos":
                             await Ba();
                             break;
@@ -3864,6 +4497,7 @@ const hideLoadingScreen = () => {
                         valor: '',
                         valor_incentivo: '',
                         clientes_vinculados: [],
+                        centros_vinculados: {},
                         cor: '#0d9488'
                     });
                     carregarIncentivos();
@@ -4033,7 +4667,7 @@ const hideLoadingScreen = () => {
         
         const calcularSaldoDisponivel = () => {
             if (saldoPlificUser.saldo === null) return null;
-            const saquesPendentes = M.filter(s => s.status === "pending" || s.status === "aguardando_aprovacao");
+            const saquesPendentes = M.filter(s => s.status === "pending" || s.status === "aguardando_aprovacao" || s.status === "aguardando_pagamento_stark");
             const totalPendente = saquesPendentes.reduce((acc, s) => acc + parseFloat(s.requested_amount || 0), 0);
             return Math.max(0, saldoPlificUser.saldo - totalPendente);
         };
@@ -5374,12 +6008,10 @@ const hideLoadingScreen = () => {
                 const hoje = new Date();
                 hoje.setHours(0, 0, 0, 0);
                 
-                // Normalizar código do usuário para string
                 const meuCod = String(l.codProfissional);
                 const meuNome = l.fullName;
                 
                 const pendentes = todas.filter(t => {
-                    // Parsear responsáveis de forma segura
                     let responsaveis = [];
                     try {
                         if (Array.isArray(t.responsaveis)) {
@@ -5391,7 +6023,6 @@ const hideLoadingScreen = () => {
                         responsaveis = [];
                     }
                     
-                    // Verificar se o usuário está na lista de responsáveis
                     const isAtribuidoParaMim = responsaveis.some(resp => {
                         if (typeof resp === 'string') {
                             return String(resp) === meuCod || resp === meuNome;
@@ -5411,30 +6042,36 @@ const hideLoadingScreen = () => {
                     if (t.data_prazo) {
                         const dataVenc = new Date(t.data_prazo);
                         dataVenc.setHours(0, 0, 0, 0);
-                        return dataVenc <= hoje; // Hoje ou vencida
+                        return dataVenc <= hoje;
                     }
-                    return true; // Sem data = considera pendente
+                    return true;
                 });
                 
-                // Na verificação inicial (login), mostra TODAS as pendentes
+                // Ler IDs já notificados do sessionStorage (persiste entre re-renders)
+                let idsJaNotificados = [];
+                try { idsJaNotificados = JSON.parse(sessionStorage.getItem('tutts_todo_ids_notificados') || '[]'); } catch { idsJaNotificados = []; }
+                
                 if (isInitialCheck) {
-                    if (pendentes.length > 0) {
+                    // Login: mostra TODAS as pendentes, mas só 1x por sessão
+                    if (pendentes.length > 0 && !sessionStorage.getItem('tutts_todo_notif_shown')) {
                         console.log(`🔔 Login: ${pendentes.length} tarefa(s) pendente(s)`);
+                        sessionStorage.setItem('tutts_todo_notif_shown', '1');
+                        sessionStorage.setItem('tutts_todo_ids_notificados', JSON.stringify(pendentes.map(t => t.id)));
                         setTodoPendentesNotif(pendentes);
                         setTodoNotifModal(true);
-                        // Marca todas como já notificadas
                         setTodoTarefasJaNotificadas(pendentes.map(t => t.id));
                     }
                 } else {
-                    // No polling, mostra apenas NOVAS tarefas (não notificadas ainda)
-                    const novasTarefas = pendentes.filter(t => !todoTarefasJaNotificadas.includes(t.id));
+                    // Polling: só tarefas que NUNCA foram notificadas nesta sessão
+                    const novasTarefas = pendentes.filter(t => !idsJaNotificados.includes(t.id));
                     
                     if (novasTarefas.length > 0) {
                         console.log(`🔔 Polling: ${novasTarefas.length} NOVA(S) tarefa(s) pendente(s)!`);
+                        const novosIds = [...idsJaNotificados, ...novasTarefas.map(t => t.id)];
+                        sessionStorage.setItem('tutts_todo_ids_notificados', JSON.stringify(novosIds));
                         setTodoPendentesNotif(novasTarefas);
                         setTodoNotifModal(true);
-                        // Adiciona às já notificadas
-                        setTodoTarefasJaNotificadas(prev => [...prev, ...novasTarefas.map(t => t.id)]);
+                        setTodoTarefasJaNotificadas(novosIds);
                     }
                 }
             } catch (err) {
@@ -5524,20 +6161,39 @@ const hideLoadingScreen = () => {
             try {
                 const isAdmin = ['admin', 'admin_master', 'admin_financeiro'].includes(l.role);
                 if (isAdmin) {
-                    // Admin: carregar stats leves + só pendentes para validação
-                    const [statsRes, pendRes] = await Promise.all([
+                    // Admin: carregar stats + pendentes + contestações abertas
+                    const [statsRes, pendRes, contestRes, rpRes] = await Promise.all([
                         fetchAuth(`${API_URL}/submissions/dashboard`),
-                        fetchAuth(`${API_URL}/submissions/busca?status=pendente&limit=500`)
+                        fetchAuth(`${API_URL}/submissions/busca?status=pendente&limit=500`),
+                        fetchAuth(`${API_URL}/submissions/busca?status=contestado&limit=100`),
+                        fetchAuth(`${API_URL}/submissions/respostas-prontas`).catch(() => ({ ok: false }))
                     ]);
                     if (statsRes.ok) { const stats = await statsRes.json(); setDashStats(stats); }
+                    if (rpRes.ok) { try { const rp = await rpRes.json(); x(prev => ({ ...prev, _respostasProntas: rp })); } catch {} }
+                    
+                    const mapSub = e => ({
+                        ...e, ordemServico: e.ordem_servico, codProfissional: e.user_cod,
+                        fullName: e.user_name, temImagem: e.tem_imagem, imagemComprovante: null,
+                        timestamp: new Date(e.created_at).toLocaleString("pt-BR")
+                    });
+                    
+                    let allSubs = [];
+                    // Contestações primeiro (prioridade)
+                    if (contestRes.ok) {
+                        try {
+                            const cData = await contestRes.json();
+                            allSubs = (cData.submissions || []).map(mapSub);
+                        } catch {}
+                    }
+                    // Depois pendentes
                     if (pendRes.ok) {
                         const data = await pendRes.json();
-                        C((data.submissions || []).map(e => ({
-                            ...e, ordemServico: e.ordem_servico, codProfissional: e.user_cod,
-                            fullName: e.user_name, temImagem: e.tem_imagem, imagemComprovante: null,
-                            timestamp: new Date(e.created_at).toLocaleString("pt-BR")
-                        })));
+                        const pendSubs = (data.submissions || []).map(mapSub);
+                        // Merge sem duplicatas (contestação pode ter sido pendente antes)
+                        const idsJa = new Set(allSubs.map(s => s.id));
+                        pendSubs.forEach(s => { if (!idsJa.has(s.id)) allSubs.push(s); });
                     }
+                    C(allSubs);
                 } else {
                     const e = `?userId=${l.id}&userCod=${l.cod_profissional}`,
                         t = await fetchAuth(`${API_URL}/submissions${e}`),
@@ -5675,6 +6331,13 @@ const hideLoadingScreen = () => {
             } catch (e) {
                 console.error(e)
             }
+            // Buscar limites junto com os saques
+            try {
+                const r = await fetchAuth(`${API_URL}/withdrawals/limites/${l.cod_profissional}`);
+                if (r.ok) setLimitesSaque(await r.json());
+            } catch (e) {
+                console.error('Erro ao buscar limites:', e);
+            }
         }, qa = async () => {
             try {
                 const e = await fetchAuth(`${API_URL}/gratuities/user/${l.cod_profissional}`);
@@ -5684,7 +6347,7 @@ const hideLoadingScreen = () => {
             }
         }, Ua = async () => {
             try {
-                const e = await fetchAuth(`${API_URL}/withdrawals?limit=200`);
+                const e = await fetchAuth(`${API_URL}/withdrawals`);
                 if (e.ok) U(await e.json())
             } catch (e) {
                 console.error(e)
@@ -5706,7 +6369,7 @@ const hideLoadingScreen = () => {
                 const resp = await fetchAuth(`${API_URL}/withdrawals?${params}`);
                 if (resp.ok) {
                     const data = await resp.json();
-                    setConciliacaoData(data.filter(e => e.status?.includes('aprovado')));
+                    setConciliacaoData(data.filter(e => e.status?.includes('aprovado') || e.status === 'pago_stark').sort((a, b) => parseFloat(b.requested_amount || 0) - parseFloat(a.requested_amount || 0)));
                 }
             } catch (e) { console.error('Erro conciliação:', e); }
             setConciliacaoLoading(false);
@@ -7400,7 +8063,8 @@ const hideLoadingScreen = () => {
                                     config: !hasConfig || allowedMods.includes("config"),
                                     "crm-whatsapp": !hasConfig || allowedMods.includes("crm-whatsapp"),
                                     agente: !hasConfig || allowedMods.includes("agente"),
-                                    antifraude: !hasConfig || allowedMods.includes("antifraude")
+                                    antifraude: !hasConfig || allowedMods.includes("antifraude"),
+                                    performance: !hasConfig || allowedMods.includes("performance")
                                 },
                                 abas: allowedTabs
                             };
@@ -7415,7 +8079,7 @@ const hideLoadingScreen = () => {
                     codProfissional: t.cod_profissional,
                     fullName: t.full_name,
                     permissions: perms
-                }), x({})
+                }), iniciarRefreshProativo(), x({})
             } catch (e) {
                 ja(e.message, "error")
             }
@@ -7524,6 +8188,17 @@ const hideLoadingScreen = () => {
             const e = parseFloat(p.withdrawAmount);
             if (!e || e <= 0) return void ja("Valor inválido", "error");
             if (e < 15) return void ja("⚠️ Valor mínimo é R$ 15,00", "error");
+            // Validar limite por solicitação
+            if (e > 1000) return void ja("⚠️ Valor máximo por solicitação é R$ 1.000,00", "error");
+            // Validar limites diário e semanal (se já carregados)
+            if (limitesSaque) {
+                if (limitesSaque.diario && e > limitesSaque.diario.disponivel) {
+                    return void ja(`⚠️ Limite diário atingido! Você já solicitou R$ ${limitesSaque.diario.utilizado.toFixed(2).replace(".", ",")} hoje. Disponível: R$ ${limitesSaque.diario.disponivel.toFixed(2).replace(".", ",")}`, "error");
+                }
+                if (limitesSaque.semanal && e > limitesSaque.semanal.disponivel) {
+                    return void ja(`⚠️ Limite semanal atingido! Você já solicitou R$ ${limitesSaque.semanal.utilizado.toFixed(2).replace(".", ",")} esta semana. Disponível: R$ ${limitesSaque.semanal.disponivel.toFixed(2).replace(".", ",")}`, "error");
+                }
+            }
             // Verificar saldo Plific (considerando saques pendentes)
             const saldoDisp = calcularSaldoDisponivel();
             if (saldoDisp !== null && e > saldoDisp) {
@@ -7536,11 +8211,11 @@ const hideLoadingScreen = () => {
                 a = new Date(t.getTime() - 36e5),
                 // Só bloqueia se tiver saque aguardando aprovação (pendente) na última hora
                 // Aprovado ou rejeitado = libera para nova solicitação
-                r = M.filter(e => new Date(e.created_at) >= a && (e.status === "pending" || e.status === "aguardando_aprovacao"));
+                r = M.filter(e => new Date(e.created_at) >= a && (e.status === "pending" || e.status === "aguardando_aprovacao" || e.status === "aguardando_pagamento_stark"));
             if (r.length >= 1) {
                 const e = new Date(new Date(r[0].created_at).getTime() + 36e5),
                     a = Math.ceil((e - t) / 6e4);
-                return void ja(`⚠️ Você já possui um saque aguardando aprovação! Aguarde a aprovação ou rejeição antes de solicitar novamente.`, "error")
+                return void ja(`⚠️ Você já possui um saque em processamento! Aguarde a conclusão antes de solicitar novamente.`, "error")
             }
             // Com 1 saque por hora, não precisa verificar valor repetido
             s(!0);
@@ -7801,7 +8476,7 @@ const hideLoadingScreen = () => {
                 }
                 s(!1)
             } else ja("Preencha todos os campos", "error")
-        }, Wl = ["Ajuste de Retorno", "Ajuste de Pedágio"], Zl = (e, t = 1920, a = .85) => new Promise((l, r) => {
+        }, Wl = ["Ajuste de Retorno", "Ajuste de Pedágio", "Ajustes Simões Filho e Camaçari"], Zl = (e, t = 1920, a = .85) => new Promise((l, r) => {
             const o = new FileReader;
             o.onload = e => {
                 const o = new Image;
@@ -7834,11 +8509,14 @@ const hideLoadingScreen = () => {
                     body: JSON.stringify({
                         ordemServico: p.os,
                         motivo: p.motivo,
+                        subcategoria: p.subcategoria || null,
                         userId: l.id,
                         userCod: l.codProfissional,
                         userName: l.fullName,
                         imagemComprovante: e,
-                        coordenadas: p.coordenadas || null
+                        coordenadas: p.coordenadas || null,
+                        validacao_ia: p.validacao_ia ? JSON.stringify(p.validacao_ia) : null,
+                        tentativas_foto: p.tentativas_foto || 0
                     })
                 }), ja("✅ OS enviada!", "success"), x({}), La()
             } catch (e) {
@@ -9078,7 +9756,7 @@ const hideLoadingScreen = () => {
             className: "bg-white rounded-xl p-4 text-center shadow"
         }, React.createElement("p", {
             className: "text-2xl font-bold text-green-600"
-        }, M.filter(e => "aguardando_aprovacao" === e.status).length), React.createElement("p", {
+        }, M.filter(e => "aguardando_aprovacao" === e.status || "aguardando_pagamento_stark" === e.status).length), React.createElement("p", {
             className: "text-xs text-gray-500"
         }, "Saques Pendentes")), React.createElement("div", {
             className: "bg-white rounded-xl p-4 text-center shadow"
@@ -9098,7 +9776,45 @@ const hideLoadingScreen = () => {
             className: "p-2 bg-white rounded-lg shadow hover:bg-gray-50"
         }, "← Voltar"), React.createElement("h1", {
             className: "text-base sm:text-xl font-bold text-gray-800"
-        }, "solicitacoes" === p.userTab && "📋 Solicitar Ajuste", "saque" === p.userTab && "💰 Saque Emergencial", "indicacoes" === p.userTab && "👥 Promoção de Indicação", "promo-novatos" === p.userTab && "🚀 Promoções Novatos", "seguro-iza" === p.userTab && "🛡️ Seguro de Vida - IZA", "loja" === p.userTab && "🛒 Lojinha Tutts", "correcao-endereco" === p.userTab && "📍 Correção de Endereço")), "solicitacoes" === p.userTab && React.createElement(React.Fragment, null, React.createElement("div", {
+        }, "solicitacoes" === p.userTab && "📋 Solicitar Ajuste", "saque" === p.userTab && "💰 Saque Emergencial", "indicacoes" === p.userTab && "👥 Promoção de Indicação", "promo-novatos" === p.userTab && "🚀 Promoções Novatos", "seguro-iza" === p.userTab && "🛡️ Seguro de Vida - IZA", "loja" === p.userTab && "🛒 Lojinha Tutts", "correcao-endereco" === p.userTab && "📍 Correção de Endereço")), "solicitacoes" === p.userTab && React.createElement(React.Fragment, null,
+        // MODAL DE REJEIÇÃO
+        (function() {
+            var rejNaoLidas = (j || []).filter(function(s) { var hoje = new Date(); hoje.setHours(0,0,0,0); return s.status === 'rejeitado' && s.contestacao_lida === false && s.contestacao_status !== 'encerrada_rejeitada' && s.contestacao_status !== 'aberta' && new Date(s.updated_at || s.created_at) >= hoje; });
+            var rej = !p._rejeicaoModalFechada && rejNaoLidas.length > 0 ? rejNaoLidas[0] : null;
+            if (!rej) return null;
+            return React.createElement("div", { className: "fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" },
+                React.createElement("div", { className: "bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full" },
+                    React.createElement("div", { className: "text-center mb-4" },
+                        React.createElement("span", { className: "text-5xl block mb-3" }, "❌"),
+                        React.createElement("h2", { className: "text-xl font-bold text-red-800 mb-2" }, "Solicitação Rejeitada"),
+                        React.createElement("p", { className: "text-sm text-gray-600" }, "OS: ", React.createElement("strong", null, rej.ordem_servico || rej.ordemServico))
+                    ),
+                    React.createElement("div", { className: "bg-red-50 rounded-xl p-4 mb-4 border border-red-200" },
+                        React.createElement("p", { className: "text-sm text-red-800 font-medium" }, "Motivo: ", rej.motivo_rejeicao || rej.observacao || "Não informado")
+                    ),
+                    React.createElement("div", { className: "bg-orange-50 rounded-xl p-3 mb-4 border border-orange-200" },
+                        React.createElement("p", { className: "text-sm text-orange-800 text-center" }, "📋 Realize a contestação agora e evite chamados via WhatsApp com o suporte.")
+                    ),
+                    React.createElement("div", { className: "flex gap-3" },
+                        React.createElement("button", {
+                            onClick: function() {
+                                fetchAuth(API_URL + "/submissions/" + rej.id + "/marcar-lida", { method: "PATCH" }).catch(function(){});
+                                x(function(prev) { return { ...prev, _rejeicaoModalFechada: true }; });
+                            },
+                            className: "flex-1 py-3 bg-gray-200 text-gray-700 rounded-xl font-bold"
+                        }, "Fechar"),
+                        React.createElement("button", {
+                            onClick: function() {
+                                fetchAuth(API_URL + "/submissions/" + rej.id + "/marcar-lida", { method: "PATCH" }).catch(function(){});
+                                x(function(prev) { return { ...prev, _rejeicaoModalFechada: true, contestandoId: rej.id, contestandoOS: rej.ordem_servico || rej.ordemServico, contestMsg: '', contestImgs: [] }; });
+                            },
+                            className: "flex-1 py-3 bg-orange-600 text-white rounded-xl font-bold"
+                        }, "⚡ Contestar Agora")
+                    )
+                )
+            );
+        })(),
+        React.createElement("div", {
             className: "bg-white rounded-xl shadow p-4 sm:p-6 mb-4 sm:mb-6"
         }, React.createElement("h2", {
             className: "text-lg font-semibold mb-4"
@@ -9120,65 +9836,157 @@ const hideLoadingScreen = () => {
                 x({
                     ...p,
                     motivo: t,
-                    imagens: []
+                    subcategoria: null,
+                    imagens: [],
+                    feedback_ia: null,
+                    validacao_ia: null,
+                    tentativas_foto: 0
                 })
             },
             className: "w-full px-4 py-3 border rounded-lg"
         }, React.createElement("option", {
             value: ""
-        }, "Selecione o motivo"), React.createElement("option", null, "Ajuste de Retorno"), React.createElement("option", null, "Ajuste de Pedágio"), React.createElement("option", null, "Ajustes Simões Filho e Camaçari")), Wl.includes(p.motivo) && React.createElement("div", {
+        }, "Selecione o motivo"), React.createElement("option", null, "Ajuste de Retorno"), React.createElement("option", null, "Ajuste de Pedágio"), React.createElement("option", null, "Ajustes Simões Filho e Camaçari")), p.motivo === "Ajuste de Retorno" && React.createElement("div", {
+            className: "border-2 border-purple-200 bg-purple-50 rounded-lg p-4"
+        }, React.createElement("p", { className: "text-sm font-bold text-purple-800 mb-3" }, "📌 Qual o motivo do retorno?"), React.createElement("div", { className: "grid grid-cols-1 gap-2" }, [
+            { id: "Cliente fechado / ausente", icon: "🏪", desc: "Loja fechada, portão trancado, ausente" },
+            { id: "Produto incorreto / avariado", icon: "📝", desc: "Ressalva no verso da NF com assinatura" },
+            { id: "Endereço não encontrado", icon: "📍", desc: "Endereço inexistente, placa de rua" }
+        ].map(sub => React.createElement("button", {
+            key: sub.id,
+            onClick: () => x({ ...p, subcategoria: sub.id, imagens: [], feedback_ia: null, validacao_ia: null, tentativas_foto: 0 }),
+            className: "flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all " + (p.subcategoria === sub.id ? "border-purple-500 bg-purple-100 shadow-md" : "border-gray-200 bg-white hover:border-purple-300")
+        }, React.createElement("span", { className: "text-2xl" }, sub.icon), React.createElement("div", null,
+            React.createElement("p", { className: "text-sm font-semibold text-gray-800" }, sub.id),
+            React.createElement("p", { className: "text-xs text-gray-500" }, sub.desc)
+        ))))), (p.motivo === "Ajuste de Pedágio" || p.motivo === "Ajustes Simões Filho e Camaçari" || (p.motivo === "Ajuste de Retorno" && p.subcategoria)) && React.createElement("div", {
             className: "border-2 border-dashed border-orange-300 bg-orange-50 rounded-lg p-4"
         }, React.createElement("p", {
             className: "text-sm font-bold text-orange-800 mb-2"
-        }, "📎 Fotos OBRIGATÓRIAS (máx. 2)"), React.createElement("input", {
+        }, "📸 ", p.subcategoria === "Cliente fechado / ausente" ? "Tire foto da FACHADA FECHADA" : p.subcategoria === "Produto incorreto / avariado" ? "Tire foto da RESSALVA no verso da NF" : p.subcategoria === "Endereço não encontrado" ? "Tire foto da PLACA DA RUA / local" : p.motivo === "Ajuste de Pedágio" ? "Tire foto do COMPROVANTE DE PEDÁGIO" : p.motivo === "Ajustes Simões Filho e Camaçari" ? "Foto do comprovante (opcional)" : "Tire foto do COMPROVANTE"), React.createElement("p", {
+            className: "text-xs text-orange-600 mb-2"
+        }, "⚠️ ", p.subcategoria === "Produto incorreto / avariado" ? "Foto do VERSO da nota com a ressalva escrita à mão + assinatura do cliente" : p.subcategoria === "Endereço não encontrado" ? "Foto mostrando placa de rua, numeração ou terreno baldio" : p.motivo === "Ajuste de Pedágio" ? "Foto do recibo/comprovante com valor e data visíveis" : p.motivo === "Ajustes Simões Filho e Camaçari" ? "Se tiver comprovante, anexe aqui. Caso contrário, pode enviar sem foto." : "Tire a foto ou selecione da galeria"), p.validandoIA ? React.createElement("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", padding: "20px 0", gap: "14px" } }, React.createElement("style", null, "@keyframes tScan{0%{top:10%}50%{top:80%}100%{top:10%}}@keyframes tBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}"), React.createElement("div", { style: { width: "80px", height: "80px", border: "2.5px solid #7C3AED", borderRadius: "12px", position: "relative", overflow: "hidden", background: "rgba(124,58,237,0.03)" } }, React.createElement("div", { style: { position: "absolute", left: "8px", right: "8px", height: "2px", background: "linear-gradient(90deg, transparent, #7C3AED, transparent)", animation: "tScan 1.8s ease-in-out infinite", borderRadius: "2px" } }), React.createElement("div", { style: { position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", fontSize: "28px", opacity: "0.25" } }, "\uD83D\uDCF7")), React.createElement("p", { style: { fontSize: "15px", fontWeight: "600", color: "#7C3AED", margin: "0" } }, "IA analisando sua foto..."), React.createElement("div", { style: { display: "flex", gap: "6px" } }, React.createElement("div", { style: { width: "8px", height: "8px", borderRadius: "50%", background: "#7C3AED", animation: "tBounce 0.6s 0s infinite" } }), React.createElement("div", { style: { width: "8px", height: "8px", borderRadius: "50%", background: "#7C3AED", animation: "tBounce 0.6s 0.15s infinite" } }), React.createElement("div", { style: { width: "8px", height: "8px", borderRadius: "50%", background: "#7C3AED", animation: "tBounce 0.6s 0.3s infinite" } })), React.createElement("p", { style: { fontSize: "12px", color: "#6B7280", margin: "0" } }, "Isso leva poucos segundos...")) : React.createElement(React.Fragment, null,
+            React.createElement("input", {
             type: "file",
             accept: "image/*",
-            multiple: !0,
+            capture: "environment",
+            id: "sub-foto-camera",
+            style: { display: "none" },
             onChange: async e => {
-                const t = Array.from(e.target.files).slice(0, 2);
-                if (t.length) {
+                const files = Array.from(e.target.files || []);
+                if (!files.length) return;
+                for (const t of files) {
+                    if (t.size > 25 * 1024 * 1024) { ja("Imagem muito grande! Máximo 25MB: " + t.name, "error"); continue; }
                     s(!0);
                     try {
-                        const e = [];
-                        for (const a of t) {
-                            if (a.size > 25 * 1024 * 1024) {
-                                ja("Imagem muito grande! Máximo 25MB por foto", "error");
-                                continue;
+                        const b64 = await Zl(t);
+                        const fotosAtuais = p.imagens || [];
+                        const tentAtual = (p.tentativas_foto || 0) + 1;
+                        if (fotosAtuais.length === 0 && tentAtual <= 3) {
+                            ja("🤖 Validando foto com IA...", "info");
+                            x({ ...p, validandoIA: true, tentativas_foto: tentAtual, _fotoTemp: b64 });
+                            try {
+                                const resp = await fetchAuth(`${API_URL}/submissions/validar-foto`, {
+                                    method: "POST", headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({ foto: b64, motivo: p.motivo, subcategoria: p.subcategoria || null, ordemServico: p.os })
+                                });
+                                const resultado = await resp.json();
+                                if (resultado.foto_valida) {
+                                    x(prev => ({ ...prev, imagens: [...(prev.imagens || []), b64], tentativas_foto: tentAtual, validacao_ia: resultado, feedback_ia: null, validandoIA: false, _fotoTemp: null }));
+                                    ja("✅ Foto validada pela IA!", "success");
+                                } else {
+                                    x(prev => ({ ...prev, tentativas_foto: tentAtual, feedback_ia: resultado.feedback_motoboy || "Foto não aceita. Tire outra.", validacao_ia: null, validandoIA: false, _fotoTemp: null }));
+                                    ja(resultado.feedback_motoboy || "❌ Foto rejeitada pela IA. Tire uma nova.", "error");
+                                }
+                            } catch (iaErr) {
+                                x(prev => ({ ...prev, imagens: [...(prev.imagens || []), b64], tentativas_foto: tentAtual, validacao_ia: { sem_ia: true, resumo_admin: "IA indisponível — foto aceita" }, feedback_ia: null, validandoIA: false, _fotoTemp: null }));
+                                ja("📷 Foto aceita (IA indisponível)", "success");
                             }
-                            e.push(await Zl(a));
+                        } else {
+                            x(prev => ({ ...prev, imagens: [...(prev.imagens || []), b64], tentativas_foto: tentAtual, feedback_ia: null, validandoIA: false }));
+                            ja("📷 Foto adicionada!", "success");
                         }
-                        if (e.length > 0) {
-                            x({
-                                ...p,
-                                imagens: [...p.imagens || [], ...e].slice(0, 2)
-                            }), ja("✅ Imagem adicionada!", "success")
-                        }
-                    } catch {
-                        ja("Erro ao processar imagem", "error")
-                    }
-                    s(!1), e.target.value = ""
+                    } catch { ja("Erro ao processar imagem", "error"); }
+                    s(!1);
                 }
-            },
-            className: "w-full text-sm"
-        }), p.imagens?.length > 0 && React.createElement("div", {
-            className: "mt-3 flex gap-2"
-        }, p.imagens.map((e, t) => React.createElement("div", {
-            key: t,
-            className: "relative"
-        }, React.createElement("img", {
-            src: e,
-            className: "h-24 rounded border"
+                e.target.value = "";
+            }
+        }),
+            React.createElement("input", {
+            type: "file",
+            accept: "image/*",
+            multiple: true,
+            id: "sub-foto-galeria",
+            style: { display: "none" },
+            onChange: async e => {
+                const files = Array.from(e.target.files || []);
+                if (!files.length) return;
+                for (const t of files) {
+                    if (t.size > 25 * 1024 * 1024) { ja("Imagem muito grande! Máximo 25MB: " + t.name, "error"); continue; }
+                    s(!0);
+                    try {
+                        const b64 = await Zl(t);
+                        const fotosAtuais = p.imagens || [];
+                        const tentAtual = (p.tentativas_foto || 0) + 1;
+                        if (fotosAtuais.length === 0 && tentAtual <= 3) {
+                            ja("🤖 Validando foto com IA...", "info");
+                            x({ ...p, validandoIA: true, tentativas_foto: tentAtual, _fotoTemp: b64 });
+                            try {
+                                const resp = await fetchAuth(`${API_URL}/submissions/validar-foto`, {
+                                    method: "POST", headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({ foto: b64, motivo: p.motivo, subcategoria: p.subcategoria || null, ordemServico: p.os })
+                                });
+                                const resultado = await resp.json();
+                                if (resultado.foto_valida) {
+                                    x(prev => ({ ...prev, imagens: [...(prev.imagens || []), b64], tentativas_foto: tentAtual, validacao_ia: resultado, feedback_ia: null, validandoIA: false, _fotoTemp: null }));
+                                    ja("✅ Foto validada pela IA!", "success");
+                                } else {
+                                    x(prev => ({ ...prev, tentativas_foto: tentAtual, feedback_ia: resultado.feedback_motoboy || "Foto não aceita. Tire outra.", validacao_ia: null, validandoIA: false, _fotoTemp: null }));
+                                    ja(resultado.feedback_motoboy || "❌ Foto rejeitada pela IA. Tire uma nova.", "error");
+                                }
+                            } catch (iaErr) {
+                                x(prev => ({ ...prev, imagens: [...(prev.imagens || []), b64], tentativas_foto: tentAtual, validacao_ia: { sem_ia: true, resumo_admin: "IA indisponível — foto aceita" }, feedback_ia: null, validandoIA: false, _fotoTemp: null }));
+                                ja("📷 Foto aceita (IA indisponível)", "success");
+                            }
+                        } else {
+                            x(prev => ({ ...prev, imagens: [...(prev.imagens || []), b64], tentativas_foto: tentAtual, feedback_ia: null, validandoIA: false }));
+                            ja("📷 Foto adicionada!", "success");
+                        }
+                    } catch { ja("Erro ao processar imagem", "error"); }
+                    s(!1);
+                }
+                e.target.value = "";
+            }
+        }),
+            React.createElement("div", { className: "flex gap-3" },
+                React.createElement("button", {
+                    type: "button",
+                    onClick: () => document.getElementById("sub-foto-camera").click(),
+                    className: "flex-1 py-3 rounded-xl font-bold text-sm border-2 border-purple-600 bg-purple-600 text-white flex items-center justify-center gap-2",
+                    style: { display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }
+                }, "📷 Tirar Foto"),
+                React.createElement("button", {
+                    type: "button",
+                    onClick: () => document.getElementById("sub-foto-galeria").click(),
+                    className: "flex-1 py-3 rounded-xl font-bold text-sm border-2 border-purple-300 bg-purple-50 text-purple-700 flex items-center justify-center gap-2",
+                    style: { display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }
+                }, "🖼️ Galeria")
+            )
+        ), p.feedback_ia && !p.imagens?.length && React.createElement("div", {
+            className: "mt-2 p-3 bg-red-50 border border-red-300 rounded-lg"
+        }, React.createElement("p", { className: "text-sm text-red-800 font-semibold" }, "❌ ", p.feedback_ia), React.createElement("p", { className: "text-xs text-red-600 mt-1" }, "Tentativa ", p.tentativas_foto || 0, " de 3 — tire uma nova foto")), p.imagens?.length > 0 && React.createElement("div", {
+            className: "mt-3"
+        }, React.createElement("div", { className: "flex flex-wrap gap-2" }, p.imagens.map((img, idx) => React.createElement("div", { key: idx, className: "relative inline-block" }, React.createElement("img", {
+            src: img,
+            className: "h-24 rounded border-2 border-green-400"
         }), React.createElement("button", {
-            onClick: () => x({
-                ...p,
-                imagens: p.imagens.filter((e, a) => a !== t)
-            }),
-            className: "absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-5 h-5 text-xs"
-        }, "✕")))), React.createElement("p", {
+            onClick: () => x({ ...p, imagens: p.imagens.filter((_, i) => i !== idx) }),
+            className: "absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-6 h-6 text-xs font-bold"
+        }, "✕")))), p.validacao_ia && !p.validacao_ia.sem_ia && React.createElement("p", { className: "text-xs text-green-700 mt-1 font-semibold" }, "✅ Validada pela IA (confiança: ", p.validacao_ia.confianca, "%)")), React.createElement("p", {
             className: "text-xs text-gray-500 mt-2"
-        }, p.imagens?.length || 0, "/2 fotos")), React.createElement("button", {
+        }, p.imagens?.length ? p.imagens.length + " foto(s) ✓ — pode adicionar mais" : p.motivo === "Ajustes Simões Filho e Camaçari" ? "Foto opcional" : "0 fotos — adicione pelo menos 1")), React.createElement("button", {
             onClick: Yl,
-            disabled: c || !p.os || !p.motivo || Wl.includes(p.motivo) && !p.imagens?.length,
+            disabled: c || !p.os || !p.motivo || (p.motivo === "Ajuste de Retorno" && !p.subcategoria) || (p.motivo !== "Ajustes Simões Filho e Camaçari" && !p.imagens?.length),
             className: "w-full bg-purple-900 text-white py-3 rounded-lg font-semibold disabled:opacity-50"
         }, c ? "⏳ Enviando..." : "Enviar"))), React.createElement("div", {
             className: "bg-white rounded-xl shadow p-6"
@@ -9205,7 +10013,80 @@ const hideLoadingScreen = () => {
             className: "mt-2 p-2 bg-red-50 border border-red-200 rounded"
         }, React.createElement("p", {
             className: "text-xs text-red-800"
-        }, React.createElement("strong", null, "Motivo da rejeição:"), " ", e.observacao)), e.temImagem && !e.imagemComprovante && React.createElement("button", {
+        }, React.createElement("strong", null, "Motivo da rejeição:"), " ", e.observacao || e.motivo_rejeicao)),
+        "rejeitado" === e.status && e.contestacao_status !== 'encerrada_rejeitada' && e.contestacao_status !== 'encerrada_aprovada' && React.createElement("div", { className: "mt-2" },
+            e.contestacao_status === 'aberta' ? React.createElement("div", { className: "mt-2 p-3 bg-orange-50 border-2 border-orange-400 rounded-lg" },
+                React.createElement("div", { className: "flex items-center justify-between mb-2" },
+                    React.createElement("span", { className: "text-sm font-bold text-orange-800" }, "⚡ Contestação em andamento"),
+                    React.createElement("button", {
+                        onClick: async () => {
+                            try {
+                                const r = await fetchAuth(`${API_URL}/submissions/${e.id}/contestacao`);
+                                const d = await r.json();
+                                if (d.success) x(prev => ({ ...prev, [`contest_msgs_${e.id}`]: d.mensagens, [`contest_open_${e.id}`]: true }));
+                            } catch { ja("Erro ao carregar", "error"); }
+                        },
+                        className: "px-3 py-1 bg-orange-600 text-white rounded text-xs font-bold"
+                    }, p[`contest_open_${e.id}`] ? "🔄 Atualizar" : "💬 Ver Mensagens")
+                ),
+                p[`contest_open_${e.id}`] && React.createElement(React.Fragment, null,
+                    React.createElement("div", { className: "space-y-2 max-h-48 overflow-y-auto mb-2" },
+                        (p[`contest_msgs_${e.id}`] || []).map((m, mi) => React.createElement("div", {
+                            key: mi,
+                            className: `p-2 rounded-lg text-xs ${m.autor_tipo === 'admin' ? 'bg-purple-100 text-purple-800 ml-4' : 'bg-white border mr-4'}`
+                        },
+                            React.createElement("p", { className: "font-bold mb-1" }, m.autor_tipo === 'admin' ? '👔 ' + m.autor_nome : '🏍️ Você', React.createElement("span", { className: "font-normal text-gray-400 ml-2" }, new Date(m.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }))),
+                            React.createElement("p", null, m.mensagem),
+                            m.imagens && (() => { try { const imgs = typeof m.imagens === 'string' ? JSON.parse(m.imagens) : m.imagens; return imgs.length > 0 ? React.createElement("div", { className: "flex gap-1 mt-1" }, imgs.map((img, ii) => React.createElement("img", { key: ii, src: img, className: "h-16 rounded cursor-pointer", onClick: () => g(img) }))) : null; } catch { return null; } })()
+                        ))
+                    ),
+                    React.createElement("textarea", { value: p[`contest_user_resp_${e.id}`] || '', onChange: ev => x({ ...p, [`contest_user_resp_${e.id}`]: ev.target.value }), placeholder: "Enviar nova mensagem...", className: "w-full px-2 py-1 border rounded text-xs mt-1", rows: 2 }),
+                    React.createElement("button", {
+                        onClick: async () => {
+                            const msg = p[`contest_user_resp_${e.id}`] || '';
+                            if (!msg.trim()) { ja("Escreva uma mensagem", "error"); return; }
+                            try {
+                                await fetchAuth(`${API_URL}/submissions/${e.id}/contestacao-responder`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mensagem: msg }) });
+                                x(prev => ({ ...prev, [`contest_user_resp_${e.id}`]: '' }));
+                                ja("Mensagem enviada!", "success");
+                                const r2 = await fetchAuth(`${API_URL}/submissions/${e.id}/contestacao`);
+                                const d2 = await r2.json();
+                                if (d2.success) x(prev => ({ ...prev, [`contest_msgs_${e.id}`]: d2.mensagens }));
+                            } catch { ja("Erro", "error"); }
+                        },
+                        className: "mt-1 w-full py-1 bg-orange-600 text-white rounded text-xs font-bold"
+                    }, "📤 Enviar")
+                )
+            ) :
+            React.createElement("button", {
+                onClick: () => x({ ...p, contestandoId: e.id, contestandoOS: e.ordemServico, contestMsg: '', contestImgs: [] }),
+                className: "px-4 py-2 bg-orange-500 text-white rounded-lg text-sm font-bold hover:bg-orange-600"
+            }, "⚡ Contestar Rejeição")
+        ),
+        e.contestacao_status === 'encerrada_aprovada' && React.createElement("span", { className: "mt-2 inline-block px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold" }, "✅ Contestação aprovada"),
+        e.contestacao_status === 'encerrada_rejeitada' && React.createElement("span", { className: "mt-2 inline-block px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-bold" }, "❌ Rejeitada definitivamente"),
+        p.contestandoId === e.id && React.createElement("div", { className: "mt-3 p-3 bg-orange-50 border border-orange-200 rounded-lg space-y-3" },
+            React.createElement("p", { className: "text-sm font-bold text-orange-800" }, "⚡ Contestar OS ", e.ordemServico),
+            React.createElement("textarea", { value: p.contestMsg || '', onChange: ev => x({ ...p, contestMsg: ev.target.value }), placeholder: "Explique por que discorda da rejeição...", className: "w-full px-3 py-2 border rounded-lg text-sm", rows: 3 }),
+            React.createElement("input", { type: "file", accept: "image/*", multiple: true, onChange: async ev => {
+                const imgs = []; for (const f of Array.from(ev.target.files || [])) { try { const b = await Zl(f); imgs.push(b); } catch {} }
+                x(prev => ({ ...prev, contestImgs: [...(prev.contestImgs || []), ...imgs] })); ev.target.value = "";
+            }, className: "text-sm" }),
+            (p.contestImgs || []).length > 0 && React.createElement("div", { className: "flex flex-wrap gap-2" }, (p.contestImgs || []).map((img, idx) => React.createElement("div", { key: idx, className: "relative" }, React.createElement("img", { src: img, className: "h-16 rounded border" }), React.createElement("button", { onClick: () => x({ ...p, contestImgs: (p.contestImgs || []).filter((_, i) => i !== idx) }), className: "absolute -top-1 -right-1 bg-red-600 text-white rounded-full w-5 h-5 text-xs" }, "✕")))),
+            React.createElement("div", { className: "flex gap-2" },
+                React.createElement("button", { onClick: () => x({ ...p, contestandoId: null, contestMsg: '', contestImgs: [] }), className: "flex-1 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-medium" }, "Cancelar"),
+                React.createElement("button", { onClick: async () => {
+                    if (!(p.contestMsg || '').trim()) { ja("Escreva uma justificativa", "error"); return; }
+                    s(!0); try {
+                        const r = await fetchAuth(`${API_URL}/submissions/${e.id}/contestar`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mensagem: p.contestMsg, imagens: p.contestImgs || [] }) });
+                        const d = await r.json();
+                        if (d.success || r.ok) { ja("✅ Contestação enviada!", "success"); x({ ...p, contestandoId: null, contestMsg: '', contestImgs: [] }); try { const rr = await fetchAuth(`${API_URL}/submissions`); const dd = await rr.json(); if (Array.isArray(dd)) C(dd.map(function(s){ return { ...s, ordemServico: s.ordem_servico, codProfissional: s.user_cod, fullName: s.user_name, temImagem: s.tem_imagem, imagemComprovante: null, timestamp: new Date(s.created_at).toLocaleString("pt-BR") }; })); } catch {} }
+                        else ja(d.error || "Erro", "error");
+                    } catch { ja("Erro ao enviar", "error"); } s(!1);
+                }, disabled: !(p.contestMsg || '').trim(), className: "flex-1 py-2 bg-orange-600 text-white rounded-lg text-sm font-bold disabled:opacity-50" }, "📤 Enviar Contestação")
+            )
+        ),
+        e.temImagem && !e.imagemComprovante && React.createElement("button", {
             onClick: () => Fa(e.id),
             className: "mt-2 text-sm text-blue-600 hover:underline"
         }, "📷 Ver foto(s)"), e.imagemComprovante && React.createElement("div", {
@@ -9370,7 +10251,7 @@ const hideLoadingScreen = () => {
                 className: "text-gray-600"
             }, "Pendentes:"), React.createElement("span", {
                 className: "font-semibold text-yellow-600"
-            }, l.filter(e => "aguardando_aprovacao" === e.status).length)), React.createElement("div", {
+            }, l.filter(e => "aguardando_aprovacao" === e.status || "aguardando_pagamento_stark" === e.status).length)), React.createElement("div", {
                 className: "flex justify-between"
             }, React.createElement("span", {
                 className: "text-gray-600"
@@ -9411,7 +10292,7 @@ const hideLoadingScreen = () => {
                 s = new Date(o.getTime() - 36e5),
                 // Bloquear apenas se houver saque ainda aguardando aprovação (pendente)
                 // Aprovado ou rejeitado = libera imediatamente para nova solicitação
-                n = M.filter(e => new Date(e.created_at) >= s && (e.status === "pending" || e.status === "aguardando_aprovacao")),
+                n = M.filter(e => new Date(e.created_at) >= s && (e.status === "pending" || e.status === "aguardando_aprovacao" || e.status === "aguardando_pagamento_stark")),
                 // Limite de 1 saque por hora (apenas pendentes bloqueiam)
                 m = Math.max(0, 1 - n.length),
                 i = n.map(e => parseFloat(e.requested_amount)),
@@ -9508,13 +10389,86 @@ const hideLoadingScreen = () => {
                 className: "text-yellow-800 font-semibold"
             }, "⚠️ Atenção!"), React.createElement("p", {
                 className: "text-yellow-700 text-sm mt-1"
-            }, "Conforme termo de uso do saque emergencial, será cobrado um valor de ", React.createElement("strong", null, "4,5%"), " na solicitação.")), React.createElement("div", null, React.createElement("label", {
+            }, "Conforme termo de uso do saque emergencial, será cobrado um valor de ", React.createElement("strong", null, "4,5%"), " na solicitação.")), limitesSaque && limitesSaque.solicitacao_pendente && React.createElement("div", {
+                className: "bg-purple-50 border-2 border-purple-400 rounded-lg p-4 animate-pulse"
+            }, React.createElement("div", { className: "flex items-center gap-2" },
+                React.createElement("span", { className: "text-2xl" }, "⏳"),
+                React.createElement("div", null,
+                    React.createElement("p", { className: "text-purple-800 font-bold" }, "Limite extra solicitado!"),
+                    React.createElement("p", { className: "text-purple-600 text-sm mt-1" }, "Aguarde a liberação pelo financeiro ou entre em contato.")
+                )
+            )), limitesSaque && React.createElement("div", {
+                className: "bg-blue-50 border border-blue-200 rounded-lg p-3"
+            }, React.createElement("p", { className: "text-sm font-semibold text-blue-800 mb-2" }, "📊 Seus Limites de Saque"),
+            React.createElement("div", { className: "grid grid-cols-3 gap-2 text-center" },
+                React.createElement("div", { className: "bg-white rounded-lg p-2 shadow-sm" },
+                    React.createElement("p", { className: "text-xs text-gray-500" }, "Por saque"),
+                    React.createElement("p", { className: "text-sm font-bold text-blue-700" }, "R$ " + limitesSaque.por_saque.limite.toFixed(2).replace(".", ","))
+                ),
+                React.createElement("div", { className: "bg-white rounded-lg p-2 shadow-sm" },
+                    React.createElement("p", { className: "text-xs text-gray-500" }, "Hoje"),
+                    React.createElement("p", { className: "text-sm font-bold " + (limitesSaque.diario.disponivel <= 0 ? "text-red-600" : "text-green-600") }, "R$ " + limitesSaque.diario.disponivel.toFixed(2).replace(".", ",")),
+                    React.createElement("p", { className: "text-xs text-gray-400" }, "de R$ " + limitesSaque.diario.limite.toFixed(2).replace(".", ","))
+                ),
+                React.createElement("div", { className: "bg-white rounded-lg p-2 shadow-sm" },
+                    React.createElement("p", { className: "text-xs text-gray-500" }, "Semana"),
+                    React.createElement("p", { className: "text-sm font-bold " + (limitesSaque.semanal.disponivel <= 0 ? "text-red-600" : "text-green-600") }, "R$ " + limitesSaque.semanal.disponivel.toFixed(2).replace(".", ",")),
+                    React.createElement("p", { className: "text-xs text-gray-400" }, "de R$ " + (limitesSaque.semanal.limite_efetivo || limitesSaque.semanal.limite).toFixed(2).replace(".", ","))
+                )
+            ),
+            limitesSaque.semanal.extra_liberado > 0 && React.createElement("p", {
+                className: "text-green-600 text-xs mt-1 text-center font-semibold"
+            }, "🔄 Ciclo renovado pelo financeiro! Limite restaurado."),
+            limitesSaque.ciclo && React.createElement("p", {
+                className: "text-gray-400 text-xs mt-1 text-center"
+            }, "📅 Ciclo: " + new Date(limitesSaque.ciclo.inicio + "T12:00:00").toLocaleDateString("pt-BR") + " a " + new Date(limitesSaque.ciclo.fim + "T12:00:00").toLocaleDateString("pt-BR") + " (reseta toda terça)"),
+            (limitesSaque.diario.disponivel <= 0 || limitesSaque.semanal.disponivel <= 0) && React.createElement("p", {
+                className: "text-red-600 text-xs mt-2 font-semibold text-center"
+            }, limitesSaque.diario.disponivel <= 0 ? "⚠️ Limite diário esgotado!" : "⚠️ Limite semanal esgotado!"),
+            (p.withdrawAmount && parseFloat(p.withdrawAmount) > 0 && parseFloat(p.withdrawAmount) > limitesSaque.max_disponivel && limitesSaque.max_disponivel > 0) && React.createElement("p", {
+                className: "text-orange-600 text-xs mt-1 font-semibold text-center"
+            }, "⚠️ Valor desejado excede o limite disponível (R$ " + limitesSaque.max_disponivel.toFixed(2).replace(".", ",") + ")"),
+            (limitesSaque.diario.disponivel <= 0 || limitesSaque.semanal.disponivel <= 0 || limitesSaque.solicitacao_pendente || (p.withdrawAmount && parseFloat(p.withdrawAmount) > 0 && (limitesSaque.diario.disponivel < parseFloat(p.withdrawAmount) || limitesSaque.semanal.disponivel < parseFloat(p.withdrawAmount)))) && React.createElement("div", { className: "mt-2 text-center" },
+                !limitesSaque.solicitacao_pendente && React.createElement("button", {
+                    onClick: async () => {
+                        setSolicitandoLimite(true);
+                        try {
+                            const resp = await fetchAuth(`${API_URL}/withdrawals/solicitar-limite`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    userCod: l.cod_profissional || l.codProfissional,
+                                    userName: l.nome || l.fullName || l.username,
+                                    motivo: 'Limite esgotado - solicitação via app'
+                                })
+                            });
+                            const data = await resp.json();
+                            if (resp.ok) {
+                                ja('✅ Solicitação enviada! O financeiro será notificado.', 'success');
+                                const lr = await fetchAuth(`${API_URL}/withdrawals/limites/${l.cod_profissional || l.codProfissional}`);
+                                if (lr.ok) setLimitesSaque(await lr.json());
+                            } else {
+                                ja('❌ ' + (data.error || 'Erro ao solicitar'), 'error');
+                            }
+                        } catch (err) {
+                            ja('❌ Erro de conexão', 'error');
+                        }
+                        setSolicitandoLimite(false);
+                    },
+                    disabled: solicitandoLimite,
+                    className: "mt-1 w-full bg-purple-600 text-white py-2 px-4 rounded-lg text-sm font-bold hover:bg-purple-700 disabled:opacity-50 transition-all"
+                }, solicitandoLimite ? "⏳ Enviando..." : "📩 Clique para solicitar mais limite"),
+                limitesSaque.solicitacao_pendente && React.createElement("p", {
+                    className: "text-purple-600 text-xs mt-2 font-semibold"
+                }, "⏳ Você já tem uma solicitação pendente. Aguarde a liberação pelo financeiro.")
+            )
+            ), React.createElement("div", null, React.createElement("label", {
                 className: "block text-sm font-semibold mb-1"
             }, "Valor ", t && React.createElement("span", {
                 className: "text-green-600 text-xs"
             }, "(máx: ", er(a), ")"), React.createElement("span", {
                 className: "text-gray-500 text-xs ml-1"
-            }, "(mín: R$ 15,00)")), React.createElement("input", {
+            }, "(mín: R$ 15,00 • máx: R$ 1.000,00)")), React.createElement("input", {
                 type: "text",
                 inputMode: "decimal",
                 value: p.withdrawAmount || "",
@@ -9537,11 +10491,17 @@ const hideLoadingScreen = () => {
                     x({...p, withdrawAmount: val});
                 },
                 placeholder: "Ex: 50,00",
-                className: "w-full px-4 py-3 border rounded-lg text-lg " + (r || (p.withdrawAmount && parseFloat(p.withdrawAmount) < 15) ? "border-red-500 bg-red-50" : ""),
-                disabled: 0 === m || (saldoDisp !== null && saldoDisp <= 0)
+                className: "w-full px-4 py-3 border rounded-lg text-lg " + (r || (p.withdrawAmount && parseFloat(p.withdrawAmount) < 15) || (p.withdrawAmount && parseFloat(p.withdrawAmount) > 1000) || (limitesSaque && p.withdrawAmount && parseFloat(p.withdrawAmount) > limitesSaque.max_disponivel) ? "border-red-500 bg-red-50" : ""),
+                disabled: 0 === m || (saldoDisp !== null && saldoDisp <= 0) || (limitesSaque && limitesSaque.diario.disponivel <= 0) || (limitesSaque && limitesSaque.semanal.disponivel <= 0)
             }), p.withdrawAmount && parseFloat(p.withdrawAmount) > 0 && parseFloat(p.withdrawAmount) < 15 && React.createElement("p", {
                 className: "text-red-600 text-sm mt-1 font-semibold"
-            }, "❌ Valor mínimo é R$ 15,00"), r && React.createElement("p", {
+            }, "❌ Valor mínimo é R$ 15,00"), p.withdrawAmount && parseFloat(p.withdrawAmount) > 1000 && React.createElement("p", {
+                className: "text-red-600 text-sm mt-1 font-semibold"
+            }, "❌ Valor máximo por solicitação é R$ 1.000,00"), limitesSaque && p.withdrawAmount && parseFloat(p.withdrawAmount) > 0 && parseFloat(p.withdrawAmount) <= 1000 && parseFloat(p.withdrawAmount) >= 15 && limitesSaque.diario.disponivel < parseFloat(p.withdrawAmount) && React.createElement("p", {
+                className: "text-red-600 text-sm mt-1 font-semibold"
+            }, "❌ Limite diário: você já solicitou R$ " + limitesSaque.diario.utilizado.toFixed(2).replace(".", ",") + " hoje. Disponível: R$ " + limitesSaque.diario.disponivel.toFixed(2).replace(".", ",")), limitesSaque && p.withdrawAmount && parseFloat(p.withdrawAmount) > 0 && parseFloat(p.withdrawAmount) <= 1000 && parseFloat(p.withdrawAmount) >= 15 && limitesSaque.diario.disponivel >= parseFloat(p.withdrawAmount) && limitesSaque.semanal.disponivel < parseFloat(p.withdrawAmount) && React.createElement("p", {
+                className: "text-red-600 text-sm mt-1 font-semibold"
+            }, "❌ Limite semanal: você já solicitou R$ " + limitesSaque.semanal.utilizado.toFixed(2).replace(".", ",") + " esta semana. Disponível: R$ " + limitesSaque.semanal.disponivel.toFixed(2).replace(".", ",")), r && React.createElement("p", {
                 className: "text-red-600 text-sm mt-1 font-semibold"
             }, "❌ Valor excede o limite da gratuidade (", er(a), ")")), saldoDisp !== null && parseFloat(p.withdrawAmount || 0) > saldoDisp && React.createElement("p", {
                 className: "text-red-600 text-sm mt-1 font-semibold"
@@ -9577,21 +10537,45 @@ const hideLoadingScreen = () => {
                 }, er(e.final))))
             })(), React.createElement("button", {
                 onClick: Vl,
-                disabled: c || !p.withdrawAmount || parseFloat(p.withdrawAmount) < 15 || r || 0 === m || (saldoDisp !== null && saldoDisp <= 0) || (saldoDisp !== null && parseFloat(p.withdrawAmount || 0) > saldoDisp),
+                disabled: c || !p.withdrawAmount || parseFloat(p.withdrawAmount) < 15 || parseFloat(p.withdrawAmount) > 1000 || r || 0 === m || (saldoDisp !== null && saldoDisp <= 0) || (saldoDisp !== null && parseFloat(p.withdrawAmount || 0) > saldoDisp) || (limitesSaque && limitesSaque.diario.disponivel < parseFloat(p.withdrawAmount || 0)) || (limitesSaque && limitesSaque.semanal.disponivel < parseFloat(p.withdrawAmount || 0)),
                 className: "w-full bg-green-600 text-white py-3 rounded-lg font-bold disabled:opacity-50"
-            }, c ? "..." : 0 === m ? "🚫 Limite Atingido" : parseFloat(p.withdrawAmount || 0) < 15 ? "⚠️ Mínimo R$ 15" : "💸 Solicitar"))
+            }, c ? "..." : 0 === m ? "🚫 Limite Atingido" : parseFloat(p.withdrawAmount || 0) < 15 ? "⚠️ Mínimo R$ 15" : parseFloat(p.withdrawAmount || 0) > 1000 ? "⚠️ Máximo R$ 1.000" : (limitesSaque && (limitesSaque.diario.disponivel <= 0 || limitesSaque.semanal.disponivel <= 0)) ? "🚫 Limite Esgotado" : (limitesSaque && limitesSaque.diario.disponivel < parseFloat(p.withdrawAmount || 0)) ? "🚫 Excede Limite Diário" : (limitesSaque && limitesSaque.semanal.disponivel < parseFloat(p.withdrawAmount || 0)) ? "🚫 Excede Limite Semanal" : "💸 Solicitar"))
         })(), React.createElement("h3", {
             className: "text-lg font-semibold mt-8 mb-4"
-        }, "📋 Histórico"), 0 === M.length ? React.createElement("p", {
+        }, "📋 Histórico"),
+        // Cards de solicitações de limite
+        limitesSaque && limitesSaque.solicitacoes && limitesSaque.solicitacoes.length > 0 && React.createElement("div", { className: "space-y-3 mb-3" },
+            limitesSaque.solicitacoes.map(function(sol) {
+                return React.createElement("div", {
+                    key: "lim-" + sol.id,
+                    className: "border-2 rounded-lg p-4 " + ("pendente" === sol.status ? "border-purple-400 bg-purple-50" : "liberado" === sol.status ? "border-green-400 bg-green-50" : "rejeitado" === sol.status ? "border-red-300 bg-red-50" : "border-gray-300 bg-gray-50")
+                },
+                React.createElement("div", { className: "flex justify-between items-center" },
+                    React.createElement("div", null,
+                        React.createElement("p", { className: "font-bold text-purple-800" }, "🔓 Solicitação de Limite"),
+                        React.createElement("p", { className: "text-sm text-gray-600 mt-1" }, "Renovação de ciclo solicitada")
+                    ),
+                    React.createElement("span", {
+                        className: "px-3 py-1 rounded-full text-xs font-bold h-fit " + ("pendente" === sol.status ? "bg-purple-500 text-white" : "liberado" === sol.status ? "bg-green-500 text-white" : "rejeitado" === sol.status ? "bg-red-500 text-white" : "bg-gray-400 text-white")
+                    }, "pendente" === sol.status ? "⏳ Processando" : "liberado" === sol.status ? "✅ Aprovado" : "rejeitado" === sol.status ? "❌ Rejeitado" : "⏰ Expirado")
+                ),
+                "pendente" === sol.status && React.createElement("p", { className: "text-sm mt-2 font-semibold text-purple-600" }, "Aguarde a liberação pelo financeiro ou entre em contato."),
+                "liberado" === sol.status && React.createElement("p", { className: "text-sm mt-2 font-semibold text-green-700" }, "Ciclo renovado por " + (sol.admin_name || "Admin") + "! Limite restaurado."),
+                "rejeitado" === sol.status && React.createElement("p", { className: "text-sm mt-2 font-semibold text-red-600" }, "Solicitação rejeitada" + (sol.motivo ? ": " + sol.motivo : "")),
+                React.createElement("p", { className: "text-xs text-gray-400 mt-2" }, new Date(sol.created_at).toLocaleString("pt-BR"))
+                );
+            })
+        ),
+        0 === M.length && (!limitesSaque || !limitesSaque.solicitacoes || limitesSaque.solicitacoes.length === 0) ? React.createElement("p", {
             className: "text-gray-500"
         }, "Nenhum saque") : React.createElement("div", {
             className: "space-y-3"
         }, M.map(e => {
             const t = "aguardando_aprovacao" === e.status && Date.now() - new Date(e.created_at) > 36e5,
-                a = "aprovado" === e.status || "aprovado_gratuidade" === e.status ? "Saque aprovado, em instantes será feito a transferência para o seu banco!" : "inativo" === e.status ? "Saque temporariamente inativo por questões técnicas" : "rejeitado" === e.status && e.reject_reason ? `Motivo: ${e.reject_reason}` : null;
+                a = "pago_stark" === e.status ? "O seu saque já foi realizado, por favor verifique a conta bancária cadastrada!" : "aguardando_pagamento_stark" === e.status ? "O seu saldo já foi debitado, em até uma hora, o valor cairá na conta bancária sinalizada." : "aprovado" === e.status || "aprovado_gratuidade" === e.status ? "Saque aprovado, em instantes será feito a transferência para o seu banco!" : "inativo" === e.status ? "Saque temporariamente inativo por questões técnicas" : "rejeitado" === e.status && e.reject_reason ? `Motivo: ${e.reject_reason}` : null;
             return React.createElement("div", {
                 key: e.id,
-                className: "border rounded-lg p-4 " + (t ? "border-red-400 bg-red-50" : e.status?.includes("aprovado") ? "border-green-400 bg-green-50" : "rejeitado" === e.status ? "border-red-300 bg-red-50" : "inativo" === e.status ? "border-orange-300 bg-orange-50" : "")
+                className: "border rounded-lg p-4 " + (t ? "border-red-400 bg-red-50" : "pago_stark" === e.status ? "border-green-400 bg-green-50" : "aguardando_pagamento_stark" === e.status ? "border-blue-400 bg-blue-50" : e.status?.includes("aprovado") ? "border-green-400 bg-green-50" : "rejeitado" === e.status ? "border-red-300 bg-red-50" : "inativo" === e.status ? "border-orange-300 bg-orange-50" : "")
             }, React.createElement("div", {
                 className: "flex justify-between"
             }, React.createElement("div", null, React.createElement("p", {
@@ -9599,9 +10583,9 @@ const hideLoadingScreen = () => {
             }, er(e.requested_amount)), React.createElement("p", {
                 className: "text-sm text-gray-600"
             }, "Receber: ", er(e.final_amount))), React.createElement("span", {
-                className: "px-3 py-1 rounded-full text-xs font-bold h-fit " + (e.status?.includes("aprovado") ? "bg-green-500 text-white" : "rejeitado" === e.status ? "bg-red-500 text-white" : "inativo" === e.status ? "bg-orange-500 text-white" : "bg-yellow-500 text-white")
-            }, t ? "⚠️ ATRASADO" : "aprovado" === e.status || "aprovado_gratuidade" === e.status ? "✅ Aprovado" : "rejeitado" === e.status ? "❌ Rejeitado" : "inativo" === e.status ? "⚠️ Inativo" : "⏳ Aguardando")), a && React.createElement("p", {
-                className: "text-sm mt-2 font-semibold " + (e.status?.includes("aprovado") ? "text-green-700" : "rejeitado" === e.status ? "text-red-600" : "text-orange-600")
+                className: "px-3 py-1 rounded-full text-xs font-bold h-fit " + ("pago_stark" === e.status ? "bg-green-600 text-white" : "aguardando_pagamento_stark" === e.status ? "bg-blue-500 text-white" : e.status?.includes("aprovado") ? "bg-green-500 text-white" : "rejeitado" === e.status ? "bg-red-500 text-white" : "inativo" === e.status ? "bg-orange-500 text-white" : "bg-yellow-500 text-white")
+            }, t ? "⚠️ ATRASADO" : "pago_stark" === e.status ? "✅ Saque Concluído" : "aguardando_pagamento_stark" === e.status ? "⏳ Em Processamento" : "aprovado" === e.status || "aprovado_gratuidade" === e.status ? "✅ Aprovado" : "rejeitado" === e.status ? "❌ Rejeitado" : "inativo" === e.status ? "⚠️ Inativo" : "⏳ Aguardando")), a && React.createElement("p", {
+                className: "text-sm mt-2 font-semibold " + ("pago_stark" === e.status ? "text-green-700" : "aguardando_pagamento_stark" === e.status ? "text-blue-700" : e.status?.includes("aprovado") ? "text-green-700" : "rejeitado" === e.status ? "text-red-600" : "text-orange-600")
             }, a), t && React.createElement("p", {
                 className: "text-red-600 text-sm mt-2 font-semibold"
             }, "Entre em contato com o suporte"), React.createElement("p", {
@@ -12934,95 +13918,6 @@ const hideLoadingScreen = () => {
                     )
                 ),
                 
-                // ========== MODAL NOTIFICAÇÃO DE MENSAGEM ==========
-                liderancaModal?.tipo === 'notificacao' && React.createElement("div", {
-                    className: "fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4"
-                },
-                    React.createElement("div", {
-                        className: "bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-bounce-in"
-                    },
-                        React.createElement("div", {className: "bg-gradient-to-r from-orange-500 to-amber-500 p-6 text-white text-center"},
-                            React.createElement("div", {className: "text-5xl mb-2"}, "📢"),
-                            React.createElement("h2", {className: "text-2xl font-bold"}, "Mensagem da Liderança"),
-                            liderancaModal?.fila?.length > 1 && React.createElement("p", {className: "text-sm text-orange-100 mt-1"}, 
-                                "1 de ", liderancaModal.fila.length, " mensagens"
-                            )
-                        ),
-                        React.createElement("div", {className: "p-6"},
-                            // Autor
-                            React.createElement("div", {className: "flex items-center gap-3 mb-4 pb-4 border-b"},
-                                liderancaModal?.dados?.criado_por_foto ?
-                                    React.createElement("img", {src: liderancaModal.dados.criado_por_foto, className: "w-14 h-14 rounded-full object-cover border-2 border-orange-300"}) :
-                                    React.createElement("div", {className: "w-14 h-14 rounded-full bg-gradient-to-br from-orange-400 to-amber-400 flex items-center justify-center text-white font-bold text-xl"}, 
-                                        liderancaModal?.dados?.criado_por_nome?.charAt(0)?.toUpperCase() || "?"
-                                    ),
-                                React.createElement("div", null,
-                                    React.createElement("p", {className: "font-bold text-lg text-gray-800"}, liderancaModal?.dados?.criado_por_nome),
-                                    React.createElement("p", {className: "text-sm text-gray-500"}, new Date(liderancaModal?.dados?.created_at).toLocaleString("pt-BR"))
-                                )
-                            ),
-                            // Título
-                            React.createElement("h3", {className: "text-xl font-bold text-gray-800 mb-3"}, liderancaModal?.dados?.titulo),
-                            // Conteúdo
-                            React.createElement("div", {
-                                className: "text-gray-700 whitespace-pre-wrap mb-4",
-                                dangerouslySetInnerHTML: {__html: liderancaModal?.dados?.conteudo?.replace(/\n/g, '<br>') || ''}
-                            }),
-                            // Mídia
-                            liderancaModal?.dados?.midia_url && liderancaModal?.dados?.midia_tipo === 'video' && React.createElement("div", {className: "mb-4"},
-                                (liderancaModal.dados.midia_url.includes('youtube') || liderancaModal.dados.midia_url.includes('youtu.be')) ?
-                                    React.createElement("iframe", {
-                                        src: liderancaModal.dados.midia_url.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/'),
-                                        className: "w-full aspect-video rounded-lg",
-                                        allowFullScreen: true
-                                    }) :
-                                    React.createElement("video", {src: liderancaModal.dados.midia_url, controls: true, className: "w-full rounded-lg"})
-                            ),
-                            liderancaModal?.dados?.midia_url && liderancaModal?.dados?.midia_tipo === 'imagem' && React.createElement("img", {
-                                src: liderancaModal.dados.midia_url,
-                                onClick: () => setLiderancaImagemExpandida(liderancaModal.dados.midia_url),
-                                className: "mb-4 w-full rounded-lg max-h-64 object-contain cursor-pointer hover:opacity-90 transition-opacity",
-                                title: "Clique para expandir"
-                            }),
-                            liderancaModal?.dados?.midia_url && liderancaModal?.dados?.midia_tipo === 'audio' && React.createElement("audio", {
-                                src: liderancaModal.dados.midia_url,
-                                controls: true,
-                                className: "mb-4 w-full"
-                            }),
-                            // Emojis de reação
-                            React.createElement("div", {className: "mb-4"},
-                                React.createElement("p", {className: "text-sm text-gray-600 mb-2 text-center"}, "Deixe sua reação:"),
-                                React.createElement("div", {className: "flex justify-center gap-2"},
-                                    ["✅", "🔥", "🎉", "💜", "😍"].map(emoji => 
-                                        React.createElement("button", {
-                                            key: emoji,
-                                            onClick: async () => {
-                                                await enviarReacaoLideranca(liderancaModal.dados.id, emoji);
-                                                ja(`${emoji} Reação enviada!`, "success");
-                                            },
-                                            className: "text-3xl hover:scale-125 transition-transform hover:bg-orange-100 rounded-full p-2"
-                                        }, emoji)
-                                    )
-                                )
-                            ),
-                            // Botão
-                            React.createElement("button", {
-                                onClick: async () => {
-                                    await marcarLiderancaVisualizada(liderancaModal.dados.id);
-                                    const filaRestante = liderancaModal.fila?.slice(1) || [];
-                                    if (filaRestante.length > 0) {
-                                        setLiderancaModal({tipo: 'notificacao', dados: filaRestante[0], fila: filaRestante});
-                                    } else {
-                                        setLiderancaModal(null);
-                                        await loadLiderancaHistorico();
-                                    }
-                                },
-                                className: "w-full py-4 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl font-bold text-lg hover:opacity-90"
-                            }, liderancaModal?.fila?.length > 1 ? "✓ Entendido - Próxima" : "✓ Entendido")
-                        )
-                    )
-                ),
-                
                 // ========== MODAL IMAGEM EXPANDIDA ==========
                 liderancaImagemExpandida && React.createElement("div", {
                     className: "fixed inset-0 bg-black/90 z-[60] flex items-center justify-center p-4 cursor-pointer",
@@ -13307,6 +14202,52 @@ const hideLoadingScreen = () => {
                 );
             }
         }
+        // ========== MÓDULO PERFORMANCE DIÁRIA (CARREGAMENTO EXTERNO) ==========
+        const canAccessPerformance = hasModuleAccess(l, "performance");
+        if (canAccessPerformance && "performance" === Ee) {
+            if (typeof window.ModuloPerformanceComponent !== 'undefined') {
+                return React.createElement("div", {
+                    className: "min-h-screen bg-gray-50"
+                },
+                    i && React.createElement(Toast, i),
+                    n && React.createElement(LoadingOverlay, null),
+                    React.createElement(HeaderCompacto, {
+                        usuario: l,
+                        moduloAtivo: Ee,
+                        abaAtiva: perfTab,
+                        socialProfile: socialProfile,
+                        isLoading: f,
+                        lastUpdate: E,
+                        onRefresh: () => window.location.reload(),
+                        onLogout: () => o(null),
+                        onGoHome: () => he("home"),
+                        onNavigate: navegarSidebar,
+                        onChangeTab: (abaId) => setPerfTab(abaId)
+                    }),
+                    React.createElement("div", { className: "max-w-7xl mx-auto p-4 md:p-6" },
+                        React.createElement(window.ModuloPerformanceComponent, {
+                            usuario:    l,
+                            API_URL:    API_URL,
+                            fetchAuth:  fetchAuth,
+                            showToast:  ja,
+                            he:         he,
+                            Ee:         Ee,
+                            perfTab:    perfTab,
+                            setPerfTab: setPerfTab,
+                            onLogout:   () => o(null),
+                            onNavigate: navegarSidebar,
+                        })
+                    )
+                );
+            } else {
+                return React.createElement("div", { className: "min-h-screen bg-gray-50 flex items-center justify-center" },
+                    React.createElement("div", { className: "text-center" },
+                        React.createElement("div", { className: "animate-spin w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4" }),
+                        React.createElement("p", { className: "text-gray-600" }, "Carregando módulo Performance Diária...")
+                    )
+                );
+            }
+        }
         // ========== MÓDULO ANTI-FRAUDE (CARREGAMENTO EXTERNO) ==========
         const canAccessAntiFraude = hasModuleAccess(l, "antifraude");
         if (canAccessAntiFraude && "antifraude" === Ee) {
@@ -13328,6 +14269,41 @@ const hideLoadingScreen = () => {
                     React.createElement("div", { className: "text-center" },
                         React.createElement("div", { className: "animate-spin w-12 h-12 border-4 border-red-500 border-t-transparent rounded-full mx-auto mb-4" }),
                         React.createElement("p", { className: "text-gray-600" }, "Carregando módulo Anti-Fraude...")
+                    )
+                );
+            }
+        }
+        // ========== MÓDULO ANÁLISE GERENCIAL SEMANAL (CARREGAMENTO EXTERNO) ==========
+        const canAccessGerencial = hasModuleAccess(l, "gerencial");
+        if (canAccessGerencial && "gerencial" === Ee) {
+            if (typeof window.ModuloGerencialComponent !== 'undefined') {
+                return React.createElement(window.ModuloGerencialComponent, {
+                    usuario: l,
+                    estado: p,
+                    setEstado: x,
+                    API_URL: API_URL,
+                    getToken: getToken,
+                    fetchAuth: fetchAuth,
+                    HeaderCompacto: HeaderCompacto,
+                    Toast: Toast,
+                    LoadingOverlay: LoadingOverlay,
+                    Ee: Ee,
+                    socialProfile: socialProfile,
+                    ul: ul,
+                    o: o,
+                    he: he,
+                    navegarSidebar: navegarSidebar,
+                    showToast: ja,
+                    n: n,
+                    i: i,
+                    f: f,
+                    E: E,
+                });
+            } else {
+                return React.createElement("div", { className: "min-h-screen bg-gray-50 flex items-center justify-center" },
+                    React.createElement("div", { className: "text-center" },
+                        React.createElement("div", { className: "animate-spin w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4" }),
+                        React.createElement("p", { className: "text-gray-600" }, "Carregando módulo Análise Gerencial...")
                     )
                 );
             }
@@ -13816,7 +14792,9 @@ const hideLoadingScreen = () => {
                 value: e
             }, e))))), React.createElement("div", {
                 className: "grid grid-cols-1 md:grid-cols-2 gap-4"
-            }, React.createElement("div", {
+            }, 
+            // ===== CLIENTE - CHECKBOXES =====
+            React.createElement("div", {
                 className: "border rounded-lg p-4 bg-purple-50"
             }, React.createElement("div", {
                 className: "flex justify-between items-center mb-3"
@@ -13844,23 +14822,10 @@ const hideLoadingScreen = () => {
                 onChange: e => setBuscaClienteModal(e.target.value),
                 className: "w-full px-3 py-2 border-2 border-purple-200 rounded-lg text-sm mb-2 focus:border-purple-500 focus:ring-2 focus:ring-purple-200"
             }),
-            React.createElement("select", {
-                multiple: !0,
-                size: "10",
-                value: ua.cod_cliente || [],
-                onChange: e => {
-                    const t = Array.from(e.target.selectedOptions, e => e.value),
-                        a = {
-                            ...ua,
-                            cod_cliente: t,
-                            centro_custo: [],
-                            regiao: ""
-                        };
-                    ga(a), rl(a)
-                },
-                className: "w-full px-3 py-2 border-2 border-purple-200 rounded-lg text-sm bg-white focus:border-purple-500 focus:ring-2 focus:ring-purple-200"
+            // Lista com checkboxes
+            React.createElement("div", {
+                className: "max-h-64 overflow-y-auto border-2 border-purple-200 rounded-lg bg-white"
             }, (function() {
-                // Filtrar e remover duplicatas por cod_cliente
                 var clientesUnicos = [];
                 var codigosVistos = {};
                 ia.filter(function(e) {
@@ -13876,13 +14841,35 @@ const hideLoadingScreen = () => {
                     }
                 });
                 return clientesUnicos;
-            })().map(e => React.createElement("option", {
-                key: e.cod_cliente,
-                value: String(e.cod_cliente),
-                className: "py-1"
-            }, e.cod_cliente, " - ", il(e.cod_cliente) || e.nome_cliente || "Cliente"))), React.createElement("p", {
+            })().map(function(cliente) {
+                var isChecked = (ua.cod_cliente || []).includes(String(cliente.cod_cliente));
+                return React.createElement("label", {
+                    key: cliente.cod_cliente,
+                    className: "flex items-center gap-2 px-3 py-2 hover:bg-purple-50 cursor-pointer border-b border-gray-100 last:border-b-0 " + (isChecked ? "bg-purple-100" : "")
+                },
+                    React.createElement("input", {
+                        type: "checkbox",
+                        checked: isChecked,
+                        onChange: function() {
+                            var codStr = String(cliente.cod_cliente);
+                            var current = ua.cod_cliente || [];
+                            var next = isChecked ? current.filter(function(c) { return c !== codStr; }) : current.concat([codStr]);
+                            var newUa = Object.assign({}, ua, { cod_cliente: next, regiao: "" });
+                            ga(newUa);
+                            rl(newUa);
+                        },
+                        className: "w-4 h-4 rounded border-purple-300 text-purple-600 focus:ring-purple-500"
+                    }),
+                    React.createElement("span", {className: "text-sm " + (isChecked ? "font-semibold text-purple-800" : "text-gray-700")},
+                        cliente.cod_cliente, " - ", il(cliente.cod_cliente) || cliente.nome_cliente || "Cliente"
+                    )
+                );
+            })), React.createElement("p", {
                 className: "text-xs text-purple-600 mt-2"
-            }, "💡 Ctrl+Click para multi-seleção | Sem seleção = Todas")), React.createElement("div", {
+            }, "💡 Marque os clientes desejados | Sem seleção = Todas")), 
+            
+            // ===== CENTRO DE CUSTO - CHECKBOXES =====
+            React.createElement("div", {
                 className: "border rounded-lg p-4 bg-green-50"
             }, React.createElement("div", {
                 className: "flex justify-between items-center mb-3"
@@ -13899,21 +14886,10 @@ const hideLoadingScreen = () => {
                 className: "text-xs bg-green-200 text-green-800 px-2 py-1 rounded-full font-semibold hover:bg-green-300 cursor-pointer"
             }, (ua.centro_custo || []).length, " selecionado(s) ✕") : React.createElement("span", {
                 className: "text-xs text-green-600"
-            }, "Todos")), React.createElement("select", {
-                multiple: !0,
-                size: "10",
-                value: ua.centro_custo || [],
-                onChange: e => {
-                    const t = Array.from(e.target.selectedOptions, e => e.value),
-                        a = {
-                            ...ua,
-                            centro_custo: t
-                        };
-                    ga(a), rl(a)
-                },
-                className: "w-full px-3 py-2 border-2 border-green-200 rounded-lg text-sm bg-white focus:border-green-500 focus:ring-2 focus:ring-green-200"
+            }, "Todos")), 
+            React.createElement("div", {
+                className: "max-h-64 overflow-y-auto border-2 border-green-200 rounded-lg bg-white"
             }, (function() {
-                // Remover duplicatas de centro de custo
                 var centrosUnicos = [];
                 var centrosVistos = {};
                 kt.forEach(function(e) {
@@ -13923,16 +14899,32 @@ const hideLoadingScreen = () => {
                     }
                 });
                 return centrosUnicos;
-            })().map(e => {
-                const t = Object.keys(Tt).find(t => (Tt[t] || []).includes(e.centro_custo));
-                return React.createElement("option", {
-                    key: e.centro_custo,
-                    value: e.centro_custo,
-                    className: "py-1"
-                }, t ? t + " - " : "", e.centro_custo)
+            })().map(function(cc) {
+                var isChecked = (ua.centro_custo || []).includes(cc.centro_custo);
+                var clienteDoCC = Object.keys(Tt).find(function(t) { return (Tt[t] || []).includes(cc.centro_custo); });
+                return React.createElement("label", {
+                    key: cc.centro_custo,
+                    className: "flex items-center gap-2 px-3 py-2 hover:bg-green-50 cursor-pointer border-b border-gray-100 last:border-b-0 " + (isChecked ? "bg-green-100" : "")
+                },
+                    React.createElement("input", {
+                        type: "checkbox",
+                        checked: isChecked,
+                        onChange: function() {
+                            var current = ua.centro_custo || [];
+                            var next = isChecked ? current.filter(function(c) { return c !== cc.centro_custo; }) : current.concat([cc.centro_custo]);
+                            var newUa = Object.assign({}, ua, { centro_custo: next });
+                            ga(newUa);
+                            rl(newUa);
+                        },
+                        className: "w-4 h-4 rounded border-green-300 text-green-600 focus:ring-green-500"
+                    }),
+                    React.createElement("span", {className: "text-sm " + (isChecked ? "font-semibold text-green-800" : "text-gray-700")},
+                        clienteDoCC ? clienteDoCC + " - " : "", cc.centro_custo
+                    )
+                );
             })), React.createElement("p", {
                 className: "text-xs text-green-600 mt-2"
-            }, "💡 Ctrl+Click para multi-seleção | Sem seleção = Todos")))), React.createElement("div", {
+            }, "💡 Marque os centros desejados | Sem seleção = Todos")))), React.createElement("div", {
                 className: "sticky bottom-0 bg-gray-100 px-6 py-4 flex justify-between border-t"
             }, React.createElement("button", {
                 onClick: () => {
@@ -14119,6 +15111,21 @@ const hideLoadingScreen = () => {
                                 ),
                                 React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Relatório IA"),
                                 React.createElement("p", {className: "text-sm text-gray-500"}, "Análises automáticas com Inteligência Artificial e geração de documentos.")
+                            )
+                        ),
+                        
+                        // Card Chat IA
+                        React.createElement("div", {
+                            onClick: () => { ht("chat-ia"); },
+                            className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-indigo-300"
+                        },
+                            React.createElement("div", {className: "h-2 bg-gradient-to-r from-indigo-500 to-blue-600"}),
+                            React.createElement("div", {className: "p-6"},
+                                React.createElement("div", {className: "w-14 h-14 bg-indigo-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
+                                    React.createElement("span", {className: "text-3xl"}, "💬")
+                                ),
+                                React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Chat IA"),
+                                React.createElement("p", {className: "text-sm text-gray-500"}, "Converse com a IA para consultar dados, gerar SQL e exportar relatórios.")
                             )
                         ),
                         
@@ -15985,14 +16992,14 @@ const hideLoadingScreen = () => {
                 !garantidoLoading && garantidoSubTab === 'analise' && React.createElement("div", {className: "bg-white rounded-xl shadow-lg overflow-hidden"},
                     React.createElement("div", {className: "overflow-x-auto"},
                         React.createElement("table", {className: "w-full"},
-                            React.createElement("thead", {className: "bg-gradient-to-r from-purple-100 to-purple-200"},
+                            React.createElement("thead", {className: "bg-gradient-to-r from-purple-100 to-purple-200 sticky top-0"},
                                 React.createElement("tr", null,
                                     React.createElement("th", {className: "px-3 py-3 text-left text-xs font-bold text-purple-800"}, "Data"),
                                     React.createElement("th", {className: "px-3 py-3 text-left text-xs font-bold text-purple-800"}, "Cód. Prof."),
                                     React.createElement("th", {className: "px-3 py-3 text-left text-xs font-bold text-purple-800"}, "Profissional"),
+                                    React.createElement("th", {className: "px-3 py-3 text-left text-xs font-bold text-purple-800"}, "Cliente"),
                                     React.createElement("th", {className: "px-3 py-3 text-left text-xs font-bold text-purple-800"}, "Onde Rodou?"),
                                     React.createElement("th", {className: "px-3 py-3 text-center text-xs font-bold text-purple-800"}, "Entregas"),
-                                    React.createElement("th", {className: "px-3 py-3 text-center text-xs font-bold text-purple-800"}, "Distância"),
                                     React.createElement("th", {className: "px-3 py-3 text-right text-xs font-bold text-purple-800"}, "Negociado"),
                                     React.createElement("th", {className: "px-3 py-3 text-right text-xs font-bold text-purple-800"}, "Produção"),
                                     React.createElement("th", {className: "px-3 py-3 text-right text-xs font-bold text-purple-800"}, "Complemento"),
@@ -16005,93 +17012,139 @@ const hideLoadingScreen = () => {
                                         "Nenhum dado encontrado. Ajuste os filtros ou verifique a planilha de garantido."
                                     )
                                 ),
-                                garantidoData.map((row, idx) => {
-                                    const statusKey = `${row.cod_prof}_${row.data}_${row.cod_cliente_garantido}`;
-                                    const statusInfo = garantidoStatusMap[statusKey];
-                                    const statusAtual = statusInfo?.status || 'analise';
-                                    
-                                    return React.createElement("tr", {
-                                        key: idx,
-                                        className: (row.status === 'nao_rodou' ? 'bg-gray-100' : 
-                                                   row.status === 'abaixo' ? 'bg-red-50' : 'bg-green-50') + 
-                                                  " border-b hover:bg-opacity-80"
-                                    },
-                                        React.createElement("td", {className: "px-3 py-2 text-sm"}, 
-                                            new Date(row.data + 'T12:00:00').toLocaleDateString('pt-BR')
-                                        ),
-                                        React.createElement("td", {className: "px-3 py-2 text-sm font-mono"}, row.cod_prof),
-                                        React.createElement("td", {className: "px-3 py-2 text-sm font-semibold"}, row.profissional),
-                                        React.createElement("td", {className: "px-3 py-2 text-sm"}, row.onde_rodou),
-                                        React.createElement("td", {className: "px-3 py-2 text-sm text-center"}, row.entregas),
-                                        React.createElement("td", {className: "px-3 py-2 text-sm text-center"}, 
-                                            row.distancia ? row.distancia.toFixed(2) + ' KM' : '-'
-                                        ),
-                                        React.createElement("td", {className: "px-3 py-2 text-sm text-right font-semibold"}, 
-                                            "R$", row.valor_negociado?.toFixed(2)
-                                        ),
-                                        React.createElement("td", {className: "px-3 py-2 text-sm text-right font-semibold"}, 
-                                            "R$", row.valor_produzido?.toFixed(2)
-                                        ),
-                                        React.createElement("td", {className: "px-3 py-2 text-right"},
-                                            React.createElement("span", {
-                                                className: "inline-flex items-center gap-1 px-2 py-1 rounded text-sm font-bold " +
-                                                    (row.complemento > 0 ? 'bg-red-200 text-red-800' : 'bg-green-200 text-green-800')
-                                            },
-                                                row.complemento > 0 ? '🔴' : '🟢',
-                                                " R$", row.complemento?.toFixed(2)
-                                            )
-                                        ),
-                                        // Coluna de Status com dropdown
-                                        React.createElement("td", {className: "px-3 py-2 text-center"},
-                                            React.createElement("div", {className: "flex flex-col items-center gap-1"},
-                                                React.createElement("select", {
-                                                    value: statusAtual,
-                                                    onChange: (e) => {
-                                                        const novoStatus = e.target.value;
-                                                        if (novoStatus === 'reprovado') {
-                                                            setGarantidoModalStatus(row);
-                                                            setGarantidoMotivoReprovado('');
-                                                        } else {
-                                                            salvarStatusGarantido(row, novoStatus);
-                                                        }
-                                                    },
-                                                    className: "px-2 py-1 text-xs font-semibold rounded border " +
-                                                        (statusAtual === 'lancado' ? 'bg-green-100 text-green-800 border-green-300' :
-                                                         statusAtual === 'reprovado' ? 'bg-red-100 text-red-800 border-red-300' :
-                                                         'bg-yellow-100 text-yellow-800 border-yellow-300')
+                                // Agrupar por cliente e renderizar com separadores
+                                (function() {
+                                    // Ordenar por cod_cliente_garantido, depois por profissional
+                                    var sorted = [...garantidoData].sort(function(a, b) {
+                                        var ca = String(a.cod_cliente_garantido || '');
+                                        var cb = String(b.cod_cliente_garantido || '');
+                                        if (ca !== cb) return ca.localeCompare(cb, 'pt-BR', {numeric: true});
+                                        return (a.profissional || '').localeCompare(b.profissional || '', 'pt-BR');
+                                    });
+                                    var rows = [];
+                                    var lastCliente = null;
+                                    sorted.forEach(function(row, idx) {
+                                        var clienteKey = String(row.cod_cliente_garantido || 'Sem cliente');
+                                        // Separador de grupo por cliente
+                                        if (clienteKey !== lastCliente) {
+                                            lastCliente = clienteKey;
+                                            var clienteNome = il(row.cod_cliente_garantido) || row.nome_cliente_garantido || '';
+                                            var qtdCliente = sorted.filter(function(r) { return String(r.cod_cliente_garantido || '') === clienteKey; }).length;
+                                            rows.push(React.createElement("tr", {key: 'group-' + clienteKey + '-' + idx},
+                                                React.createElement("td", {colSpan: 10, className: "px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold text-sm"},
+                                                    "🏢 Cliente ", clienteKey, clienteNome ? " — " + clienteNome : "", " (", qtdCliente, " registro", qtdCliente > 1 ? "s" : "", ")"
+                                                )
+                                            ));
+                                        }
+                                        // Determinar status automático e cor da linha
+                                        var statusKey = row.cod_prof + '_' + row.data + '_' + row.cod_cliente_garantido;
+                                        var statusInfo = garantidoStatusMap[statusKey];
+                                        var statusSalvo = statusInfo?.status || null;
+                                        var autoStatus = null;
+                                        var rowBg = '';
+                                        
+                                        if (row.status === 'nao_rodou' || (row.entregas === 0 && (!row.valor_produzido || row.valor_produzido === 0))) {
+                                            autoStatus = 'nao_rodou';
+                                        } else if (row.valor_produzido > row.valor_negociado) {
+                                            autoStatus = 'ultrapassou';
+                                        }
+                                        
+                                        // Status efetivo: salvo pelo admin tem prioridade, senão auto
+                                        var statusEfetivo = statusSalvo || autoStatus || 'analise';
+                                        
+                                        // Cores da linha
+                                        if (statusEfetivo === 'lancado') rowBg = 'bg-green-100';
+                                        else if (statusEfetivo === 'reprovado') rowBg = 'bg-red-100';
+                                        else if (statusEfetivo === 'nao_rodou') rowBg = 'bg-orange-100';
+                                        else if (statusEfetivo === 'ultrapassou') rowBg = 'bg-blue-100';
+                                        else if (row.status === 'abaixo') rowBg = 'bg-yellow-50';
+                                        else rowBg = 'bg-white';
+
+                                        rows.push(React.createElement("tr", {
+                                            key: idx,
+                                            className: rowBg + " border-b hover:brightness-95 transition-colors"
+                                        },
+                                            React.createElement("td", {className: "px-3 py-2 text-sm"}, 
+                                                new Date(row.data + 'T12:00:00').toLocaleDateString('pt-BR')
+                                            ),
+                                            React.createElement("td", {className: "px-3 py-2 text-sm font-mono"}, row.cod_prof),
+                                            React.createElement("td", {className: "px-3 py-2 text-sm font-semibold"}, row.profissional),
+                                            React.createElement("td", {className: "px-3 py-2 text-sm text-purple-700 font-medium"}, row.cod_cliente_garantido),
+                                            React.createElement("td", {className: "px-3 py-2 text-sm"}, row.onde_rodou),
+                                            React.createElement("td", {className: "px-3 py-2 text-sm text-center"}, row.entregas),
+                                            React.createElement("td", {className: "px-3 py-2 text-sm text-right font-semibold"}, 
+                                                "R$", row.valor_negociado?.toFixed(2)
+                                            ),
+                                            React.createElement("td", {className: "px-3 py-2 text-sm text-right font-semibold"}, 
+                                                "R$", row.valor_produzido?.toFixed(2)
+                                            ),
+                                            React.createElement("td", {className: "px-3 py-2 text-right"},
+                                                React.createElement("span", {
+                                                    className: "inline-flex items-center gap-1 px-2 py-1 rounded text-sm font-bold " +
+                                                        (row.complemento > 0 ? 'bg-red-200 text-red-800' : 'bg-green-200 text-green-800')
                                                 },
-                                                    React.createElement("option", {value: "analise"}, "🔍 Análise"),
-                                                    React.createElement("option", {value: "lancado"}, "✅ Lançado"),
-                                                    React.createElement("option", {value: "reprovado"}, "❌ Reprovado")
-                                                ),
-                                                // Mostrar info de quem alterou
-                                                statusInfo?.alterado_por && React.createElement("div", {className: "text-xs text-gray-500"},
-                                                    statusInfo.alterado_por
-                                                ),
-                                                statusInfo?.alterado_em && React.createElement("div", {className: "text-xs text-gray-400"},
-                                                    new Date(statusInfo.alterado_em).toLocaleString('pt-BR', {
-                                                        day: '2-digit', month: '2-digit', year: '2-digit',
-                                                        hour: '2-digit', minute: '2-digit'
-                                                    })
-                                                ),
-                                                // Mostrar motivo se reprovado
-                                                statusAtual === 'reprovado' && statusInfo?.motivo_reprovado && 
-                                                    React.createElement("div", {
-                                                        className: "text-xs text-red-600 italic max-w-32 truncate",
-                                                        title: statusInfo.motivo_reprovado
-                                                    }, "📝 ", statusInfo.motivo_reprovado)
+                                                    row.complemento > 0 ? '🔴' : '🟢',
+                                                    " R$", row.complemento?.toFixed(2)
+                                                )
+                                            ),
+                                            // Coluna de Status com dropdown
+                                            React.createElement("td", {className: "px-3 py-2 text-center"},
+                                                React.createElement("div", {className: "flex flex-col items-center gap-1"},
+                                                    React.createElement("select", {
+                                                        value: statusEfetivo,
+                                                        onChange: function(e) {
+                                                            var novoStatus = e.target.value;
+                                                            if (novoStatus === 'reprovado') {
+                                                                setGarantidoModalStatus(row);
+                                                                setGarantidoMotivoReprovado('');
+                                                            } else {
+                                                                salvarStatusGarantido(row, novoStatus);
+                                                            }
+                                                        },
+                                                        className: "px-2 py-1 text-xs font-semibold rounded border " +
+                                                            (statusEfetivo === 'lancado' ? 'bg-green-200 text-green-800 border-green-400' :
+                                                             statusEfetivo === 'reprovado' ? 'bg-red-200 text-red-800 border-red-400' :
+                                                             statusEfetivo === 'nao_rodou' ? 'bg-orange-200 text-orange-800 border-orange-400' :
+                                                             statusEfetivo === 'ultrapassou' ? 'bg-blue-200 text-blue-800 border-blue-400' :
+                                                             'bg-yellow-100 text-yellow-800 border-yellow-300')
+                                                    },
+                                                        React.createElement("option", {value: "analise"}, "🔍 Análise"),
+                                                        React.createElement("option", {value: "nao_rodou"}, "🟠 Não Rodou"),
+                                                        React.createElement("option", {value: "ultrapassou"}, "🔵 Ultrapassou Negociado"),
+                                                        React.createElement("option", {value: "lancado"}, "✅ Lançado"),
+                                                        React.createElement("option", {value: "reprovado"}, "❌ Reprovado")
+                                                    ),
+                                                    // Indicador de auto-status
+                                                    !statusSalvo && autoStatus && React.createElement("span", {
+                                                        className: "text-[10px] italic " + (autoStatus === 'nao_rodou' ? 'text-orange-600' : 'text-blue-600')
+                                                    }, "auto"),
+                                                    // Mostrar info de quem alterou
+                                                    statusInfo?.alterado_por && React.createElement("div", {className: "text-xs text-gray-500"},
+                                                        statusInfo.alterado_por
+                                                    ),
+                                                    statusInfo?.alterado_em && React.createElement("div", {className: "text-xs text-gray-400"},
+                                                        new Date(statusInfo.alterado_em).toLocaleString('pt-BR', {
+                                                            day: '2-digit', month: '2-digit', year: '2-digit',
+                                                            hour: '2-digit', minute: '2-digit'
+                                                        })
+                                                    ),
+                                                    // Mostrar motivo se reprovado
+                                                    statusEfetivo === 'reprovado' && statusInfo?.motivo_reprovado && 
+                                                        React.createElement("div", {
+                                                            className: "text-xs text-red-600 italic max-w-32 truncate",
+                                                            title: statusInfo.motivo_reprovado
+                                                        }, "📝 ", statusInfo.motivo_reprovado)
+                                                )
                                             )
-                                        )
-                                    );
-                                }),
+                                        ));
+                                    });
+                                    return rows;
+                                })(),
                                 // Linha de totais
                                 garantidoData.length > 0 && React.createElement("tr", {className: "bg-purple-200 font-bold"},
-                                    React.createElement("td", {colSpan: 4, className: "px-3 py-3 text-right text-purple-800"}, "Total"),
+                                    React.createElement("td", {colSpan: 5, className: "px-3 py-3 text-right text-purple-800"}, "Total"),
                                     React.createElement("td", {className: "px-3 py-3 text-center text-purple-800"}, 
                                         garantidoStats?.total_entregas || garantidoData.reduce((s, r) => s + r.entregas, 0)
-                                    ),
-                                    React.createElement("td", {className: "px-3 py-3 text-center text-purple-800"}, 
-                                        (garantidoStats?.total_distancia || garantidoData.reduce((s, r) => s + (r.distancia || 0), 0)).toFixed(2), " KM"
                                     ),
                                     React.createElement("td", {className: "px-3 py-3 text-right text-purple-800"}, 
                                         "R$", (garantidoStats?.total_negociado || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})
@@ -18412,7 +19465,7 @@ const hideLoadingScreen = () => {
                             React.createElement("div", null,
                                 React.createElement("h2", {className: "text-2xl font-bold"}, "Chat IA — Analista de Dados"),
                                 React.createElement("p", {className: "text-emerald-100 mt-1"}, chatIaIniciado 
-                                    ? (chatIaFiltros.nomes_clientes && chatIaFiltros.nomes_clientes.length > 0 ? "📌 " + (chatIaFiltros.nomes_clientes.length <= 2 ? chatIaFiltros.nomes_clientes.join(", ") : chatIaFiltros.nomes_clientes.length + " clientes") : "📌 Todos os clientes") + (chatIaFiltros.centro_custo && chatIaFiltros.centro_custo.length > 0 ? " · " + (chatIaFiltros.centro_custo.length <= 2 ? chatIaFiltros.centro_custo.join(", ") : chatIaFiltros.centro_custo.length + " centros") : "") + (chatIaFiltros.data_inicio ? " · " + chatIaFiltros.data_inicio + " a " + chatIaFiltros.data_fim : "")
+                                    ? (chatIaFiltros.regiao ? "🗺️ " + (chatIaRegioes.find(function(r) { return String(r.id) === String(chatIaFiltros.regiao); }) || {}).nome + " · " : "") + (chatIaFiltros.nomes_clientes && chatIaFiltros.nomes_clientes.length > 0 ? "📌 " + (chatIaFiltros.nomes_clientes.length <= 2 ? chatIaFiltros.nomes_clientes.join(", ") : chatIaFiltros.nomes_clientes.length + " clientes") : "📌 Todos os clientes") + (chatIaFiltros.centro_custo && chatIaFiltros.centro_custo.length > 0 ? " · " + (chatIaFiltros.centro_custo.length <= 2 ? chatIaFiltros.centro_custo.join(", ") : chatIaFiltros.centro_custo.length + " centros") : "") + (chatIaFiltros.data_inicio ? " · " + chatIaFiltros.data_inicio + " a " + chatIaFiltros.data_fim : "")
                                     : "Selecione os filtros para iniciar a conversa"
                                 )
                             )
@@ -18500,6 +19553,57 @@ const hideLoadingScreen = () => {
                 !chatIaIniciado && React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-6 space-y-5"},
                     React.createElement("h3", {className: "text-lg font-bold text-gray-800 flex items-center gap-2"}, "🎯 Configurar Contexto da Conversa"),
                     React.createElement("p", {className: "text-sm text-gray-500"}, "A IA vai responder TODAS as perguntas com base nesses filtros. Deixe em branco para consultar todos os dados."),
+
+                    // === FILTRO POR REGIÃO (acima dos filtros individuais) ===
+                    chatIaRegioes.length > 0 && React.createElement("div", {className: "bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl p-4 border border-purple-200"},
+                        React.createElement("label", {className: "block text-sm font-bold text-purple-800 mb-2"}, "🗺️ Filtrar por Região"),
+                        React.createElement("p", {className: "text-xs text-purple-600 mb-2"}, "Selecionar uma região preenche automaticamente os clientes dela."),
+                        React.createElement("select", {
+                            value: chatIaFiltros.regiao || "",
+                            onChange: function(e) {
+                                var regiaoId = e.target.value;
+                                if (!regiaoId) {
+                                    // Limpar filtro de região
+                                    setChatIaFiltros(function(prev) { return Object.assign({}, prev, { regiao: "", cod_cliente: [], nomes_clientes: [], centro_custo: [] }); });
+                                    setChatIaCentros([]);
+                                    return;
+                                }
+                                var regiaoObj = chatIaRegioes.find(function(r) { return String(r.id) === regiaoId; });
+                                if (regiaoObj && regiaoObj.clientes) {
+                                    var itens = typeof regiaoObj.clientes === 'string' ? JSON.parse(regiaoObj.clientes) : regiaoObj.clientes;
+                                    if (Array.isArray(itens)) {
+                                        var cods = []; var nomes = []; var centros = [];
+                                        itens.forEach(function(item) {
+                                            var cod = typeof item === 'number' ? item : parseInt(item.cod_cliente);
+                                            if (!isNaN(cod) && cods.indexOf(cod) === -1) {
+                                                cods.push(cod);
+                                                // Buscar nome do cliente na lista carregada
+                                                var cl = chatIaClientes.find(function(c) { return parseInt(c.cod_cliente) === cod; });
+                                                nomes.push(cl ? cl.nome_fantasia : ('Cod ' + cod));
+                                            }
+                                            if (item.centro_custo) centros.push(item.centro_custo);
+                                        });
+                                        setChatIaFiltros(function(prev) { return Object.assign({}, prev, { regiao: regiaoId, cod_cliente: cods, nomes_clientes: nomes, centro_custo: centros }); });
+                                        // Carregar centros de custo disponíveis
+                                        if (cods.length > 0) {
+                                            fetchAuth(API_URL + "/bi/chat-ia/filtros?cod_cliente=" + cods.join(",")).then(function(r) { return r.json(); }).then(function(data) { setChatIaCentros(data.centros_do_cliente || []); }).catch(function() {});
+                                        }
+                                    }
+                                } else {
+                                    setChatIaFiltros(function(prev) { return Object.assign({}, prev, { regiao: regiaoId }); });
+                                }
+                            },
+                            className: "w-full border border-purple-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white"
+                        },
+                            React.createElement("option", {value: ""}, "— Sem filtro de região —"),
+                            chatIaRegioes.map(function(reg) {
+                                var itens = typeof reg.clientes === 'string' ? JSON.parse(reg.clientes) : (reg.clientes || []);
+                                var qtdClientes = Array.isArray(itens) ? new Set(itens.map(function(i) { return typeof i === 'number' ? i : i.cod_cliente; })).size : 0;
+                                return React.createElement("option", {key: reg.id, value: reg.id}, reg.nome + " (" + qtdClientes + " clientes)");
+                            })
+                        ),
+                        chatIaFiltros.regiao && React.createElement("p", {className: "text-xs text-purple-500 mt-1"}, "✅ " + chatIaFiltros.nomes_clientes.length + " cliente(s) selecionados automaticamente")
+                    ),
 
                     // Grid de filtros
                     React.createElement("div", {className: "grid grid-cols-1 md:grid-cols-2 gap-4"},
@@ -18699,8 +19803,12 @@ const hideLoadingScreen = () => {
                     ref: function() {
                         if (chatIaClientes.length === 0 && !chatIaFiltrosLoading) {
                             setChatIaFiltrosLoading(true);
-                            fetchAuth(API_URL + "/bi/chat-ia/filtros").then(function(r) { return r.json(); }).then(function(data) {
-                                setChatIaClientes(data.clientes || []);
+                            Promise.all([
+                                fetchAuth(API_URL + "/bi/chat-ia/filtros").then(function(r) { return r.json(); }),
+                                fetchAuth(API_URL + "/bi/regioes").then(function(r) { return r.json(); }).catch(function() { return []; })
+                            ]).then(function(results) {
+                                setChatIaClientes(results[0].clientes || []);
+                                setChatIaRegioes(Array.isArray(results[1]) ? results[1] : []);
                                 setChatIaFiltrosLoading(false);
                             }).catch(function() { setChatIaFiltrosLoading(false); });
                             // Carregar Chart.js se ainda não carregou
@@ -18947,7 +20055,7 @@ const hideLoadingScreen = () => {
                                 title: "Limpar conversa"
                             }, "🗑️")
                         ),
-                        React.createElement("p", {className: "text-xs text-gray-400 text-center mt-2"}, "Powered by Claude · Apenas consultas de leitura")
+                        React.createElement("p", {className: "text-xs text-gray-400 text-center mt-2"}, "Powered by Gemini · Apenas consultas de leitura")
                     )
                 )
             ),
@@ -19248,6 +20356,38 @@ const hideLoadingScreen = () => {
                             React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Anti-Fraude"),
                             React.createElement("p", {className: "text-sm text-gray-500"}, "Detecção de duplicatas")
                         )
+                    ),
+                    
+                    // Performance Diária
+                    hasModuleAccess(l, "performance") &&
+                    React.createElement("div", {
+                        onClick: () => he("performance"),
+                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-amber-300"
+                    },
+                        React.createElement("div", {className: "h-2 bg-gradient-to-r from-amber-500 to-orange-600"}),
+                        React.createElement("div", {className: "p-6"},
+                            React.createElement("div", {className: "w-14 h-14 bg-amber-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
+                                React.createElement("span", {className: "text-3xl"}, "📈")
+                            ),
+                            React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Performance"),
+                            React.createElement("p", {className: "text-sm text-gray-500"}, "Desempenho diário")
+                        )
+                    ),
+
+                    // Análise Gerencial Semanal
+                    hasModuleAccess(l, "gerencial") &&
+                    React.createElement("div", {
+                        onClick: () => he("gerencial"),
+                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-purple-300"
+                    },
+                        React.createElement("div", {className: "h-2 bg-gradient-to-r from-purple-500 to-indigo-600"}),
+                        React.createElement("div", {className: "p-6"},
+                            React.createElement("div", {className: "w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
+                                React.createElement("span", {className: "text-3xl"}, "📊")
+                            ),
+                            React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Análise Gerencial"),
+                            React.createElement("p", {className: "text-sm text-gray-500"}, "Relatório semanal consolidado")
+                        )
                     )
                 )
             ),
@@ -19265,24 +20405,23 @@ const hideLoadingScreen = () => {
         // Determinar adminTab efetivo: se é módulo disponibilidade, forçar contexto sem setState
         const adminTabEfetivo = "disponibilidade" === Ee ? "disponibilidade" : (p.adminTab || "dashboard");
         
+        
         // Módulo CRM WhatsApp - Iframe
         if ("crm-whatsapp" === Ee) {
-            const token = sessionStorage.getItem("tutts_token");
+            const token = getToken();
             const crmUrl = token 
-                ? `https://crm-whatsapp-tawny.vercel.app/inbox?token=${encodeURIComponent(token)}&embed=true`
+                ? `https://crm-whatsapp-tawny.vercel.app/analytics?token=${encodeURIComponent(token)}&embed=true`
                 : "https://crm-whatsapp-tawny.vercel.app/login";
             
             return React.createElement("div", {
                 className: "min-h-screen bg-gray-50"
             },
                 React.createElement("iframe", {
+                    key: "crm-iframe",
                     src: crmUrl,
-                    style: {
-                        width: "100%",
-                        height: "calc(100vh - 64px)",
-                        border: "none"
-                    },
-                    title: "CRM WhatsApp"
+                    style: { width: "100%", height: "calc(100vh - 64px)", border: "none" },
+                    title: "CRM WhatsApp",
+                    allow: "clipboard-read; clipboard-write"
                 })
             );
         }
@@ -19451,16 +20590,76 @@ const hideLoadingScreen = () => {
             className: "text-lg font-semibold mb-4"
         }, "Aguardando Validação"), React.createElement("div", {
             className: "mb-4 flex flex-wrap gap-2"
-        }, ["all", "atrasados", "retorno", "ponto1", "pedagio", "simoesfilho"].map(e => React.createElement("button", {
+        }, ["all", "contestacoes", "atrasados", "retorno", "ponto1", "pedagio", "simoesfilho"].map(e => React.createElement("button", {
             key: e,
             onClick: () => x({
                 ...p,
                 pendingFilter: e
             }),
-            className: "px-4 py-2 rounded-lg font-semibold " + ((p.pendingFilter || "all") === e ? "atrasados" === e ? "bg-red-600 text-white" : "bg-purple-600 text-white" : "bg-gray-100")
-        }, "all" === e && `📋 Todos (${j.filter(e=>"pendente"===e.status).length})`, "atrasados" === e && `🚨 Atrasados (${j.filter(e=>"pendente"===e.status&&Date.now()-new Date(e.created_at).getTime()>=864e5).length})`, "retorno" === e && `🔄 Retorno (${j.filter(e=>"pendente"===e.status&&"Ajuste de Retorno"===e.motivo).length})`, "ponto1" === e && `📍 Ponto 1 (${j.filter(e=>"pendente"===e.status&&e.motivo?.includes("Ponto 1")).length})`, "pedagio" === e && `🛣️ Pedágio (${j.filter(e=>"pendente"===e.status&&e.motivo?.includes("Pedágio")).length})`, "simoesfilho" === e && `🏭 Simões Filho/Camaçari (${j.filter(e=>"pendente"===e.status&&e.motivo?.includes("Simões Filho")).length})`))), React.createElement("div", {
+            className: "px-4 py-2 rounded-lg font-semibold " + ((p.pendingFilter || "all") === e ? "contestacoes" === e ? "bg-orange-600 text-white" : "atrasados" === e ? "bg-red-600 text-white" : "bg-purple-600 text-white" : "bg-gray-100")
+        }, "all" === e && `📋 Todos (${j.filter(e=>"pendente"===e.status||e.contestacao_status==='aberta').length})`, "contestacoes" === e && `⚡ Contestações (${j.filter(e=>e.contestacao_status==='aberta').length})`, "atrasados" === e && `🚨 Atrasados (${j.filter(e=>"pendente"===e.status&&Date.now()-new Date(e.created_at).getTime()>=864e5).length})`, "retorno" === e && `🔄 Retorno (${j.filter(e=>"pendente"===e.status&&"Ajuste de Retorno"===e.motivo).length})`, "ponto1" === e && `📍 Ponto 1 (${j.filter(e=>"pendente"===e.status&&e.motivo?.includes("Ponto 1")).length})`, "pedagio" === e && `🛣️ Pedágio (${j.filter(e=>"pendente"===e.status&&e.motivo?.includes("Pedágio")).length})`, "simoesfilho" === e && `🏭 Simões Filho/Camaçari (${j.filter(e=>"pendente"===e.status&&e.motivo?.includes("Simões Filho")).length})`))), React.createElement("div", {
+            className: "flex justify-end mb-2"
+        }, React.createElement("button", {
+            onClick: () => x({ ...p, _showRespostas: !p._showRespostas }),
+            className: "px-3 py-1.5 rounded-lg text-xs font-semibold " + (p._showRespostas ? "bg-purple-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200")
+        }, "⚙️ Respostas Prontas")), p._showRespostas && React.createElement("div", {
+            className: "mb-4 bg-white border-2 border-purple-200 rounded-xl p-4"
+        }, React.createElement("h3", { className: "text-sm font-bold text-purple-800 mb-3" }, "💬 Gerenciar Respostas Prontas"), React.createElement("div", { className: "flex gap-2 mb-3" }, React.createElement("input", {
+            type: "text", placeholder: "Título curto", value: p._rpTitulo || "",
+            onChange: e => x({ ...p, _rpTitulo: e.target.value }),
+            className: "flex-1 px-3 py-2 border rounded-lg text-xs"
+        }), React.createElement("select", {
+            value: p._rpMotivo || "", onChange: e => x({ ...p, _rpMotivo: e.target.value }),
+            className: "px-2 py-2 border rounded-lg text-xs"
+        }, React.createElement("option", { value: "" }, "Todos os motivos"), React.createElement("option", { value: "Ajuste de Retorno" }, "Retorno"), React.createElement("option", { value: "Ajuste de Pedágio" }, "Pedágio"), React.createElement("option", { value: "Ajustes Simões Filho e Camaçari" }, "Simões/Camaçari"))), React.createElement("textarea", {
+            placeholder: "Mensagem da resposta pronta...", value: p._rpMensagem || "",
+            onChange: e => x({ ...p, _rpMensagem: e.target.value }),
+            className: "w-full px-3 py-2 border rounded-lg text-xs mb-2", rows: "2"
+        }), React.createElement("button", {
+            onClick: async () => {
+                if (!p._rpTitulo?.trim() || !p._rpMensagem?.trim()) { ja("Preencha título e mensagem", "error"); return; }
+                try {
+                    const url = p._rpEditId ? `${API_URL}/submissions/respostas-prontas/${p._rpEditId}` : `${API_URL}/submissions/respostas-prontas`;
+                    const method = p._rpEditId ? "PUT" : "POST";
+                    const resp = await fetchAuth(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ titulo: p._rpTitulo.trim(), mensagem: p._rpMensagem.trim(), motivo: p._rpMotivo || null }) });
+                    if (resp.ok) { ja(p._rpEditId ? "✅ Atualizada!" : "✅ Criada!", "success"); x({ ...p, _rpTitulo: "", _rpMensagem: "", _rpMotivo: "", _rpEditId: null }); const r2 = await fetchAuth(`${API_URL}/submissions/respostas-prontas`); if (r2.ok) { const rp = await r2.json(); x(prev => ({ ...prev, _respostasProntas: rp })); } }
+                    else { const d = await resp.json(); ja(d.error || "Erro", "error"); }
+                } catch { ja("Erro de conexão", "error"); }
+            },
+            className: "px-4 py-2 rounded-lg text-xs font-semibold text-white " + (p._rpEditId ? "bg-orange-500" : "bg-purple-600")
+        }, p._rpEditId ? "💾 Salvar Edição" : "➕ Adicionar"), p._rpEditId && React.createElement("button", {
+            onClick: () => x({ ...p, _rpTitulo: "", _rpMensagem: "", _rpMotivo: "", _rpEditId: null }),
+            className: "ml-2 px-3 py-2 rounded-lg text-xs font-semibold bg-gray-200 text-gray-700"
+        }, "Cancelar"), React.createElement("div", { className: "mt-3 space-y-2" }, (p._respostasProntas || []).map(r => React.createElement("div", {
+            key: r.id, className: "flex items-start gap-2 p-2 bg-gray-50 rounded-lg border"
+        }, React.createElement("div", { className: "flex-1 min-w-0" },
+            React.createElement("p", { className: "text-xs font-bold text-gray-800" }, r.titulo, r.motivo && React.createElement("span", { className: "ml-1 px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded text-[10px]" }, r.motivo)),
+            React.createElement("p", { className: "text-xs text-gray-600 mt-0.5 truncate" }, r.mensagem)
+        ), React.createElement("button", {
+            onClick: () => x({ ...p, _rpTitulo: r.titulo, _rpMensagem: r.mensagem, _rpMotivo: r.motivo || "", _rpEditId: r.id }),
+            className: "text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded font-semibold shrink-0"
+        }, "✏️"), React.createElement("button", {
+            onClick: async () => {
+                if (!confirm("Excluir \"" + r.titulo + "\"?")) return;
+                try { const resp = await fetchAuth(`${API_URL}/submissions/respostas-prontas/${r.id}`, { method: "DELETE" }); if (resp.ok) { ja("🗑️ Excluída!", "success"); x(prev => ({ ...prev, _respostasProntas: (prev._respostasProntas || []).filter(x => x.id !== r.id) })); } } catch { ja("Erro", "error"); }
+            },
+            className: "text-xs px-2 py-1 bg-red-100 text-red-700 rounded font-semibold shrink-0"
+        }, "🗑️"))))), React.createElement("div", {
             className: "grid md:grid-cols-2 lg:grid-cols-3 gap-3"
-        }, j.filter(e => "pendente" === e.status && (!p.pendingFilter || "all" === p.pendingFilter || ("atrasados" === p.pendingFilter ? Date.now() - new Date(e.created_at).getTime() >= 864e5 : "retorno" === p.pendingFilter ? "Ajuste de Retorno" === e.motivo : "ponto1" === p.pendingFilter ? e.motivo?.includes("Ponto 1") : "simoesfilho" === p.pendingFilter ? e.motivo?.includes("Simões Filho") : "pedagio" !== p.pendingFilter || e.motivo?.includes("Pedágio")))).map(e => {
+        }, j.filter(e => {
+            const f = p.pendingFilter || "all";
+            if (f === "contestacoes") return e.contestacao_status === 'aberta';
+            const isPendente = "pendente" === e.status;
+            const isContestacao = e.contestacao_status === 'aberta';
+            if (f === "all") return isPendente || isContestacao;
+            if (!isPendente) return false;
+            if (f === "atrasados") return Date.now() - new Date(e.created_at).getTime() >= 864e5;
+            if (f === "retorno") return "Ajuste de Retorno" === e.motivo;
+            if (f === "ponto1") return e.motivo?.includes("Ponto 1");
+            if (f === "simoesfilho") return e.motivo?.includes("Simões Filho");
+            if (f === "pedagio") return e.motivo?.includes("Pedágio");
+            return true;
+        }).map(e => {
             const t = Date.now() - new Date(e.created_at).getTime(),
                 a = Math.floor(t / 36e5),
                 l = Math.floor(t % 36e5 / 6e4),
@@ -19502,7 +20701,9 @@ const hideLoadingScreen = () => {
                 className: "text-xs text-gray-500 font-mono"
             }, "COD: ", e.codProfissional), React.createElement("p", {
                 className: "text-xs text-purple-900 font-semibold"
-            }, e.motivo), React.createElement("p", {
+            }, e.motivo), e.subcategoria && React.createElement("p", {
+                className: "text-[11px] text-purple-600 font-medium"
+            }, "↳ ", e.subcategoria), React.createElement("p", {
                 className: "text-[10px] text-gray-500 mt-1"
             }, "📅 ", new Date(e.created_at).toLocaleDateString("pt-BR"), " às ", new Date(e.created_at).toLocaleTimeString("pt-BR", {
                 hour: "2-digit",
@@ -19542,7 +20743,15 @@ const hideLoadingScreen = () => {
                     ja("🔄 Carregando...", "success"), Fa(e.id)
                 },
                 className: "px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-semibold"
-            }, "📷 Ver foto(s)")), React.createElement("textarea", {
+            }, "📷 Ver foto(s)")), e.validacao_ia && React.createElement("div", {
+                className: "mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs"
+            }, React.createElement("p", { className: "font-semibold text-blue-800" }, "🤖 Resumo IA:"), React.createElement("p", { className: "text-blue-700 mt-0.5" }, (() => { try { const v = typeof e.validacao_ia === "string" ? JSON.parse(e.validacao_ia) : e.validacao_ia; return v.resumo_admin || (v.sem_ia ? "Foto não validada pela IA" : "Sem resumo"); } catch { return "Sem resumo"; } })()), (() => { try { const v = typeof e.validacao_ia === "string" ? JSON.parse(e.validacao_ia) : e.validacao_ia; return v.alertas_admin?.length > 0 ? React.createElement("p", { className: "text-orange-700 mt-1" }, "⚠️ ", v.alertas_admin.join(" | ")) : null; } catch { return null; } })(), e.tentativas_foto > 1 && React.createElement("p", { className: "text-gray-500 mt-1" }, "📷 Tentativas: ", e.tentativas_foto)),
+            // Esconder Aprovar/Rejeitar quando contestação está aberta
+            e.contestacao_status !== 'aberta' && React.createElement(React.Fragment, null, React.createElement("select", {
+                value: "",
+                onChange: t => { if (t.target.value) { x({ ...p, [`obs_${e.id}`]: t.target.value }); } t.target.selectedIndex = 0; },
+                className: "w-full px-2 py-1 border border-orange-300 bg-orange-50 rounded mt-2 text-xs text-gray-700"
+            }, React.createElement("option", { value: "" }, "💬 Usar resposta pronta..."), (p._respostasProntas || []).filter(r => !r.motivo || r.motivo === e.motivo).map(r => React.createElement("option", { key: r.id, value: r.mensagem }, r.titulo))), React.createElement("textarea", {
                 placeholder: "Obs (opcional)",
                 value: p[`obs_${e.id}`] || "",
                 onChange: t => x({
@@ -19559,7 +20768,62 @@ const hideLoadingScreen = () => {
             }, "✓ Aprovar"), React.createElement("button", {
                 onClick: () => Kl(e.id, !1),
                 className: "flex-1 bg-red-600 text-white py-1 rounded text-xs font-semibold"
-            }, "✗ Rejeitar")))
+            }, "✗ Rejeitar"))),
+            // CONTESTAÇÃO - Badge + chat inline
+            e.contestacao_status === 'aberta' && React.createElement("div", { className: "mt-3 p-3 bg-orange-50 border-2 border-orange-400 rounded-lg" },
+                React.createElement("div", { className: "flex items-center justify-between mb-2" },
+                    React.createElement("span", { className: "text-sm font-bold text-orange-800" }, "⚡ CONTESTAÇÃO ABERTA"),
+                    React.createElement("button", {
+                        onClick: async () => {
+                            try {
+                                const r = await fetchAuth(`${API_URL}/submissions/${e.id}/contestacao`);
+                                const d = await r.json();
+                                if (d.success) x({ ...p, [`contest_msgs_${e.id}`]: d.mensagens, [`contest_open_${e.id}`]: true });
+                            } catch { ja("Erro ao carregar", "error"); }
+                        },
+                        className: "px-3 py-1 bg-orange-600 text-white rounded text-xs font-bold"
+                    }, p[`contest_open_${e.id}`] ? "🔄 Atualizar" : "💬 Ver Contestação")
+                ),
+                p[`contest_open_${e.id}`] && React.createElement(React.Fragment, null,
+                    React.createElement("div", { className: "space-y-2 max-h-48 overflow-y-auto mb-2" },
+                        (p[`contest_msgs_${e.id}`] || []).map((m, mi) => React.createElement("div", {
+                            key: mi,
+                            className: `p-2 rounded-lg text-xs ${m.autor_tipo === 'admin' ? 'bg-purple-100 text-purple-800 ml-4' : 'bg-white border mr-4'}`
+                        },
+                            React.createElement("p", { className: "font-bold mb-1" }, m.autor_tipo === 'admin' ? '👔 ' + m.autor_nome : '🏍️ ' + m.autor_nome, React.createElement("span", { className: "font-normal text-gray-400 ml-2" }, new Date(m.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }))),
+                            React.createElement("p", null, m.mensagem),
+                            m.imagens && (() => { try { const imgs = typeof m.imagens === 'string' ? JSON.parse(m.imagens) : m.imagens; return imgs.length > 0 ? React.createElement("div", { className: "flex gap-1 mt-1" }, imgs.map((img, ii) => React.createElement("img", { key: ii, src: img, className: "h-16 rounded cursor-pointer", onClick: () => g(img) }))) : null; } catch { return null; } })()
+                        ))
+                    ),
+                    React.createElement("textarea", { value: p[`contest_resp_${e.id}`] || '', onChange: ev => x({ ...p, [`contest_resp_${e.id}`]: ev.target.value }), placeholder: "Responder ao motoboy...", className: "w-full px-2 py-1 border rounded text-xs mt-1", rows: 2 }),
+                    React.createElement("div", { className: "flex gap-2 mt-2" },
+                        React.createElement("button", {
+                            onClick: async () => {
+                                const msg = p[`contest_resp_${e.id}`] || '';
+                                if (!msg.trim()) { ja("Escreva uma resposta", "error"); return; }
+                                try { await fetchAuth(`${API_URL}/submissions/${e.id}/contestacao-responder`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mensagem: msg }) }); x({ ...p, [`contest_resp_${e.id}`]: '' }); ja("Resposta enviada!", "success"); const r2 = await fetchAuth(`${API_URL}/submissions/${e.id}/contestacao`); const d2 = await r2.json(); if (d2.success) x(prev => ({ ...prev, [`contest_msgs_${e.id}`]: d2.mensagens })); } catch { ja("Erro", "error"); }
+                            },
+                            className: "flex-1 py-1 bg-purple-600 text-white rounded text-xs font-bold"
+                        }, "💬 Responder"),
+                        React.createElement("button", {
+                            onClick: async () => {
+                                if (!confirm("APROVAR a contestação? A solicitação será aprovada.")) return;
+                                try { const r = await fetchAuth(`${API_URL}/submissions/${e.id}/contestacao-encerrar`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ decisao: "aprovar", observacao: p[`contest_resp_${e.id}`] || '' }) }); const d = await r.json(); if (d.success) { ja("✅ Contestação aprovada!", "success"); C(prev => prev.filter(s => s.id !== e.id)); try { La(); } catch {} } } catch { ja("Erro", "error"); }
+                            },
+                            className: "py-1 px-2 bg-green-600 text-white rounded text-xs font-bold"
+                        }, "✅ Aprovar"),
+                        React.createElement("button", {
+                            onClick: async () => {
+                                if (!confirm("REJEITAR DEFINITIVAMENTE? O motoboy não poderá mais contestar.")) return;
+                                try { const r = await fetchAuth(`${API_URL}/submissions/${e.id}/contestacao-encerrar`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ decisao: "rejeitar", observacao: p[`contest_resp_${e.id}`] || '' }) }); const d = await r.json(); if (d.success) { ja("❌ Rejeitada definitivamente", "success"); C(prev => prev.filter(s => s.id !== e.id)); try { La(); } catch {} } } catch { ja("Erro", "error"); }
+                            },
+                            className: "py-1 px-2 bg-red-700 text-white rounded text-xs font-bold"
+                        }, "❌ Rejeitar Def.")
+                    )
+                )
+            ),
+            (e.contestacao_status === 'encerrada_aprovada' || e.contestacao_status === 'encerrada_rejeitada') && React.createElement("div", { className: `mt-2 p-2 rounded text-xs font-bold ${e.contestacao_status === 'encerrada_aprovada' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}` }, e.contestacao_status === 'encerrada_aprovada' ? '✅ Contestação aprovada' : '❌ Contestação rejeitada definitivamente')
+            )
         })))), "search" === adminTabEfetivo && React.createElement("div", {
             className: "bg-white rounded-xl shadow p-6"
         }, React.createElement("div", {
@@ -19589,7 +20853,9 @@ const hideLoadingScreen = () => {
             value: "aprovado"
         }, "Aprovado"), React.createElement("option", {
             value: "rejeitado"
-        }, "Rejeitado")), React.createElement("select", {
+        }, "Rejeitado"), React.createElement("option", {
+            value: "contestado"
+        }, "⚡ Contestado")), React.createElement("select", {
             value: p.dateFilter || "",
             onChange: e => x({
                 ...p,
@@ -19786,7 +21052,7 @@ const hideLoadingScreen = () => {
         })())), "disponibilidade" === adminTabEfetivo && (
             typeof window.ModuloDisponibilidadeContent !== 'undefined' 
                 ? React.createElement(window.ModuloDisponibilidadeContent, {
-                    p, x, ja, API_URL, pe, Ta, A, l, fetchAuth
+                    p, x, ja, API_URL, pe, Ta, A, l, fetchAuth, getToken
                 })
                 : React.createElement("div", {className: "flex items-center justify-center py-12"},
                     React.createElement("div", {className: "text-center"},

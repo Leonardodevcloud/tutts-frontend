@@ -18,12 +18,23 @@
             // Usuários
             A, l,
             // Auth
-            fetchAuth
+            fetchAuth,
+            // Token getter for WebSocket
+            getToken
         } = props;
 
         // ===== CÓDIGO DO MÓDULO DISPONIBILIDADE =====
         // Fallback: se fetchAuth não vier nas props, usa fetch normal
-        const _fetch = fetchAuth || fetch;
+        const _baseFetch = fetchAuth || fetch;
+        // Ref para wsId — atualizada pelo WebSocket onauth
+        const _dispWsIdRef = React.useRef(null);
+        const _fetch = function(url, opts) {
+            opts = opts || {};
+            if (_dispWsIdRef.current) {
+                opts.headers = Object.assign({}, opts.headers || {}, { 'x-ws-id': _dispWsIdRef.current });
+            }
+            return _baseFetch(url, opts);
+        };
                     const e = p.dispData || {
                     regioes: [],
                     lojas: [],
@@ -55,6 +66,181 @@
                     }
                 };
             p.dispLoaded || a || (r(), 0 === pe.length && Ta());
+
+            // ===== WEBSOCKET — Sincronização em tempo real entre admins =====
+            const _dispWsRef = React.useRef(null);
+            const _dispWsReconnect = React.useRef(null);
+            const _dispWsReloadTimer = React.useRef(null);
+            const _dispWsAuthFailed = React.useRef(false);
+            // Anti-echo: linhas editadas localmente nos últimos 2s são ignoradas via WS
+            const _dispLocalEdits = React.useRef({});
+            // Refs estáveis (evita stale closure)
+            const _dispReloadRef = React.useRef(r);
+            _dispReloadRef.current = r;
+            const _dispSetStateRef = React.useRef(x);
+            _dispSetStateRef.current = x;
+
+            // Registrar edição local (chamado por função c)
+            window._dispMarkLocalEdit = function(linhaId) {
+                _dispLocalEdits.current[linhaId] = Date.now();
+            };
+
+            React.useEffect(function() {
+                if (!l || !API_URL) return;
+                _dispWsAuthFailed.current = false;
+
+                function reloadDebounced() {
+                    if (_dispWsReloadTimer.current) clearTimeout(_dispWsReloadTimer.current);
+                    _dispWsReloadTimer.current = setTimeout(function() {
+                        _dispWsReloadTimer.current = null;
+                        if (_dispReloadRef.current) {
+                            console.log('📡 [WS-Disp] Recarregando dados (estrutural)...');
+                            _dispReloadRef.current();
+                        }
+                    }, 800);
+                }
+
+                function isLocalEdit(linhaId) {
+                    var ts = _dispLocalEdits.current[linhaId];
+                    if (!ts) return false;
+                    if (Date.now() - ts < 2000) return true;
+                    delete _dispLocalEdits.current[linhaId];
+                    return false;
+                }
+
+                // Atualização cirúrgica de uma linha — sem reload
+                function atualizarLinha(linhaAtualizada) {
+                    if (isLocalEdit(linhaAtualizada.id)) {
+                        console.log('📡 [WS-Disp] Ignorando echo local linha', linhaAtualizada.id);
+                        return;
+                    }
+                    _dispSetStateRef.current(function(prev) {
+                        var dispData = prev.dispData;
+                        if (!dispData || !dispData.linhas) return prev;
+                        var novasLinhas = dispData.linhas.map(function(li) {
+                            return li.id === linhaAtualizada.id ? Object.assign({}, li, linhaAtualizada) : li;
+                        });
+                        return Object.assign({}, prev, { dispData: Object.assign({}, dispData, { linhas: novasLinhas }) });
+                    });
+                }
+
+                // Adicionar linhas novas — sem reload
+                function adicionarLinhas(loja_id, novasLinhas) {
+                    _dispSetStateRef.current(function(prev) {
+                        var dispData = prev.dispData;
+                        if (!dispData) return prev;
+                        var linhasAtuais = dispData.linhas || [];
+                        // Evitar duplicatas
+                        var idsExistentes = {};
+                        linhasAtuais.forEach(function(li) { idsExistentes[li.id] = true; });
+                        var linhasNovas = novasLinhas.filter(function(li) { return !idsExistentes[li.id]; });
+                        if (linhasNovas.length === 0) return prev;
+                        return Object.assign({}, prev, { dispData: Object.assign({}, dispData, { linhas: linhasAtuais.concat(linhasNovas) }) });
+                    });
+                }
+
+                // Remover linha — sem reload
+                function removerLinha(linhaId) {
+                    _dispSetStateRef.current(function(prev) {
+                        var dispData = prev.dispData;
+                        if (!dispData || !dispData.linhas) return prev;
+                        var novasLinhas = dispData.linhas.filter(function(li) { return li.id !== linhaId; });
+                        if (novasLinhas.length === dispData.linhas.length) return prev;
+                        return Object.assign({}, prev, { dispData: Object.assign({}, dispData, { linhas: novasLinhas }) });
+                    });
+                }
+
+                function conectar() {
+                    if (_dispWsAuthFailed.current) return;
+                    try {
+                        var wsUrl = API_URL.replace('https://', 'wss://').replace('http://', 'ws://').replace('/api', '') + '/ws/disponibilidade';
+                        console.log('🔌 [WS-Disp] Conectando:', wsUrl);
+                        var ws = new WebSocket(wsUrl);
+
+                        ws.onopen = function() {
+                            console.log('✅ [WS-Disp] Conectado!');
+                            var token = getToken ? getToken() : null;
+                            if (token) {
+                                ws.send(JSON.stringify({ type: 'AUTH', token: token }));
+                            } else {
+                                _dispWsAuthFailed.current = true;
+                                ws.close();
+                            }
+                            if (_dispWsReconnect.current) {
+                                clearTimeout(_dispWsReconnect.current);
+                                _dispWsReconnect.current = null;
+                            }
+                        };
+
+                        ws.onmessage = function(event) {
+                            try {
+                                var data = JSON.parse(event.data);
+                                if (data.event === 'AUTH_SUCCESS') {
+                                    _dispWsIdRef.current = data.wsId;
+                                    _dispWsAuthFailed.current = false;
+                                    console.log('✅ [WS-Disp] Autenticado, wsId:', data.wsId);
+                                    return;
+                                }
+                                if (data.event === 'PONG' || data.event === 'CONNECTED') return;
+                                if (data.event === 'AUTH_ERROR' || data.event === 'AUTH_EXPIRED') {
+                                    _dispWsAuthFailed.current = true;
+                                    return;
+                                }
+
+                                // Atualização cirúrgica por tipo de evento
+                                if (data.event === 'DISP_LINHA_UPDATE' && data.data && data.data.id) {
+                                    atualizarLinha(data.data);
+                                } else if (data.event === 'DISP_LINHAS_ADD' && data.data && data.data.linhas) {
+                                    adicionarLinhas(data.data.loja_id, data.data.linhas);
+                                } else if (data.event === 'DISP_LINHA_DELETE' && data.data && data.data.id) {
+                                    removerLinha(data.data.id);
+                                } else if (data.event === 'DISP_RELOAD') {
+                                    reloadDebounced();
+                                }
+                            } catch (err) {
+                                console.error('❌ [WS-Disp] Erro:', err);
+                            }
+                        };
+
+                        ws.onclose = function() {
+                            _dispWsRef.current = null;
+                            if (!_dispWsAuthFailed.current && !_dispWsReconnect.current) {
+                                _dispWsReconnect.current = setTimeout(function() {
+                                    _dispWsReconnect.current = null;
+                                    conectar();
+                                }, 5000);
+                            }
+                        };
+
+                        ws.onerror = function() {};
+
+                        _dispWsRef.current = ws;
+                    } catch (err) {
+                        console.error('❌ [WS-Disp] Falha:', err);
+                    }
+                }
+
+                var pingInterval = setInterval(function() {
+                    if (_dispWsRef.current && _dispWsRef.current.readyState === WebSocket.OPEN) {
+                        _dispWsRef.current.send(JSON.stringify({ type: 'PING' }));
+                    }
+                }, 30000);
+
+                conectar();
+
+                return function() {
+                    clearInterval(pingInterval);
+                    if (_dispWsReconnect.current) clearTimeout(_dispWsReconnect.current);
+                    if (_dispWsReloadTimer.current) clearTimeout(_dispWsReloadTimer.current);
+                    if (_dispWsRef.current) {
+                        _dispWsRef.current.onclose = null;
+                        _dispWsRef.current.close();
+                        _dispWsRef.current = null;
+                    }
+                };
+            }, [l?.codProfissional]);
+            // ===== FIM WEBSOCKET =====
+
             const o = async () => {
                 const e = p.novaRegiao?.trim();
                 if (e) try {
@@ -78,21 +264,13 @@
                 } catch (e) {
                     ja(e.message, "error")
                 } else ja("Digite o nome da região", "error")
-            }, c = async (t, a, l) => {
+            }, c = (t, a, l) => {
+                // Anti-echo: marcar esta linha como editada localmente
+                if (window._dispMarkLocalEdit) window._dispMarkLocalEdit(t);
                 const r = [...e.linhas || []],
                     o = r.findIndex(e => e.id === t);
                 if (-1 === o) return;
-                const c = r[o];
-                if ("cod_profissional" === a && l && "" !== l.trim()) try {
-                    const e = await _fetch(`${API_URL}/disponibilidade/restricoes/verificar?cod_profissional=${l}&loja_id=${c.loja_id}`),
-                        t = await e.json();
-                    if (t.restrito) {
-                        const e = t.todas_lojas ? "TODAS AS LOJAS" : `loja ${t.loja_codigo} - ${t.loja_nome}`;
-                        return void alert(`🚫 MOTOBOY RESTRITO!\n\nCódigo: ${l}\nRestrito em: ${e}\n\nMotivo: ${t.motivo}\n\nEste motoboy não pode ser inserido nesta loja.`)
-                    }
-                } catch (e) {
-                    console.error("Erro ao verificar restrição:", e)
-                }
+                // Atualização OTIMISTA IMEDIATA — sem await, sem travar o input
                 r[o] = {
                     ...r[o],
                     [a]: l
@@ -115,8 +293,41 @@
                         ...e,
                         linhas: r
                     }
-                })), clearTimeout(window.dispDebounce), window.dispDebounce = setTimeout(async () => {
+                }));
+                // Debounce: verificar restrição + salvar no backend
+                const debounceKey = 'dispDebounce_' + t + '_' + a;
+                clearTimeout(window[debounceKey]);
+                window[debounceKey] = setTimeout(async () => {
                     try {
+                        // Verificar restrição apenas para cod_profissional com valor
+                        if ("cod_profissional" === a && l && "" !== l.trim()) {
+                            try {
+                                const resp = await _fetch(`${API_URL}/disponibilidade/restricoes/verificar?cod_profissional=${l}&loja_id=${r[o].loja_id}`),
+                                    dados = await resp.json();
+                                if (dados.restrito) {
+                                    const lojaDesc = dados.todas_lojas ? "TODAS AS LOJAS" : `loja ${dados.loja_codigo} - ${dados.loja_nome}`;
+                                    alert(`🚫 MOTOBOY RESTRITO!\n\nCódigo: ${l}\nRestrito em: ${lojaDesc}\n\nMotivo: ${dados.motivo}\n\nEste motoboy não pode ser inserido nesta loja.`);
+                                    // Limpar o código do motoboy restrito
+                                    x(prev => {
+                                        const linhas = [...(prev.dispData?.linhas || [])];
+                                        const idx = linhas.findIndex(e => e.id === t);
+                                        if (idx !== -1) {
+                                            linhas[idx] = { ...linhas[idx], cod_profissional: "", nome_profissional: "" };
+                                        }
+                                        return { ...prev, dispData: { ...prev.dispData, linhas } };
+                                    });
+                                    // Limpar no backend também
+                                    await _fetch(`${API_URL}/disponibilidade/linhas/${t}`, {
+                                        method: "PUT",
+                                        headers: { "Content-Type": "application/json" },
+                                        body: JSON.stringify({ cod_profissional: null, nome_profissional: null, status: r[o].status, observacao: r[o].observacao })
+                                    });
+                                    return;
+                                }
+                            } catch (err) {
+                                console.error("Erro ao verificar restrição:", err);
+                            }
+                        }
                         const usuarioLogado = JSON.parse(sessionStorage.getItem("tutts_user") || "{}");
                         await _fetch(`${API_URL}/disponibilidade/linhas/${t}`, {
                             method: "PUT",
@@ -134,7 +345,7 @@
                     } catch (e) {
                         console.error("Erro ao salvar linha:", e)
                     }
-                }, 500)
+                }, 600)
             }, s = async (e, t, a = !1) => {
                 try {
                     await _fetch(`${API_URL}/disponibilidade/linhas`, {
@@ -182,7 +393,7 @@
                 className: "flex items-center gap-1"
             }, React.createElement("span", {
                 className: "w-2 h-2 bg-green-500 rounded-full animate-pulse"
-            }), "Sincronização automática ativa (10s)")), React.createElement("div", {
+            }), "Sincronização em tempo real ativa")), React.createElement("div", {
                 className: "bg-white rounded-xl shadow"
             }, React.createElement("div", {
                 className: "flex border-b overflow-x-auto"
