@@ -8501,7 +8501,7 @@ const hideLoadingScreen = () => {
             s(!0);
             try {
                 const e = p.imagens?.length > 0 ? p.imagens.join("|||") : null;
-                await fetchAuth(`${API_URL}/submissions`, {
+                const resp = await fetchAuth(`${API_URL}/submissions`, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json"
@@ -8518,7 +8518,14 @@ const hideLoadingScreen = () => {
                         validacao_ia: p.validacao_ia ? JSON.stringify(p.validacao_ia) : null,
                         tentativas_foto: p.tentativas_foto || 0
                     })
-                }), ja("✅ OS enviada!", "success"), x({}), La()
+                });
+                if (!resp.ok) {
+                    const errData = await resp.json().catch(() => ({}));
+                    ja(errData.motivo || errData.error || "Erro ao enviar solicitação", "error");
+                    s(!1);
+                    return;
+                }
+                ja("✅ OS enviada!", "success"), x({}), La()
             } catch (e) {
                 ja("Erro", "error")
             }
