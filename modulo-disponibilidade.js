@@ -2223,7 +2223,7 @@
                         i = a.filter(e => "FALTANDO" === e.status).length;
                     a.filter(e => e.is_reposicao).length;
                     let d = "bg-gray-100 hover:bg-gray-200";
-                    return i > 0 ? d = "bg-red-100 hover:bg-red-200" : o >= totalTitulares && totalTitulares > 0 ? d = "bg-green-100 hover:bg-green-200" : o > 0 && (d = "bg-yellow-100 hover:bg-yellow-200"), React.createElement("div", {
+                    return o >= totalTitulares && totalTitulares > 0 ? d = "bg-green-100 hover:bg-green-200" : i > 0 ? d = "bg-red-100 hover:bg-red-200" : o > 0 && (d = "bg-yellow-100 hover:bg-yellow-200"), React.createElement("div", {
                         key: t.id,
                         className: "bg-white rounded-lg shadow overflow-hidden"
                     }, React.createElement("button", {
