@@ -77,6 +77,7 @@
     const [gpsErro, setGpsErro]     = useState('');
     const [fotoBase64, setFotoB64]  = useState(null);
     const [fotoPreview, setFotoPre] = useState(null);
+    const [valoresOS, setValoresOS] = useState(null); // { antes, depois }
 
     // Estados da localização do ponto (coordenada + endereço geocodificado)
     const [pontoCoords, setPontoCoords]     = useState(null); // { lat, lng }
@@ -173,6 +174,9 @@
           const data = await res.json();
 
           if (data.status === 'sucesso') {
+            if (data.valores_antes || data.valores_depois) {
+              setValoresOS({ antes: data.valores_antes, depois: data.valores_depois });
+            }
             pararPolling(); setFase('sucesso'); setLoading(false);
           } else if (data.status === 'erro') {
             const erro = data.detalhe_erro || 'Erro desconhecido.';
@@ -401,12 +405,41 @@
       }, '✅ Entendi, prosseguir')
     );
 
-    if (fase === 'sucesso') return h('div', { className: 'flex flex-col items-center justify-center py-16 px-6 text-center' },
+    if (fase === 'sucesso') return h('div', { className: 'flex flex-col items-center justify-center py-10 px-6 text-center' },
       h('div', { className: 'w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mb-6' },
         h('span', { className: 'text-4xl' }, '✅')
       ),
       h('h2', { className: 'text-2xl font-bold text-green-700 mb-2' }, 'Endereço corrigido com sucesso!'),
-      h('p', { className: 'text-gray-500 mb-8' }, `OS ${form.os_numero || ''} — Ponto ${form.ponto || ''}`),
+      h('p', { className: 'text-gray-500 mb-4' }, `OS ${form.os_numero || ''} — Ponto ${form.ponto || ''}`),
+      // Antes x Depois
+      valoresOS && (valoresOS.antes || valoresOS.depois) && h('div', { className: 'w-full max-w-sm mb-6' },
+        valoresOS.antes && h('div', { className: 'bg-orange-50 border border-orange-200 rounded-xl p-4 mb-3' },
+          h('p', { className: 'text-xs font-bold text-orange-600 mb-2' }, '📊 ANTES'),
+          h('div', { className: 'flex justify-around' },
+            valoresOS.antes.km && h('div', { className: 'text-center' },
+              h('p', { className: 'text-lg font-bold text-orange-700' }, `${valoresOS.antes.km} km`),
+              h('p', { className: 'text-[10px] text-orange-500' }, 'Distância')
+            ),
+            valoresOS.antes.valor_profissional && h('div', { className: 'text-center' },
+              h('p', { className: 'text-lg font-bold text-orange-700' }, `R$ ${valoresOS.antes.valor_profissional}`),
+              h('p', { className: 'text-[10px] text-orange-500' }, 'Valor profissional')
+            )
+          )
+        ),
+        valoresOS.depois && h('div', { className: 'bg-green-50 border border-green-200 rounded-xl p-4' },
+          h('p', { className: 'text-xs font-bold text-green-600 mb-2' }, '📊 DEPOIS'),
+          h('div', { className: 'flex justify-around' },
+            valoresOS.depois.km && h('div', { className: 'text-center' },
+              h('p', { className: 'text-lg font-bold text-green-700' }, `${valoresOS.depois.km} km`),
+              h('p', { className: 'text-[10px] text-green-500' }, 'Distância')
+            ),
+            valoresOS.depois.valor_servico && h('div', { className: 'text-center' },
+              h('p', { className: 'text-lg font-bold text-green-700' }, `R$ ${valoresOS.depois.valor_servico}`),
+              h('p', { className: 'text-[10px] text-green-500' }, 'Valor serviço')
+            )
+          )
+        )
+      ),
       h('button', {
         onClick: resetar,
         className: 'px-8 py-3 rounded-xl font-semibold text-white',
@@ -1140,6 +1173,30 @@
                             )
                           ),
                           v.match?.endereco && h('p', { className: 'text-xs text-gray-500 mt-2' }, '📍 Google: ', v.match.endereco)
+                        );
+                      })(),
+                      // Valores Antes x Depois
+                      (() => {
+                        const a = r.valores_antes;
+                        const d = r.valores_depois;
+                        if (!a && !d) return null;
+                        return h('div', { className: 'p-3 bg-blue-50 rounded-lg col-span-2' },
+                          h('p', { className: 'font-semibold text-blue-700 mb-2' }, '📊 Valores Antes × Depois'),
+                          h('div', { className: 'grid grid-cols-2 gap-3' },
+                            h('div', { className: 'bg-orange-50 border border-orange-200 rounded-lg p-2' },
+                              h('p', { className: 'text-[10px] font-bold text-orange-600 mb-1' }, 'ANTES'),
+                              a && a.km && h('p', { className: 'text-xs text-orange-700' }, '🛣️ ', h('strong', null, a.km), ' km'),
+                              a && a.valor_profissional && h('p', { className: 'text-xs text-orange-700' }, '💰 Profissional: R$ ', h('strong', null, a.valor_profissional)),
+                              a && a.valor_servico && h('p', { className: 'text-xs text-orange-700' }, '💰 Serviço: R$ ', h('strong', null, a.valor_servico)),
+                              !a && h('p', { className: 'text-xs text-gray-400' }, 'Não capturado')
+                            ),
+                            h('div', { className: 'bg-green-50 border border-green-200 rounded-lg p-2' },
+                              h('p', { className: 'text-[10px] font-bold text-green-600 mb-1' }, 'DEPOIS'),
+                              d && d.km && h('p', { className: 'text-xs text-green-700' }, '🛣️ ', h('strong', null, d.km), ' km'),
+                              d && d.valor_servico && h('p', { className: 'text-xs text-green-700' }, '💰 Serviço: R$ ', h('strong', null, d.valor_servico)),
+                              !d && h('p', { className: 'text-xs text-gray-400' }, 'Não capturado')
+                            )
+                          )
                         );
                       })()
                     )
