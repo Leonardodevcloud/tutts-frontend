@@ -256,6 +256,13 @@
             setFase('idle');
             return;
           }
+          // Foto rejeitada pela IA — feedback específico
+          if (data.foto_rejeitada) {
+            setFase('foto_rejeitada');
+            setDetalhe(data.motivo_rejeicao || 'A foto enviada não é válida.');
+            setLoading(false);
+            return;
+          }
           setFase('erro'); setDetalhe(msg); setLoading(false);
           return;
         }
@@ -318,6 +325,25 @@
         h('div', { style: { width: '8px', height: '8px', borderRadius: '50%', background: '#7C3AED', animation: 'agentPulse 1s 0.2s infinite' } }),
         h('div', { style: { width: '8px', height: '8px', borderRadius: '50%', background: '#7C3AED', animation: 'agentPulse 1s 0.4s infinite' } })
       )
+    );
+
+    // Fase: foto rejeitada pela IA
+    if (fase === 'foto_rejeitada') return h('div', { className: 'flex flex-col items-center justify-center py-10 px-6 text-center' },
+      h('div', { className: 'w-20 h-20 rounded-full bg-red-100 flex items-center justify-center mb-6' },
+        h('span', { className: 'text-4xl' }, '📷')
+      ),
+      h('h2', { className: 'text-xl font-bold text-red-700 mb-4' }, 'Foto Inválida'),
+      h('div', { className: 'bg-red-50 border border-red-300 rounded-xl p-5 mb-4 max-w-md' },
+        h('p', { className: 'text-sm text-red-800 leading-relaxed font-semibold' }, detalheErro)
+      ),
+      h('div', { className: 'bg-purple-50 border border-purple-200 rounded-xl p-4 mb-6 max-w-md' },
+        h('p', { className: 'text-xs text-purple-800 leading-relaxed font-medium' }, '📸 A foto deve mostrar a fachada do local de entrega: loja, empresa, residência, prédio ou condomínio. Fotos borradas, de veículos, ruas ou screenshots não são aceitas.')
+      ),
+      h('button', {
+        onClick: function() { setFase('idle'); setFotoB64(null); setFotoPre(null); },
+        className: 'px-8 py-3 rounded-xl font-semibold text-white',
+        style: { background: 'linear-gradient(135deg, #550776, #7c3aed)' },
+      }, '📸 Enviar outra foto')
     );
 
     // Fase: aviso de localização não validada
