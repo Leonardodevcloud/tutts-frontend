@@ -1014,7 +1014,20 @@
                     r.status === 'sucesso' && r.frete_recalculado === false && h('div', {
                       className: 'mt-1 text-[10px] font-bold text-orange-600 bg-orange-50 border border-orange-200 rounded px-1.5 py-0.5 text-center',
                       title: 'Endereço corrigido, mas o frete NÃO foi recalculado automaticamente. Necessário recalcular manualmente.',
-                    }, '⚠️ Frete pendente')
+                    }, '⚠️ Frete pendente'),
+                    // Badge de validação IA
+                    (() => {
+                      const v = r.validacao_localizacao;
+                      if (!v) return null;
+                      if (v.valido) return h('div', {
+                        className: 'mt-1 text-[10px] font-bold text-green-700 bg-green-50 border border-green-200 rounded px-1.5 py-0.5 text-center',
+                        title: `✅ ${v.nome_foto || 'Local'} → ${v.match?.nome || 'Validado'} (${v.confianca || 0}%)`,
+                      }, '✅ IA Validado');
+                      return h('div', {
+                        className: 'mt-1 text-[10px] font-bold text-red-700 bg-red-50 border border-red-200 rounded px-1.5 py-0.5 text-center animate-pulse',
+                        title: v.motivo || 'Não validado',
+                      }, '🔍 Investigar');
+                    })()
                   ),
                   h('td', { className: 'px-3 py-3 text-xs text-gray-500 max-w-[180px]' },
                     r.endereco_antigo
@@ -1065,7 +1078,42 @@
                       r.detalhe_erro && h('div', { className: 'p-2 bg-red-50 rounded-lg col-span-2' },
                         h('p', { className: 'font-semibold text-red-700 mb-1' }, '🔍 Detalhe do erro'),
                         h('pre', { className: 'text-red-600 whitespace-pre-wrap font-mono' }, r.detalhe_erro)
-                      )
+                      ),
+                      // Validação IA
+                      (() => {
+                        const v = r.validacao_localizacao;
+                        if (!v) return h('div', { className: 'p-2 bg-gray-50 rounded-lg col-span-2' },
+                          h('p', { className: 'font-semibold text-gray-500 mb-1' }, '🤖 Validação IA'),
+                          h('p', { className: 'text-gray-400' }, 'Sem dados de validação (solicitação anterior à funcionalidade)')
+                        );
+                        const corCard = v.valido ? 'bg-green-50' : 'bg-red-50';
+                        const corTitulo = v.valido ? 'text-green-700' : 'text-red-700';
+                        const corTexto = v.valido ? 'text-green-600' : 'text-red-600';
+                        return h('div', { className: `p-3 ${corCard} rounded-lg col-span-2` },
+                          h('p', { className: `font-semibold ${corTitulo} mb-2` },
+                            v.valido ? '🤖 ✅ Validação IA — Aprovado' : '🤖 🔍 Validação IA — Necessita Investigação'
+                          ),
+                          h('div', { className: 'grid grid-cols-2 md:grid-cols-4 gap-2' },
+                            h('div', { className: 'bg-white rounded p-2 text-center' },
+                              h('p', { className: 'text-[10px] text-gray-500' }, 'Nome na Foto'),
+                              h('p', { className: `text-xs font-semibold ${corTexto}` }, v.nome_foto || '—')
+                            ),
+                            h('div', { className: 'bg-white rounded p-2 text-center' },
+                              h('p', { className: 'text-[10px] text-gray-500' }, 'Match Google'),
+                              h('p', { className: 'text-xs font-semibold text-blue-700' }, v.match?.nome || 'Nenhum')
+                            ),
+                            h('div', { className: 'bg-white rounded p-2 text-center' },
+                              h('p', { className: 'text-[10px] text-gray-500' }, 'Confiança'),
+                              h('p', { className: `text-xs font-bold ${(v.confianca || 0) >= 50 ? 'text-green-600' : 'text-red-600'}` }, `${v.confianca || 0}%`)
+                            ),
+                            h('div', { className: 'bg-white rounded p-2 text-center' },
+                              h('p', { className: 'text-[10px] text-gray-500' }, 'Motivo'),
+                              h('p', { className: `text-xs ${corTexto}` }, v.motivo || '—')
+                            )
+                          ),
+                          v.match?.endereco && h('p', { className: 'text-xs text-gray-500 mt-2' }, '📍 Google: ', v.match.endereco)
+                        );
+                      })()
                     )
                   )
                 )
