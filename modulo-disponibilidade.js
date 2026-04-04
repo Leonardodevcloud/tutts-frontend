@@ -339,7 +339,8 @@
                                 nome_profissional: "cod_profissional" === a ? s || null : r[o].nome_profissional || null,
                                 status: r[o].status,
                                 observacao: r[o].observacao,
-                                observacao_usuario: usuarioLogado?.fullName || "Sistema"
+                                observacao_usuario: usuarioLogado?.fullName || "Sistema",
+                                status_usuario: usuarioLogado?.fullName || "Sistema"
                             })
                         })
                     } catch (e) {
@@ -2318,7 +2319,8 @@
                                 }))
                             })(e) : c(e.id, "status", t.target.value)
                         },
-                        className: `w-full px-1 py-0.5 border border-gray-200 rounded text-xs font-semibold ${n[e.status]||""}`
+                        className: `w-full px-1 py-0.5 border border-gray-200 rounded text-xs font-semibold ${n[e.status]||""}`,
+                        title: e.status_alterado_por ? `${e.status_alterado_por} — ${e.status_alterado_em ? new Date(e.status_alterado_em).toLocaleString("pt-BR") : ""}` : ""
                     }, React.createElement("option", {
                         value: "A CONFIRMAR"
                     }, "A CONFIRMAR"), React.createElement("option", {
@@ -2350,9 +2352,15 @@
                     }, React.createElement("button", {
                         onClick: () => (async e => {
                             try {
-                                await _fetch(`${API_URL}/disponibilidade/linhas/${e}`, {
+                                const resp = await _fetch(`${API_URL}/disponibilidade/linhas/${e}`, {
                                     method: "DELETE"
-                                }), r()
+                                });
+                                if (!resp.ok) {
+                                    const data = await resp.json().catch(() => ({}));
+                                    ja(data.error || "Erro ao remover linha", "error");
+                                    return;
+                                }
+                                r()
                             } catch (e) {
                                 ja("Erro ao remover linha", "error")
                             }
