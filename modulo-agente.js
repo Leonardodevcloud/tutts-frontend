@@ -229,7 +229,7 @@
       }
 
       setLoading(true);
-      setFase('polling');
+      setFase('validando');
       setDetalhe('');
 
       try {
@@ -250,7 +250,6 @@
 
         if (!res.ok) {
           const msg = data.erros ? data.erros.join(' ') : (data.erro || 'Erro ao enviar.');
-          // OS duplicada: mostrar toast e manter no formulário (não ir para tela de erro)
           if (res.status === 409) {
             showToast(msg, 'error');
             setLoading(false);
@@ -261,7 +260,20 @@
           return;
         }
 
+        // Verificar resultado da validação de localização
+        const valLoc = data.validacao_localizacao;
+        if (valLoc && valLoc.alerta) {
+          // Localização não validada — mostrar aviso e prosseguir
+          setFase('aviso_localizacao');
+          setDetalhe(JSON.stringify(valLoc));
+          setSolId(data.id);
+          setLoading(false);
+          return;
+        }
+
+        // Validado OK ou sem validação — direto pro polling
         setSolId(data.id);
+        setFase('polling');
         iniciarPolling(data.id);
 
       } catch (err) {
@@ -284,6 +296,57 @@
     };
 
     // ── Render: feedback ──────────────────────────────────────────────────
+
+    // Fase: validando localização
+    if (fase === 'validando') return h('div', {
+      className: 'fixed inset-0 z-50 flex flex-col items-center justify-center px-6',
+      style: { background: 'linear-gradient(135deg, #0f0e1a 0%, #1a1035 50%, #0f0e1a 100%)' }
+    },
+      h('style', {}, '@keyframes agentScan{0%{top:10%}50%{top:80%}100%{top:10%}}@keyframes agentPulse{0%,100%{opacity:0.3}50%{opacity:1}}'),
+      h('div', { style: { position: 'relative', width: '80px', height: '80px', marginBottom: '24px' } },
+        h('div', { style: { position: 'absolute', inset: 0, border: '2px solid #7C3AED', borderRadius: '50%', opacity: 0.2 } }),
+        h('div', { style: { position: 'absolute', inset: '10px', border: '2px solid #7C3AED', borderRadius: '50%', opacity: 0.4 } }),
+        h('div', { style: { position: 'absolute', inset: 0, borderRadius: '50%', border: '2px solid transparent', borderTopColor: '#7C3AED', animation: 'spin 1.5s linear infinite' } }),
+        h('div', { style: { position: 'absolute', width: '100%', height: '2px', background: 'linear-gradient(90deg, transparent, #7C3AED, transparent)', opacity: 0.6, animation: 'agentScan 2s linear infinite' } }),
+        h('div', { style: { position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', fontSize: '24px' } }, '📍')
+      ),
+      h('p', { style: { fontSize: '15px', fontWeight: 600, color: '#e2e0f0', textAlign: 'center', maxWidth: '300px', lineHeight: 1.5 } },
+        'Estamos cruzando a informação da foto enviada com a sua localização para identificar o estabelecimento do cliente.'
+      ),
+      h('div', { style: { display: 'flex', gap: '6px', marginTop: '20px' } },
+        h('div', { style: { width: '8px', height: '8px', borderRadius: '50%', background: '#7C3AED', animation: 'agentPulse 1s 0s infinite' } }),
+        h('div', { style: { width: '8px', height: '8px', borderRadius: '50%', background: '#7C3AED', animation: 'agentPulse 1s 0.2s infinite' } }),
+        h('div', { style: { width: '8px', height: '8px', borderRadius: '50%', background: '#7C3AED', animation: 'agentPulse 1s 0.4s infinite' } })
+      )
+    );
+
+    // Fase: aviso de localização não validada
+    if (fase === 'aviso_localizacao') return h('div', {
+      className: 'flex flex-col items-center justify-center py-10 px-6 text-center'
+    },
+      h('div', { className: 'w-20 h-20 rounded-full bg-yellow-100 flex items-center justify-center mb-6' },
+        h('span', { className: 'text-4xl' }, '⚠️')
+      ),
+      h('h2', { className: 'text-xl font-bold text-yellow-700 mb-4' }, 'Atenção'),
+      h('div', { className: 'bg-yellow-50 border border-yellow-300 rounded-xl p-5 mb-6 max-w-md' },
+        h('p', { className: 'text-sm text-yellow-800 leading-relaxed' },
+          'A foto enviada e a localização não condizem com nenhum estabelecimento comercial identificado na região.'
+        ),
+        h('p', { className: 'text-sm text-yellow-800 leading-relaxed mt-3 font-semibold' },
+          'Iremos avançar com seu ajuste. Mas posteriormente o suporte irá validar, e em caso de inconsistências, o endereço voltará ao original.'
+        )
+      ),
+      h('button', {
+        onClick: function() {
+          setFase('polling');
+          setLoading(true);
+          iniciarPolling(solicitacaoId);
+        },
+        className: 'px-8 py-3 rounded-xl font-semibold text-white',
+        style: { background: 'linear-gradient(135deg, #550776, #7c3aed)' },
+      }, '✅ Entendi, prosseguir')
+    );
+
     if (fase === 'sucesso') return h('div', { className: 'flex flex-col items-center justify-center py-16 px-6 text-center' },
       h('div', { className: 'w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mb-6' },
         h('span', { className: 'text-4xl' }, '✅')
