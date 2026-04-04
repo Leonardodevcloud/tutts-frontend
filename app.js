@@ -4075,8 +4075,11 @@ const hideLoadingScreen = () => {
                                 } else {
                                     ja(`❌ Sua contestação da OS ${data.data.ordem_servico} foi rejeitada definitivamente.`, "error");
                                 }
-                                // Recarregar lista do motoboy
                                 try { La(); } catch {}
+                            }
+                            else if (data.event === 'FILA_MOVIDO_ULTIMO') {
+                                console.log('📋 [WS] Movido para último:', data.data);
+                                x(prev => ({ ...prev, _filaMovidoModal: data.data }));
                             }
                             else if (data.event === 'REAUTH_SUCCESS') { console.log('🔄 [WS] Token renovado no WS'); }
                             else if (data.event === 'AUTH_EXPIRED') {
@@ -9846,6 +9849,30 @@ const hideLoadingScreen = () => {
                 ),
                 React.createElement("button", {
                     onClick: function() { x(function(prev) { return { ...prev, _modalFotoDuplicada: false }; }); },
+                    className: "w-full py-3 bg-purple-600 text-white rounded-xl font-bold hover:bg-purple-700"
+                }, "Entendi")
+            )
+        ),
+        // MODAL DE FILA — MOVIDO PARA ÚLTIMO
+        p._filaMovidoModal && React.createElement("div", { className: "fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" },
+            React.createElement("div", { className: "bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full" },
+                React.createElement("div", { className: "text-center mb-4" },
+                    React.createElement("span", { className: "text-5xl block mb-3" }, p._filaMovidoModal.penalidade ? "🚫" : "⚠️"),
+                    React.createElement("h2", { className: "text-xl font-bold " + (p._filaMovidoModal.penalidade ? "text-red-800" : "text-orange-800") + " mb-2" },
+                        p._filaMovidoModal.penalidade ? "Fila — Aviso Importante" : "Fila — Aviso"
+                    ),
+                    p._filaMovidoModal.central_nome && React.createElement("p", { className: "text-sm text-gray-500" }, p._filaMovidoModal.central_nome)
+                ),
+                React.createElement("div", { className: "bg-orange-50 rounded-xl p-4 mb-4 border border-orange-200" },
+                    React.createElement("p", { className: "text-sm text-orange-800 leading-relaxed" }, p._filaMovidoModal.mensagem)
+                ),
+                React.createElement("div", { className: (p._filaMovidoModal.penalidade ? "bg-red-50 border-red-200" : "bg-yellow-50 border-yellow-200") + " rounded-xl p-4 mb-4 border" },
+                    React.createElement("p", { className: "text-sm " + (p._filaMovidoModal.penalidade ? "text-red-800 font-bold" : "text-yellow-800") + " leading-relaxed text-center" },
+                        p._filaMovidoModal.proxima_punicao
+                    )
+                ),
+                React.createElement("button", {
+                    onClick: function() { x(function(prev) { return { ...prev, _filaMovidoModal: null }; }); },
                     className: "w-full py-3 bg-purple-600 text-white rounded-xl font-bold hover:bg-purple-700"
                 }, "Entendi")
             )
