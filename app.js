@@ -8521,7 +8521,11 @@ const hideLoadingScreen = () => {
                 });
                 if (!resp.ok) {
                     const errData = await resp.json().catch(() => ({}));
-                    ja(errData.motivo || errData.error || "Erro ao enviar solicitação", "error");
+                    if (errData.error === 'foto_duplicada') {
+                        x(prev => ({ ...prev, _modalFotoDuplicada: true, _fotoDupOS: errData.os_original || '?', _fotoDupData: errData.data_original || '?' }));
+                    } else {
+                        ja(errData.motivo || errData.error || "Erro ao enviar solicitação", "error");
+                    }
                     s(!1);
                     return;
                 }
@@ -9821,6 +9825,31 @@ const hideLoadingScreen = () => {
                 )
             );
         })(),
+        // MODAL DE FOTO DUPLICADA
+        p._modalFotoDuplicada && React.createElement("div", { className: "fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" },
+            React.createElement("div", { className: "bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full" },
+                React.createElement("div", { className: "text-center mb-4" },
+                    React.createElement("span", { className: "text-5xl block mb-3" }, "🚨"),
+                    React.createElement("h2", { className: "text-xl font-bold text-red-800 mb-2" }, "Foto Duplicada Detectada")
+                ),
+                React.createElement("div", { className: "bg-red-50 rounded-xl p-4 mb-4 border border-red-200" },
+                    React.createElement("p", { className: "text-sm text-red-800 text-center" },
+                        "Você já enviou essa foto anteriormente na OS ",
+                        React.createElement("strong", null, p._fotoDupOS || "?"),
+                        " do dia ",
+                        React.createElement("strong", null, p._fotoDupData || "?"),
+                        "!"
+                    )
+                ),
+                React.createElement("div", { className: "bg-yellow-50 rounded-xl p-3 mb-4 border border-yellow-200" },
+                    React.createElement("p", { className: "text-sm text-yellow-800 text-center" }, "📸 Por favor, envie uma foto diferente para prosseguir com sua solicitação.")
+                ),
+                React.createElement("button", {
+                    onClick: function() { x(function(prev) { return { ...prev, _modalFotoDuplicada: false }; }); },
+                    className: "w-full py-3 bg-purple-600 text-white rounded-xl font-bold hover:bg-purple-700"
+                }, "Entendi")
+            )
+        ),
         React.createElement("div", {
             className: "bg-white rounded-xl shadow p-4 sm:p-6 mb-4 sm:mb-6"
         }, React.createElement("h2", {
