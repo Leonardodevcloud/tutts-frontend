@@ -433,9 +433,9 @@
               h('p', { className: 'text-lg font-bold text-green-700' }, `${valoresOS.depois.km} km`),
               h('p', { className: 'text-[10px] text-green-500' }, 'Distância')
             ),
-            valoresOS.depois.valor_servico && h('div', { className: 'text-center' },
-              h('p', { className: 'text-lg font-bold text-green-700' }, `R$ ${valoresOS.depois.valor_servico}`),
-              h('p', { className: 'text-[10px] text-green-500' }, 'Valor serviço')
+            valoresOS.depois.valor_profissional && h('div', { className: 'text-center' },
+              h('p', { className: 'text-lg font-bold text-green-700' }, `R$ ${valoresOS.depois.valor_profissional}`),
+              h('p', { className: 'text-[10px] text-green-500' }, 'Valor profissional')
             )
           )
         )
@@ -1193,6 +1193,7 @@
                             h('div', { className: 'bg-green-50 border border-green-200 rounded-lg p-2' },
                               h('p', { className: 'text-[10px] font-bold text-green-600 mb-1' }, 'DEPOIS'),
                               d && d.km && h('p', { className: 'text-xs text-green-700' }, '🛣️ ', h('strong', null, d.km), ' km'),
+                              d && d.valor_profissional && h('p', { className: 'text-xs text-green-700' }, '💰 Profissional: R$ ', h('strong', null, d.valor_profissional)),
                               d && d.valor_servico && h('p', { className: 'text-xs text-green-700' }, '💰 Serviço: R$ ', h('strong', null, d.valor_servico)),
                               !d && h('p', { className: 'text-xs text-gray-400' }, 'Não capturado')
                             )
