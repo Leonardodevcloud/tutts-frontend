@@ -262,9 +262,9 @@
         if (!res.ok) {
           const msg = data.erros ? data.erros.join(' ') : (data.erro || 'Erro ao enviar.');
           if (res.status === 409) {
-            showToast(msg, 'error');
+            setFase('os_duplicada');
+            setDetalhe(msg);
             setLoading(false);
-            setFase('idle');
             return;
           }
           // Foto rejeitada pela IA — feedback específico
@@ -336,6 +336,22 @@
         h('div', { style: { width: '8px', height: '8px', borderRadius: '50%', background: '#7C3AED', animation: 'agentPulse 1s 0.2s infinite' } }),
         h('div', { style: { width: '8px', height: '8px', borderRadius: '50%', background: '#7C3AED', animation: 'agentPulse 1s 0.4s infinite' } })
       )
+    );
+
+    // Fase: OS/ponto já solicitado
+    if (fase === 'os_duplicada') return h('div', { className: 'flex flex-col items-center justify-center py-10 px-6 text-center' },
+      h('div', { className: 'w-20 h-20 rounded-full bg-orange-100 flex items-center justify-center mb-6' },
+        h('span', { className: 'text-4xl' }, '⚠️')
+      ),
+      h('h2', { className: 'text-xl font-bold text-orange-700 mb-4' }, 'Solicitação já existente'),
+      h('div', { className: 'bg-orange-50 border border-orange-300 rounded-xl p-5 mb-6 max-w-md' },
+        h('p', { className: 'text-sm text-orange-800 leading-relaxed' }, detalheErro)
+      ),
+      h('button', {
+        onClick: resetar,
+        className: 'px-8 py-3 rounded-xl font-semibold text-white',
+        style: { background: 'linear-gradient(135deg, #550776, #7c3aed)' },
+      }, '↩ Voltar')
     );
 
     // Fase: endereço já corrigido anteriormente
