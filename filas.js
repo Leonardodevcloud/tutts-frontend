@@ -136,7 +136,38 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
     const carregarMinhaPosicao = async () => { try{ const r=await fetchAuth(`${apiUrl}/filas/minha-posicao`); const d=await r.json(); if(d.success) setMinhaPosicao(d); }catch(e){} };
     const carregarEstatisticas = async (id) => { if(!id)return; try{ const r=await fetchAuth(`${apiUrl}/filas/estatisticas/${id}?data=${filtroData}`); const d=await r.json(); if(d.success) setEstatisticas(d); }catch(e){} };
     const carregarHistorico = async (id) => { if(!id)return; try{ const r=await fetchAuth(`${apiUrl}/filas/historico/${id}?data_inicio=${filtroData}&data_fim=${filtroData}`); const d=await r.json(); if(d.success) setHistorico(d.historico); }catch(e){} };
-    const carregarProfissionais = async () => { try{ const r=await fetchAuth(`${apiUrl}/users`); const d=await r.json(); if(Array.isArray(d)) setProfissionaisDisponiveis(d.filter(u=>u.role==='user')); }catch(e){} };
+    // 🔧 FIX CADASTRO-CRM: Lista de profissionais pra vínculo vem do CRM
+    // (crm_leads_capturados → planilha → fallbacks), não da tabela users.
+    // Antes: GET /api/users filter role==='user' — só pegava motoboy com login.
+    // Agora: GET /api/crm/profissionais-cadastro — pega todos do cadastro CRM.
+    // Mapeia {codigo, nome} → {cod_profissional, full_name} pra manter o
+    // resto do componente (modal, vincularProfissional) intacto.
+    const carregarProfissionais = async () => {
+        try {
+            const r = await fetchAuth(`${apiUrl}/crm/profissionais-cadastro`);
+            if (!r.ok) {
+                console.warn('[filas] /crm/profissionais-cadastro retornou', r.status);
+                return;
+            }
+            const d = await r.json();
+            const lista = Array.isArray(d?.data) ? d.data : [];
+            // Mapear pro formato esperado pelo componente
+            const normalizada = lista
+                .filter(p => p && p.codigo) // só com código válido
+                .map(p => ({
+                    cod_profissional: String(p.codigo).trim(),
+                    full_name: p.nome || `#${p.codigo}`,
+                    telefone: p.telefone || '',
+                    cidade: p.cidade || '',
+                    regiao: p.regiao || '',
+                    origem: p.origem || ''
+                }))
+                .sort((a, b) => (a.full_name || '').localeCompare(b.full_name || '', 'pt-BR'));
+            setProfissionaisDisponiveis(normalizada);
+        } catch (e) {
+            console.error('[filas] Erro ao carregar profissionais do CRM:', e?.message || e);
+        }
+    };
 
     // AÇÕES ADMIN
     const salvarCentral = async (dados) => { try{ const m=dados.id?'PUT':'POST'; const u=dados.id?`${apiUrl}/filas/centrais/${dados.id}`:`${apiUrl}/filas/centrais`; const r=await fetchAuth(u,{method:m,body:JSON.stringify(dados)}); const d=await r.json(); if(d.success){ showToast(dados.id?'Atualizada!':'Criada!','success'); setModalCentral(null); setEnderecoValidado(false); setCoordenadasEncontradas(null); carregarCentrais(); }else{ showToast(d.error||'Erro','error'); } }catch(e){ showToast('Erro ao salvar','error'); } };
