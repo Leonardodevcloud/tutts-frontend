@@ -196,6 +196,12 @@ const pararRefreshProativo = () => {
 
 // 🔒 SECURITY FIX (HIGH-01): Ao recarregar página, token em memória se perde.
 // Restaurar automaticamente via refresh cookie se usuário existir em sessionStorage.
+// 🔧 RACE FIX: Promise que resolve quando o bootstrap de auth termina.
+// fetchAuth aguarda essa promise antes de qualquer request — impede que
+// requests saiam com token null durante a janela de restauração do token.
+let _authBootstrapResolver;
+const _authBootstrapPromise = new Promise(resolve => { _authBootstrapResolver = resolve; });
+
 (async function restaurarTokenAoCarregar() {
     const userSalvo = sessionStorage.getItem("tutts_user");
     if (userSalvo && !_accessToken) {
@@ -231,6 +237,8 @@ const pararRefreshProativo = () => {
             console.warn('⚠️ Não foi possível restaurar token:', e.message);
         }
     }
+    // 🔧 RACE FIX: sempre resolve (sucesso OU falha OU sessão ausente)
+    _authBootstrapResolver();
 })();
 
 // Função para renovar token usando refresh token (via HttpOnly cookie)
@@ -294,6 +302,12 @@ const fazerLogoutCompleto = () => {
 
 // Função para fazer requisições autenticadas com auto-refresh
 const fetchAuth = async (url, options = {}, retryCount = 0) => {
+    // 🔧 RACE FIX: Aguarda o bootstrap de auth terminar antes de disparar
+    // qualquer request. Isso impede que um F5 envie fetches com token null
+    // enquanto o IIFE restaurarTokenAoCarregar ainda está renovando o token.
+    if (_authBootstrapPromise) {
+        try { await _authBootstrapPromise; } catch(e) {}
+    }
     let token = getToken();
     const headers = {
         'Content-Type': 'application/json',
@@ -2596,6 +2610,29 @@ const hideLoadingScreen = () => {
                 if (abaId) setPerfTab(abaId);
             }
         };
+
+        // ==================== SINCRONIZAR USUÁRIO PÓS-BOOTSTRAP ====================
+        // Após o IIFE restaurarTokenAoCarregar terminar, o sessionStorage pode ter
+        // sido atualizado com dados frescos do user (ou limpo se refresh falhou).
+        // Re-sincroniza o React state com esse resultado pra evitar descasamento.
+        useEffect(() => {
+            let cancelled = false;
+            (async () => {
+                if (typeof _authBootstrapPromise !== 'undefined' && _authBootstrapPromise) {
+                    try { await _authBootstrapPromise; } catch(e) {}
+                }
+                if (cancelled) return;
+                try {
+                    const userSalvo = sessionStorage.getItem("tutts_user");
+                    const userNovo = userSalvo ? JSON.parse(userSalvo) : null;
+                    // Só atualiza se realmente mudou (evita re-render desnecessário)
+                    if (JSON.stringify(userNovo) !== JSON.stringify(l)) {
+                        r(userNovo);
+                    }
+                } catch(e) { /* ignora */ }
+            })();
+            return () => { cancelled = true; };
+        }, []); // eslint-disable-line
 
         // ==================== PERSISTIR ESTADO DE NAVEGAÇÃO ====================
         // Sempre que o módulo ativo (Ee) ou qualquer state de aba mudar,
