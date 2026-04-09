@@ -293,6 +293,7 @@ const renovarToken = async () => {
 const fazerLogoutCompleto = () => {
     pararRefreshProativo(); // 🔧 FIX: Parar timer ao deslogar
     sessionStorage.removeItem("tutts_user");
+    sessionStorage.removeItem("tutts_social_profile"); // 📸 limpar cache da foto
     _accessToken = null; // 🔒 Limpar token em memória
     sessionStorage.removeItem("tutts_csrf");
     sessionStorage.removeItem("tutts_todo_notif_shown"); // 🔒 Reset flag para próximo login
@@ -2045,6 +2046,7 @@ const hideLoadingScreen = () => {
                 }).catch(() => {}); // Ignorar erros no logout
                 pararRefreshProativo(); // 🔧 FIX: Parar timer ao deslogar
                 sessionStorage.removeItem("tutts_user");
+                sessionStorage.removeItem("tutts_social_profile"); // 📸 limpar cache da foto
                 _accessToken = null; // 🔒 Limpar token em memória
                 sessionStorage.removeItem("tutts_csrf");
                 localStorage.removeItem("tutts_refresh_token"); // Limpar resquício antigo
@@ -2236,7 +2238,7 @@ const hideLoadingScreen = () => {
         [calDataFimAberto, setCalDataFimAberto] = useState(false),
         [calMesAtual, setCalMesAtual] = useState(new Date()),
         // Estados do módulo Social
-        [socialProfile, setSocialProfile] = useState(null),
+        [socialProfile, setSocialProfile] = useState(() => { try { const s = sessionStorage.getItem("tutts_social_profile"); return s ? JSON.parse(s) : null; } catch(e) { return null; } }),
         [socialUsers, setSocialUsers] = useState([]),
         [socialMessages, setSocialMessages] = useState([]),
         [socialUnread, setSocialUnread] = useState(0),
@@ -2638,6 +2640,17 @@ const hideLoadingScreen = () => {
         useEffect(() => {
             try { if (perfTab) localStorage.setItem("tutts_tab_perf", perfTab); } catch(e) {}
         }, [perfTab]);
+
+        // 📸 Persistir foto/perfil social no sessionStorage pra nunca sumir no F5
+        useEffect(() => {
+            try {
+                if (socialProfile) {
+                    sessionStorage.setItem("tutts_social_profile", JSON.stringify(socialProfile));
+                } else {
+                    sessionStorage.removeItem("tutts_social_profile");
+                }
+            } catch(e) {}
+        }, [socialProfile]);
 
         // ==================== PORTAL DO ROTEIRIZADOR ====================
         useEffect(() => {
