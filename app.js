@@ -3329,6 +3329,7 @@ const hideLoadingScreen = () => {
         
         // ==================== FUNÇÕES DO MÓDULO SOCIAL ====================
         const loadSocialProfile = async (userCod) => {
+            if (!userCod) return; // 🛡️ guard: nunca buscar perfil com cod vazio/undefined
             try {
                 const res = await fetchAuth(`${API_URL}/social/profile/${userCod}`);
                 if (res.ok) {
@@ -3930,7 +3931,7 @@ const hideLoadingScreen = () => {
         }, [p.cod, p.view, pe]), 
         
         useEffect(() => {
-            if (!l) return;
+            if (!l?.codProfissional) return;
             // ⚡ PERFORMANCE: No login, carregar APENAS dados essenciais
             // Dados pesados de cada módulo carregam sob demanda (lazy)
             const safeCall = async (fn) => { try { await fn() } catch(e) { console.log("Init error:", e) } };
