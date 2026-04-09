@@ -317,7 +317,13 @@ const fazerLogoutCompleto = () => {
     sessionStorage.removeItem("tutts_csrf");
     sessionStorage.removeItem("tutts_todo_notif_shown"); // 🔒 Reset flag para próximo login
     localStorage.removeItem("tutts_refresh_token"); // Limpar resquício antigo
-    window.location.reload();
+    // 🔧 FIX HOME-NO-LOGIN: limpa o último módulo ativo e o estado das abas
+    // pra que o próximo login sempre abra na Home, não no último módulo usado.
+    try { localStorage.removeItem("tutts_modulo_ativo"); } catch(e) {}
+    try { localStorage.removeItem("tutts_abas_estado"); } catch(e) {}
+    // 🔧 FIX HOME-NO-LOGIN: redireciona pra raiz (sem hash) em vez de recarregar
+    // mantendo a URL atual. Assim F5 logado não cai em tela de módulo direto.
+    window.location.href = window.location.origin + window.location.pathname;
 };
 
 // Função para fazer requisições autenticadas com auto-refresh
@@ -2069,6 +2075,13 @@ const hideLoadingScreen = () => {
                 _accessToken = null; // 🔒 Limpar token em memória
                 sessionStorage.removeItem("tutts_csrf");
                 localStorage.removeItem("tutts_refresh_token"); // Limpar resquício antigo
+                // 🔧 FIX HOME-NO-LOGIN: limpa último módulo e estado das abas
+                // pra que o próximo login caia na Home.
+                try { localStorage.removeItem("tutts_modulo_ativo"); } catch(e) {}
+                try { localStorage.removeItem("tutts_abas_estado"); } catch(e) {}
+                // Reseta para Home antes de sair (garante que mesmo se o usuário
+                // não recarregar a página manualmente, o state interno já está em home).
+                try { he("home"); } catch(e) {}
             }
             r(e);
         }, [c, s] = useState(!1), [n, m] = useState(!1), [i, d] = useState(null), [p, x] = useState(() => { try { const saved = localStorage.getItem("tutts_abas_estado"); return saved ? JSON.parse(saved) : {}; } catch(e) { return {}; } }), [u, g] = useState(null), [b, R] = useState(Date.now()), [E, h] = useState(null), [f, N] = useState(!1), [y, v] = useState({
