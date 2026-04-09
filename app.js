@@ -2611,29 +2611,6 @@ const hideLoadingScreen = () => {
             }
         };
 
-        // ==================== SINCRONIZAR USUÁRIO PÓS-BOOTSTRAP ====================
-        // Após o IIFE restaurarTokenAoCarregar terminar, o sessionStorage pode ter
-        // sido atualizado com dados frescos do user (ou limpo se refresh falhou).
-        // Re-sincroniza o React state com esse resultado pra evitar descasamento.
-        useEffect(() => {
-            let cancelled = false;
-            (async () => {
-                if (typeof _authBootstrapPromise !== 'undefined' && _authBootstrapPromise) {
-                    try { await _authBootstrapPromise; } catch(e) {}
-                }
-                if (cancelled) return;
-                try {
-                    const userSalvo = sessionStorage.getItem("tutts_user");
-                    const userNovo = userSalvo ? JSON.parse(userSalvo) : null;
-                    // Só atualiza se realmente mudou (evita re-render desnecessário)
-                    if (JSON.stringify(userNovo) !== JSON.stringify(l)) {
-                        r(userNovo);
-                    }
-                } catch(e) { /* ignora */ }
-            })();
-            return () => { cancelled = true; };
-        }, []); // eslint-disable-line
-
         // ==================== PERSISTIR ESTADO DE NAVEGAÇÃO ====================
         // Sempre que o módulo ativo (Ee) ou qualquer state de aba mudar,
         // salva no localStorage. No F5, todos são re-hidratados via useState lazy.
@@ -3941,9 +3918,13 @@ const hideLoadingScreen = () => {
                 t = ["mousedown", "mousemove", "keydown", "scroll", "touchstart", "click"];
             t.forEach(t => window.addEventListener(t, e));
             const a = setInterval(() => {
-                Date.now() - b > 9e5 && (ja("⏰ Sessão expirada", "error"), setTimeout(() => {
-                    o(null), x({})
-                }, 1500))
+                // 🔧 FIX: mantém o aviso de sessão idle mas NÃO desloga mais.
+                // Logout automático causava bugs de F5 quando havia race com
+                // restauração de token. Se o user realmente quer sair, usa o botão.
+                if (Date.now() - b > 9e5) {
+                    ja("⏰ Sessão inativa — continue usando normalmente", "warning");
+                    R(Date.now()); // reseta o timer pra não spammar toasts
+                }
             }, 3e4);
             return () => {
                 t.forEach(t => window.removeEventListener(t, e)), clearInterval(a)
