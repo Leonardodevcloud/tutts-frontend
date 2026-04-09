@@ -278,12 +278,22 @@
                 let s = r[o].nome_profissional;
                 if ("cod_profissional" === a)
                     if (l && "" !== l.trim()) {
+                        // 🔧 FIX CADASTRO-CRM: Preenchimento IMEDIATO via lookup local
+                        // (planilha pe / users A) como hint rápido para UX — mas o nome
+                        // DEFINITIVO é resolvido no backend (/api/crm/profissionais-cadastro/:cod)
+                        // dentro do debounce abaixo, que tem prioridade sobre isso.
+                        // O lookup local continua aqui só pra evitar "flash" de campo vazio.
                         if (l.length >= 1) {
                             const e = pe.find(e => e.codigo === l.toString());
                             if (e) s = e.nome, r[o].nome_profissional = e.nome;
                             else {
                                 const e = A.find(e => e.codProfissional?.toLowerCase() === l.toLowerCase());
-                                e ? (s = e.fullName, r[o].nome_profissional = e.fullName) : (s = "", r[o].nome_profissional = "")
+                                if (e) {
+                                    s = e.fullName;
+                                    r[o].nome_profissional = e.fullName;
+                                }
+                                // Não zera mais nome_profissional se lookup local falhou —
+                                // deixa o backend resolver. Evita piscar "vazio → nome".
                             }
                         }
                     } else s = "", r[o].nome_profissional = "";
@@ -294,13 +304,58 @@
                         linhas: r
                     }
                 }));
-                // Debounce: verificar restrição + salvar no backend
+                // Debounce: verificar restrição + buscar nome no CRM + salvar no backend
                 const debounceKey = 'dispDebounce_' + t + '_' + a;
                 clearTimeout(window[debounceKey]);
                 window[debounceKey] = setTimeout(async () => {
                     try {
                         // Verificar restrição apenas para cod_profissional com valor
                         if ("cod_profissional" === a && l && "" !== l.trim()) {
+                            // 🔧 FIX CADASTRO-CRM: resolve nome definitivo via backend.
+                            // Fonte de verdade = crm_leads_capturados (aba Cadastro do CRM),
+                            // com cadeia de fallback: CRM → planilha → disponibilidade → users.
+                            // Definido em /api/crm/profissionais-cadastro/:cod.
+                            try {
+                                const nomeResp = await _fetch(`${API_URL}/crm/profissionais-cadastro/${encodeURIComponent(l)}`);
+                                if (nomeResp.ok) {
+                                    const nomeData = await nomeResp.json();
+                                    if (nomeData && nomeData.encontrado && nomeData.profissional && nomeData.profissional.nome) {
+                                        const nomeResolvido = nomeData.profissional.nome;
+                                        // Só atualiza se o nome mudou (evita re-render desnecessário)
+                                        if (nomeResolvido !== s) {
+                                            s = nomeResolvido;
+                                            r[o].nome_profissional = nomeResolvido;
+                                            // Atualiza o state pra refletir o nome certo na UI
+                                            x(prev => {
+                                                const linhas = [...(prev.dispData?.linhas || [])];
+                                                const idx = linhas.findIndex(e => e.id === t);
+                                                if (idx !== -1 && linhas[idx].cod_profissional === l) {
+                                                    // Só atualiza se o código ainda é o mesmo que buscamos
+                                                    // (usuário pode ter trocado enquanto o fetch estava em voo)
+                                                    linhas[idx] = { ...linhas[idx], nome_profissional: nomeResolvido };
+                                                }
+                                                return { ...prev, dispData: { ...prev.dispData, linhas } };
+                                            });
+                                        }
+                                    } else {
+                                        // Backend respondeu mas não achou — limpa nome pra não deixar hint stale
+                                        s = "";
+                                        r[o].nome_profissional = "";
+                                        x(prev => {
+                                            const linhas = [...(prev.dispData?.linhas || [])];
+                                            const idx = linhas.findIndex(e => e.id === t);
+                                            if (idx !== -1 && linhas[idx].cod_profissional === l) {
+                                                linhas[idx] = { ...linhas[idx], nome_profissional: "" };
+                                            }
+                                            return { ...prev, dispData: { ...prev.dispData, linhas } };
+                                        });
+                                    }
+                                }
+                                // Se !nomeResp.ok (ex: 404, 500), mantém o que o lookup local achou
+                            } catch (errNome) {
+                                console.warn('[disponibilidade] lookup CRM falhou, mantendo hint local:', errNome.message);
+                            }
+
                             try {
                                 const resp = await _fetch(`${API_URL}/disponibilidade/restricoes/verificar?cod_profissional=${l}&loja_id=${r[o].loja_id}`),
                                     dados = await resp.json();
