@@ -6196,31 +6196,125 @@ const hideLoadingScreen = () => {
             };
             init()
         }, [Ee, l]);
+        // 🔧 FIX CADASTRO-CRM: Ta agora mergeia CRM (fonte primária) com a
+        // planilha legada (fallback). Todos os call-sites que fazem pe.find(...)
+        // — autocomplete de nome no registro, helper Da, getCidadeProfissional* —
+        // passam a enxergar motoboys do crm_leads_capturados automaticamente,
+        // sem precisar tocar em nenhum desses call-sites.
+        //
+        // Cadeia de prioridade dentro do array `pe`:
+        //   1º crm_leads_capturados (via /api/crm/profissionais-cadastro)
+        //   2º planilha Google Sheets (legacy, mantida como rede de segurança)
+        //
+        // Se um código existe nas duas fontes, o CRM ganha (sobrescreve).
+        // Se o CRM falhar (network/5xx/auth), cai pra planilha sozinha (fail-open).
+        // Se a planilha falhar, usa só o CRM.
+        // Se ambos falharem, mantém pe vazio e loga warning.
         const Ta = async () => {
             ge(!0), Re(null);
-            try {
-                const e = await fetch("https://docs.google.com/spreadsheets/d/e/2PACX-1vQTbc5J8j85MlYGrjWajG33cTDd6TEpYur5hgNcYUwmtra8jh3Nfsrzm-0GNJO6wCYEZAGEHxw807o7/pub?gid=0&single=true&output=tsv"),
-                    t = (await e.text()).split("\n").filter(e => e.trim()),
-                    a = [];
-                const cidadesSet = new Set();
+
+            // Helper: parse da planilha legacy (preservado do código original)
+            const carregarPlanilhaLegacy = async () => {
+                const e = await fetch("https://docs.google.com/spreadsheets/d/e/2PACX-1vQTbc5J8j85MlYGrjWajG33cTDd6TEpYur5hgNcYUwmtra8jh3Nfsrzm-0GNJO6wCYEZAGEHxw807o7/pub?gid=0&single=true&output=tsv");
+                const t = (await e.text()).split("\n").filter(e => e.trim());
+                const a = [];
                 for (let e = 1; e < t.length; e++) {
                     const l = t[e].split("\t"),
                         r = l[0]?.trim(),
                         o = l[1]?.trim(),
                         cidadeProf = l[3]?.trim() || "";
-                    r && o && a.push({
-                        codigo: r,
-                        nome: o,
-                        cidade: cidadeProf
-                    });
-                    if (cidadeProf) cidadesSet.add(cidadeProf);
+                    if (r && o) {
+                        a.push({
+                            codigo: r,
+                            nome: o,
+                            cidade: cidadeProf,
+                            origem: 'planilha'
+                        });
+                    }
                 }
+                return a;
+            };
+
+            // Helper: carregar CRM via endpoint backend (já autenticado via JWT admin)
+            const carregarCrmCadastro = async () => {
+                const r = await fetchAuth(`${API_URL}/crm/profissionais-cadastro`);
+                if (!r.ok) {
+                    throw new Error(`HTTP ${r.status}`);
+                }
+                const d = await r.json();
+                if (!d || !Array.isArray(d.data)) return [];
+                return d.data
+                    .filter(p => p && p.codigo)
+                    .map(p => ({
+                        codigo: String(p.codigo).trim(),
+                        nome: p.nome || '',
+                        // CRM tem cidade E região; pega o que houver, prioriza cidade
+                        cidade: p.cidade || p.regiao || '',
+                        telefone: p.telefone || '',
+                        regiao: p.regiao || '',
+                        origem: p.origem || 'crm'
+                    }));
+            };
+
+            try {
+                // Carrega ambas as fontes em paralelo (failopen individual)
+                const [crmResult, planilhaResult] = await Promise.allSettled([
+                    carregarCrmCadastro(),
+                    carregarPlanilhaLegacy()
+                ]);
+
+                const crmList = crmResult.status === 'fulfilled' ? crmResult.value : [];
+                const planilhaList = planilhaResult.status === 'fulfilled' ? planilhaResult.value : [];
+
+                if (crmResult.status === 'rejected') {
+                    console.warn('⚠️ [Ta] CRM /profissionais-cadastro falhou, usando só planilha:', crmResult.reason?.message || crmResult.reason);
+                }
+                if (planilhaResult.status === 'rejected') {
+                    console.warn('⚠️ [Ta] Planilha legada falhou, usando só CRM:', planilhaResult.reason?.message || planilhaResult.reason);
+                }
+
+                // Merge: planilha primeiro, CRM depois (CRM sobrescreve em caso de conflito)
+                // Usa Map por código pra deduplicar.
+                const merged = new Map();
+                for (const p of planilhaList) {
+                    if (p.codigo) merged.set(p.codigo, p);
+                }
+                for (const p of crmList) {
+                    if (!p.codigo) continue;
+                    const existing = merged.get(p.codigo);
+                    if (existing) {
+                        // CRM ganha, mas preserva campos da planilha que o CRM não tem
+                        merged.set(p.codigo, {
+                            codigo: p.codigo,
+                            nome: p.nome || existing.nome,
+                            cidade: p.cidade || existing.cidade,
+                            telefone: p.telefone || existing.telefone || '',
+                            regiao: p.regiao || existing.cidade || '',
+                            origem: p.origem
+                        });
+                    } else {
+                        merged.set(p.codigo, p);
+                    }
+                }
+
+                const a = Array.from(merged.values());
+
+                // Conjunto de cidades pra dropdown de indicações
+                const cidadesSet = new Set();
+                for (const p of a) {
+                    if (p.cidade) cidadesSet.add(p.cidade);
+                }
+
                 xe(a);
                 const cidadesArray = Array.from(cidadesSet).sort((a, b) => a.localeCompare(b, 'pt-BR'));
                 setCidadesIndicacao(cidadesArray);
-                console.log(`📊 Planilha carregada: ${a.length} profissionais, ${cidadesArray.length} cidades`);
+
+                const fromCrm = a.filter(p => p.origem === 'crm').length;
+                const fromPlan = a.filter(p => p.origem === 'planilha').length;
+                console.log(`📊 Cadastro carregado: ${a.length} profissionais (${fromCrm} do CRM, ${fromPlan} da planilha) · ${cidadesArray.length} cidades`);
             } catch (e) {
-                console.error("Erro ao carregar planilha:", e), Re("Erro ao carregar lista de profissionais")
+                console.error("Erro ao carregar cadastro de profissionais:", e);
+                Re("Erro ao carregar lista de profissionais");
             }
             ge(!1)
         }, Da = e => {
