@@ -227,14 +227,25 @@ const _authBootstrapPromise = new Promise(resolve => { _authBootstrapResolver = 
                     // 🔧 FIX: Iniciar refresh proativo após restaurar sessão
                     iniciarRefreshProativo();
                 }
-            } else {
-                // Refresh cookie inválido/expirado — limpar sessão salva
-                console.warn('⚠️ Refresh cookie inválido — limpando sessão');
+            } else if (response.status === 401 || response.status === 403) {
+                // 🔧 BUGFIX F5-DISCONNECT: Só apaga sessão em status de auth explícito.
+                // Antes: qualquer !response.ok (incluindo 500, 502, 503, timeout) apagava
+                // sessionStorage e o usuário era deslogado em qualquer hiccup de rede/backend.
+                console.warn(`⚠️ Refresh cookie inválido (HTTP ${response.status}) — limpando sessão`);
                 sessionStorage.removeItem("tutts_user");
                 sessionStorage.removeItem("tutts_csrf");
+            } else {
+                // Erros transitórios (5xx) ou inesperados: mantém sessão, loga e segue.
+                // O usuário ainda tem o refresh cookie httpOnly, então fetchAuth nas
+                // próximas requests vai tentar renovar de novo e eventualmente funciona.
+                console.warn(`⚠️ Refresh falhou com HTTP ${response.status} — mantendo sessão (retry no próximo fetch)`);
             }
         } catch (e) {
-            console.warn('⚠️ Não foi possível restaurar token:', e.message);
+            // 🔧 BUGFIX F5-DISCONNECT: Erros de rede NÃO deslogam.
+            // Antes passava direto sem tocar em sessionStorage, mas sem restaurar o token
+            // em memória também — o que deixava a app num estado estranho.
+            // Agora explicita que a sessão fica intacta e será recuperada no próximo fetch.
+            console.warn('⚠️ Erro de rede ao restaurar token (mantendo sessão):', e.message);
         }
     }
     // 🔧 RACE FIX: sempre resolve (sucesso OU falha OU sessão ausente)
@@ -271,14 +282,22 @@ const renovarToken = async () => {
                 }
                 console.log('🔄 Token renovado automaticamente');
                 return data.token;
-            } else {
-                // Refresh token inválido ou expirado - fazer logout
-                console.log('❌ Refresh token inválido - fazendo logout');
+            } else if (response.status === 401 || response.status === 403) {
+                // 🔧 BUGFIX F5-DISCONNECT: Só desloga em 401/403 explícitos (refresh inválido/revogado).
+                // 500/502/503/timeout são transitórios — retornar null permite retry mais tarde
+                // sem destruir a sessão.
+                console.log(`❌ Refresh token inválido (HTTP ${response.status}) — fazendo logout`);
                 fazerLogoutCompleto();
+                return null;
+            } else {
+                // Erros transitórios: NÃO desloga, só sinaliza falha pra este ciclo.
+                // O próximo fetchAuth com 401 vai tentar renovar de novo.
+                console.warn(`⚠️ Renovação falhou transitoriamente (HTTP ${response.status}) — tentando de novo em seguida`);
                 return null;
             }
         } catch (error) {
-            console.error('❌ Erro ao renovar token:', error);
+            // 🔧 BUGFIX F5-DISCONNECT: Erro de rede NÃO desloga.
+            console.error('❌ Erro de rede ao renovar token (mantendo sessão):', error.message);
             return null;
         } finally {
             isRefreshingToken = false;
