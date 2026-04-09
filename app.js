@@ -2036,7 +2036,7 @@ const hideLoadingScreen = () => {
                 localStorage.removeItem("tutts_refresh_token"); // Limpar resquício antigo
             }
             r(e);
-        }, [c, s] = useState(!1), [n, m] = useState(!1), [i, d] = useState(null), [p, x] = useState({}), [u, g] = useState(null), [b, R] = useState(Date.now()), [E, h] = useState(null), [f, N] = useState(!1), [y, v] = useState({
+        }, [c, s] = useState(!1), [n, m] = useState(!1), [i, d] = useState(null), [p, x] = useState(() => { try { const saved = localStorage.getItem("tutts_abas_estado"); return saved ? JSON.parse(saved) : {}; } catch(e) { return {}; } }), [u, g] = useState(null), [b, R] = useState(Date.now()), [E, h] = useState(null), [f, N] = useState(!1), [y, v] = useState({
             solicitacoes: 0,
             validacao: 0,
             loja: 0,
@@ -2088,7 +2088,7 @@ const hideLoadingScreen = () => {
         }), [qe, Ue] = useState({
             avisos: [],
             loading: !0
-        }), [ze, Be] = useState(null), [Ve, Je] = useState(0), [Qe, He] = useState([]), [Ge, We] = useState(!1), [Ze, Ye] = useState([]), [Ke, Xe] = useState([]), [et, tt] = useState([]), [at, lt] = useState([]), [rt, ot] = useState(!0), [ct, st] = useState(0), [nt, mt] = useState("produtos"), [it, dt] = useState([]), [pt, xt] = useState("lista"), [ut, gt] = useState([]), [bt, Rt] = useState([]), [Et, ht] = useState("home-bi"), [chatIaMsgs, setChatIaMsgs] = useState([]), [chatIaInput, setChatIaInput] = useState(""), [chatIaLoading, setChatIaLoading] = useState(false), [chatIaSql, setChatIaSql] = useState(null), [chatIaFiltros, setChatIaFiltros] = useState({ cod_cliente: [], nomes_clientes: [], centro_custo: [], data_inicio: "", data_fim: "", regiao: "" }), [chatIaIniciado, setChatIaIniciado] = useState(false), [chatIaClientes, setChatIaClientes] = useState([]), [chatIaCentros, setChatIaCentros] = useState([]), [chatIaFiltrosLoading, setChatIaFiltrosLoading] = useState(false), [chatIaDropAberto, setChatIaDropAberto] = useState(null), [chatIaBuscaCliente, setChatIaBuscaCliente] = useState(""), [chatIaConversas, setChatIaConversas] = useState([]), [chatIaConversaAtual, setChatIaConversaAtual] = useState(null), [chatIaConversasLoading, setChatIaConversasLoading] = useState(false), [chatIaSidebarAberta, setChatIaSidebarAberta] = useState(false), [chatIaExportando, setChatIaExportando] = useState(false), [chatIaRegioes, setChatIaRegioes] = useState([]), [ft, Nt] = useState(null), [yt, vt] = useState([]), [wt, _t] = useState([{
+        }), [ze, Be] = useState(null), [Ve, Je] = useState(0), [Qe, He] = useState([]), [Ge, We] = useState(!1), [Ze, Ye] = useState([]), [Ke, Xe] = useState([]), [et, tt] = useState([]), [at, lt] = useState([]), [rt, ot] = useState(!0), [ct, st] = useState(0), [nt, mt] = useState("produtos"), [it, dt] = useState([]), [pt, xt] = useState("lista"), [ut, gt] = useState([]), [bt, Rt] = useState([]), [Et, ht] = useState(() => { try { return localStorage.getItem("tutts_tab_bi") || "home-bi"; } catch(e) { return "home-bi"; } }), [chatIaMsgs, setChatIaMsgs] = useState([]), [chatIaInput, setChatIaInput] = useState(""), [chatIaLoading, setChatIaLoading] = useState(false), [chatIaSql, setChatIaSql] = useState(null), [chatIaFiltros, setChatIaFiltros] = useState({ cod_cliente: [], nomes_clientes: [], centro_custo: [], data_inicio: "", data_fim: "", regiao: "" }), [chatIaIniciado, setChatIaIniciado] = useState(false), [chatIaClientes, setChatIaClientes] = useState([]), [chatIaCentros, setChatIaCentros] = useState([]), [chatIaFiltrosLoading, setChatIaFiltrosLoading] = useState(false), [chatIaDropAberto, setChatIaDropAberto] = useState(null), [chatIaBuscaCliente, setChatIaBuscaCliente] = useState(""), [chatIaConversas, setChatIaConversas] = useState([]), [chatIaConversaAtual, setChatIaConversaAtual] = useState(null), [chatIaConversasLoading, setChatIaConversasLoading] = useState(false), [chatIaSidebarAberta, setChatIaSidebarAberta] = useState(false), [chatIaExportando, setChatIaExportando] = useState(false), [chatIaRegioes, setChatIaRegioes] = useState([]), [ft, Nt] = useState(null), [yt, vt] = useState([]), [wt, _t] = useState([{
             km_min: 0,
             km_max: 15,
             prazo_minutos: 45
@@ -2142,10 +2142,10 @@ const hideLoadingScreen = () => {
         }]),
         [prazosProfissionais, setPrazosProfissionais] = useState([]),
         [prazoProfConfigOS, setPrazoProfConfigOS] = useState([]), // Configurações de prazo prof para aba OS
-        [wa, _a] = useState(!1), [todoGrupos, setTodoGrupos] = useState([]), [todoTarefas, setTodoTarefas] = useState([]), [todoGrupoAtivo, setTodoGrupoAtivo] = useState(null), [todoMetricas, setTodoMetricas] = useState(null), [todoTab, setTodoTab] = useState("tarefas"), [todoFiltroStatus, setTodoFiltroStatus] = useState("todas"), [todoModal, setTodoModal] = useState(null), [todoLoading, setTodoLoading] = useState(false), [todoAdmins, setTodoAdmins] = useState([]),
+        [wa, _a] = useState(!1), [todoGrupos, setTodoGrupos] = useState([]), [todoTarefas, setTodoTarefas] = useState([]), [todoGrupoAtivo, setTodoGrupoAtivo] = useState(null), [todoMetricas, setTodoMetricas] = useState(null), [todoTab, setTodoTab] = useState(() => { try { return localStorage.getItem("tutts_tab_todo") || "tarefas"; } catch(e) { return "tarefas"; } }), [todoFiltroStatus, setTodoFiltroStatus] = useState("todas"), [todoModal, setTodoModal] = useState(null), [todoLoading, setTodoLoading] = useState(false), [todoAdmins, setTodoAdmins] = useState([]),
         // Estado do módulo de Filas
-        [filasTab, setFilasTab] = useState("monitoramento"),
-        [perfTab, setPerfTab] = useState("dashboard"),
+        [filasTab, setFilasTab] = useState(() => { try { return localStorage.getItem("tutts_tab_filas") || "monitoramento"; } catch(e) { return "monitoramento"; } }),
+        [perfTab, setPerfTab] = useState(() => { try { return localStorage.getItem("tutts_tab_perf") || "dashboard"; } catch(e) { return "dashboard"; } }),
         // Novos estados para TODO melhorado
         [todoMeuDia, setTodoMeuDia] = useState([]),
         [todoViewMode, setTodoViewMode] = useState("meudia"), // "meudia" ou "grupo"
@@ -2570,15 +2570,9 @@ const hideLoadingScreen = () => {
         }
         
         // ==================== FUNÇÃO DE NAVEGAÇÃO DO SIDEBAR ====================
+        // Nota: persistência do estado de navegação é feita via useEffects
+        // monitorando Ee, p, Et, todoTab, filasTab, perfTab.
         const navegarSidebar = (moduloId, abaId) => {
-            // 🔖 Persistir estado de navegação (sobrevive a F5)
-            try {
-                localStorage.setItem("tutts_modulo_ativo", moduloId || "home");
-                if (abaId) {
-                    localStorage.setItem("tutts_aba_ativa_" + moduloId, abaId);
-                }
-            } catch(e) { /* localStorage indisponível — ignora */ }
-
             he(moduloId);
             if (moduloId === "financeiro") {
                 x(prev => ({...prev, finTab: abaId || "home-fin"}));
@@ -2603,27 +2597,33 @@ const hideLoadingScreen = () => {
             }
         };
 
-        // ==================== RESTAURAR ABA APÓS F5 ====================
-        // Roda 1x no mount: o módulo já foi restaurado pelo useState lazy,
-        // mas as abas individuais (finTab, adminTab, configTab, etc.) precisam
-        // ser re-aplicadas a partir do localStorage.
-        useEffect(() => {
-            try {
-                const modSalvo = localStorage.getItem("tutts_modulo_ativo");
-                if (!modSalvo || modSalvo === "home") return;
-                const abaSalva = localStorage.getItem("tutts_aba_ativa_" + modSalvo);
-                if (!abaSalva) return;
-                // Reaproveita navegarSidebar pra reaplicar a aba (módulo já está setado)
-                navegarSidebar(modSalvo, abaSalva);
-            } catch(e) { /* ignora */ }
-        }, []); // eslint-disable-line
-
-        // ==================== PERSISTIR MÓDULO ATIVO ====================
-        // Captura TODOS os jeitos de mudar de módulo (navegarSidebar, he("home")
-        // soltos, setModulo, etc.) — sempre que Ee muda, salva no localStorage.
+        // ==================== PERSISTIR ESTADO DE NAVEGAÇÃO ====================
+        // Sempre que o módulo ativo (Ee) ou qualquer state de aba mudar,
+        // salva no localStorage. No F5, todos são re-hidratados via useState lazy.
+        // Sem side effects — não chama navegarSidebar (evita fetch antes de auth).
         useEffect(() => {
             try { localStorage.setItem("tutts_modulo_ativo", Ee || "home"); } catch(e) {}
         }, [Ee]);
+
+        useEffect(() => {
+            try { localStorage.setItem("tutts_abas_estado", JSON.stringify(p || {})); } catch(e) {}
+        }, [p]);
+
+        useEffect(() => {
+            try { if (Et) localStorage.setItem("tutts_tab_bi", Et); } catch(e) {}
+        }, [Et]);
+
+        useEffect(() => {
+            try { if (todoTab) localStorage.setItem("tutts_tab_todo", todoTab); } catch(e) {}
+        }, [todoTab]);
+
+        useEffect(() => {
+            try { if (filasTab) localStorage.setItem("tutts_tab_filas", filasTab); } catch(e) {}
+        }, [filasTab]);
+
+        useEffect(() => {
+            try { if (perfTab) localStorage.setItem("tutts_tab_perf", perfTab); } catch(e) {}
+        }, [perfTab]);
 
         // ==================== PORTAL DO ROTEIRIZADOR ====================
         useEffect(() => {
