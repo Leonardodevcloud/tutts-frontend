@@ -23,7 +23,7 @@
   };
 
   function ModuloRastreioClientes(props) {
-    const { API_URL } = (props || {});
+    const { API_URL, HeaderCompacto, usuario, he, onLogout, onNavigate } = (props || {});
     const API_BASE = (API_URL || 'https://tutts-backend-production.up.railway.app/api') + '/rastreio-clientes';
     const api = React.useMemo(() => makeApi(API_BASE), [API_BASE]);
     const [tab, setTab] = React.useState('historico');
@@ -80,7 +80,15 @@
     const btnPrim = { background:'#7c3aed', color:'#fff', padding:'8px 16px', border:'none', borderRadius:6, cursor:'pointer', fontWeight:600 };
     const tabBtn = (active) => ({ padding:'12px 24px', border:'none', background:active?'#7c3aed':'transparent', color:active?'#fff':'#6b7280', cursor:'pointer', fontWeight:600, borderRadius:'6px 6px 0 0' });
 
-    return h('div',{style:{padding:24,background:'#f9fafb',minHeight:'100vh'}},
+    return h('div', { className: 'min-h-screen bg-gray-50 flex flex-col' },
+      HeaderCompacto && h(HeaderCompacto, {
+        usuario, moduloAtivo: 'rastreio-clientes', abaAtiva: tab,
+        onGoHome: () => he && he('home'),
+        onNavigate: onNavigate || ((m) => he && he(m)),
+        onLogout: onLogout || (() => {}),
+        onChangeTab: setTab,
+      }),
+      h('div',{style:{padding:24}},
       h('div',{style:{marginBottom:24}},
         h('h1',{style:{fontSize:28,fontWeight:700,color:'#1f2937',margin:0}},'📡 Rastreio Clientes'),
         h('p',{style:{color:'#6b7280',marginTop:4}},'Gestão do detector automático de OS para envio de rastreio')
@@ -123,7 +131,7 @@
                 h('td',{style:{padding:10,fontSize:12,color:'#6b7280'}},r.enviado_em ? new Date(r.enviado_em).toLocaleString('pt-BR',{timeZone:'America/Bahia'}) : '-'),
                 h('td',{style:{padding:10}},
                   r.status==='falhou' && h('button',{onClick:()=>reenviar(r.id),style:{background:'#7c3aed',color:'#fff',border:'none',padding:'4px 10px',borderRadius:4,cursor:'pointer',fontSize:12}},'Reenviar'),
-                  r.erro_msg && h('span',{title:r.erro_msg,style:{marginLeft:8,cursor:'help'}},'⚠️')
+                  r.erro && h('span',{title:r.erro,style:{marginLeft:8,cursor:'help'}},'⚠️')
                 )
               );
             }))
@@ -182,7 +190,7 @@
           )
         )
       )
-    );
+    ));
   }
 
   window.ModuloRastreioClientes = ModuloRastreioClientes;
