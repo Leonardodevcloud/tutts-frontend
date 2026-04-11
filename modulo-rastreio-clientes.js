@@ -4,7 +4,7 @@
   const h = React.createElement;
 
   function makeApi(API) { return async function api(path, opts = {}) {
-    const csrf = document.cookie.match(/csrf-token=([^;]+)/)?.[1] || '';
+    const csrf = (document.cookie.split('; ').find(c => c.startsWith('tutts_csrf='))?.split('=')[1]) || sessionStorage.getItem('tutts_csrf') || '';
     const r = await fetch(API + path, {
       credentials: 'include',
       headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf, ...(opts.headers||{}) },
