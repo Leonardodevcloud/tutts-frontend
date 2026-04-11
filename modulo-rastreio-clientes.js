@@ -1,8 +1,8 @@
-// modulo-rastreio-clientes.js — v1.0
+﻿// modulo-rastreio-clientes.js — v1.0
 // 2 abas: Histórico + Configuração. Tema #7c3aed. Padrão Tutts.
 (function () {
   const h = React.createElement;
-  const API = '/api/rastreio-clientes';
+  const API = (window.API_URL || '') + '/api/rastreio-clientes';
 
   async function api(path, opts = {}) {
     const csrf = document.cookie.match(/csrf-token=([^;]+)/)?.[1] || '';
