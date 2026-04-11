@@ -10,7 +10,7 @@
       headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf, ...(opts.headers||{}) },
       ...opts,
     });
-    if (!r.ok) throw new Error((await r.json().catch(()=>({}))).erro || 'erro');
+    if (!r.ok) { const j = await r.json().catch(()=>({})); throw new Error(j.erro || j.error || ('HTTP '+r.status)); }
     return r.json();
   }; }
 
@@ -53,9 +53,14 @@
     }
     async function salvarCliente(c) {
       try {
+        const termos = (c.termos_filtro_str != null ? c.termos_filtro_str : (Array.isArray(c.termos_filtro) ? c.termos_filtro.join('\n') : (c.termos_filtro || '')));
         const body = JSON.stringify({
-          ...c,
-          termos_filtro: c.termos_filtro_str ? c.termos_filtro_str.split('\n').map(s=>s.trim()).filter(Boolean) : null,
+          cliente_cod: c.cliente_cod,
+          nome_exibicao: c.nome_exibicao,
+          evolution_group_id: c.evolution_group_id,
+          observacoes: c.observacoes || null,
+          ativo: c.ativo !== false,
+          termos_filtro: termos ? termos.split('\n').map(s=>s.trim()).filter(Boolean) : null,
         });
         if (c.id) await api('/config/'+c.id,{method:'PUT',body});
         else      await api('/config',{method:'POST',body});
