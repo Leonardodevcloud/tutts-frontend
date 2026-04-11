@@ -11,7 +11,7 @@
 //   A v7 NÃO intercepta nenhuma request da API nem cross-origin. Só toca em
 //   navegações de documento (HTML da própria origem), e mesmo assim só
 //   mostra a página offline se o fetch DE VERDADE falhar.
-const CACHE_VERSION = '20260411_BOMFIX_v8';
+const CACHE_VERSION = '20260411_RASTREIO_v9';
 const CACHE_NAME = `tutts-cache-${CACHE_VERSION}`;
 
 // Install: limpar TODOS os caches antigos
