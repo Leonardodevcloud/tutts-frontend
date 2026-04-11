@@ -511,6 +511,7 @@ const SISTEMA_MODULOS_CONFIG = [
     { id: "agente", label: "Agente RPA", icon: "🤖",
       abas: []
     },
+    { id: "rastreio-clientes", label: "Rastreio Clientes", icon: "📡", admin: true, abas: [] },
     { id: "antifraude", label: "Anti-Fraude", icon: "🛡️",
       abas: []
     },
@@ -8254,6 +8255,7 @@ const hideLoadingScreen = () => {
                                     config: !hasConfig || allowedMods.includes("config"),
                                     "crm-whatsapp": !hasConfig || allowedMods.includes("crm-whatsapp"),
                                     agente: !hasConfig || allowedMods.includes("agente"),
+                                    "rastreio-clientes": !hasConfig || allowedMods.includes("rastreio-clientes"),
                                     antifraude: !hasConfig || allowedMods.includes("antifraude"),
                                     performance: !hasConfig || allowedMods.includes("performance")
                                 },
@@ -14453,6 +14455,13 @@ const hideLoadingScreen = () => {
                 );
             }
         }
+        if ("rastreio-clientes" === Ee && l?.role === "admin") {
+            if (typeof window.ModuloRastreioClientes !== "undefined") {
+                return React.createElement(window.ModuloRastreioClientes, { usuario: l, API_URL: API_URL, fetchAuth: fetchAuth, HeaderCompacto: HeaderCompacto, showToast: ja, he: he, Ee: Ee, onLogout: () => o(null), onNavigate: navegarSidebar });
+            } else {
+                return React.createElement("div", { className: "min-h-screen bg-gray-50 flex items-center justify-center" }, React.createElement("div", { className: "text-center" }, React.createElement("div", { className: "animate-spin w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4" }), React.createElement("p", { className: "text-gray-600" }, "Carregando módulo Rastreio Clientes...")));
+            }
+        }
         // ========== MÓDULO PERFORMANCE DIÁRIA (CARREGAMENTO EXTERNO) ==========
         const canAccessPerformance = hasModuleAccess(l, "performance");
         if (canAccessPerformance && "performance" === Ee) {
@@ -20590,6 +20599,19 @@ const hideLoadingScreen = () => {
                             ),
                             React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Agente RPA"),
                             React.createElement("p", {className: "text-sm text-gray-500"}, "Correção de endereços")
+                        )
+                    ),
+                    
+                    // Rastreio Clientes
+                    hasModuleAccess(l, "rastreio-clientes") &&
+                    React.createElement("div", { onClick: () => he("rastreio-clientes"), className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-purple-300" },
+                        React.createElement("div", {className: "h-2 bg-gradient-to-r from-purple-500 to-fuchsia-600"}),
+                        React.createElement("div", {className: "p-6"},
+                            React.createElement("div", {className: "w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
+                                React.createElement("span", {className: "text-3xl"}, "📡")
+                            ),
+                            React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Rastreio Clientes"),
+                            React.createElement("p", {className: "text-sm text-gray-500"}, "SLA e monitoramento")
                         )
                     ),
                     
