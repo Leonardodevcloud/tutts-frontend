@@ -23,8 +23,10 @@
     ignorado:   { bg:'#e5e7eb', fg:'#374151', label:'Ignorado' },
   };
 
-  function ModuloRastreioClientes() {
+  function ModuloRastreioClientes(props) {
+    const { HeaderCompacto, usuario, he, onLogout, onNavigate, showToast } = (props || {});
     const [tab, setTab] = React.useState('historico');
+    const [erro, setErro] = React.useState(null);
     const [hist, setHist] = React.useState([]);
     const [clientes, setClientes] = React.useState([]);
     const [loading, setLoading] = React.useState(false);
@@ -41,7 +43,13 @@
       finally{ setLoading(false); }
     }
     async function carregarClientes() {
-      try { const r = await api('/config'); setClientes(r.clientes || []); }
+      try {
+        const r = await api('/config');
+        const lista = r.clientes || [];
+        setClientes(lista);
+        setErro(null);
+        if (lista.length === 0) { setTimeout(async () => { try { const r2 = await api('/config'); setClientes(r2.clientes || []); } catch(e){} }, 600); }
+      }
       catch(e){ console.error(e); }
     }
     async function reenviar(id) {
@@ -78,7 +86,18 @@
     const btnPrim = { background:'#7c3aed', color:'#fff', padding:'8px 16px', border:'none', borderRadius:6, cursor:'pointer', fontWeight:600 };
     const tabBtn = (active) => ({ padding:'12px 24px', border:'none', background:active?'#7c3aed':'transparent', color:active?'#fff':'#6b7280', cursor:'pointer', fontWeight:600, borderRadius:'6px 6px 0 0' });
 
-    return h('div',{style:{padding:24,background:'#f9fafb',minHeight:'100vh'}},
+    return h('div', { className: `${HeaderCompacto ? 'min-h-screen' : ''} bg-gray-50 flex flex-col` },
+      HeaderCompacto && h(HeaderCompacto, {
+        usuario,
+        moduloAtivo: 'rastreio-clientes',
+        abaAtiva: tab,
+        onGoHome: () => he && he('home'),
+        onNavigate: onNavigate || ((m) => he && he(m)),
+        onLogout: onLogout || (() => {}),
+        onChangeTab: setTab,
+      }),
+      erro && h('div',{style:{background:'#fee2e2',color:'#991b1b',padding:12,margin:'12px 24px',borderRadius:8,fontSize:13}},'⚠️ '+erro),
+      h('div',{style:{padding:24}},
       h('div',{style:{marginBottom:24}},
         h('h1',{style:{fontSize:28,fontWeight:700,color:'#1f2937',margin:0}},'📡 Rastreio Clientes'),
         h('p',{style:{color:'#6b7280',marginTop:4}},'Gestão do detector automático de OS para envio de rastreio')
@@ -180,7 +199,7 @@
           )
         )
       )
-    );
+    ));
   }
 
   window.ModuloRastreioClientes = ModuloRastreioClientes;
