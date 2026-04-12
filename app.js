@@ -15780,7 +15780,57 @@ const hideLoadingScreen = () => {
             ),
             
             "dashboard" === Et && React.createElement(React.Fragment, null, 
-            
+
+            // === HERO: 3 cards XL — OS, Entregas, Donut Prazo Performance ===
+            React.createElement("div", {
+                className: "grid grid-cols-1 md:grid-cols-3 gap-4 mb-4"
+            },
+                // Card 1: OS
+                React.createElement("div", {
+                    className: "bg-gradient-to-br from-purple-600 to-purple-800 rounded-2xl p-6 shadow-xl text-white"
+                },
+                    React.createElement("div", {className: "flex items-center justify-between mb-3"},
+                        React.createElement("span", {className: "text-4xl"}, "📋"),
+                        React.createElement("span", {className: "text-xs font-semibold bg-white/20 px-2 py-1 rounded-full"}, "Ordens de Serviço")
+                    ),
+                    React.createElement("p", {className: "text-5xl font-extrabold tracking-tight mb-1"},
+                        nl(ft?.total_os).toLocaleString("pt-BR")
+                    ),
+                    React.createElement("p", {className: "text-sm opacity-80"}, "Total de OS no período")
+                ),
+                // Card 2: Entregas
+                React.createElement("div", {
+                    className: "bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl p-6 shadow-xl text-white"
+                },
+                    React.createElement("div", {className: "flex items-center justify-between mb-3"},
+                        React.createElement("span", {className: "text-4xl"}, "📦"),
+                        React.createElement("span", {className: "text-xs font-semibold bg-white/20 px-2 py-1 rounded-full"}, "Entregas")
+                    ),
+                    React.createElement("p", {className: "text-5xl font-extrabold tracking-tight mb-1"},
+                        nl(ft?.total_entregas).toLocaleString("pt-BR")
+                    ),
+                    React.createElement("p", {className: "text-sm opacity-80"},
+                        "Realizadas — ", nl(ft?.total_retornos).toLocaleString("pt-BR"), " retornos"
+                    )
+                ),
+                // Card 3: Donut Prazo Performance
+                React.createElement("div", {
+                    className: "bg-white rounded-2xl p-6 shadow-xl border-2 border-green-100"
+                },
+                    React.createElement("div", {className: "flex items-center justify-between mb-2"},
+                        React.createElement("span", {className: "text-2xl"}, "⏱️"),
+                        React.createElement("span", {className: "text-xs font-semibold text-green-700 bg-green-50 px-2 py-1 rounded-full"}, "Performance")
+                    ),
+                    React.createElement(DonutPrazo, {
+                        dentro: nl(ft?.dentro_prazo),
+                        fora: nl(ft?.fora_prazo),
+                        titulo: "Prazo de Entrega",
+                        corDentro: CORES_BI.sucesso,
+                        corFora: CORES_BI.erro
+                    })
+                )
+            ),
+
             // === LINHA 1: FINANCEIRO (5 cards compactos) ===
             React.createElement("div", {
                 className: "grid grid-cols-5 gap-2 mb-3"
