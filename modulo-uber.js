@@ -445,7 +445,18 @@
   function ModuloUber(props) {
     // O app.js passa a aba ativa via props.estado.uberTab
     // Se ainda não existe, default = 'dashboard'
-    const aba = props.estado?.uberTab || 'dashboard';
+    const aba = (props && props.estado && props.estado.uberTab) || 'dashboard';
+    
+    // Proteção: se props essenciais não vieram (cache antigo do app.js), mostrar erro
+    if (!props || !props.API_URL || !props.fetchAuth) {
+      return h('div', { className: 'min-h-screen bg-gray-50 flex items-center justify-center p-8' },
+        h('div', { className: 'bg-yellow-50 border border-yellow-200 rounded-xl p-6 max-w-md text-center' },
+          h('p', { className: 'text-yellow-800 font-bold mb-2' }, '⚠️ Cache desatualizado'),
+          h('p', { className: 'text-yellow-700 text-sm mb-4' }, 'Recarregue a página com Ctrl+Shift+R para atualizar o cache.'),
+          h('button', { onClick: () => window.location.reload(true), className: 'px-4 py-2 bg-yellow-600 text-white rounded-lg' }, 'Recarregar agora')
+        )
+      );
+    }
 
     const abas = {
       dashboard: TabDashboard,
