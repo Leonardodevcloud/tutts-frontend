@@ -2318,7 +2318,7 @@ const hideLoadingScreen = () => {
         }), [qe, Ue] = useState({
             avisos: [],
             loading: !0
-        }), [ze, Be] = useState(null), [Ve, Je] = useState(0), [Qe, He] = useState([]), [Ge, We] = useState(!1), [Ze, Ye] = useState([]), [Ke, Xe] = useState([]), [et, tt] = useState([]), [at, lt] = useState([]), [rt, ot] = useState(!0), [ct, st] = useState(0), [nt, mt] = useState("produtos"), [it, dt] = useState([]), [pt, xt] = useState("lista"), [ut, gt] = useState([]), [bt, Rt] = useState([]), [Et, ht] = useState(() => { try { return localStorage.getItem("tutts_tab_bi") || "home-bi"; } catch(e) { return "home-bi"; } }), [chatIaMsgs, setChatIaMsgs] = useState([]), [chatIaInput, setChatIaInput] = useState(""), [chatIaLoading, setChatIaLoading] = useState(false), [chatIaSql, setChatIaSql] = useState(null), [chatIaFiltros, setChatIaFiltros] = useState({ cod_cliente: [], nomes_clientes: [], centro_custo: [], data_inicio: "", data_fim: "", regiao: "" }), [chatIaIniciado, setChatIaIniciado] = useState(false), [chatIaClientes, setChatIaClientes] = useState([]), [chatIaCentros, setChatIaCentros] = useState([]), [chatIaFiltrosLoading, setChatIaFiltrosLoading] = useState(false), [chatIaDropAberto, setChatIaDropAberto] = useState(null), [chatIaBuscaCliente, setChatIaBuscaCliente] = useState(""), [chatIaConversas, setChatIaConversas] = useState([]), [chatIaConversaAtual, setChatIaConversaAtual] = useState(null), [chatIaConversasLoading, setChatIaConversasLoading] = useState(false), [chatIaSidebarAberta, setChatIaSidebarAberta] = useState(false), [chatIaExportando, setChatIaExportando] = useState(false), [chatIaRegioes, setChatIaRegioes] = useState([]), [ft, Nt] = useState(null), [yt, vt] = useState([]), [wt, _t] = useState([{
+        }), [ze, Be] = useState(null), [Ve, Je] = useState(0), [Qe, He] = useState([]), [Ge, We] = useState(!1), [Ze, Ye] = useState([]), [Ke, Xe] = useState([]), [et, tt] = useState([]), [at, lt] = useState([]), [rt, ot] = useState(!0), [ct, st] = useState(0), [nt, mt] = useState("produtos"), [it, dt] = useState([]), [pt, xt] = useState("lista"), [ut, gt] = useState([]), [bt, Rt] = useState([]), [Et, ht] = useState(() => { try { return localStorage.getItem("tutts_tab_bi") || "home-bi"; } catch(e) { return "home-bi"; } }), [chatIaMsgs, setChatIaMsgs] = useState([]), [chatIaInput, setChatIaInput] = useState(""), [chatIaLoading, setChatIaLoading] = useState(false), [chatIaSql, setChatIaSql] = useState(null), [chatIaFiltros, setChatIaFiltros] = useState({ cod_cliente: [], nomes_clientes: [], centro_custo: [], data_inicio: "", data_fim: "", regiao: "" }), [chatIaIniciado, setChatIaIniciado] = useState(false), [chatIaClientes, setChatIaClientes] = useState([]), [chatIaCentros, setChatIaCentros] = useState([]), [chatIaFiltrosLoading, setChatIaFiltrosLoading] = useState(false), [chatIaDropAberto, setChatIaDropAberto] = useState(null), [chatIaBuscaCliente, setChatIaBuscaCliente] = useState(""), [chatIaConversas, setChatIaConversas] = useState([]), [chatIaConversaAtual, setChatIaConversaAtual] = useState(null), [chatIaConversasLoading, setChatIaConversasLoading] = useState(false), [chatIaSidebarAberta, setChatIaSidebarAberta] = useState(false), [chatIaExportando, setChatIaExportando] = useState(false), [chatIaRegioes, setChatIaRegioes] = useState([]), [ft, Nt] = useState(null), [mostrarDetalhes, setMostrarDetalhes] = useState(false), [yt, vt] = useState([]), [wt, _t] = useState([{
             km_min: 0,
             km_max: 15,
             prazo_minutos: 45
@@ -15875,7 +15875,59 @@ const hideLoadingScreen = () => {
                React.createElement("span", {className: "text-[10px] text-orange-700 bg-orange-50 px-1.5 py-0.5 rounded font-semibold"}, "Devoluções")),
                React.createElement("p", {className: "text-xl font-bold text-gray-800"}, nl(ft?.total_retornos || 0).toLocaleString('pt-BR')),
                React.createElement("p", {className: "text-[10px] text-gray-500 font-medium"}, "Retornos"))),
-            
+
+            // === BLOCO 3: LINHA TERCIÁRIA COLAPSÁVEL — Tempos + Entregadores ===
+            React.createElement("div", {className: "mb-3"},
+                React.createElement("button", {
+                    onClick: () => setMostrarDetalhes(!mostrarDetalhes),
+                    className: "w-full bg-white rounded-2xl shadow-lg border-l-4 border-violet-500 px-4 py-2.5 flex items-center justify-between hover:bg-violet-50 transition-colors"
+                },
+                    React.createElement("span", {className: "text-sm font-semibold text-gray-700"}, "📊 Mais detalhes"),
+                    React.createElement("span", {className: "text-violet-600 text-lg font-bold"}, mostrarDetalhes ? "▲" : "▼")
+                ),
+                mostrarDetalhes && React.createElement("div", {className: "grid grid-cols-3 gap-3 mt-3"},
+                    // Card Tempos (médio / coleta / alocação)
+                    React.createElement("div", {className: "bg-white rounded-2xl p-4 shadow-lg border-l-4 border-indigo-500"},
+                        React.createElement("div", {className: "flex items-center justify-between mb-2"},
+                            React.createElement("span", {className: "text-base"}, "⏱️"),
+                            React.createElement("span", {className: "text-[10px] text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded font-semibold"}, "Tempos")
+                        ),
+                        React.createElement("div", {className: "space-y-1"},
+                            React.createElement("div", {className: "flex justify-between items-center"},
+                                React.createElement("span", {className: "text-[10px] text-gray-500"}, "Médio"),
+                                React.createElement("span", {className: "text-sm font-bold text-gray-800"}, cl(ft?.tempo_medio))
+                            ),
+                            React.createElement("div", {className: "flex justify-between items-center"},
+                                React.createElement("span", {className: "text-[10px] text-gray-500"}, "Coleta"),
+                                React.createElement("span", {className: "text-sm font-bold text-gray-800"}, cl(ft?.tempo_medio_coleta))
+                            ),
+                            React.createElement("div", {className: "flex justify-between items-center"},
+                                React.createElement("span", {className: "text-[10px] text-gray-500"}, "Alocação"),
+                                React.createElement("span", {className: "text-sm font-bold text-gray-800"}, cl(ft?.tempo_medio_alocacao))
+                            )
+                        )
+                    ),
+                    // Card Total Entregadores
+                    React.createElement("div", {className: "bg-white rounded-2xl p-4 shadow-lg border-l-4 border-pink-500"},
+                        React.createElement("div", {className: "flex items-center justify-between mb-2"},
+                            React.createElement("span", {className: "text-base"}, "🏍️"),
+                            React.createElement("span", {className: "text-[10px] text-pink-700 bg-pink-50 px-1.5 py-0.5 rounded font-semibold"}, "Entregadores")
+                        ),
+                        React.createElement("p", {className: "text-xl font-bold text-gray-800"}, nl(ft?.total_profissionais || 0).toLocaleString('pt-BR')),
+                        React.createElement("p", {className: "text-[10px] text-gray-500 font-medium"}, "Total ativos no período")
+                    ),
+                    // Card Média Ent/Entregador
+                    React.createElement("div", {className: "bg-white rounded-2xl p-4 shadow-lg border-l-4 border-teal-500"},
+                        React.createElement("div", {className: "flex items-center justify-between mb-2"},
+                            React.createElement("span", {className: "text-base"}, "📈"),
+                            React.createElement("span", {className: "text-[10px] text-teal-700 bg-teal-50 px-1.5 py-0.5 rounded font-semibold"}, "Média")
+                        ),
+                        React.createElement("p", {className: "text-xl font-bold text-gray-800"}, (Number(ft?.media_entregas_por_prof) || 0).toLocaleString('pt-BR', {minimumFractionDigits: 1, maximumFractionDigits: 1})),
+                        React.createElement("p", {className: "text-[10px] text-gray-500 font-medium"}, "Entregas / entregador")
+                    )
+                )
+            ),
+
             // === LINHA 2: OPERACIONAL + TEMPO (7 cards compactos) ===
             React.createElement("div", {
                 className: "grid grid-cols-7 gap-2 mb-3"
