@@ -14591,6 +14591,11 @@ const hideLoadingScreen = () => {
                     navegarSidebar: navegarSidebar,
                     showToast: ja,
                     token: getToken(),
+                    socialProfile: socialProfile,
+                    isLoading: f,
+                    lastUpdate: E,
+                    onRefresh: ul,
+                    onLogout: () => o(null),
                 });
             } else {
                 return React.createElement("div", { className: "min-h-screen bg-gray-50 flex items-center justify-center" },

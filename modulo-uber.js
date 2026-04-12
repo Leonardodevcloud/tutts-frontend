@@ -443,20 +443,10 @@
   // Usa props.estado.uberTab (controlado pelo OverflowNav do app.js)
   // ════════════════════════════════════════════════════════
   function ModuloUber(props) {
-    // O app.js passa a aba ativa via props.estado.uberTab
-    // Se ainda não existe, default = 'dashboard'
-    const aba = (props && props.estado && props.estado.uberTab) || 'dashboard';
-    
-    // Proteção: se props essenciais não vieram (cache antigo do app.js), mostrar erro
-    if (!props || !props.API_URL || !props.fetchAuth) {
-      return h('div', { className: 'min-h-screen bg-gray-50 flex items-center justify-center p-8' },
-        h('div', { className: 'bg-yellow-50 border border-yellow-200 rounded-xl p-6 max-w-md text-center' },
-          h('p', { className: 'text-yellow-800 font-bold mb-2' }, '⚠️ Cache desatualizado'),
-          h('p', { className: 'text-yellow-700 text-sm mb-4' }, 'Recarregue a página com Ctrl+Shift+R para atualizar o cache.'),
-          h('button', { onClick: () => window.location.reload(true), className: 'px-4 py-2 bg-yellow-600 text-white rounded-lg' }, 'Recarregar agora')
-        )
-      );
-    }
+    const { HeaderCompacto, usuario, Ee, socialProfile, isLoading, lastUpdate, onRefresh, onLogout, navegarSidebar, estado, setEstado } = props;
+
+    // Aba ativa controlada pelo OverflowNav do app.js (via estado.uberTab)
+    const aba = (estado && estado.uberTab) || 'dashboard';
 
     const abas = {
       dashboard: TabDashboard,
@@ -467,6 +457,21 @@
     const Atual = abas[aba] || TabDashboard;
 
     return h('div', { className: 'min-h-screen bg-gray-50' },
+      // Header com a barra de navegação igual aos outros módulos
+      HeaderCompacto && h(HeaderCompacto, {
+        usuario: usuario,
+        moduloAtivo: Ee,
+        abaAtiva: aba,
+        socialProfile: socialProfile,
+        isLoading: isLoading,
+        lastUpdate: lastUpdate,
+        onRefresh: onRefresh,
+        onLogout: onLogout,
+        onGoHome: () => props.he && props.he('home'),
+        onNavigate: navegarSidebar,
+        onChangeTab: (abaId) => setEstado(e => ({ ...e, uberTab: abaId })),
+      }),
+      // Conteúdo da aba ativa
       h(Atual, props)
     );
   }
