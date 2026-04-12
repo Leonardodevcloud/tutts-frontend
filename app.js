@@ -2318,7 +2318,7 @@ const hideLoadingScreen = () => {
         }), [qe, Ue] = useState({
             avisos: [],
             loading: !0
-        }), [ze, Be] = useState(null), [Ve, Je] = useState(0), [Qe, He] = useState([]), [Ge, We] = useState(!1), [Ze, Ye] = useState([]), [Ke, Xe] = useState([]), [et, tt] = useState([]), [at, lt] = useState([]), [rt, ot] = useState(!0), [ct, st] = useState(0), [nt, mt] = useState("produtos"), [it, dt] = useState([]), [pt, xt] = useState("lista"), [ut, gt] = useState([]), [bt, Rt] = useState([]), [Et, ht] = useState(() => { try { return localStorage.getItem("tutts_tab_bi") || "home-bi"; } catch(e) { return "home-bi"; } }), [chatIaMsgs, setChatIaMsgs] = useState([]), [chatIaInput, setChatIaInput] = useState(""), [chatIaLoading, setChatIaLoading] = useState(false), [chatIaSql, setChatIaSql] = useState(null), [chatIaFiltros, setChatIaFiltros] = useState({ cod_cliente: [], nomes_clientes: [], centro_custo: [], data_inicio: "", data_fim: "", regiao: "" }), [chatIaIniciado, setChatIaIniciado] = useState(false), [chatIaClientes, setChatIaClientes] = useState([]), [chatIaCentros, setChatIaCentros] = useState([]), [chatIaFiltrosLoading, setChatIaFiltrosLoading] = useState(false), [chatIaDropAberto, setChatIaDropAberto] = useState(null), [chatIaBuscaCliente, setChatIaBuscaCliente] = useState(""), [chatIaConversas, setChatIaConversas] = useState([]), [chatIaConversaAtual, setChatIaConversaAtual] = useState(null), [chatIaConversasLoading, setChatIaConversasLoading] = useState(false), [chatIaSidebarAberta, setChatIaSidebarAberta] = useState(false), [chatIaExportando, setChatIaExportando] = useState(false), [chatIaRegioes, setChatIaRegioes] = useState([]), [ft, Nt] = useState(null), [mostrarDetalhes, setMostrarDetalhes] = useState(false), [yt, vt] = useState([]), [wt, _t] = useState([{
+        }), [ze, Be] = useState(null), [Ve, Je] = useState(0), [Qe, He] = useState([]), [Ge, We] = useState(!1), [Ze, Ye] = useState([]), [Ke, Xe] = useState([]), [et, tt] = useState([]), [at, lt] = useState([]), [rt, ot] = useState(!0), [ct, st] = useState(0), [nt, mt] = useState("produtos"), [it, dt] = useState([]), [pt, xt] = useState("lista"), [ut, gt] = useState([]), [bt, Rt] = useState([]), [Et, ht] = useState(() => { try { return localStorage.getItem("tutts_tab_bi") || "home-bi"; } catch(e) { return "home-bi"; } }), [chatIaMsgs, setChatIaMsgs] = useState([]), [chatIaInput, setChatIaInput] = useState(""), [chatIaLoading, setChatIaLoading] = useState(false), [chatIaSql, setChatIaSql] = useState(null), [chatIaFiltros, setChatIaFiltros] = useState({ cod_cliente: [], nomes_clientes: [], centro_custo: [], data_inicio: "", data_fim: "", regiao: "" }), [chatIaIniciado, setChatIaIniciado] = useState(false), [chatIaClientes, setChatIaClientes] = useState([]), [chatIaCentros, setChatIaCentros] = useState([]), [chatIaFiltrosLoading, setChatIaFiltrosLoading] = useState(false), [chatIaDropAberto, setChatIaDropAberto] = useState(null), [chatIaBuscaCliente, setChatIaBuscaCliente] = useState(""), [chatIaConversas, setChatIaConversas] = useState([]), [chatIaConversaAtual, setChatIaConversaAtual] = useState(null), [chatIaConversasLoading, setChatIaConversasLoading] = useState(false), [chatIaSidebarAberta, setChatIaSidebarAberta] = useState(false), [chatIaExportando, setChatIaExportando] = useState(false), [chatIaRegioes, setChatIaRegioes] = useState([]), [ft, Nt] = useState(null), [mostrarDetalhes, setMostrarDetalhes] = useState(false), [linhasExpandidas, setLinhasExpandidas] = useState(() => new Set()), [yt, vt] = useState([]), [wt, _t] = useState([{
             km_min: 0,
             km_max: 15,
             prazo_minutos: 45
@@ -15928,80 +15928,7 @@ const hideLoadingScreen = () => {
                 )
             ),
 
-            // === LINHA 2: OPERACIONAL + TEMPO (7 cards compactos) ===
-            React.createElement("div", {
-                className: "grid grid-cols-7 gap-2 mb-3"
-            }, React.createElement("div", {
-                className: "bg-white rounded-lg p-3 shadow"
-            }, React.createElement("span", {
-                className: "text-base"
-            }, "📋"), React.createElement("p", {
-                className: "text-xl font-bold text-gray-800"
-            }, nl(ft?.total_os).toLocaleString("pt-BR")), React.createElement("p", {
-                className: "text-[10px] text-gray-500"
-            }, "Qtd OS")), React.createElement("div", {
-                className: "bg-white rounded-lg p-3 shadow"
-            }, React.createElement("span", {
-                className: "text-base"
-            }, "🚚"), React.createElement("p", {
-                className: "text-xl font-bold text-gray-800"
-            }, nl(ft?.total_entregas).toLocaleString("pt-BR")), React.createElement("p", {
-                className: "text-[10px] text-gray-500"
-            }, "Entregas")), React.createElement("div", {
-                className: "bg-white rounded-lg p-3 shadow"
-            }, React.createElement("span", {
-                className: "text-base"
-            }, "🔄"), React.createElement("p", {
-                className: "text-xl font-bold text-gray-800"
-            }, nl(ft?.total_retornos).toLocaleString("pt-BR")), React.createElement("p", {
-                className: "text-[10px] text-gray-500"
-            }, "Retornos")), React.createElement("div", {
-                className: "bg-white rounded-lg p-3 shadow"
-            }, React.createElement("span", {
-                className: "text-base"
-            }, "🏍️"), React.createElement("p", {
-                className: "text-xl font-bold text-gray-800"
-            }, nl(ft?.total_profissionais).toLocaleString("pt-BR")), React.createElement("p", {
-                className: "text-[10px] text-gray-500"
-            }, "Entregadores")), React.createElement("div", {
-                className: "bg-gradient-to-br from-sky-500 to-blue-600 rounded-lg p-3 shadow"
-            }, React.createElement("div", {
-                className: "flex items-center gap-1 mb-1"
-            }, React.createElement("span", {
-                className: "text-base"
-            }, "🚀"), React.createElement("span", {
-                className: "text-[10px] text-sky-100 bg-white/20 px-1 py-0.5 rounded"
-            }, "Entrega")), React.createElement("p", {
-                className: "text-xl font-bold text-white"
-            }, cl(ft?.tempo_medio)), React.createElement("p", {
-                className: "text-[10px] text-sky-100"
-            }, "Tempo Médio")), React.createElement("div", {
-                className: "bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg p-3 shadow"
-            }, React.createElement("div", {
-                className: "flex items-center gap-1 mb-1"
-            }, React.createElement("span", {
-                className: "text-base"
-            }, "📦"), React.createElement("span", {
-                className: "text-[10px] text-amber-100 bg-white/20 px-1 py-0.5 rounded"
-            }, "Coleta")), React.createElement("p", {
-                className: "text-xl font-bold text-white"
-            }, cl(ft?.tempo_medio_coleta || ft?.tempo_medio_alocacao)), React.createElement("p", {
-                className: "text-[10px] text-amber-100"
-            }, "Tempo Médio")), React.createElement("div", {
-                className: "bg-gradient-to-br from-pink-500 to-rose-600 rounded-lg p-3 shadow"
-            }, React.createElement("div", {
-                className: "flex items-center gap-1 mb-1"
-            }, React.createElement("span", {
-                className: "text-base"
-            }, "⏳"), React.createElement("span", {
-                className: "text-[10px] text-pink-100 bg-white/20 px-1 py-0.5 rounded"
-            }, "Alocação")), React.createElement("p", {
-                className: "text-xl font-bold text-white"
-            }, cl(ft?.tempo_medio_alocacao)), React.createElement("p", {
-                className: "text-[10px] text-pink-100"
-            }, "Tempo Médio"))),
-            
-            // === LINHA 3: STATUS DE PRAZO (2 cards compactos) ===
+            // === LINHA 3: STATUS DE PRAZO (DonutPrazo Profissional) ===
             React.createElement("div", {
                 className: "grid grid-cols-2 gap-2 mb-4"
             }, 
@@ -16030,36 +15957,23 @@ const hideLoadingScreen = () => {
                 className: "text-sm font-semibold text-red-600"
             }, (nl(ft?.fora_prazo) / (nl(ft?.total_entregas) || 1) * 100).toFixed(1), "%")))),
             
-            // ===== CARD PRAZO PROF CONSOLIDADO =====
+            // ===== CARD DONUT PRAZO PROFISSIONAL =====
             React.createElement("div", {
-                className: "bg-white rounded-lg p-4 shadow border-l-4 border-blue-500"
-            }, React.createElement("h4", {
-                className: "text-sm font-bold text-gray-700 mb-3"
-            }, "👨‍💼 Prazo Profissional"), React.createElement("div", {
-                className: "grid grid-cols-3 gap-2"
+                className: "bg-white rounded-2xl p-4 shadow-lg border-l-4 border-blue-500"
             }, React.createElement("div", {
-                className: "text-center p-2 bg-blue-50 rounded-lg"
-            }, React.createElement("p", {
-                className: "text-[10px] text-blue-600 font-medium"
-            }, "✅ No Prazo"), React.createElement("p", {
-                className: "text-xl font-bold text-blue-700"
-            }, nl(ft?.dentro_prazo_prof).toLocaleString("pt-BR")), React.createElement("p", {
-                className: "text-sm font-semibold text-blue-600"
-            }, (nl(ft?.dentro_prazo_prof) / ((nl(ft?.dentro_prazo_prof) + nl(ft?.fora_prazo_prof)) || 1) * 100).toFixed(1), "%")), React.createElement("div", {
-                className: "text-center p-2 bg-orange-50 rounded-lg"
-            }, React.createElement("p", {
-                className: "text-[10px] text-orange-600 font-medium"
-            }, "❌ Fora do Prazo"), React.createElement("p", {
-                className: "text-xl font-bold text-orange-700"
-            }, nl(ft?.fora_prazo_prof).toLocaleString("pt-BR")), React.createElement("p", {
-                className: "text-sm font-semibold text-orange-600"
-            }, (nl(ft?.fora_prazo_prof) / ((nl(ft?.dentro_prazo_prof) + nl(ft?.fora_prazo_prof)) || 1) * 100).toFixed(1), "%")), React.createElement("div", {
-                className: "text-center p-2 bg-indigo-50 rounded-lg"
-            }, React.createElement("p", {
-                className: "text-[10px] text-indigo-600 font-medium"
-            }, "⏱️ T. Médio"), React.createElement("p", {
-                className: "text-xl font-bold text-indigo-700"
-            }, cl(ft?.tempo_medio_entrega_prof)))))),
+                className: "flex items-center justify-between mb-2"
+            }, React.createElement("h4", {
+                className: "text-sm font-bold text-gray-700"
+            }, "🏍️ Prazo Profissional"), React.createElement("span", {
+                className: "text-[10px] text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded font-semibold"
+            }, "T. Médio: ", cl(ft?.tempo_medio_entrega_prof))),
+            React.createElement(DonutPrazo, {
+                dentro: nl(ft?.dentro_prazo_prof),
+                fora: nl(ft?.fora_prazo_prof),
+                titulo: "Prazo Profissional",
+                corDentro: CORES_BI.info,
+                corFora: CORES_BI.aviso
+            }))),
             
             React.createElement("div", {
                 className: "bg-white rounded-lg shadow overflow-hidden"
@@ -16083,159 +15997,89 @@ const hideLoadingScreen = () => {
                 className: "w-full text-sm"
             }, React.createElement("thead", {
                 className: "bg-purple-50"
-            }, React.createElement("tr", null, React.createElement("th", {
-                className: "px-2 py-2 text-left text-purple-900 w-8"
-            }), React.createElement("th", {
-                className: "px-2 py-2 text-left text-purple-900 max-w-[150px]"
-            }, "Cliente"), React.createElement("th", {
-                className: "px-2 py-2 text-right text-purple-900"
-            }, "OS"), React.createElement("th", {
-                className: "px-2 py-2 text-right text-purple-900"
-            }, "Entregas"), React.createElement("th", {
-                className: "px-2 py-2 text-right text-purple-900"
-            }, "Retornos"), React.createElement("th", {
-                className: "px-3 py-2 text-center text-green-700 bg-green-50 min-w-[100px]"
-            }, "No Prazo"), React.createElement("th", {
-                className: "px-3 py-2 text-center text-red-700 bg-red-50 min-w-[100px]"
-            }, "Fora Prazo"), React.createElement("th", {
-                className: "px-3 py-2 text-center text-blue-700 bg-blue-50 min-w-[100px]"
-            }, "Prazo Prof"), React.createElement("th", {
-                className: "px-3 py-2 text-center text-orange-700 bg-orange-50 min-w-[100px]"
-            }, "Fora Prof"), React.createElement("th", {
-                className: "px-2 py-2 text-right text-purple-900"
-            }, "Média"), React.createElement("th", {
-                className: "px-2 py-2 text-right text-purple-900"
-            }, "Val. Cliente"), React.createElement("th", {
-                className: "px-2 py-2 text-right text-purple-900"
-            }, "Val. Prof."), React.createElement("th", {
-                className: "px-2 py-2 text-right text-purple-900"
-            }, "Faturamento"), React.createElement("th", {
-                className: "px-2 py-2 text-right text-purple-900"
-            }, "Tckt. Médio"), React.createElement("th", {
-                className: "px-2 py-2 text-right text-purple-900"
-            }, "Entregadores"), React.createElement("th", {
-                className: "px-2 py-2 text-right text-purple-900"
-            }, "Ent/Entreg"), React.createElement("th", {
-                className: "px-2 py-2 text-right text-purple-900"
-            }, "Últ. Entrega"))), React.createElement("tbody", null, (zt || []).filter(e => parseInt(e.total_os) > 0 || parseInt(e.total_entregas) > 0).map((e, t) => React.createElement(React.Fragment, {
-                key: t
-            }, React.createElement("tr", {
-                className: "border-b hover:bg-purple-50 " + (t % 2 == 0 ? "bg-white" : "bg-gray-50")
-            }, React.createElement("td", {
-                className: "px-2 py-2"
-            }, React.createElement("button", {
-                onClick: () => ml(`dash-cli-${t}`),
-                className: "text-purple-600 hover:text-purple-800 font-bold"
-            }, Kt[`dash-cli-${t}`] ? "➖" : "➕")), React.createElement("td", {
-                className: "px-2 py-2 font-medium max-w-[150px] truncate",
-                title: e.cod_cliente + " - " + (e.nome_display || e.nome_cliente)
-            }, e.cod_cliente, " - ", e.nome_display || e.nome_cliente), React.createElement("td", {
-                className: "px-2 py-2 text-right"
-            }, nl(e.total_os).toLocaleString("pt-BR")), React.createElement("td", {
-                className: "px-2 py-2 text-right"
-            }, nl(e.total_entregas).toLocaleString("pt-BR")), React.createElement("td", {
-                className: "px-2 py-2 text-right text-orange-600"
-            }, nl(e.total_retornos).toLocaleString("pt-BR")), React.createElement("td", {
-                className: "px-3 py-2 text-center text-green-700 bg-green-50"
-            }, React.createElement("div", { className: "font-bold" }, nl(e.dentro_prazo).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm font-semibold" }, (nl(e.dentro_prazo) / (nl(e.total_entregas) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
-                className: "px-3 py-2 text-center text-red-700 bg-red-50"
-            }, React.createElement("div", { className: "font-bold" }, nl(e.fora_prazo).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm font-semibold" }, (nl(e.fora_prazo) / (nl(e.total_entregas) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
-                className: "px-3 py-2 text-center text-blue-700 bg-blue-50"
-            }, React.createElement("div", { className: "font-bold" }, nl(e.dentro_prazo_prof || 0).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm font-semibold" }, (nl(e.dentro_prazo_prof || 0) / (nl(e.total_entregas) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
-                className: "px-3 py-2 text-center text-orange-700 bg-orange-50"
-            }, React.createElement("div", { className: "font-bold" }, nl(e.fora_prazo_prof || 0).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm font-semibold" }, (nl(e.fora_prazo_prof || 0) / (nl(e.total_entregas) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
-                className: "px-2 py-2 text-right"
-            }, cl(e.tempo_medio)), React.createElement("td", {
-                className: "px-2 py-2 text-right"
-            }, sl(e.valor_total)), React.createElement("td", {
-                className: "px-2 py-2 text-right"
-            }, sl(e.valor_prof)), React.createElement("td", {
-                className: "px-2 py-2 text-right font-medium"
-            }, sl(nl(e.valor_total) - nl(e.valor_prof))), React.createElement("td", {
-                className: "px-2 py-2 text-right"
-            }, sl(e.ticket_medio)), React.createElement("td", {
-                className: "px-2 py-2 text-right"
-            }, nl(e.total_profissionais).toLocaleString("pt-BR")), React.createElement("td", {
-                className: "px-2 py-2 text-right"
-            }, nl(e.entregas_por_prof).toLocaleString("pt-BR", {
-                minimumFractionDigits: 2
-            })), React.createElement("td", {
-                className: "px-3 py-2 text-right text-xs"
-            }, e.ultima_entrega ? React.createElement("span", {
-                className: new Date(e.ultima_entrega) > new Date(Date.now() - 6048e5) ? "text-green-600" : "text-orange-500"
-            }, "● ", new Date(e.ultima_entrega).toLocaleDateString("pt-BR")) : "-")), Kt[`dash-cli-${t}`] && (e.centros_custo || []).map((a, l) => React.createElement("tr", {
-                key: `${t}-cc-${l}`,
-                className: "bg-purple-50 border-l-4 border-purple-400"
-            }, React.createElement("td", {
-                className: "px-2 py-2 text-purple-400 text-center"
-            }, "└"), React.createElement("td", {
-                className: "px-2 py-2 text-purple-700 pl-4 max-w-[150px] truncate text-sm"
-            }, "📁 ", a.centro_custo), React.createElement("td", {
-                className: "px-2 py-2 text-right text-purple-600"
-            }, nl(a.total_os).toLocaleString("pt-BR")), React.createElement("td", {
-                className: "px-2 py-2 text-right text-purple-600"
-            }, nl(a.total_entregas).toLocaleString("pt-BR")), React.createElement("td", {
-                className: "px-2 py-2 text-right text-orange-500"
-            }, nl(a.total_retornos || 0).toLocaleString("pt-BR")), React.createElement("td", {
-                className: "px-3 py-2 text-center text-green-600 bg-green-50"
-            }, React.createElement("div", { className: "font-medium" }, nl(a.dentro_prazo).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(a.dentro_prazo) / (nl(a.total_entregas) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
-                className: "px-3 py-2 text-center text-red-600 bg-red-50"
-            }, React.createElement("div", { className: "font-medium" }, nl(a.fora_prazo).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(a.fora_prazo) / (nl(a.total_entregas) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
-                className: "px-3 py-2 text-center text-blue-600 bg-blue-50"
-            }, React.createElement("div", { className: "font-medium" }, nl(a.dentro_prazo_prof || 0).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(a.dentro_prazo_prof || 0) / (nl(a.total_entregas) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
-                className: "px-3 py-2 text-center text-orange-600 bg-orange-50"
-            }, React.createElement("div", { className: "font-medium" }, nl(a.fora_prazo_prof || 0).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(a.fora_prazo_prof || 0) / (nl(a.total_entregas) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
-                className: "px-2 py-2 text-right text-purple-600"
-            }, cl(a.tempo_medio)), React.createElement("td", {
-                className: "px-2 py-2 text-right text-purple-600"
-            }, sl(a.valor_total)), React.createElement("td", {
-                className: "px-2 py-2 text-right text-purple-600"
-            }, sl(a.valor_prof)), React.createElement("td", {
-                className: "px-2 py-2 text-right text-purple-600"
-            }, sl(nl(a.valor_total) - nl(a.valor_prof))), React.createElement("td", {
-                className: "px-2 py-2 text-right text-purple-600"
-            }, a.total_entregas > 0 ? sl(nl(a.valor_total) / a.total_entregas) : "-"), React.createElement("td", {
-                colSpan: "3",
-                className: "px-2 py-2 text-center text-gray-400"
-            }, "-")))))), React.createElement("tfoot", {
-                className: "bg-purple-200 font-bold"
-            }, React.createElement("tr", null, React.createElement("td", {
-                className: "px-2 py-2"
-            }), React.createElement("td", {
-                className: "px-2 py-2"
-            }, "Total"), React.createElement("td", {
-                className: "px-2 py-2 text-right"
-            }, nl(ft?.total_os).toLocaleString("pt-BR")), React.createElement("td", {
-                className: "px-2 py-2 text-right"
-            }, nl(ft?.total_entregas).toLocaleString("pt-BR")), React.createElement("td", {
-                className: "px-2 py-2 text-right text-orange-700"
-            }, nl(ft?.total_retornos).toLocaleString("pt-BR")), React.createElement("td", {
-                className: "px-3 py-2 text-center text-green-700 bg-green-100"
-            }, React.createElement("div", null, nl(ft?.dentro_prazo).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(ft?.dentro_prazo) / (nl(ft?.total_entregas) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
-                className: "px-3 py-2 text-center text-red-700 bg-red-100"
-            }, React.createElement("div", null, nl(ft?.fora_prazo).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(ft?.fora_prazo) / (nl(ft?.total_entregas) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
-                className: "px-3 py-2 text-center text-blue-700 bg-blue-100"
-            }, React.createElement("div", null, nl(ft?.dentro_prazo_prof).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(ft?.dentro_prazo_prof) / (nl(ft?.total_entregas) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
-                className: "px-3 py-2 text-center text-orange-700 bg-orange-100"
-            }, React.createElement("div", null, nl(ft?.fora_prazo_prof).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(ft?.fora_prazo_prof) / (nl(ft?.total_entregas) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
-                className: "px-2 py-2 text-right"
-            }, cl(ft?.tempo_medio)), React.createElement("td", {
-                className: "px-2 py-2 text-right"
-            }, sl(ft?.valor_total)), React.createElement("td", {
-                className: "px-2 py-2 text-right"
-            }, sl(ft?.valor_prof_total)), React.createElement("td", {
-                className: "px-2 py-2 text-right"
-            }, sl(nl(ft?.valor_total) - nl(ft?.valor_prof_total))), React.createElement("td", {
-                className: "px-2 py-2 text-right"
-            }, sl(ft?.ticket_medio)), React.createElement("td", {
-                className: "px-2 py-2 text-right"
-            }, nl(ft?.total_profissionais).toLocaleString("pt-BR")), React.createElement("td", {
-                className: "px-2 py-2 text-right"
-            }, nl(ft?.media_entregas_por_prof).toLocaleString("pt-BR", {
-                minimumFractionDigits: 2
-            })), React.createElement("td", {
-                className: "px-2 py-2 text-right"
-            }, ft?.ultima_entrega ? new Date(ft.ultima_entrega).toLocaleDateString("pt-BR") : "-")))))), React.createElement("div", {
+            }, React.createElement("tr", null,
+                React.createElement("th", {className: "px-2 py-2 text-left text-purple-900 w-8"}),
+                React.createElement("th", {className: "px-2 py-2 text-left text-purple-900"}, "Cliente"),
+                React.createElement("th", {className: "px-2 py-2 text-right text-purple-900"}, "OS"),
+                React.createElement("th", {className: "px-2 py-2 text-right text-purple-900"}, "Entregas"),
+                React.createElement("th", {className: "px-3 py-2 text-center text-green-700 bg-green-50"}, "No Prazo %"),
+                React.createElement("th", {className: "px-2 py-2 text-right text-purple-900"}, "Faturamento")
+            )),
+            React.createElement("tbody", null, (zt || []).filter(e => parseInt(e.total_os) > 0 || parseInt(e.total_entregas) > 0).map((e, t) => {
+                const expanded = linhasExpandidas.has(t);
+                const toggleRow = () => {
+                    setLinhasExpandidas(prev => {
+                        const next = new Set(prev);
+                        if (next.has(t)) next.delete(t); else next.add(t);
+                        return next;
+                    });
+                };
+                const pctNoPrazo = (nl(e.dentro_prazo) / (nl(e.total_entregas) || 1) * 100).toFixed(1);
+                const faturamento = nl(e.valor_total) - nl(e.valor_prof);
+                return React.createElement(React.Fragment, {key: t},
+                    React.createElement("tr", {
+                        className: "border-b hover:bg-purple-50 cursor-pointer " + (t % 2 == 0 ? "bg-white" : "bg-gray-50"),
+                        onClick: toggleRow
+                    },
+                        React.createElement("td", {className: "px-2 py-2"},
+                            React.createElement("span", {className: "text-purple-600 font-bold"}, expanded ? "▼" : "▶")
+                        ),
+                        React.createElement("td", {className: "px-2 py-2 font-medium max-w-[250px] truncate", title: e.cod_cliente + " - " + (e.nome_display || e.nome_cliente)}, e.cod_cliente, " - ", e.nome_display || e.nome_cliente),
+                        React.createElement("td", {className: "px-2 py-2 text-right"}, nl(e.total_os).toLocaleString("pt-BR")),
+                        React.createElement("td", {className: "px-2 py-2 text-right"}, nl(e.total_entregas).toLocaleString("pt-BR")),
+                        React.createElement("td", {className: "px-3 py-2 text-center text-green-700 bg-green-50 font-semibold"}, pctNoPrazo, "%"),
+                        React.createElement("td", {className: "px-2 py-2 text-right font-semibold text-violet-700"}, sl(faturamento))
+                    ),
+                    expanded && React.createElement("tr", {className: "bg-violet-50 border-b"},
+                        React.createElement("td", {colSpan: 6, className: "px-4 py-3"},
+                            React.createElement("div", {className: "grid grid-cols-4 gap-3 text-xs"},
+                                React.createElement("div", {className: "bg-white rounded-lg p-2 shadow-sm border-l-4 border-orange-400"},
+                                    React.createElement("p", {className: "text-[10px] text-gray-500 font-medium"}, "🔄 Retornos"),
+                                    React.createElement("p", {className: "text-sm font-bold text-gray-800"}, nl(e.total_retornos).toLocaleString("pt-BR"))
+                                ),
+                                React.createElement("div", {className: "bg-white rounded-lg p-2 shadow-sm border-l-4 border-blue-400"},
+                                    React.createElement("p", {className: "text-[10px] text-gray-500 font-medium"}, "🏍️ Prazo Prof"),
+                                    React.createElement("p", {className: "text-sm font-bold text-gray-800"}, (nl(e.dentro_prazo_prof || 0) / (nl(e.total_entregas) || 1) * 100).toFixed(1), "%")
+                                ),
+                                React.createElement("div", {className: "bg-white rounded-lg p-2 shadow-sm border-l-4 border-indigo-400"},
+                                    React.createElement("p", {className: "text-[10px] text-gray-500 font-medium"}, "⏱️ Tempo Médio"),
+                                    React.createElement("p", {className: "text-sm font-bold text-gray-800"}, cl(e.tempo_medio))
+                                ),
+                                React.createElement("div", {className: "bg-white rounded-lg p-2 shadow-sm border-l-4 border-cyan-400"},
+                                    React.createElement("p", {className: "text-[10px] text-gray-500 font-medium"}, "💵 Valor Prof"),
+                                    React.createElement("p", {className: "text-sm font-bold text-gray-800"}, sl(e.valor_prof))
+                                ),
+                                React.createElement("div", {className: "bg-white rounded-lg p-2 shadow-sm border-l-4 border-emerald-400"},
+                                    React.createElement("p", {className: "text-[10px] text-gray-500 font-medium"}, "🎯 Ticket Médio"),
+                                    React.createElement("p", {className: "text-sm font-bold text-gray-800"}, sl(e.ticket_medio))
+                                ),
+                                React.createElement("div", {className: "bg-white rounded-lg p-2 shadow-sm border-l-4 border-pink-400"},
+                                    React.createElement("p", {className: "text-[10px] text-gray-500 font-medium"}, "👥 Profissionais"),
+                                    React.createElement("p", {className: "text-sm font-bold text-gray-800"}, nl(e.total_profissionais).toLocaleString("pt-BR"))
+                                ),
+                                React.createElement("div", {className: "bg-white rounded-lg p-2 shadow-sm border-l-4 border-teal-400"},
+                                    React.createElement("p", {className: "text-[10px] text-gray-500 font-medium"}, "📈 Ent/Entreg"),
+                                    React.createElement("p", {className: "text-sm font-bold text-gray-800"}, nl(e.entregas_por_prof).toLocaleString("pt-BR", {minimumFractionDigits: 2}))
+                                ),
+                                React.createElement("div", {className: "bg-white rounded-lg p-2 shadow-sm border-l-4 border-gray-400"},
+                                    React.createElement("p", {className: "text-[10px] text-gray-500 font-medium"}, "📅 Últ. Entrega"),
+                                    React.createElement("p", {className: "text-sm font-bold text-gray-800"}, e.ultima_entrega ? new Date(e.ultima_entrega).toLocaleDateString("pt-BR") : "-")
+                                )
+                            )
+                        )
+                    )
+                );
+            })),
+            React.createElement("tfoot", {className: "bg-purple-200 font-bold"},
+                React.createElement("tr", null,
+                    React.createElement("td", {className: "px-2 py-2"}),
+                    React.createElement("td", {className: "px-2 py-2"}, "Total"),
+                    React.createElement("td", {className: "px-2 py-2 text-right"}, nl(ft?.total_os).toLocaleString("pt-BR")),
+                    React.createElement("td", {className: "px-2 py-2 text-right"}, nl(ft?.total_entregas).toLocaleString("pt-BR")),
+                    React.createElement("td", {className: "px-3 py-2 text-center text-green-700 bg-green-100"}, (nl(ft?.dentro_prazo) / (nl(ft?.total_entregas) || 1) * 100).toFixed(1), "%"),
+                    React.createElement("td", {className: "px-2 py-2 text-right text-violet-800"}, sl(nl(ft?.valor_total) - nl(ft?.valor_prof_total)))
+                )
+            )))), React.createElement("div", {
                 className: "space-y-6 mt-6"
             }, 
             // ========== GRÁFICO 1: DISTRIBUIÇÃO POR TEMPO (Design Moderno) ==========
