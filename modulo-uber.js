@@ -466,6 +466,6 @@
     );
   }
 
-  // Expor globalmente para o app.js carregar
-  window.ModuloUber = ModuloUber;
+  // Expor globalmente para o app.js carregar (padrão dos outros módulos)
+  window.ModuloUberComponent = ModuloUber;
 })();

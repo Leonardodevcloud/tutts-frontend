@@ -516,7 +516,8 @@ const SISTEMA_MODULOS_CONFIG = [
       abas: []
     },
     { id: "performance", label: "Performance Diária", icon: "📈", abas: [{id:"dashboard",label:"📊 Dashboard"},{id:"busca",label:"🔍 Busca"},{id:"config",label:"⚙️ Configurações"},{id:"jobs",label:"🗂️ Jobs"}] },
-    { id: "gerencial", label: "Análise Gerencial", icon: "📊", abas: [] }
+    { id: "gerencial", label: "Análise Gerencial", icon: "📊", abas: [] },
+    { id: "uber", label: "Uber Direct", icon: "U", abas: [{id:"dashboard",label:"Dashboard"},{id:"tracking",label:"Tracking"},{id:"entregas",label:"Entregas"},{id:"config",label:"Config"}] }
 ];
 
 // ==================== COMPONENTE OVERFLOW NAV (módulos + abas com dropdown inteligente) ====================
@@ -14569,7 +14570,36 @@ const hideLoadingScreen = () => {
             }
         }
         // ========== MÓDULO CONFIGURAÇÕES (CARREGAMENTO EXTERNO) ==========
-        const canAccessConfig = hasModuleAccess(l, "config");
+        // ========== MODULO UBER DIRECT (CARREGAMENTO EXTERNO) ==========
+        const canAccessUber = hasModuleAccess(l, "uber");
+        if (canAccessUber && "uber" === Ee) {
+            if (typeof window.ModuloUberComponent !== 'undefined') {
+                return React.createElement(window.ModuloUberComponent, {
+                    usuario: l,
+                    estado: p,
+                    setEstado: x,
+                    API_URL: API_URL,
+                    getToken: getToken,
+                    fetchAuth: fetchAuth,
+                    HeaderCompacto: HeaderCompacto,
+                    Toast: Toast,
+                    LoadingOverlay: LoadingOverlay,
+                    Ee: Ee,
+                    he: he,
+                    navegarSidebar: navegarSidebar,
+                    showToast: ja,
+                    token: getToken(),
+                });
+            } else {
+                return React.createElement("div", { className: "min-h-screen bg-gray-50 flex items-center justify-center" },
+                    React.createElement("div", { className: "text-center" },
+                        React.createElement("div", { className: "animate-spin w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4" }),
+                        React.createElement("p", { className: "text-gray-600" }, "Carregando modulo Uber Direct...")
+                    )
+                );
+            }
+        }
+                const canAccessConfig = hasModuleAccess(l, "config");
         if (canAccessConfig && "config" === Ee) {
             if (typeof window.ModuloConfigComponent !== 'undefined') {
                 return React.createElement(window.ModuloConfigComponent, {
