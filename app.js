@@ -1509,11 +1509,7 @@ const hideLoadingScreen = () => {
                             startAngle: 90, endAngle: -270,
                             animationDuration: 800,
                             stroke: "none"
-                        }, dados.map((d, i) => React.createElement(R.Cell, { key: i, fill: d.color }))),
-                        React.createElement(R.Tooltip, {
-                            formatter: (v, n) => [`${v} (${(v / total * 100).toFixed(1)}%)`, n],
-                            contentStyle: { borderRadius: '8px', border: '1px solid #e5e7eb', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', fontSize: '12px' }
-                        })
+                        }, dados.map((d, i) => React.createElement(R.Cell, { key: i, fill: d.color })))
                     )
                 ),
                 // Texto centralizado: % grande
@@ -1524,19 +1520,29 @@ const hideLoadingScreen = () => {
                     React.createElement("p", { className: "text-[10px] text-gray-500 uppercase tracking-wide" }, "no prazo")
                 )
             ),
-            // Legenda compacta embaixo
+            // Legenda compacta embaixo (com % ao lado da quantidade)
             React.createElement("div", { className: "flex justify-between items-center mt-3 pt-3 border-t border-gray-100" },
                 React.createElement("div", { className: "flex items-center gap-2" },
                     React.createElement("div", { className: "w-2.5 h-2.5 rounded-full", style: { backgroundColor: cD } }),
                     React.createElement("div", null,
                         React.createElement("p", { className: "text-xs text-gray-500" }, "No Prazo"),
-                        React.createElement("p", { className: "text-sm font-bold text-gray-800" }, dentro.toLocaleString('pt-BR'))
+                        React.createElement("p", { className: "text-sm font-bold text-gray-800" },
+                            dentro.toLocaleString('pt-BR'),
+                            React.createElement("span", { className: "ml-1 text-xs font-semibold", style: { color: cD } },
+                                "(", pct.toFixed(1), "%)"
+                            )
+                        )
                     )
                 ),
                 React.createElement("div", { className: "flex items-center gap-2" },
                     React.createElement("div", null,
                         React.createElement("p", { className: "text-xs text-gray-500 text-right" }, "Fora Prazo"),
-                        React.createElement("p", { className: "text-sm font-bold text-gray-800 text-right" }, fora.toLocaleString('pt-BR'))
+                        React.createElement("p", { className: "text-sm font-bold text-gray-800 text-right" },
+                            fora.toLocaleString('pt-BR'),
+                            React.createElement("span", { className: "ml-1 text-xs font-semibold", style: { color: cF } },
+                                "(", (100 - pct).toFixed(1), "%)"
+                            )
+                        )
                     ),
                     React.createElement("div", { className: "w-2.5 h-2.5 rounded-full", style: { backgroundColor: cF } })
                 )
