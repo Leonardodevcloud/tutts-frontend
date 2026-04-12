@@ -7586,12 +7586,39 @@ const hideLoadingScreen = () => {
                             clientesSemFiltroCC = clientesComTodosCC;
                         }
                     }
+                } else if (centrosCustoParaEnviar.length > 0 && clientesParaEnviar.length > 0) {
+                    // 🔧 FIX BI-CC-LOCAL: CC selecionado é restrição local ao cliente dono.
+                    // Mesmo padrão da Xa() — usar Tt como mapping principal e kt como fallback.
+                    const ccsSelSet = new Set(centrosCustoParaEnviar);
+                    const donosCC = new Set();
+                    Object.keys(Tt || {}).forEach(cod => {
+                        const ccsCli = Tt[cod] || [];
+                        const matches = ccsCli.some(cc => {
+                            if (typeof cc === 'string') return ccsSelSet.has(cc);
+                            if (cc && typeof cc === 'object') return ccsSelSet.has(cc.centro_custo || cc.nome || cc.name);
+                            return false;
+                        });
+                        if (matches) donosCC.add(String(cod));
+                    });
+                    if (donosCC.size === 0 && Array.isArray(kt)) {
+                        kt.forEach(it => {
+                            if (it && it.centro_custo && ccsSelSet.has(it.centro_custo) && it.cod_cliente) {
+                                donosCC.add(String(it.cod_cliente));
+                            }
+                        });
+                    }
+                    clientesSemFiltroCC = clientesParaEnviar.map(String).filter(c => !donosCC.has(c));
+                    console.log('🔍 [BI-CC-LOCAL/loadBi] donos:', [...donosCC], 'semCC:', clientesSemFiltroCC);
                 }
                 
-                clientesParaEnviar && clientesParaEnviar.length > 0 && clientesParaEnviar.forEach(c => t.append("cod_cliente", c));
-                centrosCustoParaEnviar && centrosCustoParaEnviar.length > 0 && centrosCustoParaEnviar.forEach(c => t.append("centro_custo", c));
+                // 🔧 FIX: usar comma-join (não múltiplos params separados) pra casar com Xa() e backend
+                clientesParaEnviar && clientesParaEnviar.length > 0 && t.append("cod_cliente", clientesParaEnviar.join(","));
+                centrosCustoParaEnviar && centrosCustoParaEnviar.length > 0 && t.append("centro_custo", centrosCustoParaEnviar.join(","));
                 clientesSemFiltroCC && clientesSemFiltroCC.length > 0 && t.append("clientes_sem_filtro_cc", clientesSemFiltroCC.join(","));
-                e.cod_prof && t.append("cod_prof", e.cod_prof), e.categoria && t.append("categoria", e.categoria), e.cidade && t.append("cidade", e.cidade), e.status_prazo && t.append("status_prazo", e.status_prazo), e.status_retorno && t.append("status_retorno", e.status_retorno), console.log("📊 loadBiDashboardComFiltros - params:", t.toString());
+                // 🔧 FIX BI-CATEGORIA-MULTI: categorias array em vez de categoria string
+                const _catsLB = e.categorias || [];
+                _catsLB.length > 0 && t.append("categoria", _catsLB.join(","));
+                e.cod_prof && t.append("cod_prof", e.cod_prof), e.cidade && t.append("cidade", e.cidade), e.status_prazo && t.append("status_prazo", e.status_prazo), e.status_retorno && t.append("status_retorno", e.status_retorno), console.log("📊 loadBiDashboardComFiltros - params:", t.toString());
                 const a = await fetchAuth(`${API_URL}/bi/dashboard-completo?${t}`),
                     l = await a.json();
                 console.log("📊 loadBiDashboardComFiltros - resposta:", l), console.log("📊 metricas:", l.metricas), console.log("📊 porCliente:", l.porCliente?.length, "registros"), console.log("📊 porProfissional:", l.porProfissional?.length, "registros"), Nt(l.metricas || {}), Bt(l.porCliente || []), Jt(l.porProfissional || []);
