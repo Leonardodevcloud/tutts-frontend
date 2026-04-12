@@ -1204,11 +1204,22 @@ const hideLoadingScreen = () => {
             }, s ? "✅ Código Copiado!" : "📋 Copiar Código PIX")
         ))) : null
     },
-    PieChart = ({
-        data: e,
-        title: t
-    }) => {
-        const a = e.reduce((e, t) => e + t.value, 0);
+    // 🎨 PALETA SEMÂNTICA BI — usar essas cores em vez de inventar a cada gráfico
+    CORES_BI = {
+        sucesso: '#10b981',  // verde — no prazo, crescimento, lucro
+        erro: '#ef4444',     // vermelho — fora prazo, queda, retorno
+        info: '#3b82f6',     // azul — volume, neutro informativo
+        destaque: '#7c3aed', // roxo Tutts — totais e destaques
+        aviso: '#f59e0b',    // amarelo — atenção, intermediário
+        neutro: '#64748b',   // cinza slate — secundário
+        gradiente: ['#7c3aed', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16']
+    },
+
+    // 🔧 FASE 1A: PieChart agora usa Recharts internamente. Mesma API: {data, title}.
+    // data = [{label, value, color}]. Renderiza via window.Recharts (carregado por CDN no index.html).
+    // Tem fallback pro SVG cru caso o Recharts não tenha carregado ainda.
+    PieChart = ({ data: e, title: t }) => {
+        const a = e.reduce((acc, it) => acc + (it.value || 0), 0);
         if (0 === a) return React.createElement("div", {
             className: "bg-white rounded-xl shadow p-6"
         }, React.createElement("h3", {
@@ -1216,54 +1227,80 @@ const hideLoadingScreen = () => {
         }, t), React.createElement("p", {
             className: "text-gray-500 text-center py-8"
         }, "Sem dados disponíveis"));
+
+        const R = (typeof window !== 'undefined') && window.Recharts;
+        if (R) {
+            // Versão Recharts moderna: animação, tooltip, hover, responsivo
+            const dadosRC = e.map((it) => ({ name: it.label, value: it.value, color: it.color }));
+            return React.createElement("div", {
+                className: "bg-white rounded-xl shadow p-6"
+            }, React.createElement("h3", {
+                className: "text-lg font-semibold mb-4 text-gray-800"
+            }, t), React.createElement("div", {
+                className: "flex flex-col md:flex-row items-center gap-4"
+            }, React.createElement("div", {
+                style: { width: '220px', height: '220px' }
+            }, React.createElement(R.ResponsiveContainer, { width: "100%", height: "100%" },
+                React.createElement(R.PieChart, null,
+                    React.createElement(R.Pie, {
+                        data: dadosRC,
+                        cx: "50%", cy: "50%",
+                        innerRadius: 55, outerRadius: 95,
+                        paddingAngle: 2,
+                        dataKey: "value",
+                        animationDuration: 600,
+                        stroke: "#fff", strokeWidth: 2
+                    }, dadosRC.map((entry, idx) => React.createElement(R.Cell, { key: `cell-${idx}`, fill: entry.color }))),
+                    React.createElement(R.Tooltip, {
+                        formatter: (val, name) => [`${val} (${(val / a * 100).toFixed(1)}%)`, name],
+                        contentStyle: { borderRadius: '8px', border: '1px solid #e5e7eb', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }
+                    })
+                )
+            )), React.createElement("div", { className: "flex-1 space-y-2 w-full" },
+                e.map((it, idx) => React.createElement("div", {
+                    key: idx,
+                    className: "flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-50 transition-colors"
+                }, React.createElement("div", {
+                    className: "w-3 h-3 rounded-full flex-shrink-0",
+                    style: { backgroundColor: it.color }
+                }), React.createElement("span", {
+                    className: "text-sm flex-1 text-gray-700"
+                }, it.label), React.createElement("span", {
+                    className: "font-semibold text-gray-900"
+                }, it.value), React.createElement("span", {
+                    className: "text-gray-500 text-xs ml-1"
+                }, "(", (it.value / a * 100).toFixed(1), "%)"))
+            ))));
+        }
+
+        // Fallback SVG cru (caso Recharts não tenha carregado)
         let l = 0;
-        const r = e.map((e, t) => {
-            const r = e.value / a * 100,
-                o = r / 100 * 360,
-                c = l;
-            l += o;
+        const r = e.map((it) => {
+            const pct = it.value / a * 100, ang = pct / 100 * 360, c = l;
+            l += ang;
             const s = 100 + 90 * Math.cos((c - 90) * Math.PI / 180),
-                n = 100 + 90 * Math.sin((c - 90) * Math.PI / 180),
-                m = 100 + 90 * Math.cos((l - 90) * Math.PI / 180),
-                i = 100 + 90 * Math.sin((l - 90) * Math.PI / 180),
-                d = o > 180 ? 1 : 0;
-            return {
-                ...e,
-                path: `M 100 100 L ${s} ${n} A 90 90 0 ${d} 1 ${m} ${i} Z`,
-                percentage: r.toFixed(1)
-            }
+                  n = 100 + 90 * Math.sin((c - 90) * Math.PI / 180),
+                  m = 100 + 90 * Math.cos((l - 90) * Math.PI / 180),
+                  i = 100 + 90 * Math.sin((l - 90) * Math.PI / 180),
+                  d = ang > 180 ? 1 : 0;
+            return { ...it, path: `M 100 100 L ${s} ${n} A 90 90 0 ${d} 1 ${m} ${i} Z`, percentage: pct.toFixed(1) };
         });
-        return React.createElement("div", {
-            className: "bg-white rounded-xl shadow p-6"
-        }, React.createElement("h3", {
-            className: "text-lg font-semibold mb-4"
-        }, t), React.createElement("div", {
-            className: "flex flex-col md:flex-row items-center gap-6"
-        }, React.createElement("svg", {
-            viewBox: "0 0 200 200",
-            className: "w-48 h-48"
-        }, r.map((e, t) => React.createElement("path", {
-            key: t,
-            d: e.path,
-            fill: e.color,
-            className: "hover:opacity-80 transition-opacity cursor-pointer"
-        }))), React.createElement("div", {
-            className: "flex-1 space-y-2"
-        }, r.map((e, t) => React.createElement("div", {
-            key: t,
-            className: "flex items-center gap-2"
-        }, React.createElement("div", {
-            className: "w-4 h-4 rounded",
-            style: {
-                backgroundColor: e.color
-            }
-        }), React.createElement("span", {
-            className: "text-sm flex-1"
-        }, e.label), React.createElement("span", {
-            className: "font-semibold"
-        }, e.value), React.createElement("span", {
-            className: "text-gray-500 text-sm"
-        }, "(", e.percentage, "%)"))))))
+        return React.createElement("div", { className: "bg-white rounded-xl shadow p-6" },
+            React.createElement("h3", { className: "text-lg font-semibold mb-4" }, t),
+            React.createElement("div", { className: "flex flex-col md:flex-row items-center gap-6" },
+                React.createElement("svg", { viewBox: "0 0 200 200", className: "w-48 h-48" },
+                    r.map((it, idx) => React.createElement("path", { key: idx, d: it.path, fill: it.color, className: "hover:opacity-80 transition-opacity cursor-pointer" }))
+                ),
+                React.createElement("div", { className: "flex-1 space-y-2" },
+                    r.map((it, idx) => React.createElement("div", { key: idx, className: "flex items-center gap-2" },
+                        React.createElement("div", { className: "w-4 h-4 rounded", style: { backgroundColor: it.color } }),
+                        React.createElement("span", { className: "text-sm flex-1" }, it.label),
+                        React.createElement("span", { className: "font-semibold" }, it.value),
+                        React.createElement("span", { className: "text-gray-500 text-sm" }, "(", it.percentage, "%)")
+                    ))
+                )
+            )
+        );
     },
     StatusPieChart = ({
         submissions: e
@@ -1433,6 +1470,132 @@ const hideLoadingScreen = () => {
             className: "text-xs text-gray-500"
         }, e.count, " (", e.percentage, "%)")))))))
     },
+    
+    // 🎨 FASE 1A: DonutPrazo — donut compacto pra mostrar No Prazo / Fora.
+    // Uso: <DonutPrazo dentro={1621} fora={259} titulo="Prazo de Entrega" />
+    // Mostra o % grande no centro, donut animado, e legenda embaixo.
+    DonutPrazo = ({ dentro: dentroProp, fora: foraProp, titulo, corDentro, corFora }) => {
+        const dentro = Number(dentroProp) || 0;
+        const fora = Number(foraProp) || 0;
+        const total = dentro + fora;
+        const pct = total > 0 ? (dentro / total * 100) : 0;
+        const cD = corDentro || CORES_BI.sucesso;
+        const cF = corFora || CORES_BI.erro;
+        const R = (typeof window !== 'undefined') && window.Recharts;
+        
+        if (!R || total === 0) {
+            return React.createElement("div", { className: "bg-white rounded-xl shadow-lg p-5 border border-gray-100" },
+                React.createElement("h3", { className: "text-sm font-semibold text-gray-700 mb-3" }, titulo),
+                React.createElement("p", { className: "text-gray-400 text-center py-8 text-sm" }, total === 0 ? "Sem dados" : "Carregando...")
+            );
+        }
+        
+        const dados = [
+            { name: "No Prazo", value: dentro, color: cD },
+            { name: "Fora Prazo", value: fora, color: cF }
+        ];
+        
+        return React.createElement("div", { className: "bg-white rounded-xl shadow-lg p-5 border border-gray-100 hover:shadow-xl transition-shadow" },
+            React.createElement("h3", { className: "text-sm font-semibold text-gray-700 mb-2" }, titulo),
+            React.createElement("div", { className: "relative", style: { height: '180px' } },
+                React.createElement(R.ResponsiveContainer, { width: "100%", height: "100%" },
+                    React.createElement(R.PieChart, null,
+                        React.createElement(R.Pie, {
+                            data: dados,
+                            cx: "50%", cy: "50%",
+                            innerRadius: 55, outerRadius: 78,
+                            paddingAngle: 3,
+                            dataKey: "value",
+                            startAngle: 90, endAngle: -270,
+                            animationDuration: 800,
+                            stroke: "none"
+                        }, dados.map((d, i) => React.createElement(R.Cell, { key: i, fill: d.color }))),
+                        React.createElement(R.Tooltip, {
+                            formatter: (v, n) => [`${v} (${(v / total * 100).toFixed(1)}%)`, n],
+                            contentStyle: { borderRadius: '8px', border: '1px solid #e5e7eb', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', fontSize: '12px' }
+                        })
+                    )
+                ),
+                // Texto centralizado: % grande
+                React.createElement("div", {
+                    className: "absolute inset-0 flex flex-col items-center justify-center pointer-events-none"
+                },
+                    React.createElement("p", { className: "text-3xl font-bold", style: { color: cD } }, pct.toFixed(1), "%"),
+                    React.createElement("p", { className: "text-[10px] text-gray-500 uppercase tracking-wide" }, "no prazo")
+                )
+            ),
+            // Legenda compacta embaixo
+            React.createElement("div", { className: "flex justify-between items-center mt-3 pt-3 border-t border-gray-100" },
+                React.createElement("div", { className: "flex items-center gap-2" },
+                    React.createElement("div", { className: "w-2.5 h-2.5 rounded-full", style: { backgroundColor: cD } }),
+                    React.createElement("div", null,
+                        React.createElement("p", { className: "text-xs text-gray-500" }, "No Prazo"),
+                        React.createElement("p", { className: "text-sm font-bold text-gray-800" }, dentro.toLocaleString('pt-BR'))
+                    )
+                ),
+                React.createElement("div", { className: "flex items-center gap-2" },
+                    React.createElement("div", null,
+                        React.createElement("p", { className: "text-xs text-gray-500 text-right" }, "Fora Prazo"),
+                        React.createElement("p", { className: "text-sm font-bold text-gray-800 text-right" }, fora.toLocaleString('pt-BR'))
+                    ),
+                    React.createElement("div", { className: "w-2.5 h-2.5 rounded-full", style: { backgroundColor: cF } })
+                )
+            )
+        );
+    },
+    
+    // 🎨 FASE 1A: LinhaTemporal — line/area chart suave para evolução temporal.
+    // Uso: <LinhaTemporal dados={[{label:"01/04",valor:120},...]} cor="#7c3aed" titulo="Entregas por dia" />
+    LinhaTemporal = ({ dados, cor, titulo, altura, formatador }) => {
+        const R = (typeof window !== 'undefined') && window.Recharts;
+        const c = cor || CORES_BI.destaque;
+        const h = altura || 240;
+        const fmt = formatador || ((v) => v.toLocaleString('pt-BR'));
+        
+        if (!R || !Array.isArray(dados) || dados.length === 0) {
+            return React.createElement("div", { className: "bg-white rounded-xl shadow-lg p-5 border border-gray-100" },
+                titulo && React.createElement("h3", { className: "text-sm font-semibold text-gray-700 mb-3" }, titulo),
+                React.createElement("p", { className: "text-gray-400 text-center py-8 text-sm" }, "Sem dados")
+            );
+        }
+        
+        const gradId = "grad-" + (titulo || "lt").replace(/\s+/g, '');
+        
+        return React.createElement("div", { className: "bg-white rounded-xl shadow-lg p-5 border border-gray-100 hover:shadow-xl transition-shadow" },
+            titulo && React.createElement("h3", { className: "text-sm font-semibold text-gray-700 mb-3" }, titulo),
+            React.createElement("div", { style: { width: '100%', height: h + 'px' } },
+                React.createElement(R.ResponsiveContainer, { width: "100%", height: "100%" },
+                    React.createElement(R.AreaChart, { data: dados, margin: { top: 10, right: 10, left: -10, bottom: 0 } },
+                        React.createElement("defs", null,
+                            React.createElement("linearGradient", { id: gradId, x1: "0", y1: "0", x2: "0", y2: "1" },
+                                React.createElement("stop", { offset: "0%", stopColor: c, stopOpacity: 0.4 }),
+                                React.createElement("stop", { offset: "100%", stopColor: c, stopOpacity: 0 })
+                            )
+                        ),
+                        React.createElement(R.CartesianGrid, { strokeDasharray: "3 3", stroke: "#f1f5f9", vertical: false }),
+                        React.createElement(R.XAxis, { dataKey: "label", tick: { fontSize: 11, fill: '#64748b' }, axisLine: false, tickLine: false }),
+                        React.createElement(R.YAxis, { tick: { fontSize: 11, fill: '#64748b' }, axisLine: false, tickLine: false, tickFormatter: fmt }),
+                        React.createElement(R.Tooltip, {
+                            formatter: (v) => [fmt(v), ''],
+                            contentStyle: { borderRadius: '8px', border: '1px solid #e5e7eb', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', fontSize: '12px' },
+                            labelStyle: { color: '#475569', fontWeight: 600 }
+                        }),
+                        React.createElement(R.Area, {
+                            type: "monotone",
+                            dataKey: "valor",
+                            stroke: c,
+                            strokeWidth: 2.5,
+                            fill: `url(#${gradId})`,
+                            animationDuration: 800,
+                            dot: { r: 3, fill: c, strokeWidth: 0 },
+                            activeDot: { r: 5, fill: c, stroke: '#fff', strokeWidth: 2 }
+                        })
+                    )
+                )
+            )
+        );
+    },
+    
     TechRanking = ({
         submissions: e
     }) => {
