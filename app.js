@@ -6732,7 +6732,7 @@ const hideLoadingScreen = () => {
             clientesParaEnviar && clientesParaEnviar.length > 0 && e.append("cod_cliente", Array.isArray(clientesParaEnviar) ? clientesParaEnviar.join(",") : clientesParaEnviar);
             centrosCustoParaEnviar && centrosCustoParaEnviar.length > 0 && e.append("centro_custo", Array.isArray(centrosCustoParaEnviar) ? centrosCustoParaEnviar.join(",") : centrosCustoParaEnviar);
             clientesSemFiltroCC && clientesSemFiltroCC.length > 0 && e.append("clientes_sem_filtro_cc", clientesSemFiltroCC.join(","));
-            ua.cod_prof && e.append("cod_prof", ua.cod_prof), ua.categoria && e.append("categoria", ua.categoria), ua.cidade && e.append("cidade", ua.cidade), ua.status_prazo && e.append("status_prazo", ua.status_prazo), ua.status_retorno && e.append("status_retorno", ua.status_retorno);
+            ua.cod_prof && e.append("cod_prof", ua.cod_prof), (ua.categorias && ua.categorias.length > 0) && e.append("categoria", ua.categorias.join(",")), ua.cidade && e.append("cidade", ua.cidade), ua.status_prazo && e.append("status_prazo", ua.status_prazo), ua.status_retorno && e.append("status_retorno", ua.status_retorno);
             return e;
         }, carregarMapaCalor = async () => {
             try {
@@ -7152,7 +7152,7 @@ const hideLoadingScreen = () => {
                 console.log("📈 Filtros alterados, recarregando acompanhamento...");
                 carregarAcompanhamento();
             }
-        }, [ua.data_inicio, ua.data_fim, ua.cod_cliente, ua.centro_custo, ua.categoria]);
+        }, [ua.data_inicio, ua.data_fim, ua.cod_cliente, ua.centro_custo, ua.categorias]);
         
         // useEffect para CARREGAR DADOS DO BI automaticamente quando entrar no módulo
         useEffect(() => {
@@ -7177,7 +7177,7 @@ const hideLoadingScreen = () => {
             if (Et === "dashboard" && mapaCalorVisivel && !ba) {
                 carregarMapaCalor();
             }
-        }, [ua.data_inicio, ua.data_fim, ua.cod_cliente, ua.centro_custo, ua.categoria]);
+        }, [ua.data_inicio, ua.data_fim, ua.cod_cliente, ua.centro_custo, ua.categorias]);
         
         // useEffect para RENDERIZAR o mapa quando os dados estiverem disponíveis
         useEffect(() => {
@@ -7203,7 +7203,9 @@ const hideLoadingScreen = () => {
                 if (ua.data_fim) params.append("data_fim", ua.data_fim);
                 if (ua.cod_cliente && ua.cod_cliente.length > 0) params.append("cod_cliente", ua.cod_cliente.join(","));
                 if (ua.centro_custo && ua.centro_custo.length > 0) params.append("centro_custo", ua.centro_custo.join(","));
-                if (ua.categoria) params.append("categoria", ua.categoria);
+                // 🔧 FIX BI-CATEGORIA-MULTI: enviar múltiplas categorias separadas por vírgula
+                const _cats = ua.categorias || [];
+                if (_cats.length > 0) params.append("categoria", _cats.join(","));
                 if (ua.status_prazo) params.append("status_prazo", ua.status_prazo);
                 if (ua.status_retorno) params.append("status_retorno", ua.status_retorno);
                 if (ua.cidade) params.append("cidade", ua.cidade);
@@ -7476,17 +7478,23 @@ const hideLoadingScreen = () => {
                 }
             }
             let l = t;
-            if (a.length > 0 && (l = l.filter(e => a.includes(String(e.cod_cliente)))), e.categoria && (l = l.filter(t => t.categoria === e.categoria)), e.centro_custo && e.centro_custo.length > 0 && (l = l.filter(t => e.centro_custo.includes(t.centro_custo))), centrosCustoRegiao.length > 0 && (l = l.filter(t => centrosCustoRegiao.includes(t.centro_custo))), 0 === a.length) {
+            // 🔧 FIX BI-CLIENTE-CC: NÃO filtrar lista de clientes pelo centro_custo
+            // selecionado — assim o usuário consegue marcar mais lojas mesmo após ter
+            // escolhido um CC. (Antes, ao selecionar CC, só sobrava a loja dona daquele
+            // CC na lista, impossibilitando seleção de outras lojas.)
+            // 🔧 FIX BI-CATEGORIA-MULTI: categorias agora é array.
+            const cats = e.categorias || (e.categoria ? [e.categoria] : []);
+            if (a.length > 0 && (l = l.filter(e => a.includes(String(e.cod_cliente)))), cats.length > 0 && (l = l.filter(t => cats.includes(t.categoria))), centrosCustoRegiao.length > 0 && (l = l.filter(t => centrosCustoRegiao.includes(t.centro_custo))), 0 === a.length) {
                 const e = [...new Set(l.map(e => e.cod_cliente))];
                 da(jt.filter(t => e.includes(t.cod_cliente)))
             } else {
                 let a = t;
-                e.categoria && (a = a.filter(t => t.categoria === e.categoria)), e.centro_custo && e.centro_custo.length > 0 && (a = a.filter(t => e.centro_custo.includes(t.centro_custo)));
+                cats.length > 0 && (a = a.filter(t => cats.includes(t.categoria)));
                 const l = [...new Set(a.map(e => e.cod_cliente))];
                 da(jt.filter(e => l.includes(e.cod_cliente)))
             }
             let r = t;
-            a.length > 0 && (r = r.filter(e => a.includes(String(e.cod_cliente)))), e.categoria && (r = r.filter(t => t.categoria === e.categoria));
+            a.length > 0 && (r = r.filter(e => a.includes(String(e.cod_cliente)))), cats.length > 0 && (r = r.filter(t => cats.includes(t.categoria)));
             const o = [...new Set(r.map(e => e.centro_custo).filter(e => e))];
             Pt(At.filter(e => o.includes(e.centro_custo)));
             let c = t;
@@ -14714,7 +14722,7 @@ const hideLoadingScreen = () => {
             (Et === "dashboard" || Et === "acompanhamento" || Et === "profissionais" || Et === "os") && (
                 (ua.cod_cliente && ua.cod_cliente.length > 0) || 
                 (ua.centro_custo && ua.centro_custo.length > 0) || 
-                ua.categoria || 
+                (ua.categorias && ua.categorias.length > 0) || 
                 ua.regiao ||
                 ua.status_prazo ||
                 ua.status_retorno
@@ -14768,9 +14776,18 @@ const hideLoadingScreen = () => {
                         )
                     ),
                     
-                    // Categoria
-                    ua.categoria && React.createElement("span", {className: "inline-flex items-center gap-1 px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs"},
-                        "🏷️ " + ua.categoria
+                    // Categoria(s)
+                    ua.categorias && ua.categorias.length > 0 && React.createElement("span", {
+                        className: "inline-flex items-center gap-1 px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs cursor-pointer relative group",
+                        title: ua.categorias.length > 1 ? ua.categorias.join("\n") : ""
+                    },
+                        "🏷️ " + (ua.categorias.length === 1 ? ua.categorias[0] : ua.categorias.length + " categorias"),
+                        ua.categorias.length > 1 && React.createElement("div", {
+                            className: "absolute left-0 top-full mt-1 bg-gray-900 text-white text-xs rounded-lg p-2 shadow-xl z-50 hidden group-hover:block whitespace-nowrap min-w-max"
+                        },
+                            React.createElement("div", {className: "font-semibold mb-1 text-yellow-300"}, "🏷️ Categorias:"),
+                            ua.categorias.map(c => React.createElement("div", {key: c, className: "py-0.5"}, c))
+                        )
                     ),
                     
                     // Status Prazo
@@ -15089,22 +15106,29 @@ const hideLoadingScreen = () => {
                 className: "border rounded-lg p-3 bg-blue-50"
             }, React.createElement("h3", {
                 className: "font-semibold text-gray-700 mb-2 text-sm"
-            }, "🏷️ Categoria"), React.createElement("select", {
-                value: ua.categoria,
-                onChange: e => {
-                    const t = {
-                        ...ua,
-                        categoria: e.target.value
-                    };
-                    ga(t), rl(t)
-                },
-                className: "w-full px-3 py-2 border rounded text-sm"
-            }, React.createElement("option", {
-                value: ""
-            }, "Todas as Categorias (", pa.length, " disponíveis)"), pa.map(e => React.createElement("option", {
-                key: e,
-                value: e
-            }, e))))), React.createElement("div", {
+            }, "🏷️ Categoria"), React.createElement("div", {
+                className: "max-h-40 overflow-y-auto border-2 border-blue-200 rounded-lg bg-white"
+            }, pa.map(cat => {
+                const isChecked = (ua.categorias || []).includes(cat);
+                return React.createElement("label", {
+                    key: cat,
+                    className: "flex items-center gap-2 px-3 py-2 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0 " + (isChecked ? "bg-blue-100" : "")
+                }, React.createElement("input", {
+                    type: "checkbox",
+                    checked: isChecked,
+                    onChange: () => {
+                        const current = ua.categorias || [];
+                        const next = isChecked ? current.filter(c => c !== cat) : current.concat([cat]);
+                        const newUa = Object.assign({}, ua, { categorias: next });
+                        ga(newUa); rl(newUa);
+                    },
+                    className: "w-4 h-4 rounded border-blue-300 text-blue-600 focus:ring-blue-500"
+                }), React.createElement("span", {
+                    className: "text-sm " + (isChecked ? "font-semibold text-blue-800" : "text-gray-700")
+                }, cat));
+            })), React.createElement("p", {
+                className: "text-xs text-blue-600 mt-1"
+            }, (ua.categorias || []).length > 0 ? `✓ ${(ua.categorias || []).length} selecionada(s) | Clique pra desmarcar` : `💡 ${pa.length} disponíveis | Sem seleção = Todas`))), React.createElement("div", {
                 className: "grid grid-cols-1 md:grid-cols-2 gap-4"
             }, 
             // ===== CLIENTE - CHECKBOXES =====
@@ -15724,7 +15748,7 @@ const hideLoadingScreen = () => {
                 className: "bg-purple-100 px-4 py-3"
             }, React.createElement("h3", {
                 className: "font-bold text-purple-900"
-            }, "Resumo Geral por Cliente"), ((ua.cod_cliente || []).length > 0 || (ua.centro_custo || []).length > 0 || ua.categoria || ua.regiao) && React.createElement("div", {
+            }, "Resumo Geral por Cliente"), ((ua.cod_cliente || []).length > 0 || (ua.centro_custo || []).length > 0 || (ua.categorias || []).length > 0 || ua.regiao) && React.createElement("div", {
                 className: "mt-2 flex flex-wrap gap-2"
             }, ua.regiao && React.createElement("span", {
                 className: "text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded-full"
@@ -15732,9 +15756,9 @@ const hideLoadingScreen = () => {
                 className: "text-xs bg-purple-200 text-purple-800 px-2 py-1 rounded-full"
             }, "🏢 ", (ua.cod_cliente || []).length, " cliente(s)"), (ua.centro_custo || []).length > 0 && React.createElement("span", {
                 className: "text-xs bg-green-200 text-green-800 px-2 py-1 rounded-full"
-            }, "📁 Centro(s): ", (ua.centro_custo || []).join(", ")), ua.categoria && React.createElement("span", {
+            }, "📁 Centro(s): ", (ua.centro_custo || []).join(", ")), (ua.categorias || []).length > 0 && React.createElement("span", {
                 className: "text-xs bg-yellow-200 text-yellow-800 px-2 py-1 rounded-full"
-            }, "🏷️ ", ua.categoria))), React.createElement("div", {
+            }, "🏷️ ", (ua.categorias || []).join(", ")))), React.createElement("div", {
                 className: "overflow-x-auto"
             }, React.createElement("table", {
                 className: "w-full text-sm"
