@@ -2394,6 +2394,7 @@ const hideLoadingScreen = () => {
         [acompLoading, setAcompLoading] = useState(false),
         [acompFiltros, setAcompFiltros] = useState({os: false, entregas: false, noPrazo: false, foraPrazo: false, retornos: false, valorTotal: false, valorProf: false, faturamentoTotal: false, ticketMedio: false, tempoMedioEntrega: false, tempoMedioAlocacao: false, tempoMedioColeta: false, totalEntregadores: false, mediaEntProfissional: false, evolucaoSemanal: false}),
         [acompFiltrosOrdem, setAcompFiltrosOrdem] = useState([]),
+        [acompTabAtiva, setAcompTabAtiva] = useState("volume"),
         [acompClientes, setAcompClientes] = useState(null),
         [comparativoSemanal, setComparativoSemanal] = useState(null),
         [comparativoSemanalClientes, setComparativoSemanalClientes] = useState(null),
@@ -16310,7 +16311,88 @@ const hideLoadingScreen = () => {
                     React.createElement("div", {id: "mapa-calor-leaflet", style: {height: "600px", width: "100%", borderRadius: "12px", backgroundColor: "#e5e7eb"}}),
                     mapaCalorLoading && React.createElement("div", {style: {position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(255,255,255,0.8)", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "12px", zIndex: 1000}}, React.createElement("div", {className: "text-center"}, React.createElement("div", {className: "animate-spin text-4xl"}, "⏳"), React.createElement("span", {className: "text-gray-600"}, "Carregando mapa...")))
                 )
-            ), "acompanhamento" === Et && React.createElement("div", {className: "space-y-6"}, React.createElement("div", {className: "bg-gradient-to-r from-purple-600 to-purple-800 rounded-xl p-6 text-white"}, React.createElement("h2", {className: "text-2xl font-bold mb-2"}, "📈 Acompanhamento Periódico"), React.createElement("p", {className: "opacity-80"}, "Análise temporal com múltiplas métricas")), React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-6"}, React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-4"}, "📊 Selecione as Métricas"), React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2"}, React.createElement("label", {className: "flex items-center gap-2 p-2 border rounded-lg cursor-pointer text-xs " + (acompFiltros.os ? "border-blue-500 bg-blue-50" : "border-gray-200")}, React.createElement("input", {type: "checkbox", checked: acompFiltros.os, onChange: function() { toggleAcompFiltro("os"); }, className: "w-3 h-3"}), "OS"), React.createElement("label", {className: "flex items-center gap-2 p-2 border rounded-lg cursor-pointer text-xs " + (acompFiltros.entregas ? "border-sky-500 bg-sky-50" : "border-gray-200")}, React.createElement("input", {type: "checkbox", checked: acompFiltros.entregas, onChange: function() { toggleAcompFiltro("entregas"); }, className: "w-3 h-3"}), "Entregas"), React.createElement("label", {className: "flex items-center gap-2 p-2 border rounded-lg cursor-pointer text-xs " + (acompFiltros.noPrazo ? "border-green-500 bg-green-50" : "border-gray-200")}, React.createElement("input", {type: "checkbox", checked: acompFiltros.noPrazo, onChange: function() { toggleAcompFiltro("noPrazo"); }, className: "w-3 h-3"}), "No Prazo"), React.createElement("label", {className: "flex items-center gap-2 p-2 border rounded-lg cursor-pointer text-xs " + (acompFiltros.foraPrazo ? "border-red-500 bg-red-50" : "border-gray-200")}, React.createElement("input", {type: "checkbox", checked: acompFiltros.foraPrazo, onChange: function() { toggleAcompFiltro("foraPrazo"); }, className: "w-3 h-3"}), "Fora Prazo"), React.createElement("label", {className: "flex items-center gap-2 p-2 border rounded-lg cursor-pointer text-xs " + (acompFiltros.retornos ? "border-orange-500 bg-orange-50" : "border-gray-200")}, React.createElement("input", {type: "checkbox", checked: acompFiltros.retornos, onChange: function() { toggleAcompFiltro("retornos"); }, className: "w-3 h-3"}), "Retornos"), React.createElement("label", {className: "flex items-center gap-2 p-2 border rounded-lg cursor-pointer text-xs " + (acompFiltros.valorTotal ? "border-purple-500 bg-purple-50" : "border-gray-200")}, React.createElement("input", {type: "checkbox", checked: acompFiltros.valorTotal, onChange: function() { toggleAcompFiltro("valorTotal"); }, className: "w-3 h-3"}), "Valor Total"), React.createElement("label", {className: "flex items-center gap-2 p-2 border rounded-lg cursor-pointer text-xs " + (acompFiltros.valorProf ? "border-amber-500 bg-amber-50" : "border-gray-200")}, React.createElement("input", {type: "checkbox", checked: acompFiltros.valorProf, onChange: function() { toggleAcompFiltro("valorProf"); }, className: "w-3 h-3"}), "Valor Prof."), React.createElement("label", {className: "flex items-center gap-2 p-2 border rounded-lg cursor-pointer text-xs " + (acompFiltros.faturamentoTotal ? "border-violet-500 bg-violet-50" : "border-gray-200")}, React.createElement("input", {type: "checkbox", checked: acompFiltros.faturamentoTotal, onChange: function() { toggleAcompFiltro("faturamentoTotal"); }, className: "w-3 h-3"}), "Fat. Total"), React.createElement("label", {className: "flex items-center gap-2 p-2 border rounded-lg cursor-pointer text-xs " + (acompFiltros.ticketMedio ? "border-cyan-500 bg-cyan-50" : "border-gray-200")}, React.createElement("input", {type: "checkbox", checked: acompFiltros.ticketMedio, onChange: function() { toggleAcompFiltro("ticketMedio"); }, className: "w-3 h-3"}), "Ticket Médio"), React.createElement("label", {className: "flex items-center gap-2 p-2 border rounded-lg cursor-pointer text-xs " + (acompFiltros.tempoMedioEntrega ? "border-rose-500 bg-rose-50" : "border-gray-200")}, React.createElement("input", {type: "checkbox", checked: acompFiltros.tempoMedioEntrega, onChange: function() { toggleAcompFiltro("tempoMedioEntrega"); }, className: "w-3 h-3"}), "Temp. Médio Entrega"), React.createElement("label", {className: "flex items-center gap-2 p-2 border rounded-lg cursor-pointer text-xs " + (acompFiltros.tempoMedioAlocacao ? "border-pink-500 bg-pink-50" : "border-gray-200")}, React.createElement("input", {type: "checkbox", checked: acompFiltros.tempoMedioAlocacao, onChange: function() { toggleAcompFiltro("tempoMedioAlocacao"); }, className: "w-3 h-3"}), "Temp. Médio Alocação"), React.createElement("label", {className: "flex items-center gap-2 p-2 border rounded-lg cursor-pointer text-xs " + (acompFiltros.tempoMedioColeta ? "border-fuchsia-500 bg-fuchsia-50" : "border-gray-200")}, React.createElement("input", {type: "checkbox", checked: acompFiltros.tempoMedioColeta, onChange: function() { toggleAcompFiltro("tempoMedioColeta"); }, className: "w-3 h-3"}), "Temp. Médio Coleta"), React.createElement("label", {className: "flex items-center gap-2 p-2 border rounded-lg cursor-pointer text-xs " + (acompFiltros.totalEntregadores ? "border-teal-500 bg-teal-50" : "border-gray-200")}, React.createElement("input", {type: "checkbox", checked: acompFiltros.totalEntregadores, onChange: function() { toggleAcompFiltro("totalEntregadores"); }, className: "w-3 h-3"}), "Total Entregadores"), React.createElement("label", {className: "flex items-center gap-2 p-2 border rounded-lg cursor-pointer text-xs " + (acompFiltros.mediaEntProfissional ? "border-violet-500 bg-violet-50" : "border-gray-200")}, React.createElement("input", {type: "checkbox", checked: acompFiltros.mediaEntProfissional, onChange: function() { toggleAcompFiltro("mediaEntProfissional"); }, className: "w-3 h-3"}), "Média Ent. Profissional"), React.createElement("label", {className: "flex items-center gap-2 p-2 border rounded-lg cursor-pointer text-xs " + (acompFiltros.evolucaoSemanal ? "border-violet-500 bg-violet-50" : "border-gray-200")}, React.createElement("input", {type: "checkbox", checked: acompFiltros.evolucaoSemanal, onChange: function() { toggleAcompFiltro("evolucaoSemanal"); }, className: "w-3 h-3"}), "Evolução Semanal"))),
+            ), "acompanhamento" === Et && React.createElement("div", {className: "space-y-6"}, React.createElement("div", {className: "bg-gradient-to-r from-purple-600 to-purple-800 rounded-xl p-6 text-white"}, React.createElement("h2", {className: "text-2xl font-bold mb-2"}, "📈 Acompanhamento Periódico"), React.createElement("p", {className: "opacity-80"}, "Análise temporal com múltiplas métricas")), React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-6"}, (function() {
+                var TABS_ACOMP = {
+                    volume:      { label: "📦 Volume",      cor: CORES_BI.info,      metricas: ["os","entregas","retornos","totalEntregadores"] },
+                    financeiro:  { label: "💰 Financeiro",  cor: CORES_BI.destaque,  metricas: ["valorTotal","valorProf","faturamentoTotal","ticketMedio"] },
+                    performance: { label: "⏱️ Performance", cor: CORES_BI.sucesso,   metricas: ["noPrazo","foraPrazo","tempoMedioEntrega","tempoMedioColeta","tempoMedioAlocacao"] },
+                    tendencias:  { label: "📈 Tendências",  cor: CORES_BI.aviso,     metricas: ["mediaEntProfissional","evolucaoSemanal"] }
+                };
+                var META = {
+                    os:                  { label: "OS",                    campo: "total_os",            cor: CORES_BI.info },
+                    entregas:            { label: "Entregas",              campo: "total_entregas",      cor: "#0ea5e9" },
+                    retornos:            { label: "Retornos",              campo: "retornos",            cor: CORES_BI.erro },
+                    totalEntregadores:   { label: "Total Entregadores",    campo: "total_entregadores",  cor: "#14b8a6" },
+                    valorTotal:          { label: "Valor Total",           campo: "valor_total",         cor: CORES_BI.destaque, money: true },
+                    valorProf:           { label: "Valor Profissional",    campo: "valor_motoboy",       cor: "#f59e0b", money: true },
+                    faturamentoTotal:    { label: "Faturamento",           campo: "faturamento_total",   cor: "#8b5cf6", money: true },
+                    ticketMedio:         { label: "Ticket Médio",          campo: "ticket_medio",        cor: "#06b6d4", money: true },
+                    noPrazo:             { label: "No Prazo",              campo: "dentro_prazo",        cor: CORES_BI.sucesso },
+                    foraPrazo:           { label: "Fora do Prazo",         campo: "fora_prazo",          cor: CORES_BI.erro },
+                    tempoMedioEntrega:   { label: "T. Médio Entrega",      campo: "tempo_medio_entrega", cor: "#f43f5e", min: true },
+                    tempoMedioColeta:    { label: "T. Médio Coleta",       campo: "tempo_medio_coleta",  cor: "#d946ef", min: true },
+                    tempoMedioAlocacao:  { label: "T. Médio Alocação",     campo: "tempo_medio_alocacao",cor: "#ec4899", min: true },
+                    mediaEntProfissional:{ label: "Média Ent./Profissional",campo: "media_ent_profissional",cor: "#8b5cf6" },
+                    evolucaoSemanal:     { label: "Evolução Semanal",      campo: "evolucao_semanal",    cor: "#a855f7" }
+                };
+                var tab = TABS_ACOMP[acompTabAtiva] || TABS_ACOMP.volume;
+                return React.createElement(React.Fragment, null,
+                    React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-4"}, "📊 Métricas de Acompanhamento"),
+                    React.createElement("div", {className: "flex gap-2 border-b border-gray-200 mb-5 overflow-x-auto"},
+                        Object.keys(TABS_ACOMP).map(function(key) {
+                            var t = TABS_ACOMP[key];
+                            var ativa = key === acompTabAtiva;
+                            return React.createElement("button", {
+                                key: key,
+                                onClick: function() { setAcompTabAtiva(key); },
+                                className: "px-4 py-2 text-sm font-semibold whitespace-nowrap transition-all border-b-2 " + (ativa ? "border-purple-600 text-purple-700" : "border-transparent text-gray-500 hover:text-gray-700")
+                            }, t.label);
+                        })
+                    ),
+                    React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 mb-5"},
+                        tab.metricas.map(function(mk) {
+                            var m = META[mk];
+                            var sel = !!acompFiltros[mk];
+                            return React.createElement("label", {
+                                key: mk,
+                                className: "flex items-center gap-2 p-2 border rounded-lg cursor-pointer text-xs transition-all " + (sel ? "border-purple-500 bg-purple-50" : "border-gray-200 hover:border-gray-300")
+                            },
+                                React.createElement("input", {type: "checkbox", checked: sel, onChange: function() { toggleAcompFiltro(mk); }, className: "w-3 h-3"}),
+                                React.createElement("span", {className: "w-2 h-2 rounded-full", style: {background: m.cor}}),
+                                m.label
+                            );
+                        })
+                    ),
+                    (function() {
+                        if (!acompDados || !acompDados.porData || !acompDados.porData.length) {
+                            return React.createElement("div", {className: "text-center text-gray-400 text-sm py-8"}, "Selecione um período e clique em Atualizar para ver os gráficos.");
+                        }
+                        var ativas = tab.metricas.filter(function(mk) { return acompFiltros[mk]; });
+                        if (!ativas.length) {
+                            return React.createElement("div", {className: "text-center text-gray-400 text-sm py-6 border-2 border-dashed border-gray-200 rounded-lg"}, "👆 Marque uma ou mais métricas acima para visualizar os gráficos.");
+                        }
+                        return React.createElement("div", {className: "grid grid-cols-1 lg:grid-cols-2 gap-4"},
+                            ativas.map(function(mk) {
+                                var m = META[mk];
+                                var dados = acompDados.porData.map(function(d) {
+                                    return { label: d.data_formatada, valor: parseFloat(d[m.campo]) || 0 };
+                                });
+                                var formatador = m.money
+                                    ? function(v) { return "R$ " + Math.round(v).toLocaleString("pt-BR"); }
+                                    : (m.min ? function(v) { var h=Math.floor(v/60); var mm=Math.floor(v%60); return String(h).padStart(2,"0")+":"+String(mm).padStart(2,"0"); } : function(v) { return Math.round(v).toLocaleString("pt-BR"); });
+                                return React.createElement(LinhaTemporal, {
+                                    key: mk,
+                                    dados: dados,
+                                    cor: m.cor,
+                                    titulo: m.label,
+                                    altura: 200,
+                                    formatador: formatador
+                                });
+                            })
+                        );
+                    })()
+                );
+            })()),
             
             // TABELA DE RESUMO POR CLIENTE - DINÂMICA BASEADA NOS SUBFILTROS
             !acompLoading && acompClientes && acompClientes.clientes && acompClientes.clientes.length > 0 && acompFiltrosOrdem.length > 0 && React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-6"}, 
