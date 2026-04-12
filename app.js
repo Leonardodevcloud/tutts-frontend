@@ -6727,6 +6727,26 @@ const hideLoadingScreen = () => {
                     }
                     // Se todos os clientes têm "Todos CC", não enviar filtro de centro_custo
                 }
+            } else if (centrosCustoParaEnviar.length > 0 && clientesParaEnviar.length > 0) {
+                // 🔧 FIX BI-CC-LOCAL: quando o usuário selecionou clientes E centros de custo
+                // manualmente, o CC é uma RESTRIÇÃO LOCAL ao cliente dono dele — os outros
+                // clientes selecionados não devem ser filtrados por CC. Antes o backend fazia
+                // (cod_cliente IN $1 AND centro_custo IN $2), o que excluía silenciosamente
+                // todos os clientes que não fossem dono do CC escolhido. Agora dividimos:
+                // - clientes "donos" dos CCs escolhidos → ficam restritos pelos CCs
+                // - demais clientes selecionados → vão em clientes_sem_filtro_cc (sem restrição)
+                // Tt é o mapping {cod_cliente: [centros_custo]}
+                const ccsSelecionadosSet = new Set(centrosCustoParaEnviar);
+                const clientesDonosDosCCs = new Set();
+                Object.keys(Tt || {}).forEach(cod => {
+                    const ccsDoCliente = Tt[cod] || [];
+                    if (ccsDoCliente.some(cc => ccsSelecionadosSet.has(cc))) {
+                        clientesDonosDosCCs.add(String(cod));
+                    }
+                });
+                clientesSemFiltroCC = clientesParaEnviar
+                    .map(String)
+                    .filter(c => !clientesDonosDosCCs.has(c));
             }
             
             clientesParaEnviar && clientesParaEnviar.length > 0 && e.append("cod_cliente", Array.isArray(clientesParaEnviar) ? clientesParaEnviar.join(",") : clientesParaEnviar);
