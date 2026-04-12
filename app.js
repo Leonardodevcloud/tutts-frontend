@@ -15781,54 +15781,50 @@ const hideLoadingScreen = () => {
             
             "dashboard" === Et && React.createElement(React.Fragment, null, 
 
-            // === HERO: Coluna OS+Entregas empilhada + 2 Donuts (Performance + Profissional) ===
+            // === HERO: Coluna OS+Entregas (cards brancos compactos) + 2 Donuts ===
             React.createElement("div", {
                 className: "grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 items-stretch"
             },
-                // Coluna 1: stack vertical OS + Entregas
+                // Coluna 1: stack vertical OS + Entregas (brancos, border-l-4)
                 React.createElement("div", {className: "flex flex-col gap-4"},
-                    // Card OS
+                    // Card OS — branco compacto
                     React.createElement("div", {
-                        className: "bg-gradient-to-br from-purple-600 to-purple-800 rounded-2xl p-5 shadow-xl text-white flex-1 flex flex-col justify-between"
+                        className: "bg-white rounded-2xl p-4 shadow-lg border-l-4 border-violet-500 flex-1 flex flex-col justify-center"
                     },
-                        React.createElement("div", {className: "flex items-center justify-between mb-2"},
-                            React.createElement("span", {className: "text-3xl"}, "📋"),
-                            React.createElement("span", {className: "text-[10px] font-semibold bg-white/20 px-2 py-1 rounded-full"}, "Ordens de Serviço")
+                        React.createElement("div", {className: "flex items-center justify-between mb-1"},
+                            React.createElement("span", {className: "text-xl"}, "📋"),
+                            React.createElement("span", {className: "text-[10px] text-violet-700 bg-violet-50 px-1.5 py-0.5 rounded font-semibold"}, "Ordens de Serviço")
                         ),
-                        React.createElement("div", null,
-                            React.createElement("p", {className: "text-4xl font-extrabold tracking-tight mb-1"},
-                                nl(ft?.total_os).toLocaleString("pt-BR")
-                            ),
-                            React.createElement("p", {className: "text-xs opacity-80"}, "Total de OS no período")
-                        )
+                        React.createElement("p", {className: "text-3xl font-bold text-gray-800 leading-tight"},
+                            nl(ft?.total_os).toLocaleString("pt-BR")
+                        ),
+                        React.createElement("p", {className: "text-[11px] text-gray-500 font-medium"}, "Total de OS no período")
                     ),
-                    // Card Entregas
+                    // Card Entregas — branco compacto
                     React.createElement("div", {
-                        className: "bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl p-5 shadow-xl text-white flex-1 flex flex-col justify-between"
+                        className: "bg-white rounded-2xl p-4 shadow-lg border-l-4 border-blue-500 flex-1 flex flex-col justify-center"
                     },
-                        React.createElement("div", {className: "flex items-center justify-between mb-2"},
-                            React.createElement("span", {className: "text-3xl"}, "📦"),
-                            React.createElement("span", {className: "text-[10px] font-semibold bg-white/20 px-2 py-1 rounded-full"}, "Entregas")
+                        React.createElement("div", {className: "flex items-center justify-between mb-1"},
+                            React.createElement("span", {className: "text-xl"}, "📦"),
+                            React.createElement("span", {className: "text-[10px] text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded font-semibold"}, "Entregas")
                         ),
-                        React.createElement("div", null,
-                            React.createElement("p", {className: "text-4xl font-extrabold tracking-tight mb-1"},
-                                nl(ft?.total_entregas).toLocaleString("pt-BR")
-                            ),
-                            React.createElement("p", {className: "text-xs opacity-80"},
-                                "Realizadas — ", nl(ft?.total_retornos).toLocaleString("pt-BR"), " retornos"
-                            )
+                        React.createElement("p", {className: "text-3xl font-bold text-gray-800 leading-tight"},
+                            nl(ft?.total_entregas).toLocaleString("pt-BR")
+                        ),
+                        React.createElement("p", {className: "text-[11px] text-gray-500 font-medium"},
+                            "Realizadas — ", nl(ft?.total_retornos).toLocaleString("pt-BR"), " retornos"
                         )
                     )
                 ),
                 // Coluna 2: Donut Performance (Prazo de Entrega)
                 React.createElement("div", {
-                    className: "bg-white rounded-2xl p-6 shadow-xl border-2 border-green-100 flex flex-col"
+                    className: "bg-white rounded-2xl px-4 pt-3 pb-4 shadow-lg border-l-4 border-green-500 flex flex-col overflow-visible"
                 },
-                    React.createElement("div", {className: "flex items-center justify-between mb-2"},
-                        React.createElement("span", {className: "text-2xl"}, "⏱️"),
-                        React.createElement("span", {className: "text-xs font-semibold text-green-700 bg-green-50 px-2 py-1 rounded-full"}, "Performance")
+                    React.createElement("div", {className: "flex items-center justify-between mb-1"},
+                        React.createElement("span", {className: "text-xl"}, "⏱️"),
+                        React.createElement("span", {className: "text-[10px] text-green-700 bg-green-50 px-1.5 py-0.5 rounded font-semibold"}, "Performance")
                     ),
-                    React.createElement("div", {className: "flex-1 flex items-center justify-center"},
+                    React.createElement("div", {className: "flex-1 flex items-center justify-center min-h-0"},
                         React.createElement(DonutPrazo, {
                             dentro: nl(ft?.dentro_prazo),
                             fora: nl(ft?.fora_prazo),
@@ -15840,16 +15836,16 @@ const hideLoadingScreen = () => {
                 ),
                 // Coluna 3: Donut Prazo Profissional
                 React.createElement("div", {
-                    className: "bg-white rounded-2xl p-6 shadow-xl border-2 border-blue-100 flex flex-col"
+                    className: "bg-white rounded-2xl px-4 pt-3 pb-4 shadow-lg border-l-4 border-blue-500 flex flex-col overflow-visible"
                 },
-                    React.createElement("div", {className: "flex items-center justify-between mb-2"},
-                        React.createElement("span", {className: "text-2xl"}, "🏍️"),
-                        React.createElement("div", {className: "flex items-center gap-2"},
-                            React.createElement("span", {className: "text-[10px] font-semibold text-indigo-700 bg-indigo-50 px-2 py-1 rounded-full"}, "T. Médio: ", cl(ft?.tempo_medio_entrega_prof)),
-                            React.createElement("span", {className: "text-xs font-semibold text-blue-700 bg-blue-50 px-2 py-1 rounded-full"}, "Profissional")
+                    React.createElement("div", {className: "flex items-center justify-between mb-1"},
+                        React.createElement("span", {className: "text-xl"}, "🏍️"),
+                        React.createElement("div", {className: "flex items-center gap-1.5"},
+                            React.createElement("span", {className: "text-[10px] text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded font-semibold"}, "T. Médio: ", cl(ft?.tempo_medio_entrega_prof)),
+                            React.createElement("span", {className: "text-[10px] text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded font-semibold"}, "Profissional")
                         )
                     ),
-                    React.createElement("div", {className: "flex-1 flex items-center justify-center"},
+                    React.createElement("div", {className: "flex-1 flex items-center justify-center min-h-0"},
                         React.createElement(DonutPrazo, {
                             dentro: nl(ft?.dentro_prazo_prof),
                             fora: nl(ft?.fora_prazo_prof),
