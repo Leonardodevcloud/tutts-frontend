@@ -517,7 +517,7 @@ const SISTEMA_MODULOS_CONFIG = [
     },
     { id: "performance", label: "Performance Diária", icon: "📈", abas: [{id:"dashboard",label:"📊 Dashboard"},{id:"busca",label:"🔍 Busca"},{id:"config",label:"⚙️ Configurações"},{id:"jobs",label:"🗂️ Jobs"}] },
     { id: "gerencial", label: "Análise Gerencial", icon: "📊", abas: [] },
-    { id: "uber", label: "Uber Direct", icon: "U", abas: [{id:"dashboard",label:"Dashboard"},{id:"tracking",label:"Tracking"},{id:"entregas",label:"Entregas"},{id:"config",label:"Config"}] }
+    { id: "uber", label: "Uber Direct", icon: "🛵", abas: [{id:"dashboard",label:"Dashboard"},{id:"tracking",label:"Tracking"},{id:"entregas",label:"Entregas"},{id:"config",label:"Config"}] }
 ];
 
 // ==================== COMPONENTE OVERFLOW NAV (módulos + abas com dropdown inteligente) ====================
@@ -2644,6 +2644,8 @@ const hideLoadingScreen = () => {
                 if (abaId) setFilasTab(abaId);
             } else if (moduloId === "performance") {
                 if (abaId) setPerfTab(abaId);
+            } else if (moduloId === "uber") {
+                x(prev => ({...prev, uberTab: abaId || "dashboard"}));
             }
         };
 
@@ -20565,6 +20567,22 @@ const hideLoadingScreen = () => {
                             ),
                             React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Operacional"),
                             React.createElement("p", {className: "text-sm text-gray-500"}, "Gestão operacional")
+                        )
+                    ),
+                    
+                                        // Uber Direct
+                    hasModuleAccess(l, "uber") &&
+                    React.createElement("div", {
+                        onClick: () => { he("uber"); x(e => ({...e, uberTab: "dashboard"})); },
+                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-purple-300"
+                    },
+                        React.createElement("div", {className: "h-2 bg-gradient-to-r from-purple-500 to-fuchsia-600"}),
+                        React.createElement("div", {className: "p-6"},
+                            React.createElement("div", {className: "w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
+                                React.createElement("span", {className: "text-3xl"}, "🛵")
+                            ),
+                            React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Uber Direct"),
+                            React.createElement("p", {className: "text-sm text-gray-500"}, "Entregas via Uber")
                         )
                     ),
                     

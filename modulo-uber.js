@@ -440,28 +440,22 @@
 
   // ════════════════════════════════════════════════════════
   // COMPONENTE RAIZ
+  // Usa props.estado.uberTab (controlado pelo OverflowNav do app.js)
   // ════════════════════════════════════════════════════════
   function ModuloUber(props) {
-    const [aba, setAba] = useState('dashboard');
-    const abas = [
-      { id: 'dashboard', label: '📊 Dashboard', cmp: TabDashboard },
-      { id: 'tracking',  label: '🛵 Tracking',  cmp: TabTracking },
-      { id: 'entregas',  label: '📦 Entregas',  cmp: TabEntregas },
-      { id: 'config',    label: '⚙️ Config',    cmp: TabConfig },
-    ];
-    const Atual = abas.find(a => a.id === aba).cmp;
+    // O app.js passa a aba ativa via props.estado.uberTab
+    // Se ainda não existe, default = 'dashboard'
+    const aba = props.estado?.uberTab || 'dashboard';
+
+    const abas = {
+      dashboard: TabDashboard,
+      tracking:  TabTracking,
+      entregas:  TabEntregas,
+      config:    TabConfig,
+    };
+    const Atual = abas[aba] || TabDashboard;
 
     return h('div', { className: 'min-h-screen bg-gray-50' },
-      h('div', { className: 'bg-white border-b sticky top-0 z-10' },
-        h('div', { className: 'max-w-7xl mx-auto px-4' },
-          h('div', { className: 'flex gap-1 overflow-x-auto' },
-            abas.map(a => h('button', {
-              key: a.id, onClick: () => setAba(a.id),
-              className: `px-4 py-3 text-sm font-medium border-b-2 transition ${aba === a.id ? 'border-purple-600 text-purple-600' : 'border-transparent text-gray-500 hover:text-gray-800'}`
-            }, a.label))
-          )
-        )
-      ),
       h(Atual, props)
     );
   }
