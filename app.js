@@ -6730,29 +6730,55 @@ const hideLoadingScreen = () => {
             } else if (centrosCustoParaEnviar.length > 0 && clientesParaEnviar.length > 0) {
                 // 🔧 FIX BI-CC-LOCAL: quando o usuário selecionou clientes E centros de custo
                 // manualmente, o CC é uma RESTRIÇÃO LOCAL ao cliente dono dele — os outros
-                // clientes selecionados não devem ser filtrados por CC. Antes o backend fazia
-                // (cod_cliente IN $1 AND centro_custo IN $2), o que excluía silenciosamente
-                // todos os clientes que não fossem dono do CC escolhido. Agora dividimos:
-                // - clientes "donos" dos CCs escolhidos → ficam restritos pelos CCs
-                // - demais clientes selecionados → vão em clientes_sem_filtro_cc (sem restrição)
-                // Tt é o mapping {cod_cliente: [centros_custo]}
+                // clientes selecionados não devem ser filtrados por CC.
                 const ccsSelecionadosSet = new Set(centrosCustoParaEnviar);
                 const clientesDonosDosCCs = new Set();
+                
+                // Tt pode estar em formatos diferentes. Tentar 2 estruturas:
+                // 1) {cod_cliente: ["CC1","CC2"]}  (array de strings)
+                // 2) {cod_cliente: [{centro_custo:"CC1"},...]}  (array de objetos)
                 Object.keys(Tt || {}).forEach(cod => {
                     const ccsDoCliente = Tt[cod] || [];
-                    if (ccsDoCliente.some(cc => ccsSelecionadosSet.has(cc))) {
+                    const matches = ccsDoCliente.some(cc => {
+                        if (typeof cc === 'string') return ccsSelecionadosSet.has(cc);
+                        if (cc && typeof cc === 'object') return ccsSelecionadosSet.has(cc.centro_custo || cc.nome || cc.name);
+                        return false;
+                    });
+                    if (matches) {
                         clientesDonosDosCCs.add(String(cod));
                     }
                 });
+                
+                // FALLBACK: se Tt não encontrou nenhum dono (mapeamento ausente/incompleto),
+                // varrer kt (lista global de centros de custo) que tem {centro_custo, cod_cliente}
+                if (clientesDonosDosCCs.size === 0 && Array.isArray(kt)) {
+                    kt.forEach(item => {
+                        if (item && item.centro_custo && ccsSelecionadosSet.has(item.centro_custo) && item.cod_cliente) {
+                            clientesDonosDosCCs.add(String(item.cod_cliente));
+                        }
+                    });
+                }
+                
                 clientesSemFiltroCC = clientesParaEnviar
                     .map(String)
                     .filter(c => !clientesDonosDosCCs.has(c));
+                
+                console.log('🔍 [BI-CC-LOCAL] Debug filtro:', {
+                    clientesSelecionados: clientesParaEnviar,
+                    ccsSelecionados: centrosCustoParaEnviar,
+                    clientesDonosDosCCs: [...clientesDonosDosCCs],
+                    clientesSemFiltroCC: clientesSemFiltroCC,
+                    TtKeys: Object.keys(Tt || {}).slice(0, 5),
+                    TtSample: Tt && Object.keys(Tt)[0] ? Tt[Object.keys(Tt)[0]] : null,
+                    ktLength: Array.isArray(kt) ? kt.length : 'não-array'
+                });
             }
             
             clientesParaEnviar && clientesParaEnviar.length > 0 && e.append("cod_cliente", Array.isArray(clientesParaEnviar) ? clientesParaEnviar.join(",") : clientesParaEnviar);
             centrosCustoParaEnviar && centrosCustoParaEnviar.length > 0 && e.append("centro_custo", Array.isArray(centrosCustoParaEnviar) ? centrosCustoParaEnviar.join(",") : centrosCustoParaEnviar);
             clientesSemFiltroCC && clientesSemFiltroCC.length > 0 && e.append("clientes_sem_filtro_cc", clientesSemFiltroCC.join(","));
             ua.cod_prof && e.append("cod_prof", ua.cod_prof), (ua.categorias && ua.categorias.length > 0) && e.append("categoria", ua.categorias.join(",")), ua.cidade && e.append("cidade", ua.cidade), ua.status_prazo && e.append("status_prazo", ua.status_prazo), ua.status_retorno && e.append("status_retorno", ua.status_retorno);
+            console.log('🔍 [BI-CC-LOCAL] Request params finais:', e.toString());
             return e;
         }, carregarMapaCalor = async () => {
             try {
