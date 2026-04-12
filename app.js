@@ -15831,70 +15831,50 @@ const hideLoadingScreen = () => {
                 )
             ),
 
-            // === LINHA 1: FINANCEIRO (5 cards compactos) ===
+            // === BLOCO 2: LINHA SECUNDÁRIA — Financeiro + Retornos (5 cards) ===
             React.createElement("div", {
-                className: "grid grid-cols-5 gap-2 mb-3"
-            }, React.createElement("div", {
-                className: "bg-white rounded-lg p-3 shadow border-l-3 border-violet-500"
-            }, React.createElement("div", {
-                className: "flex items-center gap-2 mb-1"
-            }, React.createElement("span", {
-                className: "text-base"
-            }, "💵"), React.createElement("span", {
-                className: "text-[10px] text-violet-600 bg-violet-50 px-1.5 py-0.5 rounded"
-            }, "Cliente")), React.createElement("p", {
-                className: "text-lg font-bold text-gray-800"
-            }, sl(ft?.valor_total || 0)), React.createElement("p", {
-                className: "text-[10px] text-gray-500"
-            }, "Valor Total")), React.createElement("div", {
-                className: "bg-white rounded-lg p-3 shadow border-l-3 border-blue-500"
+                className: "grid grid-cols-5 gap-3 mb-3"
+            },
+            React.createElement("div", {
+                className: "bg-white rounded-2xl p-4 shadow-lg border-l-4 border-violet-500"
             }, React.createElement("div", {
                 className: "flex items-center gap-2 mb-1"
-            }, React.createElement("span", {
-                className: "text-base"
-            }, "👷"), React.createElement("span", {
-                className: "text-[10px] text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded"
-            }, "Entregador")), React.createElement("p", {
-                className: "text-lg font-bold text-gray-800"
-            }, sl(ft?.valor_prof_total || 0)), React.createElement("p", {
-                className: "text-[10px] text-gray-500"
-            }, "Valor Profissional")), React.createElement("div", {
-                className: "bg-white rounded-lg p-3 shadow border-l-3 border-purple-500"
+            }, React.createElement("span", {className: "text-lg"}, "💰"),
+               React.createElement("span", {className: "text-[10px] text-violet-700 bg-violet-50 px-1.5 py-0.5 rounded font-semibold"}, "Lucro")),
+               React.createElement("p", {className: "text-xl font-bold text-gray-800"}, sl(nl(ft?.valor_total) - nl(ft?.valor_prof_total))),
+               React.createElement("p", {className: "text-[10px] text-gray-500 font-medium"}, "Faturamento")),
+            React.createElement("div", {
+                className: "bg-white rounded-2xl p-4 shadow-lg border-l-4 border-blue-500"
             }, React.createElement("div", {
                 className: "flex items-center gap-2 mb-1"
-            }, React.createElement("span", {
-                className: "text-base"
-            }, "📈"), React.createElement("span", {
-                className: "text-[10px] text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded"
-            }, "Lucro")), React.createElement("p", {
-                className: "text-lg font-bold text-gray-800"
-            }, sl(nl(ft?.valor_total) - nl(ft?.valor_prof_total))), React.createElement("p", {
-                className: "text-[10px] text-gray-500"
-            }, "Faturamento")), React.createElement("div", {
-                className: "bg-white rounded-lg p-3 shadow border-l-3 border-amber-500"
+            }, React.createElement("span", {className: "text-lg"}, "💵"),
+               React.createElement("span", {className: "text-[10px] text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded font-semibold"}, "Cliente")),
+               React.createElement("p", {className: "text-xl font-bold text-gray-800"}, sl(ft?.valor_total || 0)),
+               React.createElement("p", {className: "text-[10px] text-gray-500 font-medium"}, "Valor Total")),
+            React.createElement("div", {
+                className: "bg-white rounded-2xl p-4 shadow-lg border-l-4 border-cyan-500"
             }, React.createElement("div", {
                 className: "flex items-center gap-2 mb-1"
-            }, React.createElement("span", {
-                className: "text-base"
-            }, "🎫"), React.createElement("span", {
-                className: "text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded"
-            }, "Por OS")), React.createElement("p", {
-                className: "text-lg font-bold text-gray-800"
-            }, sl(ft?.ticket_medio || 0)), React.createElement("p", {
-                className: "text-[10px] text-gray-500"
-            }, "Ticket Médio")), React.createElement("div", {
-                className: "bg-white rounded-lg p-3 shadow border-l-3 border-violet-500"
+            }, React.createElement("span", {className: "text-lg"}, "🏍️"),
+               React.createElement("span", {className: "text-[10px] text-cyan-700 bg-cyan-50 px-1.5 py-0.5 rounded font-semibold"}, "Profissional")),
+               React.createElement("p", {className: "text-xl font-bold text-gray-800"}, sl(ft?.valor_prof_total || 0)),
+               React.createElement("p", {className: "text-[10px] text-gray-500 font-medium"}, "Valor Prof")),
+            React.createElement("div", {
+                className: "bg-white rounded-2xl p-4 shadow-lg border-l-4 border-emerald-500"
             }, React.createElement("div", {
                 className: "flex items-center gap-2 mb-1"
-            }, React.createElement("span", {
-                className: "text-base"
-            }, "📊"), React.createElement("span", {
-                className: "text-[10px] text-violet-600 bg-violet-50 px-1.5 py-0.5 rounded"
-            }, "Média")), React.createElement("p", {
-                className: "text-lg font-bold text-gray-800"
-            }, nl(ft?.media_entregas_por_prof).toFixed(2)), React.createElement("p", {
-                className: "text-[10px] text-gray-500"
-            }, "Ent/Entregador"))),
+            }, React.createElement("span", {className: "text-lg"}, "🎯"),
+               React.createElement("span", {className: "text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-semibold"}, "Por OS")),
+               React.createElement("p", {className: "text-xl font-bold text-gray-800"}, sl(ft?.ticket_medio || 0)),
+               React.createElement("p", {className: "text-[10px] text-gray-500 font-medium"}, "Ticket Médio")),
+            React.createElement("div", {
+                className: "bg-white rounded-2xl p-4 shadow-lg border-l-4 border-orange-500"
+            }, React.createElement("div", {
+                className: "flex items-center gap-2 mb-1"
+            }, React.createElement("span", {className: "text-lg"}, "🔄"),
+               React.createElement("span", {className: "text-[10px] text-orange-700 bg-orange-50 px-1.5 py-0.5 rounded font-semibold"}, "Devoluções")),
+               React.createElement("p", {className: "text-xl font-bold text-gray-800"}, nl(ft?.total_retornos || 0).toLocaleString('pt-BR')),
+               React.createElement("p", {className: "text-[10px] text-gray-500 font-medium"}, "Retornos"))),
             
             // === LINHA 2: OPERACIONAL + TEMPO (7 cards compactos) ===
             React.createElement("div", {
