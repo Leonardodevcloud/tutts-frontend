@@ -2062,15 +2062,32 @@ const hideLoadingScreen = () => {
             } catch {
                 return null
             }
-        }), o = e => {
+        }), o = async e => {
             if (e) {
                 sessionStorage.setItem("tutts_user", JSON.stringify(e));
             } else {
-                // Notificar servidor sobre logout (revogar refresh token via cookie)
-                fetchAuth(`${API_URL}/users/logout`, {
-                    method: 'POST',
-                    body: JSON.stringify({})
-                }).catch(() => {}); // Ignorar erros no logout
+                // 🔧 FIX LOGOUT-RESURRECTION: Notificar servidor ANTES de zerar o estado
+                // local, usando fetch puro (NÃO fetchAuth). O fetchAuth tem auto-refresh
+                // em 401 — como o logout era fire-and-forget e _accessToken era zerado
+                // antes do request sair, o backend respondia 401, o fetchAuth chamava
+                // renovarToken() via cookie ainda válido, e RESSUSCITAVA a sessão por
+                // ~10s antes do logout final. Agora enviamos token + CSRF explícitos
+                // e damos await pra garantir que o cookie de refresh seja revogado
+                // ANTES de o React voltar pra tela de login.
+                const tokenAtual = _accessToken;
+                const csrfAtual = document.cookie.split('; ').find(c => c.startsWith('tutts_csrf='))?.split('=')[1] || sessionStorage.getItem('tutts_csrf');
+                try {
+                    await fetch(`${API_URL}/users/logout`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            ...(tokenAtual ? { 'Authorization': `Bearer ${tokenAtual}` } : {}),
+                            ...(csrfAtual ? { 'X-CSRF-Token': csrfAtual } : {})
+                        },
+                        credentials: 'include',
+                        body: JSON.stringify({})
+                    });
+                } catch (_) { /* ignora erro de rede no logout */ }
                 pararRefreshProativo(); // 🔧 FIX: Parar timer ao deslogar
                 sessionStorage.removeItem("tutts_user");
                 sessionStorage.removeItem("tutts_social_profile"); // 📸 limpar cache da foto
