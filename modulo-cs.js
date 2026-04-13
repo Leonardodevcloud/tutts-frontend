@@ -510,6 +510,7 @@
     var _rr = useState(null), raioXResult = _rr[0], setRaioXResult = _rr[1];
     var _re = useState(false), raioXEditando = _re[0], setRaioXEditando = _re[1];
     var _rs = useState(false), raioXSalvando = _rs[0], setRaioXSalvando = _rs[1];
+    var _rev = useState(false), raioXEnviandoEmail = _rev[0], setRaioXEnviandoEmail = _rev[1];
     var raioXEditRef = useRef(null);
     var _si = useState(false), showNovaInteracao = _si[0], setShowNovaInteracao = _si[1];
     var _so = useState(false), showNovaOcorrencia = _so[0], setShowNovaOcorrencia = _so[1];
@@ -611,6 +612,42 @@
         }
       } catch (e) { alert('Erro ao salvar edição'); console.error(e); }
       setRaioXSalvando(false);
+    };
+
+    var enviarEmailRaioX = async function() {
+      if (!raioXResult || !raioXResult.id) {
+        alert('⚠️ Salve o relatório antes de enviar por email');
+        return;
+      }
+      // Sugere o email do contato do cliente (se houver) como destinatário inicial
+      var emailSugerido = (data.ficha && (data.ficha.email_contato || data.ficha.email)) || '';
+      var para = prompt('📧 Email do destinatário:', emailSugerido);
+      if (!para) return;
+      // Validação básica
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(para.trim())) {
+        alert('❌ Email inválido');
+        return;
+      }
+      var cc = prompt('CC (opcional — deixe em branco se não quiser cópia):', '');
+
+      setRaioXEnviandoEmail(true);
+      try {
+        var body = { raio_x_id: raioXResult.id, para: para.trim() };
+        if (cc && cc.trim()) body.cc = cc.trim();
+        var res = await fetchApi('/cs/raio-x/enviar-email', {
+          method: 'POST',
+          body: JSON.stringify(body)
+        });
+        if (res.success) {
+          alert('✅ Email enviado com sucesso para ' + para + '!\n\nID: ' + (res.messageId || '—'));
+        } else {
+          alert('❌ Erro ao enviar email:\n\n' + (res.error || 'Falha desconhecida'));
+        }
+      } catch (e) {
+        console.error(e);
+        alert('❌ Erro ao enviar email:\n\n' + (e.message || 'Falha de rede'));
+      }
+      setRaioXEnviandoEmail(false);
     };
 
     if (loading) return h('div', { className: 'p-6' }, h(Skeleton, { linhas: 10 }));
@@ -746,6 +783,12 @@
               .then(function(blob) { var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'RaioX_Apresentacao_' + codCliente + '.pdf'; a.click(); URL.revokeObjectURL(a.href); })
               .catch(function(e) { alert('Erro: ' + e.message); });
           } }, '📊 Apresentação'),
+          // Botão Enviar por Email
+          raioXResult.id && h('button', {
+            className: 'ml-1 px-4 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-lg text-xs font-bold shadow-md hover:from-emerald-700 hover:to-teal-700 disabled:opacity-50',
+            onClick: enviarEmailRaioX,
+            disabled: raioXEnviandoEmail
+          }, raioXEnviandoEmail ? '⏳ Enviando...' : '📧 Enviar por Email'),
           h('span', { className: 'text-xs text-indigo-400 ml-auto' }, 'Gerado ' + formatDateTime(raioXResult.gerado_em) + ' · ' + raioXResult.tokens + ' tokens')
         ),
         // Aviso de modo edição
