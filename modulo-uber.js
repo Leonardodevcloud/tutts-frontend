@@ -366,6 +366,30 @@
       } catch { showToast('Erro ao testar', 'error'); }
     }
 
+    async function testarCotacaoUber() {
+      const enderecoColeta = prompt('Endereço de COLETA (rua, bairro, cidade - UF - CEP):');
+      if (!enderecoColeta) return;
+      const enderecoEntrega = prompt('Endereço de ENTREGA (rua, bairro, cidade - UF - CEP):');
+      if (!enderecoEntrega) return;
+
+      try {
+        const res = await fetchAuth(`${API_URL}/uber/teste-cotacao`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            coleta:  { endereco: enderecoColeta },
+            entrega: { endereco: enderecoEntrega },
+          }),
+        });
+        const json = await res.json();
+        if (json.success) {
+          const c = json.cotacao;
+          showToast(`✅ Cotação OK: R$${c.valor.toFixed(2)} | ETA ${c.eta_minutos}min | quote_id: ${c.quote_id}`, 'success');
+        } else {
+          showToast(`❌ ${json.error}`, 'error');
+        }
+      } catch (e) { showToast('Erro na requisição', 'error'); }
+    }
+
     if (loading || !config) return h('div', { className: 'flex items-center justify-center py-16' },
       h('div', { className: 'animate-spin w-10 h-10 border-4 border-purple-500 border-t-transparent rounded-full' })
     );
@@ -403,11 +427,21 @@
           h('span', { className: 'text-sm text-gray-700' }, 'Despacho automático (worker decide sozinho qual OS enviar)')
         ),
 
+        h('label', { className: 'inline-flex items-center mb-4 ml-4' },
+          h('input', { type: 'checkbox', checked: !!config.sandbox_mode, onChange: e => update('sandbox_mode', e.target.checked), className: 'mr-2' }),
+          h('span', { className: 'text-sm text-amber-700 font-semibold' }, '🤖 Modo SANDBOX (RoboCourier — não gera entregas reais)')
+        ),
+
         h('h4', { className: 'font-bold text-gray-700 mt-4 mb-2' }, '🚗 Credenciais Uber Direct'),
         Field('Client ID', 'client_id', 'text', 'Seu client_id da Uber'),
         Field('Client Secret', 'client_secret', 'password', '••••••••'),
         Field('Customer ID', 'customer_id', 'text', 'Seu customer_id'),
         Field('Webhook Secret', 'webhook_secret', 'password', 'Para validar HMAC dos webhooks'),
+
+        h('button', {
+          onClick: testarCotacaoUber,
+          className: 'mt-2 px-3 py-1.5 bg-purple-100 text-purple-700 rounded-lg text-sm hover:bg-purple-200'
+        }, '🧪 Testar cotação Uber (sem criar entrega)'),
 
         h('h4', { className: 'font-bold text-gray-700 mt-6 mb-2' }, '🔌 API Mapp/Tutts'),
         Field('URL da API Mapp', 'mapp_api_url', 'text', 'https://seuDominio.com/sem/v1/rotas.php'),
@@ -420,6 +454,8 @@
         h('h4', { className: 'font-bold text-gray-700 mt-6 mb-2' }, '⏱️ Comportamento'),
         Field('Intervalo de polling (segundos)', 'polling_intervalo_seg', 'number', '30'),
         Field('Timeout sem entregador (minutos)', 'timeout_sem_entregador_min', 'number', '10'),
+        Field('Telefone suporte (fallback E.164)', 'telefone_suporte', 'text', '(71) 99999-8888'),
+        Field('Valor declarado da encomenda (centavos)', 'manifest_total_value_centavos', 'number', '10000 = R$ 100,00'),
 
         h('div', { className: 'flex justify-end gap-2 mt-6 pt-4 border-t' },
           h('button', { onClick: carregar, className: 'px-4 py-2 bg-gray-200 rounded-lg text-sm hover:bg-gray-300' }, 'Cancelar'),
