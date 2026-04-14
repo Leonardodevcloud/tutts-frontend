@@ -513,6 +513,10 @@
     var _rev = useState(false), raioXEnviandoEmail = _rev[0], setRaioXEnviandoEmail = _rev[1];
     var _sem = useState(false), showEmailModal = _sem[0], setShowEmailModal = _sem[1];
     var _emf = useState({ para: '', cc: '', assunto: '' }), emailForm = _emf[0], setEmailForm = _emf[1];
+    // emailStatus: null (form aberto) | 'sending' | 'success' | 'error'
+    var _ems = useState(null), emailStatus = _ems[0], setEmailStatus = _ems[1];
+    var _emi = useState(''), emailMessageId = _emi[0], setEmailMessageId = _emi[1];
+    var _eme = useState(''), emailError = _eme[0], setEmailError = _eme[1];
     var raioXEditRef = useRef(null);
     var _si = useState(false), showNovaInteracao = _si[0], setShowNovaInteracao = _si[1];
     var _so = useState(false), showNovaOcorrencia = _so[0], setShowNovaOcorrencia = _so[1];
@@ -624,7 +628,6 @@
       }
       var emailSugerido = (data.ficha && (data.ficha.email_contato || data.ficha.email)) || '';
       var nomeCliente = (data.ficha && (data.ficha.mascara || data.ficha.nome_fantasia || data.ficha.nome)) || 'Cliente';
-      // Monta assunto padrão usando o período selecionado no filtro (formato BR)
       var fmt = function(iso) {
         if (!iso) return '';
         var partes = String(iso).split('-');
@@ -632,23 +635,38 @@
       };
       var assuntoPadrao = 'Raio-X Operacional - ' + nomeCliente + ' (' + fmt(periodo.inicio) + ' a ' + fmt(periodo.fim) + ')';
       setEmailForm({ para: emailSugerido, cc: '', assunto: assuntoPadrao });
+      setEmailStatus(null);
+      setEmailMessageId('');
+      setEmailError('');
       setShowEmailModal(true);
     };
 
-    // Envio real a partir dos dados do modal
+    var fecharModalEmail = function() {
+      // Não fecha se estiver no meio do envio
+      if (emailStatus === 'sending') return;
+      setShowEmailModal(false);
+      // Pequeno delay pra animação do modal fechar antes de resetar o status
+      setTimeout(function() {
+        setEmailStatus(null);
+        setEmailMessageId('');
+        setEmailError('');
+      }, 300);
+    };
+
     var enviarEmailRaioX = async function() {
       var para = (emailForm.para || '').trim();
-      if (!para) { alert('❌ Informe o email do destinatário'); return; }
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(para)) { alert('❌ Email inválido'); return; }
+      if (!para) { setEmailError('Informe o email do destinatário'); setEmailStatus('error'); return; }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(para)) { setEmailError('Email do destinatário inválido'); setEmailStatus('error'); return; }
       var cc = (emailForm.cc || '').trim();
-      // Valida CC se preenchido (pode ser lista separada por vírgula/ponto-vírgula)
       if (cc) {
         var ccList = cc.split(/[;,]/).map(function(e) { return e.trim(); }).filter(Boolean);
         var ccInvalido = ccList.find(function(e) { return !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); });
-        if (ccInvalido) { alert('❌ CC inválido: ' + ccInvalido); return; }
+        if (ccInvalido) { setEmailError('CC inválido: ' + ccInvalido); setEmailStatus('error'); return; }
       }
       var assunto = (emailForm.assunto || '').trim();
 
+      setEmailError('');
+      setEmailStatus('sending');
       setRaioXEnviandoEmail(true);
       try {
         var body = { raio_x_id: raioXResult.id, para: para };
@@ -659,16 +677,28 @@
           body: JSON.stringify(body)
         });
         if (res.success) {
-          setShowEmailModal(false);
-          alert('✅ Email enviado com sucesso para ' + para + '!\n\nID: ' + (res.messageId || '—'));
+          setEmailMessageId(res.messageId || '');
+          setEmailStatus('success');
+          setRaioXEnviandoEmail(false);
+          // Auto-fecha depois de mostrar a animação de sucesso
+          setTimeout(function() {
+            setShowEmailModal(false);
+            setTimeout(function() {
+              setEmailStatus(null);
+              setEmailMessageId('');
+            }, 300);
+          }, 2200);
         } else {
-          alert('❌ Erro ao enviar email:\n\n' + (res.error || 'Falha desconhecida'));
+          setEmailError(res.error || 'Falha desconhecida ao enviar');
+          setEmailStatus('error');
+          setRaioXEnviandoEmail(false);
         }
       } catch (e) {
         console.error(e);
-        alert('❌ Erro ao enviar email:\n\n' + (e.message || 'Falha de rede'));
+        setEmailError((e && e.message) || 'Falha de rede');
+        setEmailStatus('error');
+        setRaioXEnviandoEmail(false);
       }
-      setRaioXEnviandoEmail(false);
     };
 
     if (loading) return h('div', { className: 'p-6' }, h(Skeleton, { linhas: 10 }));
@@ -893,52 +923,88 @@
           h('button', { onClick: salvarOcorrencia, disabled: !ocorrenciaForm.titulo, className: 'w-full py-3 bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700 disabled:opacity-50' }, '💾 Registrar')
         )
       ),
-      // Modal de Envio de Email do Raio-X
-      h(Modal, { aberto: showEmailModal, fechar: function() { if (!raioXEnviandoEmail) setShowEmailModal(false); }, titulo: '📧 Enviar Raio-X por Email', largura: 'max-w-xl' },
-        h('div', { className: 'space-y-4' },
-          h('div', null,
-            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Destinatário *'),
-            h('input', {
-              type: 'email',
-              value: emailForm.para,
-              onChange: function(e) { setEmailForm(function(f) { return Object.assign({}, f, { para: e.target.value }); }); },
-              placeholder: 'cliente@empresa.com.br',
-              className: 'w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500'
-            })
-          ),
-          h('div', null,
-            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'CC (opcional)'),
-            h('input', {
-              type: 'text',
-              value: emailForm.cc,
-              onChange: function(e) { setEmailForm(function(f) { return Object.assign({}, f, { cc: e.target.value }); }); },
-              placeholder: 'Separe múltiplos emails com vírgula',
-              className: 'w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500'
-            }),
-            h('p', { className: 'text-xs text-gray-400 mt-1' }, 'Ex: gestor@empresa.com, financeiro@empresa.com')
-          ),
-          h('div', null,
-            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Assunto'),
-            h('input', {
-              type: 'text',
-              value: emailForm.assunto,
-              onChange: function(e) { setEmailForm(function(f) { return Object.assign({}, f, { assunto: e.target.value }); }); },
-              className: 'w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500'
-            })
-          ),
-          h('div', { className: 'flex items-center gap-2 pt-2' },
-            h('button', {
-              onClick: function() { setShowEmailModal(false); },
-              disabled: raioXEnviandoEmail,
-              className: 'flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 disabled:opacity-50'
-            }, 'Cancelar'),
-            h('button', {
-              onClick: enviarEmailRaioX,
-              disabled: raioXEnviandoEmail || !emailForm.para,
-              className: 'flex-[2] py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-semibold hover:from-emerald-700 hover:to-teal-700 disabled:opacity-50'
-            }, raioXEnviandoEmail ? '⏳ Enviando...' : '📧 Enviar Email')
+      // Modal de Envio de Email do Raio-X (form + animações de envio/sucesso)
+      h(Modal, { aberto: showEmailModal, fechar: fecharModalEmail, titulo: emailStatus === 'success' ? '✅ Enviado!' : emailStatus === 'sending' ? '📤 Enviando...' : '📧 Enviar Raio-X por Email', largura: 'max-w-xl' },
+        // ─── ESTADO: SENDING ──────────────────────────────
+        emailStatus === 'sending' ?
+          h('div', { className: 'flex flex-col items-center py-10' },
+            h('div', { className: 'relative w-24 h-24' },
+              h('div', { className: 'absolute inset-0 rounded-full border-4 border-emerald-100' }),
+              h('div', { className: 'absolute inset-0 rounded-full border-4 border-emerald-500 border-t-transparent animate-spin' }),
+              h('div', { className: 'absolute inset-0 flex items-center justify-center' },
+                h('span', { className: 'text-4xl animate-pulse' }, '📧')
+              )
+            ),
+            h('p', { className: 'mt-6 text-lg font-bold text-gray-700' }, 'Enviando email...'),
+            h('p', { className: 'text-sm text-gray-400 mt-1' }, 'Processando gráficos e enviando via Resend')
           )
-        )
+        // ─── ESTADO: SUCCESS ──────────────────────────────
+        : emailStatus === 'success' ?
+          h('div', { className: 'flex flex-col items-center py-10' },
+            h('div', { className: 'relative w-24 h-24' },
+              h('div', { className: 'absolute inset-0 rounded-full bg-emerald-400 opacity-75 animate-ping' }),
+              h('div', { className: 'relative w-24 h-24 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg' },
+                h('svg', { width: '48', height: '48', viewBox: '0 0 24 24', fill: 'none', stroke: 'white', strokeWidth: '4', strokeLinecap: 'round', strokeLinejoin: 'round' },
+                  h('polyline', { points: '20 6 9 17 4 12' })
+                )
+              )
+            ),
+            h('p', { className: 'mt-6 text-xl font-bold text-emerald-600' }, 'Email enviado com sucesso!'),
+            h('p', { className: 'text-sm text-gray-500 mt-2' }, 'Para: ', h('span', { className: 'font-semibold text-gray-700' }, emailForm.para)),
+            emailMessageId && h('p', { className: 'text-xs text-gray-400 mt-3 font-mono bg-gray-50 px-3 py-1 rounded' }, 'ID: ' + emailMessageId.substring(0, 24) + '...')
+          )
+        // ─── ESTADO: FORM (null ou error) ──────────────────
+        :
+          h('div', { className: 'space-y-4' },
+            emailStatus === 'error' && emailError && h('div', { className: 'p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2' },
+              h('span', { className: 'text-red-500 text-lg leading-none' }, '⚠️'),
+              h('div', { className: 'flex-1' },
+                h('p', { className: 'text-sm font-semibold text-red-800' }, 'Falha ao enviar'),
+                h('p', { className: 'text-xs text-red-600 mt-0.5' }, emailError)
+              )
+            ),
+            h('div', null,
+              h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Destinatário *'),
+              h('input', {
+                type: 'email',
+                value: emailForm.para,
+                onChange: function(e) { setEmailForm(function(f) { return Object.assign({}, f, { para: e.target.value }); }); },
+                placeholder: 'cliente@empresa.com.br',
+                className: 'w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500'
+              })
+            ),
+            h('div', null,
+              h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'CC (opcional)'),
+              h('input', {
+                type: 'text',
+                value: emailForm.cc,
+                onChange: function(e) { setEmailForm(function(f) { return Object.assign({}, f, { cc: e.target.value }); }); },
+                placeholder: 'Separe múltiplos emails com vírgula',
+                className: 'w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500'
+              }),
+              h('p', { className: 'text-xs text-gray-400 mt-1' }, 'Ex: gestor@empresa.com, financeiro@empresa.com')
+            ),
+            h('div', null,
+              h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Assunto'),
+              h('input', {
+                type: 'text',
+                value: emailForm.assunto,
+                onChange: function(e) { setEmailForm(function(f) { return Object.assign({}, f, { assunto: e.target.value }); }); },
+                className: 'w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500'
+              })
+            ),
+            h('div', { className: 'flex items-center gap-2 pt-2' },
+              h('button', {
+                onClick: fecharModalEmail,
+                className: 'flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200'
+              }, 'Cancelar'),
+              h('button', {
+                onClick: enviarEmailRaioX,
+                disabled: !emailForm.para,
+                className: 'flex-[2] py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-semibold hover:from-emerald-700 hover:to-teal-700 disabled:opacity-50'
+              }, '📧 Enviar Email')
+            )
+          )
       )
     );
   }
