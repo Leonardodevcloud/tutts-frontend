@@ -681,6 +681,9 @@
     const [detalhesAberto, setDetalhesAberto] = useState(null); // {entrega, tracking, webhooks, loading}
     const [redespachoAberto, setRedespachoAberto] = useState(null); // {entrega, novo_endereco, ...}
     const [redespachando, setRedespachando] = useState(false);
+    // Modal de cotação manual (Opção C)
+    const [cotacaoModal, setCotacaoModal] = useState(null); // null | {state, codigoOS, dados, error}
+    const [tickClock, setTickClock] = useState(0); // força re-render por segundo pro countdown
 
     const carregar = useCallback(async () => {
       setLoading(true);
@@ -695,18 +698,106 @@
 
     useEffect(() => { carregar(); }, [carregar]);
 
+    // Timer de re-render por segundo enquanto o modal de cotação está aberto.
+    // Necessário pra o countdown atualizar visualmente.
+    useEffect(() => {
+      if (!cotacaoModal || cotacaoModal.state !== 'ok') return;
+      const t = setInterval(() => setTickClock(x => x + 1), 1000);
+      return () => clearInterval(t);
+    }, [cotacaoModal?.state]);
+
+    // Abre modal de cotação manual: pede código da OS, cota na Uber, mostra valores.
+    // Substitui o prompt() antigo que despachava direto sem mostrar preço.
     async function despacharOS() {
-      const codigoOS = prompt('Código da OS para despachar para o Uber:');
+      const codigoOS = prompt('Código da OS para cotar no Uber:');
       if (!codigoOS) return;
+      const codigoOSNum = parseInt(codigoOS);
+      if (isNaN(codigoOSNum) || codigoOSNum <= 0) {
+        showToast('Código inválido', 'error');
+        return;
+      }
+      // Abre modal em estado "cotando" e dispara cotação
+      setCotacaoModal({ state: 'cotando', codigoOS: codigoOSNum, dados: null, error: null });
       try {
-        const res = await fetchAuth(`${API_URL}/uber/entregas/despachar`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ codigoOS: parseInt(codigoOS) })
+        const res = await fetchAuth(`${API_URL}/uber/entregas/cotar`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ codigoOS: codigoOSNum }),
         });
         const json = await res.json();
-        if (json.success) { showToast('OS despachada com sucesso!', 'success'); carregar(); }
-        else showToast(json.error || 'Erro ao despachar', 'error');
-      } catch { showToast('Erro ao despachar', 'error'); }
+        if (res.ok && json.success) {
+          setCotacaoModal({ state: 'ok', codigoOS: codigoOSNum, dados: json, error: null });
+        } else {
+          setCotacaoModal({ state: 'erro', codigoOS: codigoOSNum, dados: null, error: json.error || 'Erro ao cotar' });
+        }
+      } catch (err) {
+        setCotacaoModal({ state: 'erro', codigoOS: codigoOSNum, dados: null, error: 'Erro de rede ao cotar' });
+      }
+    }
+
+    // Botão "Tentar de novo" no modal — reusa o estado pra cotar mais uma vez
+    async function recotarOS() {
+      if (!cotacaoModal?.codigoOS) return;
+      const cod = cotacaoModal.codigoOS;
+      setCotacaoModal({ state: 'cotando', codigoOS: cod, dados: null, error: null });
+      try {
+        const res = await fetchAuth(`${API_URL}/uber/entregas/cotar`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ codigoOS: cod }),
+        });
+        const json = await res.json();
+        if (res.ok && json.success) {
+          setCotacaoModal({ state: 'ok', codigoOS: cod, dados: json, error: null });
+        } else {
+          setCotacaoModal({ state: 'erro', codigoOS: cod, dados: null, error: json.error || 'Erro ao cotar' });
+        }
+      } catch {
+        setCotacaoModal({ state: 'erro', codigoOS: cod, dados: null, error: 'Erro de rede ao cotar' });
+      }
+    }
+
+    // Confirma o despacho usando o quote_id da cotação atual (não cota 2x)
+    async function confirmarDespacho() {
+      if (!cotacaoModal?.dados?.quote_id) return;
+      // Verifica se a quote ainda tá válida (fail-safe — o botão deveria estar desabilitado)
+      if (Date.now() > cotacaoModal.dados.expires_at) {
+        showToast('Cotação expirada — cote novamente', 'error');
+        return;
+      }
+      setCotacaoModal({ ...cotacaoModal, state: 'despachando' });
+      try {
+        const res = await fetchAuth(`${API_URL}/uber/entregas/despachar`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            codigoOS: cotacaoModal.codigoOS,
+            quote_id: cotacaoModal.dados.quote_id,
+          }),
+        });
+        const json = await res.json();
+        if (res.ok && json.success) {
+          showToast(`OS ${cotacaoModal.codigoOS} despachada com sucesso!`, 'success');
+          setCotacaoModal(null);
+          carregar();
+        } else {
+          showToast(json.error || 'Erro ao despachar', 'error');
+          // Se a quote expirou no servidor (410), volta pra estado ok pra usuário poder recotar
+          if (res.status === 410) {
+            setCotacaoModal({ ...cotacaoModal, state: 'ok', dados: { ...cotacaoModal.dados, expires_at: 0 } });
+          } else {
+            setCotacaoModal({ ...cotacaoModal, state: 'ok' });
+          }
+        }
+      } catch {
+        showToast('Erro de rede ao despachar', 'error');
+        setCotacaoModal({ ...cotacaoModal, state: 'ok' });
+      }
+    }
+
+    function fecharCotacaoModal() {
+      if (cotacaoModal?.state === 'cotando' || cotacaoModal?.state === 'despachando') return;
+      setCotacaoModal(null);
     }
 
     async function cancelarEntrega(id) {
@@ -1016,7 +1107,162 @@
             }, redespachando ? 'Redespachando…' : 'Confirmar redespacho'),
           ),
         )
-      )
+      ),
+
+      // ── Modal de cotação manual (Opção C) ──
+      cotacaoModal && (function () {
+        const m = cotacaoModal;
+        const d = m.dados;
+        const segundosRestantes = d ? Math.max(0, Math.floor((d.expires_at - Date.now()) / 1000)) : 0;
+        const expirou = d && segundosRestantes === 0;
+        const margem = d ? parseFloat(d.margem || 0) : 0;
+        const margemPositiva = margem >= 0;
+        const margemNegativaForte = margem < 0;
+        const mm = Math.floor(segundosRestantes / 60);
+        const ss = segundosRestantes % 60;
+
+        return h('div', {
+          className: 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4',
+          onClick: (ev) => { if (ev.target === ev.currentTarget) fecharCotacaoModal(); },
+        },
+          h('div', { className: 'bg-white rounded-xl shadow-2xl max-w-xl w-full max-h-[90vh] overflow-y-auto' },
+
+            // Header
+            h('div', { className: 'border-b border-gray-200 px-5 py-4' },
+              h('h3', { className: 'text-lg font-bold text-gray-800' }, `Cotação OS ${m.codigoOS}`),
+              h('p', { className: 'text-xs text-gray-500 mt-1' },
+                'Confirme o valor da Uber antes de despachar. A entrega só é criada quando você clica em Confirmar.')
+            ),
+
+            // Body — depende do estado
+            m.state === 'cotando' || m.state === 'despachando'
+              ? h('div', { className: 'p-12 text-center' },
+                  h('div', { className: 'animate-spin w-10 h-10 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-3' }),
+                  h('p', { className: 'text-sm text-gray-500' },
+                    m.state === 'cotando' ? 'Cotando na Uber…' : 'Despachando…'))
+
+              : m.state === 'erro'
+              ? h('div', { className: 'p-5' },
+                  h('div', { className: 'bg-red-50 border border-red-200 rounded-lg p-4 mb-4' },
+                    h('div', { className: 'flex items-start gap-2' },
+                      h('span', { className: 'text-red-600 text-lg flex-shrink-0' }, '⚠'),
+                      h('div', { className: 'flex-1' },
+                        h('div', { className: 'text-sm font-semibold text-red-800 mb-1' }, 'Erro ao cotar'),
+                        h('div', { className: 'text-xs text-red-700 break-words' }, m.error || 'Erro desconhecido'),
+                        h('div', { className: 'text-xs text-red-600 mt-2' },
+                          'A OS continua livre na Mapp pra ser despachada manualmente ou pelos motoboys internos.')
+                      )
+                    )
+                  ),
+                  h('div', { className: 'flex justify-end gap-2' },
+                    h('button', {
+                      onClick: fecharCotacaoModal,
+                      className: 'px-4 py-2 border border-gray-200 rounded-lg text-sm hover:bg-gray-50',
+                    }, 'Fechar'),
+                    h('button', {
+                      onClick: recotarOS,
+                      className: 'px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-semibold hover:bg-purple-700',
+                    }, 'Tentar novamente'),
+                  )
+                )
+
+              : // state === 'ok'
+                h('div', { className: 'p-5 space-y-4' },
+
+                  // Endereços
+                  h('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-3' },
+                    h('div', null,
+                      h('div', { className: 'text-[11px] uppercase tracking-wider text-gray-400 font-semibold mb-1' }, '📦 Coleta'),
+                      h('div', { className: 'text-sm text-gray-800' }, d.endereco_coleta || '—')
+                    ),
+                    h('div', null,
+                      h('div', { className: 'text-[11px] uppercase tracking-wider text-gray-400 font-semibold mb-1' }, '📍 Entrega'),
+                      h('div', { className: 'text-sm text-gray-800' }, d.endereco_entrega || '—')
+                    ),
+                  ),
+
+                  // 4 cards de valores
+                  h('div', { className: 'grid grid-cols-2 md:grid-cols-4 gap-2' },
+                    h('div', { className: 'bg-gray-50 rounded-lg px-3 py-2.5' },
+                      h('div', { className: 'text-[11px] text-gray-500 mb-0.5' }, 'Cliente paga'),
+                      h('div', { className: 'text-base font-semibold text-gray-800' }, fmtMoney(parseFloat(d.valor_cliente || 0)))
+                    ),
+                    h('div', { className: 'bg-gray-50 rounded-lg px-3 py-2.5' },
+                      h('div', { className: 'text-[11px] text-gray-500 mb-0.5' }, 'Profissional Mapp'),
+                      h('div', { className: 'text-base font-semibold text-gray-800' }, fmtMoney(parseFloat(d.valor_profissional || 0)))
+                    ),
+                    h('div', { className: 'bg-purple-50 rounded-lg px-3 py-2.5' },
+                      h('div', { className: 'text-[11px] text-purple-700 mb-0.5' }, 'Custo Uber'),
+                      h('div', { className: 'text-base font-semibold text-purple-800' }, fmtMoney(parseFloat(d.valor_uber || 0)))
+                    ),
+                    h('div', {
+                      className: `rounded-lg px-3 py-2.5 ${margemPositiva ? 'bg-green-50' : 'bg-red-50'}`,
+                    },
+                      h('div', { className: `text-[11px] mb-0.5 ${margemPositiva ? 'text-green-700' : 'text-red-700'}` }, 'Margem'),
+                      h('div', {
+                        className: `text-base font-semibold ${margemPositiva ? 'text-green-800' : 'text-red-800'}`,
+                      }, `${margemPositiva ? '+ ' : '− '}${fmtMoney(Math.abs(margem))}`),
+                      h('div', { className: `text-[10px] ${margemPositiva ? 'text-green-600' : 'text-red-600'}` },
+                        `${parseFloat(d.margem_pct || 0).toFixed(1)}%`)
+                    ),
+                  ),
+
+                  // ETA
+                  h('div', { className: 'flex items-center gap-2 text-xs text-gray-600' },
+                    h('span', null, '⏱'),
+                    h('span', null, 'ETA estimado: '),
+                    h('span', { className: 'font-semibold text-gray-800' }, `${d.eta_minutos || '?'} min`),
+                  ),
+
+                  // Warning de margem negativa (forte)
+                  margemNegativaForte && h('div', { className: 'bg-red-50 border-2 border-red-300 rounded-lg p-3' },
+                    h('div', { className: 'flex items-start gap-2' },
+                      h('span', { className: 'text-red-600 text-lg flex-shrink-0' }, '⚠'),
+                      h('div', null,
+                        h('div', { className: 'text-sm font-semibold text-red-800' },
+                          `Esta entrega vai dar prejuízo de ${fmtMoney(Math.abs(margem))}`),
+                        h('div', { className: 'text-xs text-red-700 mt-0.5' },
+                          'O custo da Uber está acima do valor que o cliente paga. Tem certeza que quer despachar?')
+                      )
+                    )
+                  ),
+
+                  // Timer countdown
+                  h('div', {
+                    className: `flex items-center justify-between text-xs px-3 py-2 rounded-lg ${
+                      expirou ? 'bg-red-50 text-red-700' : 'bg-gray-50 text-gray-600'
+                    }`,
+                  },
+                    h('span', null, expirou ? '⌛ Cotação expirada' : '⏱ Cotação válida por:'),
+                    h('span', { className: 'font-mono font-semibold' },
+                      expirou ? '00:00' : `${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`)
+                  ),
+                ),
+
+            // Footer com ações (só aparece no estado 'ok')
+            m.state === 'ok' && h('div', { className: 'border-t border-gray-200 px-5 py-3 flex justify-between gap-2 bg-gray-50' },
+              h('button', {
+                onClick: fecharCotacaoModal,
+                className: 'px-4 py-2 border border-gray-200 rounded-lg text-sm hover:bg-white',
+              }, 'Cancelar'),
+              h('div', { className: 'flex gap-2' },
+                expirou && h('button', {
+                  onClick: recotarOS,
+                  className: 'px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-semibold hover:bg-purple-700',
+                }, 'Cotar de novo'),
+                !expirou && h('button', {
+                  onClick: confirmarDespacho,
+                  className: `px-4 py-2 rounded-lg text-sm font-semibold text-white ${
+                    margemNegativaForte
+                      ? 'bg-red-600 hover:bg-red-700'
+                      : 'bg-green-600 hover:bg-green-700'
+                  }`,
+                }, margemNegativaForte ? 'Despachar mesmo assim' : 'Confirmar despacho'),
+              )
+            )
+          )
+        );
+      })()
     );
   }
 
@@ -1229,6 +1475,8 @@
         horario_fim: '',
         valor_minimo: '',
         valor_maximo: '',
+        margem_minima_aceita: '',
+        margem_pct_minima: '',
         ativo: true,
       });
     }
@@ -1244,6 +1492,8 @@
         horario_fim: r.horario_fim || '',
         valor_minimo: r.valor_minimo || '',
         valor_maximo: r.valor_maximo || '',
+        margem_minima_aceita: r.margem_minima_aceita ?? '',
+        margem_pct_minima: r.margem_pct_minima ?? '',
       });
     }
 
@@ -1266,6 +1516,8 @@
         horario_fim: editando.horario_fim || null,
         valor_minimo: editando.valor_minimo === '' ? null : parseFloat(editando.valor_minimo),
         valor_maximo: editando.valor_maximo === '' ? null : parseFloat(editando.valor_maximo),
+        margem_minima_aceita: editando.margem_minima_aceita === '' ? null : parseFloat(editando.margem_minima_aceita),
+        margem_pct_minima: editando.margem_pct_minima === '' ? null : parseFloat(editando.margem_pct_minima),
         ativo: !!editando.ativo,
       };
       const metodo = editando.id ? 'PUT' : 'POST';
@@ -1448,6 +1700,36 @@
               h('div', null,
                 h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Valor máximo (R$)'),
                 h('input', { type: 'number', step: '0.01', value: editando.valor_maximo || '', onChange: e => up('valor_maximo', e.target.value), placeholder: 'sem limite', className: 'w-full px-3 py-2 border rounded-lg text-sm' })),
+            ),
+
+            // ── Filtros de margem (Opção C) ──
+            h('div', { className: 'pt-3 border-t border-gray-100' },
+              h('div', { className: 'text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2' }, '💰 Filtro de margem'),
+              h('div', { className: 'grid grid-cols-2 gap-3' },
+                h('div', null,
+                  h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Margem mínima (R$)'),
+                  h('input', {
+                    type: 'number', step: '0.01',
+                    value: editando.margem_minima_aceita ?? '',
+                    onChange: e => up('margem_minima_aceita', e.target.value),
+                    placeholder: 'deixe vazio',
+                    className: 'w-full px-3 py-2 border rounded-lg text-sm',
+                  })
+                ),
+                h('div', null,
+                  h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Margem mínima (%)'),
+                  h('input', {
+                    type: 'number', step: '0.1',
+                    value: editando.margem_pct_minima ?? '',
+                    onChange: e => up('margem_pct_minima', e.target.value),
+                    placeholder: 'deixe vazio',
+                    className: 'w-full px-3 py-2 border rounded-lg text-sm',
+                  })
+                ),
+              ),
+              h('p', { className: 'text-xs text-gray-500 mt-2' },
+                '⚠ OSs com margem (valor cliente − custo Uber) abaixo desses limites NÃO serão despachadas automaticamente. ',
+                'Se ambos forem definidos, a OS precisa passar nos dois. Deixe vazio pra desativar o filtro.')
             ),
 
             h('div', { className: 'flex items-center gap-6 pt-2 border-t' },
