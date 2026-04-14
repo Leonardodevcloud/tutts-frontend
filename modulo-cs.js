@@ -511,6 +511,8 @@
     var _re = useState(false), raioXEditando = _re[0], setRaioXEditando = _re[1];
     var _rs = useState(false), raioXSalvando = _rs[0], setRaioXSalvando = _rs[1];
     var _rev = useState(false), raioXEnviandoEmail = _rev[0], setRaioXEnviandoEmail = _rev[1];
+    var _sem = useState(false), showEmailModal = _sem[0], setShowEmailModal = _sem[1];
+    var _emf = useState({ para: '', cc: '', assunto: '' }), emailForm = _emf[0], setEmailForm = _emf[1];
     var raioXEditRef = useRef(null);
     var _si = useState(false), showNovaInteracao = _si[0], setShowNovaInteracao = _si[1];
     var _so = useState(false), showNovaOcorrencia = _so[0], setShowNovaOcorrencia = _so[1];
@@ -614,31 +616,50 @@
       setRaioXSalvando(false);
     };
 
-    var enviarEmailRaioX = async function() {
+    // Abre o modal pré-preenchendo destinatário, CC vazio e assunto padrão
+    var abrirModalEmail = function() {
       if (!raioXResult || !raioXResult.id) {
         alert('⚠️ Salve o relatório antes de enviar por email');
         return;
       }
-      // Sugere o email do contato do cliente (se houver) como destinatário inicial
       var emailSugerido = (data.ficha && (data.ficha.email_contato || data.ficha.email)) || '';
-      var para = prompt('📧 Email do destinatário:', emailSugerido);
-      if (!para) return;
-      // Validação básica
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(para.trim())) {
-        alert('❌ Email inválido');
-        return;
+      var nomeCliente = (data.ficha && (data.ficha.mascara || data.ficha.nome_fantasia || data.ficha.nome)) || 'Cliente';
+      // Monta assunto padrão usando o período selecionado no filtro (formato BR)
+      var fmt = function(iso) {
+        if (!iso) return '';
+        var partes = String(iso).split('-');
+        return partes.length === 3 ? (partes[2] + '/' + partes[1] + '/' + partes[0]) : iso;
+      };
+      var assuntoPadrao = 'Raio-X Operacional - ' + nomeCliente + ' (' + fmt(periodo.inicio) + ' a ' + fmt(periodo.fim) + ')';
+      setEmailForm({ para: emailSugerido, cc: '', assunto: assuntoPadrao });
+      setShowEmailModal(true);
+    };
+
+    // Envio real a partir dos dados do modal
+    var enviarEmailRaioX = async function() {
+      var para = (emailForm.para || '').trim();
+      if (!para) { alert('❌ Informe o email do destinatário'); return; }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(para)) { alert('❌ Email inválido'); return; }
+      var cc = (emailForm.cc || '').trim();
+      // Valida CC se preenchido (pode ser lista separada por vírgula/ponto-vírgula)
+      if (cc) {
+        var ccList = cc.split(/[;,]/).map(function(e) { return e.trim(); }).filter(Boolean);
+        var ccInvalido = ccList.find(function(e) { return !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); });
+        if (ccInvalido) { alert('❌ CC inválido: ' + ccInvalido); return; }
       }
-      var cc = prompt('CC (opcional — deixe em branco se não quiser cópia):', '');
+      var assunto = (emailForm.assunto || '').trim();
 
       setRaioXEnviandoEmail(true);
       try {
-        var body = { raio_x_id: raioXResult.id, para: para.trim() };
-        if (cc && cc.trim()) body.cc = cc.trim();
+        var body = { raio_x_id: raioXResult.id, para: para };
+        if (cc) body.cc = cc;
+        if (assunto) body.assunto = assunto;
         var res = await fetchApi('/cs/raio-x/enviar-email', {
           method: 'POST',
           body: JSON.stringify(body)
         });
         if (res.success) {
+          setShowEmailModal(false);
           alert('✅ Email enviado com sucesso para ' + para + '!\n\nID: ' + (res.messageId || '—'));
         } else {
           alert('❌ Erro ao enviar email:\n\n' + (res.error || 'Falha desconhecida'));
@@ -786,7 +807,7 @@
           // Botão Enviar por Email
           raioXResult.id && h('button', {
             className: 'ml-1 px-4 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-lg text-xs font-bold shadow-md hover:from-emerald-700 hover:to-teal-700 disabled:opacity-50',
-            onClick: enviarEmailRaioX,
+            onClick: abrirModalEmail,
             disabled: raioXEnviandoEmail
           }, raioXEnviandoEmail ? '⏳ Enviando...' : '📧 Enviar por Email'),
           h('span', { className: 'text-xs text-indigo-400 ml-auto' }, 'Gerado ' + formatDateTime(raioXResult.gerado_em) + ' · ' + raioXResult.tokens + ' tokens')
@@ -870,6 +891,53 @@
           h('div', null, h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Título *'), h('input', { type: 'text', value: ocorrenciaForm.titulo, onChange: function(e) { setOcorrenciaForm(function(f) { return Object.assign({}, f, { titulo: e.target.value }); }); }, className: 'w-full px-3 py-2 border border-gray-200 rounded-lg' })),
           h('div', null, h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Descrição'), h('textarea', { value: ocorrenciaForm.descricao, onChange: function(e) { setOcorrenciaForm(function(f) { return Object.assign({}, f, { descricao: e.target.value }); }); }, rows: 3, className: 'w-full px-3 py-2 border border-gray-200 rounded-lg resize-none' })),
           h('button', { onClick: salvarOcorrencia, disabled: !ocorrenciaForm.titulo, className: 'w-full py-3 bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700 disabled:opacity-50' }, '💾 Registrar')
+        )
+      ),
+      // Modal de Envio de Email do Raio-X
+      h(Modal, { aberto: showEmailModal, fechar: function() { if (!raioXEnviandoEmail) setShowEmailModal(false); }, titulo: '📧 Enviar Raio-X por Email', largura: 'max-w-xl' },
+        h('div', { className: 'space-y-4' },
+          h('div', null,
+            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Destinatário *'),
+            h('input', {
+              type: 'email',
+              value: emailForm.para,
+              onChange: function(e) { setEmailForm(function(f) { return Object.assign({}, f, { para: e.target.value }); }); },
+              placeholder: 'cliente@empresa.com.br',
+              className: 'w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500'
+            })
+          ),
+          h('div', null,
+            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'CC (opcional)'),
+            h('input', {
+              type: 'text',
+              value: emailForm.cc,
+              onChange: function(e) { setEmailForm(function(f) { return Object.assign({}, f, { cc: e.target.value }); }); },
+              placeholder: 'Separe múltiplos emails com vírgula',
+              className: 'w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500'
+            }),
+            h('p', { className: 'text-xs text-gray-400 mt-1' }, 'Ex: gestor@empresa.com, financeiro@empresa.com')
+          ),
+          h('div', null,
+            h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Assunto'),
+            h('input', {
+              type: 'text',
+              value: emailForm.assunto,
+              onChange: function(e) { setEmailForm(function(f) { return Object.assign({}, f, { assunto: e.target.value }); }); },
+              className: 'w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500'
+            })
+          ),
+          h('div', { className: 'flex items-center gap-2 pt-2' },
+            h('button', {
+              onClick: function() { setShowEmailModal(false); },
+              disabled: raioXEnviandoEmail,
+              className: 'flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 disabled:opacity-50'
+            }, 'Cancelar'),
+            h('button', {
+              onClick: enviarEmailRaioX,
+              disabled: raioXEnviandoEmail || !emailForm.para,
+              className: 'flex-[2] py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-semibold hover:from-emerald-700 hover:to-teal-700 disabled:opacity-50'
+            }, raioXEnviandoEmail ? '⏳ Enviando...' : '📧 Enviar Email')
+          )
         )
       )
     );
