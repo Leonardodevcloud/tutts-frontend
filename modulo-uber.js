@@ -200,9 +200,19 @@
                 onClick: () => { setSelecionada(e); setPosicaoAtual(e.ultima_posicao ? { lat: e.ultima_posicao.lat, lng: e.ultima_posicao.lng } : null); },
                 className: `p-3 rounded-lg border cursor-pointer mb-2 ${selecionada?.id === e.id ? 'bg-purple-50 border-purple-400' : 'border-gray-100 hover:bg-gray-50'}`
               },
-                h('div', { className: 'flex items-center justify-between mb-1' },
+                h('div', { className: 'flex items-center justify-between mb-1 gap-2' },
                   h('span', { className: 'text-sm font-bold' }, `OS ${e.codigo_os}`),
-                  h(Badge, { status: e.status_uber })
+                  h('div', { className: 'flex items-center gap-1.5' },
+                    h(Badge, { status: e.status_uber }),
+                    e.tracking_url && h('a', {
+                      href: e.tracking_url,
+                      target: '_blank',
+                      rel: 'noopener noreferrer',
+                      onClick: (ev) => ev.stopPropagation(),
+                      title: 'Abrir tracking oficial Uber',
+                      className: 'text-purple-600 hover:text-purple-800 text-base',
+                    }, '🔗'),
+                  ),
                 ),
                 e.entregador_nome && h('p', { className: 'text-xs text-gray-600' }, `🛵 ${e.entregador_nome}`),
                 h('p', { className: 'text-xs text-gray-400 truncate' }, e.endereco_entrega)
@@ -212,12 +222,46 @@
         h('div', { className: 'lg:col-span-2 space-y-3' },
           selecionada ? [
             h('div', { key: 'info', className: 'bg-white rounded-xl border shadow-sm p-4' },
-              h('h3', { className: 'font-bold text-gray-800 mb-2' }, `OS ${selecionada.codigo_os}`),
-              selecionada.entregador_nome && h('div', { className: 'grid grid-cols-2 gap-2 text-xs text-gray-600' },
-                h('div', null, h('strong', null, 'Entregador: '), selecionada.entregador_nome),
-                h('div', null, h('strong', null, 'Telefone: '), selecionada.entregador_telefone || '—'),
+              // Header com OS + botão tracking oficial
+              h('div', { className: 'flex items-start justify-between gap-3 mb-3' },
+                h('div', { className: 'flex items-center gap-3 min-w-0' },
+                  // Foto do entregador
+                  selecionada.entregador_foto
+                    ? h('img', {
+                        src: selecionada.entregador_foto,
+                        alt: selecionada.entregador_nome || 'Entregador',
+                        className: 'w-12 h-12 rounded-full object-cover bg-purple-100 flex-shrink-0',
+                        onError: (ev) => { ev.target.style.display = 'none'; },
+                      })
+                    : null,
+                  h('div', { className: 'min-w-0' },
+                    h('h3', { className: 'font-bold text-gray-800' }, `OS ${selecionada.codigo_os}`),
+                    h(Badge, { status: selecionada.status_uber })
+                  )
+                ),
+                // Botão tracking oficial Uber
+                selecionada.tracking_url && h('a', {
+                  href: selecionada.tracking_url,
+                  target: '_blank',
+                  rel: 'noopener noreferrer',
+                  className: 'flex items-center gap-1.5 text-xs px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-semibold flex-shrink-0',
+                  title: 'Abrir página oficial de rastreio do Uber em nova aba',
+                }, '🔗 Tracking Uber'),
+              ),
+
+              // Dados do entregador
+              selecionada.entregador_nome && h('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-gray-600 pt-3 border-t border-gray-100' },
+                h('div', null, h('strong', null, 'Entregador: '), selecionada.entregador_nome,
+                  selecionada.entregador_rating && h('span', { className: 'ml-2 text-gray-500' }, `★ ${selecionada.entregador_rating}`)),
+                h('div', null, h('strong', null, 'Telefone: '), fmtTelefoneBR(selecionada.entregador_telefone)),
                 h('div', null, h('strong', null, 'Veículo: '), selecionada.entregador_veiculo || '—'),
                 h('div', null, h('strong', null, 'Placa: '), selecionada.entregador_placa || '—')
+              ),
+
+              // Última posição (se houver)
+              posicaoAtual && h('div', { className: 'text-[11px] text-gray-400 mt-2 pt-2 border-t border-gray-100 font-mono' },
+                `📍 ${parseFloat(posicaoAtual.lat).toFixed(5)}, ${parseFloat(posicaoAtual.lng).toFixed(5)}`,
+                posicaoAtual.at && h('span', { className: 'ml-2' }, `· ${fmtDT(posicaoAtual.at)}`)
               )
             ),
             h('div', { key: 'map', id: 'uber-map', className: 'w-full h-[500px] rounded-xl border shadow-sm bg-gray-100' })
