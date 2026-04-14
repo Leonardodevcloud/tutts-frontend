@@ -706,8 +706,8 @@
       return () => clearInterval(t);
     }, [cotacaoModal?.state]);
 
-    // Abre modal de cotação manual: pede código da OS, cota na Uber, mostra valores.
-    // Substitui o prompt() antigo que despachava direto sem mostrar preço.
+    // Abre modal de cotação manual: pede código da OS, cota moto + carro EM PARALELO,
+    // mostra os 2 cards lado a lado, usuário escolhe qual veículo despachar.
     async function despacharOS() {
       const codigoOS = prompt('Código da OS para cotar no Uber:');
       if (!codigoOS) return;
@@ -716,52 +716,101 @@
         showToast('Código inválido', 'error');
         return;
       }
-      // Abre modal em estado "cotando" e dispara cotação
-      setCotacaoModal({ state: 'cotando', codigoOS: codigoOSNum, dados: null, error: null });
+      // Abre modal em estado "cotando" e dispara cotação múltipla
+      setCotacaoModal({
+        state: 'cotando', codigoOS: codigoOSNum,
+        cotacoes: null, selecionado: null, error: null,
+      });
       try {
         const res = await fetchAuth(`${API_URL}/uber/entregas/cotar`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ codigoOS: codigoOSNum }),
+          body: JSON.stringify({ codigoOS: codigoOSNum, vehicle_types: ['motorcycle', 'car'] }),
         });
         const json = await res.json();
         if (res.ok && json.success) {
-          setCotacaoModal({ state: 'ok', codigoOS: codigoOSNum, dados: json, error: null });
+          // Pré-seleciona a primeira cotação disponível (geralmente moto)
+          const primeiraDisponivel = json.cotacoes.find(c => c.available);
+          setCotacaoModal({
+            state: 'ok',
+            codigoOS: codigoOSNum,
+            cotacoes: json.cotacoes,
+            selecionado: primeiraDisponivel?.vehicle_type || null,
+            error: null,
+          });
         } else {
-          setCotacaoModal({ state: 'erro', codigoOS: codigoOSNum, dados: null, error: json.error || 'Erro ao cotar' });
+          setCotacaoModal({
+            state: 'erro',
+            codigoOS: codigoOSNum,
+            cotacoes: json.cotacoes || null,
+            selecionado: null,
+            error: json.error || 'Erro ao cotar',
+          });
         }
       } catch (err) {
-        setCotacaoModal({ state: 'erro', codigoOS: codigoOSNum, dados: null, error: 'Erro de rede ao cotar' });
+        setCotacaoModal({
+          state: 'erro', codigoOS: codigoOSNum,
+          cotacoes: null, selecionado: null, error: 'Erro de rede ao cotar',
+        });
       }
     }
 
-    // Botão "Tentar de novo" no modal — reusa o estado pra cotar mais uma vez
+    // Re-cota: usado tanto no botão "Tentar de novo" do estado de erro
+    // quanto no "Cotar de novo" quando a quote expira
     async function recotarOS() {
       if (!cotacaoModal?.codigoOS) return;
       const cod = cotacaoModal.codigoOS;
-      setCotacaoModal({ state: 'cotando', codigoOS: cod, dados: null, error: null });
+      setCotacaoModal({
+        state: 'cotando', codigoOS: cod,
+        cotacoes: null, selecionado: null, error: null,
+      });
       try {
         const res = await fetchAuth(`${API_URL}/uber/entregas/cotar`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ codigoOS: cod }),
+          body: JSON.stringify({ codigoOS: cod, vehicle_types: ['motorcycle', 'car'] }),
         });
         const json = await res.json();
         if (res.ok && json.success) {
-          setCotacaoModal({ state: 'ok', codigoOS: cod, dados: json, error: null });
+          const primeiraDisponivel = json.cotacoes.find(c => c.available);
+          setCotacaoModal({
+            state: 'ok', codigoOS: cod,
+            cotacoes: json.cotacoes,
+            selecionado: primeiraDisponivel?.vehicle_type || null,
+            error: null,
+          });
         } else {
-          setCotacaoModal({ state: 'erro', codigoOS: cod, dados: null, error: json.error || 'Erro ao cotar' });
+          setCotacaoModal({
+            state: 'erro', codigoOS: cod,
+            cotacoes: json.cotacoes || null,
+            selecionado: null,
+            error: json.error || 'Erro ao cotar',
+          });
         }
       } catch {
-        setCotacaoModal({ state: 'erro', codigoOS: cod, dados: null, error: 'Erro de rede ao cotar' });
+        setCotacaoModal({
+          state: 'erro', codigoOS: cod,
+          cotacoes: null, selecionado: null, error: 'Erro de rede ao cotar',
+        });
       }
     }
 
-    // Confirma o despacho usando o quote_id da cotação atual (não cota 2x)
+    // Seleciona um veículo no modal (clica no card)
+    function selecionarVeiculo(vehicleType) {
+      if (!cotacaoModal) return;
+      const cot = cotacaoModal.cotacoes?.find(c => c.vehicle_type === vehicleType);
+      if (!cot || !cot.available) return; // não seleciona indisponível
+      setCotacaoModal({ ...cotacaoModal, selecionado: vehicleType });
+    }
+
+    // Confirma o despacho usando o quote_id do veículo selecionado
     async function confirmarDespacho() {
-      if (!cotacaoModal?.dados?.quote_id) return;
+      if (!cotacaoModal?.selecionado || !cotacaoModal?.cotacoes) return;
+      const cotSelecionada = cotacaoModal.cotacoes.find(c => c.vehicle_type === cotacaoModal.selecionado);
+      if (!cotSelecionada || !cotSelecionada.available) return;
+
       // Verifica se a quote ainda tá válida (fail-safe — o botão deveria estar desabilitado)
-      if (Date.now() > cotacaoModal.dados.expires_at) {
+      if (Date.now() > cotSelecionada.expires_at) {
         showToast('Cotação expirada — cote novamente', 'error');
         return;
       }
@@ -772,7 +821,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             codigoOS: cotacaoModal.codigoOS,
-            quote_id: cotacaoModal.dados.quote_id,
+            quote_id: cotSelecionada.quote_id,
           }),
         });
         const json = await res.json();
@@ -782,9 +831,11 @@
           carregar();
         } else {
           showToast(json.error || 'Erro ao despachar', 'error');
-          // Se a quote expirou no servidor (410), volta pra estado ok pra usuário poder recotar
+          // Se a quote expirou no servidor (410), volta pra estado ok pra usuário recotar
           if (res.status === 410) {
-            setCotacaoModal({ ...cotacaoModal, state: 'ok', dados: { ...cotacaoModal.dados, expires_at: 0 } });
+            // Marca todas as cotações como expiradas pra forçar "Cotar de novo"
+            const cotacoesExpiradas = cotacaoModal.cotacoes.map(c => ({ ...c, expires_at: 0 }));
+            setCotacaoModal({ ...cotacaoModal, state: 'ok', cotacoes: cotacoesExpiradas });
           } else {
             setCotacaoModal({ ...cotacaoModal, state: 'ok' });
           }
@@ -1109,29 +1160,89 @@
         )
       ),
 
-      // ── Modal de cotação manual (Opção C) ──
+      // ── Modal de cotação manual com seleção de veículo (Opção C + Desenho 1) ──
       cotacaoModal && (function () {
         const m = cotacaoModal;
-        const d = m.dados;
-        const segundosRestantes = d ? Math.max(0, Math.floor((d.expires_at - Date.now()) / 1000)) : 0;
-        const expirou = d && segundosRestantes === 0;
-        const margem = d ? parseFloat(d.margem || 0) : 0;
-        const margemPositiva = margem >= 0;
-        const margemNegativaForte = margem < 0;
+        const cotacoes = m.cotacoes || [];
+        // Cotação atualmente selecionada (se houver)
+        const cotSel = cotacoes.find(c => c.vehicle_type === m.selecionado);
+
+        // Timer da cotação SELECIONADA (cada veículo tem seu próprio expires_at,
+        // mas como foram cotados juntos, a diferença é desprezível)
+        const segundosRestantes = cotSel?.available
+          ? Math.max(0, Math.floor((cotSel.expires_at - Date.now()) / 1000))
+          : 0;
+        const expirou = cotSel?.available && segundosRestantes === 0;
+        const margemSel = cotSel?.available ? parseFloat(cotSel.margem || 0) : 0;
+        const margemNegativaForte = cotSel?.available && margemSel < 0;
         const mm = Math.floor(segundosRestantes / 60);
         const ss = segundosRestantes % 60;
+
+        // Endereços (vêm em qualquer cotação disponível)
+        const primeiraDisponivel = cotacoes.find(c => c.available);
+        const enderecoColeta = primeiraDisponivel?.endereco_coleta || '—';
+        const enderecoEntrega = primeiraDisponivel?.endereco_entrega || '—';
+
+        // Label e SVG por tipo de veículo (estilo flat, monocromático, cor controlada por currentColor)
+        function svgVeiculo(tipo, selecionado, indisponivel) {
+          const cor = indisponivel ? '#9ca3af' : (selecionado ? '#5b21b6' : '#6b7280');
+          if (tipo === 'motorcycle') {
+            return h('svg', {
+              width: 56, height: 40, viewBox: '0 0 64 44', fill: 'none',
+              xmlns: 'http://www.w3.org/2000/svg',
+            },
+              h('circle', { cx: 13, cy: 33, r: 9, stroke: cor, strokeWidth: 2.5, fill: 'none' }),
+              h('circle', { cx: 13, cy: 33, r: 2, fill: cor }),
+              h('circle', { cx: 51, cy: 33, r: 9, stroke: cor, strokeWidth: 2.5, fill: 'none' }),
+              h('circle', { cx: 51, cy: 33, r: 2, fill: cor }),
+              h('path', {
+                d: 'M13 33 L26 16 L40 16 L51 33',
+                stroke: cor, strokeWidth: 2.5,
+                strokeLinecap: 'round', strokeLinejoin: 'round', fill: 'none',
+              }),
+              h('path', {
+                d: 'M26 16 L22 8 L30 8',
+                stroke: cor, strokeWidth: 2.5,
+                strokeLinecap: 'round', strokeLinejoin: 'round', fill: 'none',
+              }),
+              h('rect', { x: 36, y: 10, width: 10, height: 6, rx: 1, fill: cor }),
+            );
+          }
+          // car
+          return h('svg', {
+            width: 64, height: 40, viewBox: '0 0 72 44', fill: 'none',
+            xmlns: 'http://www.w3.org/2000/svg',
+          },
+            h('path', {
+              d: 'M8 30 L8 22 L18 12 L52 12 L62 22 L62 30 L56 30 L56 33 L50 33 L50 30 L22 30 L22 33 L16 33 L16 30 Z',
+              stroke: cor, strokeWidth: 2.5, strokeLinejoin: 'round', fill: 'none',
+            }),
+            h('circle', { cx: 20, cy: 33, r: 6, stroke: cor, strokeWidth: 2.5, fill: 'white' }),
+            h('circle', { cx: 20, cy: 33, r: 1.5, fill: cor }),
+            h('circle', { cx: 52, cy: 33, r: 6, stroke: cor, strokeWidth: 2.5, fill: 'white' }),
+            h('circle', { cx: 52, cy: 33, r: 1.5, fill: cor }),
+          );
+        }
+        function labelVeiculo(tipo) {
+          if (tipo === 'motorcycle') return 'Moto';
+          if (tipo === 'car') return 'Carro';
+          if (tipo === 'van') return 'Van';
+          if (tipo === 'bicycle') return 'Bike';
+          if (tipo === 'walker') return 'A pé';
+          return tipo;
+        }
 
         return h('div', {
           className: 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4',
           onClick: (ev) => { if (ev.target === ev.currentTarget) fecharCotacaoModal(); },
         },
-          h('div', { className: 'bg-white rounded-xl shadow-2xl max-w-xl w-full max-h-[90vh] overflow-y-auto' },
+          h('div', { className: 'bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto' },
 
             // Header
             h('div', { className: 'border-b border-gray-200 px-5 py-4' },
               h('h3', { className: 'text-lg font-bold text-gray-800' }, `Cotação OS ${m.codigoOS}`),
               h('p', { className: 'text-xs text-gray-500 mt-1' },
-                'Confirme o valor da Uber antes de despachar. A entrega só é criada quando você clica em Confirmar.')
+                'Escolha o tipo de veículo. A entrega só é criada quando você confirmar.')
             ),
 
             // Body — depende do estado
@@ -1139,7 +1250,7 @@
               ? h('div', { className: 'p-12 text-center' },
                   h('div', { className: 'animate-spin w-10 h-10 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-3' }),
                   h('p', { className: 'text-sm text-gray-500' },
-                    m.state === 'cotando' ? 'Cotando na Uber…' : 'Despachando…'))
+                    m.state === 'cotando' ? 'Cotando moto e carro na Uber…' : 'Despachando…'))
 
               : m.state === 'erro'
               ? h('div', { className: 'p-5' },
@@ -1169,66 +1280,111 @@
               : // state === 'ok'
                 h('div', { className: 'p-5 space-y-4' },
 
+                  // Cards de veículos lado a lado
+                  h('div', { className: 'grid grid-cols-2 gap-3' },
+                    cotacoes.map(cot => {
+                      const isSelecionado = cot.vehicle_type === m.selecionado;
+                      const indisponivel = !cot.available;
+                      const margemCard = cot.available ? parseFloat(cot.margem || 0) : 0;
+                      const margemPosCard = margemCard >= 0;
+
+                      return h('button', {
+                        key: cot.vehicle_type,
+                        onClick: () => selecionarVeiculo(cot.vehicle_type),
+                        disabled: indisponivel,
+                        className: `text-left rounded-xl p-4 transition-all ${
+                          indisponivel
+                            ? 'border border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed'
+                            : isSelecionado
+                              ? 'border-2 border-purple-700 bg-purple-50 shadow-sm'
+                              : 'border border-gray-200 bg-white hover:border-purple-300 cursor-pointer'
+                        }`,
+                      },
+                        // Ícone do veículo
+                        h('div', { className: 'flex items-center justify-center h-14 mb-2' },
+                          svgVeiculo(cot.vehicle_type, isSelecionado, indisponivel)
+                        ),
+                        // Nome
+                        h('div', {
+                          className: `text-center text-sm font-semibold mb-1 ${
+                            indisponivel ? 'text-gray-400' : isSelecionado ? 'text-purple-900' : 'text-gray-800'
+                          }`,
+                        }, labelVeiculo(cot.vehicle_type)),
+
+                        // Indisponível: mostra mensagem
+                        indisponivel
+                          ? h('div', { className: 'text-center text-xs text-gray-400 mt-2' }, 'Indisponível agora')
+                          : [
+                              // Valor
+                              h('div', {
+                                key: 'valor',
+                                className: `text-center text-xl font-bold ${isSelecionado ? 'text-purple-900' : 'text-gray-800'}`,
+                              }, fmtMoney(parseFloat(cot.valor_uber || 0))),
+                              // ETA
+                              h('div', {
+                                key: 'eta',
+                                className: `text-center text-[11px] mt-0.5 ${isSelecionado ? 'text-purple-700' : 'text-gray-500'}`,
+                              }, `ETA ${cot.eta_minutos || '?'} min`),
+                              // Margem
+                              h('div', {
+                                key: 'margem',
+                                className: `mt-2 pt-2 text-center border-t ${isSelecionado ? 'border-purple-200' : 'border-gray-100'}`,
+                              },
+                                h('div', { className: `text-[10px] uppercase tracking-wider ${isSelecionado ? 'text-purple-600' : 'text-gray-400'}` }, 'Margem'),
+                                h('div', {
+                                  className: `text-sm font-semibold ${margemPosCard ? 'text-green-700' : 'text-red-700'}`,
+                                }, `${margemPosCard ? '+ ' : '− '}${fmtMoney(Math.abs(margemCard))}`),
+                                h('div', { className: `text-[10px] ${margemPosCard ? 'text-green-600' : 'text-red-600'}` },
+                                  `${parseFloat(cot.margem_pct || 0).toFixed(1)}%`)
+                              ),
+                            ]
+                      );
+                    })
+                  ),
+
                   // Endereços
-                  h('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-3' },
+                  h('div', { className: 'text-xs text-gray-500 space-y-1' },
                     h('div', null,
-                      h('div', { className: 'text-[11px] uppercase tracking-wider text-gray-400 font-semibold mb-1' }, '📦 Coleta'),
-                      h('div', { className: 'text-sm text-gray-800' }, d.endereco_coleta || '—')
+                      h('span', { className: 'font-semibold text-gray-600' }, '📦 Coleta: '),
+                      enderecoColeta
                     ),
                     h('div', null,
-                      h('div', { className: 'text-[11px] uppercase tracking-wider text-gray-400 font-semibold mb-1' }, '📍 Entrega'),
-                      h('div', { className: 'text-sm text-gray-800' }, d.endereco_entrega || '—')
+                      h('span', { className: 'font-semibold text-gray-600' }, '📍 Entrega: '),
+                      enderecoEntrega
                     ),
                   ),
 
-                  // 4 cards de valores
-                  h('div', { className: 'grid grid-cols-2 md:grid-cols-4 gap-2' },
-                    h('div', { className: 'bg-gray-50 rounded-lg px-3 py-2.5' },
-                      h('div', { className: 'text-[11px] text-gray-500 mb-0.5' }, 'Cliente paga'),
-                      h('div', { className: 'text-base font-semibold text-gray-800' }, fmtMoney(parseFloat(d.valor_cliente || 0)))
+                  // Detalhes da cotação selecionada
+                  cotSel?.available && h('div', { className: 'bg-gray-50 rounded-lg p-3 space-y-1.5 text-xs' },
+                    h('div', { className: 'flex justify-between' },
+                      h('span', { className: 'text-gray-500' }, 'Cliente paga (Mapp)'),
+                      h('span', { className: 'font-semibold text-gray-800' }, fmtMoney(parseFloat(cotSel.valor_cliente || 0))),
                     ),
-                    h('div', { className: 'bg-gray-50 rounded-lg px-3 py-2.5' },
-                      h('div', { className: 'text-[11px] text-gray-500 mb-0.5' }, 'Profissional Mapp'),
-                      h('div', { className: 'text-base font-semibold text-gray-800' }, fmtMoney(parseFloat(d.valor_profissional || 0)))
+                    h('div', { className: 'flex justify-between' },
+                      h('span', { className: 'text-gray-500' }, 'Profissional Mapp'),
+                      h('span', { className: 'font-semibold text-gray-800' }, fmtMoney(parseFloat(cotSel.valor_profissional || 0))),
                     ),
-                    h('div', { className: 'bg-purple-50 rounded-lg px-3 py-2.5' },
-                      h('div', { className: 'text-[11px] text-purple-700 mb-0.5' }, 'Custo Uber'),
-                      h('div', { className: 'text-base font-semibold text-purple-800' }, fmtMoney(parseFloat(d.valor_uber || 0)))
-                    ),
-                    h('div', {
-                      className: `rounded-lg px-3 py-2.5 ${margemPositiva ? 'bg-green-50' : 'bg-red-50'}`,
-                    },
-                      h('div', { className: `text-[11px] mb-0.5 ${margemPositiva ? 'text-green-700' : 'text-red-700'}` }, 'Margem'),
-                      h('div', {
-                        className: `text-base font-semibold ${margemPositiva ? 'text-green-800' : 'text-red-800'}`,
-                      }, `${margemPositiva ? '+ ' : '− '}${fmtMoney(Math.abs(margem))}`),
-                      h('div', { className: `text-[10px] ${margemPositiva ? 'text-green-600' : 'text-red-600'}` },
-                        `${parseFloat(d.margem_pct || 0).toFixed(1)}%`)
+                    h('div', { className: 'flex justify-between' },
+                      h('span', { className: 'text-gray-500' }, `Custo Uber (${labelVeiculo(cotSel.vehicle_type)})`),
+                      h('span', { className: 'font-semibold text-purple-800' }, fmtMoney(parseFloat(cotSel.valor_uber || 0))),
                     ),
                   ),
 
-                  // ETA
-                  h('div', { className: 'flex items-center gap-2 text-xs text-gray-600' },
-                    h('span', null, '⏱'),
-                    h('span', null, 'ETA estimado: '),
-                    h('span', { className: 'font-semibold text-gray-800' }, `${d.eta_minutos || '?'} min`),
-                  ),
-
-                  // Warning de margem negativa (forte)
+                  // Warning de margem negativa (forte) na cotação selecionada
                   margemNegativaForte && h('div', { className: 'bg-red-50 border-2 border-red-300 rounded-lg p-3' },
                     h('div', { className: 'flex items-start gap-2' },
                       h('span', { className: 'text-red-600 text-lg flex-shrink-0' }, '⚠'),
                       h('div', null,
                         h('div', { className: 'text-sm font-semibold text-red-800' },
-                          `Esta entrega vai dar prejuízo de ${fmtMoney(Math.abs(margem))}`),
+                          `Esta entrega vai dar prejuízo de ${fmtMoney(Math.abs(margemSel))}`),
                         h('div', { className: 'text-xs text-red-700 mt-0.5' },
-                          'O custo da Uber está acima do valor que o cliente paga. Tem certeza que quer despachar?')
+                          `O custo da Uber (${labelVeiculo(cotSel.vehicle_type)}) está acima do valor que o cliente paga.`)
                       )
                     )
                   ),
 
                   // Timer countdown
-                  h('div', {
+                  cotSel?.available && h('div', {
                     className: `flex items-center justify-between text-xs px-3 py-2 rounded-lg ${
                       expirou ? 'bg-red-50 text-red-700' : 'bg-gray-50 text-gray-600'
                     }`,
@@ -1250,14 +1406,17 @@
                   onClick: recotarOS,
                   className: 'px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-semibold hover:bg-purple-700',
                 }, 'Cotar de novo'),
-                !expirou && h('button', {
+                !expirou && cotSel?.available && h('button', {
                   onClick: confirmarDespacho,
-                  className: `px-4 py-2 rounded-lg text-sm font-semibold text-white ${
+                  disabled: !m.selecionado,
+                  className: `px-4 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-50 ${
                     margemNegativaForte
                       ? 'bg-red-600 hover:bg-red-700'
                       : 'bg-green-600 hover:bg-green-700'
                   }`,
-                }, margemNegativaForte ? 'Despachar mesmo assim' : 'Confirmar despacho'),
+                }, margemNegativaForte
+                    ? `Despachar mesmo assim · ${labelVeiculo(m.selecionado)}`
+                    : `Confirmar despacho · ${labelVeiculo(m.selecionado)}`),
               )
             )
           )
