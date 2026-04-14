@@ -397,8 +397,23 @@
       temEntregador
         ? h('div', { className: 'flex items-center gap-3 p-3 bg-gray-50 rounded-lg' },
             // Avatar
+            // Avatar — foto real do entregador se vier, senão iniciais
+            e.entregador_foto
+              ? h('img', {
+                  src: e.entregador_foto,
+                  alt: e.entregador_nome,
+                  className: 'w-11 h-11 rounded-full object-cover flex-shrink-0 bg-purple-100',
+                  onError: (ev) => {
+                    // Se a URL expirou ou falhou, esconde a img e o div abaixo aparece
+                    ev.target.style.display = 'none';
+                    const fallback = ev.target.nextSibling;
+                    if (fallback) fallback.style.display = 'flex';
+                  },
+                })
+              : null,
             h('div', {
               className: 'w-11 h-11 rounded-full bg-purple-100 flex items-center justify-center font-semibold text-sm text-purple-700 flex-shrink-0',
+              style: e.entregador_foto ? { display: 'none' } : {},
             }, iniciaisDoNome(e.entregador_nome)),
 
             // Info
@@ -765,16 +780,26 @@
               ),
 
               // Entregador completo
-              e.entregador_nome && h('div', { className: 'bg-gray-50 rounded-lg p-4 space-y-2' },
-                h('div', { className: 'text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2' }, '🏍 Entregador'),
-                h('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-2 text-sm' },
-                  h('div', null, h('span', { className: 'text-gray-500' }, 'Nome: '), h('span', { className: 'font-semibold' }, e.entregador_nome)),
-                  e.entregador_rating && h('div', null, h('span', { className: 'text-gray-500' }, 'Rating: '), `★ ${e.entregador_rating}`),
-                  e.entregador_telefone && h('div', null, h('span', { className: 'text-gray-500' }, 'Telefone: '), fmtTelefoneBR(e.entregador_telefone)),
-                  e.entregador_placa && h('div', null, h('span', { className: 'text-gray-500' }, 'Placa: '), e.entregador_placa),
-                  e.entregador_veiculo && h('div', null, h('span', { className: 'text-gray-500' }, 'Veículo: '), e.entregador_veiculo),
-                  e.entregador_documento && h('div', null, h('span', { className: 'text-gray-500' }, 'Doc: '), e.entregador_documento),
-                  e.id_motoboy_mapp && h('div', null, h('span', { className: 'text-gray-500' }, 'id Mapp: '), e.id_motoboy_mapp),
+              e.entregador_nome && h('div', { className: 'bg-gray-50 rounded-lg p-4' },
+                h('div', { className: 'text-xs uppercase tracking-wider text-gray-400 font-semibold mb-3' }, '🏍 Entregador'),
+                h('div', { className: 'flex gap-4 items-start' },
+                  // Foto grande à esquerda
+                  e.entregador_foto && h('img', {
+                    src: e.entregador_foto,
+                    alt: e.entregador_nome,
+                    className: 'w-20 h-20 rounded-full object-cover bg-purple-100 flex-shrink-0',
+                    onError: (ev) => { ev.target.style.display = 'none'; },
+                  }),
+                  // Dados ao lado
+                  h('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-2 text-sm flex-1 min-w-0' },
+                    h('div', null, h('span', { className: 'text-gray-500' }, 'Nome: '), h('span', { className: 'font-semibold' }, e.entregador_nome)),
+                    e.entregador_rating && h('div', null, h('span', { className: 'text-gray-500' }, 'Rating: '), `★ ${e.entregador_rating}`),
+                    e.entregador_telefone && h('div', null, h('span', { className: 'text-gray-500' }, 'Telefone: '), fmtTelefoneBR(e.entregador_telefone)),
+                    e.entregador_placa && h('div', null, h('span', { className: 'text-gray-500' }, 'Placa: '), e.entregador_placa),
+                    e.entregador_veiculo && h('div', null, h('span', { className: 'text-gray-500' }, 'Veículo: '), e.entregador_veiculo),
+                    e.entregador_documento && h('div', null, h('span', { className: 'text-gray-500' }, 'Doc: '), e.entregador_documento),
+                    e.id_motoboy_mapp && h('div', null, h('span', { className: 'text-gray-500' }, 'id Mapp: '), e.id_motoboy_mapp),
+                  ),
                 ),
               ),
 
