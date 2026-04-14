@@ -368,8 +368,8 @@
     }
 
     async function salvar() {
-      if (!editando?.cliente_nome?.trim()) {
-        showToast('Nome do cliente é obrigatório', 'error');
+      if (!editando?.cliente_nome?.trim() || editando.cliente_nome.trim().length < 5) {
+        showToast('Trecho do endereço deve ter no mínimo 5 caracteres', 'error');
         return;
       }
       const payload = {
@@ -430,10 +430,10 @@
     return h('div', { className: 'max-w-5xl mx-auto p-4 space-y-4' },
       h('div', { className: 'flex items-center justify-between' },
         h('div', null,
-          h('h2', { className: 'text-2xl font-bold text-gray-800' }, '📋 Regras por cliente'),
+          h('h2', { className: 'text-2xl font-bold text-gray-800' }, '📋 Regras por endereço de coleta'),
           h('p', { className: 'text-xs text-gray-500 mt-1' },
-            'O worker só despacha pra Uber OS de clientes cadastrados aqui com status ATIVO. ',
-            'Sem regra ativa = sem despacho automático.')
+            'O worker só despacha pra Uber OS cujo endereço de coleta casa com algum trecho cadastrado aqui. ',
+            'A Mapp não retorna nome do cliente — match é por trecho do endereço. Sem regra ativa = sem despacho automático.')
         ),
         h('button', {
           onClick: novoForm,
@@ -452,7 +452,7 @@
               h('thead', { className: 'bg-gray-50 text-xs uppercase text-gray-600' },
                 h('tr', null,
                   h('th', { className: 'px-4 py-3 text-left' }, 'Status'),
-                  h('th', { className: 'px-4 py-3 text-left' }, 'Cliente'),
+                  h('th', { className: 'px-4 py-3 text-left' }, 'Trecho do endereço'),
                   h('th', { className: 'px-4 py-3 text-left' }, 'Regiões'),
                   h('th', { className: 'px-4 py-3 text-left' }, 'Horário'),
                   h('th', { className: 'px-4 py-3 text-left' }, 'Valor (R$)'),
@@ -501,24 +501,29 @@
           h('div', { className: 'p-5 space-y-3' },
 
             h('div', null,
-              h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Nome do cliente *'),
+              h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Trecho do endereço de coleta *'),
               h('input', {
                 type: 'text', value: editando.cliente_nome || '',
                 onChange: e => up('cliente_nome', e.target.value),
-                placeholder: 'Como aparece no ponto de coleta na Mapp',
+                placeholder: 'ex: pernambuco, 1500',
                 className: 'w-full px-3 py-2 border rounded-lg text-sm',
               }),
-              h('p', { className: 'text-xs text-gray-500 mt-1' }, 'Match por "contém" no nome do ponto de coleta (case-insensitive, mínimo 3 letras)')
+              h('p', { className: 'text-xs text-gray-500 mt-1' },
+                '⚠ A Mapp não retorna nome de cliente — match é feito contra o ENDEREÇO de coleta da OS. ',
+                'Coloque um trecho ÚNICO do endereço do cliente (mínimo 5 caracteres, lowercase, sem acento se possível). ',
+                'Quanto mais específico, melhor.')
             ),
 
             h('div', null,
-              h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Identificador (opcional)'),
+              h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Identificador alternativo (opcional)'),
               h('input', {
                 type: 'text', value: editando.cliente_identificador || '',
                 onChange: e => up('cliente_identificador', e.target.value),
-                placeholder: 'Alternativa pra match mais preciso',
+                placeholder: 'outro trecho de endereço (alternativa)',
                 className: 'w-full px-3 py-2 border rounded-lg text-sm',
-              })
+              }),
+              h('p', { className: 'text-xs text-gray-500 mt-1' },
+                'Segunda opção de match — se este trecho aparecer no endereço de coleta, também casa.')
             ),
 
             h('div', null,
