@@ -7,7 +7,7 @@
 (function () {
   'use strict';
 
-  const { useState, useEffect, useCallback, useRef } = React;
+  const { useState, useEffect, useCallback, useRef, useMemo } = React;
   const h = React.createElement;
 
   // ── Helpers ──
@@ -232,10 +232,197 @@
   // ════════════════════════════════════════════════════════
   // ABA 3: ENTREGAS - listagem com filtros
   // ════════════════════════════════════════════════════════
+  // Helpers locais usados pelos cards
+  function fmtTelefoneBR(tel) {
+    if (!tel) return '—';
+    const digits = String(tel).replace(/\D/g, '');
+    // E.164 com DDI Brasil (55) + DDD (2) + 9 dígitos
+    if (digits.length === 13 && digits.startsWith('55')) {
+      return `+55 ${digits.slice(2, 4)} ${digits.slice(4, 9)}-${digits.slice(9)}`;
+    }
+    if (digits.length === 11) {
+      return `${digits.slice(0, 2)} ${digits.slice(2, 7)}-${digits.slice(7)}`;
+    }
+    return tel;
+  }
+
+  function iniciaisDoNome(nome) {
+    if (!nome) return '?';
+    const partes = nome.trim().split(/\s+/);
+    if (partes.length === 1) return partes[0].slice(0, 2).toUpperCase();
+    return (partes[0][0] + partes[partes.length - 1][0]).toUpperCase();
+  }
+
+  function calcularDuracao(inicio, fim) {
+    if (!inicio || !fim) return null;
+    const ms = new Date(fim) - new Date(inicio);
+    if (ms < 0) return null;
+    const min = Math.floor(ms / 60000);
+    const seg = Math.floor((ms % 60000) / 1000);
+    if (min === 0) return `${seg}s`;
+    return `${min}m${String(seg).padStart(2, '0')}s`;
+  }
+
+  function truncMeio(s, ini = 12, fim = 4) {
+    if (!s) return '—';
+    if (s.length <= ini + fim + 1) return s;
+    return `${s.slice(0, ini)}…${s.slice(-fim)}`;
+  }
+
+  // Card individual de entrega — extraído pra ficar legível
+  function CardEntrega({ entrega, onCancelar, onVerTracking, onVerDetalhes }) {
+    const e = entrega;
+
+    const valorCliente   = parseFloat(e.valor_servico || 0);
+    const valorProfMapp  = parseFloat(e.valor_profissional || 0);
+    const valorUber      = parseFloat(e.valor_uber || 0);
+    const margem         = valorCliente - valorUber;
+    const margemPositiva = margem >= 0;
+
+    const podeCancelar = !['delivered', 'cancelado', 'canceled', 'fallback_fila'].includes(e.status_uber);
+    const temEntregador = !!e.entregador_nome;
+
+    const duracao = calcularDuracao(e.created_at, e.finalizado_at);
+
+    function copiarTel() {
+      if (!e.entregador_telefone) return;
+      navigator.clipboard?.writeText(e.entregador_telefone).then(
+        () => showToast('Telefone copiado', 'success'),
+        () => showToast('Não foi possível copiar', 'error')
+      );
+    }
+
+    function ligar() {
+      if (!e.entregador_telefone) return;
+      window.location.href = `tel:${e.entregador_telefone}`;
+    }
+
+    return h('div', {
+      className: 'bg-white rounded-xl border border-gray-200 shadow-sm p-4 md:p-5 space-y-4',
+    },
+
+      // ── Cabeçalho ──
+      h('div', { className: 'flex items-center justify-between gap-3 pb-3 border-b border-gray-100' },
+        h('div', { className: 'flex items-center gap-3 min-w-0' },
+          h('span', { className: 'text-lg md:text-xl font-bold text-gray-800' }, `OS ${e.codigo_os}`),
+          h(Badge, { status: e.status_uber }),
+        ),
+        h('div', { className: 'flex gap-2 flex-shrink-0' },
+          onVerTracking && h('button', {
+            onClick: () => onVerTracking(e),
+            className: 'text-xs px-3 py-1.5 border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-700',
+          }, 'Tracking'),
+          onVerDetalhes && h('button', {
+            onClick: () => onVerDetalhes(e),
+            className: 'text-xs px-3 py-1.5 border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-700',
+          }, 'Detalhes'),
+          podeCancelar && h('button', {
+            onClick: () => onCancelar(e.id),
+            className: 'text-xs px-3 py-1.5 border border-red-200 text-red-600 rounded-lg hover:bg-red-50',
+          }, 'Cancelar'),
+        )
+      ),
+
+      // ── Endereços lado a lado ──
+      h('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-4' },
+        h('div', null,
+          h('div', { className: 'text-[11px] uppercase tracking-wider text-gray-400 font-semibold mb-1' }, '📦 Coleta'),
+          h('div', { className: 'text-sm text-gray-800 leading-relaxed break-words' }, e.endereco_coleta || '—')
+        ),
+        h('div', null,
+          h('div', { className: 'text-[11px] uppercase tracking-wider text-gray-400 font-semibold mb-1' }, '📍 Entrega'),
+          h('div', { className: 'text-sm text-gray-800 leading-relaxed break-words' }, e.endereco_entrega || '—')
+        ),
+      ),
+
+      // ── 4 cards de valores: cliente Mapp / prof Mapp / Uber / margem ──
+      h('div', { className: 'grid grid-cols-2 md:grid-cols-4 gap-2' },
+        h('div', { className: 'bg-gray-50 rounded-lg px-3 py-2.5' },
+          h('div', { className: 'text-[11px] text-gray-500 mb-0.5' }, 'Cliente paga'),
+          h('div', { className: 'text-base font-semibold text-gray-800' }, fmtMoney(valorCliente))
+        ),
+        h('div', { className: 'bg-gray-50 rounded-lg px-3 py-2.5' },
+          h('div', { className: 'text-[11px] text-gray-500 mb-0.5' }, 'Profissional Mapp'),
+          h('div', { className: 'text-base font-semibold text-gray-800' }, fmtMoney(valorProfMapp))
+        ),
+        h('div', { className: 'bg-gray-50 rounded-lg px-3 py-2.5' },
+          h('div', { className: 'text-[11px] text-gray-500 mb-0.5' }, 'Custo Uber'),
+          h('div', { className: 'text-base font-semibold text-gray-800' }, fmtMoney(valorUber))
+        ),
+        h('div', {
+          className: `rounded-lg px-3 py-2.5 ${margemPositiva ? 'bg-green-50' : 'bg-red-50'}`,
+        },
+          h('div', { className: `text-[11px] mb-0.5 ${margemPositiva ? 'text-green-700' : 'text-red-700'}` }, 'Margem'),
+          h('div', {
+            className: `text-base font-semibold ${margemPositiva ? 'text-green-800' : 'text-red-800'}`,
+          }, `${margemPositiva ? '+ ' : '− '}${fmtMoney(Math.abs(margem))}`)
+        ),
+      ),
+
+      // ── Bloco do entregador ──
+      temEntregador
+        ? h('div', { className: 'flex items-center gap-3 p-3 bg-gray-50 rounded-lg' },
+            // Avatar
+            h('div', {
+              className: 'w-11 h-11 rounded-full bg-purple-100 flex items-center justify-center font-semibold text-sm text-purple-700 flex-shrink-0',
+            }, iniciaisDoNome(e.entregador_nome)),
+
+            // Info
+            h('div', { className: 'flex-1 min-w-0' },
+              h('div', { className: 'flex items-center gap-2 flex-wrap' },
+                h('span', { className: 'text-sm font-semibold text-gray-800' }, e.entregador_nome),
+                e.entregador_rating && h('span', { className: 'text-xs text-gray-600' }, `★ ${e.entregador_rating}`),
+                e.id_motoboy_mapp && h('span', { className: 'text-[11px] text-gray-400' }, `· id Mapp ${e.id_motoboy_mapp}`),
+              ),
+              h('div', { className: 'text-xs text-gray-600 mt-0.5 break-words' },
+                [
+                  fmtTelefoneBR(e.entregador_telefone),
+                  e.entregador_veiculo,
+                  e.entregador_placa,
+                ].filter(Boolean).join(' · ') || '—'
+              ),
+            ),
+
+            // Ações
+            e.entregador_telefone && h('div', { className: 'flex gap-1.5 flex-shrink-0' },
+              h('button', {
+                onClick: copiarTel,
+                title: 'Copiar telefone',
+                className: 'text-[11px] px-2.5 py-1.5 border border-gray-200 rounded-md hover:bg-white text-gray-700',
+              }, 'Copiar'),
+              h('button', {
+                onClick: ligar,
+                title: 'Ligar pro entregador',
+                className: 'text-[11px] px-2.5 py-1.5 border border-gray-200 rounded-md hover:bg-white text-gray-700',
+              }, 'Ligar'),
+            ),
+          )
+        : h('div', { className: 'p-3 bg-gray-50 rounded-lg text-xs text-gray-400 italic text-center' },
+            'Aguardando atribuição de entregador...'
+          ),
+
+      // ── Rodapé com timestamps ──
+      h('div', { className: 'flex items-center justify-between gap-2 pt-2 border-t border-gray-100 text-[11px] text-gray-400 flex-wrap' },
+        h('span', null,
+          'Despachada ', fmtDT(e.created_at),
+          e.finalizado_at ? ` · Finalizada ${fmtDT(e.finalizado_at)}` : '',
+          duracao ? ` · Duração ${duracao}` : '',
+        ),
+        e.uber_delivery_id && h('span', { className: 'font-mono' }, truncMeio(e.uber_delivery_id, 12, 4))
+      ),
+    );
+  }
+
+  // ════════════════════════════════════════════════════════
+  // ABA: ENTREGAS — listagem em cards
+  // ════════════════════════════════════════════════════════
   function TabEntregas({ API_URL, fetchAuth, showToast }) {
     const [entregas, setEntregas] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filtroStatus, setFiltroStatus] = useState('');
+    const [busca, setBusca] = useState('');
+    const [filtroMargem, setFiltroMargem] = useState('todas'); // todas | positiva | negativa
+    const [ordenacao, setOrdenacao] = useState('recente');     // recente | antiga | margem_maior | margem_menor
 
     const carregar = useCallback(async () => {
       setLoading(true);
@@ -275,47 +462,153 @@
       } catch { showToast('Erro ao cancelar', 'error'); }
     }
 
-    return h('div', { className: 'max-w-7xl mx-auto p-4 space-y-4' },
-      h('div', { className: 'flex items-center justify-between' },
-        h('h2', { className: 'text-2xl font-bold text-gray-800' }, 'Entregas Uber'),
-        h('div', { className: 'flex gap-2' },
-          h('select', { value: filtroStatus, onChange: e => setFiltroStatus(e.target.value), className: 'px-3 py-1.5 border rounded-lg text-sm' },
-            h('option', { value: '' }, 'Todos os status'),
-            Object.keys(STATUS_LABELS).map(s => h('option', { key: s, value: s }, STATUS_LABELS[s].label))
-          ),
-          h('button', { onClick: despacharOS, className: 'px-3 py-1.5 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700' }, '+ Despachar OS'),
-          h('button', { onClick: carregar, className: 'px-3 py-1.5 bg-gray-200 rounded-lg text-sm hover:bg-gray-300' }, '🔄')
+    // Filtragem + ordenação client-side
+    const entregasFiltradas = useMemo(() => {
+      let lista = entregas;
+
+      // Busca por código OS
+      if (busca.trim()) {
+        const q = busca.trim().toLowerCase();
+        lista = lista.filter(e =>
+          String(e.codigo_os).includes(q) ||
+          (e.endereco_coleta || '').toLowerCase().includes(q) ||
+          (e.endereco_entrega || '').toLowerCase().includes(q) ||
+          (e.entregador_nome || '').toLowerCase().includes(q)
+        );
+      }
+
+      // Filtro de margem
+      if (filtroMargem !== 'todas') {
+        lista = lista.filter(e => {
+          const m = parseFloat(e.valor_servico || 0) - parseFloat(e.valor_uber || 0);
+          return filtroMargem === 'positiva' ? m >= 0 : m < 0;
+        });
+      }
+
+      // Ordenação
+      const ordenado = [...lista].sort((a, b) => {
+        if (ordenacao === 'recente') return new Date(b.created_at) - new Date(a.created_at);
+        if (ordenacao === 'antiga')  return new Date(a.created_at) - new Date(b.created_at);
+        const ma = parseFloat(a.valor_servico || 0) - parseFloat(a.valor_uber || 0);
+        const mb = parseFloat(b.valor_servico || 0) - parseFloat(b.valor_uber || 0);
+        if (ordenacao === 'margem_maior') return mb - ma;
+        if (ordenacao === 'margem_menor') return ma - mb;
+        return 0;
+      });
+
+      return ordenado;
+    }, [entregas, busca, filtroMargem, ordenacao]);
+
+    // Resumo — total de margem da lista filtrada
+    const resumo = useMemo(() => {
+      const total = entregasFiltradas.reduce((acc, e) => {
+        const m = parseFloat(e.valor_servico || 0) - parseFloat(e.valor_uber || 0);
+        return acc + (isNaN(m) ? 0 : m);
+      }, 0);
+      const negativas = entregasFiltradas.filter(e =>
+        parseFloat(e.valor_servico || 0) - parseFloat(e.valor_uber || 0) < 0
+      ).length;
+      return { total, negativas, qtd: entregasFiltradas.length };
+    }, [entregasFiltradas]);
+
+    function abrirTracking(e) {
+      // Sinal pra outras abas — usuário pode ir manualmente pra Tracking
+      // (não temos roteamento entre abas aqui, então só mostramos a OS no clipboard)
+      navigator.clipboard?.writeText(String(e.codigo_os));
+      showToast(`OS ${e.codigo_os} copiada — abra a aba Tracking`, 'info');
+    }
+
+    function abrirDetalhes(e) {
+      // Detalhes futuros poderiam abrir um modal — por ora, copia delivery_id
+      if (e.uber_delivery_id) {
+        navigator.clipboard?.writeText(e.uber_delivery_id);
+        showToast('Delivery ID copiado', 'success');
+      }
+    }
+
+    return h('div', { className: 'max-w-6xl mx-auto p-4 space-y-4' },
+
+      // ── Header ──
+      h('div', { className: 'flex items-center justify-between flex-wrap gap-3' },
+        h('div', null,
+          h('h2', { className: 'text-2xl font-bold text-gray-800' }, 'Entregas Uber'),
+          h('p', { className: 'text-xs text-gray-500 mt-1' },
+            `${resumo.qtd} entrega${resumo.qtd !== 1 ? 's' : ''} · `,
+            'Margem total ',
+            h('span', {
+              className: resumo.total >= 0 ? 'text-green-700 font-semibold' : 'text-red-700 font-semibold',
+            }, `${resumo.total >= 0 ? '+' : '−'} ${fmtMoney(Math.abs(resumo.total))}`),
+            resumo.negativas > 0 && h('span', { className: 'text-red-600 ml-2' }, `· ${resumo.negativas} no prejuízo`),
+          )
+        ),
+        h('div', { className: 'flex gap-2 flex-wrap' },
+          h('button', {
+            onClick: despacharOS,
+            className: 'px-3 py-1.5 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 font-semibold',
+          }, '+ Despachar OS'),
+          h('button', {
+            onClick: carregar,
+            className: 'px-3 py-1.5 bg-gray-200 rounded-lg text-sm hover:bg-gray-300',
+          }, '🔄'),
         )
       ),
+
+      // ── Filtros ──
+      h('div', { className: 'bg-white rounded-xl border border-gray-200 p-3 flex flex-wrap items-center gap-3' },
+        h('input', {
+          type: 'search',
+          value: busca,
+          onChange: e => setBusca(e.target.value),
+          placeholder: '🔍 Buscar OS, endereço, entregador...',
+          className: 'flex-1 min-w-[200px] px-3 py-2 border border-gray-200 rounded-lg text-sm',
+        }),
+        h('select', {
+          value: filtroStatus,
+          onChange: e => setFiltroStatus(e.target.value),
+          className: 'px-3 py-2 border border-gray-200 rounded-lg text-sm',
+        },
+          h('option', { value: '' }, 'Todos os status'),
+          Object.keys(STATUS_LABELS).map(s => h('option', { key: s, value: s }, STATUS_LABELS[s].label))
+        ),
+        h('select', {
+          value: filtroMargem,
+          onChange: e => setFiltroMargem(e.target.value),
+          className: 'px-3 py-2 border border-gray-200 rounded-lg text-sm',
+        },
+          h('option', { value: 'todas' }, 'Margem: todas'),
+          h('option', { value: 'positiva' }, 'Margem: positiva'),
+          h('option', { value: 'negativa' }, 'Margem: negativa (prejuízo)'),
+        ),
+        h('select', {
+          value: ordenacao,
+          onChange: e => setOrdenacao(e.target.value),
+          className: 'px-3 py-2 border border-gray-200 rounded-lg text-sm',
+        },
+          h('option', { value: 'recente' }, 'Mais recente primeiro'),
+          h('option', { value: 'antiga' }, 'Mais antiga primeiro'),
+          h('option', { value: 'margem_menor' }, 'Margem: menor primeiro'),
+          h('option', { value: 'margem_maior' }, 'Margem: maior primeiro'),
+        ),
+      ),
+
+      // ── Lista de cards ──
       loading
-        ? h('div', { className: 'text-center py-12' }, h('div', { className: 'animate-spin w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full mx-auto' }))
-        : h('div', { className: 'bg-white rounded-xl border shadow-sm overflow-x-auto' },
-            h('table', { className: 'w-full text-sm' },
-              h('thead', { className: 'bg-gray-50 text-xs uppercase text-gray-500' },
-                h('tr', null,
-                  ['OS', 'Status', 'Entregador', 'Coleta → Entrega', 'Valor Uber', 'Criado em', 'Ações'].map(c => h('th', { key: c, className: 'px-3 py-2 text-left' }, c))
-                )
-              ),
-              h('tbody', null,
-                entregas.length === 0
-                  ? h('tr', null, h('td', { colSpan: 7, className: 'text-center py-8 text-gray-400' }, 'Nenhuma entrega encontrada'))
-                  : entregas.map(e => h('tr', { key: e.id, className: 'border-t hover:bg-gray-50' },
-                      h('td', { className: 'px-3 py-2 font-bold' }, e.codigo_os),
-                      h('td', { className: 'px-3 py-2' }, h(Badge, { status: e.status_uber })),
-                      h('td', { className: 'px-3 py-2 text-xs' }, e.entregador_nome || '—'),
-                      h('td', { className: 'px-3 py-2 text-xs text-gray-500 max-w-xs truncate' }, `${e.endereco_coleta || '?'} → ${e.endereco_entrega || '?'}`),
-                      h('td', { className: 'px-3 py-2' }, fmtMoney(parseFloat(e.valor_uber || 0))),
-                      h('td', { className: 'px-3 py-2 text-xs' }, fmtDT(e.created_at)),
-                      h('td', { className: 'px-3 py-2' },
-                        !['delivered', 'cancelado', 'fallback_fila'].includes(e.status_uber) && h('button', {
-                          onClick: () => cancelarEntrega(e.id),
-                          className: 'text-red-600 hover:text-red-800 text-xs'
-                        }, 'Cancelar')
-                      )
-                    ))
-              )
-            )
+        ? h('div', { className: 'text-center py-12' },
+            h('div', { className: 'animate-spin w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full mx-auto' })
           )
+        : entregasFiltradas.length === 0
+          ? h('div', { className: 'bg-white rounded-xl border border-gray-200 py-16 text-center text-gray-400' },
+              'Nenhuma entrega encontrada com esses filtros'
+            )
+          : h('div', { className: 'space-y-3' },
+              entregasFiltradas.map(e => h(CardEntrega, {
+                key: e.id,
+                entrega: e,
+                onCancelar: cancelarEntrega,
+                onVerTracking: abrirTracking,
+                onVerDetalhes: abrirDetalhes,
+              }))
+            )
     );
   }
 
