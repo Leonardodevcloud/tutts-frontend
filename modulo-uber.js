@@ -322,6 +322,254 @@
   // ════════════════════════════════════════════════════════
   // ABA 4: CONFIG - configuração da integração
   // ════════════════════════════════════════════════════════
+  // ════════════════════════════════════════════════════════
+  // ABA: REGRAS DE CLIENTE (opt-in por cliente + região)
+  // ════════════════════════════════════════════════════════
+  function TabRegras({ API_URL, fetchAuth, showToast }) {
+    const [regras, setRegras] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [editando, setEditando] = useState(null); // null | 'novo' | {id, ...}
+
+    const carregar = useCallback(async () => {
+      setLoading(true);
+      try {
+        const res = await fetchAuth(`${API_URL}/uber/regras`);
+        const json = await res.json();
+        setRegras(json.regras || []);
+      } catch { showToast('Erro ao carregar regras', 'error'); }
+      finally { setLoading(false); }
+    }, [fetchAuth, API_URL]);
+
+    useEffect(() => { carregar(); }, []);
+
+    function novoForm() {
+      setEditando({
+        cliente_nome: '',
+        cliente_identificador: '',
+        usar_uber: true,
+        regioes_permitidas_csv: '',
+        horario_inicio: '',
+        horario_fim: '',
+        valor_minimo: '',
+        valor_maximo: '',
+        ativo: true,
+      });
+    }
+
+    function editarRegra(r) {
+      setEditando({
+        ...r,
+        regioes_permitidas_csv: (r.regioes_permitidas || []).join(', '),
+        horario_inicio: r.horario_inicio || '',
+        horario_fim: r.horario_fim || '',
+        valor_minimo: r.valor_minimo || '',
+        valor_maximo: r.valor_maximo || '',
+      });
+    }
+
+    async function salvar() {
+      if (!editando?.cliente_nome?.trim()) {
+        showToast('Nome do cliente é obrigatório', 'error');
+        return;
+      }
+      const payload = {
+        cliente_nome: editando.cliente_nome.trim(),
+        cliente_identificador: editando.cliente_identificador?.trim() || null,
+        usar_uber: !!editando.usar_uber,
+        regioes_permitidas: editando.regioes_permitidas_csv,  // backend normaliza
+        horario_inicio: editando.horario_inicio || null,
+        horario_fim: editando.horario_fim || null,
+        valor_minimo: editando.valor_minimo === '' ? null : parseFloat(editando.valor_minimo),
+        valor_maximo: editando.valor_maximo === '' ? null : parseFloat(editando.valor_maximo),
+        ativo: !!editando.ativo,
+      };
+      const metodo = editando.id ? 'PUT' : 'POST';
+      const url = editando.id ? `${API_URL}/uber/regras/${editando.id}` : `${API_URL}/uber/regras`;
+      try {
+        const res = await fetchAuth(url, {
+          method: metodo,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (res.ok) {
+          showToast(editando.id ? 'Regra atualizada' : 'Regra criada', 'success');
+          setEditando(null);
+          carregar();
+        } else {
+          const j = await res.json().catch(() => ({}));
+          showToast(j.error || 'Erro ao salvar', 'error');
+        }
+      } catch { showToast('Erro de rede', 'error'); }
+    }
+
+    async function toggleAtivo(r) {
+      try {
+        const res = await fetchAuth(`${API_URL}/uber/regras/${r.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ativo: !r.ativo }),
+        });
+        if (res.ok) { showToast(r.ativo ? 'Regra desativada' : 'Regra ativada', 'success'); carregar(); }
+      } catch { showToast('Erro', 'error'); }
+    }
+
+    async function excluir(r) {
+      if (!confirm(`Excluir a regra do cliente "${r.cliente_nome}"?`)) return;
+      try {
+        const res = await fetchAuth(`${API_URL}/uber/regras/${r.id}`, { method: 'DELETE' });
+        if (res.ok) { showToast('Regra excluída', 'success'); carregar(); }
+      } catch { showToast('Erro ao excluir', 'error'); }
+    }
+
+    if (loading) return h('div', { className: 'flex items-center justify-center py-16' },
+      h('div', { className: 'animate-spin w-10 h-10 border-4 border-purple-500 border-t-transparent rounded-full' })
+    );
+
+    const up = (k, v) => setEditando(e => ({ ...e, [k]: v }));
+
+    return h('div', { className: 'max-w-5xl mx-auto p-4 space-y-4' },
+      h('div', { className: 'flex items-center justify-between' },
+        h('div', null,
+          h('h2', { className: 'text-2xl font-bold text-gray-800' }, '📋 Regras por cliente'),
+          h('p', { className: 'text-xs text-gray-500 mt-1' },
+            'O worker só despacha pra Uber OS de clientes cadastrados aqui com status ATIVO. ',
+            'Sem regra ativa = sem despacho automático.')
+        ),
+        h('button', {
+          onClick: novoForm,
+          className: 'px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 font-semibold',
+        }, '+ Nova regra')
+      ),
+
+      // Lista de regras
+      h('div', { className: 'bg-white rounded-xl border shadow-sm overflow-hidden' },
+        regras.length === 0
+          ? h('div', { className: 'p-12 text-center text-gray-400' },
+              h('div', { className: 'text-4xl mb-2' }, '📭'),
+              h('p', { className: 'font-semibold' }, 'Nenhuma regra cadastrada'),
+              h('p', { className: 'text-xs mt-1' }, 'Enquanto não houver regras, o worker não vai despachar nada pra Uber automaticamente.'))
+          : h('table', { className: 'w-full text-sm' },
+              h('thead', { className: 'bg-gray-50 text-xs uppercase text-gray-600' },
+                h('tr', null,
+                  h('th', { className: 'px-4 py-3 text-left' }, 'Status'),
+                  h('th', { className: 'px-4 py-3 text-left' }, 'Cliente'),
+                  h('th', { className: 'px-4 py-3 text-left' }, 'Regiões'),
+                  h('th', { className: 'px-4 py-3 text-left' }, 'Horário'),
+                  h('th', { className: 'px-4 py-3 text-left' }, 'Valor (R$)'),
+                  h('th', { className: 'px-4 py-3 text-right' }, 'Ações'),
+                )),
+              h('tbody', null,
+                regras.map(r => h('tr', { key: r.id, className: 'border-t hover:bg-gray-50' },
+                  h('td', { className: 'px-4 py-3' },
+                    h('button', {
+                      onClick: () => toggleAtivo(r),
+                      className: `px-2 py-0.5 rounded-full text-xs font-bold ${r.ativo && r.usar_uber ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-500'}`,
+                    }, r.ativo && r.usar_uber ? '● Ativa' : '○ Inativa')),
+                  h('td', { className: 'px-4 py-3' },
+                    h('div', { className: 'font-semibold text-gray-800' }, r.cliente_nome),
+                    r.cliente_identificador && h('div', { className: 'text-xs text-gray-500' }, `id: ${r.cliente_identificador}`)),
+                  h('td', { className: 'px-4 py-3 text-xs' },
+                    (r.regioes_permitidas && r.regioes_permitidas.length > 0)
+                      ? r.regioes_permitidas.join(', ')
+                      : h('span', { className: 'text-amber-600 font-semibold' }, '⚠ qualquer região')),
+                  h('td', { className: 'px-4 py-3 text-xs' },
+                    (r.horario_inicio && r.horario_fim)
+                      ? `${r.horario_inicio} – ${r.horario_fim}`
+                      : h('span', { className: 'text-gray-400' }, 'sempre')),
+                  h('td', { className: 'px-4 py-3 text-xs' },
+                    (r.valor_minimo || r.valor_maximo)
+                      ? `${r.valor_minimo || 0} – ${r.valor_maximo || '∞'}`
+                      : h('span', { className: 'text-gray-400' }, '—')),
+                  h('td', { className: 'px-4 py-3 text-right' },
+                    h('button', { onClick: () => editarRegra(r), className: 'text-purple-600 text-xs hover:underline mr-3' }, 'Editar'),
+                    h('button', { onClick: () => excluir(r), className: 'text-red-600 text-xs hover:underline' }, 'Excluir'))
+                ))
+              )
+            )
+      ),
+
+      // Modal de edição
+      editando && h('div', {
+        className: 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4',
+        onClick: e => { if (e.target === e.currentTarget) setEditando(null); },
+      },
+        h('div', { className: 'bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto' },
+          h('div', { className: 'p-5 border-b sticky top-0 bg-white' },
+            h('h3', { className: 'font-bold text-gray-800' },
+              editando.id ? '✏️ Editar regra' : '➕ Nova regra'),
+          ),
+          h('div', { className: 'p-5 space-y-3' },
+
+            h('div', null,
+              h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Nome do cliente *'),
+              h('input', {
+                type: 'text', value: editando.cliente_nome || '',
+                onChange: e => up('cliente_nome', e.target.value),
+                placeholder: 'Como aparece no ponto de coleta na Mapp',
+                className: 'w-full px-3 py-2 border rounded-lg text-sm',
+              }),
+              h('p', { className: 'text-xs text-gray-500 mt-1' }, 'Match por "contém" no nome do ponto de coleta (case-insensitive, mínimo 3 letras)')
+            ),
+
+            h('div', null,
+              h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Identificador (opcional)'),
+              h('input', {
+                type: 'text', value: editando.cliente_identificador || '',
+                onChange: e => up('cliente_identificador', e.target.value),
+                placeholder: 'Alternativa pra match mais preciso',
+                className: 'w-full px-3 py-2 border rounded-lg text-sm',
+              })
+            ),
+
+            h('div', null,
+              h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Regiões permitidas (CSV)'),
+              h('input', {
+                type: 'text', value: editando.regioes_permitidas_csv || '',
+                onChange: e => up('regioes_permitidas_csv', e.target.value),
+                placeholder: 'salvador, lauro de freitas, simões filho',
+                className: 'w-full px-3 py-2 border rounded-lg text-sm',
+              }),
+              h('p', { className: 'text-xs text-amber-700 mt-1 font-semibold' },
+                '⚠ Deixar vazio = aceita qualquer região (não recomendado). Preencher evita que OS fora da cobertura Uber sejam travadas na Mapp.')
+            ),
+
+            h('div', { className: 'grid grid-cols-2 gap-3' },
+              h('div', null,
+                h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Horário início'),
+                h('input', { type: 'time', value: editando.horario_inicio || '', onChange: e => up('horario_inicio', e.target.value), className: 'w-full px-3 py-2 border rounded-lg text-sm' })),
+              h('div', null,
+                h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Horário fim'),
+                h('input', { type: 'time', value: editando.horario_fim || '', onChange: e => up('horario_fim', e.target.value), className: 'w-full px-3 py-2 border rounded-lg text-sm' })),
+            ),
+
+            h('div', { className: 'grid grid-cols-2 gap-3' },
+              h('div', null,
+                h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Valor mínimo (R$)'),
+                h('input', { type: 'number', step: '0.01', value: editando.valor_minimo || '', onChange: e => up('valor_minimo', e.target.value), placeholder: 'sem limite', className: 'w-full px-3 py-2 border rounded-lg text-sm' })),
+              h('div', null,
+                h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Valor máximo (R$)'),
+                h('input', { type: 'number', step: '0.01', value: editando.valor_maximo || '', onChange: e => up('valor_maximo', e.target.value), placeholder: 'sem limite', className: 'w-full px-3 py-2 border rounded-lg text-sm' })),
+            ),
+
+            h('div', { className: 'flex items-center gap-6 pt-2 border-t' },
+              h('label', { className: 'inline-flex items-center text-sm' },
+                h('input', { type: 'checkbox', checked: !!editando.usar_uber, onChange: e => up('usar_uber', e.target.checked), className: 'mr-2' }),
+                'Usar Uber'),
+              h('label', { className: 'inline-flex items-center text-sm' },
+                h('input', { type: 'checkbox', checked: !!editando.ativo, onChange: e => up('ativo', e.target.checked), className: 'mr-2' }),
+                'Regra ativa'),
+            ),
+          ),
+          h('div', { className: 'p-5 border-t flex justify-end gap-2 bg-gray-50' },
+            h('button', { onClick: () => setEditando(null), className: 'px-4 py-2 bg-gray-200 rounded-lg text-sm hover:bg-gray-300' }, 'Cancelar'),
+            h('button', { onClick: salvar, className: 'px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 font-semibold' },
+              editando.id ? '💾 Salvar' : '➕ Criar'),
+          )
+        )
+      )
+    );
+  }
+
   function TabConfig({ API_URL, fetchAuth, showToast }) {
     const [config, setConfig] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -453,6 +701,7 @@
 
         h('h4', { className: 'font-bold text-gray-700 mt-6 mb-2' }, '⏱️ Comportamento'),
         Field('Intervalo de polling (segundos)', 'polling_intervalo_seg', 'number', '30'),
+        Field('Janela temporal do worker (minutos)', 'worker_janela_minutos', 'number', '30 — OS mais antigas que isso são ignoradas'),
         Field('Timeout sem entregador (minutos)', 'timeout_sem_entregador_min', 'number', '10'),
         Field('Telefone suporte (fallback E.164)', 'telefone_suporte', 'text', '(71) 99999-8888'),
         Field('Valor declarado da encomenda (centavos)', 'manifest_total_value_centavos', 'number', '10000 = R$ 100,00'),
@@ -488,6 +737,7 @@
       dashboard: TabDashboard,
       tracking:  TabTracking,
       entregas:  TabEntregas,
+      regras:    TabRegras,
       config:    TabConfig,
     };
     const Atual = abas[aba] || TabDashboard;
