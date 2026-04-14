@@ -46,6 +46,10 @@
   function TabDashboard({ API_URL, fetchAuth, showToast }) {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
+    // Margem por cliente
+    const [margemData, setMargemData] = useState(null);
+    const [margemLoading, setMargemLoading] = useState(false);
+    const [periodo, setPeriodo] = useState('7d'); // 1d | 7d | 30d
 
     const carregar = useCallback(async () => {
       setLoading(true);
@@ -57,7 +61,19 @@
       finally { setLoading(false); }
     }, [fetchAuth, API_URL]);
 
+    const carregarMargem = useCallback(async () => {
+      setMargemLoading(true);
+      try {
+        const res = await fetchAuth(`${API_URL}/uber/dashboard/margem-clientes?periodo=${periodo}`);
+        const json = await res.json();
+        if (json.success) setMargemData(json);
+        else showToast(json.error || 'Erro ao carregar margem', 'error');
+      } catch { showToast('Erro de rede ao carregar margem', 'error'); }
+      finally { setMargemLoading(false); }
+    }, [fetchAuth, API_URL, periodo]);
+
     useEffect(() => { carregar(); }, []);
+    useEffect(() => { carregarMargem(); }, [carregarMargem]);
 
     if (loading || !data) return h('div', { className: 'flex items-center justify-center py-16' },
       h('div', { className: 'animate-spin w-10 h-10 border-4 border-purple-500 border-t-transparent rounded-full' })
@@ -74,11 +90,16 @@
       { label: 'ETA médio', value: `${Math.round(parseFloat(data.eta_medio || 0))} min`, icon: '⏱️', bg: 'bg-pink-50', tc: 'text-pink-600' },
     ];
 
+    // Cálculos pro gráfico CSS-only (margem por dia)
+    const porDia = margemData?.por_dia || [];
+    const valoresDia = porDia.map(d => parseFloat(d.margem || 0));
+    const maxAbs = Math.max(1, ...valoresDia.map(v => Math.abs(v))); // evita div-zero
+
     return h('div', { className: 'max-w-7xl mx-auto p-4 space-y-6' },
       h('div', { className: 'flex items-center justify-between' },
         h('h2', { className: 'text-2xl font-bold text-gray-800' }, 'Dashboard Uber Direct'),
         h('button', {
-          onClick: carregar,
+          onClick: () => { carregar(); carregarMargem(); },
           className: 'px-3 py-1.5 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700'
         }, '🔄 Atualizar')
       ),
@@ -90,6 +111,134 @@
           ),
           h('p', { className: `${k.small ? 'text-lg' : 'text-3xl'} font-bold ${k.tc}` }, k.value)
         ))
+      ),
+
+      // ════════════════════════════════════════════════════════
+      // SEÇÃO: MARGEM POR CLIENTE
+      // ════════════════════════════════════════════════════════
+      h('div', { className: 'bg-white rounded-xl border border-gray-200 shadow-sm p-5 space-y-4' },
+        // Header com filtro de período
+        h('div', { className: 'flex items-center justify-between flex-wrap gap-3' },
+          h('div', null,
+            h('h3', { className: 'text-lg font-bold text-gray-800' }, '💼 Margem por cliente'),
+            h('p', { className: 'text-xs text-gray-500 mt-1' },
+              'Quanto cada cliente está rendendo (ou custando) quando despachado pelo Uber. ',
+              h('span', { className: 'text-gray-400' }, 'Margem = valor cliente Mapp − custo Uber.'))
+          ),
+          h('div', { className: 'flex gap-1 bg-gray-100 rounded-lg p-1' },
+            ['1d', '7d', '30d'].map(p => h('button', {
+              key: p,
+              onClick: () => setPeriodo(p),
+              className: `px-3 py-1.5 text-xs font-semibold rounded-md ${
+                periodo === p ? 'bg-white text-purple-700 shadow' : 'text-gray-600 hover:text-gray-800'
+              }`,
+            }, p === '1d' ? 'Hoje' : p === '7d' ? '7 dias' : '30 dias'))
+          ),
+        ),
+
+        margemLoading
+          ? h('div', { className: 'text-center py-12' },
+              h('div', { className: 'animate-spin w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full mx-auto' }))
+          : !margemData || margemData.por_cliente.length === 0
+            ? h('div', { className: 'text-center py-12 text-gray-400' },
+                h('p', { className: 'font-semibold' }, 'Nenhuma entrega no período'),
+                h('p', { className: 'text-xs mt-1' }, 'Ajuste o filtro de período ou despache OSs pra ver os dados aqui.'))
+            : [
+                // Totais gerais
+                h('div', { key: 'totais', className: 'grid grid-cols-2 md:grid-cols-4 gap-2' },
+                  h('div', { className: 'bg-gray-50 rounded-lg px-3 py-2.5' },
+                    h('div', { className: 'text-[11px] text-gray-500 mb-0.5' }, 'Entregas'),
+                    h('div', { className: 'text-base font-semibold text-gray-800' }, margemData.totais.qtd_total || 0)
+                  ),
+                  h('div', { className: 'bg-gray-50 rounded-lg px-3 py-2.5' },
+                    h('div', { className: 'text-[11px] text-gray-500 mb-0.5' }, 'Receita'),
+                    h('div', { className: 'text-base font-semibold text-gray-800' }, fmtMoney(parseFloat(margemData.totais.receita || 0)))
+                  ),
+                  h('div', { className: 'bg-gray-50 rounded-lg px-3 py-2.5' },
+                    h('div', { className: 'text-[11px] text-gray-500 mb-0.5' }, 'Custo Uber'),
+                    h('div', { className: 'text-base font-semibold text-gray-800' }, fmtMoney(parseFloat(margemData.totais.custo || 0)))
+                  ),
+                  (function () {
+                    const m = parseFloat(margemData.totais.margem || 0);
+                    const pos = m >= 0;
+                    return h('div', { className: `rounded-lg px-3 py-2.5 ${pos ? 'bg-green-50' : 'bg-red-50'}` },
+                      h('div', { className: `text-[11px] mb-0.5 ${pos ? 'text-green-700' : 'text-red-700'}` }, 'Margem total'),
+                      h('div', { className: `text-base font-semibold ${pos ? 'text-green-800' : 'text-red-800'}` },
+                        `${pos ? '+ ' : '− '}${fmtMoney(Math.abs(m))}`)
+                    );
+                  })(),
+                ),
+
+                // Mini-gráfico: margem por dia (CSS only, sem libs)
+                porDia.length > 0 && h('div', { key: 'chart', className: 'pt-2' },
+                  h('div', { className: 'text-xs text-gray-500 mb-2' }, `Margem por dia (${porDia.length} dia${porDia.length !== 1 ? 's' : ''})`),
+                  h('div', { className: 'flex items-end gap-1 h-32 border-b border-gray-200' },
+                    porDia.map((d, i) => {
+                      const v = parseFloat(d.margem || 0);
+                      const pos = v >= 0;
+                      const pct = (Math.abs(v) / maxAbs) * 100;
+                      // Barras positivas crescem pra cima, negativas pra baixo
+                      return h('div', {
+                        key: i,
+                        className: 'flex-1 flex flex-col justify-end items-center group relative',
+                        title: `${new Date(d.dia).toLocaleDateString('pt-BR')}: ${pos ? '+' : '−'} ${fmtMoney(Math.abs(v))} (${d.qtd} entrega${d.qtd != 1 ? 's' : ''})`,
+                      },
+                        h('div', {
+                          className: `w-full ${pos ? 'bg-green-400 hover:bg-green-500' : 'bg-red-400 hover:bg-red-500'} rounded-t transition-all`,
+                          style: { height: `${Math.max(2, pct)}%` },
+                        }),
+                      );
+                    })
+                  ),
+                  h('div', { className: 'flex justify-between text-[10px] text-gray-400 mt-1' },
+                    porDia.length > 0 && h('span', null, new Date(porDia[0].dia).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })),
+                    porDia.length > 1 && h('span', null, new Date(porDia[porDia.length - 1].dia).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })),
+                  )
+                ),
+
+                // Tabela por cliente
+                h('div', { key: 'tabela', className: 'overflow-x-auto' },
+                  h('table', { className: 'w-full text-sm' },
+                    h('thead', { className: 'bg-gray-50 text-xs uppercase text-gray-600' },
+                      h('tr', null,
+                        h('th', { className: 'px-3 py-2 text-left' }, 'Cliente'),
+                        h('th', { className: 'px-3 py-2 text-right' }, 'Qtd'),
+                        h('th', { className: 'px-3 py-2 text-right' }, 'Receita'),
+                        h('th', { className: 'px-3 py-2 text-right' }, 'Custo Uber'),
+                        h('th', { className: 'px-3 py-2 text-right' }, 'Margem'),
+                        h('th', { className: 'px-3 py-2 text-right' }, 'Margem méd.'),
+                        h('th', { className: 'px-3 py-2 text-right' }, '%'),
+                        h('th', { className: 'px-3 py-2 text-right' }, '% Cancel.'),
+                      )),
+                    h('tbody', null,
+                      margemData.por_cliente.map((c, i) => {
+                        const m = parseFloat(c.margem_total || 0);
+                        const pos = m >= 0;
+                        return h('tr', {
+                          key: i,
+                          className: `border-t hover:bg-gray-50 ${m < 0 ? 'bg-red-50/40' : ''}`,
+                        },
+                          h('td', { className: 'px-3 py-2' },
+                            h('div', { className: 'font-semibold text-gray-800' }, c.cliente),
+                            !c.regra_id && h('div', { className: 'text-[10px] text-gray-400' }, 'Sem regra cadastrada'),
+                          ),
+                          h('td', { className: 'px-3 py-2 text-right text-gray-700' }, c.qtd),
+                          h('td', { className: 'px-3 py-2 text-right text-gray-700' }, fmtMoney(parseFloat(c.receita_total || 0))),
+                          h('td', { className: 'px-3 py-2 text-right text-gray-700' }, fmtMoney(parseFloat(c.custo_uber_total || 0))),
+                          h('td', { className: `px-3 py-2 text-right font-semibold ${pos ? 'text-green-700' : 'text-red-700'}` },
+                            `${pos ? '+' : '−'} ${fmtMoney(Math.abs(m))}`),
+                          h('td', { className: 'px-3 py-2 text-right text-gray-600' },
+                            `${parseFloat(c.margem_media || 0) >= 0 ? '+' : '−'} ${fmtMoney(Math.abs(parseFloat(c.margem_media || 0)))}`),
+                          h('td', { className: `px-3 py-2 text-right font-semibold ${pos ? 'text-green-600' : 'text-red-600'}` },
+                            `${parseFloat(c.margem_pct || 0).toFixed(1)}%`),
+                          h('td', { className: 'px-3 py-2 text-right text-gray-600' },
+                            `${parseFloat(c.taxa_cancelamento || 0).toFixed(0)}%`),
+                        );
+                      })
+                    )
+                  )
+                ),
+              ]
       )
     );
   }
@@ -319,7 +468,7 @@
   }
 
   // Card individual de entrega — extraído pra ficar legível
-  function CardEntrega({ entrega, onCancelar, onVerTracking, onVerDetalhes, showToast }) {
+  function CardEntrega({ entrega, onCancelar, onVerTracking, onVerDetalhes, onRedespachar, showToast }) {
     const e = entrega;
 
     const valorCliente   = parseFloat(e.valor_servico || 0);
@@ -374,12 +523,20 @@
     },
 
       // ── Cabeçalho ──
-      h('div', { className: 'flex items-center justify-between gap-3 pb-3 border-b border-gray-100' },
-        h('div', { className: 'flex items-center gap-3 min-w-0' },
-          h('span', { className: 'text-lg md:text-xl font-bold text-gray-800' }, `OS ${e.codigo_os}`),
-          h(Badge, { status: e.status_uber }),
+      h('div', { className: 'flex items-start justify-between gap-3 pb-3 border-b border-gray-100' },
+        h('div', { className: 'flex flex-col gap-1 min-w-0 flex-1' },
+          h('div', { className: 'flex items-center gap-3 flex-wrap' },
+            h('span', { className: 'text-lg md:text-xl font-bold text-gray-800' }, `OS ${e.codigo_os}`),
+            h(Badge, { status: e.status_uber }),
+          ),
+          // Nome do cliente vindo da regra que casou (ou "Manual" se foi despacho manual)
+          h('div', { className: 'text-xs text-gray-500' },
+            'Cliente: ',
+            h('span', { className: 'font-semibold text-gray-700' },
+              e.cliente_nome_regra || 'Manual / sem regra')
+          ),
         ),
-        h('div', { className: 'flex gap-2 flex-shrink-0' },
+        h('div', { className: 'flex gap-2 flex-shrink-0 flex-wrap justify-end' },
           onVerTracking && h('button', {
             onClick: () => onVerTracking(e),
             disabled: !e.tracking_url,
@@ -394,6 +551,11 @@
             onClick: () => onVerDetalhes(e),
             className: 'text-xs px-3 py-1.5 border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-700',
           }, 'Detalhes'),
+          podeCancelar && onRedespachar && h('button', {
+            onClick: () => onRedespachar(e),
+            title: 'Cancelar e redespachar com novo endereço de entrega',
+            className: 'text-xs px-3 py-1.5 border border-amber-200 text-amber-700 rounded-lg hover:bg-amber-50',
+          }, 'Editar endereço'),
           podeCancelar && h('button', {
             onClick: () => onCancelar(e.id),
             className: 'text-xs px-3 py-1.5 border border-red-200 text-red-600 rounded-lg hover:bg-red-50',
@@ -517,6 +679,8 @@
     const [filtroMargem, setFiltroMargem] = useState('todas'); // todas | positiva | negativa
     const [ordenacao, setOrdenacao] = useState('recente');     // recente | antiga | margem_maior | margem_menor
     const [detalhesAberto, setDetalhesAberto] = useState(null); // {entrega, tracking, webhooks, loading}
+    const [redespachoAberto, setRedespachoAberto] = useState(null); // {entrega, novo_endereco, ...}
+    const [redespachando, setRedespachando] = useState(false);
 
     const carregar = useCallback(async () => {
       setLoading(true);
@@ -642,6 +806,54 @@
       setDetalhesAberto(null);
     }
 
+    // Redespacho: cancela a delivery atual no Uber e cria nova com novo endereço
+    function abrirRedespacho(e) {
+      setRedespachoAberto({
+        entrega: e,
+        novo_endereco: e.endereco_entrega || '',
+        nome_destinatario: '',
+        telefone_destinatario: '',
+        complemento: '',
+      });
+    }
+
+    function fecharRedespacho() {
+      if (redespachando) return; // não fecha enquanto está rolando
+      setRedespachoAberto(null);
+    }
+
+    async function confirmarRedespacho() {
+      if (!redespachoAberto?.novo_endereco?.trim() || redespachoAberto.novo_endereco.trim().length < 8) {
+        showToast('Endereço novo deve ter pelo menos 8 caracteres', 'error');
+        return;
+      }
+      setRedespachando(true);
+      try {
+        const res = await fetchAuth(`${API_URL}/uber/entregas/${redespachoAberto.entrega.id}/redespachar`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            novo_endereco: redespachoAberto.novo_endereco.trim(),
+            nome_destinatario: redespachoAberto.nome_destinatario || null,
+            telefone_destinatario: redespachoAberto.telefone_destinatario || null,
+            complemento: redespachoAberto.complemento || null,
+          }),
+        });
+        const json = await res.json();
+        if (res.ok && json.success) {
+          showToast(`Redespachado! Nova entrega id=${json.entrega_nova_id}`, 'success');
+          setRedespachoAberto(null);
+          carregar();
+        } else {
+          showToast(json.error || 'Erro ao redespachar', 'error');
+        }
+      } catch (err) {
+        showToast('Erro de rede ao redespachar', 'error');
+      } finally {
+        setRedespachando(false);
+      }
+    }
+
     return h('div', { className: 'max-w-6xl mx-auto p-4 space-y-4' },
 
       // ── Header ──
@@ -723,6 +935,7 @@
                 onCancelar: cancelarEntrega,
                 onVerTracking: abrirTracking,
                 onVerDetalhes: abrirDetalhes,
+                onRedespachar: abrirRedespacho,
                 showToast,
               }))
             ),
@@ -732,7 +945,78 @@
         data: detalhesAberto,
         onClose: fecharDetalhes,
         showToast,
-      })
+      }),
+
+      // ── Modal de redespacho ──
+      redespachoAberto && h('div', {
+        className: 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4',
+        onClick: (ev) => { if (ev.target === ev.currentTarget) fecharRedespacho(); },
+      },
+        h('div', { className: 'bg-white rounded-xl shadow-2xl max-w-lg w-full' },
+          h('div', { className: 'border-b border-gray-200 px-5 py-4' },
+            h('h3', { className: 'text-lg font-bold text-gray-800' },
+              `Redespachar OS ${redespachoAberto.entrega.codigo_os}`),
+            h('p', { className: 'text-xs text-gray-500 mt-1' },
+              'A entrega atual será cancelada no Uber e uma nova será criada com o novo endereço.'),
+          ),
+          h('div', { className: 'p-5 space-y-3' },
+            h('div', { className: 'bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800' },
+              '⚠ Esta ação cancela a delivery atual no Uber (perdendo qualquer progresso de courier) e cria uma nova com a mesma coleta + novo destino. Use apenas se o endereço de entrega original estava errado.'),
+
+            h('div', null,
+              h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Endereço atual'),
+              h('div', { className: 'text-sm text-gray-500 bg-gray-50 rounded p-2 border border-gray-200' },
+                redespachoAberto.entrega.endereco_entrega || '—'),
+            ),
+
+            h('div', null,
+              h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Novo endereço de entrega *'),
+              h('textarea', {
+                value: redespachoAberto.novo_endereco,
+                onChange: e => setRedespachoAberto({ ...redespachoAberto, novo_endereco: e.target.value }),
+                placeholder: 'Rua, número, bairro, cidade, estado, CEP',
+                rows: 2,
+                className: 'w-full px-3 py-2 border border-gray-200 rounded-lg text-sm',
+              }),
+            ),
+
+            h('div', { className: 'grid grid-cols-2 gap-2' },
+              h('div', null,
+                h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Nome destinatário'),
+                h('input', {
+                  type: 'text',
+                  value: redespachoAberto.nome_destinatario,
+                  onChange: e => setRedespachoAberto({ ...redespachoAberto, nome_destinatario: e.target.value }),
+                  placeholder: 'opcional',
+                  className: 'w-full px-3 py-2 border border-gray-200 rounded-lg text-sm',
+                }),
+              ),
+              h('div', null,
+                h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Telefone'),
+                h('input', {
+                  type: 'tel',
+                  value: redespachoAberto.telefone_destinatario,
+                  onChange: e => setRedespachoAberto({ ...redespachoAberto, telefone_destinatario: e.target.value }),
+                  placeholder: '+55...',
+                  className: 'w-full px-3 py-2 border border-gray-200 rounded-lg text-sm',
+                }),
+              ),
+            ),
+          ),
+          h('div', { className: 'border-t border-gray-200 px-5 py-3 flex justify-end gap-2' },
+            h('button', {
+              onClick: fecharRedespacho,
+              disabled: redespachando,
+              className: 'px-4 py-2 border border-gray-200 rounded-lg text-sm hover:bg-gray-50',
+            }, 'Cancelar'),
+            h('button', {
+              onClick: confirmarRedespacho,
+              disabled: redespachando,
+              className: 'px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-semibold hover:bg-amber-700 disabled:opacity-50',
+            }, redespachando ? 'Redespachando…' : 'Confirmar redespacho'),
+          ),
+        )
+      )
     );
   }
 
@@ -937,6 +1221,7 @@
     function novoForm() {
       setEditando({
         cliente_nome: '',
+        trecho_endereco: '',
         cliente_identificador: '',
         usar_uber: true,
         regioes_permitidas_csv: '',
@@ -951,6 +1236,9 @@
     function editarRegra(r) {
       setEditando({
         ...r,
+        // Compat: regras antigas só tinham cliente_nome (que era o trecho).
+        // Se trecho_endereco estiver vazio, preenche com cliente_nome pra não perder o match.
+        trecho_endereco: r.trecho_endereco || r.cliente_nome || '',
         regioes_permitidas_csv: (r.regioes_permitidas || []).join(', '),
         horario_inicio: r.horario_inicio || '',
         horario_fim: r.horario_fim || '',
@@ -960,15 +1248,20 @@
     }
 
     async function salvar() {
-      if (!editando?.cliente_nome?.trim() || editando.cliente_nome.trim().length < 5) {
+      if (!editando?.cliente_nome?.trim()) {
+        showToast('Nome do cliente é obrigatório', 'error');
+        return;
+      }
+      if (!editando?.trecho_endereco?.trim() || editando.trecho_endereco.trim().length < 5) {
         showToast('Trecho do endereço deve ter no mínimo 5 caracteres', 'error');
         return;
       }
       const payload = {
         cliente_nome: editando.cliente_nome.trim(),
+        trecho_endereco: editando.trecho_endereco.trim(),
         cliente_identificador: editando.cliente_identificador?.trim() || null,
         usar_uber: !!editando.usar_uber,
-        regioes_permitidas: editando.regioes_permitidas_csv,  // backend normaliza
+        regioes_permitidas: editando.regioes_permitidas_csv,
         horario_inicio: editando.horario_inicio || null,
         horario_fim: editando.horario_fim || null,
         valor_minimo: editando.valor_minimo === '' ? null : parseFloat(editando.valor_minimo),
@@ -1044,10 +1337,10 @@
               h('thead', { className: 'bg-gray-50 text-xs uppercase text-gray-600' },
                 h('tr', null,
                   h('th', { className: 'px-4 py-3 text-left' }, 'Status'),
+                  h('th', { className: 'px-4 py-3 text-left' }, 'Cliente'),
                   h('th', { className: 'px-4 py-3 text-left' }, 'Trecho do endereço'),
                   h('th', { className: 'px-4 py-3 text-left' }, 'Regiões'),
                   h('th', { className: 'px-4 py-3 text-left' }, 'Horário'),
-                  h('th', { className: 'px-4 py-3 text-left' }, 'Valor (R$)'),
                   h('th', { className: 'px-4 py-3 text-right' }, 'Ações'),
                 )),
               h('tbody', null,
@@ -1058,8 +1351,10 @@
                       className: `px-2 py-0.5 rounded-full text-xs font-bold ${r.ativo && r.usar_uber ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-500'}`,
                     }, r.ativo && r.usar_uber ? '● Ativa' : '○ Inativa')),
                   h('td', { className: 'px-4 py-3' },
-                    h('div', { className: 'font-semibold text-gray-800' }, r.cliente_nome),
-                    r.cliente_identificador && h('div', { className: 'text-xs text-gray-500' }, `id: ${r.cliente_identificador}`)),
+                    h('div', { className: 'font-semibold text-gray-800' }, r.cliente_nome)),
+                  h('td', { className: 'px-4 py-3 text-xs' },
+                    h('div', { className: 'font-mono text-gray-700' }, r.trecho_endereco || r.cliente_nome),
+                    r.cliente_identificador && h('div', { className: 'text-[11px] text-gray-500 mt-0.5' }, `+ alt: ${r.cliente_identificador}`)),
                   h('td', { className: 'px-4 py-3 text-xs' },
                     (r.regioes_permitidas && r.regioes_permitidas.length > 0)
                       ? r.regioes_permitidas.join(', ')
@@ -1068,10 +1363,6 @@
                     (r.horario_inicio && r.horario_fim)
                       ? `${r.horario_inicio} – ${r.horario_fim}`
                       : h('span', { className: 'text-gray-400' }, 'sempre')),
-                  h('td', { className: 'px-4 py-3 text-xs' },
-                    (r.valor_minimo || r.valor_maximo)
-                      ? `${r.valor_minimo || 0} – ${r.valor_maximo || '∞'}`
-                      : h('span', { className: 'text-gray-400' }, '—')),
                   h('td', { className: 'px-4 py-3 text-right' },
                     h('button', { onClick: () => editarRegra(r), className: 'text-purple-600 text-xs hover:underline mr-3' }, 'Editar'),
                     h('button', { onClick: () => excluir(r), className: 'text-red-600 text-xs hover:underline' }, 'Excluir'))
@@ -1093,17 +1384,28 @@
           h('div', { className: 'p-5 space-y-3' },
 
             h('div', null,
-              h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Trecho do endereço de coleta *'),
+              h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Nome do cliente *'),
               h('input', {
                 type: 'text', value: editando.cliente_nome || '',
                 onChange: e => up('cliente_nome', e.target.value),
+                placeholder: 'ex: Auto Peças Pereira',
+                className: 'w-full px-3 py-2 border rounded-lg text-sm',
+              }),
+              h('p', { className: 'text-xs text-gray-500 mt-1' },
+                'Nome de exibição do cliente — usado nos cards e no dashboard de margem por cliente.')
+            ),
+
+            h('div', null,
+              h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Trecho do endereço de coleta *'),
+              h('input', {
+                type: 'text', value: editando.trecho_endereco || '',
+                onChange: e => up('trecho_endereco', e.target.value),
                 placeholder: 'ex: pernambuco, 1500',
                 className: 'w-full px-3 py-2 border rounded-lg text-sm',
               }),
               h('p', { className: 'text-xs text-gray-500 mt-1' },
                 '⚠ A Mapp não retorna nome de cliente — match é feito contra o ENDEREÇO de coleta da OS. ',
-                'Coloque um trecho ÚNICO do endereço do cliente (mínimo 5 caracteres, lowercase, sem acento se possível). ',
-                'Quanto mais específico, melhor.')
+                'Coloque um trecho ÚNICO do endereço do cliente (mínimo 5 caracteres, lowercase, sem acento se possível).')
             ),
 
             h('div', null,
