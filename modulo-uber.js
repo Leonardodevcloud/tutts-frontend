@@ -1983,11 +1983,20 @@
     async function salvar() {
       setSalvando(true);
       try {
-        // Não enviar campos mascarados
+        // Não enviar campos sensíveis vazios OU que sejam só máscara visual.
+        // Mesma regra do backend (defesa em camadas).
+        const ehMascara = (v) => typeof v === 'string' && /^[•·●○*–\-\u2022\u00b7]+$/.test(v.trim());
         const payload = { ...config };
         ['client_secret', 'mapp_api_token', 'webhook_secret'].forEach(k => {
-          if (payload[k] === '••••••••') delete payload[k];
+          const v = payload[k];
+          if (v === undefined || v === null || v === '' || ehMascara(v)) {
+            delete payload[k];
+          }
         });
+        // Limpa flags de leitura — não devem ir no PUT
+        delete payload.client_secret_setado;
+        delete payload.mapp_api_token_setado;
+        delete payload.webhook_secret_setado;
 
         const res = await fetchAuth(`${API_URL}/uber/config`, {
           method: 'PUT', headers: { 'Content-Type': 'application/json' },
@@ -2048,6 +2057,31 @@
         })
       );
 
+    // SecretField — campo pra credenciais (token, secret).
+    // O backend NUNCA devolve o valor real, só uma flag _setado dizendo se há valor configurado.
+    // Quando há valor, o placeholder fica "✓ Configurado · cole novo valor pra alterar".
+    // Quando não há, o placeholder pede pra colar o token.
+    // O input começa SEMPRE vazio — só envia algo se o usuário digitar de fato.
+    const SecretField = (label, key, hint = '') => {
+      const setado = !!config[key + '_setado'];
+      return h('div', { className: 'mb-3' },
+        h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, label),
+        h('input', {
+          type: 'password',
+          value: config[key] || '',
+          onChange: e => update(key, e.target.value),
+          placeholder: setado
+            ? '✓ Configurado · cole novo valor só se quiser alterar'
+            : (hint || 'Cole o valor aqui'),
+          className: `w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+            setado ? 'border-green-300 bg-green-50' : 'border-gray-300'
+          }`,
+        }),
+        setado && h('p', { className: 'text-[11px] text-green-700 mt-1' },
+          '✓ Já existe valor salvo. Deixe em branco pra preservar.')
+      );
+    };
+
     return h('div', { className: 'max-w-4xl mx-auto p-4 space-y-4' },
       h('h2', { className: 'text-2xl font-bold text-gray-800' }, '⚙️ Configuração Uber Direct'),
 
@@ -2075,9 +2109,9 @@
 
         h('h4', { className: 'font-bold text-gray-700 mt-4 mb-2' }, '🚗 Credenciais Uber Direct'),
         Field('Client ID', 'client_id', 'text', 'Seu client_id da Uber'),
-        Field('Client Secret', 'client_secret', 'password', '••••••••'),
+        SecretField('Client Secret', 'client_secret', 'Seu client_secret da Uber'),
         Field('Customer ID', 'customer_id', 'text', 'Seu customer_id'),
-        Field('Webhook Secret', 'webhook_secret', 'password', 'Para validar HMAC dos webhooks'),
+        SecretField('Webhook Secret', 'webhook_secret', 'Para validar HMAC dos webhooks'),
 
         h('button', {
           onClick: testarCotacaoUber,
@@ -2086,7 +2120,7 @@
 
         h('h4', { className: 'font-bold text-gray-700 mt-6 mb-2' }, '🔌 API Mapp/Tutts'),
         Field('URL da API Mapp', 'mapp_api_url', 'text', 'https://seuDominio.com/sem/v1/rotas.php'),
-        Field('Token Mapp', 'mapp_api_token', 'password', '••••••••'),
+        SecretField('Token Mapp', 'mapp_api_token', 'Seu token de integração com a Mapp'),
         h('button', {
           onClick: testarMapp,
           className: 'mt-2 px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg text-sm hover:bg-blue-200'
