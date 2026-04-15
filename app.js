@@ -6426,9 +6426,14 @@ const hideLoadingScreen = () => {
                 return a;
             };
 
-            // Helper: carregar CRM via endpoint backend (já autenticado via JWT admin)
+            // Helper: carregar CRM via endpoint PÚBLICO do backend.
+            // 🔧 FIX: a tela de cadastro é pré-login (motoboy ainda não tem
+            // JWT), então fetchAuth retornava 401 e o cadastro caía 100% na
+            // planilha legada — que parou de ser atualizada. Agora usa fetch
+            // puro no endpoint público dedicado, que retorna apenas
+            // codigo+nome+cidade (não vaza telefone/ativador).
             const carregarCrmCadastro = async () => {
-                const r = await fetchAuth(`${API_URL}/crm/profissionais-cadastro`);
+                const r = await fetch(`${API_URL}/public/profissionais-cadastro`);
                 if (!r.ok) {
                     throw new Error(`HTTP ${r.status}`);
                 }
@@ -6439,10 +6444,9 @@ const hideLoadingScreen = () => {
                     .map(p => ({
                         codigo: String(p.codigo).trim(),
                         nome: p.nome || '',
-                        // CRM tem cidade E região; pega o que houver, prioriza cidade
-                        cidade: p.cidade || p.regiao || '',
-                        telefone: p.telefone || '',
-                        regiao: p.regiao || '',
+                        cidade: p.cidade || '',
+                        telefone: '',
+                        regiao: p.cidade || '',
                         origem: p.origem || 'crm'
                     }));
             };
