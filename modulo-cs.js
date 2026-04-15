@@ -18,6 +18,7 @@
     { id: 'ocorrencias', label: 'Ocorrências', icon: '🚨' },
     { id: 'agenda', label: 'Agenda', icon: '📅' },
     { id: 'emails', label: 'Emails', icon: '📧' },
+    { id: 'emails-automacao', label: 'Automação E-mail', icon: '⚡' },
   ];
 
   const CORES_HEALTH = {
@@ -1561,6 +1562,571 @@
   }
 
   // ══════════════════════════════════════════════════
+  // AUTOMAÇÃO DE EMAIL — config global + cards por cliente
+  // Consome /cs/email-automacao/* (config global + CRUD)
+  // Cliente com 1 centro = card simples
+  // Cliente com N centros = card-pai com sub-cards (1 por centro)
+  // ══════════════════════════════════════════════════
+
+  function ChipEmail({ email, onRemove }) {
+    return h('span', {
+      className: 'inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-md bg-gray-100 border border-gray-200'
+    },
+      h('span', null, email),
+      onRemove && h('span', {
+        onClick: onRemove,
+        className: 'cursor-pointer text-gray-400 hover:text-red-500 text-[10px] ml-0.5',
+        title: 'Remover'
+      }, '✕')
+    );
+  }
+
+  function InputAddEmail({ onAdd, small, disabled }) {
+    var _v = useState(''), val = _v[0], setVal = _v[1];
+    var add = function() {
+      var e = val.trim().toLowerCase();
+      if (!e) return;
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) { alert('Email inválido: ' + e); return; }
+      onAdd(e);
+      setVal('');
+    };
+    return h('input', {
+      type: 'text',
+      placeholder: '+ adicionar email',
+      value: val,
+      disabled: disabled,
+      onChange: function(e) { setVal(e.target.value); },
+      onKeyDown: function(e) { if (e.key === 'Enter') { e.preventDefault(); add(); } },
+      onBlur: function() { if (val.trim()) add(); },
+      className: (small ? 'h-7 text-xs ' : 'h-8 text-xs ') +
+                 'min-w-[180px] flex-1 px-2.5 border border-dashed border-gray-300 rounded-md focus:border-purple-400 focus:outline-none' +
+                 (disabled ? ' bg-gray-50 text-gray-400 cursor-not-allowed' : '')
+    });
+  }
+
+  function ToggleSwitch({ checked, onChange, small, disabled }) {
+    var w = small ? 'w-9 h-5' : 'w-10 h-[22px]';
+    var thumbW = small ? 'w-4 h-4' : 'w-[18px] h-[18px]';
+    var thumbPos = checked ? (small ? 'translate-x-[18px]' : 'translate-x-[20px]') : 'translate-x-0.5';
+    return h('label', {
+      className: 'relative inline-flex items-center cursor-pointer ' + (disabled ? 'opacity-50 cursor-not-allowed' : ''),
+      title: checked ? 'Ativa — clique pra desativar' : 'Inativa — clique pra ativar'
+    },
+      h('input', { type: 'checkbox', checked: checked, onChange: function() { if (!disabled) onChange(!checked); }, className: 'sr-only' }),
+      h('div', { className: w + ' rounded-full transition ' + (checked ? 'bg-emerald-500' : 'bg-gray-300') }),
+      h('div', {
+        className: thumbW + ' bg-white rounded-full shadow absolute top-0.5 transition transform ' + thumbPos
+      })
+    );
+  }
+
+  function StatusBadgeUltimoEnvio({ status, em }) {
+    if (!em) return h('span', { className: 'text-[11px] text-gray-400' }, 'Nunca enviado');
+    var quando = formatDateTime(em);
+    if (status === 'success') return h('span', { className: 'text-[11px] text-emerald-700' }, '✓ Último envio: ' + quando);
+    if (status === 'failed') return h('span', { className: 'text-[11px] text-red-600' }, '✕ Falhou: ' + quando);
+    return h('span', { className: 'text-[11px] text-gray-500' }, quando);
+  }
+
+  function CardCentroConfig({ config, codCliente, fetchApi, onAtualizar, onRemover, onDispararAgora }) {
+    var _saving = useState(false), saving = _saving[0], setSaving = _saving[1];
+    var dest = config.destinatarios || [];
+
+    var atualizar = async function(patch) {
+      setSaving(true);
+      try {
+        var r = await fetchApi('/cs/email-automacao/' + config.id, { method: 'PUT', body: JSON.stringify(patch) });
+        if (r.success) onAtualizar(); else alert('Erro: ' + (r.error || 'falha desconhecida'));
+      } catch (e) { alert('Erro: ' + e.message); }
+      setSaving(false);
+    };
+
+    var addEmail = function(email) { atualizar({ destinatarios: dest.concat([email]) }); };
+    var removeEmail = function(email) { atualizar({ destinatarios: dest.filter(function(e) { return e !== email; }) }); };
+    var toggleAtiva = function(novo) { atualizar({ ativa: novo }); };
+
+    var bgInativa = !config.ativa ? ' opacity-60' : '';
+
+    return h('div', { className: 'mt-2 p-3 bg-gray-50 rounded-lg border border-gray-100' + bgInativa },
+      h('div', { className: 'flex items-center justify-between gap-3' },
+        h('div', { className: 'min-w-0 flex-1' },
+          h('p', { className: 'text-sm font-medium text-gray-900 truncate' },
+            config.centro_custo || h('span', { className: 'italic text-gray-500' }, 'Sem centro de custo')
+          ),
+          h('div', { className: 'mt-0.5 flex items-center gap-2 flex-wrap' },
+            config.centro_custo && h('span', { className: 'text-[10px] font-mono text-gray-500' }, 'CC: ' + config.centro_custo),
+            h(StatusBadgeUltimoEnvio, { status: config.ultimo_envio_status, em: config.ultimo_envio_em })
+          )
+        ),
+        h('div', { className: 'flex items-center gap-2 flex-shrink-0' },
+          h('span', {
+            className: 'text-[10px] px-2 py-0.5 rounded-full ' + (config.ativa ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-200 text-gray-600')
+          }, config.ativa ? 'Ativa' : 'Inativa'),
+          h(ToggleSwitch, { checked: config.ativa, onChange: toggleAtiva, small: true, disabled: saving })
+        )
+      ),
+      h('div', { className: 'mt-2.5 flex flex-wrap gap-1.5' },
+        dest.map(function(e) {
+          return h(ChipEmail, { key: e, email: e, onRemove: function() { removeEmail(e); } });
+        }),
+        h(InputAddEmail, { onAdd: addEmail, small: true, disabled: saving })
+      ),
+      h('div', { className: 'mt-2.5 flex items-center justify-between gap-2 pt-2 border-t border-gray-200' },
+        h('div', { className: 'flex items-center gap-2' },
+          h('button', {
+            onClick: function() { if (confirm('Disparar relatório agora pra ' + dest.length + ' destinatário(s)?\n\n(Roda em background, pode levar 60s)')) onDispararAgora(config.id); },
+            disabled: saving || !config.ativa || dest.length === 0,
+            className: 'text-[11px] px-2.5 py-1 rounded-md border border-purple-200 text-purple-700 hover:bg-purple-50 disabled:opacity-40 disabled:cursor-not-allowed'
+          }, '⚡ Disparar agora'),
+          config.ultimo_envio_resend_id && h('a', {
+            href: 'https://resend.com/emails/' + config.ultimo_envio_resend_id,
+            target: '_blank',
+            rel: 'noopener',
+            className: 'text-[11px] text-gray-500 hover:text-purple-600'
+          }, 'Ver no Resend ↗')
+        ),
+        h('button', {
+          onClick: function() { if (confirm('Remover esta configuração? Não pode ser desfeito.')) onRemover(config.id); },
+          className: 'text-[11px] text-red-500 hover:text-red-700 hover:underline'
+        }, 'Remover')
+      ),
+      config.ultimo_envio_status === 'failed' && config.ultimo_envio_erro && h('div', {
+        className: 'mt-2 p-2 bg-red-50 border border-red-200 rounded text-[11px] text-red-700'
+      }, '❌ Erro no último envio: ' + config.ultimo_envio_erro)
+    );
+  }
+
+  function CardClienteAutomacao({ grupo, fetchApi, onAtualizar, onDispararAgora }) {
+    var _open = useState(grupo.configs.length > 1 ? false : true);
+    var open = _open[0], setOpen = _open[1];
+
+    var temMultiplosCentros = grupo.configs.length > 1;
+    var ativos = grupo.configs.filter(function(c) { return c.ativa; }).length;
+    var total = grupo.configs.length;
+
+    var iniciais = (grupo.nome_cliente || '').split(/\s+/).slice(0, 2).map(function(p) { return (p[0] || '').toUpperCase(); }).join('') || '#';
+
+    var badgeStatus;
+    if (!temMultiplosCentros) {
+      var c = grupo.configs[0];
+      badgeStatus = h('span', {
+        className: 'text-xs px-2.5 py-0.5 rounded-full ' + (c.ativa ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-200 text-gray-600')
+      }, c.ativa ? 'Ativa' : 'Inativa');
+    } else {
+      var cor = ativos === 0 ? 'bg-gray-200 text-gray-600' : (ativos === total ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900');
+      badgeStatus = h('span', { className: 'text-xs px-2.5 py-0.5 rounded-full ' + cor }, ativos + ' / ' + total + ' ativas');
+    }
+
+    var deleteConfig = async function(id) {
+      var r = await fetchApi('/cs/email-automacao/' + id, { method: 'DELETE' });
+      if (r.success) onAtualizar(); else alert('Erro: ' + (r.error || 'falha'));
+    };
+
+    return h('div', { className: 'bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow transition p-4' },
+      h('div', { className: 'flex items-center justify-between gap-3' },
+        h('div', { className: 'flex items-center gap-3 min-w-0 flex-1' },
+          h('div', {
+            className: 'w-10 h-10 rounded-lg bg-purple-100 text-purple-900 flex items-center justify-center font-medium text-sm flex-shrink-0'
+          }, iniciais),
+          h('div', { className: 'min-w-0' },
+            h('p', { className: 'font-medium text-gray-900 truncate' }, grupo.nome_cliente),
+            h('p', { className: 'text-xs text-gray-500 mt-0.5' },
+              'Cód ', h('span', { className: 'font-mono' }, grupo.cod_cliente),
+              ' · ', total, total === 1 ? ' centro' : ' centros configurados'
+            )
+          )
+        ),
+        h('div', { className: 'flex items-center gap-3 flex-shrink-0' },
+          badgeStatus,
+          temMultiplosCentros && h('span', {
+            onClick: function() { setOpen(!open); },
+            className: 'cursor-pointer text-gray-400 hover:text-gray-700 text-lg select-none px-1'
+          }, open ? '▾' : '▸')
+        )
+      ),
+      // Quando tem 1 centro só: render direto sem expandir
+      !temMultiplosCentros && h('div', { className: 'mt-3 pt-3 border-t border-gray-100' },
+        h(CardCentroConfig, {
+          config: grupo.configs[0],
+          codCliente: grupo.cod_cliente,
+          fetchApi: fetchApi,
+          onAtualizar: onAtualizar,
+          onRemover: deleteConfig,
+          onDispararAgora: onDispararAgora
+        })
+      ),
+      // Quando tem N centros: expandível
+      temMultiplosCentros && open && h('div', { className: 'mt-1' },
+        grupo.configs.map(function(c) {
+          return h(CardCentroConfig, {
+            key: c.id,
+            config: c,
+            codCliente: grupo.cod_cliente,
+            fetchApi: fetchApi,
+            onAtualizar: onAtualizar,
+            onRemover: deleteConfig,
+            onDispararAgora: onDispararAgora
+          });
+        })
+      )
+    );
+  }
+
+  function ModalConfigurarCliente({ aberto, fechar, fetchApi, onSalvo }) {
+    var _busca = useState(''), busca = _busca[0], setBusca = _busca[1];
+    var _clientes = useState([]), clientes = _clientes[0], setClientes = _clientes[1];
+    var _loading = useState(false), loading = _loading[0], setLoading = _loading[1];
+    var _selecionado = useState(null), selecionado = _selecionado[0], setSelecionado = _selecionado[1];
+    var _centrosForm = useState([]), centrosForm = _centrosForm[0], setCentrosForm = _centrosForm[1];
+    var _saving = useState(false), saving = _saving[0], setSaving = _saving[1];
+
+    useEffect(function() {
+      if (!aberto) { setBusca(''); setClientes([]); setSelecionado(null); setCentrosForm([]); return; }
+      var t = setTimeout(async function() {
+        setLoading(true);
+        try {
+          var qs = busca.trim() ? '?q=' + encodeURIComponent(busca.trim()) : '';
+          var r = await fetchApi('/cs/email-automacao/clientes-disponiveis' + qs);
+          if (r.success) setClientes(r.clientes || []);
+        } catch (e) { console.error(e); }
+        setLoading(false);
+      }, 300);
+      return function() { clearTimeout(t); };
+    }, [aberto, busca, fetchApi]);
+
+    var selecionarCliente = function(c) {
+      setSelecionado(c);
+      var centros = (c.centros || []).filter(function(x) { return x; });
+      if (centros.length === 0) {
+        // Sem CC: 1 form único
+        setCentrosForm([{ centro_custo: null, marcado: true, destinatarios: [], emailInput: '' }]);
+      } else {
+        setCentrosForm(centros.map(function(cc) {
+          return { centro_custo: cc, marcado: false, destinatarios: [], emailInput: '' };
+        }));
+      }
+    };
+
+    var atualizarCentro = function(idx, patch) {
+      setCentrosForm(centrosForm.map(function(c, i) { return i === idx ? Object.assign({}, c, patch) : c; }));
+    };
+
+    var addEmailCentro = function(idx) {
+      var c = centrosForm[idx];
+      var e = (c.emailInput || '').trim().toLowerCase();
+      if (!e) return;
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) { alert('Email inválido'); return; }
+      if (c.destinatarios.indexOf(e) >= 0) { atualizarCentro(idx, { emailInput: '' }); return; }
+      atualizarCentro(idx, { destinatarios: c.destinatarios.concat([e]), emailInput: '' });
+    };
+
+    var salvar = async function() {
+      var paraSalvar = centrosForm.filter(function(c) { return c.marcado || c.centro_custo === null; });
+      if (paraSalvar.length === 0) { alert('Marque pelo menos 1 centro'); return; }
+      var faltam = paraSalvar.filter(function(c) { return c.destinatarios.length === 0; });
+      if (faltam.length > 0) { alert('Cada centro marcado precisa de pelo menos 1 destinatário'); return; }
+
+      setSaving(true);
+      try {
+        var r = await fetchApi('/cs/email-automacao', {
+          method: 'POST',
+          body: JSON.stringify({
+            cod_cliente: selecionado.cod_cliente,
+            centros: paraSalvar.map(function(c) { return { centro_custo: c.centro_custo, destinatarios: c.destinatarios }; })
+          })
+        });
+        if (r.success) {
+          onSalvo();
+          fechar();
+        } else {
+          alert('Erro ao salvar:\n' + (r.erros || []).map(function(e) { return '· ' + (e.centro_custo || '(sem CC)') + ': ' + e.erro; }).join('\n') || r.error);
+        }
+      } catch (e) { alert('Erro: ' + e.message); }
+      setSaving(false);
+    };
+
+    if (!aberto) return null;
+
+    return h('div', {
+      className: 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4',
+      onClick: function(e) { if (e.target === e.currentTarget) fechar(); }
+    },
+      h('div', { className: 'bg-white rounded-xl max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col' },
+        h('div', { className: 'p-4 border-b border-gray-200 flex items-center justify-between' },
+          h('h3', { className: 'font-semibold text-gray-900' }, 'Configurar automação de cliente'),
+          h('button', { onClick: fechar, className: 'text-gray-400 hover:text-gray-700' }, '✕')
+        ),
+        h('div', { className: 'p-4 flex-1 overflow-y-auto' },
+          !selecionado && h('div', null,
+            h('input', {
+              type: 'text',
+              placeholder: 'Buscar cliente por nome ou código',
+              value: busca,
+              onChange: function(e) { setBusca(e.target.value); },
+              autoFocus: true,
+              className: 'w-full h-10 px-3 border border-gray-200 rounded-lg focus:border-purple-400 focus:outline-none'
+            }),
+            h('div', { className: 'mt-3 space-y-1' },
+              loading && h('p', { className: 'text-sm text-gray-400 text-center py-4' }, 'Buscando...'),
+              !loading && clientes.length === 0 && h('p', { className: 'text-sm text-gray-400 text-center py-4' }, 'Nenhum cliente encontrado'),
+              clientes.map(function(c) {
+                return h('div', {
+                  key: c.cod_cliente,
+                  onClick: function() { selecionarCliente(c); },
+                  className: 'p-3 border border-gray-200 rounded-lg hover:border-purple-300 hover:bg-purple-50 cursor-pointer'
+                },
+                  h('p', { className: 'font-medium text-sm text-gray-900' }, c.nome),
+                  h('p', { className: 'text-xs text-gray-500 mt-0.5' },
+                    'Cód ', h('span', { className: 'font-mono' }, c.cod_cliente),
+                    ' · ', (c.centros || []).length, ' centro(s) ativo(s) nos últimos 90 dias'
+                  )
+                );
+              })
+            )
+          ),
+          selecionado && h('div', null,
+            h('div', { className: 'mb-4 p-3 bg-purple-50 rounded-lg border border-purple-100 flex items-center justify-between' },
+              h('div', null,
+                h('p', { className: 'font-medium text-sm text-purple-900' }, selecionado.nome),
+                h('p', { className: 'text-xs text-purple-700 mt-0.5' }, 'Cód ' + selecionado.cod_cliente)
+              ),
+              h('button', {
+                onClick: function() { setSelecionado(null); setCentrosForm([]); },
+                className: 'text-xs text-purple-700 hover:text-purple-900 hover:underline'
+              }, '← Trocar cliente')
+            ),
+            centrosForm.length === 0 && h('p', { className: 'text-sm text-gray-500 text-center py-4' }, 'Nenhum centro de custo encontrado nos últimos 90 dias'),
+            centrosForm[0] && centrosForm[0].centro_custo === null && h('div', { className: 'space-y-3' },
+              h('p', { className: 'text-xs text-gray-600' }, 'Cliente sem centro de custo. Configure os destinatários:'),
+              h('div', { className: 'p-3 border border-gray-200 rounded-lg' },
+                h('div', { className: 'flex flex-wrap gap-1.5 mb-2' },
+                  centrosForm[0].destinatarios.map(function(e) {
+                    return h(ChipEmail, { key: e, email: e, onRemove: function() {
+                      atualizarCentro(0, { destinatarios: centrosForm[0].destinatarios.filter(function(x) { return x !== e; }) });
+                    } });
+                  })
+                ),
+                h('div', { className: 'flex gap-2' },
+                  h('input', {
+                    type: 'email',
+                    placeholder: 'email@cliente.com',
+                    value: centrosForm[0].emailInput,
+                    onChange: function(e) { atualizarCentro(0, { emailInput: e.target.value }); },
+                    onKeyDown: function(e) { if (e.key === 'Enter') { e.preventDefault(); addEmailCentro(0); } },
+                    className: 'flex-1 h-9 px-3 text-sm border border-gray-200 rounded-md focus:border-purple-400 focus:outline-none'
+                  }),
+                  h('button', {
+                    onClick: function() { addEmailCentro(0); },
+                    className: 'h-9 px-3 text-sm border border-purple-200 text-purple-700 rounded-md hover:bg-purple-50'
+                  }, '+ Adicionar')
+                )
+              )
+            ),
+            centrosForm[0] && centrosForm[0].centro_custo !== null && h('div', { className: 'space-y-2' },
+              h('p', { className: 'text-xs text-gray-600 mb-2' }, 'Marque os centros que terão automação. Cada um precisa dos seus próprios destinatários:'),
+              centrosForm.map(function(c, idx) {
+                return h('div', {
+                  key: c.centro_custo,
+                  className: 'p-3 border rounded-lg ' + (c.marcado ? 'border-purple-300 bg-purple-50/40' : 'border-gray-200')
+                },
+                  h('label', { className: 'flex items-center gap-2 cursor-pointer' },
+                    h('input', {
+                      type: 'checkbox',
+                      checked: c.marcado,
+                      onChange: function() { atualizarCentro(idx, { marcado: !c.marcado }); },
+                      className: 'rounded text-purple-600 focus:ring-purple-500'
+                    }),
+                    h('span', { className: 'font-mono text-sm font-medium text-gray-900' }, c.centro_custo)
+                  ),
+                  c.marcado && h('div', { className: 'mt-3 pl-6' },
+                    h('div', { className: 'flex flex-wrap gap-1.5 mb-2' },
+                      c.destinatarios.map(function(e) {
+                        return h(ChipEmail, { key: e, email: e, onRemove: function() {
+                          atualizarCentro(idx, { destinatarios: c.destinatarios.filter(function(x) { return x !== e; }) });
+                        } });
+                      })
+                    ),
+                    h('div', { className: 'flex gap-2' },
+                      h('input', {
+                        type: 'email',
+                        placeholder: 'email@cliente.com',
+                        value: c.emailInput,
+                        onChange: function(e) { atualizarCentro(idx, { emailInput: e.target.value }); },
+                        onKeyDown: function(e) { if (e.key === 'Enter') { e.preventDefault(); addEmailCentro(idx); } },
+                        className: 'flex-1 h-8 px-2.5 text-xs border border-gray-200 rounded-md focus:border-purple-400 focus:outline-none'
+                      }),
+                      h('button', {
+                        onClick: function() { addEmailCentro(idx); },
+                        className: 'h-8 px-2.5 text-xs border border-purple-200 text-purple-700 rounded-md hover:bg-purple-50'
+                      }, '+ Adicionar')
+                    )
+                  )
+                );
+              })
+            )
+          )
+        ),
+        selecionado && h('div', { className: 'p-4 border-t border-gray-200 flex items-center justify-end gap-2' },
+          h('button', {
+            onClick: fechar,
+            className: 'px-4 py-2 text-sm text-gray-600 hover:text-gray-900'
+          }, 'Cancelar'),
+          h('button', {
+            onClick: salvar,
+            disabled: saving,
+            className: 'px-4 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-60'
+          }, saving ? 'Salvando...' : 'Salvar automação')
+        )
+      )
+    );
+  }
+
+  function AutomacaoEmailView({ fetchApi }) {
+    var _data = useState(null), data = _data[0], setData = _data[1];
+    var _loading = useState(true), loading = _loading[0], setLoading = _loading[1];
+    var _modal = useState(false), modal = _modal[0], setModal = _modal[1];
+    var _diaInput = useState(''), diaInput = _diaInput[0], setDiaInput = _diaInput[1];
+    var _savingDia = useState(false), savingDia = _savingDia[0], setSavingDia = _savingDia[1];
+    var _toast = useState(null), toast = _toast[0], setToast = _toast[1];
+
+    var carregar = useCallback(async function() {
+      try {
+        var r = await fetchApi('/cs/email-automacao');
+        if (r.success) {
+          setData(r);
+          setDiaInput(String(r.dia_envio));
+        }
+      } catch (e) { console.error('Erro lista:', e); }
+      setLoading(false);
+    }, [fetchApi]);
+
+    useEffect(function() { carregar(); }, [carregar]);
+
+    var salvarDia = async function() {
+      var dia = parseInt(diaInput, 10);
+      if (!Number.isFinite(dia) || dia < 1 || dia > 28) { alert('Dia precisa ser entre 1 e 28'); return; }
+      setSavingDia(true);
+      try {
+        var r = await fetchApi('/cs/email-automacao/config', { method: 'PUT', body: JSON.stringify({ dia_envio: dia }) });
+        if (r.success) { setToast('✓ Dia atualizado'); setTimeout(function() { setToast(null); }, 2000); carregar(); }
+        else alert('Erro: ' + (r.error || 'falha'));
+      } catch (e) { alert('Erro: ' + e.message); }
+      setSavingDia(false);
+    };
+
+    var dispararAgora = async function(id) {
+      try {
+        var r = await fetchApi('/cs/email-automacao/' + id + '/disparar-agora', { method: 'POST', body: '{}' });
+        if (r.success) {
+          setToast('⚡ Disparo iniciado em background — atualiza em ~60s');
+          setTimeout(function() { setToast(null); }, 5000);
+          setTimeout(carregar, 60000);
+        } else alert('Erro: ' + (r.error || 'falha'));
+      } catch (e) { alert('Erro: ' + e.message); }
+    };
+
+    if (loading) return h('div', { className: 'p-8 text-center text-gray-500' }, 'Carregando...');
+    if (!data) return h('div', { className: 'p-8 text-center text-red-500' }, 'Erro ao carregar dados');
+
+    var stats = data.estatisticas || {};
+    var clientes = data.clientes || [];
+
+    return h('div', { className: 'space-y-4' },
+      // Toast
+      toast && h('div', {
+        className: 'fixed top-20 right-6 z-40 bg-purple-600 text-white px-4 py-2 rounded-lg shadow-lg text-sm'
+      }, toast),
+
+      // Header com config global
+      h('div', { className: 'bg-white rounded-xl border border-gray-200 p-4' },
+        h('div', { className: 'flex items-center justify-between gap-4 flex-wrap' },
+          h('div', null,
+            h('h2', { className: 'text-lg font-semibold text-gray-900' }, '⚡ Automação E-mail'),
+            h('p', { className: 'text-xs text-gray-500 mt-0.5' }, 'Envio mensal automático do relatório do raio-x cliente')
+          ),
+          h('div', { className: 'flex items-center gap-3' },
+            h('div', { className: 'flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-lg' },
+              h('label', { className: 'text-xs text-gray-600' }, 'Dia do envio:'),
+              h('input', {
+                type: 'number',
+                min: 1, max: 28,
+                value: diaInput,
+                onChange: function(e) { setDiaInput(e.target.value); },
+                className: 'w-14 h-8 px-2 text-center text-sm border border-gray-200 rounded-md focus:border-purple-400 focus:outline-none'
+              }),
+              h('button', {
+                onClick: salvarDia,
+                disabled: savingDia || diaInput === String(data.dia_envio),
+                className: 'h-8 px-3 text-xs bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-40 disabled:cursor-not-allowed'
+              }, savingDia ? '...' : 'Salvar')
+            ),
+            h('button', {
+              onClick: function() { setModal(true); },
+              className: 'h-9 px-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-medium'
+            }, '+ Configurar cliente')
+          )
+        ),
+        h('p', { className: 'mt-3 text-xs text-gray-500' },
+          'Próximo disparo: ',
+          h('span', { className: 'font-medium text-gray-900' }, formatDateTime(data.proximo_envio)),
+          ' · O relatório enviado é sempre referente ao mês anterior fechado'
+        )
+      ),
+
+      // Stats grid
+      h('div', { className: 'grid grid-cols-4 gap-3' },
+        h('div', { className: 'bg-white rounded-lg border border-gray-200 p-4' },
+          h('p', { className: 'text-xs text-gray-500 mb-1' }, 'Clientes configurados'),
+          h('p', { className: 'text-2xl font-semibold text-gray-900' }, stats.clientes_configurados || 0)
+        ),
+        h('div', { className: 'bg-white rounded-lg border border-gray-200 p-4' },
+          h('p', { className: 'text-xs text-gray-500 mb-1' }, 'Centros ativos'),
+          h('p', { className: 'text-2xl font-semibold text-emerald-600' },
+            (stats.centros_ativos || 0),
+            h('span', { className: 'text-base text-gray-400 font-normal ml-1' }, '/ ' + (stats.centros_total || 0))
+          )
+        ),
+        h('div', { className: 'bg-white rounded-lg border border-gray-200 p-4' },
+          h('p', { className: 'text-xs text-gray-500 mb-1' }, 'Destinatários totais'),
+          h('p', { className: 'text-2xl font-semibold text-gray-900' }, stats.destinatarios_totais || 0)
+        ),
+        h('div', { className: 'bg-white rounded-lg border border-gray-200 p-4' },
+          h('p', { className: 'text-xs text-gray-500 mb-1' }, 'Próximo disparo'),
+          h('p', { className: 'text-2xl font-semibold text-purple-700' },
+            data.dia_envio < 10 ? '0' + data.dia_envio : data.dia_envio,
+            h('span', { className: 'text-base text-gray-400 font-normal ml-1' }, '/' + ('0' + (new Date(data.proximo_envio).getMonth() + 1)).slice(-2))
+          )
+        )
+      ),
+
+      // Lista de cards
+      clientes.length === 0
+        ? h('div', { className: 'bg-white rounded-xl border border-gray-200 p-12 text-center' },
+            h('p', { className: 'text-gray-500 text-sm' }, 'Nenhum cliente configurado ainda.'),
+            h('p', { className: 'text-gray-400 text-xs mt-1' }, 'Clique em "Configurar cliente" pra começar.')
+          )
+        : h('div', { className: 'space-y-3' },
+            clientes.map(function(g) {
+              return h(CardClienteAutomacao, {
+                key: g.cod_cliente,
+                grupo: g,
+                fetchApi: fetchApi,
+                onAtualizar: carregar,
+                onDispararAgora: dispararAgora
+              });
+            })
+          ),
+
+      // Modal de adicionar
+      h(ModalConfigurarCliente, { aberto: modal, fechar: function() { setModal(false); }, fetchApi: fetchApi, onSalvo: function() {
+        carregar();
+        setToast('✓ Configuração salva');
+        setTimeout(function() { setToast(null); }, 2500);
+      } })
+    );
+  }
+
+  // ══════════════════════════════════════════════════
   // COMPONENTE PRINCIPAL
   // ══════════════════════════════════════════════════
   window.ModuloCsComponent = function(props) {
@@ -1591,6 +2157,7 @@
         case 'ocorrencias': return h(OcorrenciasView, { fetchApi: fetchApi });
         case 'agenda': return h(AgendaView, { fetchApi: fetchApi });
         case 'emails': return h(EmailsView, { fetchApi: fetchApi, apiUrl: apiUrl, getToken: getToken });
+        case 'emails-automacao': return h(AutomacaoEmailView, { fetchApi: fetchApi });
         default: return h(DashboardView, { fetchApi: fetchApi });
       }
     };
