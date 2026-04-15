@@ -513,10 +513,14 @@
     var _rev = useState(false), raioXEnviandoEmail = _rev[0], setRaioXEnviandoEmail = _rev[1];
     var _sem = useState(false), showEmailModal = _sem[0], setShowEmailModal = _sem[1];
     var _emf = useState({ para: '', cc: '', assunto: '' }), emailForm = _emf[0], setEmailForm = _emf[1];
-    // emailStatus: null (form aberto) | 'sending' | 'success' | 'error'
     var _ems = useState(null), emailStatus = _ems[0], setEmailStatus = _ems[1];
     var _emi = useState(''), emailMessageId = _emi[0], setEmailMessageId = _emi[1];
     var _eme = useState(''), emailError = _eme[0], setEmailError = _eme[1];
+    // Relatório Cliente (derivado do raio-x interno)
+    var _rcr = useState(null), raioXClienteResult = _rcr[0], setRaioXClienteResult = _rcr[1];
+    var _rcg = useState(false), raioXClienteGerando = _rcg[0], setRaioXClienteGerando = _rcg[1];
+    // Tab ativa quando há os dois relatórios: 'interno' | 'cliente'
+    var _rxt = useState('interno'), raioXTab = _rxt[0], setRaioXTab = _rxt[1];
     var raioXEditRef = useRef(null);
     var _si = useState(false), showNovaInteracao = _si[0], setShowNovaInteracao = _si[1];
     var _so = useState(false), showNovaOcorrencia = _so[0], setShowNovaOcorrencia = _so[1];
@@ -620,10 +624,35 @@
       setRaioXSalvando(false);
     };
 
-    // Abre o modal pré-preenchendo destinatário, CC vazio e assunto padrão
-    var abrirModalEmail = function() {
+    // Gera a Versão Cliente a partir do raio-x interno atual
+    var gerarRaioXCliente = async function() {
       if (!raioXResult || !raioXResult.id) {
-        alert('⚠️ Salve o relatório antes de enviar por email');
+        alert('⚠️ Gere e salve o Raio-X interno antes de criar a versão cliente');
+        return;
+      }
+      setRaioXClienteGerando(true);
+      try {
+        var res = await fetchApi('/cs/raio-x/cliente', {
+          method: 'POST',
+          body: JSON.stringify({ raio_x_id: raioXResult.id })
+        });
+        if (res.success && res.raio_x_cliente) {
+          setRaioXClienteResult(res.raio_x_cliente);
+          setRaioXTab('cliente');
+        } else {
+          alert('❌ Erro ao gerar versão cliente:\n\n' + (res.error || 'Falha desconhecida'));
+        }
+      } catch (e) {
+        console.error(e);
+        alert('❌ Erro ao gerar versão cliente:\n\n' + (e.message || 'Falha de rede'));
+      }
+      setRaioXClienteGerando(false);
+    };
+
+    // Abre o modal de envio de email (só a partir da versão cliente)
+    var abrirModalEmail = function() {
+      if (!raioXClienteResult || !raioXClienteResult.id) {
+        alert('⚠️ Gere a versão cliente do relatório antes de enviar por email');
         return;
       }
       var emailSugerido = (data.ficha && (data.ficha.email_contato || data.ficha.email)) || '';
@@ -633,7 +662,7 @@
         var partes = String(iso).split('-');
         return partes.length === 3 ? (partes[2] + '/' + partes[1] + '/' + partes[0]) : iso;
       };
-      var assuntoPadrao = 'Raio-X Operacional - ' + nomeCliente + ' (' + fmt(periodo.inicio) + ' a ' + fmt(periodo.fim) + ')';
+      var assuntoPadrao = 'Relatório Operacional - ' + nomeCliente + ' (' + fmt(periodo.inicio) + ' a ' + fmt(periodo.fim) + ')';
       setEmailForm({ para: emailSugerido, cc: '', assunto: assuntoPadrao });
       setEmailStatus(null);
       setEmailMessageId('');
@@ -642,10 +671,8 @@
     };
 
     var fecharModalEmail = function() {
-      // Não fecha se estiver no meio do envio
       if (emailStatus === 'sending') return;
       setShowEmailModal(false);
-      // Pequeno delay pra animação do modal fechar antes de resetar o status
       setTimeout(function() {
         setEmailStatus(null);
         setEmailMessageId('');
@@ -669,7 +696,8 @@
       setEmailStatus('sending');
       setRaioXEnviandoEmail(true);
       try {
-        var body = { raio_x_id: raioXResult.id, para: para };
+        // IMPORTANTE: envia usando o ID do relatório CLIENTE, não do interno
+        var body = { raio_x_id: raioXClienteResult.id, para: para };
         if (cc) body.cc = cc;
         if (assunto) body.assunto = assunto;
         var res = await fetchApi('/cs/raio-x/enviar-email', {
@@ -680,7 +708,6 @@
           setEmailMessageId(res.messageId || '');
           setEmailStatus('success');
           setRaioXEnviandoEmail(false);
-          // Auto-fecha depois de mostrar a animação de sucesso
           setTimeout(function() {
             setShowEmailModal(false);
             setTimeout(function() {
@@ -834,31 +861,57 @@
               .then(function(blob) { var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'RaioX_Apresentacao_' + codCliente + '.pdf'; a.click(); URL.revokeObjectURL(a.href); })
               .catch(function(e) { alert('Erro: ' + e.message); });
           } }, '📊 Apresentação'),
-          // Botão Enviar por Email
+          // Botão Gerar Versão Cliente (novo)
           raioXResult.id && h('button', {
-            className: 'ml-1 px-4 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-lg text-xs font-bold shadow-md hover:from-emerald-700 hover:to-teal-700 disabled:opacity-50',
+            className: 'ml-1 px-3 py-1.5 bg-gradient-to-r from-fuchsia-600 to-pink-600 text-white rounded-lg text-xs font-bold shadow-md hover:from-fuchsia-700 hover:to-pink-700 disabled:opacity-50',
+            onClick: gerarRaioXCliente,
+            disabled: raioXClienteGerando,
+            title: 'Gera um relatório voltado ao cliente, com textos corporativos e visual polido'
+          }, raioXClienteGerando ? '⏳ Gerando...' : (raioXClienteResult ? '🔄 Regerar Cliente' : '👔 Gerar Versão Cliente')),
+          // Botão Enviar por Email (só habilitado quando existe versão cliente)
+          raioXResult.id && h('button', {
+            className: 'ml-1 px-4 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-lg text-xs font-bold shadow-md hover:from-emerald-700 hover:to-teal-700 disabled:opacity-50 disabled:cursor-not-allowed',
             onClick: abrirModalEmail,
-            disabled: raioXEnviandoEmail
+            disabled: raioXEnviandoEmail || !raioXClienteResult,
+            title: raioXClienteResult ? 'Enviar relatório cliente por email' : 'Gere a versão cliente primeiro'
           }, raioXEnviandoEmail ? '⏳ Enviando...' : '📧 Enviar por Email'),
           h('span', { className: 'text-xs text-indigo-400 ml-auto' }, 'Gerado ' + formatDateTime(raioXResult.gerado_em) + ' · ' + raioXResult.tokens + ' tokens')
+        ),
+        // Tabs: Interno ↔ Cliente (só aparecem se ambos existem)
+        raioXClienteResult && h('div', { className: 'mb-3 inline-flex rounded-lg border border-gray-200 bg-white p-1' },
+          h('button', {
+            onClick: function() { setRaioXTab('interno'); },
+            className: 'px-4 py-1.5 rounded-md text-xs font-bold transition ' + (raioXTab === 'interno' ? 'bg-indigo-600 text-white shadow' : 'text-gray-500 hover:text-gray-700')
+          }, '🔬 Interno'),
+          h('button', {
+            onClick: function() { setRaioXTab('cliente'); },
+            className: 'px-4 py-1.5 rounded-md text-xs font-bold transition ' + (raioXTab === 'cliente' ? 'bg-fuchsia-600 text-white shadow' : 'text-gray-500 hover:text-gray-700')
+          }, '👔 Versão Cliente'),
+          h('span', { className: 'text-xs text-gray-400 px-3 flex items-center' }, raioXTab === 'cliente' ? (raioXClienteResult.tokens + ' tokens · gerado ' + formatDateTime(raioXClienteResult.gerado_em)) : '')
         ),
         // Aviso de modo edição
         raioXEditando && h('div', { className: 'mb-3 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-2' },
           h('span', { className: 'text-amber-600 text-sm' }, '✏️'),
           h('span', { className: 'text-amber-800 text-sm font-medium' }, 'Modo de edição ativo — edite o texto abaixo e clique em "Salvar Alterações".')
         ),
-        // Conteúdo: modo leitura usa dangerouslySetInnerHTML, modo edição usa ref com contentEditable
-        raioXEditando
+        // Conteúdo: tab interno renderiza o raio-x interno normal; tab cliente renderiza o HTML do relatório cliente
+        raioXTab === 'cliente' && raioXClienteResult
           ? h('div', {
-              ref: raioXEditRef,
-              className: 'prose prose-sm prose-indigo max-w-none outline-none ring-2 ring-amber-300 rounded-lg p-3 bg-white min-h-[200px]',
-              contentEditable: 'true',
-              suppressContentEditableWarning: true
+              className: 'max-w-none border border-gray-200 rounded-lg overflow-hidden bg-white',
+              style: { minHeight: '400px' },
+              dangerouslySetInnerHTML: { __html: raioXClienteResult.html || '<div style="padding:40px;text-align:center;color:#94a3b8">Relatório cliente sem conteúdo</div>' }
             })
-          : h('div', {
-              className: 'prose prose-sm prose-indigo max-w-none',
-              dangerouslySetInnerHTML: { __html: renderMarkdown(raioXResult.analise) }
-            })
+          : raioXEditando
+            ? h('div', {
+                ref: raioXEditRef,
+                className: 'prose prose-sm prose-indigo max-w-none outline-none ring-2 ring-amber-300 rounded-lg p-3 bg-white min-h-[200px]',
+                contentEditable: 'true',
+                suppressContentEditableWarning: true
+              })
+            : h('div', {
+                className: 'prose prose-sm prose-indigo max-w-none',
+                dangerouslySetInnerHTML: { __html: renderMarkdown(raioXResult.analise) }
+              })
       ),
 
       // Interações + Ocorrências
@@ -923,9 +976,8 @@
           h('button', { onClick: salvarOcorrencia, disabled: !ocorrenciaForm.titulo, className: 'w-full py-3 bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700 disabled:opacity-50' }, '💾 Registrar')
         )
       ),
-      // Modal de Envio de Email do Raio-X (form + animações de envio/sucesso)
-      h(Modal, { aberto: showEmailModal, fechar: fecharModalEmail, titulo: emailStatus === 'success' ? '✅ Enviado!' : emailStatus === 'sending' ? '📤 Enviando...' : '📧 Enviar Raio-X por Email', largura: 'max-w-xl' },
-        // ─── ESTADO: SENDING ──────────────────────────────
+      // Modal de Envio de Email do Raio-X Cliente (form + animações sending/success)
+      h(Modal, { aberto: showEmailModal, fechar: fecharModalEmail, titulo: emailStatus === 'success' ? '✅ Enviado!' : emailStatus === 'sending' ? '📤 Enviando...' : '📧 Enviar Relatório por Email', largura: 'max-w-xl' },
         emailStatus === 'sending' ?
           h('div', { className: 'flex flex-col items-center py-10' },
             h('div', { className: 'relative w-24 h-24' },
@@ -938,7 +990,6 @@
             h('p', { className: 'mt-6 text-lg font-bold text-gray-700' }, 'Enviando email...'),
             h('p', { className: 'text-sm text-gray-400 mt-1' }, 'Processando gráficos e enviando via Resend')
           )
-        // ─── ESTADO: SUCCESS ──────────────────────────────
         : emailStatus === 'success' ?
           h('div', { className: 'flex flex-col items-center py-10' },
             h('div', { className: 'relative w-24 h-24' },
@@ -953,7 +1004,6 @@
             h('p', { className: 'text-sm text-gray-500 mt-2' }, 'Para: ', h('span', { className: 'font-semibold text-gray-700' }, emailForm.para)),
             emailMessageId && h('p', { className: 'text-xs text-gray-400 mt-3 font-mono bg-gray-50 px-3 py-1 rounded' }, 'ID: ' + emailMessageId.substring(0, 24) + '...')
           )
-        // ─── ESTADO: FORM (null ou error) ──────────────────
         :
           h('div', { className: 'space-y-4' },
             emailStatus === 'error' && emailError && h('div', { className: 'p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2' },
