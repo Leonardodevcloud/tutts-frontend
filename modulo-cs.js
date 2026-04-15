@@ -17,6 +17,7 @@
     { id: 'interacoes', label: 'Interações', icon: '📝' },
     { id: 'ocorrencias', label: 'Ocorrências', icon: '🚨' },
     { id: 'agenda', label: 'Agenda', icon: '📅' },
+    { id: 'emails', label: 'Emails', icon: '📧' },
   ];
 
   const CORES_HEALTH = {
@@ -1180,6 +1181,386 @@
   }
 
   // ══════════════════════════════════════════════════
+  // EMAILS ENVIADOS — listagem + detalhe + timeline + iframe
+  // Consome /cs/emails-enviados (lista, detalhe, html)
+  // Eventos chegam via webhook /cs/webhook/resend (público)
+  // ══════════════════════════════════════════════════
+
+  var STATUS_BADGE = {
+    sent:           { label: 'Enviado',   bg: '#E5E7EB', fg: '#374151' },
+    scheduled:      { label: 'Agendado',  bg: '#EDE9FE', fg: '#5B21B6' },
+    delivered:      { label: 'Entregue',  bg: '#DBEAFE', fg: '#1E3A8A' },
+    delivery_delayed:{ label: 'Atrasado', bg: '#FEF3C7', fg: '#78350F' },
+    opened:         { label: 'Aberto',    bg: '#DCFCE7', fg: '#14532D' },
+    clicked:        { label: 'Clicado',   bg: '#EEEDFE', fg: '#26215C' },
+    bounced:        { label: 'Bounce',    bg: '#FEE2E2', fg: '#7F1D1D' },
+    failed:         { label: 'Falhou',    bg: '#FEE2E2', fg: '#7F1D1D' },
+    complained:     { label: 'Spam',      bg: '#FEE2E2', fg: '#7F1D1D' },
+    suppressed:     { label: 'Suprimido', bg: '#FEE2E2', fg: '#7F1D1D' },
+  };
+
+  var EVENTO_COR = {
+    'email.sent':              '#10B981',
+    'email.delivered':         '#10B981',
+    'email.delivery_delayed':  '#F59E0B',
+    'email.opened':            '#3B82F6',
+    'email.clicked':           '#7c3aed',
+    'email.bounced':           '#EF4444',
+    'email.failed':            '#EF4444',
+    'email.complained':        '#EF4444',
+    'email.suppressed':        '#EF4444',
+    'email.scheduled':         '#8B5CF6',
+  };
+
+  var EVENTO_LABEL = {
+    'email.sent':              'Aceito pelo Resend',
+    'email.delivered':         'Entregue ao servidor',
+    'email.delivery_delayed':  'Entrega atrasada',
+    'email.opened':            'Email aberto',
+    'email.clicked':           'Link clicado',
+    'email.bounced':           'Bounce',
+    'email.failed':            'Falha no envio',
+    'email.complained':        'Marcado como spam',
+    'email.suppressed':        'Suprimido (lista)',
+    'email.scheduled':         'Agendado',
+  };
+
+  function EmailsView({ fetchApi, apiUrl, getToken }) {
+    var _list = useState([]),       lista = _list[0],       setLista = _list[1];
+    var _stat = useState({}),       stats = _stat[0],       setStats = _stat[1];
+    var _ld = useState(true),       loading = _ld[0],       setLoading = _ld[1];
+    var _sel = useState(null),      selecionado = _sel[0],  setSelecionado = _sel[1];
+    var _dt = useState(null),       detalhe = _dt[0],       setDetalhe = _dt[1];
+    var _dtl = useState(false),     detLoading = _dtl[0],   setDetLoading = _dtl[1];
+    var _modal = useState(null),    htmlModal = _modal[0],  setHtmlModal = _modal[1];
+    var _mhtml = useState(''),      htmlContent = _mhtml[0], setHtmlContent = _mhtml[1];
+    var _mloading = useState(false),htmlLoading = _mloading[0], setHtmlLoading = _mloading[1];
+
+    // Carrega o HTML do email via fetch autenticado (não dá pra usar
+    // iframe src diretamente porque iframe não manda Authorization header)
+    useEffect(function() {
+      if (!htmlModal) { setHtmlContent(''); return; }
+      setHtmlLoading(true); setHtmlContent('');
+      var token = getToken();
+      fetch(apiUrl + '/cs/emails-enviados/' + htmlModal + '/html', {
+        headers: { 'Authorization': 'Bearer ' + token },
+        credentials: 'include'
+      })
+        .then(function(r) { return r.ok ? r.text() : Promise.reject(new Error('HTTP ' + r.status)); })
+        .then(function(html) { setHtmlContent(html); })
+        .catch(function(e) { setHtmlContent('<div style="padding:24px;font-family:sans-serif;color:#dc2626">Erro ao carregar HTML: ' + e.message + '</div>'); })
+        .finally(function() { setHtmlLoading(false); });
+    }, [htmlModal, apiUrl, getToken]);
+    var _filtros = useState({ status: '', tipo: '', dias: 30 }),
+        filtros = _filtros[0], setFiltros = _filtros[1];
+    var _auto = useState(false),    autoRefresh = _auto[0], setAutoRefresh = _auto[1];
+
+    var carregarLista = useCallback(async function() {
+      try {
+        var qs = 'dias=' + (filtros.dias || 30);
+        if (filtros.status) qs += '&status=' + encodeURIComponent(filtros.status);
+        if (filtros.tipo)   qs += '&tipo='   + encodeURIComponent(filtros.tipo);
+        var r = await fetchApi('/cs/emails-enviados?' + qs);
+        if (r.success) {
+          setLista(r.data || []);
+          setStats(r.estatisticas || {});
+        }
+      } catch (e) { console.error('Erro lista emails:', e); }
+      setLoading(false);
+    }, [fetchApi, filtros]);
+
+    var carregarDetalhe = useCallback(async function(id) {
+      setDetLoading(true);
+      try {
+        var r = await fetchApi('/cs/emails-enviados/' + id);
+        if (r.success) setDetalhe({ email: r.email, eventos: r.eventos || [] });
+      } catch (e) { console.error('Erro detalhe:', e); }
+      setDetLoading(false);
+    }, [fetchApi]);
+
+    useEffect(function() { carregarLista(); }, [carregarLista]);
+    useEffect(function() { if (selecionado) carregarDetalhe(selecionado); else setDetalhe(null); }, [selecionado, carregarDetalhe]);
+
+    // Auto-refresh: polling de 30s quando habilitado
+    useEffect(function() {
+      if (!autoRefresh) return;
+      var iv = setInterval(function() {
+        carregarLista();
+        if (selecionado) carregarDetalhe(selecionado);
+      }, 30000);
+      return function() { clearInterval(iv); };
+    }, [autoRefresh, carregarLista, carregarDetalhe, selecionado]);
+
+    var pct = function(num, den) {
+      if (!den || den === 0) return '0%';
+      return ((num / den) * 100).toFixed(1) + '%';
+    };
+
+    var emails = lista || [];
+
+    return h('div', { className: 'space-y-4' },
+      // ─── Header com filtros e auto-refresh ───
+      h('div', { className: 'flex flex-wrap items-center justify-between gap-3' },
+        h('div', null,
+          h('h3', { className: 'text-lg font-bold text-gray-900' }, '📧 Emails Enviados'),
+          h('p', { className: 'text-xs text-gray-500' }, 'Rastreamento em tempo real via webhook Resend')
+        ),
+        h('div', { className: 'flex items-center gap-2 text-sm' },
+          h('select', {
+            value: filtros.dias,
+            onChange: function(e) { setFiltros(Object.assign({}, filtros, { dias: parseInt(e.target.value, 10) })); },
+            className: 'px-3 py-1.5 border border-gray-200 rounded-lg text-xs bg-white'
+          },
+            h('option', { value: 7 }, 'Últimos 7 dias'),
+            h('option', { value: 30 }, 'Últimos 30 dias'),
+            h('option', { value: 90 }, 'Últimos 90 dias'),
+            h('option', { value: 365 }, 'Último ano')
+          ),
+          h('select', {
+            value: filtros.status,
+            onChange: function(e) { setFiltros(Object.assign({}, filtros, { status: e.target.value })); },
+            className: 'px-3 py-1.5 border border-gray-200 rounded-lg text-xs bg-white'
+          },
+            h('option', { value: '' }, 'Todos status'),
+            h('option', { value: 'sent' }, 'Enviado'),
+            h('option', { value: 'delivered' }, 'Entregue'),
+            h('option', { value: 'opened' }, 'Aberto'),
+            h('option', { value: 'clicked' }, 'Clicado'),
+            h('option', { value: 'bounced' }, 'Bounce'),
+            h('option', { value: 'complained' }, 'Spam')
+          ),
+          h('select', {
+            value: filtros.tipo,
+            onChange: function(e) { setFiltros(Object.assign({}, filtros, { tipo: e.target.value })); },
+            className: 'px-3 py-1.5 border border-gray-200 rounded-lg text-xs bg-white'
+          },
+            h('option', { value: '' }, 'Todos tipos'),
+            h('option', { value: 'raio_x_cliente' }, 'Raio-X Cliente'),
+            h('option', { value: 'raio_x_interno' }, 'Raio-X Interno')
+          ),
+          h('label', { className: 'flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer ml-2' },
+            h('input', {
+              type: 'checkbox',
+              checked: autoRefresh,
+              onChange: function(e) { setAutoRefresh(e.target.checked); },
+              className: 'rounded'
+            }),
+            'Auto 30s'
+          ),
+          h('button', {
+            onClick: function() { carregarLista(); if (selecionado) carregarDetalhe(selecionado); },
+            className: 'px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-lg hover:bg-gray-50'
+          }, '↻ Atualizar')
+        )
+      ),
+
+      // ─── Métricas agregadas ───
+      h('div', { className: 'grid grid-cols-2 md:grid-cols-5 gap-3' },
+        h('div', { className: 'bg-white rounded-xl border border-gray-200 p-3' },
+          h('p', { className: 'text-xs text-gray-500' }, 'Enviados'),
+          h('p', { className: 'text-2xl font-bold text-gray-900' }, stats.enviados || 0)
+        ),
+        h('div', { className: 'bg-white rounded-xl border border-gray-200 p-3' },
+          h('p', { className: 'text-xs text-gray-500' }, 'Entregues'),
+          h('p', { className: 'text-2xl font-bold text-gray-900' },
+            (stats.entregues || 0),
+            h('span', { className: 'text-xs text-emerald-600 font-normal ml-1' }, pct(stats.entregues, stats.enviados))
+          )
+        ),
+        h('div', { className: 'bg-white rounded-xl border border-gray-200 p-3' },
+          h('p', { className: 'text-xs text-gray-500' }, 'Abertos'),
+          h('p', { className: 'text-2xl font-bold text-gray-900' },
+            (stats.abertos || 0),
+            h('span', { className: 'text-xs text-blue-600 font-normal ml-1' }, pct(stats.abertos, stats.entregues))
+          )
+        ),
+        h('div', { className: 'bg-white rounded-xl border border-gray-200 p-3' },
+          h('p', { className: 'text-xs text-gray-500' }, 'Cliques'),
+          h('p', { className: 'text-2xl font-bold text-gray-900' },
+            (stats.clicados || 0),
+            h('span', { className: 'text-xs text-purple-600 font-normal ml-1' }, pct(stats.clicados, stats.abertos))
+          )
+        ),
+        h('div', { className: 'bg-white rounded-xl border border-gray-200 p-3' },
+          h('p', { className: 'text-xs text-gray-500' }, 'Bounces / Spam'),
+          h('p', { className: 'text-2xl font-bold ' + ((stats.bounces || 0) > 0 ? 'text-red-600' : 'text-gray-900') }, stats.bounces || 0)
+        )
+      ),
+
+      // ─── Master-detail layout ───
+      loading ? h(Skeleton, { linhas: 6 }) :
+      emails.length === 0 ? h(EmptyState, { icone: '📭', titulo: 'Nenhum email enviado no período', descricao: 'Envie um Raio-X pra ver o histórico aqui.' }) :
+      h('div', { className: 'grid grid-cols-1 lg:grid-cols-5 gap-4' },
+        // ─── Lista (esquerda, 2/5) ───
+        h('div', { className: 'lg:col-span-2 bg-white rounded-xl border border-gray-200 overflow-hidden' },
+          h('div', { className: 'px-4 py-2.5 border-b border-gray-100 flex justify-between items-center' },
+            h('span', { className: 'text-sm font-medium text-gray-700' }, emails.length + ' email' + (emails.length !== 1 ? 's' : '')),
+            h('span', { className: 'text-xs text-gray-400' }, 'Mais recentes ↓')
+          ),
+          h('div', { className: 'divide-y divide-gray-100 max-h-[640px] overflow-y-auto' },
+            ...emails.map(function(em) {
+              var ativo = selecionado === em.id;
+              var bd = STATUS_BADGE[em.status_atual] || STATUS_BADGE.sent;
+              var paraStr = Array.isArray(em.para) ? em.para[0] : em.para;
+              return h('div', {
+                key: em.id,
+                onClick: function() { setSelecionado(em.id); },
+                className: 'px-4 py-3 cursor-pointer transition ' + (ativo ? 'bg-purple-50 border-l-4 border-purple-600' : 'border-l-4 border-transparent hover:bg-gray-50')
+              },
+                h('div', { className: 'flex justify-between items-start gap-2' },
+                  h('div', { className: 'min-w-0 flex-1' },
+                    h('p', { className: 'text-sm font-medium text-gray-900 truncate' }, em.nome_cliente || paraStr || '—'),
+                    h('p', { className: 'text-xs text-gray-500 truncate mt-0.5' }, em.assunto || '—')
+                  ),
+                  h('div', { className: 'flex flex-col items-end gap-1 shrink-0' },
+                    h('span', {
+                      className: 'text-[10px] px-2 py-0.5 rounded-full font-medium',
+                      style: { background: bd.bg, color: bd.fg }
+                    }, bd.label),
+                    h('span', { className: 'text-[10px] text-gray-400' }, diasAtras(em.created_at) || formatDate(em.created_at))
+                  )
+                ),
+                h('div', { className: 'flex gap-1.5 mt-2 items-center flex-wrap' },
+                  em.tipo === 'raio_x_cliente' ?
+                    h('span', { className: 'text-[10px] px-1.5 py-0.5 bg-purple-100 text-purple-800 rounded' }, 'cliente') :
+                    h('span', { className: 'text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-700 rounded' }, 'interno'),
+                  (em.total_aberturas || 0) > 0 && h('span', { className: 'text-[10px] px-1.5 py-0.5 bg-white border border-gray-200 text-gray-600 rounded' }, em.total_aberturas + '× ↺'),
+                  (em.total_cliques || 0) > 0 && h('span', { className: 'text-[10px] px-1.5 py-0.5 bg-white border border-gray-200 text-gray-600 rounded' }, em.total_cliques + '× 🖱')
+                ),
+                em.bounce_msg && h('p', { className: 'text-[11px] text-red-600 mt-1 truncate' }, em.bounce_msg)
+              );
+            })
+          )
+        ),
+
+        // ─── Detalhe (direita, 3/5) ───
+        h('div', { className: 'lg:col-span-3' },
+          !selecionado ? h('div', { className: 'bg-white rounded-xl border border-gray-200 p-12 text-center text-gray-400 text-sm' },
+            '👈 Selecione um email pra ver o detalhe e a linha do tempo'
+          ) :
+          detLoading ? h(Skeleton, { linhas: 8 }) :
+          !detalhe ? null :
+          h('div', { className: 'bg-white rounded-xl border border-gray-200 divide-y divide-gray-100' },
+            // Header detalhe
+            h('div', { className: 'px-4 py-3 flex justify-between items-start gap-3' },
+              h('div', { className: 'min-w-0 flex-1' },
+                h('p', { className: 'text-base font-bold text-gray-900' }, detalhe.email.nome_cliente || '—'),
+                h('p', { className: 'text-sm text-gray-600 mt-0.5' }, detalhe.email.assunto),
+                h('p', { className: 'text-xs text-gray-400 mt-0.5' },
+                  formatDate(detalhe.email.data_inicio) + ' a ' + formatDate(detalhe.email.data_fim)
+                )
+              ),
+              h('button', {
+                onClick: function() { setHtmlModal(detalhe.email.id); },
+                className: 'px-3 py-1.5 text-xs font-medium text-white rounded-lg hover:opacity-90 shrink-0',
+                style: { background: '#7c3aed' }
+              }, 'Ver relatório ↗')
+            ),
+
+            // Metadados
+            h('div', { className: 'px-4 py-3 grid grid-cols-2 gap-y-1.5 text-xs' },
+              h('span', { className: 'text-gray-500' }, 'Para'),
+              h('span', { className: 'text-right text-gray-800 truncate' }, (detalhe.email.para || []).join(', ') || '—'),
+              detalhe.email.cc && detalhe.email.cc.length > 0 && h('span', { className: 'text-gray-500' }, 'Cc'),
+              detalhe.email.cc && detalhe.email.cc.length > 0 && h('span', { className: 'text-right text-gray-800 truncate' }, detalhe.email.cc.join(', ')),
+              h('span', { className: 'text-gray-500' }, 'Resend ID'),
+              h('span', { className: 'text-right font-mono text-gray-400 truncate' }, detalhe.email.resend_email_id || '—'),
+              h('span', { className: 'text-gray-500' }, 'Enviado por'),
+              h('span', { className: 'text-right text-gray-800' }, detalhe.email.enviado_por_nome || '—'),
+              h('span', { className: 'text-gray-500' }, 'Aberturas / Cliques'),
+              h('span', { className: 'text-right text-gray-800' }, (detalhe.email.total_aberturas || 0) + ' aberturas · ' + (detalhe.email.total_cliques || 0) + ' cliques')
+            ),
+
+            // Tags
+            detalhe.email.tags && detalhe.email.tags.length > 0 && h('div', { className: 'px-4 py-3' },
+              h('div', { className: 'flex flex-wrap gap-1.5' },
+                ...detalhe.email.tags.map(function(t, i) {
+                  return h('span', {
+                    key: i,
+                    className: 'text-[10px] px-2 py-1 bg-purple-50 text-purple-900 rounded font-mono'
+                  },
+                    h('span', { style: { color: '#7F77DD' } }, t.name + ':'),
+                    t.value
+                  );
+                })
+              )
+            ),
+
+            // Timeline de eventos
+            h('div', { className: 'px-4 py-4' },
+              h('p', { className: 'text-xs font-medium text-gray-500 mb-3' }, 'Linha do tempo · ' + (detalhe.eventos || []).length + ' evento' + ((detalhe.eventos || []).length !== 1 ? 's' : '')),
+              (detalhe.eventos || []).length === 0 ? h('p', { className: 'text-xs text-gray-400 italic' }, 'Nenhum evento webhook recebido ainda. Verifique se o webhook do Resend está configurado.') :
+              h('div', { className: 'relative pl-5' },
+                h('div', { className: 'absolute left-1 top-1 bottom-1 w-px bg-gray-200' }),
+                ...(detalhe.eventos || []).map(function(ev, i) {
+                  var cor = EVENTO_COR[ev.tipo] || '#9CA3AF';
+                  var label = EVENTO_LABEL[ev.tipo] || ev.tipo;
+                  var payload = ev.payload || {};
+                  var detExtra = '';
+                  if (ev.tipo === 'email.opened' || ev.tipo === 'email.clicked') {
+                    if (ev.user_agent) {
+                      var ua = ev.user_agent.toLowerCase();
+                      var dev = ua.indexOf('mobile') !== -1 ? 'mobile' : 'desktop';
+                      var cli = ua.indexOf('gmail') !== -1 ? 'Gmail' :
+                                ua.indexOf('outlook') !== -1 ? 'Outlook' :
+                                ua.indexOf('thunderbird') !== -1 ? 'Thunderbird' :
+                                ua.indexOf('apple') !== -1 ? 'Apple Mail' : 'cliente';
+                      detExtra = cli + ' ' + dev;
+                    }
+                  } else if (ev.tipo === 'email.bounced' && payload.data && payload.data.bounce) {
+                    detExtra = (payload.data.bounce.subType || '') + ' — ' + (payload.data.bounce.message || '');
+                  }
+                  return h('div', { key: ev.id, className: 'relative mb-3' },
+                    h('div', {
+                      className: 'absolute -left-[18px] top-1 w-2.5 h-2.5 rounded-full border-2 border-white',
+                      style: { background: cor }
+                    }),
+                    h('div', { className: 'flex justify-between items-start gap-2' },
+                      h('div', { className: 'min-w-0 flex-1' },
+                        h('p', { className: 'text-xs font-medium text-gray-800' }, label),
+                        detExtra && h('p', { className: 'text-[11px] text-gray-500 mt-0.5 truncate' }, detExtra),
+                        ev.link_clicado && h('p', { className: 'text-[11px] text-purple-600 mt-0.5 font-mono truncate' }, '→ ' + ev.link_clicado)
+                      ),
+                      h('span', { className: 'text-[11px] text-gray-400 whitespace-nowrap shrink-0' }, formatDateTime(ev.evento_em))
+                    )
+                  );
+                })
+              )
+            )
+          )
+        )
+      ),
+
+      // ─── Modal HTML do email ───
+      htmlModal && h('div', {
+        className: 'fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4',
+        onClick: function() { setHtmlModal(null); }
+      },
+        h('div', {
+          className: 'bg-white rounded-xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden',
+          onClick: function(e) { e.stopPropagation(); }
+        },
+          h('div', { className: 'px-4 py-3 border-b border-gray-200 flex justify-between items-center' },
+            h('p', { className: 'text-sm font-medium text-gray-900' }, '📧 Visualização do email enviado'),
+            h('button', {
+              onClick: function() { setHtmlModal(null); },
+              className: 'text-gray-400 hover:text-gray-600 text-xl leading-none'
+            }, '×')
+          ),
+          htmlLoading
+            ? h('div', { className: 'flex-1 flex items-center justify-center text-sm text-gray-400' }, 'Carregando relatório...')
+            : h('iframe', {
+                srcDoc: htmlContent,
+                className: 'flex-1 w-full',
+                style: { minHeight: '600px', border: 'none', background: '#f1f5f9' },
+                sandbox: 'allow-same-origin'
+              })
+        )
+      )
+    );
+  }
+
+  // ══════════════════════════════════════════════════
   // COMPONENTE PRINCIPAL
   // ══════════════════════════════════════════════════
   window.ModuloCsComponent = function(props) {
@@ -1209,6 +1590,7 @@
         case 'interacoes': return h(InteracoesView, { fetchApi: fetchApi });
         case 'ocorrencias': return h(OcorrenciasView, { fetchApi: fetchApi });
         case 'agenda': return h(AgendaView, { fetchApi: fetchApi });
+        case 'emails': return h(EmailsView, { fetchApi: fetchApi, apiUrl: apiUrl, getToken: getToken });
         default: return h(DashboardView, { fetchApi: fetchApi });
       }
     };
