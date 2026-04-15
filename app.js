@@ -502,7 +502,7 @@ const SISTEMA_MODULOS_CONFIG = [
       abas: [{id: "perfil", label: "Meu Perfil"}, {id: "comunidade", label: "Comunidade"}, {id: "mensagens", label: "Mensagens"}]
     },
     { id: "cs", label: "Sucesso do Cliente", icon: "🤝",
-      abas: [{id: "dashboard", label: "Dashboard"}, {id: "clientes", label: "Clientes"}, {id: "interacoes", label: "Interações"}, {id: "ocorrencias", label: "Ocorrências"}, {id: "agenda", label: "Agenda"}, {id: "emails", label: "Emails"}]
+      abas: [{id: "dashboard", label: "Dashboard"}, {id: "clientes", label: "Clientes"}, {id: "interacoes", label: "Interações"}, {id: "ocorrencias", label: "Ocorrências"}, {id: "agenda", label: "Agenda"}, {id: "emails", label: "Emails"}, {id: "emails-automacao", label: "Automação E-mail"}]
     },
     { id: "config", label: "Configurações", icon: "🔧",
       abas: [{id: "usuarios", label: "Usuários"}, {id: "permissoes", label: "Permissões ADM"}, {id: "clientes-api", label: "Clientes API"}, {id: "auditoria", label: "Auditoria"}, {id: "sistema", label: "Sistema"}]
