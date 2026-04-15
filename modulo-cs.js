@@ -1651,7 +1651,12 @@
       h('div', { className: 'flex items-center justify-between gap-3' },
         h('div', { className: 'min-w-0 flex-1' },
           h('p', { className: 'text-sm font-medium text-gray-900 truncate' },
-            config.centro_custo || h('span', { className: 'italic text-gray-500' }, 'Sem centro de custo')
+            config.centro_custo
+              ? config.centro_custo
+              : h('span', { className: 'inline-flex items-center gap-1.5 text-purple-700' },
+                  h('span', { className: 'text-[10px] px-1.5 py-0.5 rounded bg-purple-100 font-mono' }, 'TODOS'),
+                  h('span', null, 'Relatório consolidado de todos os centros')
+                )
           ),
           h('div', { className: 'mt-0.5 flex items-center gap-2 flex-wrap' },
             config.centro_custo && h('span', { className: 'text-[10px] font-mono text-gray-500' }, 'CC: ' + config.centro_custo),
@@ -1777,11 +1782,19 @@
     var _clientes = useState([]), clientes = _clientes[0], setClientes = _clientes[1];
     var _loading = useState(false), loading = _loading[0], setLoading = _loading[1];
     var _selecionado = useState(null), selecionado = _selecionado[0], setSelecionado = _selecionado[1];
+    // tipo: 'todos' = 1 config sem centro_custo (relatório consolidado de todos os centros)
+    //       'especificos' = N configs, 1 por centro marcado
+    var _tipo = useState('todos'), tipo = _tipo[0], setTipo = _tipo[1];
+    var _todosForm = useState({ destinatarios: [], emailInput: '' }), todosForm = _todosForm[0], setTodosForm = _todosForm[1];
     var _centrosForm = useState([]), centrosForm = _centrosForm[0], setCentrosForm = _centrosForm[1];
     var _saving = useState(false), saving = _saving[0], setSaving = _saving[1];
 
     useEffect(function() {
-      if (!aberto) { setBusca(''); setClientes([]); setSelecionado(null); setCentrosForm([]); return; }
+      if (!aberto) {
+        setBusca(''); setClientes([]); setSelecionado(null);
+        setTipo('todos'); setTodosForm({ destinatarios: [], emailInput: '' }); setCentrosForm([]);
+        return;
+      }
       var t = setTimeout(async function() {
         setLoading(true);
         try {
@@ -1796,15 +1809,20 @@
 
     var selecionarCliente = function(c) {
       setSelecionado(c);
+      setTipo('todos');
+      setTodosForm({ destinatarios: [], emailInput: '' });
       var centros = (c.centros || []).filter(function(x) { return x; });
-      if (centros.length === 0) {
-        // Sem CC: 1 form único
-        setCentrosForm([{ centro_custo: null, marcado: true, destinatarios: [], emailInput: '' }]);
-      } else {
-        setCentrosForm(centros.map(function(cc) {
-          return { centro_custo: cc, marcado: false, destinatarios: [], emailInput: '' };
-        }));
-      }
+      setCentrosForm(centros.map(function(cc) {
+        return { centro_custo: cc, marcado: false, destinatarios: [], emailInput: '' };
+      }));
+    };
+
+    var addEmailTodos = function() {
+      var e = (todosForm.emailInput || '').trim().toLowerCase();
+      if (!e) return;
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) { alert('Email inválido'); return; }
+      if (todosForm.destinatarios.indexOf(e) >= 0) { setTodosForm(Object.assign({}, todosForm, { emailInput: '' })); return; }
+      setTodosForm({ destinatarios: todosForm.destinatarios.concat([e]), emailInput: '' });
     };
 
     var atualizarCentro = function(idx, patch) {
@@ -1820,26 +1838,32 @@
       atualizarCentro(idx, { destinatarios: c.destinatarios.concat([e]), emailInput: '' });
     };
 
+    var temCentros = (selecionado?.centros || []).filter(function(x) { return x; }).length > 0;
+
     var salvar = async function() {
-      var paraSalvar = centrosForm.filter(function(c) { return c.marcado || c.centro_custo === null; });
-      if (paraSalvar.length === 0) { alert('Marque pelo menos 1 centro'); return; }
-      var faltam = paraSalvar.filter(function(c) { return c.destinatarios.length === 0; });
-      if (faltam.length > 0) { alert('Cada centro marcado precisa de pelo menos 1 destinatário'); return; }
+      var paraSalvar = [];
+      if (tipo === 'todos' || !temCentros) {
+        if (todosForm.destinatarios.length === 0) { alert('Adicione pelo menos 1 destinatário'); return; }
+        paraSalvar = [{ centro_custo: null, destinatarios: todosForm.destinatarios }];
+      } else {
+        var marcados = centrosForm.filter(function(c) { return c.marcado; });
+        if (marcados.length === 0) { alert('Marque pelo menos 1 centro'); return; }
+        var faltam = marcados.filter(function(c) { return c.destinatarios.length === 0; });
+        if (faltam.length > 0) { alert('Cada centro marcado precisa de pelo menos 1 destinatário'); return; }
+        paraSalvar = marcados.map(function(c) { return { centro_custo: c.centro_custo, destinatarios: c.destinatarios }; });
+      }
 
       setSaving(true);
       try {
         var r = await fetchApi('/cs/email-automacao', {
           method: 'POST',
-          body: JSON.stringify({
-            cod_cliente: selecionado.cod_cliente,
-            centros: paraSalvar.map(function(c) { return { centro_custo: c.centro_custo, destinatarios: c.destinatarios }; })
-          })
+          body: JSON.stringify({ cod_cliente: selecionado.cod_cliente, centros: paraSalvar })
         });
         if (r.success) {
           onSalvo();
           fechar();
         } else {
-          alert('Erro ao salvar:\n' + (r.erros || []).map(function(e) { return '· ' + (e.centro_custo || '(sem CC)') + ': ' + e.erro; }).join('\n') || r.error);
+          alert('Erro ao salvar:\n' + ((r.erros || []).map(function(e) { return '· ' + (e.centro_custo || '(sem CC)') + ': ' + e.erro; }).join('\n') || r.error));
         }
       } catch (e) { alert('Erro: ' + e.message); }
       setSaving(false);
@@ -1857,6 +1881,7 @@
           h('button', { onClick: fechar, className: 'text-gray-400 hover:text-gray-700' }, '✕')
         ),
         h('div', { className: 'p-4 flex-1 overflow-y-auto' },
+          // ETAPA 1: busca de cliente
           !selecionado && h('div', null,
             h('input', {
               type: 'text',
@@ -1870,6 +1895,7 @@
               loading && h('p', { className: 'text-sm text-gray-400 text-center py-4' }, 'Buscando...'),
               !loading && clientes.length === 0 && h('p', { className: 'text-sm text-gray-400 text-center py-4' }, 'Nenhum cliente encontrado'),
               clientes.map(function(c) {
+                var nCentros = (c.centros || []).filter(function(x) { return x; }).length;
                 return h('div', {
                   key: c.cod_cliente,
                   onClick: function() { selecionarCliente(c); },
@@ -1878,31 +1904,97 @@
                   h('p', { className: 'font-medium text-sm text-gray-900' }, c.nome),
                   h('p', { className: 'text-xs text-gray-500 mt-0.5' },
                     'Cód ', h('span', { className: 'font-mono' }, c.cod_cliente),
-                    ' · ', (c.centros || []).length, ' centro(s) ativo(s) nos últimos 90 dias'
+                    ' · ', (c.total_entregas_90d || 0).toLocaleString('pt-BR'), ' entregas/90d',
+                    nCentros > 0 ? ' · ' + nCentros + ' centros' : ' · sem centros'
                   )
                 );
               })
             )
           ),
+          // ETAPA 2: cliente selecionado — escolher tipo + destinatários
           selecionado && h('div', null,
             h('div', { className: 'mb-4 p-3 bg-purple-50 rounded-lg border border-purple-100 flex items-center justify-between' },
               h('div', null,
                 h('p', { className: 'font-medium text-sm text-purple-900' }, selecionado.nome),
-                h('p', { className: 'text-xs text-purple-700 mt-0.5' }, 'Cód ' + selecionado.cod_cliente)
+                h('p', { className: 'text-xs text-purple-700 mt-0.5' },
+                  'Cód ', selecionado.cod_cliente,
+                  temCentros ? ' · ' + (selecionado.centros || []).filter(function(x) { return x; }).length + ' centros disponíveis' : ' · sem centros'
+                )
               ),
               h('button', {
-                onClick: function() { setSelecionado(null); setCentrosForm([]); },
+                onClick: function() { setSelecionado(null); },
                 className: 'text-xs text-purple-700 hover:text-purple-900 hover:underline'
               }, '← Trocar cliente')
             ),
-            centrosForm.length === 0 && h('p', { className: 'text-sm text-gray-500 text-center py-4' }, 'Nenhum centro de custo encontrado nos últimos 90 dias'),
-            centrosForm[0] && centrosForm[0].centro_custo === null && h('div', { className: 'space-y-3' },
-              h('p', { className: 'text-xs text-gray-600' }, 'Cliente sem centro de custo. Configure os destinatários:'),
-              h('div', { className: 'p-3 border border-gray-200 rounded-lg' },
+
+            // Quando o cliente NÃO tem centros, vai direto pro form (sem radio)
+            !temCentros && h('div', { className: 'p-3 border border-gray-200 rounded-lg' },
+              h('p', { className: 'text-xs text-gray-600 mb-2' }, 'Destinatários:'),
+              h('div', { className: 'flex flex-wrap gap-1.5 mb-2' },
+                todosForm.destinatarios.map(function(e) {
+                  return h(ChipEmail, { key: e, email: e, onRemove: function() {
+                    setTodosForm(Object.assign({}, todosForm, { destinatarios: todosForm.destinatarios.filter(function(x) { return x !== e; }) }));
+                  } });
+                })
+              ),
+              h('div', { className: 'flex gap-2' },
+                h('input', {
+                  type: 'email',
+                  placeholder: 'email@cliente.com',
+                  value: todosForm.emailInput,
+                  onChange: function(e) { setTodosForm(Object.assign({}, todosForm, { emailInput: e.target.value })); },
+                  onKeyDown: function(e) { if (e.key === 'Enter') { e.preventDefault(); addEmailTodos(); } },
+                  className: 'flex-1 h-9 px-3 text-sm border border-gray-200 rounded-md focus:border-purple-400 focus:outline-none'
+                }),
+                h('button', {
+                  onClick: addEmailTodos,
+                  className: 'h-9 px-3 text-sm border border-purple-200 text-purple-700 rounded-md hover:bg-purple-50'
+                }, '+ Adicionar')
+              )
+            ),
+
+            // Quando o cliente TEM centros, mostra radio "todos vs específicos"
+            temCentros && h('div', null,
+              h('div', { className: 'space-y-2 mb-4' },
+                h('label', {
+                  className: 'flex items-start gap-2 p-3 border rounded-lg cursor-pointer ' + (tipo === 'todos' ? 'border-purple-300 bg-purple-50/40' : 'border-gray-200 hover:border-gray-300')
+                },
+                  h('input', {
+                    type: 'radio',
+                    name: 'tipo',
+                    checked: tipo === 'todos',
+                    onChange: function() { setTipo('todos'); },
+                    className: 'mt-0.5 text-purple-600 focus:ring-purple-500'
+                  }),
+                  h('div', null,
+                    h('p', { className: 'text-sm font-medium text-gray-900' }, 'Todos os centros (consolidado)'),
+                    h('p', { className: 'text-xs text-gray-500 mt-0.5' }, '1 envio por mês com relatório de TODOS os centros somados')
+                  )
+                ),
+                h('label', {
+                  className: 'flex items-start gap-2 p-3 border rounded-lg cursor-pointer ' + (tipo === 'especificos' ? 'border-purple-300 bg-purple-50/40' : 'border-gray-200 hover:border-gray-300')
+                },
+                  h('input', {
+                    type: 'radio',
+                    name: 'tipo',
+                    checked: tipo === 'especificos',
+                    onChange: function() { setTipo('especificos'); },
+                    className: 'mt-0.5 text-purple-600 focus:ring-purple-500'
+                  }),
+                  h('div', null,
+                    h('p', { className: 'text-sm font-medium text-gray-900' }, 'Centros específicos (individual)'),
+                    h('p', { className: 'text-xs text-gray-500 mt-0.5' }, '1 envio por centro marcado, cada um com seu próprio relatório e destinatários')
+                  )
+                )
+              ),
+
+              // Form pro tipo selecionado
+              tipo === 'todos' && h('div', { className: 'p-3 border border-gray-200 rounded-lg' },
+                h('p', { className: 'text-xs text-gray-600 mb-2' }, 'Destinatários (recebem o relatório consolidado):'),
                 h('div', { className: 'flex flex-wrap gap-1.5 mb-2' },
-                  centrosForm[0].destinatarios.map(function(e) {
+                  todosForm.destinatarios.map(function(e) {
                     return h(ChipEmail, { key: e, email: e, onRemove: function() {
-                      atualizarCentro(0, { destinatarios: centrosForm[0].destinatarios.filter(function(x) { return x !== e; }) });
+                      setTodosForm(Object.assign({}, todosForm, { destinatarios: todosForm.destinatarios.filter(function(x) { return x !== e; }) }));
                     } });
                   })
                 ),
@@ -1910,67 +2002,65 @@
                   h('input', {
                     type: 'email',
                     placeholder: 'email@cliente.com',
-                    value: centrosForm[0].emailInput,
-                    onChange: function(e) { atualizarCentro(0, { emailInput: e.target.value }); },
-                    onKeyDown: function(e) { if (e.key === 'Enter') { e.preventDefault(); addEmailCentro(0); } },
+                    value: todosForm.emailInput,
+                    onChange: function(e) { setTodosForm(Object.assign({}, todosForm, { emailInput: e.target.value })); },
+                    onKeyDown: function(e) { if (e.key === 'Enter') { e.preventDefault(); addEmailTodos(); } },
                     className: 'flex-1 h-9 px-3 text-sm border border-gray-200 rounded-md focus:border-purple-400 focus:outline-none'
                   }),
                   h('button', {
-                    onClick: function() { addEmailCentro(0); },
+                    onClick: addEmailTodos,
                     className: 'h-9 px-3 text-sm border border-purple-200 text-purple-700 rounded-md hover:bg-purple-50'
                   }, '+ Adicionar')
                 )
-              )
-            ),
-            centrosForm[0] && centrosForm[0].centro_custo !== null && h('div', { className: 'space-y-2' },
-              h('p', { className: 'text-xs text-gray-600 mb-2' }, 'Marque os centros que terão automação. Cada um precisa dos seus próprios destinatários:'),
-              centrosForm.map(function(c, idx) {
-                return h('div', {
-                  key: c.centro_custo,
-                  className: 'p-3 border rounded-lg ' + (c.marcado ? 'border-purple-300 bg-purple-50/40' : 'border-gray-200')
-                },
-                  h('label', { className: 'flex items-center gap-2 cursor-pointer' },
-                    h('input', {
-                      type: 'checkbox',
-                      checked: c.marcado,
-                      onChange: function() { atualizarCentro(idx, { marcado: !c.marcado }); },
-                      className: 'rounded text-purple-600 focus:ring-purple-500'
-                    }),
-                    h('span', { className: 'font-mono text-sm font-medium text-gray-900' }, c.centro_custo)
-                  ),
-                  c.marcado && h('div', { className: 'mt-3 pl-6' },
-                    h('div', { className: 'flex flex-wrap gap-1.5 mb-2' },
-                      c.destinatarios.map(function(e) {
-                        return h(ChipEmail, { key: e, email: e, onRemove: function() {
-                          atualizarCentro(idx, { destinatarios: c.destinatarios.filter(function(x) { return x !== e; }) });
-                        } });
-                      })
-                    ),
-                    h('div', { className: 'flex gap-2' },
+              ),
+
+              tipo === 'especificos' && h('div', { className: 'space-y-2' },
+                h('p', { className: 'text-xs text-gray-600 mb-1' }, 'Marque os centros e configure destinatários de cada um:'),
+                centrosForm.map(function(c, idx) {
+                  return h('div', {
+                    key: c.centro_custo,
+                    className: 'p-3 border rounded-lg ' + (c.marcado ? 'border-purple-300 bg-purple-50/40' : 'border-gray-200')
+                  },
+                    h('label', { className: 'flex items-center gap-2 cursor-pointer' },
                       h('input', {
-                        type: 'email',
-                        placeholder: 'email@cliente.com',
-                        value: c.emailInput,
-                        onChange: function(e) { atualizarCentro(idx, { emailInput: e.target.value }); },
-                        onKeyDown: function(e) { if (e.key === 'Enter') { e.preventDefault(); addEmailCentro(idx); } },
-                        className: 'flex-1 h-8 px-2.5 text-xs border border-gray-200 rounded-md focus:border-purple-400 focus:outline-none'
+                        type: 'checkbox',
+                        checked: c.marcado,
+                        onChange: function() { atualizarCentro(idx, { marcado: !c.marcado }); },
+                        className: 'rounded text-purple-600 focus:ring-purple-500'
                       }),
-                      h('button', {
-                        onClick: function() { addEmailCentro(idx); },
-                        className: 'h-8 px-2.5 text-xs border border-purple-200 text-purple-700 rounded-md hover:bg-purple-50'
-                      }, '+ Adicionar')
+                      h('span', { className: 'font-mono text-sm font-medium text-gray-900' }, c.centro_custo)
+                    ),
+                    c.marcado && h('div', { className: 'mt-3 pl-6' },
+                      h('div', { className: 'flex flex-wrap gap-1.5 mb-2' },
+                        c.destinatarios.map(function(e) {
+                          return h(ChipEmail, { key: e, email: e, onRemove: function() {
+                            atualizarCentro(idx, { destinatarios: c.destinatarios.filter(function(x) { return x !== e; }) });
+                          } });
+                        })
+                      ),
+                      h('div', { className: 'flex gap-2' },
+                        h('input', {
+                          type: 'email',
+                          placeholder: 'email@cliente.com',
+                          value: c.emailInput,
+                          onChange: function(e) { atualizarCentro(idx, { emailInput: e.target.value }); },
+                          onKeyDown: function(e) { if (e.key === 'Enter') { e.preventDefault(); addEmailCentro(idx); } },
+                          className: 'flex-1 h-8 px-2.5 text-xs border border-gray-200 rounded-md focus:border-purple-400 focus:outline-none'
+                        }),
+                        h('button', {
+                          onClick: function() { addEmailCentro(idx); },
+                          className: 'h-8 px-2.5 text-xs border border-purple-200 text-purple-700 rounded-md hover:bg-purple-50'
+                        }, '+ Adicionar')
+                      )
                     )
-                  )
-                );
-              })
+                  );
+                })
+              )
             )
           )
         ),
         selecionado && h('div', { className: 'p-4 border-t border-gray-200 flex items-center justify-end gap-2' },
-          h('button', {
-            onClick: fechar,
-            className: 'px-4 py-2 text-sm text-gray-600 hover:text-gray-900'
-          }, 'Cancelar'),
+          h('button', { onClick: fechar, className: 'px-4 py-2 text-sm text-gray-600 hover:text-gray-900' }, 'Cancelar'),
           h('button', {
             onClick: salvar,
             disabled: saving,
