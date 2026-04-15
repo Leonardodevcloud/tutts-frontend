@@ -2,7 +2,7 @@
 // Arquivo: modulo-cs.js
 // Self-contained: gerencia próprio estado e fetch
 // UI inspirada no CRM WhatsApp: clean, sidebar + content
-// v2: Filtros estilo BI (cliente com máscara + centro de custo)
+// v2: Filtros estilo BI (cliente com máscara + centro de custo) .
 // ================================================================
 
 (function() {
