@@ -443,6 +443,22 @@
             // Evita adicionar pontos "genéricos" que confundem o motoboy
             const [aguardandoNumero, setAguardandoNumero] = useState({ aberto: false, sugestao: null, numero: '' });
             
+            // NOVO: estados da aba "Meus Endereços"
+            const [todosEnderecos, setTodosEnderecos] = useState([]);
+            const [carregandoEnderecos, setCarregandoEnderecos] = useState(false);
+            const [filtroEnderecos, setFiltroEnderecos] = useState('');
+            const [modalNovoEndereco, setModalNovoEndereco] = useState({ aberto: false });
+            const [modalEditarEndereco, setModalEditarEndereco] = useState({ aberto: false, endereco: null });
+            const [buscaNovoEndereco, setBuscaNovoEndereco] = useState('');
+            const [sugestoesNovoEndereco, setSugestoesNovoEndereco] = useState([]);
+            const [dadosNovoEndereco, setDadosNovoEndereco] = useState(null); // endereço selecionado do Google
+            const [apelidoNovo, setApelidoNovo] = useState('');
+            const [complementoNovo, setComplementoNovo] = useState('');
+            const [numeroManualNovo, setNumeroManualNovo] = useState('');
+            const [aguardandoNumeroNovo, setAguardandoNumeroNovo] = useState(false);
+            const [salvandoNovoEndereco, setSalvandoNovoEndereco] = useState(false);
+            const [dadosEditar, setDadosEditar] = useState({ apelido: '', complemento: '', observacao_padrao: '', telefone_padrao: '' });
+            
             const abrirFotoModal = (fotos, indice = 0) => {
                 setFotoModal({ aberto: true, fotos, indice });
             };
@@ -575,6 +591,148 @@
             }, [abaAtiva, corridaSelecionada]);
             
             const carregarHistorico = async () => { try { const resp = await fetch(`${API_URL}/api/solicitacao/historico?limite=20`, { headers: { 'Authorization': `Bearer ${token}` } }); if (resp.ok) { const data = await resp.json(); setHistorico(data.solicitacoes || []); } } catch (err) {} };
+            
+            // NOVO: carregar todos os endereços salvos do cliente (aba Meus Endereços)
+            const carregarTodosEnderecos = async () => {
+                setCarregandoEnderecos(true);
+                try {
+                    const resp = await fetch(`${API_URL}/api/solicitacao/enderecos-salvos/buscar`, { headers: { 'Authorization': `Bearer ${token}` } });
+                    if (resp.ok) { const data = await resp.json(); setTodosEnderecos(data || []); }
+                } catch (err) { console.error('Erro ao carregar endereços:', err); }
+                setCarregandoEnderecos(false);
+            };
+            
+            // Deletar endereço salvo (aba Meus Endereços)
+            const deletarEnderecoSalvo = async (id, apelido) => {
+                if (!confirm(`Excluir o endereço "${apelido}"?`)) return;
+                try {
+                    const resp = await fetch(`${API_URL}/api/solicitacao/enderecos-salvos/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+                    if (resp.ok) { showToast('🗑️ Endereço excluído', 'success'); carregarTodosEnderecos(); }
+                    else showToast('❌ Erro ao excluir', 'error');
+                } catch (err) { showToast('❌ Erro de conexão', 'error'); }
+            };
+            
+            // Abrir modal de edição de endereço salvo
+            const abrirEditarEndereco = (endereco) => {
+                setModalEditarEndereco({ aberto: true, endereco });
+                setDadosEditar({
+                    apelido: (endereco.apelido || '').toUpperCase(),
+                    complemento: (endereco.complemento || '').toUpperCase(),
+                    observacao_padrao: endereco.observacao_padrao || '',
+                    telefone_padrao: endereco.telefone_padrao || ''
+                });
+            };
+            
+            // Salvar edição do endereço
+            const salvarEdicaoEnderecoSalvo = async () => {
+                const { endereco } = modalEditarEndereco;
+                if (!endereco) return;
+                if (!dadosEditar.apelido?.trim()) { showToast('O apelido é obrigatório', 'warning'); return; }
+                try {
+                    const resp = await fetch(`${API_URL}/api/solicitacao/enderecos-salvos/${endereco.id}`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        body: JSON.stringify(dadosEditar)
+                    });
+                    if (resp.ok) {
+                        showToast('✅ Endereço atualizado', 'success');
+                        setModalEditarEndereco({ aberto: false, endereco: null });
+                        carregarTodosEnderecos();
+                    } else { showToast('❌ Erro ao atualizar', 'error'); }
+                } catch (err) { showToast('❌ Erro de conexão', 'error'); }
+            };
+            
+            // Abrir modal de novo endereço
+            const abrirNovoEndereco = () => {
+                setModalNovoEndereco({ aberto: true });
+                setBuscaNovoEndereco('');
+                setSugestoesNovoEndereco([]);
+                setDadosNovoEndereco(null);
+                setApelidoNovo('');
+                setComplementoNovo('');
+                setNumeroManualNovo('');
+                setAguardandoNumeroNovo(false);
+            };
+            
+            // Debounce de busca Google pro modal de novo endereço
+            useEffect(() => {
+                if (!modalNovoEndereco.aberto) return;
+                if (!buscaNovoEndereco || buscaNovoEndereco.length < 3) {
+                    setSugestoesNovoEndereco([]);
+                    return;
+                }
+                const timer = setTimeout(async () => {
+                    try {
+                        const resp = await fetch(`${API_URL}/api/geocode/google?endereco=${encodeURIComponent(buscaNovoEndereco)}`);
+                        if (resp.ok) {
+                            const data = await resp.json();
+                            setSugestoesNovoEndereco(data.results?.length > 0 ? data.results : []);
+                        }
+                    } catch (err) { console.error('Erro busca:', err); }
+                }, 400);
+                return () => clearTimeout(timer);
+            }, [buscaNovoEndereco, modalNovoEndereco.aberto]);
+            
+            // Usuário selecionou uma sugestão no modal de novo endereço
+            const selecionarSugestaoNovoEndereco = (sug) => {
+                const comp = sug.componentes || [];
+                const temNumero = !!comp.find(c => c.types?.includes('street_number'));
+                setDadosNovoEndereco(sug);
+                setSugestoesNovoEndereco([]);
+                if (!temNumero) {
+                    setAguardandoNumeroNovo(true);
+                } else {
+                    setAguardandoNumeroNovo(false);
+                    setNumeroManualNovo('');
+                }
+            };
+            
+            // Salvar novo endereço na aba Meus Endereços
+            const salvarNovoEndereco = async () => {
+                if (!dadosNovoEndereco) { showToast('Selecione um endereço', 'warning'); return; }
+                if (!apelidoNovo.trim()) { showToast('Digite um apelido', 'warning'); return; }
+                
+                const comp = dadosNovoEndereco.componentes || [];
+                const get = (t) => comp.find(c => c.types?.includes(t))?.long_name || '';
+                const getS = (t) => comp.find(c => c.types?.includes(t))?.short_name || '';
+                const numeroFinal = numeroManualNovo || get('street_number') || '';
+                
+                // Recompor endereco_completo com número manual se necessário
+                let enderecoFinal = dadosNovoEndereco.endereco || '';
+                if (numeroManualNovo && !get('street_number')) {
+                    const rua = get('route');
+                    if (rua && enderecoFinal.startsWith(rua)) {
+                        enderecoFinal = `${rua}, ${numeroManualNovo}${enderecoFinal.substring(rua.length)}`;
+                    }
+                }
+                
+                setSalvandoNovoEndereco(true);
+                try {
+                    const resp = await fetch(`${API_URL}/api/solicitacao/enderecos-salvos`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        body: JSON.stringify({
+                            apelido: apelidoNovo.trim(),
+                            endereco_completo: enderecoFinal,
+                            rua: get('route'),
+                            numero: numeroFinal,
+                            complemento: complementoNovo.trim(),
+                            bairro: get('sublocality_level_1') || get('sublocality'),
+                            cidade: get('administrative_area_level_2') || get('locality'),
+                            uf: getS('administrative_area_level_1'),
+                            cep: get('postal_code'),
+                            latitude: dadosNovoEndereco.latitude,
+                            longitude: dadosNovoEndereco.longitude
+                        })
+                    });
+                    if (resp.ok) {
+                        showToast(`💾 "${apelidoNovo}" salvo!`, 'success');
+                        setModalNovoEndereco({ aberto: false });
+                        carregarTodosEnderecos();
+                    } else { showToast('❌ Erro ao salvar', 'error'); }
+                } catch (err) { showToast('❌ Erro de conexão', 'error'); }
+                setSalvandoNovoEndereco(false);
+            };
             const carregarCorridasAtivas = async () => { try { const resp = await fetch(`${API_URL}/api/solicitacao/historico?limite=50`, { headers: { 'Authorization': `Bearer ${token}` } }); if (resp.ok) { const data = await resp.json(); setCorridasAtivas((data.solicitacoes || []).filter(s => ['enviado', 'aceito', 'em_andamento'].includes(s.status))); } } catch (err) {} };
             const carregarConcluidas = async () => { try { const resp = await fetch(`${API_URL}/api/solicitacao/historico?limite=100`, { headers: { 'Authorization': `Bearer ${token}` } }); if (resp.ok) { const data = await resp.json(); setCorridasConcluidas((data.solicitacoes || []).filter(s => ['finalizado', 'cancelado'].includes(s.status))); } } catch (err) {} };
             
@@ -1316,6 +1474,7 @@
                                 {abaAtiva === 'acompanhar' && <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" title="Atualizando em tempo real"></span>}
                             </button>
                             <button onClick={() => { setAbaAtiva('concluidas'); carregarConcluidas(); }} className={`flex-1 md:flex-none px-4 py-3 text-sm font-medium border-b-2 ${abaAtiva === 'concluidas' ? 'text-green-600 border-green-600 bg-green-50' : 'text-gray-500 border-transparent'}`}>✅ Concluídas</button>
+                            <button onClick={() => { setAbaAtiva('enderecos'); carregarTodosEnderecos(); }} className={`flex-1 md:flex-none px-4 py-3 text-sm font-medium border-b-2 ${abaAtiva === 'enderecos' ? 'text-purple-600 border-purple-600 bg-purple-50' : 'text-gray-500 border-transparent'}`}>📚 Meus Endereços</button>
                         </div>
                     </div>
                     
@@ -2079,6 +2238,262 @@
                         </div>
                     )}
                     
+                    {/* ========== ABA MEUS ENDEREÇOS ========== */}
+                    {abaAtiva === 'enderecos' && (
+                        <div className="max-w-7xl mx-auto p-2 md:p-4">
+                            <div className="bg-white rounded-xl shadow p-4">
+                                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+                                    <div>
+                                        <div className="text-lg font-bold text-gray-800">📚 Meus Endereços</div>
+                                        <div className="text-xs text-gray-500">Endereços salvos para uso rápido nas solicitações</div>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <input 
+                                            type="text" 
+                                            value={filtroEnderecos} 
+                                            onChange={(e) => setFiltroEnderecos(e.target.value)} 
+                                            placeholder="🔍 Filtrar..."
+                                            className="px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-purple-400"
+                                        />
+                                        <button onClick={abrirNovoEndereco} className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium whitespace-nowrap">+ Novo Endereço</button>
+                                    </div>
+                                </div>
+                                
+                                {carregandoEnderecos ? (
+                                    <div className="text-center py-12 text-gray-400">
+                                        <div className="text-4xl mb-2 animate-pulse">📚</div>
+                                        <div className="text-sm">Carregando...</div>
+                                    </div>
+                                ) : todosEnderecos.length === 0 ? (
+                                    <div className="text-center py-12 text-gray-400">
+                                        <div className="text-5xl mb-3">📭</div>
+                                        <div className="text-sm font-medium">Nenhum endereço salvo ainda</div>
+                                        <div className="text-xs mt-1">Clique em "+ Novo Endereço" para cadastrar o primeiro</div>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                        {todosEnderecos
+                                            .filter(e => {
+                                                if (!filtroEnderecos.trim()) return true;
+                                                const q = filtroEnderecos.toLowerCase();
+                                                return (e.apelido || '').toLowerCase().includes(q) ||
+                                                       (e.endereco_completo || '').toLowerCase().includes(q) ||
+                                                       (e.rua || '').toLowerCase().includes(q) ||
+                                                       (e.bairro || '').toLowerCase().includes(q) ||
+                                                       (e.cidade || '').toLowerCase().includes(q);
+                                            })
+                                            .map(e => {
+                                                const enderecoFinal = e.endereco_completo || [e.rua, e.numero, e.bairro, e.cidade, e.uf].filter(x => x && x.trim()).join(', ');
+                                                return (
+                                                    <div key={e.id} className="border-2 border-purple-100 hover:border-purple-300 rounded-lg p-3 transition-colors bg-gradient-to-br from-purple-50 to-white">
+                                                        <div className="flex items-start justify-between gap-2 mb-1">
+                                                            <div className="font-bold text-purple-800 text-sm truncate flex-1">⭐ {e.apelido}</div>
+                                                            {e.vezes_usado > 0 && (
+                                                                <span className="text-xs bg-purple-100 text-purple-600 px-1.5 py-0.5 rounded whitespace-nowrap">{e.vezes_usado}×</span>
+                                                            )}
+                                                        </div>
+                                                        <div className="text-xs text-gray-700 leading-relaxed">{enderecoFinal}</div>
+                                                        {e.complemento && <div className="text-xs text-purple-600 mt-1">🏠 {e.complemento}</div>}
+                                                        {e.telefone_padrao && <div className="text-xs text-gray-500 mt-0.5">📞 {e.telefone_padrao}</div>}
+                                                        {e.observacao_padrao && <div className="text-xs text-gray-500 mt-0.5 italic">💬 {e.observacao_padrao}</div>}
+                                                        
+                                                        <div className="flex gap-2 mt-3 pt-2 border-t border-purple-100">
+                                                            <button onClick={() => abrirEditarEndereco(e)} className="flex-1 px-2 py-1.5 text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 rounded font-medium">✏️ Editar</button>
+                                                            <button onClick={() => deletarEnderecoSalvo(e.id, e.apelido)} className="flex-1 px-2 py-1.5 text-xs bg-red-100 hover:bg-red-200 text-red-700 rounded font-medium">🗑️ Excluir</button>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                    </div>
+                                )}
+                                
+                                {todosEnderecos.length > 0 && (
+                                    <div className="mt-4 pt-4 border-t text-xs text-gray-500 text-center">
+                                        {todosEnderecos.length} endereço(s) salvo(s) · {todosEnderecos.reduce((acc, e) => acc + (e.vezes_usado || 0), 0)} uso(s) total
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                    
+                    {/* ========== MODAL: NOVO ENDEREÇO ========== */}
+                    {modalNovoEndereco.aberto && (
+                        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setModalNovoEndereco({ aberto: false })}>
+                            <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-4 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xl">💾</span>
+                                        <span className="font-bold text-purple-700">Novo Endereço Salvo</span>
+                                    </div>
+                                    <button onClick={() => setModalNovoEndereco({ aberto: false })} className="text-gray-400 hover:text-gray-600">✕</button>
+                                </div>
+                                
+                                {/* Passo 1: buscar endereço */}
+                                {!dadosNovoEndereco && (
+                                    <div>
+                                        <label className="text-xs text-gray-600 font-medium">📍 Buscar endereço</label>
+                                        <input 
+                                            type="text" 
+                                            value={buscaNovoEndereco} 
+                                            onChange={(e) => setBuscaNovoEndereco(e.target.value)}
+                                            className="w-full px-3 py-2 border border-purple-300 rounded-lg text-sm mt-1 focus:ring-2 focus:ring-purple-400 outline-none" 
+                                            placeholder="Digite rua, número, bairro..."
+                                            autoFocus
+                                        />
+                                        {sugestoesNovoEndereco.length > 0 && (
+                                            <div className="mt-2 bg-white border border-purple-200 rounded-lg max-h-60 overflow-y-auto">
+                                                {sugestoesNovoEndereco.map((s, i) => (
+                                                    <div key={i} onClick={() => selecionarSugestaoNovoEndereco(s)} className="p-2 hover:bg-purple-50 border-b cursor-pointer">
+                                                        <span className="text-xs">📍 {s.endereco}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                                
+                                {/* Passo 1.5: pedir número se não veio */}
+                                {dadosNovoEndereco && aguardandoNumeroNovo && (
+                                    <div className="mb-3 bg-amber-50 border border-amber-300 rounded-lg p-3">
+                                        <div className="text-xs font-bold text-amber-800 mb-1">🔢 Endereço sem número</div>
+                                        <div className="text-xs text-amber-700 mb-2">📍 {dadosNovoEndereco.endereco}</div>
+                                        <div className="flex gap-2">
+                                            <input 
+                                                type="text" 
+                                                value={numeroManualNovo} 
+                                                onChange={(e) => setNumeroManualNovo(e.target.value.toUpperCase())}
+                                                style={{ textTransform: 'uppercase' }}
+                                                className="flex-1 px-3 py-2 border border-amber-300 rounded-lg text-sm outline-none bg-white" 
+                                                placeholder="Nº"
+                                                autoFocus
+                                            />
+                                            <button onClick={() => { if (numeroManualNovo.trim()) { setAguardandoNumeroNovo(false); } }} className="px-3 py-2 bg-amber-600 text-white rounded-lg text-sm">✓</button>
+                                            <button onClick={() => { setNumeroManualNovo('S/N'); setAguardandoNumeroNovo(false); }} className="px-3 py-2 bg-white border border-amber-300 text-amber-700 rounded-lg text-xs">S/N</button>
+                                        </div>
+                                    </div>
+                                )}
+                                
+                                {/* Passo 2: preencher dados */}
+                                {dadosNovoEndereco && !aguardandoNumeroNovo && (
+                                    <>
+                                        <div className="mb-3 bg-purple-50 border border-purple-200 rounded-lg p-2">
+                                            <div className="text-xs text-purple-600 font-medium">📍 Endereço selecionado:</div>
+                                            <div className="text-xs text-gray-700 mt-1">
+                                                {dadosNovoEndereco.endereco}
+                                                {numeroManualNovo && ` (Nº ${numeroManualNovo})`}
+                                            </div>
+                                            <button onClick={() => { setDadosNovoEndereco(null); setNumeroManualNovo(''); setBuscaNovoEndereco(''); }} className="text-xs text-purple-600 hover:underline mt-1">Trocar endereço</button>
+                                        </div>
+                                        
+                                        <div className="mb-3">
+                                            <label className="text-xs text-gray-600 font-medium">⭐ Apelido *</label>
+                                            <input 
+                                                type="text" 
+                                                value={apelidoNovo} 
+                                                onChange={(e) => setApelidoNovo(e.target.value.toUpperCase())}
+                                                style={{ textTransform: 'uppercase' }}
+                                                className="w-full px-3 py-2 border border-purple-300 rounded-lg text-sm mt-1 focus:ring-2 focus:ring-purple-400 outline-none" 
+                                                placeholder="EX: LOJA CENTRO, CD PRINCIPAL..."
+                                                autoFocus
+                                            />
+                                        </div>
+                                        
+                                        <div className="mb-4">
+                                            <label className="text-xs text-gray-600 font-medium">🏠 Complemento</label>
+                                            <input 
+                                                type="text" 
+                                                value={complementoNovo} 
+                                                onChange={(e) => setComplementoNovo(e.target.value.toUpperCase())}
+                                                style={{ textTransform: 'uppercase' }}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm mt-1 focus:ring-2 focus:ring-purple-400 outline-none" 
+                                                placeholder="QUADRA, LOTE, APTO, BLOCO..."
+                                            />
+                                        </div>
+                                        
+                                        <div className="flex gap-2">
+                                            <button onClick={() => setModalNovoEndereco({ aberto: false })} className="flex-1 py-2 border rounded-lg text-sm hover:bg-gray-50">Cancelar</button>
+                                            <button onClick={salvarNovoEndereco} disabled={salvandoNovoEndereco || !apelidoNovo.trim()} className="flex-1 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 disabled:opacity-50">
+                                                {salvandoNovoEndereco ? '⏳' : '💾 Salvar'}
+                                            </button>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                    
+                    {/* ========== MODAL: EDITAR ENDEREÇO ========== */}
+                    {modalEditarEndereco.aberto && modalEditarEndereco.endereco && (
+                        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setModalEditarEndereco({ aberto: false, endereco: null })}>
+                            <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-4" onClick={e => e.stopPropagation()}>
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xl">✏️</span>
+                                        <span className="font-bold text-blue-700">Editar Endereço</span>
+                                    </div>
+                                    <button onClick={() => setModalEditarEndereco({ aberto: false, endereco: null })} className="text-gray-400 hover:text-gray-600">✕</button>
+                                </div>
+                                
+                                <div className="bg-gray-50 border rounded-lg p-2 mb-3 text-xs">
+                                    <div className="text-gray-500 font-medium">📍 Endereço:</div>
+                                    <div className="text-gray-700 mt-1">{modalEditarEndereco.endereco.endereco_completo || `${modalEditarEndereco.endereco.rua}, ${modalEditarEndereco.endereco.numero}`}</div>
+                                    <div className="text-xs text-gray-400 mt-1">Para trocar o endereço, exclua e cadastre novamente</div>
+                                </div>
+                                
+                                <div className="mb-3">
+                                    <label className="text-xs text-gray-600 font-medium">⭐ Apelido *</label>
+                                    <input 
+                                        type="text" 
+                                        value={dadosEditar.apelido} 
+                                        onChange={(e) => setDadosEditar({...dadosEditar, apelido: e.target.value.toUpperCase()})}
+                                        style={{ textTransform: 'uppercase' }}
+                                        className="w-full px-3 py-2 border border-blue-300 rounded-lg text-sm mt-1 focus:ring-2 focus:ring-blue-400 outline-none" 
+                                        autoFocus
+                                    />
+                                </div>
+                                
+                                <div className="mb-3">
+                                    <label className="text-xs text-gray-600 font-medium">🏠 Complemento</label>
+                                    <input 
+                                        type="text" 
+                                        value={dadosEditar.complemento} 
+                                        onChange={(e) => setDadosEditar({...dadosEditar, complemento: e.target.value.toUpperCase()})}
+                                        style={{ textTransform: 'uppercase' }}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm mt-1" 
+                                        placeholder="QUADRA, LOTE, APTO, BLOCO..."
+                                    />
+                                </div>
+                                
+                                <div className="mb-3">
+                                    <label className="text-xs text-gray-600 font-medium">📞 Telefone padrão</label>
+                                    <input 
+                                        type="text" 
+                                        value={dadosEditar.telefone_padrao} 
+                                        onChange={(e) => setDadosEditar({...dadosEditar, telefone_padrao: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm mt-1" 
+                                        placeholder="(11) 99999-9999"
+                                    />
+                                </div>
+                                
+                                <div className="mb-4">
+                                    <label className="text-xs text-gray-600 font-medium">💬 Observação padrão</label>
+                                    <textarea 
+                                        value={dadosEditar.observacao_padrao} 
+                                        onChange={(e) => setDadosEditar({...dadosEditar, observacao_padrao: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm mt-1 resize-none" 
+                                        rows="2"
+                                        placeholder="Ex: Portão azul, fundos, etc."
+                                    />
+                                </div>
+                                
+                                <div className="flex gap-2">
+                                    <button onClick={() => setModalEditarEndereco({ aberto: false, endereco: null })} className="flex-1 py-2 border rounded-lg text-sm hover:bg-gray-50">Cancelar</button>
+                                    <button onClick={salvarEdicaoEnderecoSalvo} disabled={!dadosEditar.apelido?.trim()} className="flex-1 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50">💾 Salvar</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    
                     {/* Modal salvar endereço */}
                     {modalSalvarEndereco.aberto && (
                         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => { setModalSalvarEndereco({ aberto: false, ponto: null }); setComplementoSalvar(''); }}>
@@ -2100,9 +2515,10 @@
                                     <input 
                                         type="text" 
                                         value={complementoSalvar} 
-                                        onChange={(e) => setComplementoSalvar(e.target.value)}
+                                        onChange={(e) => setComplementoSalvar(e.target.value.toUpperCase())}
+                                        style={{ textTransform: 'uppercase' }}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm mt-1 focus:ring-2 focus:ring-green-400 outline-none" 
-                                        placeholder="Quadra, Lote, Apto, Bloco..."
+                                        placeholder="QUADRA, LOTE, APTO, BLOCO..."
                                     />
                                 </div>
                                 
@@ -2112,10 +2528,11 @@
                                     <input 
                                         type="text" 
                                         value={apelidoSalvar} 
-                                        onChange={(e) => setApelidoSalvar(e.target.value)}
+                                        onChange={(e) => setApelidoSalvar(e.target.value.toUpperCase())}
                                         onKeyPress={(e) => { if (e.key === 'Enter') salvarEndereco(); }}
+                                        style={{ textTransform: 'uppercase' }}
                                         className="w-full px-3 py-2 border border-green-300 rounded-lg text-sm mt-1 focus:ring-2 focus:ring-green-400 outline-none" 
-                                        placeholder="Ex: Loja Centro, CD Principal, Cliente X..."
+                                        placeholder="EX: LOJA CENTRO, CD PRINCIPAL, CLIENTE X..."
                                         autoFocus
                                     />
                                     <div className="text-xs text-gray-400 mt-1">💡 Use um nome fácil de lembrar</div>
