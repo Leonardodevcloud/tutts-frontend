@@ -9,10 +9,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <!-- Google Maps JS API — usado no modal de ajuste fino de posição.
-         IMPORTANTE: crie uma chave separada RESTRITA por HTTP Referrer ao domínio centraltutts.online
-         NÃO reutilize a GOOGLE_GEOCODING_API_KEY do backend aqui. -->
-    <script defer src="https://maps.googleapis.com/maps/api/js?key=SUBSTITUA_PELA_SUA_CHAVE_BROWSER&libraries=places,geometry&v=weekly"></script>
+    <!-- Google Maps JS é carregado dinamicamente via /api/solicitacao/maps-key após login -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -457,6 +454,40 @@
                     { timeout: 8000, maximumAge: 300000, enableHighAccuracy: false }
                 );
             }, []);
+            
+            // NOVO: carregar Google Maps JS dinamicamente usando chave do backend
+            // Evita hardcode de chave no HTML e permite rotação via env var no Railway
+            useEffect(() => {
+                // Já carregado? Nada a fazer.
+                if (window.google?.maps) return;
+                // Já existe um <script> de google maps injetado? Aguarda ele carregar.
+                if (document.querySelector('script[data-tutts-maps-loader]')) return;
+                
+                (async () => {
+                    try {
+                        const resp = await fetch(`${API_URL}/api/solicitacao/maps-key`, {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        if (!resp.ok) {
+                            console.error('❌ Falha ao obter chave do Google Maps:', resp.status);
+                            return;
+                        }
+                        const { key } = await resp.json();
+                        if (!key) return;
+                        
+                        const script = document.createElement('script');
+                        script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&libraries=places,geometry&v=weekly`;
+                        script.async = true;
+                        script.defer = true;
+                        script.setAttribute('data-tutts-maps-loader', '1');
+                        script.onload = () => console.log('✅ Google Maps JS carregado');
+                        script.onerror = () => console.error('❌ Erro ao carregar Google Maps JS — verifique a chave');
+                        document.head.appendChild(script);
+                    } catch (err) {
+                        console.error('❌ Erro no loader do Google Maps:', err);
+                    }
+                })();
+            }, [token]);
             
             // Foco no input de nota quando ponto é adicionado
             useEffect(() => {
