@@ -957,6 +957,26 @@
                                             className: "px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs hover:bg-gray-300"
                                         }, "🔄"),
                                         React.createElement("button", {
+                                            onClick: function() {
+                                                // Abre modal de edição de dados gerais + senha
+                                                x({...p, 
+                                                    editarClienteSolicitacao: {
+                                                        id: cliente.id,
+                                                        nome: cliente.nome || "",
+                                                        email: cliente.email || "",
+                                                        empresa: cliente.empresa || "",
+                                                        nova_senha: "",
+                                                        confirmar_senha: "",
+                                                        mostrar_senha: false,
+                                                        salvando: false,
+                                                        erro: ""
+                                                    }
+                                                });
+                                            },
+                                            title: "Editar cliente (nome, email, empresa, senha)",
+                                            className: "px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200"
+                                        }, "✏️"),
+                                        React.createElement("button", {
                                             onClick: async function() {
                                                 var total = parseInt(cliente.total_solicitacoes) || 0;
                                                 var msg = "⚠️ EXCLUIR cliente \"" + cliente.nome + "\" (" + cliente.email + ")?\n\n" +
@@ -1004,6 +1024,166 @@
             // ==================== TAB AUDITORIA ====================
             p.configTab === "auditoria" && ("admin_master" === l.role || "admin" === l.role) && 
                 React.createElement(AuditLogs, { apiUrl: API_URL, showToast: ja }),
+
+            // ==================== MODAL EDITAR CLIENTE DE SOLICITAÇÃO ====================
+            p.editarClienteSolicitacao && (function() {
+                var ec = p.editarClienteSolicitacao;
+                var temSenha = (ec.nova_senha || "").length > 0 || (ec.confirmar_senha || "").length > 0;
+                var senhaValida = !temSenha || (ec.nova_senha.length >= 6 && ec.nova_senha === ec.confirmar_senha);
+                var podeSalvar = ec.nome.trim() && ec.email.trim() && senhaValida && !ec.salvando;
+                
+                var atualizarCampo = function(campo, valor) {
+                    x({...p, editarClienteSolicitacao: {...p.editarClienteSolicitacao, [campo]: valor, erro: ""}});
+                };
+                
+                var fecharModal = function() {
+                    x({...p, editarClienteSolicitacao: null});
+                };
+                
+                var salvar = async function() {
+                    if (!podeSalvar) return;
+                    x({...p, editarClienteSolicitacao: {...p.editarClienteSolicitacao, salvando: true, erro: ""}});
+                    try {
+                        // 1. Atualizar dados gerais
+                        var respDados = await fetch(API_URL + "/admin/solicitacao/clientes/" + ec.id, {
+                            method: "PATCH",
+                            headers: {"Content-Type": "application/json", "Authorization": "Bearer " + getToken()},
+                            body: JSON.stringify({
+                                nome: ec.nome.trim(),
+                                email: ec.email.trim(),
+                                empresa: ec.empresa.trim()
+                            })
+                        });
+                        if (!respDados.ok) {
+                            var dataErr = await respDados.json().catch(function() { return {}; });
+                            x({...p, editarClienteSolicitacao: {...p.editarClienteSolicitacao, salvando: false, erro: dataErr.error || "Erro ao atualizar dados"}});
+                            return;
+                        }
+                        
+                        // 2. Atualizar senha se foi preenchida
+                        if (temSenha) {
+                            var respSenha = await fetch(API_URL + "/admin/solicitacao/clientes/" + ec.id + "/senha", {
+                                method: "PATCH",
+                                headers: {"Content-Type": "application/json", "Authorization": "Bearer " + getToken()},
+                                body: JSON.stringify({nova_senha: ec.nova_senha})
+                            });
+                            if (!respSenha.ok) {
+                                var dataErr2 = await respSenha.json().catch(function() { return {}; });
+                                x({...p, editarClienteSolicitacao: {...p.editarClienteSolicitacao, salvando: false, erro: dataErr2.error || "Dados salvos, mas falhou ao trocar senha"}});
+                                return;
+                            }
+                        }
+                        
+                        ja("✅ Cliente atualizado!", "success");
+                        x({...p, editarClienteSolicitacao: null, clientesApiLista: null});
+                    } catch (err) {
+                        x({...p, editarClienteSolicitacao: {...p.editarClienteSolicitacao, salvando: false, erro: "Erro de conexão"}});
+                    }
+                };
+                
+                return React.createElement("div", {
+                    className: "fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4",
+                    onClick: fecharModal
+                },
+                    React.createElement("div", {
+                        className: "bg-white rounded-xl shadow-2xl w-full max-w-md p-5 max-h-[90vh] overflow-y-auto",
+                        onClick: function(e) { e.stopPropagation(); }
+                    },
+                        React.createElement("div", {className: "flex items-center justify-between mb-4"},
+                            React.createElement("div", {className: "flex items-center gap-2"},
+                                React.createElement("span", {className: "text-xl"}, "✏️"),
+                                React.createElement("span", {className: "font-bold text-blue-700"}, "Editar Cliente")
+                            ),
+                            React.createElement("button", {
+                                onClick: fecharModal,
+                                className: "text-gray-400 hover:text-gray-600"
+                            }, "✕")
+                        ),
+                        
+                        // Seção: Dados gerais
+                        React.createElement("div", {className: "mb-4"},
+                            React.createElement("div", {className: "text-xs font-bold text-gray-500 uppercase mb-2"}, "📋 Dados"),
+                            React.createElement("label", {className: "text-xs text-gray-600 font-medium"}, "Nome *"),
+                            React.createElement("input", {
+                                type: "text",
+                                value: ec.nome,
+                                onChange: function(e) { atualizarCampo("nome", e.target.value); },
+                                className: "w-full px-3 py-2 border border-gray-300 rounded-lg text-sm mt-1 mb-2 focus:ring-2 focus:ring-blue-400 outline-none",
+                                placeholder: "Nome do cliente"
+                            }),
+                            React.createElement("label", {className: "text-xs text-gray-600 font-medium"}, "Email *"),
+                            React.createElement("input", {
+                                type: "email",
+                                value: ec.email,
+                                onChange: function(e) { atualizarCampo("email", e.target.value); },
+                                className: "w-full px-3 py-2 border border-gray-300 rounded-lg text-sm mt-1 mb-2 focus:ring-2 focus:ring-blue-400 outline-none",
+                                placeholder: "cliente@email.com"
+                            }),
+                            React.createElement("label", {className: "text-xs text-gray-600 font-medium"}, "Empresa"),
+                            React.createElement("input", {
+                                type: "text",
+                                value: ec.empresa,
+                                onChange: function(e) { atualizarCampo("empresa", e.target.value); },
+                                className: "w-full px-3 py-2 border border-gray-300 rounded-lg text-sm mt-1 focus:ring-2 focus:ring-blue-400 outline-none",
+                                placeholder: "Nome da empresa (opcional)"
+                            })
+                        ),
+                        
+                        // Seção: Senha (opcional)
+                        React.createElement("div", {className: "mb-4 pt-3 border-t"},
+                            React.createElement("div", {className: "text-xs font-bold text-gray-500 uppercase mb-2"}, "🔒 Alterar Senha (opcional)"),
+                            React.createElement("div", {className: "text-xs text-gray-500 mb-2"}, "Deixe em branco para manter a senha atual"),
+                            React.createElement("label", {className: "text-xs text-gray-600 font-medium"}, "Nova senha"),
+                            React.createElement("div", {className: "relative mt-1 mb-2"},
+                                React.createElement("input", {
+                                    type: ec.mostrar_senha ? "text" : "password",
+                                    value: ec.nova_senha,
+                                    onChange: function(e) { atualizarCampo("nova_senha", e.target.value); },
+                                    className: "w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-400 outline-none",
+                                    placeholder: "Mínimo 6 caracteres",
+                                    autoComplete: "new-password"
+                                }),
+                                React.createElement("button", {
+                                    type: "button",
+                                    onClick: function() { atualizarCampo("mostrar_senha", !ec.mostrar_senha); },
+                                    className: "absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 text-sm"
+                                }, ec.mostrar_senha ? "🙈" : "👁️")
+                            ),
+                            temSenha && React.createElement("label", {className: "text-xs text-gray-600 font-medium"}, "Confirmar senha"),
+                            temSenha && React.createElement("input", {
+                                type: ec.mostrar_senha ? "text" : "password",
+                                value: ec.confirmar_senha,
+                                onChange: function(e) { atualizarCampo("confirmar_senha", e.target.value); },
+                                className: "w-full px-3 py-2 border rounded-lg text-sm mt-1 outline-none " +
+                                    (temSenha && ec.nova_senha !== ec.confirmar_senha
+                                        ? "border-red-300 bg-red-50"
+                                        : temSenha && ec.nova_senha.length >= 6
+                                            ? "border-green-300 bg-green-50"
+                                            : "border-gray-300"),
+                                placeholder: "Digite novamente",
+                                autoComplete: "new-password"
+                            }),
+                            temSenha && ec.nova_senha.length > 0 && ec.nova_senha.length < 6 && React.createElement("div", {className: "text-xs text-red-600 mt-1"}, "⚠️ Mínimo 6 caracteres"),
+                            temSenha && ec.nova_senha.length >= 6 && ec.confirmar_senha.length > 0 && ec.nova_senha !== ec.confirmar_senha && React.createElement("div", {className: "text-xs text-red-600 mt-1"}, "⚠️ Senhas não conferem"),
+                            temSenha && ec.nova_senha.length >= 6 && ec.nova_senha === ec.confirmar_senha && React.createElement("div", {className: "text-xs text-green-600 mt-1"}, "✅ Senha OK")
+                        ),
+                        
+                        ec.erro && React.createElement("div", {className: "mb-3 px-3 py-2 bg-red-100 text-red-700 rounded text-xs"}, "❌ ", ec.erro),
+                        
+                        React.createElement("div", {className: "flex gap-2"},
+                            React.createElement("button", {
+                                onClick: fecharModal,
+                                className: "flex-1 py-2 border rounded-lg text-sm hover:bg-gray-50"
+                            }, "Cancelar"),
+                            React.createElement("button", {
+                                onClick: salvar,
+                                disabled: !podeSalvar,
+                                className: "flex-1 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            }, ec.salvando ? "⏳ Salvando..." : "💾 Salvar")
+                        )
+                    )
+                );
+            })(),
 
             // ==================== MODAL ALTERAR SENHA ====================
             p.senhaModal && p.senhaModalUser && (function() {
