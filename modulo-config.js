@@ -953,8 +953,46 @@
                                                     ja("Erro", "error");
                                                 }
                                             },
+                                            title: cliente.ativo ? "Desativar cliente" : "Ativar cliente",
                                             className: "px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs hover:bg-gray-300"
-                                        }, "🔄")
+                                        }, "🔄"),
+                                        React.createElement("button", {
+                                            onClick: async function() {
+                                                var total = parseInt(cliente.total_solicitacoes) || 0;
+                                                var msg = "⚠️ EXCLUIR cliente \"" + cliente.nome + "\" (" + cliente.email + ")?\n\n" +
+                                                    (total > 0
+                                                        ? "Este cliente possui " + total + " solicitação(ões) no histórico.\n" +
+                                                          "A exclusão provavelmente FALHARÁ por referência de chave estrangeira.\n" +
+                                                          "Recomendação: desative em vez de excluir.\n\n" +
+                                                          "Deseja tentar excluir mesmo assim?"
+                                                        : "Nenhuma solicitação no histórico — exclusão segura.\n\n" +
+                                                          "Esta ação é IRREVERSÍVEL e também apagará todos os endereços salvos.\n\n" +
+                                                          "Confirmar exclusão?");
+                                                if (!confirm(msg)) return;
+                                                try {
+                                                    var resp = await fetch(API_URL + "/admin/solicitacao/clientes/" + cliente.id, {
+                                                        method: "DELETE",
+                                                        headers: {"Authorization": "Bearer " + getToken()}
+                                                    });
+                                                    var data = await resp.json().catch(function() { return {}; });
+                                                    if (resp.ok) {
+                                                        ja("🗑️ Cliente excluído com sucesso!", "success");
+                                                        x({...p, clientesApiLista: null});
+                                                    } else {
+                                                        var erro = (data.error || "").toLowerCase();
+                                                        if (erro.indexOf("foreign key") >= 0 || erro.indexOf("violates") >= 0 || erro.indexOf("constraint") >= 0) {
+                                                            ja("❌ Não é possível excluir: cliente possui corridas no histórico. Desative em vez de excluir.", "error");
+                                                        } else {
+                                                            ja("❌ " + (data.error || "Erro ao excluir"), "error");
+                                                        }
+                                                    }
+                                                } catch (err) {
+                                                    ja("❌ Erro de conexão ao excluir", "error");
+                                                }
+                                            },
+                                            title: "Excluir cliente permanentemente",
+                                            className: "px-2 py-1 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200"
+                                        }, "🗑️")
                                     )
                                 );
                             })
