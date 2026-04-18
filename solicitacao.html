@@ -414,6 +414,10 @@
             // NOVO: banner que pergunta se quer ajustar a posição após adicionar um ponto
             const [promptAjuste, setPromptAjuste] = useState({ aberto: false, pontoId: null });
             
+            // NOVO: prompt inline pra quando o endereço escolhido não traz número (street_number)
+            // Evita adicionar pontos "genéricos" que confundem o motoboy
+            const [aguardandoNumero, setAguardandoNumero] = useState({ aberto: false, sugestao: null, numero: '' });
+            
             const abrirFotoModal = (fotos, indice = 0) => {
                 setFotoModal({ aberto: true, fotos, indice });
             };
@@ -904,45 +908,92 @@
                 setSalvandoEndereco(false);
             };
             
-            const adicionarPonto = (sug) => {
-                if (pontos.length >= 2) { showToast('Este fluxo permite apenas 1 ponto de entrega', 'error'); return; }
+            // Helper: cria o objeto ponto a partir da sugestão do Google.
+            // Aceita um `numeroOverride` pra quando o usuário preenche manualmente o número.
+            const criarPontoDeSugestao = (sug, numeroOverride = null) => {
                 const comp = sug.componentes || [];
                 const get = (t) => comp.find(c => c.types?.includes(t))?.long_name || '';
                 const getS = (t) => comp.find(c => c.types?.includes(t))?.short_name || '';
-                const novoId = Date.now();
-                const novoPonto = { 
-                    id: novoId, 
-                    endereco_completo: sug.endereco || '', 
-                    rua: get('route'), 
-                    numero: get('street_number'), 
+                const numeroFinal = numeroOverride !== null ? numeroOverride : get('street_number');
+                // Se o usuário informou um número manual, concatena no endereço completo
+                let enderecoFinal = sug.endereco || '';
+                if (numeroOverride && numeroOverride !== 'S/N' && !get('street_number')) {
+                    // Insere o número após a rua no endereço formatado
+                    const rua = get('route');
+                    if (rua && enderecoFinal.startsWith(rua)) {
+                        enderecoFinal = `${rua}, ${numeroOverride}${enderecoFinal.substring(rua.length)}`;
+                    }
+                }
+                return {
+                    id: Date.now(),
+                    endereco_completo: enderecoFinal,
+                    rua: get('route'),
+                    numero: numeroFinal,
                     complemento: '',
-                    bairro: get('sublocality_level_1') || get('sublocality'), 
-                    cidade: get('administrative_area_level_2') || get('locality'), 
-                    uf: getS('administrative_area_level_1'), 
-                    cep: get('postal_code'), 
-                    latitude: sug.latitude, 
-                    longitude: sug.longitude, 
-                    observacao: '', 
-                    telefone: '', 
-                    procurar_por: '', 
-                    numero_nota: '', 
-                    codigo_finalizar: '' 
+                    bairro: get('sublocality_level_1') || get('sublocality'),
+                    cidade: get('administrative_area_level_2') || get('locality'),
+                    uf: getS('administrative_area_level_1'),
+                    cep: get('postal_code'),
+                    latitude: sug.latitude,
+                    longitude: sug.longitude,
+                    observacao: '',
+                    telefone: '',
+                    procurar_por: '',
+                    numero_nota: '',
+                    codigo_finalizar: '',
+                    numero_manual: !!numeroOverride && !get('street_number')
                 };
+            };
+            
+            // Finaliza a adição do ponto (efeitos colaterais: toast, prompt de ajuste, nota rápida)
+            const finalizarAdicaoPonto = (novoPonto) => {
                 const novosPontos = [...pontos, novoPonto];
                 setPontos(novosPontos);
-                setTermoBusca(''); 
+                setTermoBusca('');
                 setSugestoes([]);
+                setAguardandoNumero({ aberto: false, sugestao: null, numero: '' });
                 
                 // Se for ponto de entrega (não o primeiro), mostrar input de nota
                 if (novosPontos.length > 1) {
-                    setPontoRecemAdicionado(novoId);
+                    setPontoRecemAdicionado(novoPonto.id);
                     setNotaRapida('');
                 }
                 
-                // NOVO: perguntar se quer ajustar a posição no mapa (Google com satélite 3D)
-                setPromptAjuste({ aberto: true, pontoId: novoId });
+                // Perguntar se quer ajustar a posição no mapa
+                setPromptAjuste({ aberto: true, pontoId: novoPonto.id });
                 
                 showToast('✅ Adicionado', 'success');
+            };
+            
+            const adicionarPonto = (sug) => {
+                if (pontos.length >= 2) { showToast('Este fluxo permite apenas 1 ponto de entrega', 'error'); return; }
+                const comp = sug.componentes || [];
+                const temNumero = !!comp.find(c => c.types?.includes('street_number'));
+                
+                // Se o Google não retornou número, pedir pro usuário informar antes de adicionar
+                if (!temNumero) {
+                    setAguardandoNumero({ aberto: true, sugestao: sug, numero: '' });
+                    return;
+                }
+                
+                finalizarAdicaoPonto(criarPontoDeSugestao(sug));
+            };
+            
+            // Confirmar número digitado manualmente e adicionar o ponto
+            const confirmarNumeroManual = () => {
+                const num = (aguardandoNumero.numero || '').trim();
+                if (!num) { showToast('Digite o número ou marque S/N', 'warning'); return; }
+                finalizarAdicaoPonto(criarPontoDeSugestao(aguardandoNumero.sugestao, num));
+            };
+            
+            // Marcar como S/N (sem número) — ainda assim adiciona o ponto
+            const marcarSemNumero = () => {
+                finalizarAdicaoPonto(criarPontoDeSugestao(aguardandoNumero.sugestao, 'S/N'));
+            };
+            
+            // Cancelar — volta pras sugestões
+            const cancelarPromptNumero = () => {
+                setAguardandoNumero({ aberto: false, sugestao: null, numero: '' });
             };
             
             // NOVO: aceitar o ajuste — abre o modal Google Maps com o ponto recém-adicionado
@@ -1180,7 +1231,36 @@
                                                         </div>
                                                     )}
                                                     {/* Sugestões do Google */}
-                                                    {sugestoes.length > 0 && <div className="mt-2 bg-white border border-amber-200 rounded-lg max-h-48 overflow-y-auto">{sugestoes.map((s, i) => <div key={i} className="p-2 hover:bg-amber-50 border-b cursor-pointer" onClick={() => adicionarPonto(s)}><span className="text-xs">📍 {s.endereco}</span></div>)}</div>}
+                                                    {/* Sugestões do Google OU prompt de número quando endereço não tem número */}
+                                                    {aguardandoNumero.aberto ? (
+                                                        <div className="mt-2 bg-amber-50 border-2 border-amber-400 rounded-lg p-3 fade-in">
+                                                            <div className="flex items-start gap-2 mb-2">
+                                                                <span className="text-lg">🔢</span>
+                                                                <div className="flex-1">
+                                                                    <div className="text-xs font-bold text-amber-800">Endereço sem número</div>
+                                                                    <div className="text-xs text-amber-700 mt-0.5 truncate">📍 {aguardandoNumero.sugestao?.endereco}</div>
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex gap-2 mb-2">
+                                                                <input
+                                                                    type="text"
+                                                                    autoFocus
+                                                                    value={aguardandoNumero.numero}
+                                                                    onChange={(e) => setAguardandoNumero(prev => ({ ...prev, numero: e.target.value }))}
+                                                                    onKeyPress={(e) => { if (e.key === 'Enter') confirmarNumeroManual(); }}
+                                                                    placeholder="Digite o número"
+                                                                    className="flex-1 px-3 py-2 border border-amber-300 rounded-lg text-sm outline-none bg-white"
+                                                                />
+                                                                <button onClick={confirmarNumeroManual} className="px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm font-medium">✓</button>
+                                                            </div>
+                                                            <div className="flex gap-2">
+                                                                <button onClick={marcarSemNumero} className="flex-1 py-1.5 bg-white border border-amber-300 hover:bg-amber-100 text-amber-700 rounded-lg text-xs font-medium">🚫 S/N (sem número)</button>
+                                                                <button onClick={cancelarPromptNumero} className="px-3 py-1.5 text-gray-500 hover:text-gray-700 text-xs">Cancelar</button>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        sugestoes.length > 0 && <div className="mt-2 bg-white border border-amber-200 rounded-lg max-h-48 overflow-y-auto">{sugestoes.map((s, i) => <div key={i} className="p-2 hover:bg-amber-50 border-b cursor-pointer" onClick={() => adicionarPonto(s)}><span className="text-xs">📍 {s.endereco}</span></div>)}</div>
+                                                    )}
                                                 </div>
                                             ) : (
                                                 <div className="bg-white rounded-lg p-2 border border-amber-200">
@@ -1232,7 +1312,36 @@
                                                         </div>
                                                     )}
                                                     {/* Sugestões do Google */}
-                                                    {sugestoes.length > 0 && <div className="mt-2 bg-white border rounded-lg max-h-48 overflow-y-auto">{sugestoes.map((s, i) => <div key={i} className="p-2 hover:bg-blue-50 border-b cursor-pointer" onClick={() => adicionarPonto(s)}><span className="text-xs">📍 {s.endereco}</span></div>)}</div>}
+                                                    {/* Sugestões do Google OU prompt de número quando endereço não tem número */}
+                                                    {aguardandoNumero.aberto ? (
+                                                        <div className="mt-2 bg-blue-50 border-2 border-blue-400 rounded-lg p-3 fade-in">
+                                                            <div className="flex items-start gap-2 mb-2">
+                                                                <span className="text-lg">🔢</span>
+                                                                <div className="flex-1">
+                                                                    <div className="text-xs font-bold text-blue-800">Endereço sem número</div>
+                                                                    <div className="text-xs text-blue-700 mt-0.5 truncate">📍 {aguardandoNumero.sugestao?.endereco}</div>
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex gap-2 mb-2">
+                                                                <input
+                                                                    type="text"
+                                                                    autoFocus
+                                                                    value={aguardandoNumero.numero}
+                                                                    onChange={(e) => setAguardandoNumero(prev => ({ ...prev, numero: e.target.value }))}
+                                                                    onKeyPress={(e) => { if (e.key === 'Enter') confirmarNumeroManual(); }}
+                                                                    placeholder="Digite o número"
+                                                                    className="flex-1 px-3 py-2 border border-blue-300 rounded-lg text-sm outline-none bg-white"
+                                                                />
+                                                                <button onClick={confirmarNumeroManual} className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium">✓</button>
+                                                            </div>
+                                                            <div className="flex gap-2">
+                                                                <button onClick={marcarSemNumero} className="flex-1 py-1.5 bg-white border border-blue-300 hover:bg-blue-100 text-blue-700 rounded-lg text-xs font-medium">🚫 S/N (sem número)</button>
+                                                                <button onClick={cancelarPromptNumero} className="px-3 py-1.5 text-gray-500 hover:text-gray-700 text-xs">Cancelar</button>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        sugestoes.length > 0 && <div className="mt-2 bg-white border rounded-lg max-h-48 overflow-y-auto">{sugestoes.map((s, i) => <div key={i} className="p-2 hover:bg-blue-50 border-b cursor-pointer" onClick={() => adicionarPonto(s)}><span className="text-xs">📍 {s.endereco}</span></div>)}</div>
+                                                    )}
                                                 </div>
                                             )}
                                             <div className="space-y-2 max-h-64 overflow-y-auto">
