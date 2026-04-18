@@ -1173,6 +1173,73 @@
             const formatarHora = (d) => d ? new Date(d).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '';
             const contarPontos = (corrida) => { const total = corrida.total_pontos || 0; return { coletas: 1, entregas: Math.max(0, total - 1) }; };
             
+            // Analisa o estado completo da corrida e retorna uma mensagem descritiva.
+            // Combina o status principal com os eventos dos pontos pra dar uma descrição precisa
+            // do que o motoboy está fazendo agora.
+            const analisarEstadoCorrida = (corrida) => {
+                // Estados diretos do status principal
+                if (corrida.status === 'enviado') {
+                    return { icone: '⏳', texto: 'Aguardando aceite do motoboy', cor: 'bg-gray-100 text-gray-700 border-gray-300' };
+                }
+                if (corrida.status === 'erro') {
+                    return { icone: '❌', texto: 'Erro ao criar corrida', cor: 'bg-red-100 text-red-700 border-red-300' };
+                }
+                if (corrida.status === 'cancelado') {
+                    return { icone: '✕', texto: 'Cancelado', cor: 'bg-red-100 text-red-700 border-red-300' };
+                }
+                if (corrida.status === 'finalizado') {
+                    return { icone: '✅', texto: 'Finalizado', cor: 'bg-green-100 text-green-700 border-green-300' };
+                }
+                
+                // Para 'aceito' e 'em_andamento', olhamos os pontos
+                let pontos = corrida.dados_pontos;
+                if (pontos && typeof pontos === 'string') {
+                    try { pontos = JSON.parse(pontos); } catch { pontos = null; }
+                }
+                
+                // Normaliza status de cada ponto nos dois formatos possíveis (webhook + sync)
+                const normalizar = (p) => {
+                    if (!p) return 'pendente';
+                    if (p.status && ['chegou','coletado','finalizado','pendente'].includes(p.status)) return p.status;
+                    const codigo = (p.codigo || '').toUpperCase();
+                    if (codigo === 'CHE') return 'chegou';
+                    if (codigo === 'COL') return 'coletado';
+                    if (codigo === 'FIN') return 'finalizado';
+                    return 'pendente';
+                };
+                
+                const statusColeta = pontos && pontos[0] ? normalizar(pontos[0]) : 'pendente';
+                const statusEntrega = pontos && pontos[1] ? normalizar(pontos[1]) : 'pendente';
+                
+                // Motoboy aceitou mas ainda não começou nada
+                if (statusColeta === 'pendente' && statusEntrega === 'pendente') {
+                    return { icone: '📦', texto: 'Aguardando coleta', cor: 'bg-amber-100 text-amber-700 border-amber-300' };
+                }
+                
+                // Chegou na coleta mas ainda não coletou
+                if (statusColeta === 'chegou' && statusEntrega === 'pendente') {
+                    return { icone: '📍', texto: 'Motoboy chegou na coleta', cor: 'bg-blue-100 text-blue-700 border-blue-300' };
+                }
+                
+                // Coletou (ou finalizou coleta) mas ainda não chegou na entrega
+                if ((statusColeta === 'coletado' || statusColeta === 'finalizado') && statusEntrega === 'pendente') {
+                    return { icone: '🏍️', texto: 'Motoboy a caminho da entrega', cor: 'bg-indigo-100 text-indigo-700 border-indigo-300' };
+                }
+                
+                // Chegou no cliente
+                if (statusEntrega === 'chegou') {
+                    return { icone: '📍', texto: 'Motoboy no cliente', cor: 'bg-purple-100 text-purple-700 border-purple-300' };
+                }
+                
+                // Entrega finalizada mas a corrida ainda não virou 'finalizado' (transição ou insucesso)
+                if (statusEntrega === 'finalizado') {
+                    return { icone: '✅', texto: 'Entrega finalizada', cor: 'bg-green-100 text-green-700 border-green-300' };
+                }
+                
+                // Fallback defensivo
+                return { icone: '🏍️', texto: 'Em andamento', cor: 'bg-blue-100 text-blue-700 border-blue-300' };
+            };
+            
             // Infere o sub-status atual a partir de dados_pontos (JSONB com eventos do webhook)
             // Usado para mostrar eventos intermediários no card da lista Ativas.
             // Lê dois formatos possíveis do JSONB:
@@ -1534,15 +1601,13 @@
                                                                 </div>
                                                                 <span className="text-xs font-bold text-gray-600 whitespace-nowrap">OS #{c.tutts_os_numero || c.id}</span>
                                                             </div>
-                                                            <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${statusCores[c.status]}`}><span>{statusIcons[c.status]}</span><span>{statusNomes[c.status]}</span></div>
-                                                            {/* NOVO: sub-status granular baseado em webhook events (ex: "Chegou na coleta", "Coletou, a caminho") */}
+                                                            {/* Status unificado: mensagem descritiva baseada no status + eventos do webhook */}
                                                             {(() => {
-                                                                const sub = inferirSubStatus(c);
-                                                                if (!sub) return null;
+                                                                const estado = analisarEstadoCorrida(c);
                                                                 return (
-                                                                    <div className={`mt-2 inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${sub.cor}`}>
-                                                                        <span>{sub.icone}</span>
-                                                                        <span>{sub.texto}</span>
+                                                                    <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${estado.cor}`}>
+                                                                        <span>{estado.icone}</span>
+                                                                        <span>{estado.texto}</span>
                                                                     </div>
                                                                 );
                                                             })()}
@@ -1594,7 +1659,12 @@
                                                     <div className="flex-1 min-w-0">
                                                         <div className="flex items-center gap-2 flex-wrap">
                                                             <span className="font-bold text-sm">OS #{detalheCorrida.tutts_os_numero || detalheCorrida.id}</span>
-                                                            <span className={`text-xs px-2 py-0.5 rounded-full ${statusCores[detalheCorrida.status]}`}>{statusIcons[detalheCorrida.status]} {statusNomes[detalheCorrida.status]}</span>
+                                                            {(() => {
+                                                                const estado = analisarEstadoCorrida(detalheCorrida);
+                                                                return (
+                                                                    <span className={`text-xs px-2 py-0.5 rounded-full border ${estado.cor}`}>{estado.icone} {estado.texto}</span>
+                                                                );
+                                                            })()}
                                                         </div>
                                                         <div className="text-sm font-medium text-gray-800 truncate">{detalheCorrida.profissional_nome || 'Aguardando profissional...'}</div>
                                                         <div className="flex items-center gap-3 text-xs text-gray-600 mt-1">
