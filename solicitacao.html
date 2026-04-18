@@ -1174,7 +1174,10 @@
             const contarPontos = (corrida) => { const total = corrida.total_pontos || 0; return { coletas: 1, entregas: Math.max(0, total - 1) }; };
             
             // Infere o sub-status atual a partir de dados_pontos (JSONB com eventos do webhook)
-            // Usado para mostrar eventos intermediários no card da lista Ativas
+            // Usado para mostrar eventos intermediários no card da lista Ativas.
+            // Lê dois formatos possíveis do JSONB:
+            //   - Formato A (webhook): { status: 'chegou'|'coletado'|'finalizado', status_descricao, motivo_tipo }
+            //   - Formato B (sync Tutts): { codigo: 'CHE'|'COL'|'FIN', statusPonto: { motivo, ocorrencia, ... } }
             const inferirSubStatus = (corrida) => {
                 let pontos = corrida.dados_pontos;
                 if (!pontos) return null;
@@ -1183,18 +1186,33 @@
                 } catch { return null; }
                 if (!Array.isArray(pontos) || pontos.length === 0) return null;
                 
+                // Normaliza um ponto para { status, motivo } independente do formato
+                const normalizar = (p) => {
+                    if (!p) return null;
+                    // Formato A (webhook)
+                    if (p.status && ['chegou','coletado','finalizado','pendente'].includes(p.status)) {
+                        return { status: p.status, motivo: p.motivo_tipo };
+                    }
+                    // Formato B (sync)
+                    const codigo = (p.codigo || '').toUpperCase();
+                    if (codigo === 'CHE') return { status: 'chegou', motivo: p.statusPonto?.ocorrencia };
+                    if (codigo === 'COL') return { status: 'coletado', motivo: p.statusPonto?.ocorrencia };
+                    if (codigo === 'FIN') return { status: 'finalizado', motivo: p.statusPonto?.ocorrencia || p.statusPonto?.motivo };
+                    return { status: 'pendente' };
+                };
+                
                 // Procura o último ponto com status não-pendente (mais recente)
                 for (let i = pontos.length - 1; i >= 0; i--) {
-                    const p = pontos[i];
-                    if (!p?.status || p.status === 'pendente') continue;
+                    const n = normalizar(pontos[i]);
+                    if (!n || n.status === 'pendente') continue;
                     const isColeta = i === 0;
                     const tipo = isColeta ? 'coleta' : 'entrega';
                     
-                    if (p.status === 'chegou') return { icone: '📍', texto: `Chegou na ${tipo}`, cor: 'bg-blue-50 text-blue-700 border-blue-200' };
-                    if (p.status === 'coletado') return { icone: '📦', texto: 'Coletou, a caminho', cor: 'bg-indigo-50 text-indigo-700 border-indigo-200' };
-                    if (p.status === 'finalizado') {
-                        const motivo = (p.motivo_tipo || '').toLowerCase();
-                        if (motivo && motivo !== 'sucesso') {
+                    if (n.status === 'chegou') return { icone: '📍', texto: `Chegou na ${tipo}`, cor: 'bg-blue-50 text-blue-700 border-blue-200' };
+                    if (n.status === 'coletado') return { icone: '📦', texto: 'Coletou, a caminho', cor: 'bg-indigo-50 text-indigo-700 border-indigo-200' };
+                    if (n.status === 'finalizado') {
+                        const motivo = (n.motivo || '').toLowerCase();
+                        if (motivo && motivo !== 'sucesso' && motivo !== 'entregue') {
                             return { icone: '⚠️', texto: `Insucesso na ${tipo}`, cor: 'bg-orange-50 text-orange-700 border-orange-200' };
                         }
                         return { icone: '✅', texto: isColeta ? 'Coleta concluída' : 'Entregue', cor: 'bg-green-50 text-green-700 border-green-200' };
