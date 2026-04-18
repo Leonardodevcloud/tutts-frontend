@@ -1173,6 +1173,36 @@
             const formatarHora = (d) => d ? new Date(d).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '';
             const contarPontos = (corrida) => { const total = corrida.total_pontos || 0; return { coletas: 1, entregas: Math.max(0, total - 1) }; };
             
+            // Infere o sub-status atual a partir de dados_pontos (JSONB com eventos do webhook)
+            // Usado para mostrar eventos intermediários no card da lista Ativas
+            const inferirSubStatus = (corrida) => {
+                let pontos = corrida.dados_pontos;
+                if (!pontos) return null;
+                try {
+                    if (typeof pontos === 'string') pontos = JSON.parse(pontos);
+                } catch { return null; }
+                if (!Array.isArray(pontos) || pontos.length === 0) return null;
+                
+                // Procura o último ponto com status não-pendente (mais recente)
+                for (let i = pontos.length - 1; i >= 0; i--) {
+                    const p = pontos[i];
+                    if (!p?.status || p.status === 'pendente') continue;
+                    const isColeta = i === 0;
+                    const tipo = isColeta ? 'coleta' : 'entrega';
+                    
+                    if (p.status === 'chegou') return { icone: '📍', texto: `Chegou na ${tipo}`, cor: 'bg-blue-50 text-blue-700 border-blue-200' };
+                    if (p.status === 'coletado') return { icone: '📦', texto: 'Coletou, a caminho', cor: 'bg-indigo-50 text-indigo-700 border-indigo-200' };
+                    if (p.status === 'finalizado') {
+                        const motivo = (p.motivo_tipo || '').toLowerCase();
+                        if (motivo && motivo !== 'sucesso') {
+                            return { icone: '⚠️', texto: `Insucesso na ${tipo}`, cor: 'bg-orange-50 text-orange-700 border-orange-200' };
+                        }
+                        return { icone: '✅', texto: isColeta ? 'Coleta concluída' : 'Entregue', cor: 'bg-green-50 text-green-700 border-green-200' };
+                    }
+                }
+                return null;
+            };
+            
             return (
                 <div className="min-h-screen bg-gray-100">
                     <header className="bg-blue-900 text-white px-3 py-2 shadow-lg">
@@ -1487,6 +1517,17 @@
                                                                 <span className="text-xs font-bold text-gray-600 whitespace-nowrap">OS #{c.tutts_os_numero || c.id}</span>
                                                             </div>
                                                             <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${statusCores[c.status]}`}><span>{statusIcons[c.status]}</span><span>{statusNomes[c.status]}</span></div>
+                                                            {/* NOVO: sub-status granular baseado em webhook events (ex: "Chegou na coleta", "Coletou, a caminho") */}
+                                                            {(() => {
+                                                                const sub = inferirSubStatus(c);
+                                                                if (!sub) return null;
+                                                                return (
+                                                                    <div className={`mt-2 inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${sub.cor}`}>
+                                                                        <span>{sub.icone}</span>
+                                                                        <span>{sub.texto}</span>
+                                                                    </div>
+                                                                );
+                                                            })()}
                                                             {/* Alerta de retorno */}
                                                             {temRetorno && (
                                                                 <div className="mt-2 group relative">
