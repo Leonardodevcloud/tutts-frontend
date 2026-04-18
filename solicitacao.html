@@ -1705,20 +1705,43 @@
                                                                             </div>
                                                                             <div className="text-xs text-gray-700 leading-relaxed">{enderecoFinal}</div>
                                                                             
-                                                                            {/* Horário de finalização - para coleta */}
-                                                                            {isColeta && p.data_finalizado && (
-                                                                                <div className="mt-1 text-xs text-green-600">✅ Coletado: {formatarHora(p.data_finalizado)}</div>
-                                                                            )}
-                                                                            
                                                                             {/* Número da nota - só para entregas (não retorno) */}
                                                                             {!isColeta && !isRetorno && p.numero_nota && <div className="text-xs text-green-600 mt-1 font-medium">🏷️ Nota: {p.numero_nota}</div>}
                                                                             
-                                                                            {/* Horários - para entregas e retornos */}
-                                                                            {!isColeta && (p.data_chegada || p.data_finalizado || p.data_coletado) && (
-                                                                                <div className="mt-2 pt-2 border-t border-gray-200 text-xs space-y-1">
-                                                                                    {p.data_chegada && <div className="text-blue-600">🔵 Chegou: {formatarHora(p.data_chegada)}</div>}
-                                                                                    {p.data_coletado && <div className="text-yellow-600">🟡 Coletou: {formatarHora(p.data_coletado)}</div>}
-                                                                                    {p.data_finalizado && <div className="text-green-600">✅ Finalizado: {formatarHora(p.data_finalizado)}</div>}
+                                                                            {/* Timeline unificada de eventos do ponto (chegou → coletou → finalizou) */}
+                                                                            {(p.data_chegada || p.data_coletado || p.data_finalizado) && (
+                                                                                <div className="mt-2 pt-2 border-t border-gray-200">
+                                                                                    <div className="text-xs font-medium text-gray-500 mb-1.5">⏱️ Linha do tempo</div>
+                                                                                    <div className="space-y-1">
+                                                                                        {p.data_chegada && (
+                                                                                            <div className="flex items-center gap-2 text-xs">
+                                                                                                <span className="w-5 text-center">📍</span>
+                                                                                                <span className="text-blue-700 flex-1">Chegou no {isColeta ? 'ponto' : 'cliente'}</span>
+                                                                                                <span className="font-mono text-gray-600 text-xs">{formatarHora(p.data_chegada)}</span>
+                                                                                            </div>
+                                                                                        )}
+                                                                                        {isColeta && p.data_coletado && (
+                                                                                            <div className="flex items-center gap-2 text-xs">
+                                                                                                <span className="w-5 text-center">📦</span>
+                                                                                                <span className="text-indigo-700 flex-1">Confirmou coleta</span>
+                                                                                                <span className="font-mono text-gray-600 text-xs">{formatarHora(p.data_coletado)}</span>
+                                                                                            </div>
+                                                                                        )}
+                                                                                        {p.data_finalizado && (() => {
+                                                                                            const motivo = (p.motivo_finalizacao || '').toLowerCase();
+                                                                                            const sucesso = !motivo || motivo === 'sucesso' || motivo === 'entregue';
+                                                                                            const label = isColeta ? 'Finalizou coleta' : (sucesso ? 'Entrega concluída' : 'Finalizado (insucesso)');
+                                                                                            const icone = sucesso ? '✅' : '⚠️';
+                                                                                            const corTexto = sucesso ? 'text-green-700' : 'text-orange-700';
+                                                                                            return (
+                                                                                                <div className="flex items-center gap-2 text-xs">
+                                                                                                    <span className="w-5 text-center">{icone}</span>
+                                                                                                    <span className={`${corTexto} flex-1 font-medium`}>{label}</span>
+                                                                                                    <span className="font-mono text-gray-600 text-xs">{formatarHora(p.data_finalizado)}</span>
+                                                                                                </div>
+                                                                                            );
+                                                                                        })()}
+                                                                                    </div>
                                                                                 </div>
                                                                             )}
                                                                             
