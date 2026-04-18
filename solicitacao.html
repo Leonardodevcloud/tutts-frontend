@@ -157,6 +157,31 @@
                     const tipoLabel = idx === 0 ? '📦 COLETA' : `📍 ENTREGA ${idx}`;
                     L.marker([p.latitude, p.longitude], { icon }).bindPopup(`<strong>${tipoLabel}</strong><br/>${enderecoCompleto}`).addTo(markersLayer);
                 });
+                
+                // NOVO: desenhar traçado entre os pontos.
+                // Tenta usar OSRM (rota real pelas ruas); se falhar, cai em linha reta.
+                if (pontosValidos.length >= 2) {
+                    const coords = pontosValidos.map(p => `${p.longitude},${p.latitude}`).join(';');
+                    const url = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`;
+                    
+                    // Linha reta como fallback imediato (aparece rápido enquanto rota real carrega)
+                    const linhaReta = L.polyline(
+                        pontosValidos.map(p => [p.latitude, p.longitude]),
+                        { color: '#7c3aed', weight: 3, opacity: 0.5, dashArray: '8, 10' }
+                    ).addTo(markersLayer);
+                    
+                    fetch(url)
+                        .then(r => r.ok ? r.json() : null)
+                        .then(data => {
+                            if (!data || !data.routes?.[0]?.geometry?.coordinates) return;
+                            // Remove a linha reta e desenha a rota real
+                            markersLayer.removeLayer(linhaReta);
+                            const coordsRota = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+                            L.polyline(coordsRota, { color: '#7c3aed', weight: 5, opacity: 0.85 }).addTo(markersLayer);
+                        })
+                        .catch(() => { /* mantém a linha reta se o OSRM falhar */ });
+                }
+                
                 if (pontosValidos.length > 0) { const bounds = L.latLngBounds(pontosValidos.map(p => [p.latitude, p.longitude])); map.fitBounds(bounds, { padding: [50, 50] }); }
                 setTimeout(() => map.invalidateSize(), 50);
             }, [pontos, tipo]);
@@ -1479,7 +1504,6 @@
                                                             )}
                                                             <div className="flex items-center justify-between mt-2 text-xs text-gray-500">
                                                                 <span>📦 {coletas} → 📍 {entregas}</span>
-                                                                {c.tutts_valor && <span className="font-bold text-green-600">R$ {parseFloat(c.tutts_valor).toFixed(2)}</span>}
                                                             </div>
                                                             {c.primeiro_numero_nota && <div className="mt-2 text-xs text-green-600 font-medium">🏷️ {c.primeiro_numero_nota}</div>}
                                                         </div>
@@ -1558,7 +1582,7 @@
                                             </div>
                                             
                                             {/* Métricas compactas */}
-                                            <div className="grid grid-cols-4 gap-2">
+                                            <div className="grid grid-cols-3 gap-2">
                                                 <div className="bg-white p-2 rounded-lg shadow text-center">
                                                     <div className="text-sm font-bold text-blue-600">{detalheCorrida.tutts_distancia || '-'} km</div>
                                                     <div className="text-xs text-gray-400">Dist.</div>
@@ -1566,10 +1590,6 @@
                                                 <div className="bg-white p-2 rounded-lg shadow text-center">
                                                     <div className="text-sm font-bold text-blue-600">{detalheCorrida.tutts_duracao || '-'}</div>
                                                     <div className="text-xs text-gray-400">Tempo</div>
-                                                </div>
-                                                <div className="bg-white p-2 rounded-lg shadow text-center">
-                                                    <div className="text-sm font-bold text-green-600">{detalheCorrida.tutts_valor ? `R$ ${parseFloat(detalheCorrida.tutts_valor).toFixed(0)}` : '-'}</div>
-                                                    <div className="text-xs text-gray-400">Valor</div>
                                                 </div>
                                                 <div className="bg-white p-2 rounded-lg shadow text-center">
                                                     <div className="text-sm font-bold text-purple-600">{detalheCorrida.pontos?.length || 0}</div>
