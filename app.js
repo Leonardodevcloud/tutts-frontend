@@ -417,7 +417,7 @@ function hasModuleAccess(user, moduleId) {
     
     // User comum tem acesso ao módulo de filas (para check-in na fila)
     if (user.role === "user") {
-        return ["filas", "agente"].includes(moduleId);
+        return ["filas", "agente", "coleta"].includes(moduleId);
     }
     
     // Admin normal - verificar permissões
@@ -14699,8 +14699,7 @@ const hideLoadingScreen = () => {
         }
 
         // ========== MÓDULO COLETA DE ENDEREÇOS (CARREGAMENTO EXTERNO) ==========
-        // Motoboy (role='user') sempre vê este módulo. Admin também.
-        const canAccessColeta = l?.role === 'user' || l?.role === 'admin' || l?.role === 'admin_master' || hasModuleAccess(l, "coleta");
+        const canAccessColeta = hasModuleAccess(l, "coleta");
         if (canAccessColeta && "coleta" === Ee) {
             if (typeof window.ModuloColetaComponent !== 'undefined') {
                 return React.createElement(window.ModuloColetaComponent, {
