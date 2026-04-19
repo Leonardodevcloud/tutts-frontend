@@ -797,6 +797,7 @@
         const [regioes, setRegioes] = useState([]);
         const [loading, setLoading] = useState(true);
         const [grupos, setGrupos] = useState([]);
+        const [regioesCrm, setRegioesCrm] = useState([]); // regiões disponíveis no CRM (pra autocomplete)
         const [editarRegiao, setEditarRegiao] = useState(null); // { id?, nome, uf, cidade, grupo_enderecos_id, ativo }
         const [gerenciarMotoboys, setGerenciarMotoboys] = useState(null); // regiao
         const [verClientesDoGrupo, setVerClientesDoGrupo] = useState(null); // { grupo_id, nome }
@@ -812,6 +813,7 @@
         useEffect(() => {
             carregar();
             fetchApi('/admin/grupos-enderecos').then(setGrupos).catch(() => {});
+            fetchApi('/admin/coleta/regioes-crm').then(setRegioesCrm).catch(() => {});
         }, []);
 
         // Mapa grupo_id → total_clientes (do endpoint grupos-enderecos)
@@ -855,22 +857,26 @@
                     h('div', { className: 'flex-1' },
                         h('h3', { className: 'font-bold text-purple-900 mb-1' }, 'Como funciona o fluxo'),
                         h('p', { className: 'text-sm text-purple-800 mb-2' },
-                            'Toda região é vinculada a um ',
+                            'Motoboys cuja ',
+                            h('strong', null, 'Região/Cidade no CRM'),
+                            ' bate com o nome da região aqui serão automaticamente habilitados. Endereços aprovados caem no ',
                             h('strong', null, 'Grupo de Endereços'),
-                            '. Quando um motoboy cadastra um endereço aqui e ele é aprovado, todos os clientes vinculados àquele grupo passam a enxergá-lo na tela de solicitação.'
+                            ' configurado, e todos os clientes vinculados àquele grupo passam a enxergá-los.'
                         ),
-                        h('div', { className: 'flex items-center gap-2 flex-wrap text-xs' },
-                            h('span', { className: 'bg-white border border-purple-300 rounded px-2 py-1 font-medium' }, '🏍️ Motoboy da região'),
-                            h('span', { className: 'text-purple-500' }, '→ cadastra endereço →'),
+                        h('div', { className: 'flex items-center gap-2 flex-wrap text-xs mb-2' },
+                            h('span', { className: 'bg-white border border-purple-300 rounded px-2 py-1 font-medium' }, '🏍️ Motoboys do CRM'),
+                            h('span', { className: 'text-purple-500' }, '→ match de região →'),
+                            h('span', { className: 'bg-white border border-purple-300 rounded px-2 py-1 font-medium' }, '📍 Região'),
+                            h('span', { className: 'text-purple-500' }, '→ cadastram →'),
                             h('span', { className: 'bg-white border border-purple-300 rounded px-2 py-1 font-medium' }, '📚 Grupo'),
-                            h('span', { className: 'text-purple-500' }, '→ visível para →'),
-                            h('span', { className: 'bg-white border border-purple-300 rounded px-2 py-1 font-medium' }, '🏢 Clientes do grupo')
+                            h('span', { className: 'text-purple-500' }, '→'),
+                            h('span', { className: 'bg-white border border-purple-300 rounded px-2 py-1 font-medium' }, '🏢 Clientes')
                         ),
-                        h('p', { className: 'text-xs text-purple-700 mt-2' },
+                        h('p', { className: 'text-xs text-purple-700' },
                             '⚙️ A vinculação ', h('strong', null, 'cliente → grupo'),
-                            ' é feita em ',
-                            h('strong', null, 'Configurações → Grupos de Endereços'),
-                            ' e na edição de cada cliente API.'
+                            ' é feita em ', h('strong', null, 'Configurações → Grupos de Endereços'),
+                            '. Motoboys são vinculados ', h('strong', null, 'automaticamente'),
+                            ' pela Região/Cidade do CRM (mesma lógica do módulo de Indicações/Promoções).'
                         )
                     )
                 )
@@ -934,7 +940,7 @@
                             h('button', {
                                 onClick: () => setGerenciarMotoboys(r),
                                 className: 'flex-1 py-1 bg-blue-100 text-blue-700 rounded text-xs'
-                            }, '👥 Motoboys'),
+                            }, '👥 Ver ' + (r.total_motoboys || 0) + ' motoboy(s)'),
                             h('button', {
                                 onClick: () => setEditarRegiao({ ...r }),
                                 className: 'flex-1 py-1 bg-gray-100 text-gray-700 rounded text-xs'
@@ -960,13 +966,23 @@
                     h('h3', { className: 'font-bold mb-4' }, editarRegiao.id ? '✏️ Editar Região' : '+ Nova Região'),
                     h('div', { className: 'space-y-3' },
                         h('div', null,
-                            h('label', { className: 'text-xs font-medium' }, 'Nome *'),
+                            h('label', { className: 'text-xs font-medium' }, 'Nome da Região *'),
                             h('input', {
                                 type: 'text',
+                                list: 'regioes-crm-list',
                                 value: editarRegiao.nome || '',
                                 onChange: e => setEditarRegiao({ ...editarRegiao, nome: e.target.value }),
+                                placeholder: 'Digite ou escolha uma região do CRM',
                                 className: 'w-full px-3 py-2 border rounded text-sm'
-                            })
+                            }),
+                            // datalist: autocomplete nativo HTML5, sem dependência de JS
+                            h('datalist', { id: 'regioes-crm-list' },
+                                regioesCrm.map(r => h('option', { key: r, value: r }))
+                            ),
+                            h('p', { className: 'text-xs text-gray-500 mt-1' },
+                                '💡 ', h('strong', null, regioesCrm.length), ' regiões disponíveis no CRM. ',
+                                'O nome deve bater com a Região/Cidade dos motoboys no CRM pra funcionar.'
+                            )
                         ),
                         h('div', { className: 'grid grid-cols-2 gap-2' },
                             h('div', null,
@@ -1101,47 +1117,28 @@
         );
     }
 
-    // ==================== MODAL MOTOBOYS DA REGIÃO ====================
+    // ==================== MODAL MOTOBOYS DA REGIÃO (READ-ONLY) ====================
+    // Motoboys são descobertos AUTOMATICAMENTE via match do CRM.
+    // Não há ação de adicionar/remover — apenas visualização.
     function ModalMotoboys({ regiao, fetchApi, showToast, onClose }) {
-        const [vinculados, setVinculados] = useState([]);
+        const [motoboys, setMotoboys] = useState(null); // null = loading
         const [busca, setBusca] = useState('');
-        const [sugestoes, setSugestoes] = useState([]);
-
-        const carregar = () => {
-            fetchApi('/admin/coleta/regioes/' + regiao.id + '/motoboys')
-                .then(setVinculados).catch(() => {});
-        };
-        useEffect(carregar, []);
 
         useEffect(() => {
-            if (!busca.trim() || busca.length < 2) { setSugestoes([]); return; }
-            const t = setTimeout(() => {
-                fetchApi('/admin/coleta/motoboys-disponiveis?q=' + encodeURIComponent(busca))
-                    .then(setSugestoes).catch(() => {});
-            }, 300);
-            return () => clearTimeout(t);
-        }, [busca]);
+            fetchApi('/admin/coleta/regioes/' + regiao.id + '/motoboys')
+                .then(setMotoboys)
+                .catch(err => { showToast('❌ ' + err.message, 'error'); setMotoboys([]); });
+        }, [regiao.id]);
 
-        const vincular = async (cod) => {
-            try {
-                await fetchApi('/admin/coleta/regioes/' + regiao.id + '/motoboys', {
-                    method: 'POST',
-                    body: JSON.stringify({ cod_profissional: cod })
-                });
-                showToast('✅ Vinculado', 'success');
-                setBusca(''); setSugestoes([]);
-                carregar();
-            } catch (err) { showToast('❌ ' + err.message, 'error'); }
-        };
-
-        const desvincular = async (cod) => {
-            if (!confirm('Desvincular este motoboy?')) return;
-            try {
-                await fetchApi('/admin/coleta/regioes/' + regiao.id + '/motoboys/' + cod, { method: 'DELETE' });
-                showToast('🗑️ Desvinculado', 'success');
-                carregar();
-            } catch (err) { showToast('❌ ' + err.message, 'error'); }
-        };
+        const filtrados = useMemo(() => {
+            if (!motoboys) return [];
+            if (!busca.trim()) return motoboys;
+            const t = busca.trim().toLowerCase();
+            return motoboys.filter(m =>
+                (m.full_name || '').toLowerCase().includes(t) ||
+                (m.cod_profissional || '').toLowerCase().includes(t)
+            );
+        }, [motoboys, busca]);
 
         return h('div', {
             onClick: onClose,
@@ -1151,51 +1148,55 @@
                 onClick: e => e.stopPropagation(),
                 className: 'bg-white rounded-xl shadow-2xl w-full max-w-md p-5 max-h-[90vh] overflow-y-auto'
             },
-                h('div', { className: 'flex items-center justify-between mb-4' },
-                    h('h3', { className: 'font-bold' }, '👥 Motoboys em "' + regiao.nome + '"'),
+                h('div', { className: 'flex items-center justify-between mb-3' },
+                    h('div', null,
+                        h('h3', { className: 'font-bold' }, '👥 Motoboys em "' + regiao.nome + '"'),
+                        h('p', { className: 'text-xs text-gray-500 mt-0.5' }, 'Vinculação automática via CRM')
+                    ),
                     h('button', { onClick: onClose, className: 'text-gray-400' }, '✕')
                 ),
 
-                h('div', { className: 'mb-4' },
-                    h('label', { className: 'text-xs font-medium' }, 'Adicionar motoboy'),
+                // Banner explicativo
+                h('div', { className: 'bg-blue-50 border border-blue-200 rounded-lg p-2 mb-3 text-xs text-blue-800' },
+                    '💡 Esta lista é gerada automaticamente. Motoboys cujo campo ',
+                    h('strong', null, 'Região ou Cidade'),
+                    ' no CRM bate com "', h('strong', null, regiao.nome), '" aparecem aqui.'
+                ),
+
+                motoboys === null
+                ? h('div', { className: 'text-center py-6 text-gray-400 text-sm' }, '⏳ Carregando...')
+                : motoboys.length === 0
+                ? h('div', { className: 'bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800' },
+                    '⚠️ Nenhum motoboy do CRM tem Região ou Cidade "', h('strong', null, regiao.nome),
+                    '". Verifique se o nome da região aqui bate exatamente com o cadastro no CRM.'
+                )
+                : h('div', null,
                     h('input', {
                         type: 'text',
                         value: busca,
                         onChange: e => setBusca(e.target.value),
-                        placeholder: 'Buscar por nome ou código...',
-                        className: 'w-full px-3 py-2 border rounded text-sm mt-1'
+                        placeholder: '🔍 Filtrar por nome ou código...',
+                        className: 'w-full px-3 py-2 border rounded text-sm mb-2'
                     }),
-                    sugestoes.length > 0 && h('div', { className: 'mt-2 border rounded max-h-40 overflow-y-auto' },
-                        sugestoes.map(u => h('div', {
-                            key: u.cod_profissional,
-                            onClick: () => vincular(u.cod_profissional),
-                            className: 'p-2 hover:bg-purple-50 cursor-pointer border-b text-sm'
-                        },
-                            h('div', { className: 'font-medium' }, u.full_name || '(sem nome)'),
-                            h('div', { className: 'text-xs text-gray-500' }, 'Cód: ' + u.cod_profissional)
-                        ))
-                    )
-                ),
-
-                h('div', null,
                     h('h4', { className: 'text-xs font-bold text-gray-500 uppercase mb-2' },
-                        'Vinculados (' + vinculados.length + ')'
+                        'Vinculados automaticamente (' + motoboys.length + ')'
                     ),
-                    vinculados.length === 0 ? h('div', { className: 'text-center py-4 text-gray-400 text-sm' }, 'Nenhum motoboy vinculado')
-                    : h('div', { className: 'space-y-1' },
-                        vinculados.map(v => h('div', {
-                            key: v.id,
+                    h('div', { className: 'space-y-1 max-h-80 overflow-y-auto' },
+                        filtrados.map(m => h('div', {
+                            key: m.cod_profissional,
                             className: 'flex items-center justify-between bg-gray-50 rounded p-2 text-sm'
                         },
-                            h('div', null,
-                                h('div', { className: 'font-medium' }, v.full_name || '(sem nome)'),
-                                h('div', { className: 'text-xs text-gray-500' }, v.cod_profissional)
-                            ),
-                            h('button', {
-                                onClick: () => desvincular(v.cod_profissional),
-                                className: 'text-red-600 text-xs px-2 py-1 hover:bg-red-50 rounded'
-                            }, '🗑️ Remover')
+                            h('div', { className: 'min-w-0 flex-1' },
+                                h('div', { className: 'font-medium truncate' }, m.full_name || '(sem nome)'),
+                                h('div', { className: 'text-xs text-gray-500' },
+                                    'Cód: ' + m.cod_profissional,
+                                    m.celular ? ' • ' + m.celular : ''
+                                )
+                            )
                         ))
+                    ),
+                    filtrados.length === 0 && h('div', { className: 'text-center py-4 text-gray-400 text-sm' },
+                        'Nenhum resultado no filtro'
                     )
                 )
             )
