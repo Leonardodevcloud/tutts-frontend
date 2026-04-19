@@ -9365,36 +9365,37 @@ const hideLoadingScreen = () => {
                     )
                 );
             }
-            // Módulo Coleta de Endereços para user (motoboy)
+            // Módulo Coleta de Endereços para user (motoboy) — layout estilo Filas
             if ("coleta" === Ee) {
-                if (typeof window.ModuloColetaComponent !== 'undefined') {
-                    return React.createElement(window.ModuloColetaComponent, {
-                        usuario: l,
-                        l: l,
-                        API_URL: API_URL,
-                        getToken: getToken,
-                        showToast: ja,
-                        ja: ja,
-                        HeaderCompacto: HeaderCompacto,
-                        Toast: Toast,
-                        LoadingOverlay: LoadingOverlay,
-                        Ee: Ee,
-                        socialProfile: socialProfile,
-                        ul: ul,
-                        o: o,
-                        he: he,
-                        navegarSidebar: navegarSidebar,
-                        n: n,
-                        i: i,
-                        f: f,
-                        E: E,
-                    });
-                }
-                return React.createElement("div", { className: "min-h-screen bg-gray-50 flex items-center justify-center" },
-                    React.createElement("div", { className: "text-center" },
-                        React.createElement("div", { className: "animate-spin w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4" }),
-                        React.createElement("p", { className: "text-gray-600" }, "Carregando módulo Coleta...")
-                    )
+                return React.createElement("div", {
+                    className: "min-h-screen bg-gray-50"
+                },
+                    i && React.createElement(Toast, i),
+                    n && React.createElement(LoadingOverlay, null),
+                    // Header simples com voltar (mesmo padrão do Filas)
+                    React.createElement("div", { className: "bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4 flex items-center gap-4 sticky top-0 z-40 shadow-md" },
+                        React.createElement("button", {
+                            onClick: () => he("home"),
+                            className: "p-2 bg-white/20 rounded-lg hover:bg-white/30"
+                        }, "← Voltar"),
+                        React.createElement("h1", { className: "text-xl font-bold" }, "📍 Coleta de Endereços")
+                    ),
+                    // Conteúdo
+                    typeof window.ModuloColetaComponent !== 'undefined'
+                        ? React.createElement(window.ModuloColetaComponent, {
+                            usuario: l,
+                            l: l,
+                            API_URL: API_URL,
+                            getToken: getToken,
+                            showToast: ja,
+                            ja: ja,
+                        })
+                        : React.createElement("div", { className: "min-h-screen flex items-center justify-center" },
+                            React.createElement("div", { className: "text-center" },
+                                React.createElement("div", { className: "animate-spin w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4" }),
+                                React.createElement("p", { className: "text-gray-600" }, "Carregando módulo Coleta...")
+                            )
+                        )
                 );
             }
             return React.createElement("div", {
