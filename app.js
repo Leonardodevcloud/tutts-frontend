@@ -7569,7 +7569,8 @@ const hideLoadingScreen = () => {
                     }));
                 Ht({
                     porTempo: r,
-                    porKm: o
+                    porKm: o,
+                    porHora: a.porHora || []
                 })
             } catch (e) {
                 console.error("Erro ao carregar BI:", e)
@@ -7895,7 +7896,8 @@ const hideLoadingScreen = () => {
                     }));
                 Ht({
                     porTempo: o,
-                    porKm: c
+                    porKm: c,
+                    porHora: l.porHora || []
                 }), Xt({});
                 
                 // Também recarregar a lista de OS com os mesmos filtros
@@ -16400,7 +16402,51 @@ const hideLoadingScreen = () => {
                     );
                 })()
 
-            ))), "dashboard" === Et && React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-6 mt-6 max-w-4xl mx-auto", style: {overflow: "hidden"}}, 
+            ),
+
+            // ========== GRÁFICO 3: HORA A HORA — PICO ==========
+            React.createElement("div", {className: "bg-white rounded-xl shadow p-6 border border-gray-100"},
+                (function() {
+                    var dados = Qt.porHora || [];
+                    if (dados.length === 0) return React.createElement("p", {className: "text-gray-400 text-sm text-center py-8"}, "Sem dados de horário");
+                    var total = dados.reduce(function(acc, e) { return acc + (e.total || 0); }, 0) || 1;
+                    var picoS = 8, picoE = 18;
+                    var totalPico = dados.filter(function(d) { return d.hora >= picoS && d.hora < picoE; }).reduce(function(acc, e) { return acc + (e.total || 0); }, 0);
+                    var pctPico = (totalPico / total * 100).toFixed(1);
+                    var hPico = dados.reduce(function(mx, d) { return d.total > mx.total ? d : mx; }, {hora: 0, total: 0});
+                    var mediaPico = Math.round(totalPico / (picoE - picoS));
+                    return React.createElement(React.Fragment, null,
+                        React.createElement("div", {className: "flex items-center justify-between mb-4"},
+                            React.createElement("div", {className: "flex items-center gap-2"},
+                                React.createElement("h3", {className: "font-medium text-gray-800 text-base"}, "Acompanhamento hora a hora"),
+                                React.createElement("span", {className: "text-xs px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200"}, pctPico + "% entre 8h–18h")
+                            ),
+                            React.createElement("span", {className: "text-xs text-gray-400 bg-gray-50 px-2.5 py-1 rounded-full"}, total.toLocaleString("pt-BR") + " OS")
+                        ),
+                        React.createElement("div", {className: "grid grid-cols-4 gap-2.5 mb-5"},
+                            React.createElement("div", {className: "bg-gray-50 rounded-lg px-3 py-2.5"}, React.createElement("div", {className: "text-xs text-gray-400 mb-0.5"}, "Horário de pico"), React.createElement("div", {className: "text-xl font-medium text-gray-800"}, hPico.hora + ":00"), React.createElement("div", {className: "text-xs text-gray-400"}, hPico.total.toLocaleString("pt-BR") + " OS")),
+                            React.createElement("div", {className: "bg-gray-50 rounded-lg px-3 py-2.5"}, React.createElement("div", {className: "text-xs text-gray-400 mb-0.5"}, "OS no pico (8h–18h)"), React.createElement("div", {className: "text-xl font-medium text-gray-800"}, totalPico.toLocaleString("pt-BR")), React.createElement("div", {className: "text-xs text-gray-400"}, pctPico + "% do total")),
+                            React.createElement("div", {className: "bg-gray-50 rounded-lg px-3 py-2.5"}, React.createElement("div", {className: "text-xs text-gray-400 mb-0.5"}, "Média por hora (pico)"), React.createElement("div", {className: "text-xl font-medium text-gray-800"}, mediaPico.toLocaleString("pt-BR")), React.createElement("div", {className: "text-xs text-gray-400"}, "OS/hora")),
+                            React.createElement("div", {className: "bg-gray-50 rounded-lg px-3 py-2.5"}, React.createElement("div", {className: "text-xs text-gray-400 mb-0.5"}, "Fora do pico"), React.createElement("div", {className: "text-xl font-medium text-gray-800"}, (total - totalPico).toLocaleString("pt-BR")), React.createElement("div", {className: "text-xs text-gray-400"}, ((total - totalPico) / total * 100).toFixed(1) + "%"))
+                        ),
+                        React.createElement("div", {style: {position: "relative", height: "260px"}, ref: function(ct) {
+                            if (!ct || ct.dataset.chartRendered || !window.Chart) return;
+                            ct.dataset.chartRendered = "1";
+                            var cvs = document.createElement("canvas"); ct.appendChild(cvs);
+                            var lbs = dados.map(function(d) { return String(d.hora).padStart(2, "0") + "h"; });
+                            var vals = dados.map(function(d) { return d.total || 0; });
+                            var bgs = dados.map(function(d) { return (d.hora >= picoS && d.hora < picoE) ? "#7F77DD" : "#D3D1C7"; });
+                            new Chart(cvs, { type: "bar", data: { labels: lbs, datasets: [{ data: vals, backgroundColor: bgs, borderRadius: 4, borderSkipped: false, barPercentage: 0.82 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { backgroundColor: "#1e293b", padding: 10, cornerRadius: 8, callbacks: { label: function(ctx) { return " " + ctx.parsed.y.toLocaleString("pt-BR") + " OS (" + (ctx.parsed.y / total * 100).toFixed(1) + "%)"; } } } }, scales: { x: { grid: { display: false }, border: { display: false }, ticks: { color: "#94a3b8", font: { size: 10 }, maxRotation: 0 } }, y: { grid: { color: "rgba(0,0,0,0.03)" }, border: { display: false }, ticks: { color: "#94a3b8", font: { size: 11 }, callback: function(v) { return v >= 1000 ? (v/1000).toFixed(0) + "k" : v; } }, beginAtZero: true } }, layout: { padding: { top: 24 } } }, plugins: [{ id: "hLabels", afterDatasetsDraw: function(chart) { var cx = chart.ctx; chart.data.datasets[0].data.forEach(function(v, j) { if (v < total * 0.005) return; var b = chart.getDatasetMeta(0).data[j]; cx.fillStyle = "#64748b"; cx.font = "500 10px system-ui"; cx.textAlign = "center"; cx.textBaseline = "bottom"; cx.fillText(v.toLocaleString("pt-BR"), b.x, b.y - 3); }); } }] });
+                        }}),
+                        React.createElement("div", {className: "flex items-center gap-4 mt-3"},
+                            React.createElement("span", {className: "flex items-center gap-1.5 text-xs text-gray-500"}, React.createElement("span", {style: {width: "10px", height: "10px", borderRadius: "2px", background: "#7F77DD", display: "inline-block"}}), "Pico (8h–18h)"),
+                            React.createElement("span", {className: "flex items-center gap-1.5 text-xs text-gray-500"}, React.createElement("span", {style: {width: "10px", height: "10px", borderRadius: "2px", background: "#D3D1C7", display: "inline-block"}}), "Fora do pico")
+                        )
+                    );
+                })()
+            )
+
+            )), "dashboard" === Et && React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-6 mt-6 max-w-4xl mx-auto", style: {overflow: "hidden"}}, 
                 React.createElement("div", {className: "flex items-center justify-between mb-4"}, 
                     React.createElement("h3", {className: "text-lg font-bold text-gray-800"}, "🗺️ Acompanhamento Regional"),
                     React.createElement("button", {onClick: function() { setMapaCalorVisivel(!mapaCalorVisivel); if (!mapaCalorVisivel && window.destroyMapaCalor) window.destroyMapaCalor(); }, className: "px-3 py-1 text-sm rounded-lg " + (mapaCalorVisivel ? "bg-purple-600 text-white" : "bg-gray-200 text-gray-600")}, mapaCalorVisivel ? "👁️ Ocultar" : "👁️ Mostrar")
