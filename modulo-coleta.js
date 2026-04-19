@@ -769,9 +769,9 @@
                                     : h('span', { className: 'text-gray-400 italic' }, '—')
                             ),
                             h('td', { className: 'px-3 py-2 text-xs text-gray-600' }, p.regiao_nome),
-                            h('td', { className: 'px-3 py-2 text-xs text-gray-700 max-w-[240px]', title: p.endereco_formatado || '' },
+                            h('td', { className: 'px-3 py-2 text-xs text-gray-700', title: p.endereco_formatado || '' },
                                 p.endereco_formatado
-                                    ? h('div', { className: 'truncate' }, '📍 ' + p.endereco_formatado)
+                                    ? h('div', null, '📍 ' + p.endereco_formatado)
                                     : h('span', { className: 'text-gray-400 italic' }, 'Sem endereço')
                             ),
                             h('td', { className: 'px-3 py-2 text-sm' },
@@ -1515,8 +1515,8 @@
                                                 ? e.cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5')
                                                 : h('span', { className: 'text-gray-400 italic' }, '—')
                                         ),
-                                        h('td', { className: 'px-3 py-2 text-xs text-gray-700 max-w-[240px]', title: e.endereco_completo },
-                                            h('div', { className: 'truncate' }, e.endereco_completo || (e.rua + ', ' + e.numero))
+                                        h('td', { className: 'px-3 py-2 text-xs text-gray-700', title: e.endereco_completo },
+                                            h('div', null, e.endereco_completo || (e.rua + ', ' + e.numero))
                                         ),
                                         h('td', { className: 'px-3 py-2 text-xs text-gray-600' },
                                             (e.cidade || '—') + (e.uf ? ' / ' + e.uf : '')
