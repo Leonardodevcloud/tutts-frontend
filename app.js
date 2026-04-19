@@ -16220,152 +16220,186 @@ const hideLoadingScreen = () => {
             }, ft?.ultima_entrega ? new Date(ft.ultima_entrega).toLocaleDateString("pt-BR") : "-")))))), React.createElement("div", {
                 className: "space-y-6 mt-6"
             }, 
-            // ========== GRÁFICO 1: DISTRIBUIÇÃO POR TEMPO (Design Moderno) ==========
-            React.createElement("div", {
-                className: "bg-white rounded-xl shadow-lg p-6 border border-gray-100"
-            }, 
-                React.createElement("div", {className: "flex items-center justify-between mb-6"},
-                    React.createElement("h3", {className: "font-bold text-gray-800 text-lg flex items-center gap-2"}, 
-                        React.createElement("span", {className: "w-8 h-8 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg flex items-center justify-center text-white text-sm"}, "⏱"),
-                        "Distribuicao por Tempo de Entrega"
-                    )
-                ),
-                React.createElement("div", {
-                    className: "flex items-end gap-3 pt-4",
-                    style: {height: "280px"}
-                }, (() => {
-                    const dados = Qt.porTempo || [];
-                    const maxVal = Math.max(...dados.map(e => e.total || 0), 1);
-                    const total = dados.reduce((acc, e) => acc + (e.total || 0), 0) || 1;
-                    const cores = [
-                        "from-emerald-400 to-emerald-600",
-                        "from-blue-400 to-blue-600",
-                        "from-purple-400 to-purple-600",
-                        "from-amber-400 to-amber-600",
-                        "from-orange-400 to-orange-600",
-                        "from-red-400 to-red-600"
+            // ========== GRÁFICO 1: DISTRIBUIÇÃO POR TEMPO (Design v2 — Clean) ==========
+            React.createElement("div", {className: "bg-white rounded-xl shadow p-6 border border-gray-100"},
+                (function() {
+                    var dados = Qt.porTempo || [];
+                    var total = dados.reduce(function(acc, e) { return acc + (e.total || 0); }, 0) || 1;
+                    var cores = ["#1D9E75", "#378ADD", "#534AB7", "#BA7517", "#D85A30", "#A32D2D"];
+                    var tags = [
+                        { label: "Até 45 min", idx: [0], cor: "bg-green-50 text-green-700 border border-green-200" },
+                        { label: "45–90 min", idx: [1,2,3], cor: "bg-blue-50 text-blue-700 border border-blue-200" },
+                        { label: "90–120 min", idx: [4], cor: "bg-amber-50 text-amber-700 border border-amber-200" },
+                        { label: "> 120 min", idx: [5], cor: "bg-red-50 text-red-700 border border-red-200" }
                     ];
-                    return dados.map((item, idx) => {
-                        const val = item.total || 0;
-                        const pct = (val / total * 100).toFixed(1);
-                        const altura = maxVal > 0 ? (val / maxVal * 200) : 0;
-                        return React.createElement("div", {
-                            key: idx,
-                            className: "flex-1 flex flex-col items-center justify-end group cursor-pointer"
-                        },
-                            React.createElement("div", {
-                                className: "opacity-0 group-hover:opacity-100 transition-all duration-200 bg-gray-900 text-white text-xs px-3 py-2 rounded-lg mb-2 shadow-lg whitespace-nowrap"
-                            }, val.toLocaleString("pt-BR"), " entregas"),
-                            React.createElement("div", {className: "text-xs font-bold text-gray-500 mb-1"}, pct + "%"),
-                            React.createElement("div", {className: "text-lg font-bold text-gray-800 mb-2"}, val.toLocaleString("pt-BR")),
-                            React.createElement("div", {
-                                className: "w-full bg-gradient-to-t " + cores[idx % cores.length] + " rounded-t-lg transition-all duration-500 group-hover:scale-105 shadow-md",
-                                style: {height: Math.max(altura, val > 0 ? 25 : 8) + "px", minWidth: "50px"}
-                            }),
-                            React.createElement("div", {
-                                className: "mt-3 px-2 py-1 bg-gray-100 rounded-full text-xs font-semibold text-gray-700 text-center whitespace-nowrap"
-                            }, item.faixa)
-                        );
+                    var metricas = tags.map(function(t) {
+                        var soma = t.idx.reduce(function(acc, i) { return acc + (dados[i]?.total || 0); }, 0);
+                        return { label: t.label, valor: soma, pct: (soma / total * 100).toFixed(1), cor: t.cor };
                     });
-                })())
-            ),
-            
-            // ========== GRÁFICO 2: DISTRIBUIÇÃO POR KM (Design Moderno) ==========
-            React.createElement("div", {
-                className: "bg-white rounded-xl shadow-lg p-6 border border-gray-100"
-            },
-                React.createElement("div", {className: "flex items-center justify-between mb-6"},
-                    React.createElement("h3", {className: "font-bold text-gray-800 text-lg flex items-center gap-2"}, 
-                        React.createElement("span", {className: "w-8 h-8 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg flex items-center justify-center text-white text-sm"}, "📍"),
-                        "Distribuicao por Distancia (Km)"
-                    ),
-                    React.createElement("div", {className: "text-sm text-gray-500"}, 
-                        "Faixas visiveis: ", React.createElement("span", {className: "font-bold text-orange-600"}, 
-                            ((Qt.porKm || []).filter(e => !Gt?.includes(e.faixa)).length)
-                        )
-                    )
-                ),
-                React.createElement("div", {className: "flex gap-6"},
-                    React.createElement("div", {className: "flex-1"},
-                        React.createElement("div", {
-                            className: "flex items-end gap-1 pt-4",
-                            style: {height: "280px"}
-                        }, (() => {
-                            const dados = (Qt.porKm || []).filter(e => !Gt?.includes(e.faixa));
-                            const maxVal = Math.max(...dados.map(e => e.total || 0), 1);
-                            const total = dados.reduce((acc, e) => acc + (e.total || 0), 0) || 1;
-                            return dados.map((item, idx) => {
-                                const val = item.total || 0;
-                                const pct = (val / total * 100).toFixed(1);
-                                const altura = maxVal > 0 ? (val / maxVal * 200) : 0;
-                                const hue = Math.max(0, 120 - (idx * 10));
-                                return React.createElement("div", {
-                                    key: idx,
-                                    className: "flex-1 min-w-[28px] flex flex-col items-center justify-end group cursor-pointer"
-                                },
-                                    React.createElement("div", {
-                                        className: "opacity-0 group-hover:opacity-100 transition-all duration-200 bg-gray-900 text-white text-xs px-2 py-1.5 rounded-lg mb-1 shadow-lg whitespace-nowrap z-10"
-                                    }, val.toLocaleString("pt-BR"), " (", pct, "%)"),
-                                    React.createElement("div", {className: "text-[10px] font-bold text-gray-400 mb-0.5"}, pct + "%"),
-                                    React.createElement("div", {className: "text-xs font-bold text-gray-700 mb-1"}, val.toLocaleString("pt-BR")),
-                                    React.createElement("div", {
-                                        className: "w-full rounded-t-md transition-all duration-300 group-hover:scale-110 shadow-sm",
-                                        style: {
-                                            height: Math.max(altura, val > 0 ? 15 : 4) + "px",
-                                            background: "linear-gradient(to top, hsl(" + hue + ", 70%, 45%), hsl(" + hue + ", 70%, 60%))",
-                                            maxWidth: "24px",
-                                            margin: "0 auto"
-                                        }
-                                    }),
-                                    React.createElement("div", {
-                                        className: "mt-2 text-[9px] font-medium text-gray-600 text-center"
-                                    }, item.faixa)
-                                );
-                            });
-                        })())
-                    ),
-                    React.createElement("div", {className: "w-44 flex-shrink-0 border-l border-gray-200 pl-4"},
-                        React.createElement("div", {className: "text-sm font-bold text-gray-700 mb-3 flex items-center gap-2"},
-                            "Filtrar Faixas"
+
+                    return React.createElement(React.Fragment, null,
+                        // Header
+                        React.createElement("div", {className: "flex items-center justify-between mb-4"},
+                            React.createElement("div", {className: "flex items-center gap-2"},
+                                React.createElement("h3", {className: "font-medium text-gray-800 text-base"}, "Distribuição por tempo de entrega"),
+                                metricas[0].valor > 0 && React.createElement("span", {className: "text-xs px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200"}, metricas[0].pct + "% até 45min")
+                            ),
+                            React.createElement("span", {className: "text-xs text-gray-400 bg-gray-50 px-2.5 py-1 rounded-full"}, total.toLocaleString("pt-BR") + " entregas")
                         ),
-                        React.createElement("div", {className: "space-y-1 max-h-56 overflow-y-auto pr-2"},
-                            (Qt.porKm || []).map((item, idx) => {
-                                const isVisible = !Gt?.includes(item.faixa);
-                                return React.createElement("label", {
-                                    key: idx,
-                                    className: "flex items-center gap-2 cursor-pointer px-2 py-1.5 rounded-lg transition-all " + (isVisible ? "bg-purple-50 hover:bg-purple-100" : "bg-gray-50 hover:bg-gray-100 opacity-60")
-                                },
-                                    React.createElement("input", {
-                                        type: "checkbox",
-                                        checked: isVisible,
-                                        onChange: function(e) {
-                                            e.target.checked 
-                                                ? Wt(function(prev) { return (prev || []).filter(function(f) { return f !== item.faixa; }); })
-                                                : Wt(function(prev) { return [...(prev || []), item.faixa]; });
-                                        },
-                                        className: "w-4 h-4 accent-purple-600 rounded"
-                                    }),
-                                    React.createElement("span", {className: "text-xs font-medium " + (isVisible ? "text-gray-800" : "text-gray-500")}, 
-                                        item.faixa, " km"
-                                    ),
-                                    item.total > 0 && React.createElement("span", {
-                                        className: "ml-auto text-[10px] px-1.5 py-0.5 rounded-full " + (isVisible ? "bg-orange-100 text-orange-600" : "bg-gray-200 text-gray-500")
-                                    }, item.total)
+                        // Metric cards
+                        React.createElement("div", {className: "grid grid-cols-4 gap-2.5 mb-5"},
+                            metricas.map(function(m, i) {
+                                return React.createElement("div", {key: i, className: "bg-gray-50 rounded-lg px-3 py-2.5"},
+                                    React.createElement("div", {className: "text-xs text-gray-400 mb-0.5"}, m.label),
+                                    React.createElement("div", {className: "text-xl font-medium text-gray-800"}, m.valor.toLocaleString("pt-BR")),
+                                    React.createElement("div", {className: "text-xs text-gray-400"}, m.pct + "% do total")
                                 );
                             })
                         ),
-                        React.createElement("div", {className: "mt-3 pt-3 border-t border-gray-200 flex gap-2"},
-                            React.createElement("button", {
-                                onClick: function() { Wt([]); },
-                                className: "flex-1 text-xs px-2 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                            }, "Todos"),
-                            React.createElement("button", {
-                                onClick: function() { Wt((Qt.porKm || []).map(function(e) { return e.faixa; })); },
-                                className: "flex-1 text-xs px-2 py-1.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
-                            }, "Nenhum")
+                        // Chart container
+                        React.createElement("div", {style: {position: "relative", height: "240px"}, ref: function(container) {
+                            if (!container || container.dataset.chartRendered || !window.Chart) return;
+                            container.dataset.chartRendered = "1";
+                            var cvs = document.createElement("canvas");
+                            container.appendChild(cvs);
+                            var labels = dados.map(function(d) { return d.faixa; });
+                            var values = dados.map(function(d) { return d.total || 0; });
+                            var pcts = dados.map(function(d) { return ((d.total || 0) / total * 100).toFixed(1) + "%"; });
+                            new Chart(cvs, {
+                                type: "bar",
+                                data: { labels: labels, datasets: [{ data: values, backgroundColor: cores.slice(0, dados.length), borderRadius: 6, borderSkipped: false, barPercentage: 0.7 }] },
+                                options: {
+                                    responsive: true, maintainAspectRatio: false,
+                                    plugins: { legend: { display: false }, tooltip: { backgroundColor: "#1e293b", padding: 10, cornerRadius: 8, callbacks: { label: function(ctx) { return " " + ctx.parsed.y.toLocaleString("pt-BR") + " entregas (" + pcts[ctx.dataIndex] + ")"; } } } },
+                                    scales: { x: { grid: { display: false }, border: { display: false }, ticks: { color: "#94a3b8", font: { size: 11 } } }, y: { grid: { color: "rgba(0,0,0,0.03)" }, border: { display: false }, ticks: { color: "#94a3b8", font: { size: 11 }, callback: function(v) { return v >= 1000 ? (v/1000).toFixed(0) + "k" : v; } }, beginAtZero: true } },
+                                    layout: { padding: { top: 28 } }
+                                },
+                                plugins: [{ id: "labels", afterDatasetsDraw: function(chart) { var ctx2 = chart.ctx; chart.data.datasets[0].data.forEach(function(val, j) { if (!val) return; var bar = chart.getDatasetMeta(0).data[j]; ctx2.fillStyle = "#94a3b8"; ctx2.font = "500 11px system-ui"; ctx2.textAlign = "center"; ctx2.textBaseline = "bottom"; ctx2.fillText(val.toLocaleString("pt-BR"), bar.x, bar.y - 4); ctx2.font = "400 10px system-ui"; ctx2.fillText(pcts[j], bar.x, bar.y - 17); }); } }]
+                            });
+                        }}),
+                        // Legend
+                        React.createElement("div", {className: "flex flex-wrap gap-3 mt-3"},
+                            dados.map(function(d, i) {
+                                var pct = ((d.total || 0) / total * 100).toFixed(1);
+                                return React.createElement("span", {key: i, className: "flex items-center gap-1.5 text-xs text-gray-500"},
+                                    React.createElement("span", {style: {width: "10px", height: "10px", borderRadius: "2px", background: cores[i], display: "inline-block"}}),
+                                    d.faixa + " (" + pct + "%)"
+                                );
+                            })
                         )
-                    )
-                )
+                    );
+                })()
+            ),
+
+            // ========== GRÁFICO 2: DISTRIBUIÇÃO POR KM (Design v2 — Clean) ==========
+            React.createElement("div", {className: "bg-white rounded-xl shadow p-6 border border-gray-100"},
+                (function() {
+                    var todosKm = Qt.porKm || [];
+                    var dadosVisiveis = todosKm.filter(function(e) { return !Gt?.includes(e.faixa); });
+                    var total = dadosVisiveis.reduce(function(acc, e) { return acc + (e.total || 0); }, 0) || 1;
+
+                    // Agrupar em faixas para metrics
+                    function somarFaixa(arr, min, max) {
+                        return arr.reduce(function(acc, e, i) {
+                            var idx = todosKm.indexOf(e);
+                            return (idx >= min && idx <= max) ? acc + (e.total || 0) : acc;
+                        }, 0);
+                    }
+                    var ate10 = dadosVisiveis.length > 0 ? (dadosVisiveis[0]?.total || 0) : 0;
+                    var de10a25 = dadosVisiveis.slice(1, 4).reduce(function(a, e) { return a + (e.total || 0); }, 0);
+                    var de25a50 = dadosVisiveis.slice(4, 8).reduce(function(a, e) { return a + (e.total || 0); }, 0);
+                    var acima50 = dadosVisiveis.slice(8).reduce(function(a, e) { return a + (e.total || 0); }, 0);
+                    var metricas = [
+                        { label: "Até 10 km", valor: ate10, pct: (ate10/total*100).toFixed(1) },
+                        { label: "10–25 km", valor: de10a25, pct: (de10a25/total*100).toFixed(1) },
+                        { label: "25–50 km", valor: de25a50, pct: (de25a50/total*100).toFixed(1) },
+                        { label: "Acima de 50 km", valor: acima50, pct: (acima50/total*100).toFixed(1) }
+                    ];
+
+                    return React.createElement(React.Fragment, null,
+                        // Header
+                        React.createElement("div", {className: "flex items-center justify-between mb-4"},
+                            React.createElement("div", {className: "flex items-center gap-2"},
+                                React.createElement("h3", {className: "font-medium text-gray-800 text-base"}, "Distribuição por distância (km)"),
+                                ate10 > 0 && React.createElement("span", {className: "text-xs px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200"}, metricas[0].pct + "% até 10km")
+                            ),
+                            React.createElement("span", {className: "text-xs text-gray-400 bg-gray-50 px-2.5 py-1 rounded-full"}, dadosVisiveis.length + " faixas")
+                        ),
+                        // Metric cards
+                        React.createElement("div", {className: "grid grid-cols-4 gap-2.5 mb-5"},
+                            metricas.map(function(m, i) {
+                                return React.createElement("div", {key: i, className: "bg-gray-50 rounded-lg px-3 py-2.5"},
+                                    React.createElement("div", {className: "text-xs text-gray-400 mb-0.5"}, m.label),
+                                    React.createElement("div", {className: "text-xl font-medium text-gray-800"}, m.valor.toLocaleString("pt-BR")),
+                                    React.createElement("div", {className: "text-xs text-gray-400"}, m.pct + "% do total")
+                                );
+                            })
+                        ),
+                        // Chart + Filter
+                        React.createElement("div", {className: "flex gap-5"},
+                            // Chart
+                            React.createElement("div", {className: "flex-1", style: {position: "relative", height: "260px"}, ref: function(container) {
+                                if (!container || container.dataset.chartRendered || !window.Chart) return;
+                                container.dataset.chartRendered = "1";
+                                var cvs = document.createElement("canvas");
+                                container.appendChild(cvs);
+                                var labels = dadosVisiveis.map(function(d) { return d.faixa; });
+                                var values = dadosVisiveis.map(function(d) { return d.total || 0; });
+                                var pcts = dadosVisiveis.map(function(d) { return ((d.total || 0) / total * 100).toFixed(1) + "%"; });
+                                var bgColors = dadosVisiveis.map(function(d, i) {
+                                    var idx = todosKm.indexOf(d);
+                                    if (idx === 0) return "#1D9E75";
+                                    if (idx <= 3) return "#5DCAA5";
+                                    if (idx <= 7) return "#378ADD";
+                                    return "#534AB7";
+                                });
+                                new Chart(cvs, {
+                                    type: "bar",
+                                    data: { labels: labels, datasets: [{ data: values, backgroundColor: bgColors, borderRadius: 4, borderSkipped: false, barPercentage: 0.75 }] },
+                                    options: {
+                                        responsive: true, maintainAspectRatio: false,
+                                        plugins: { legend: { display: false }, tooltip: { backgroundColor: "#1e293b", padding: 10, cornerRadius: 8, callbacks: { label: function(ctx) { return " " + ctx.parsed.y.toLocaleString("pt-BR") + " entregas (" + pcts[ctx.dataIndex] + ")"; } } } },
+                                        scales: { x: { grid: { display: false }, border: { display: false }, ticks: { color: "#94a3b8", font: { size: 10 }, maxRotation: 45, autoSkip: false } }, y: { grid: { color: "rgba(0,0,0,0.03)" }, border: { display: false }, ticks: { color: "#94a3b8", font: { size: 11 }, callback: function(v) { return v >= 1000 ? (v/1000).toFixed(0) + "k" : v; } }, beginAtZero: true } },
+                                        layout: { padding: { top: 28 } }
+                                    },
+                                    plugins: [{ id: "labels2", afterDatasetsDraw: function(chart) { var ctx2 = chart.ctx; chart.data.datasets[0].data.forEach(function(val, j) { if (!val) return; var bar = chart.getDatasetMeta(0).data[j]; ctx2.fillStyle = "#94a3b8"; ctx2.font = "500 11px system-ui"; ctx2.textAlign = "center"; ctx2.textBaseline = "bottom"; ctx2.fillText(val.toLocaleString("pt-BR"), bar.x, bar.y - 4); ctx2.font = "400 10px system-ui"; ctx2.fillText(pcts[j], bar.x, bar.y - 17); }); } }]
+                                });
+                            }}),
+                            // Filter sidebar
+                            React.createElement("div", {className: "w-40 flex-shrink-0 border-l border-gray-100 pl-4"},
+                                React.createElement("div", {className: "text-xs font-medium text-gray-500 mb-2"}, "Filtrar faixas"),
+                                React.createElement("div", {className: "space-y-0.5 max-h-52 overflow-y-auto pr-1"},
+                                    todosKm.map(function(item, idx) {
+                                        var isVis = !Gt?.includes(item.faixa);
+                                        return React.createElement("label", {key: idx, className: "flex items-center gap-2 cursor-pointer px-2 py-1.5 rounded-lg transition-all text-xs " + (isVis ? "hover:bg-gray-50" : "opacity-40")},
+                                            React.createElement("input", {
+                                                type: "checkbox", checked: isVis,
+                                                onChange: function(e) { e.target.checked ? Wt(function(p) { return (p || []).filter(function(f) { return f !== item.faixa; }); }) : Wt(function(p) { return [].concat(p || [], [item.faixa]); }); },
+                                                className: "w-3.5 h-3.5 accent-purple-600 rounded"
+                                            }),
+                                            React.createElement("span", {className: "flex-1 " + (isVis ? "text-gray-700" : "text-gray-400")}, item.faixa + " km"),
+                                            item.total > 0 && React.createElement("span", {className: "text-[10px] px-1.5 py-0.5 rounded-full " + (isVis ? "bg-purple-50 text-purple-600" : "bg-gray-100 text-gray-400")}, item.total)
+                                        );
+                                    })
+                                ),
+                                React.createElement("div", {className: "mt-2 pt-2 border-t border-gray-100 flex gap-1.5"},
+                                    React.createElement("button", {onClick: function() { Wt([]); }, className: "flex-1 text-xs px-2 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700"}, "Todos"),
+                                    React.createElement("button", {onClick: function() { Wt(todosKm.map(function(e) { return e.faixa; })); }, className: "flex-1 text-xs px-2 py-1.5 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200"}, "Nenhum")
+                                )
+                            )
+                        ),
+                        // Legend
+                        React.createElement("div", {className: "flex flex-wrap gap-3 mt-3"},
+                            [["Até 10 km","#1D9E75"],["11–25 km","#5DCAA5"],["26–50 km","#378ADD"],["51+ km","#534AB7"]].map(function(item, i) {
+                                return React.createElement("span", {key: i, className: "flex items-center gap-1.5 text-xs text-gray-500"},
+                                    React.createElement("span", {style: {width: "10px", height: "10px", borderRadius: "2px", background: item[1], display: "inline-block"}}),
+                                    item[0]
+                                );
+                            })
+                        )
+                    );
+                })()
+
             ))), "dashboard" === Et && React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-6 mt-6 max-w-4xl mx-auto", style: {overflow: "hidden"}}, 
                 React.createElement("div", {className: "flex items-center justify-between mb-4"}, 
                     React.createElement("h3", {className: "text-lg font-bold text-gray-800"}, "🗺️ Acompanhamento Regional"),
