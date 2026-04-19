@@ -16338,14 +16338,13 @@ const hideLoadingScreen = () => {
                         });
                         var yID = m.ax==="pct"?"y1":m.ax==="money"?"y2":"y";
                         if(m.ax==="vol")temVol=true; if(m.ax==="pct")temPct=true; if(m.ax==="money")temMoney=true;
-                        var ds={label:m.l,data:data,yAxisID:yID,order:m.t==="line"?oi:oi+100};
-                        if(m.t==="bar"){ds.type="bar";ds.backgroundColor=m.c;ds.borderRadius=3;ds.borderSkipped=false;ds.barPercentage=0.7;ds.categoryPercentage=0.85;}
-                        else{ds.type="line";ds.borderColor=m.c;ds.borderWidth=2.5;ds.tension=0.3;ds.pointRadius=3;ds.pointBackgroundColor=m.c;ds.pointBorderColor="#fff";ds.pointBorderWidth=2;ds.backgroundColor="transparent";if(m.dash)ds.borderDash=[6,3];}
+                        var ds={label:m.l,data:data,yAxisID:yID,order:oi};
+                        ds.type="line";ds.borderColor=m.c;ds.borderWidth=2;ds.tension=0.35;ds.pointRadius=4;ds.pointBackgroundColor=m.c;ds.pointBorderColor="#fff";ds.pointBorderWidth=2;ds.pointHoverRadius=6;ds.backgroundColor="transparent";if(m.dash)ds.borderDash=[6,3];
                         datasets.push(ds);
                     });
 
                     chartInstance = new Chart(cvs, {
-                        type:"bar", data:{labels:labels,datasets:datasets},
+                        type:"line", data:{labels:labels,datasets:datasets},
                         options:{
                             responsive:true,maintainAspectRatio:false,
                             interaction:{mode:"index",intersect:false},
