@@ -957,14 +957,21 @@
                                             className: "px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs hover:bg-gray-300"
                                         }, "🔄"),
                                         React.createElement("button", {
-                                            onClick: function() {
-                                                // Abre modal de edição de dados gerais + senha
+                                            onClick: async function() {
+                                                // Abre modal de edição + carrega lista de grupos pra o select
+                                                var gruposFetched = [];
+                                                try {
+                                                    var respG = await fetch(API_URL + "/admin/grupos-enderecos", { headers: {"Authorization": "Bearer " + getToken()} });
+                                                    if (respG.ok) gruposFetched = await respG.json();
+                                                } catch {}
                                                 x({...p, 
                                                     editarClienteSolicitacao: {
                                                         id: cliente.id,
                                                         nome: cliente.nome || "",
                                                         email: cliente.email || "",
                                                         empresa: cliente.empresa || "",
+                                                        grupo_enderecos_id: cliente.grupo_enderecos_id || "",
+                                                        grupos_disponiveis: gruposFetched,
                                                         nova_senha: "",
                                                         confirmar_senha: "",
                                                         mostrar_senha: false,
@@ -973,7 +980,7 @@
                                                     }
                                                 });
                                             },
-                                            title: "Editar cliente (nome, email, empresa, senha)",
+                                            title: "Editar cliente (nome, email, empresa, grupo, senha)",
                                             className: "px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200"
                                         }, "✏️"),
                                         React.createElement("button", {
@@ -1017,6 +1024,93 @@
                                 );
                             })
                         )
+                    ),
+                    
+                    // ==================== GRUPOS DE ENDEREÇOS COMPARTILHADOS ====================
+                    React.createElement("div", {className: "mt-6 pt-6 border-t"},
+                        React.createElement("div", {className: "flex items-center justify-between mb-3"},
+                            React.createElement("div", null,
+                                React.createElement("h3", {className: "font-bold text-gray-700 flex items-center gap-2"}, "📚 Grupos de Endereços Compartilhados"),
+                                React.createElement("p", {className: "text-xs text-gray-500"}, "Agrupe clientes para que compartilhem o mesmo pool de endereços salvos")
+                            ),
+                            React.createElement("div", {className: "flex gap-2"},
+                                React.createElement("button", {
+                                    onClick: async function() {
+                                        try {
+                                            var resp = await fetch(API_URL + "/admin/grupos-enderecos", {headers: {"Authorization": "Bearer " + getToken()}});
+                                            if (resp.ok) {
+                                                var data = await resp.json();
+                                                x({...p, gruposEnderecosLista: data});
+                                            }
+                                        } catch (err) { ja("Erro ao carregar grupos", "error"); }
+                                    },
+                                    className: "px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                                }, "🔄 Carregar"),
+                                React.createElement("button", {
+                                    onClick: function() {
+                                        x({...p, editarGrupoEnderecos: {id: null, nome: "", descricao: "", ativo: true, salvando: false, erro: ""}});
+                                    },
+                                    className: "px-3 py-1 bg-purple-600 text-white rounded text-sm hover:bg-purple-700"
+                                }, "+ Novo Grupo")
+                            )
+                        ),
+                        p.gruposEnderecosLista && p.gruposEnderecosLista.length === 0 && 
+                            React.createElement("p", {className: "text-gray-500 text-sm text-center py-4"}, "Nenhum grupo cadastrado. Clique em \"+ Novo Grupo\" para criar."),
+                        p.gruposEnderecosLista && p.gruposEnderecosLista.length > 0 && 
+                            React.createElement("div", {className: "space-y-2"},
+                                p.gruposEnderecosLista.map(function(g) {
+                                    return React.createElement("div", {
+                                        key: g.id,
+                                        className: "bg-purple-50 border border-purple-200 rounded-lg p-3 flex items-center justify-between"
+                                    },
+                                        React.createElement("div", {className: "flex-1"},
+                                            React.createElement("div", {className: "flex items-center gap-2"},
+                                                React.createElement("p", {className: "font-medium text-purple-900"}, g.nome),
+                                                !g.ativo && React.createElement("span", {className: "text-xs bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded"}, "INATIVO")
+                                            ),
+                                            g.descricao && React.createElement("p", {className: "text-xs text-gray-600 mt-0.5"}, g.descricao),
+                                            React.createElement("p", {className: "text-xs text-purple-600 mt-1"},
+                                                "👥 " + (g.total_clientes || 0) + " cliente(s) · 📍 " + (g.total_enderecos || 0) + " endereço(s)"
+                                            )
+                                        ),
+                                        React.createElement("div", {className: "flex items-center gap-2"},
+                                            React.createElement("button", {
+                                                onClick: function() {
+                                                    x({...p, editarGrupoEnderecos: {
+                                                        id: g.id, nome: g.nome || "", descricao: g.descricao || "", ativo: g.ativo, salvando: false, erro: ""
+                                                    }});
+                                                },
+                                                className: "px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200"
+                                            }, "✏️ Editar"),
+                                            React.createElement("button", {
+                                                onClick: async function() {
+                                                    var totalC = parseInt(g.total_clientes) || 0;
+                                                    var totalE = parseInt(g.total_enderecos) || 0;
+                                                    var msg = "Excluir grupo \"" + g.nome + "\"?\n\n";
+                                                    if (totalC > 0 || totalE > 0) {
+                                                        msg += "⚠️ Este grupo tem " + totalC + " cliente(s) e " + totalE + " endereço(s).\n";
+                                                        msg += "Os clientes voltarão a ter endereços individuais.\n";
+                                                        msg += "Os endereços continuarão existindo, mas voltam a ser privados de quem os cadastrou.\n\n";
+                                                    }
+                                                    msg += "Confirmar exclusão?";
+                                                    if (!confirm(msg)) return;
+                                                    try {
+                                                        var resp = await fetch(API_URL + "/admin/grupos-enderecos/" + g.id, {
+                                                            method: "DELETE",
+                                                            headers: {"Authorization": "Bearer " + getToken()}
+                                                        });
+                                                        if (resp.ok) {
+                                                            ja("🗑️ Grupo excluído", "success");
+                                                            x({...p, gruposEnderecosLista: null});
+                                                        } else ja("Erro ao excluir grupo", "error");
+                                                    } catch { ja("Erro de conexão", "error"); }
+                                                },
+                                                className: "px-2 py-1 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200"
+                                            }, "🗑️")
+                                        )
+                                    );
+                                })
+                            )
                     )
                 )
             ),
@@ -1074,7 +1168,24 @@
                             }
                         }
                         
-                        ja("✅ Cliente atualizado!", "success");
+                        // 3. Atualizar grupo de endereços (pode ser "" = null = sem grupo)
+                        var novoGrupo = ec.grupo_enderecos_id ? parseInt(ec.grupo_enderecos_id) : null;
+                        var respGrupo = await fetch(API_URL + "/admin/solicitacao/clientes/" + ec.id + "/grupo", {
+                            method: "PATCH",
+                            headers: {"Content-Type": "application/json", "Authorization": "Bearer " + getToken()},
+                            body: JSON.stringify({grupo_enderecos_id: novoGrupo})
+                        });
+                        if (respGrupo.ok) {
+                            var dataG = await respGrupo.json().catch(function() { return {}; });
+                            if (dataG.enderecos_migrados > 0) {
+                                ja("✅ Cliente atualizado! " + dataG.enderecos_migrados + " endereço(s) migrado(s) pro grupo", "success");
+                            } else {
+                                ja("✅ Cliente atualizado!", "success");
+                            }
+                        } else {
+                            ja("⚠️ Dados salvos, mas erro ao atribuir grupo", "warning");
+                        }
+                        
                         x({...p, editarClienteSolicitacao: null, clientesApiLista: null});
                     } catch (err) {
                         x({...p, editarClienteSolicitacao: {...p.editarClienteSolicitacao, salvando: false, erro: "Erro de conexão"}});
@@ -1124,9 +1235,25 @@
                                 type: "text",
                                 value: ec.empresa,
                                 onChange: function(e) { atualizarCampo("empresa", e.target.value); },
-                                className: "w-full px-3 py-2 border border-gray-300 rounded-lg text-sm mt-1 focus:ring-2 focus:ring-blue-400 outline-none",
+                                className: "w-full px-3 py-2 border border-gray-300 rounded-lg text-sm mt-1 mb-2 focus:ring-2 focus:ring-blue-400 outline-none",
                                 placeholder: "Nome da empresa (opcional)"
-                            })
+                            }),
+                            React.createElement("label", {className: "text-xs text-gray-600 font-medium"}, "📚 Grupo de Endereços"),
+                            React.createElement("select", {
+                                value: ec.grupo_enderecos_id || "",
+                                onChange: function(e) { atualizarCampo("grupo_enderecos_id", e.target.value); },
+                                className: "w-full px-3 py-2 border border-gray-300 rounded-lg text-sm mt-1 focus:ring-2 focus:ring-blue-400 outline-none bg-white"
+                            },
+                                React.createElement("option", {value: ""}, "— Sem grupo (individual) —"),
+                                (ec.grupos_disponiveis || []).filter(function(g) { return g.ativo; }).map(function(g) {
+                                    return React.createElement("option", {key: g.id, value: g.id}, g.nome + " (" + (g.total_clientes || 0) + " clientes, " + (g.total_enderecos || 0) + " endereços)");
+                                })
+                            ),
+                            React.createElement("div", {className: "text-xs text-gray-500 mt-1"}, 
+                                ec.grupo_enderecos_id 
+                                    ? "💡 Este cliente vê e edita os endereços de todo o grupo"
+                                    : "💡 Este cliente tem endereços próprios, não compartilha com ninguém"
+                            )
                         ),
                         
                         // Seção: Senha (opcional)
@@ -1180,6 +1307,98 @@
                                 disabled: !podeSalvar,
                                 className: "flex-1 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                             }, ec.salvando ? "⏳ Salvando..." : "💾 Salvar")
+                        )
+                    )
+                );
+            })(),
+
+            // ==================== MODAL CRIAR/EDITAR GRUPO DE ENDEREÇOS ====================
+            p.editarGrupoEnderecos && (function() {
+                var g = p.editarGrupoEnderecos;
+                var podeSalvar = g.nome && g.nome.trim() && !g.salvando;
+                
+                var atualizar = function(campo, valor) {
+                    x({...p, editarGrupoEnderecos: {...p.editarGrupoEnderecos, [campo]: valor, erro: ""}});
+                };
+                var fechar = function() { x({...p, editarGrupoEnderecos: null}); };
+                
+                var salvar = async function() {
+                    if (!podeSalvar) return;
+                    x({...p, editarGrupoEnderecos: {...p.editarGrupoEnderecos, salvando: true, erro: ""}});
+                    try {
+                        var url = g.id 
+                            ? API_URL + "/admin/grupos-enderecos/" + g.id
+                            : API_URL + "/admin/grupos-enderecos";
+                        var method = g.id ? "PATCH" : "POST";
+                        var resp = await fetch(url, {
+                            method: method,
+                            headers: {"Content-Type": "application/json", "Authorization": "Bearer " + getToken()},
+                            body: JSON.stringify({nome: g.nome.trim(), descricao: g.descricao.trim(), ativo: g.ativo})
+                        });
+                        if (resp.ok) {
+                            ja(g.id ? "✅ Grupo atualizado!" : "✅ Grupo criado!", "success");
+                            x({...p, editarGrupoEnderecos: null, gruposEnderecosLista: null});
+                        } else {
+                            var dataErr = await resp.json().catch(function() { return {}; });
+                            x({...p, editarGrupoEnderecos: {...p.editarGrupoEnderecos, salvando: false, erro: dataErr.error || "Erro ao salvar"}});
+                        }
+                    } catch {
+                        x({...p, editarGrupoEnderecos: {...p.editarGrupoEnderecos, salvando: false, erro: "Erro de conexão"}});
+                    }
+                };
+                
+                return React.createElement("div", {
+                    className: "fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4",
+                    onClick: fechar
+                },
+                    React.createElement("div", {
+                        className: "bg-white rounded-xl shadow-2xl w-full max-w-md p-5",
+                        onClick: function(e) { e.stopPropagation(); }
+                    },
+                        React.createElement("div", {className: "flex items-center justify-between mb-4"},
+                            React.createElement("div", {className: "flex items-center gap-2"},
+                                React.createElement("span", {className: "text-xl"}, g.id ? "✏️" : "➕"),
+                                React.createElement("span", {className: "font-bold text-purple-700"}, g.id ? "Editar Grupo" : "Novo Grupo de Endereços")
+                            ),
+                            React.createElement("button", {onClick: fechar, className: "text-gray-400 hover:text-gray-600"}, "✕")
+                        ),
+                        React.createElement("label", {className: "text-xs text-gray-600 font-medium"}, "Nome do Grupo *"),
+                        React.createElement("input", {
+                            type: "text",
+                            value: g.nome,
+                            onChange: function(e) { atualizar("nome", e.target.value); },
+                            className: "w-full px-3 py-2 border border-gray-300 rounded-lg text-sm mt-1 mb-3 focus:ring-2 focus:ring-purple-400 outline-none",
+                            placeholder: "Ex: Rede Goiânia, Filiais BA",
+                            autoFocus: true
+                        }),
+                        React.createElement("label", {className: "text-xs text-gray-600 font-medium"}, "Descrição (opcional)"),
+                        React.createElement("textarea", {
+                            value: g.descricao,
+                            onChange: function(e) { atualizar("descricao", e.target.value); },
+                            className: "w-full px-3 py-2 border border-gray-300 rounded-lg text-sm mt-1 mb-3 focus:ring-2 focus:ring-purple-400 outline-none resize-none",
+                            rows: 2,
+                            placeholder: "Descreva este grupo..."
+                        }),
+                        g.id && React.createElement("label", {className: "flex items-center gap-2 mb-3 cursor-pointer"},
+                            React.createElement("input", {
+                                type: "checkbox",
+                                checked: g.ativo,
+                                onChange: function(e) { atualizar("ativo", e.target.checked); },
+                                className: "w-4 h-4"
+                            }),
+                            React.createElement("span", {className: "text-sm"}, "Grupo ativo")
+                        ),
+                        g.erro && React.createElement("div", {className: "mb-3 px-3 py-2 bg-red-100 text-red-700 rounded text-xs"}, "❌ ", g.erro),
+                        React.createElement("div", {className: "flex gap-2"},
+                            React.createElement("button", {
+                                onClick: fechar,
+                                className: "flex-1 py-2 border rounded-lg text-sm hover:bg-gray-50"
+                            }, "Cancelar"),
+                            React.createElement("button", {
+                                onClick: salvar,
+                                disabled: !podeSalvar,
+                                className: "flex-1 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 disabled:opacity-50"
+                            }, g.salvando ? "⏳ Salvando..." : "💾 Salvar")
                         )
                     )
                 );
