@@ -19721,7 +19721,7 @@ const hideLoadingScreen = () => {
                 })(fa),
                 className: "px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
             }, "💾 Salvar Prazo Padrão"))), configSecaoAberta === "prazos" && React.createElement("div", {
-                className: "bg-white rounded-xl shadow p-6"
+                className: "bg-white rounded-xl shadow p-6 mt-4"
             }, React.createElement("h2", {
                 className: "text-xl font-bold text-purple-900 mb-2"
             }, "➕ Prazo por Cliente ou Centro de Custo"), React.createElement("p", {
@@ -19833,7 +19833,7 @@ const hideLoadingScreen = () => {
                 },
                 className: "px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
             }, "💾 Salvar Configuração"))), configSecaoAberta === "prazos" && React.createElement("div", {
-                className: "bg-white rounded-xl shadow p-6"
+                className: "bg-white rounded-xl shadow p-6 mt-4"
             }, React.createElement("h2", {
                 className: "text-xl font-bold text-purple-900 mb-4"
             }, "📋 Prazos Configurados (", yt.length, ")"), 0 === yt.length ? React.createElement("p", {
@@ -19868,7 +19868,7 @@ const hideLoadingScreen = () => {
             }, e.km_min, " - ", e.km_max || "∞", " km → ", React.createElement("strong", null, e.prazo_minutos, " min")))))))))),
             
             // ========== SEÇÃO 4: PRAZOS PROFISSIONAIS (Dropdown) - APENAS NA ABA CONFIG ==========
-            "config" === Et && React.createElement("div", {className: "bg-white rounded-xl shadow overflow-hidden"},
+            "config" === Et && React.createElement("div", {className: "bg-white rounded-xl shadow overflow-hidden mt-4"},
                 React.createElement("button", {
                     onClick: function() { setConfigSecaoAberta(configSecaoAberta === "prazos_prof" ? "" : "prazos_prof"); },
                     className: "w-full px-6 py-4 flex items-center justify-between bg-gradient-to-r from-orange-50 to-white hover:from-orange-100 transition-all"
