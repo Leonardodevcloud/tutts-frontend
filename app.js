@@ -16260,11 +16260,15 @@ const hideLoadingScreen = () => {
                         ),
                         // Chart container
                         React.createElement("div", {style: {position: "relative", height: "240px"}, ref: function(container) {
-                            if (!container || !window.Chart) return; container.innerHTML = "";
-                            var cvs = document.createElement("canvas");
-                            container.appendChild(cvs);
+                            if (!container || !window.Chart) return;
                             var labels = dados.map(function(d) { return d.faixa; });
                             var values = dados.map(function(d) { return d.total || 0; });
+                            var hash = values.join(",");
+                            if (container.dataset.chartHash === hash) return;
+                            container.dataset.chartHash = hash;
+                            container.innerHTML = "";
+                            var cvs = document.createElement("canvas");
+                            container.appendChild(cvs);
                             var pcts = dados.map(function(d) { return ((d.total || 0) / total * 100).toFixed(1) + "%"; });
                             new Chart(cvs, {
                                 type: "bar",
@@ -16340,11 +16344,15 @@ const hideLoadingScreen = () => {
                         React.createElement("div", {className: "flex gap-5"},
                             // Chart
                             React.createElement("div", {className: "flex-1", style: {position: "relative", height: "260px"}, ref: function(container) {
-                                if (!container || !window.Chart) return; container.innerHTML = "";
-                                var cvs = document.createElement("canvas");
-                                container.appendChild(cvs);
+                                if (!container || !window.Chart) return;
                                 var labels = dadosVisiveis.map(function(d) { return d.faixa; });
                                 var values = dadosVisiveis.map(function(d) { return d.total || 0; });
+                                var hash = values.join(",");
+                                if (container.dataset.chartHash === hash) return;
+                                container.dataset.chartHash = hash;
+                                container.innerHTML = "";
+                                var cvs = document.createElement("canvas");
+                                container.appendChild(cvs);
                                 var pcts = dadosVisiveis.map(function(d) { return ((d.total || 0) / total * 100).toFixed(1) + "%"; });
                                 var bgColors = dadosVisiveis.map(function(d, i) {
                                     var idx = todosKm.indexOf(d);
@@ -16428,10 +16436,14 @@ const hideLoadingScreen = () => {
                             React.createElement("div", {className: "bg-gray-50 rounded-lg px-3 py-2.5"}, React.createElement("div", {className: "text-xs text-gray-400 mb-0.5"}, "Fora do pico"), React.createElement("div", {className: "text-xl font-medium text-gray-800"}, (total - totalPico).toLocaleString("pt-BR")), React.createElement("div", {className: "text-xs text-gray-400"}, ((total - totalPico) / total * 100).toFixed(1) + "%"))
                         ),
                         React.createElement("div", {style: {position: "relative", height: "260px"}, ref: function(ct) {
-                            if (!ct || !window.Chart) return; ct.innerHTML = "";
+                            if (!ct || !window.Chart) return;
+                            var vals = dados.map(function(d) { return d.total || 0; });
+                            var hash = vals.join(",");
+                            if (ct.dataset.chartHash === hash) return;
+                            ct.dataset.chartHash = hash;
+                            ct.innerHTML = "";
                             var cvs = document.createElement("canvas"); ct.appendChild(cvs);
                             var lbs = dados.map(function(d) { return String(d.hora).padStart(2, "0") + "h"; });
-                            var vals = dados.map(function(d) { return d.total || 0; });
                             var bgs = dados.map(function(d) { return (d.hora >= picoS && d.hora < picoE) ? "#7F77DD" : "#D3D1C7"; });
                             new Chart(cvs, { type: "bar", data: { labels: lbs, datasets: [{ data: vals, backgroundColor: bgs, borderRadius: 4, borderSkipped: false, barPercentage: 0.82 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { backgroundColor: "#1e293b", padding: 10, cornerRadius: 8, callbacks: { label: function(ctx) { return " " + ctx.parsed.y.toLocaleString("pt-BR") + " OS (" + (ctx.parsed.y / total * 100).toFixed(1) + "%)"; } } } }, scales: { x: { grid: { display: false }, border: { display: false }, ticks: { color: "#94a3b8", font: { size: 10 }, maxRotation: 0 } }, y: { grid: { color: "rgba(0,0,0,0.03)" }, border: { display: false }, ticks: { color: "#94a3b8", font: { size: 11 }, callback: function(v) { return v >= 1000 ? (v/1000).toFixed(0) + "k" : v; } }, beginAtZero: true } }, layout: { padding: { top: 24 } } }, plugins: [{ id: "hLabels", afterDatasetsDraw: function(chart) { var cx = chart.ctx; chart.data.datasets[0].data.forEach(function(v, j) { if (v < total * 0.005) return; var b = chart.getDatasetMeta(0).data[j]; cx.fillStyle = "#64748b"; cx.font = "500 10px system-ui"; cx.textAlign = "center"; cx.textBaseline = "bottom"; cx.fillText(v.toLocaleString("pt-BR"), b.x, b.y - 3); }); } }] });
                         }}),
