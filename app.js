@@ -2404,7 +2404,6 @@ const hideLoadingScreen = () => {
         [acompFiltrosOrdem, setAcompFiltrosOrdem] = useState([]),
         [acompTabAtiva, setAcompTabAtiva] = useState("volume"),
         [acompClientes, setAcompClientes] = useState(null),
-        [dashAcompMetricas, setDashAcompMetricas] = useState(["os", "entregas", "noPrazo"]),
         [comparativoSemanal, setComparativoSemanal] = useState(null),
         [comparativoSemanalClientes, setComparativoSemanalClientes] = useState(null),
         // Estados do Cliente 767
@@ -16223,142 +16222,146 @@ const hideLoadingScreen = () => {
             }, ft?.ultima_entrega ? new Date(ft.ultima_entrega).toLocaleDateString("pt-BR") : "-")))))),
 
             // ========== ACOMPANHAMENTO POR CLIENTE (Gráfico interativo) ==========
-            (zt || []).length > 0 && React.createElement("div", {className: "bg-white rounded-xl shadow p-6 border border-gray-100 mt-6"},
-                (function() {
-                    var METRICAS_DISP = [
-                        {grupo: "Volume", items: [
-                            {id: "os", label: "OS", campo: "total_os", tipo: "bar", cor: "#534AB7", eixo: "vol"},
-                            {id: "entregas", label: "Entregas", campo: "total_entregas", tipo: "bar", cor: "#378ADD", eixo: "vol"},
-                            {id: "noPrazo", label: "No prazo", campo: "dentro_prazo", tipo: "bar", cor: "#1D9E75", eixo: "vol"},
-                            {id: "foraPrazo", label: "Fora prazo", campo: "fora_prazo", tipo: "bar", cor: "#E24B4A", eixo: "vol"},
-                            {id: "retornos", label: "Retornos", campo: "total_retornos", tipo: "bar", cor: "#D85A30", eixo: "vol"},
-                            {id: "entregadores", label: "Entregadores", campo: "total_profissionais", tipo: "bar", cor: "#1D9E75", eixo: "vol"},
-                            {id: "entProf", label: "Ent/prof", campo: "media_entregas_por_prof", tipo: "line", cor: "#BA7517", eixo: "pct"}
-                        ]},
-                        {grupo: "Performance", items: [
-                            {id: "taxaPrazo", label: "Taxa prazo %", campo: function(c) { return (parseInt(c.dentro_prazo)||0) / Math.max(parseInt(c.total_entregas)||1, 1) * 100; }, tipo: "line", cor: "#1D9E75", eixo: "pct", sufixo: "%"},
-                            {id: "taxaPrazoProf", label: "Taxa prof %", campo: function(c) { return (parseInt(c.dentro_prazo_prof||0)) / Math.max(parseInt(c.total_entregas)||1, 1) * 100; }, tipo: "line", cor: "#5DCAA5", eixo: "pct", sufixo: "%"},
-                            {id: "tEntrega", label: "T. entrega", campo: "tempo_medio", tipo: "line", cor: "#7F77DD", eixo: "tempo", isTempo: true},
-                        ]},
-                        {grupo: "Financeiro", items: [
-                            {id: "valCliente", label: "Val. cliente", campo: "valor_total", tipo: "bar", cor: "#534AB7", eixo: "money"},
-                            {id: "valProf", label: "Val. prof.", campo: "valor_prof", tipo: "bar", cor: "#BA7517", eixo: "money"},
-                            {id: "faturamento", label: "Faturamento", campo: "faturamento", tipo: "line", cor: "#D85A30", eixo: "money", dash: true},
-                            {id: "ticketMedio", label: "Ticket médio", campo: "ticket_medio", tipo: "line", cor: "#D4537E", eixo: "money"}
-                        ]}
-                    ];
-                    var allItems = METRICAS_DISP.flatMap(function(g) { return g.items; });
-                    var selecionadas = dashAcompMetricas || [];
-                    function toggleMetrica(id) {
-                        setDashAcompMetricas(function(prev) {
-                            return prev.includes(id) ? prev.filter(function(x) { return x !== id; }) : prev.concat([id]);
-                        });
+            (zt || []).length > 0 && React.createElement("div", {className: "bg-white rounded-xl shadow p-6 border border-gray-100 mt-6", ref: function(container) {
+                if (!container || !window.Chart) return;
+                var clientes = (zt || []).filter(function(e) { return parseInt(e.total_os) > 0 || parseInt(e.total_entregas) > 0; }).slice(0, 20);
+                var dataHash = "acomp|" + clientes.length + "|" + clientes.slice(0,3).map(function(c){return c.cod_cliente;}).join(",");
+                if (container.dataset.built === dataHash) return;
+                container.dataset.built = dataHash;
+                container.innerHTML = "";
+
+                var METS = [
+                    {g:"Volume", items:[
+                        {id:"os",l:"OS",f:"total_os",t:"bar",c:"#534AB7",ax:"vol"},
+                        {id:"ent",l:"Entregas",f:"total_entregas",t:"bar",c:"#378ADD",ax:"vol"},
+                        {id:"np",l:"No prazo",f:"dentro_prazo",t:"bar",c:"#1D9E75",ax:"vol"},
+                        {id:"fp",l:"Fora prazo",f:"fora_prazo",t:"bar",c:"#E24B4A",ax:"vol"},
+                        {id:"ret",l:"Retornos",f:"total_retornos",t:"bar",c:"#D85A30",ax:"vol"},
+                        {id:"profs",l:"Entregadores",f:"total_profissionais",t:"bar",c:"#0F6E56",ax:"vol"},
+                        {id:"epf",l:"Ent/prof",f:"media_entregas_por_prof",t:"line",c:"#BA7517",ax:"pct"}
+                    ]},
+                    {g:"Performance", items:[
+                        {id:"txp",l:"Taxa prazo %",fn:function(c){return(parseInt(c.dentro_prazo)||0)/Math.max(parseInt(c.total_entregas)||1,1)*100;},t:"line",c:"#1D9E75",ax:"pct",s:"%"},
+                        {id:"txpp",l:"Taxa prof %",fn:function(c){return(parseInt(c.dentro_prazo_prof||0))/Math.max(parseInt(c.total_entregas)||1,1)*100;},t:"line",c:"#5DCAA5",ax:"pct",s:"%"},
+                        {id:"tent",l:"T. entrega",f:"tempo_medio",t:"line",c:"#7F77DD",ax:"vol",isTempo:true}
+                    ]},
+                    {g:"Financeiro", items:[
+                        {id:"vc",l:"Val. cliente",f:"valor_total",t:"bar",c:"#534AB7",ax:"money"},
+                        {id:"vp",l:"Val. prof.",f:"valor_prof",t:"bar",c:"#BA7517",ax:"money"},
+                        {id:"fat",l:"Faturamento",f:"faturamento",t:"line",c:"#D85A30",ax:"money",dash:true},
+                        {id:"tk",l:"Ticket médio",f:"ticket_medio",t:"line",c:"#D4537E",ax:"money"}
+                    ]}
+                ];
+                var allI = METS.flatMap(function(g){return g.items;});
+                var sel = ["os","ent","np"];
+
+                // Header
+                var hdr = document.createElement("div");
+                hdr.style.cssText = "display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;";
+                hdr.innerHTML = '<span style="font-size:15px;font-weight:500;color:#1f2937;">Acompanhamento por cliente</span><span style="font-size:12px;color:#9ca3af;background:#f3f4f6;padding:3px 10px;border-radius:20px;">' + clientes.length + ' clientes</span>';
+                container.appendChild(hdr);
+
+                // Pills
+                var pillsWrap = document.createElement("div");
+                pillsWrap.style.cssText = "margin-bottom:20px;";
+                var pillEls = {};
+                METS.forEach(function(grupo) {
+                    var gl = document.createElement("div");
+                    gl.style.cssText = "font-size:11px;color:#9ca3af;margin-bottom:5px;" + (grupo.g !== "Volume" ? "margin-top:8px;" : "");
+                    gl.textContent = grupo.g;
+                    pillsWrap.appendChild(gl);
+                    var row = document.createElement("div");
+                    row.style.cssText = "display:flex;flex-wrap:wrap;gap:6px;";
+                    grupo.items.forEach(function(m) {
+                        var btn = document.createElement("button");
+                        btn.style.cssText = "font-size:12px;padding:5px 12px;border-radius:20px;border:none;cursor:pointer;transition:all .15s;";
+                        btn.textContent = m.l;
+                        pillEls[m.id] = btn;
+                        btn.onclick = function() {
+                            var idx = sel.indexOf(m.id);
+                            if (idx >= 0) sel.splice(idx, 1); else sel.push(m.id);
+                            updatePills();
+                            renderChart();
+                        };
+                        row.appendChild(btn);
+                    });
+                    pillsWrap.appendChild(row);
+                });
+                container.appendChild(pillsWrap);
+
+                function updatePills() {
+                    allI.forEach(function(m) {
+                        var btn = pillEls[m.id];
+                        var on = sel.includes(m.id);
+                        btn.style.background = on ? m.c : "#f3f4f6";
+                        btn.style.color = on ? "#fff" : "#6b7280";
+                    });
+                }
+                updatePills();
+
+                // Chart area
+                var chartWrap = document.createElement("div");
+                chartWrap.style.cssText = "position:relative;height:340px;";
+                container.appendChild(chartWrap);
+                var emptyMsg = document.createElement("div");
+                emptyMsg.style.cssText = "text-align:center;padding:60px 0;color:#9ca3af;font-size:13px;display:none;";
+                emptyMsg.textContent = "Selecione pelo menos uma métrica acima";
+                container.appendChild(emptyMsg);
+
+                var chartInstance = null;
+                var labels = clientes.map(function(c) {
+                    var n = (c.nome_display || c.nome_cliente || "").substring(0, 12);
+                    return c.cod_cliente + " " + n;
+                });
+
+                function renderChart() {
+                    if (sel.length === 0) {
+                        chartWrap.style.display = "none"; emptyMsg.style.display = "block";
+                        if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
+                        return;
                     }
-                    var clientesFiltrados = (zt || []).filter(function(e) { return parseInt(e.total_os) > 0 || parseInt(e.total_entregas) > 0; }).slice(0, 20);
+                    chartWrap.style.display = "block"; emptyMsg.style.display = "none";
+                    if (chartInstance) chartInstance.destroy();
+                    chartWrap.innerHTML = "";
+                    var cvs = document.createElement("canvas"); chartWrap.appendChild(cvs);
 
-                    return React.createElement(React.Fragment, null,
-                        React.createElement("div", {className: "flex items-center justify-between mb-4"},
-                            React.createElement("span", {className: "font-medium text-gray-800 text-base"}, "Acompanhamento por cliente"),
-                            React.createElement("span", {className: "text-xs text-gray-400 bg-gray-50 px-2.5 py-1 rounded-full"}, clientesFiltrados.length + " clientes")
-                        ),
-                        React.createElement("div", {className: "space-y-2 mb-5"},
-                            METRICAS_DISP.map(function(grupo) {
-                                return React.createElement("div", {key: grupo.grupo},
-                                    React.createElement("div", {className: "text-xs text-gray-400 mb-1.5"}, grupo.grupo),
-                                    React.createElement("div", {className: "flex flex-wrap gap-1.5"},
-                                        grupo.items.map(function(m) {
-                                            var ativo = selecionadas.includes(m.id);
-                                            return React.createElement("button", {
-                                                key: m.id,
-                                                onClick: function() { toggleMetrica(m.id); },
-                                                className: "text-xs px-3 py-1.5 rounded-full transition-all " + (ativo ? "text-white" : "bg-gray-100 text-gray-500 hover:bg-gray-200"),
-                                                style: ativo ? {background: m.cor} : {}
-                                            }, m.label);
-                                        })
-                                    )
-                                );
-                            })
-                        ),
-                        selecionadas.length === 0 ? React.createElement("div", {className: "text-center py-12 text-gray-400 text-sm"}, "Selecione pelo menos uma métrica acima") :
-                        React.createElement("div", {style: {position: "relative", height: "340px"}, ref: function(ct) {
-                            if (!ct || !window.Chart) return;
-                            var hash = selecionadas.join(",") + "|" + clientesFiltrados.length;
-                            if (ct.dataset.chartHash === hash) return;
-                            ct.dataset.chartHash = hash;
-                            ct.innerHTML = "";
-                            var cvs = document.createElement("canvas"); ct.appendChild(cvs);
+                    var temVol=false, temPct=false, temMoney=false;
+                    var datasets = [];
+                    sel.forEach(function(id, oi) {
+                        var m = allI.find(function(x){return x.id===id;});
+                        if (!m) return;
+                        var data = clientes.map(function(c) {
+                            if (m.fn) return Math.round(m.fn(c)*100)/100;
+                            var v = c[m.f];
+                            if (m.isTempo && typeof v==="string" && v.includes(":")) { var p=v.split(":"); return parseInt(p[0])*60+parseInt(p[1]); }
+                            return parseFloat(v)||0;
+                        });
+                        var yID = m.ax==="pct"?"y1":m.ax==="money"?"y2":"y";
+                        if(m.ax==="vol")temVol=true; if(m.ax==="pct")temPct=true; if(m.ax==="money")temMoney=true;
+                        var ds={label:m.l,data:data,yAxisID:yID,order:m.t==="line"?oi:oi+100};
+                        if(m.t==="bar"){ds.type="bar";ds.backgroundColor=m.c;ds.borderRadius=3;ds.borderSkipped=false;ds.barPercentage=0.7;ds.categoryPercentage=0.85;}
+                        else{ds.type="line";ds.borderColor=m.c;ds.borderWidth=2.5;ds.tension=0.3;ds.pointRadius=3;ds.pointBackgroundColor=m.c;ds.pointBorderColor="#fff";ds.pointBorderWidth=2;ds.backgroundColor="transparent";if(m.dash)ds.borderDash=[6,3];}
+                        datasets.push(ds);
+                    });
 
-                            var labels = clientesFiltrados.map(function(c) {
-                                var nome = (c.nome_display || c.nome_cliente || "").substring(0, 12);
-                                return c.cod_cliente + " " + nome;
-                            });
-
-                            var temVol = false, temPct = false, temMoney = false;
-                            var datasets = [];
-                            var orderIdx = 0;
-                            selecionadas.forEach(function(id) {
-                                var m = allItems.find(function(x) { return x.id === id; });
-                                if (!m) return;
-                                var data = clientesFiltrados.map(function(c) {
-                                    if (typeof m.campo === "function") return Math.round(m.campo(c) * 100) / 100;
-                                    var v = c[m.campo];
-                                    if (m.isTempo && typeof v === "string" && v.includes(":")) {
-                                        var parts = v.split(":");
-                                        return parseInt(parts[0]) * 60 + parseInt(parts[1]);
-                                    }
-                                    return parseFloat(v) || 0;
-                                });
-                                var yID = m.eixo === "pct" ? "y1" : m.eixo === "money" ? "y2" : "y";
-                                if (m.eixo === "vol") temVol = true;
-                                if (m.eixo === "pct") temPct = true;
-                                if (m.eixo === "money") temMoney = true;
-
-                                var ds = { label: m.label, data: data, yAxisID: yID, order: m.tipo === "line" ? orderIdx : orderIdx + 100 };
-                                if (m.tipo === "bar") {
-                                    ds.type = "bar"; ds.backgroundColor = m.cor; ds.borderRadius = 3; ds.borderSkipped = false;
-                                    ds.barPercentage = 0.7; ds.categoryPercentage = 0.85;
-                                } else {
-                                    ds.type = "line"; ds.borderColor = m.cor; ds.borderWidth = 2.5; ds.tension = 0.3;
-                                    ds.pointRadius = 3; ds.pointBackgroundColor = m.cor; ds.pointBorderColor = "#fff"; ds.pointBorderWidth = 2;
-                                    ds.backgroundColor = "transparent";
-                                    if (m.dash) { ds.borderDash = [6, 3]; }
-                                }
-                                datasets.push(ds);
-                                orderIdx++;
-                            });
-
-                            new Chart(cvs, {
-                                type: "bar",
-                                data: { labels: labels, datasets: datasets },
-                                options: {
-                                    responsive: true, maintainAspectRatio: false,
-                                    interaction: { mode: "index", intersect: false },
-                                    plugins: {
-                                        legend: { display: true, position: "bottom", labels: { padding: 16, usePointStyle: true, pointStyle: "circle", font: { size: 11 } } },
-                                        tooltip: { backgroundColor: "#1e293b", padding: 10, cornerRadius: 8, callbacks: {
-                                            label: function(ctx) {
-                                                var m = allItems.find(function(x) { return x.label === ctx.dataset.label; });
-                                                var v = ctx.parsed.y;
-                                                if (m && m.sufixo) return " " + v.toFixed(1) + m.sufixo;
-                                                if (m && m.isTempo) return " " + Math.floor(v/60) + ":" + String(Math.round(v%60)).padStart(2,"0");
-                                                if (m && m.eixo === "money") return " R$ " + Math.round(v).toLocaleString("pt-BR");
-                                                return " " + Math.round(v).toLocaleString("pt-BR");
-                                            }
-                                        }}
-                                    },
-                                    scales: {
-                                        x: { grid: { display: false }, border: { display: false }, ticks: { color: "#374151", font: { size: 10 }, maxRotation: 45 } },
-                                        y: { display: temVol, position: "left", grid: { color: "rgba(0,0,0,0.04)" }, border: { display: false }, ticks: { color: "#374151", font: { size: 11 }, callback: function(v) { return v >= 1000 ? (v/1000).toFixed(0) + "k" : v; } }, beginAtZero: true },
-                                        y1: { display: temPct, position: "right", grid: { display: false }, border: { display: false }, ticks: { color: "#1D9E75", font: { size: 11 }, callback: function(v) { return v + "%"; } }, min: 0, max: 100 },
-                                        y2: { display: temMoney, position: temPct ? "left" : "right", grid: { display: false }, border: { display: false }, ticks: { color: "#D85A30", font: { size: 11 }, callback: function(v) { return "R$" + (v >= 1000 ? (v/1000).toFixed(0) + "k" : v); } }, beginAtZero: true }
-                                    },
-                                    layout: { padding: { top: 8 } }
-                                }
-                            });
-                        }})
-                    );
-                })()
-            ),
+                    chartInstance = new Chart(cvs, {
+                        type:"bar", data:{labels:labels,datasets:datasets},
+                        options:{
+                            responsive:true,maintainAspectRatio:false,
+                            interaction:{mode:"index",intersect:false},
+                            plugins:{legend:{display:true,position:"bottom",labels:{padding:16,usePointStyle:true,pointStyle:"circle",font:{size:11}}},tooltip:{backgroundColor:"#1e293b",padding:10,cornerRadius:8,callbacks:{label:function(ctx){var m=allI.find(function(x){return x.l===ctx.dataset.label;});var v=ctx.parsed.y;if(m&&m.s)return" "+v.toFixed(1)+m.s;if(m&&m.isTempo)return" "+Math.floor(v/60)+":"+String(Math.round(v%60)).padStart(2,"0");if(m&&m.ax==="money")return" R$ "+Math.round(v).toLocaleString("pt-BR");return" "+Math.round(v).toLocaleString("pt-BR");}}}},
+                            scales:{
+                                x:{grid:{display:false},border:{display:false},ticks:{color:"#374151",font:{size:10},maxRotation:45}},
+                                y:{display:temVol,position:"left",grid:{color:"rgba(0,0,0,0.04)"},border:{display:false},ticks:{color:"#374151",font:{size:11},callback:function(v){return v>=1000?(v/1000).toFixed(0)+"k":v;}},beginAtZero:true},
+                                y1:{display:temPct,position:"right",grid:{display:false},border:{display:false},ticks:{color:"#1D9E75",font:{size:11},callback:function(v){return v+"%";}},min:0,max:100},
+                                y2:{display:temMoney,position:temPct?"left":"right",grid:{display:false},border:{display:false},ticks:{color:"#D85A30",font:{size:11},callback:function(v){return"R$"+(v>=1000?(v/1000).toFixed(0)+"k":v);}},beginAtZero:true}
+                            },
+                            layout:{padding:{top:8}}
+                        }
+                    });
+                }
+                renderChart();
+            }}),
 
             React.createElement("div", {
                 className: "space-y-6 mt-6"
