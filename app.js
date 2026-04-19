@@ -19713,13 +19713,13 @@ const hideLoadingScreen = () => {
                                 })
                             }),
                             a = await t.json();
-                        a.success ? (ja("✅ Prazo padrão salvo!", "success"), al(), xl()) : ja("❌ Erro: " + a.error, "error")
+                        a.success ? (ja("✅ Prazo padrão salvo! Clique em Recalcular para aplicar nas entregas.", "success"), al()) : ja("❌ Erro: " + a.error, "error")
                     } catch (e) {
                         ja("Erro ao salvar", "error")
                     }
                 })(fa),
                 className: "px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
-            }, "💾 Salvar Prazo Padrão"))), React.createElement("div", {
+            }, "💾 Salvar Prazo Padrão"))), configSecaoAberta === "prazos" && React.createElement("div", {
                 className: "bg-white rounded-xl shadow p-6"
             }, React.createElement("h2", {
                 className: "text-xl font-bold text-purple-900 mb-2"
@@ -19820,7 +19820,7 @@ const hideLoadingScreen = () => {
                                     })
                                 }),
                                 o = await r.json();
-                            o.success ? (ja("✅ Prazo salvo!", "success"), tl(), xl()) : ja("❌ Erro: " + o.error, "error")
+                            o.success ? (ja("✅ Prazo salvo! Clique em Recalcular para aplicar nas entregas.", "success"), tl()) : ja("❌ Erro: " + o.error, "error")
                         } catch (e) {
                             ja("Erro ao salvar", "error")
                         }
@@ -19831,7 +19831,7 @@ const hideLoadingScreen = () => {
                     }]), document.getElementById("bi-novo-codigo").value = ""
                 },
                 className: "px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
-            }, "💾 Salvar Configuração"))), React.createElement("div", {
+            }, "💾 Salvar Configuração"))), configSecaoAberta === "prazos" && React.createElement("div", {
                 className: "bg-white rounded-xl shadow p-6"
             }, React.createElement("h2", {
                 className: "text-xl font-bold text-purple-900 mb-4"
