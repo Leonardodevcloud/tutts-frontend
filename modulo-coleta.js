@@ -124,7 +124,7 @@
         const [loading, setLoading] = useState(true);
 
         useEffect(() => {
-            fetchApi('/api/motoboy/coleta/minhas-regioes')
+            fetchApi('/motoboy/coleta/minhas-regioes')
                 .then(setRegioes)
                 .catch(err => showToast('❌ ' + err.message, 'error'))
                 .finally(() => setLoading(false));
@@ -247,7 +247,7 @@
 
             setEnviando(true);
             try {
-                const resp = await fetchApi('/api/motoboy/coleta', {
+                const resp = await fetchApi('/motoboy/coleta', {
                     method: 'POST',
                     body: JSON.stringify({
                         regiao_id: parseInt(regiaoId),
@@ -393,7 +393,7 @@
         const carregar = useCallback(() => {
             setLoading(true);
             const q = filtro.trim() ? '?q=' + encodeURIComponent(filtro) : '';
-            fetchApi('/api/motoboy/coleta/enderecos' + q)
+            fetchApi('/motoboy/coleta/enderecos' + q)
                 .then(setDados)
                 .catch(err => showToast('❌ ' + err.message, 'error'))
                 .finally(() => setLoading(false));
@@ -406,7 +406,7 @@
 
         const abrirFoto = async (pendenteId) => {
             try {
-                const r = await fetchApi('/api/motoboy/coleta/enderecos/' + pendenteId + '/foto');
+                const r = await fetchApi('/motoboy/coleta/enderecos/' + pendenteId + '/foto');
                 setModalFoto(r.foto);
             } catch {
                 showToast('Foto indisponível', 'warning');
@@ -503,7 +503,7 @@
         const [loading, setLoading] = useState(true);
 
         useEffect(() => {
-            fetchApi('/api/motoboy/coleta/ganhos')
+            fetchApi('/motoboy/coleta/ganhos')
                 .then(setDados)
                 .catch(err => showToast('❌ ' + err.message, 'error'))
                 .finally(() => setLoading(false));
@@ -603,7 +603,7 @@
 
         const carregar = useCallback(() => {
             setLoading(true);
-            fetchApi('/api/admin/coleta/fila')
+            fetchApi('/admin/coleta/fila')
                 .then(setPendentes)
                 .catch(err => showToast('❌ ' + err.message, 'error'))
                 .finally(() => setLoading(false));
@@ -618,7 +618,7 @@
             setAcao(''); setMotivoRejeicao('');
             if (p.tem_foto) {
                 try {
-                    const r = await fetchApi('/api/admin/coleta/fila/' + p.id + '/foto');
+                    const r = await fetchApi('/admin/coleta/fila/' + p.id + '/foto');
                     setFotoAtual(r.foto);
                 } catch {}
             }
@@ -627,7 +627,7 @@
         const aprovar = async () => {
             setProcessando(true);
             try {
-                await fetchApi('/api/admin/coleta/fila/' + detalhe.id + '/aprovar', {
+                await fetchApi('/admin/coleta/fila/' + detalhe.id + '/aprovar', {
                     method: 'POST',
                     body: JSON.stringify({ nome_cliente_editado: nomeEdit.trim() })
                 });
@@ -641,7 +641,7 @@
             if (!motivoRejeicao.trim()) return showToast('Informe o motivo', 'warning');
             setProcessando(true);
             try {
-                await fetchApi('/api/admin/coleta/fila/' + detalhe.id + '/rejeitar', {
+                await fetchApi('/admin/coleta/fila/' + detalhe.id + '/rejeitar', {
                     method: 'POST',
                     body: JSON.stringify({ motivo: motivoRejeicao.trim() })
                 });
@@ -803,7 +803,7 @@
 
         const carregar = useCallback(() => {
             setLoading(true);
-            fetchApi('/api/admin/coleta/regioes')
+            fetchApi('/admin/coleta/regioes')
                 .then(setRegioes)
                 .catch(err => showToast('❌ ' + err.message, 'error'))
                 .finally(() => setLoading(false));
@@ -811,7 +811,7 @@
 
         useEffect(() => {
             carregar();
-            fetchApi('/api/admin/grupos-enderecos').then(setGrupos).catch(() => {});
+            fetchApi('/admin/grupos-enderecos').then(setGrupos).catch(() => {});
         }, []);
 
         // Mapa grupo_id → total_clientes (do endpoint grupos-enderecos)
@@ -826,8 +826,8 @@
             if (!editarRegiao.grupo_enderecos_id) return showToast('Grupo obrigatório', 'warning');
             try {
                 const url = editarRegiao.id
-                    ? '/api/admin/coleta/regioes/' + editarRegiao.id
-                    : '/api/admin/coleta/regioes';
+                    ? '/admin/coleta/regioes/' + editarRegiao.id
+                    : '/admin/coleta/regioes';
                 await fetchApi(url, {
                     method: editarRegiao.id ? 'PATCH' : 'POST',
                     body: JSON.stringify(editarRegiao)
@@ -841,7 +841,7 @@
         const excluir = async (r) => {
             if (!confirm(`Excluir a região "${r.nome}"?\n\nOs motoboys vinculados serão desvinculados e os itens na fila serão removidos.`)) return;
             try {
-                await fetchApi('/api/admin/coleta/regioes/' + r.id, { method: 'DELETE' });
+                await fetchApi('/admin/coleta/regioes/' + r.id, { method: 'DELETE' });
                 showToast('🗑️ Excluído', 'success');
                 carregar();
             } catch (err) { showToast('❌ ' + err.message, 'error'); }
@@ -1047,7 +1047,7 @@
         const [loading, setLoading] = useState(true);
 
         useEffect(() => {
-            fetchApi('/api/admin/grupos-enderecos/' + grupoId)
+            fetchApi('/admin/grupos-enderecos/' + grupoId)
                 .then(setDados)
                 .catch(err => showToast('❌ ' + err.message, 'error'))
                 .finally(() => setLoading(false));
@@ -1108,7 +1108,7 @@
         const [sugestoes, setSugestoes] = useState([]);
 
         const carregar = () => {
-            fetchApi('/api/admin/coleta/regioes/' + regiao.id + '/motoboys')
+            fetchApi('/admin/coleta/regioes/' + regiao.id + '/motoboys')
                 .then(setVinculados).catch(() => {});
         };
         useEffect(carregar, []);
@@ -1116,7 +1116,7 @@
         useEffect(() => {
             if (!busca.trim() || busca.length < 2) { setSugestoes([]); return; }
             const t = setTimeout(() => {
-                fetchApi('/api/admin/coleta/motoboys-disponiveis?q=' + encodeURIComponent(busca))
+                fetchApi('/admin/coleta/motoboys-disponiveis?q=' + encodeURIComponent(busca))
                     .then(setSugestoes).catch(() => {});
             }, 300);
             return () => clearTimeout(t);
@@ -1124,7 +1124,7 @@
 
         const vincular = async (cod) => {
             try {
-                await fetchApi('/api/admin/coleta/regioes/' + regiao.id + '/motoboys', {
+                await fetchApi('/admin/coleta/regioes/' + regiao.id + '/motoboys', {
                     method: 'POST',
                     body: JSON.stringify({ cod_profissional: cod })
                 });
@@ -1137,7 +1137,7 @@
         const desvincular = async (cod) => {
             if (!confirm('Desvincular este motoboy?')) return;
             try {
-                await fetchApi('/api/admin/coleta/regioes/' + regiao.id + '/motoboys/' + cod, { method: 'DELETE' });
+                await fetchApi('/admin/coleta/regioes/' + regiao.id + '/motoboys/' + cod, { method: 'DELETE' });
                 showToast('🗑️ Desvinculado', 'success');
                 carregar();
             } catch (err) { showToast('❌ ' + err.message, 'error'); }
@@ -1208,7 +1208,7 @@
         const [loading, setLoading] = useState(true);
 
         useEffect(() => {
-            fetchApi('/api/admin/coleta/stats')
+            fetchApi('/admin/coleta/stats')
                 .then(setStats)
                 .catch(err => showToast('❌ ' + err.message, 'error'))
                 .finally(() => setLoading(false));
