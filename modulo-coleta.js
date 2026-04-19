@@ -149,18 +149,8 @@
             );
         }
 
-        return h('div', { className: 'min-h-screen bg-gray-50 pb-20' },
-            // Header mobile
-            h('div', { className: 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4 sticky top-0 z-30 shadow-md' },
-                h('div', { className: 'flex items-center justify-between' },
-                    h('div', null,
-                        h('h1', { className: 'font-bold text-lg' }, '📍 Coleta de Endereços'),
-                        h('p', { className: 'text-xs text-purple-100' }, regioes.length + ' região(ões) vinculada(s)')
-                    )
-                )
-            ),
-
-            // Conteúdo da aba
+        return h('div', { className: 'bg-gray-50 pb-20 min-h-[calc(100vh-4rem)]' },
+            // Conteúdo da aba (header agora vem do app.js)
             tab === 'cadastrar' && h(TabCadastrar, { fetchApi, showToast, regioes }),
             tab === 'consultar' && h(TabConsultar, { fetchApi, showToast }),
             tab === 'wallet' && h(TabWallet, { fetchApi, showToast }),
@@ -299,15 +289,28 @@
             );
         }
 
+        const regiaoAtual = regioes.find(r => String(r.id) === String(regiaoId)) || regioes[0];
+
         return h('div', { className: 'max-w-md mx-auto p-4 space-y-4' },
-            // Região
-            h('div', { className: 'bg-white rounded-xl shadow p-4' },
-                h('label', { className: 'text-xs font-bold text-gray-600 uppercase mb-1 block' }, '📍 Região'),
-                h('select', {
-                    value: regiaoId,
-                    onChange: e => setRegiaoId(e.target.value),
-                    className: 'w-full px-3 py-2 border rounded-lg text-sm bg-white'
-                }, regioes.map(r => h('option', { key: r.id, value: r.id }, r.nome + (r.cidade ? ' - ' + r.cidade : ''))))
+            // Região (read-only — configurada pelo admin)
+            h('div', { className: 'bg-gradient-to-br from-purple-50 to-indigo-50 border border-purple-200 rounded-xl p-4' },
+                h('div', { className: 'flex items-center justify-between' },
+                    h('div', null,
+                        h('div', { className: 'text-xs text-purple-600 font-semibold uppercase tracking-wide' }, '📍 Sua região'),
+                        h('div', { className: 'text-lg font-bold text-purple-900 mt-0.5' },
+                            regiaoAtual ? regiaoAtual.nome : '—'
+                        ),
+                        regiaoAtual && regiaoAtual.cidade && h('div', { className: 'text-xs text-purple-700' },
+                            regiaoAtual.cidade + (regiaoAtual.uf ? ' - ' + regiaoAtual.uf : '')
+                        )
+                    ),
+                    // Se o motoboy estiver em múltiplas regiões, mostra um select compacto
+                    regioes.length > 1 && h('select', {
+                        value: regiaoId,
+                        onChange: e => setRegiaoId(e.target.value),
+                        className: 'text-xs px-2 py-1 border border-purple-300 rounded bg-white text-purple-700'
+                    }, regioes.map(r => h('option', { key: r.id, value: r.id }, r.nome)))
+                )
             ),
 
             // Nome do cliente (CAPS)
