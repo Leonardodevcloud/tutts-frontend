@@ -10129,7 +10129,25 @@ const hideLoadingScreen = () => {
             className: "text-sm text-white/80"
         }, "Entre na fila e aguarde a disponibilidade de corridas")), React.createElement("span", {
             className: "text-white/60 text-2xl"
-        }, "›")), (() => {
+        }, "›")),
+
+        // Coleta de Endereços (novo módulo) — estilo "featured" como o Filas
+        hasModuleAccess(l, "coleta") && React.createElement("button", {
+            onClick: function() { if(typeof window._tuttsSetModulo === 'function') window._tuttsSetModulo("coleta"); },
+            className: "w-full bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl shadow-lg p-4 sm:p-6 flex items-center gap-3 sm:gap-4 hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98]"
+        }, React.createElement("div", {
+            className: "w-12 h-12 sm:w-16 sm:h-16 bg-white/20 rounded-xl flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0"
+        }, "📍"), React.createElement("div", {
+            className: "text-left flex-1"
+        }, React.createElement("h3", {
+            className: "text-lg font-bold text-white"
+        }, "Coleta de Endereços"), React.createElement("p", {
+            className: "text-sm text-white/80"
+        }, "Cadastre endereços e ganhe R$ 1,00 por aprovação")), React.createElement("span", {
+            className: "text-white/60 text-2xl"
+        }, "›")),
+
+        (() => {
             // Nova lógica: usa elegibilidade do backend
             // Mostra se elegível OU se ainda está carregando (para não piscar)
             if (!l || !l.codProfissional) return !1;
@@ -21055,22 +21073,6 @@ const hideLoadingScreen = () => {
                             ),
                             React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Agente RPA"),
                             React.createElement("p", {className: "text-sm text-gray-500"}, "Correção de endereços")
-                        )
-                    ),
-
-                    // Coleta de Endereços
-                    hasModuleAccess(l, "coleta") &&
-                    React.createElement("div", {
-                        onClick: () => he("coleta"),
-                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-purple-300"
-                    },
-                        React.createElement("div", {className: "h-2 bg-gradient-to-r from-purple-500 to-indigo-600"}),
-                        React.createElement("div", {className: "p-6"},
-                            React.createElement("div", {className: "w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
-                                React.createElement("span", {className: "text-3xl"}, "📍")
-                            ),
-                            React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Coleta de Endereços"),
-                            React.createElement("p", {className: "text-sm text-gray-500"}, "Cadastre e ganhe")
                         )
                     ),
                     
