@@ -16339,7 +16339,11 @@ const hideLoadingScreen = () => {
                         var yID = m.ax==="pct"?"y1":m.ax==="money"?"y2":"y";
                         if(m.ax==="vol")temVol=true; if(m.ax==="pct")temPct=true; if(m.ax==="money")temMoney=true;
                         var ds={label:m.l,data:data,yAxisID:yID,order:oi};
-                        ds.type="line";ds.borderColor=m.c;ds.borderWidth=2;ds.tension=0.35;ds.pointRadius=4;ds.pointBackgroundColor=m.c;ds.pointBorderColor="#fff";ds.pointBorderWidth=2;ds.pointHoverRadius=6;ds.backgroundColor="transparent";if(m.dash)ds.borderDash=[6,3];
+                        var lineStyles = [[2.5,[],"circle"],[2,[8,4],"rect"],[2.5,[3,3],"triangle"],[2,[12,4,3,4],"rectRot"],[2.5,[],"rectRounded"],[2,[6,3],"star"],[2.5,[2,2],"crossRot"]];
+                        var ls = lineStyles[oi % lineStyles.length];
+                        ds.type="line";ds.borderColor=m.c;ds.borderWidth=ls[0];ds.tension=0.35;ds.pointRadius=5;ds.pointBackgroundColor=m.c;ds.pointBorderColor="#fff";ds.pointBorderWidth=2;ds.pointHoverRadius=8;ds.backgroundColor="transparent";ds.pointStyle=ls[2];
+                        if(ls[1].length > 0) ds.borderDash=ls[1];
+                        if(m.dash) ds.borderDash=[6,3];
                         datasets.push(ds);
                     });
 
@@ -16348,12 +16352,12 @@ const hideLoadingScreen = () => {
                         options:{
                             responsive:true,maintainAspectRatio:false,
                             interaction:{mode:"index",intersect:false},
-                            plugins:{legend:{display:true,position:"bottom",labels:{padding:16,usePointStyle:true,pointStyle:"circle",font:{size:11}}},tooltip:{backgroundColor:"#1e293b",padding:10,cornerRadius:8,callbacks:{label:function(ctx){var m=allI.find(function(x){return x.l===ctx.dataset.label;});var v=ctx.parsed.y;if(m&&m.s)return" "+v.toFixed(1)+m.s;if(m&&m.isTempo)return" "+Math.floor(v/60)+":"+String(Math.round(v%60)).padStart(2,"0");if(m&&m.ax==="money")return" R$ "+Math.round(v).toLocaleString("pt-BR");return" "+Math.round(v).toLocaleString("pt-BR");}}}},
+                            plugins:{legend:{display:true,position:"bottom",labels:{padding:20,usePointStyle:true,font:{size:13}}},tooltip:{backgroundColor:"#1e293b",padding:12,cornerRadius:8,titleFont:{size:14},bodyFont:{size:13},callbacks:{label:function(ctx){var m=allI.find(function(x){return x.l===ctx.dataset.label;});var v=ctx.parsed.y;if(m&&m.s)return" "+v.toFixed(1)+m.s;if(m&&m.isTempo)return" "+Math.floor(v/60)+":"+String(Math.round(v%60)).padStart(2,"0");if(m&&m.ax==="money")return" R$ "+Math.round(v).toLocaleString("pt-BR");return" "+Math.round(v).toLocaleString("pt-BR");}}}},
                             scales:{
-                                x:{grid:{display:false},border:{display:false},ticks:{color:"#374151",font:{size:10},maxRotation:45}},
-                                y:{display:temVol,position:"left",grid:{color:"rgba(0,0,0,0.04)"},border:{display:false},ticks:{color:"#374151",font:{size:11},callback:function(v){return v>=1000?(v/1000).toFixed(0)+"k":v;}},beginAtZero:true},
-                                y1:{display:temPct,position:"right",grid:{display:false},border:{display:false},ticks:{color:"#1D9E75",font:{size:11},callback:function(v){return v+"%";}},min:0,max:100},
-                                y2:{display:temMoney,position:temPct?"left":"right",grid:{display:false},border:{display:false},ticks:{color:"#D85A30",font:{size:11},callback:function(v){return"R$"+(v>=1000?(v/1000).toFixed(0)+"k":v);}},beginAtZero:true}
+                                x:{grid:{display:false},border:{display:false},ticks:{color:"#374151",font:{size:12,weight:"500"},maxRotation:45}},
+                                y:{display:temVol,position:"left",grid:{color:"rgba(0,0,0,0.06)"},border:{display:false},ticks:{color:"#374151",font:{size:13},callback:function(v){return v>=1000?(v/1000).toFixed(0)+"k":v;}},beginAtZero:true},
+                                y1:{display:temPct,position:"right",grid:{display:false},border:{display:false},ticks:{color:"#1D9E75",font:{size:13},callback:function(v){return v+"%";}},min:0,max:100},
+                                y2:{display:temMoney,position:temPct?"left":"right",grid:{display:false},border:{display:false},ticks:{color:"#D85A30",font:{size:13},callback:function(v){return"R$"+(v>=1000?(v/1000).toFixed(0)+"k":v);}},beginAtZero:true}
                             },
                             layout:{padding:{top:8}}
                         }
