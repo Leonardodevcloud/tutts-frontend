@@ -117,7 +117,33 @@
             )); }))
         ),
         abaTreinar === 'memorias' && el('div', { className: 'space-y-4 pt-2' },
-          el('div', { className: 'bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl p-4 border border-blue-100' }, el('p', { className: 'text-sm text-blue-800 font-medium' }, '🧠 Como funciona'), el('p', { className: 'text-xs text-blue-600 mt-1' }, 'A IA aprende quando você diz "sempre que...", "prefiro...", "a partir de agora...". Aqui você vê tudo o que ela aprendeu, incluindo o que você disse.')),
+          el('div', { className: 'bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl p-4 border border-blue-100 space-y-3' },
+            el('p', { className: 'text-sm text-blue-800 font-medium' }, '🧠 Como funciona o aprendizado automático'),
+            el('p', { className: 'text-xs text-blue-600' }, 'Durante a conversa, a IA detecta automaticamente suas preferências e regras quando você usa certas expressões. Tudo o que ela aprender aparece aqui — com o contexto do que você disse.'),
+            el('div', { className: 'bg-white/70 rounded-lg p-3 border border-blue-100' },
+              el('p', { className: 'text-xs font-semibold text-blue-800 mb-2' }, '💬 Use frases como estas no chat para a IA aprender:'),
+              el('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-1.5' },
+                [
+                  '"Sempre que eu pedir faturamento, separa por centro de custo"',
+                  '"Prefiro ver gráficos de barra horizontal"',
+                  '"A partir de agora, mostra a taxa de prazo em %"',
+                  '"Aqui a gente chama motoboy de moto"',
+                  '"Quando eu pedir ranking, mostra os top 10"',
+                  '"Não precisa mostrar os cancelados"',
+                  '"Na Tutts a gente considera retorno acima de 3% como crítico"',
+                  '"Minha preferência é ver dados por semana, não por dia"',
+                  '"Lembra que o cliente 767 é o Comollati"',
+                  '"Inclui sempre o nome do motoboy nos rankings"'
+                ].map(function(ex, i) {
+                  return el('div', { key: i, className: 'flex items-start gap-1.5' },
+                    el('span', { className: 'text-cyan-500 text-xs mt-0.5 flex-shrink-0' }, '•'),
+                    el('span', { className: 'text-xs text-gray-600 italic' }, ex)
+                  );
+                })
+              )
+            ),
+            el('p', { className: 'text-xs text-blue-500 italic' }, '💡 Dica: Você também pode adicionar memórias manualmente no campo abaixo.')
+          ),
           el('div', { className: 'flex gap-2' }, el('input', { type: 'text', placeholder: 'Adicionar memória manual...', value: novaMemoria, onChange: function(e) { setNovaMemoria(e.target.value); }, onKeyDown: function(e) { if (e.key === 'Enter') saveMem(); }, className: 'flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500' }), el('button', { onClick: saveMem, disabled: !novaMemoria.trim(), className: 'px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-40 whitespace-nowrap' }, '+ Salvar')),
           memorias.length > 0 && el('div', { className: 'flex gap-3 flex-wrap' }, el('span', { className: 'text-xs px-3 py-1.5 rounded-full bg-cyan-50 text-cyan-700 border border-cyan-200 font-medium' }, '🤖 ' + mA.length + ' aprendida(s)'), el('span', { className: 'text-xs px-3 py-1.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200 font-medium' }, '✍️ ' + mM.length + ' manual(is)')),
           memorias.length === 0 ? el('div', { className: 'text-center py-8' }, el('p', { className: 'text-4xl mb-2' }, '🧠'), el('p', { className: 'text-gray-400 text-sm' }, 'Nenhuma memória'), el('p', { className: 'text-gray-300 text-xs mt-1' }, 'Converse com a IA para ela aprender')) :
