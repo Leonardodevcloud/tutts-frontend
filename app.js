@@ -359,7 +359,8 @@ const fetchAuth = async (url, options = {}, retryCount = 0) => {
         const response = await fetch(url, {
             ...options,
             headers,
-            credentials: 'include' // 🔒 Envia cookies HttpOnly automaticamente
+            credentials: 'include', // 🔒 Envia cookies HttpOnly automaticamente
+            cache: 'no-store' // 🔄 Garante dados frescos após mutações (fix v6.1)
         });
         
         // Se token expirou, tentar renovar automaticamente
@@ -19440,7 +19441,7 @@ const hideLoadingScreen = () => {
                             setRegiaoCentrosCusto({});
                             setRegiaoItensAdicionados([]);
                             setRegiaoEditando(null);
-                            pl(); // Recarregar regiões
+                            await pl(); // Recarregar regiões (awaited para garantir atualização)
                         } else {
                             ja("❌ Erro: " + data.error, "error");
                         }
@@ -19517,7 +19518,7 @@ const hideLoadingScreen = () => {
                                     var resp = await fetchAuth(API_URL + "/bi/regioes/" + e.id, {method: "DELETE"});
                                     if (resp.ok) {
                                         ja("✅ Região excluída!", "success");
-                                        pl();
+                                        await pl();
                                     }
                                 } catch (err) {
                                     ja("Erro ao excluir", "error");
