@@ -55,6 +55,21 @@
         const getToken = props.getToken;
         const showToast = props.showToast || props.ja || (() => {});
 
+        // Props compartilhadas do layout do sistema (header, nav, etc.)
+        const HeaderCompacto = props.HeaderCompacto;
+        const Toast = props.Toast;
+        const LoadingOverlay = props.LoadingOverlay;
+        const Ee = props.Ee;
+        const socialProfile = props.socialProfile;
+        const ul = props.ul;
+        const oLogout = props.o;
+        const he = props.he;
+        const navegarSidebar = props.navegarSidebar;
+        const isLoadingGlobal = props.n;
+        const toastData = props.i;
+        const isLoading = props.f;
+        const lastUpdate = props.E;
+
         const isAdmin = usuario?.role === 'admin' || usuario?.role === 'admin_master';
         const isMotoboy = !isAdmin; // role = 'user'
 
@@ -75,14 +90,31 @@
         }, [apiUrl, getToken]);
 
         // ================================================================
-        // MODO MOTOBOY
+        // MODO MOTOBOY - UI mobile-first, sem header do sistema
         // ================================================================
         if (isMotoboy) return h(ViewMotoboy, { fetchApi, showToast });
 
         // ================================================================
-        // MODO ADMIN
+        // MODO ADMIN - usa o layout padrão do sistema (HeaderCompacto)
         // ================================================================
-        return h(ViewAdmin, { fetchApi, showToast });
+        return h('div', { className: 'min-h-screen bg-gray-50' },
+            toastData && Toast && h(Toast, toastData),
+            isLoadingGlobal && LoadingOverlay && h(LoadingOverlay),
+            HeaderCompacto && h(HeaderCompacto, {
+                usuario: usuario,
+                moduloAtivo: Ee,
+                abaAtiva: null,
+                socialProfile: socialProfile,
+                isLoading: isLoading,
+                lastUpdate: lastUpdate,
+                onRefresh: ul,
+                onLogout: function() { oLogout && oLogout(null); },
+                onGoHome: function() { he && he('home'); },
+                onNavigate: navegarSidebar,
+                onChangeTab: null
+            }),
+            h(ViewAdmin, { fetchApi, showToast })
+        );
     };
 
     // ==================== VIEW MOTOBOY (mobile-first) ====================
@@ -537,12 +569,9 @@
     function ViewAdmin({ fetchApi, showToast }) {
         const [tab, setTab] = useState('fila');
 
-        return h('div', { className: 'p-4 bg-gray-50 min-h-screen' },
-            h('div', { className: 'max-w-7xl mx-auto' },
-                h('div', { className: 'flex items-center justify-between mb-4' },
-                    h('h1', { className: 'text-xl font-bold text-gray-800' }, '📍 Coleta de Endereços — Admin')
-                ),
-                h('div', { className: 'flex gap-2 mb-4 border-b' },
+        return h('div', { className: 'max-w-7xl mx-auto p-4 md:p-6' },
+            h('div', { className: 'bg-white rounded-lg shadow-sm border border-gray-200 mb-4' },
+                h('div', { className: 'flex gap-1 p-1' },
                     [
                         { id: 'fila', label: '⏳ Fila de Validação' },
                         { id: 'regioes', label: '🌎 Regiões' },
@@ -550,14 +579,14 @@
                     ].map(t => h('button', {
                         key: t.id,
                         onClick: () => setTab(t.id),
-                        className: 'px-4 py-2 text-sm font-medium border-b-2 transition-colors ' +
-                            (tab === t.id ? 'text-purple-600 border-purple-600' : 'text-gray-500 border-transparent')
+                        className: 'flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors ' +
+                            (tab === t.id ? 'bg-purple-600 text-white shadow' : 'text-gray-600 hover:bg-gray-100')
                     }, t.label))
-                ),
-                tab === 'fila' && h(AdminFila, { fetchApi, showToast }),
-                tab === 'regioes' && h(AdminRegioes, { fetchApi, showToast }),
-                tab === 'stats' && h(AdminStats, { fetchApi, showToast })
-            )
+                )
+            ),
+            tab === 'fila' && h(AdminFila, { fetchApi, showToast }),
+            tab === 'regioes' && h(AdminRegioes, { fetchApi, showToast }),
+            tab === 'stats' && h(AdminStats, { fetchApi, showToast })
         );
     }
 
@@ -770,6 +799,7 @@
         const [grupos, setGrupos] = useState([]);
         const [editarRegiao, setEditarRegiao] = useState(null); // { id?, nome, uf, cidade, grupo_enderecos_id, ativo }
         const [gerenciarMotoboys, setGerenciarMotoboys] = useState(null); // regiao
+        const [verClientesDoGrupo, setVerClientesDoGrupo] = useState(null); // { grupo_id, nome }
 
         const carregar = useCallback(() => {
             setLoading(true);
@@ -783,6 +813,13 @@
             carregar();
             fetchApi('/api/admin/grupos-enderecos').then(setGrupos).catch(() => {});
         }, []);
+
+        // Mapa grupo_id → total_clientes (do endpoint grupos-enderecos)
+        const clientesPorGrupo = useMemo(() => {
+            const map = {};
+            grupos.forEach(g => { map[g.id] = parseInt(g.total_clientes) || 0; });
+            return map;
+        }, [grupos]);
 
         const salvar = async () => {
             if (!editarRegiao.nome?.trim()) return showToast('Nome obrigatório', 'warning');
@@ -811,6 +848,34 @@
         };
 
         return h('div', null,
+            // Banner explicativo do fluxo
+            h('div', { className: 'bg-gradient-to-r from-purple-50 to-indigo-50 border-2 border-purple-200 rounded-xl p-4 mb-4' },
+                h('div', { className: 'flex items-start gap-3' },
+                    h('div', { className: 'text-2xl' }, '💡'),
+                    h('div', { className: 'flex-1' },
+                        h('h3', { className: 'font-bold text-purple-900 mb-1' }, 'Como funciona o fluxo'),
+                        h('p', { className: 'text-sm text-purple-800 mb-2' },
+                            'Toda região é vinculada a um ',
+                            h('strong', null, 'Grupo de Endereços'),
+                            '. Quando um motoboy cadastra um endereço aqui e ele é aprovado, todos os clientes vinculados àquele grupo passam a enxergá-lo na tela de solicitação.'
+                        ),
+                        h('div', { className: 'flex items-center gap-2 flex-wrap text-xs' },
+                            h('span', { className: 'bg-white border border-purple-300 rounded px-2 py-1 font-medium' }, '🏍️ Motoboy da região'),
+                            h('span', { className: 'text-purple-500' }, '→ cadastra endereço →'),
+                            h('span', { className: 'bg-white border border-purple-300 rounded px-2 py-1 font-medium' }, '📚 Grupo'),
+                            h('span', { className: 'text-purple-500' }, '→ visível para →'),
+                            h('span', { className: 'bg-white border border-purple-300 rounded px-2 py-1 font-medium' }, '🏢 Clientes do grupo')
+                        ),
+                        h('p', { className: 'text-xs text-purple-700 mt-2' },
+                            '⚙️ A vinculação ', h('strong', null, 'cliente → grupo'),
+                            ' é feita em ',
+                            h('strong', null, 'Configurações → Grupos de Endereços'),
+                            ' e na edição de cada cliente API.'
+                        )
+                    )
+                )
+            ),
+
             h('div', { className: 'flex justify-end mb-4' },
                 h('button', {
                     onClick: () => setEditarRegiao({ nome: '', uf: '', cidade: '', grupo_enderecos_id: '', ativo: true }),
@@ -822,47 +887,65 @@
                 h('div', { className: 'text-gray-400 text-sm' }, 'Nenhuma região cadastrada')
             )
             : h('div', { className: 'grid md:grid-cols-2 lg:grid-cols-3 gap-3' },
-                regioes.map(r => h('div', {
-                    key: r.id,
-                    className: 'bg-white border-2 rounded-lg p-3 ' + (r.ativo ? 'border-purple-200' : 'border-gray-200 opacity-60')
-                },
-                    h('div', { className: 'flex items-start justify-between gap-2 mb-2' },
-                        h('div', null,
-                            h('div', { className: 'font-bold text-purple-800' }, '📍 ' + r.nome),
-                            h('div', { className: 'text-xs text-gray-500' }, (r.cidade || '') + (r.uf ? ' - ' + r.uf : '')),
-                            h('div', { className: 'text-xs text-gray-600 mt-1' }, '→ Grupo: ', h('strong', null, r.grupo_nome || '(sem grupo)'))
+                regioes.map(r => {
+                    const qtdClientes = clientesPorGrupo[r.grupo_enderecos_id] || 0;
+                    return h('div', {
+                        key: r.id,
+                        className: 'bg-white border-2 rounded-lg p-3 ' + (r.ativo ? 'border-purple-200' : 'border-gray-200 opacity-60')
+                    },
+                        h('div', { className: 'flex items-start justify-between gap-2 mb-2' },
+                            h('div', { className: 'flex-1 min-w-0' },
+                                h('div', { className: 'font-bold text-purple-800' }, '📍 ' + r.nome),
+                                h('div', { className: 'text-xs text-gray-500' }, (r.cidade || '') + (r.uf ? ' - ' + r.uf : ''))
+                            ),
+                            !r.ativo && h('span', { className: 'text-xs bg-gray-200 px-1.5 py-0.5 rounded' }, 'INATIVO')
                         ),
-                        !r.ativo && h('span', { className: 'text-xs bg-gray-200 px-1.5 py-0.5 rounded' }, 'INATIVO')
-                    ),
-                    h('div', { className: 'grid grid-cols-3 gap-1 text-center text-xs my-2' },
-                        h('div', { className: 'bg-blue-50 rounded p-1' },
-                            h('div', { className: 'font-bold text-blue-700' }, r.total_motoboys || 0),
-                            h('div', { className: 'text-gray-500' }, 'Motoboys')
+
+                        // Destaque do fluxo: grupo + clientes que recebem
+                        r.grupo_enderecos_id ? h('button', {
+                            onClick: () => setVerClientesDoGrupo({ grupo_id: r.grupo_enderecos_id, nome: r.grupo_nome }),
+                            className: 'w-full text-left bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-lg p-2 my-2 hover:from-purple-100 hover:to-indigo-100 transition-colors'
+                        },
+                            h('div', { className: 'text-xs text-purple-600 font-medium' }, '📚 Grupo'),
+                            h('div', { className: 'text-sm font-bold text-purple-900 truncate' }, r.grupo_nome || '(sem grupo)'),
+                            h('div', { className: 'text-xs text-purple-700 mt-0.5' },
+                                '🏢 ', h('strong', null, qtdClientes), ' cliente(s) receberão os endereços ',
+                                h('span', { className: 'text-purple-500 underline' }, 'ver')
+                            )
+                        ) : h('div', { className: 'bg-red-50 border border-red-200 rounded-lg p-2 my-2 text-xs text-red-700' },
+                            '⚠️ Sem grupo vinculado — endereços não serão salvos'
                         ),
-                        h('div', { className: 'bg-green-50 rounded p-1' },
-                            h('div', { className: 'font-bold text-green-700' }, r.total_aprovados || 0),
-                            h('div', { className: 'text-gray-500' }, 'Aprovados')
+
+                        h('div', { className: 'grid grid-cols-3 gap-1 text-center text-xs my-2' },
+                            h('div', { className: 'bg-blue-50 rounded p-1' },
+                                h('div', { className: 'font-bold text-blue-700' }, r.total_motoboys || 0),
+                                h('div', { className: 'text-gray-500' }, 'Motoboys')
+                            ),
+                            h('div', { className: 'bg-green-50 rounded p-1' },
+                                h('div', { className: 'font-bold text-green-700' }, r.total_aprovados || 0),
+                                h('div', { className: 'text-gray-500' }, 'Aprovados')
+                            ),
+                            h('div', { className: 'bg-amber-50 rounded p-1' },
+                                h('div', { className: 'font-bold text-amber-700' }, r.total_pendentes || 0),
+                                h('div', { className: 'text-gray-500' }, 'Fila')
+                            )
                         ),
-                        h('div', { className: 'bg-amber-50 rounded p-1' },
-                            h('div', { className: 'font-bold text-amber-700' }, r.total_pendentes || 0),
-                            h('div', { className: 'text-gray-500' }, 'Fila')
+                        h('div', { className: 'flex gap-1 mt-2' },
+                            h('button', {
+                                onClick: () => setGerenciarMotoboys(r),
+                                className: 'flex-1 py-1 bg-blue-100 text-blue-700 rounded text-xs'
+                            }, '👥 Motoboys'),
+                            h('button', {
+                                onClick: () => setEditarRegiao({ ...r }),
+                                className: 'flex-1 py-1 bg-gray-100 text-gray-700 rounded text-xs'
+                            }, '✏️ Editar'),
+                            h('button', {
+                                onClick: () => excluir(r),
+                                className: 'flex-1 py-1 bg-red-100 text-red-700 rounded text-xs'
+                            }, '🗑️')
                         )
-                    ),
-                    h('div', { className: 'flex gap-1 mt-2' },
-                        h('button', {
-                            onClick: () => setGerenciarMotoboys(r),
-                            className: 'flex-1 py-1 bg-blue-100 text-blue-700 rounded text-xs'
-                        }, '👥 Motoboys'),
-                        h('button', {
-                            onClick: () => setEditarRegiao({ ...r }),
-                            className: 'flex-1 py-1 bg-gray-100 text-gray-700 rounded text-xs'
-                        }, '✏️ Editar'),
-                        h('button', {
-                            onClick: () => excluir(r),
-                            className: 'flex-1 py-1 bg-red-100 text-red-700 rounded text-xs'
-                        }, '🗑️')
-                    )
-                ))
+                    );
+                })
             ),
 
             // Modal editar/criar região
@@ -946,7 +1029,75 @@
                 regiao: gerenciarMotoboys,
                 fetchApi, showToast,
                 onClose: () => { setGerenciarMotoboys(null); carregar(); }
+            }),
+
+            // Modal clientes que recebem os endereços deste grupo
+            verClientesDoGrupo && h(ModalClientesGrupo, {
+                grupoId: verClientesDoGrupo.grupo_id,
+                nomeGrupo: verClientesDoGrupo.nome,
+                fetchApi, showToast,
+                onClose: () => setVerClientesDoGrupo(null)
             })
+        );
+    }
+
+    // ==================== MODAL CLIENTES DO GRUPO ====================
+    function ModalClientesGrupo({ grupoId, nomeGrupo, fetchApi, showToast, onClose }) {
+        const [dados, setDados] = useState(null);
+        const [loading, setLoading] = useState(true);
+
+        useEffect(() => {
+            fetchApi('/api/admin/grupos-enderecos/' + grupoId)
+                .then(setDados)
+                .catch(err => showToast('❌ ' + err.message, 'error'))
+                .finally(() => setLoading(false));
+        }, [grupoId]);
+
+        return h('div', {
+            onClick: onClose,
+            className: 'fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4'
+        },
+            h('div', {
+                onClick: e => e.stopPropagation(),
+                className: 'bg-white rounded-xl shadow-2xl w-full max-w-md p-5 max-h-[90vh] overflow-y-auto'
+            },
+                h('div', { className: 'flex items-center justify-between mb-4' },
+                    h('div', null,
+                        h('h3', { className: 'font-bold' }, '📚 ' + (nomeGrupo || 'Grupo')),
+                        h('p', { className: 'text-xs text-gray-500 mt-0.5' }, 'Clientes que receberão os endereços aprovados')
+                    ),
+                    h('button', { onClick: onClose, className: 'text-gray-400' }, '✕')
+                ),
+
+                loading ? h('div', { className: 'text-center py-6 text-gray-400' }, '⏳ Carregando...')
+                : !dados ? h('div', { className: 'text-center py-6 text-gray-400 text-sm' }, 'Erro ao carregar')
+                : h('div', null,
+                    h('div', { className: 'bg-purple-50 border border-purple-200 rounded-lg p-3 mb-3' },
+                        h('div', { className: 'text-xs text-purple-700' }, 'Total de endereços já no grupo'),
+                        h('div', { className: 'text-2xl font-bold text-purple-800' }, dados.total_enderecos || 0)
+                    ),
+
+                    h('h4', { className: 'text-xs font-bold text-gray-500 uppercase mb-2' },
+                        'Clientes API (' + (dados.clientes?.length || 0) + ')'
+                    ),
+                    !dados.clientes || dados.clientes.length === 0
+                    ? h('div', { className: 'bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800' },
+                        '⚠️ Nenhum cliente vinculado a este grupo ainda. Vincule em ',
+                        h('strong', null, 'Configurações → Grupos de Endereços'),
+                        ' ou editando o cliente API individualmente.'
+                    )
+                    : h('div', { className: 'space-y-1' },
+                        dados.clientes.map(c => h('div', {
+                            key: c.id,
+                            className: 'bg-gray-50 rounded p-2 border border-gray-200'
+                        },
+                            h('div', { className: 'font-medium text-sm' }, c.nome || '(sem nome)'),
+                            c.empresa && h('div', { className: 'text-xs text-gray-600' }, '🏢 ' + c.empresa),
+                            c.email && h('div', { className: 'text-xs text-gray-500' }, '✉️ ' + c.email)
+                        ))
+                    )
+                )
+            )
         );
     }
 
