@@ -1634,7 +1634,7 @@ const hideLoadingScreen = () => {
             key: t,
             className: "flex items-center gap-4 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
         }, React.createElement("div", {
-            className: "text-2xl font-bold w-8 " + (0 === t ? "text-yellow-500" : 1 === t ? "text-gray-400" : 2 === t ? "text-orange-600" : "text-gray-400")
+            className: "text-2xl font-bold w-8 " + (0 === t ? "text-yellow-500" : 1 === t ? "text-gray-400" : 2 === t ? "text-purple-600" : "text-gray-400")
         }, t + 1, "º"), React.createElement("div", {
             className: "flex-1"
         }, React.createElement("p", {
@@ -9684,7 +9684,7 @@ const hideLoadingScreen = () => {
                     key: t.id,
                     className: "bg-orange-50 border-l-4 border-orange-500 p-3 rounded"
                 }, React.createElement("p", {className: "font-semibold text-gray-800"}, t.titulo),
-                    t.data_prazo && React.createElement("p", {className: "text-xs text-orange-600"}, "📅 Vence: ", new Date(t.data_prazo).toLocaleDateString("pt-BR"))
+                    t.data_prazo && React.createElement("p", {className: "text-xs text-purple-600"}, "📅 Vence: ", new Date(t.data_prazo).toLocaleDateString("pt-BR"))
                 ))
             ),
             todoPendentesNotif.length > 5 && React.createElement("p", {className: "text-sm text-gray-500 mt-2"}, "... e mais ", todoPendentesNotif.length - 5, " tarefa(s)")
@@ -10166,7 +10166,7 @@ const hideLoadingScreen = () => {
             })},
             className: "w-full bg-white rounded-2xl shadow-lg p-4 sm:p-6 flex items-center gap-3 sm:gap-4 hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98] border-l-4 border-orange-500"
         }, React.createElement("div", {
-            className: "w-12 h-12 sm:w-16 sm:h-16 bg-orange-100 rounded-xl flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0"
+            className: "w-12 h-12 sm:w-16 sm:h-16 bg-purple-100 rounded-xl flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0"
         }, "🚀"), React.createElement("div", {
             className: "text-left flex-1"
         }, React.createElement("h3", {
@@ -10201,7 +10201,7 @@ const hideLoadingScreen = () => {
             onClick: () => x({ ...p, userTab: "correcao-endereco" }),
             className: "w-full bg-white rounded-2xl shadow-lg p-4 sm:p-6 flex items-center gap-3 sm:gap-4 hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98] border-l-4 border-orange-500"
         }, React.createElement("div", {
-            className: "w-12 h-12 sm:w-16 sm:h-16 bg-orange-100 rounded-xl flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0"
+            className: "w-12 h-12 sm:w-16 sm:h-16 bg-purple-100 rounded-xl flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0"
         }, "📍"), React.createElement("div", {
             className: "text-left flex-1"
         }, React.createElement("h3", {
@@ -10327,7 +10327,7 @@ const hideLoadingScreen = () => {
                         React.createElement("p", { className: "text-sm text-red-800 font-medium" }, "Motivo: ", rej.motivo_rejeicao || rej.observacao || "Não informado")
                     ),
                     React.createElement("div", { className: "bg-orange-50 rounded-xl p-3 mb-4 border border-orange-200" },
-                        React.createElement("p", { className: "text-sm text-orange-800 text-center" }, "📋 Realize a contestação agora e evite chamados via WhatsApp com o suporte.")
+                        React.createElement("p", { className: "text-sm text-purple-800 text-center" }, "📋 Realize a contestação agora e evite chamados via WhatsApp com o suporte.")
                     ),
                     React.createElement("div", { className: "flex gap-3" },
                         React.createElement("button", {
@@ -10378,13 +10378,13 @@ const hideLoadingScreen = () => {
             React.createElement("div", { className: "bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full" },
                 React.createElement("div", { className: "text-center mb-4" },
                     React.createElement("span", { className: "text-5xl block mb-3" }, p._filaMovidoModal.penalidade ? "🚫" : "⚠️"),
-                    React.createElement("h2", { className: "text-xl font-bold " + (p._filaMovidoModal.penalidade ? "text-red-800" : "text-orange-800") + " mb-2" },
+                    React.createElement("h2", { className: "text-xl font-bold " + (p._filaMovidoModal.penalidade ? "text-red-800" : "text-purple-800") + " mb-2" },
                         p._filaMovidoModal.penalidade ? "Fila — Aviso Importante" : "Fila — Aviso"
                     ),
                     p._filaMovidoModal.central_nome && React.createElement("p", { className: "text-sm text-gray-500" }, p._filaMovidoModal.central_nome)
                 ),
                 React.createElement("div", { className: "bg-orange-50 rounded-xl p-4 mb-4 border border-orange-200" },
-                    React.createElement("p", { className: "text-sm text-orange-800 leading-relaxed" }, p._filaMovidoModal.mensagem)
+                    React.createElement("p", { className: "text-sm text-purple-800 leading-relaxed" }, p._filaMovidoModal.mensagem)
                 ),
                 React.createElement("div", { className: (p._filaMovidoModal.penalidade ? "bg-red-50 border-red-200" : "bg-yellow-50 border-yellow-200") + " rounded-xl p-4 mb-4 border" },
                     React.createElement("p", { className: "text-sm " + (p._filaMovidoModal.penalidade ? "text-red-800 font-bold" : "text-yellow-800") + " leading-relaxed text-center" },
@@ -10445,9 +10445,9 @@ const hideLoadingScreen = () => {
         ))))), (p.motivo === "Ajuste de Pedágio" || p.motivo === "Ajustes Simões Filho e Camaçari" || (p.motivo === "Ajuste de Retorno" && p.subcategoria)) && React.createElement("div", {
             className: "border-2 border-dashed border-orange-300 bg-orange-50 rounded-lg p-4"
         }, React.createElement("p", {
-            className: "text-sm font-bold text-orange-800 mb-2"
+            className: "text-sm font-bold text-purple-800 mb-2"
         }, "📸 ", p.subcategoria === "Cliente fechado / ausente" ? "Tire foto da FACHADA FECHADA" : p.subcategoria === "Produto incorreto / avariado" ? "Tire foto da RESSALVA no verso da NF" : p.subcategoria === "Endereço não encontrado" ? "Tire foto da PLACA DA RUA / local" : p.motivo === "Ajuste de Pedágio" ? "Tire foto do COMPROVANTE DE PEDÁGIO" : p.motivo === "Ajustes Simões Filho e Camaçari" ? "Foto do comprovante (opcional)" : "Tire foto do COMPROVANTE"), React.createElement("p", {
-            className: "text-xs text-orange-600 mb-2"
+            className: "text-xs text-purple-600 mb-2"
         }, "⚠️ ", p.subcategoria === "Produto incorreto / avariado" ? "Foto do VERSO da nota com a ressalva escrita à mão + assinatura do cliente" : p.subcategoria === "Endereço não encontrado" ? "Foto mostrando placa de rua, numeração ou terreno baldio" : p.motivo === "Ajuste de Pedágio" ? "Foto do recibo/comprovante com valor e data visíveis" : p.motivo === "Ajustes Simões Filho e Camaçari" ? "Se tiver comprovante, anexe aqui. Caso contrário, pode enviar sem foto." : "Tire a foto ou selecione da galeria"), p.validandoIA ? React.createElement("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", padding: "20px 0", gap: "14px" } }, React.createElement("style", null, "@keyframes tScan{0%{top:10%}50%{top:80%}100%{top:10%}}@keyframes tBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}"), React.createElement("div", { style: { width: "80px", height: "80px", border: "2.5px solid #7C3AED", borderRadius: "12px", position: "relative", overflow: "hidden", background: "rgba(124,58,237,0.03)" } }, React.createElement("div", { style: { position: "absolute", left: "8px", right: "8px", height: "2px", background: "linear-gradient(90deg, transparent, #7C3AED, transparent)", animation: "tScan 1.8s ease-in-out infinite", borderRadius: "2px" } }), React.createElement("div", { style: { position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", fontSize: "28px", opacity: "0.25" } }, "\uD83D\uDCF7")), React.createElement("p", { style: { fontSize: "15px", fontWeight: "600", color: "#7C3AED", margin: "0" } }, "IA analisando sua foto..."), React.createElement("div", { style: { display: "flex", gap: "6px" } }, React.createElement("div", { style: { width: "8px", height: "8px", borderRadius: "50%", background: "#7C3AED", animation: "tBounce 0.6s 0s infinite" } }), React.createElement("div", { style: { width: "8px", height: "8px", borderRadius: "50%", background: "#7C3AED", animation: "tBounce 0.6s 0.15s infinite" } }), React.createElement("div", { style: { width: "8px", height: "8px", borderRadius: "50%", background: "#7C3AED", animation: "tBounce 0.6s 0.3s infinite" } })), React.createElement("p", { style: { fontSize: "12px", color: "#6B7280", margin: "0" } }, "Isso leva poucos segundos...")) : React.createElement(React.Fragment, null,
             React.createElement("input", {
             type: "file",
@@ -10600,7 +10600,7 @@ const hideLoadingScreen = () => {
         "rejeitado" === e.status && e.contestacao_status !== 'encerrada_rejeitada' && e.contestacao_status !== 'encerrada_aprovada' && React.createElement("div", { className: "mt-2" },
             e.contestacao_status === 'aberta' ? React.createElement("div", { className: "mt-2 p-3 bg-orange-50 border-2 border-orange-400 rounded-lg" },
                 React.createElement("div", { className: "flex items-center justify-between mb-2" },
-                    React.createElement("span", { className: "text-sm font-bold text-orange-800" }, "⚡ Contestação em andamento"),
+                    React.createElement("span", { className: "text-sm font-bold text-purple-800" }, "⚡ Contestação em andamento"),
                     React.createElement("button", {
                         onClick: async () => {
                             try {
@@ -10649,7 +10649,7 @@ const hideLoadingScreen = () => {
         e.contestacao_status === 'encerrada_aprovada' && React.createElement("span", { className: "mt-2 inline-block px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold" }, "✅ Contestação aprovada"),
         e.contestacao_status === 'encerrada_rejeitada' && React.createElement("span", { className: "mt-2 inline-block px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-bold" }, "❌ Rejeitada definitivamente"),
         p.contestandoId === e.id && React.createElement("div", { className: "mt-3 p-3 bg-orange-50 border border-orange-200 rounded-lg space-y-3" },
-            React.createElement("p", { className: "text-sm font-bold text-orange-800" }, "⚡ Contestar OS ", e.ordemServico),
+            React.createElement("p", { className: "text-sm font-bold text-purple-800" }, "⚡ Contestar OS ", e.ordemServico),
             React.createElement("textarea", { value: p.contestMsg || '', onChange: ev => x({ ...p, contestMsg: ev.target.value }), placeholder: "Explique por que discorda da rejeição...", className: "w-full px-3 py-2 border rounded-lg text-sm", rows: 3 }),
             React.createElement("input", { type: "file", accept: "image/*", multiple: true, onChange: async ev => {
                 const imgs = []; for (const f of Array.from(ev.target.files || [])) { try { const b = await Zl(f); imgs.push(b); } catch {} }
@@ -10697,13 +10697,13 @@ const hideLoadingScreen = () => {
         }, e.titulo), React.createElement("p", {
             className: "text-xs text-gray-700"
         }, e.mensagem)))), ze && !ze.dentroHorario && Ge && React.createElement("div", {
-            className: "bg-orange-100 border border-orange-300 rounded-xl p-3 mb-4 flex items-center gap-3"
+            className: "bg-purple-100 border border-orange-300 rounded-xl p-3 mb-4 flex items-center gap-3"
         }, React.createElement("span", {
             className: "text-2xl"
         }, "⏰"), React.createElement("div", null, React.createElement("p", {
-            className: "text-sm font-semibold text-orange-800"
+            className: "text-sm font-semibold text-purple-800"
         }, "Solicitação fora do horário"), React.createElement("p", {
-            className: "text-xs text-orange-700"
+            className: "text-xs text-purple-700"
         }, "Será processada ", yl()))), k ? T?.full_name ? React.createElement(React.Fragment, null, React.createElement("div", {
             className: "bg-white rounded-xl shadow mb-6"
         }, React.createElement("div", {
@@ -11009,7 +11009,7 @@ const hideLoadingScreen = () => {
                 className: "text-red-600 text-xs mt-2 font-semibold text-center"
             }, limitesSaque.diario.disponivel <= 0 ? "⚠️ Limite diário esgotado!" : "⚠️ Limite semanal esgotado!"),
             (p.withdrawAmount && parseFloat(p.withdrawAmount) > 0 && parseFloat(p.withdrawAmount) > limitesSaque.max_disponivel && limitesSaque.max_disponivel > 0) && React.createElement("p", {
-                className: "text-orange-600 text-xs mt-1 font-semibold text-center"
+                className: "text-purple-600 text-xs mt-1 font-semibold text-center"
             }, "⚠️ Valor desejado excede o limite disponível (R$ " + limitesSaque.max_disponivel.toFixed(2).replace(".", ",") + ")"),
             (limitesSaque.diario.disponivel <= 0 || limitesSaque.semanal.disponivel <= 0 || limitesSaque.solicitacao_pendente || (p.withdrawAmount && parseFloat(p.withdrawAmount) > 0 && (limitesSaque.diario.disponivel < parseFloat(p.withdrawAmount) || limitesSaque.semanal.disponivel < parseFloat(p.withdrawAmount)))) && React.createElement("div", { className: "mt-2 text-center" },
                 !limitesSaque.solicitacao_pendente && React.createElement("button", {
@@ -11168,7 +11168,7 @@ const hideLoadingScreen = () => {
             }, "Receber: ", er(e.final_amount))), React.createElement("span", {
                 className: "px-3 py-1 rounded-full text-xs font-bold h-fit " + ("pago_stark" === e.status ? "bg-green-600 text-white" : "aguardando_pagamento_stark" === e.status ? "bg-blue-500 text-white" : e.status?.includes("aprovado") ? "bg-green-500 text-white" : "rejeitado" === e.status ? "bg-red-500 text-white" : "inativo" === e.status ? "bg-orange-500 text-white" : "bg-yellow-500 text-white")
             }, t ? "⚠️ ATRASADO" : "pago_stark" === e.status ? "✅ Saque Concluído" : "aguardando_pagamento_stark" === e.status ? "⏳ Em Processamento" : "aprovado" === e.status || "aprovado_gratuidade" === e.status ? "✅ Aprovado" : "rejeitado" === e.status ? "❌ Rejeitado" : "inativo" === e.status ? "⚠️ Inativo" : "⏳ Aguardando")), a && React.createElement("p", {
-                className: "text-sm mt-2 font-semibold " + ("pago_stark" === e.status ? "text-green-700" : "aguardando_pagamento_stark" === e.status ? "text-blue-700" : e.status?.includes("aprovado") ? "text-green-700" : "rejeitado" === e.status ? "text-red-600" : "text-orange-600")
+                className: "text-sm mt-2 font-semibold " + ("pago_stark" === e.status ? "text-green-700" : "aguardando_pagamento_stark" === e.status ? "text-blue-700" : e.status?.includes("aprovado") ? "text-green-700" : "rejeitado" === e.status ? "text-red-600" : "text-purple-600")
             }, a), t && React.createElement("p", {
                 className: "text-red-600 text-sm mt-2 font-semibold"
             }, "Entre em contato com o suporte"), React.createElement("p", {
@@ -11482,17 +11482,17 @@ const hideLoadingScreen = () => {
         }, React.createElement("div", {
             className: "text-6xl mb-4"
         }, "🕐"), React.createElement("h2", {
-            className: "text-xl font-bold text-orange-800 mb-2"
+            className: "text-xl font-bold text-purple-800 mb-2"
         }, "Fora do Horário de Atendimento"), React.createElement("p", {
-            className: "text-orange-700"
+            className: "text-purple-700"
         }, "O atendimento de saques estará disponível novamente ", React.createElement("strong", null, yl()), ".")), React.createElement("div", {
             className: "bg-white rounded-xl p-4 mb-6"
         }, React.createElement("p", {
             className: "text-sm text-gray-700 text-center"
         }, "⚠️ Você pode solicitar o saque agora, mas ele só será processado quando o atendimento reabrir.")), React.createElement("div", {
-            className: "bg-orange-100 rounded-xl p-4"
+            className: "bg-purple-100 rounded-xl p-4"
         }, React.createElement("p", {
-            className: "text-sm font-semibold text-orange-800 mb-4 text-center"
+            className: "text-sm font-semibold text-purple-800 mb-4 text-center"
         }, "Arraste o cursor para confirmar que entendeu:"), React.createElement("div", {
             className: "relative h-14 bg-orange-200 rounded-full overflow-hidden touch-none select-none",
             onTouchStart: e => {
@@ -11536,7 +11536,7 @@ const hideLoadingScreen = () => {
         }, Ve < 95 ? "👉" : "✅"), React.createElement("div", {
             className: "absolute inset-0 flex items-center justify-end pr-4 pointer-events-none"
         }, React.createElement("span", {
-            className: "font-bold text-sm " + (Ve < 95 ? "text-orange-700" : "text-green-700")
+            className: "font-bold text-sm " + (Ve < 95 ? "text-purple-700" : "text-green-700")
         }, Ve < 30 ? "Arraste →→→" : Ve < 95 ? "Continue →" : "✓ OK!"))))))), "indicacoes" === p.userTab && React.createElement(React.Fragment, null, React.createElement("div", {
             className: "bg-gradient-to-br from-blue-600 to-purple-700 rounded-xl shadow-lg p-6 mb-6 text-white"
         }, React.createElement("div", {
@@ -11871,7 +11871,7 @@ const hideLoadingScreen = () => {
         }), React.createElement("div", {
             className: "bg-white rounded-xl shadow p-3 sm:p-6 mb-3 sm:mb-6"
         }, React.createElement("h2", {
-            className: "text-sm sm:text-lg font-bold text-orange-700 mb-3 sm:mb-4"
+            className: "text-sm sm:text-lg font-bold text-purple-700 mb-3 sm:mb-4"
         }, "🚀 Promoções Disponíveis"), 0 === ce.length ? React.createElement("div", {
             className: "text-center py-4 sm:py-8"
         }, React.createElement("p", {
@@ -11988,7 +11988,7 @@ const hideLoadingScreen = () => {
             }, "🏢 ", e.cliente), React.createElement("p", {
                 className: "text-[10px] sm:text-sm text-gray-500"
             }, "📍 ", e.regiao, " • ", new Date(e.created_at).toLocaleDateString("pt-BR")), t && "pendente" === e.status && !a && React.createElement("p", {
-                className: "text-[10px] sm:text-xs text-orange-600 font-medium"
+                className: "text-[10px] sm:text-xs text-purple-600 font-medium"
             }, "⏱️ Expira: ", t.toLocaleDateString("pt-BR"))), React.createElement("div", {
                 className: "text-right flex-shrink-0"
             }, React.createElement("p", {
@@ -12005,7 +12005,7 @@ const hideLoadingScreen = () => {
             }, React.createElement("p", {
                 className: "text-[10px] sm:text-sm font-semibold text-gray-700"
             }, "📦 Entregas"), React.createElement("p", {
-                className: "text-xs sm:text-base font-bold " + (progresso.meta_atingida ? "text-green-600" : "text-orange-600")
+                className: "text-xs sm:text-base font-bold " + (progresso.meta_atingida ? "text-green-600" : "text-purple-600")
             }, progresso.total_entregas, "/", progresso.meta_entregas)), React.createElement("div", {
                 className: "w-full bg-gray-200 rounded-full h-1.5 sm:h-4 mb-1"
             }, React.createElement("div", {
@@ -12054,7 +12054,7 @@ const hideLoadingScreen = () => {
         }, React.createElement("span", {
             className: "text-[10px] sm:text-sm text-gray-600"
         }, "📅 ", modalEntregasNovatos.data_inscricao ? new Date(modalEntregasNovatos.data_inscricao).toLocaleDateString("pt-BR") : "-", " - ", modalEntregasNovatos.data_expiracao ? new Date(modalEntregasNovatos.data_expiracao).toLocaleDateString("pt-BR") : "-"), React.createElement("span", {
-            className: "font-bold text-base sm:text-xl " + (modalEntregasNovatos.meta_atingida ? "text-green-600" : "text-orange-600")
+            className: "font-bold text-base sm:text-xl " + (modalEntregasNovatos.meta_atingida ? "text-green-600" : "text-purple-600")
         }, modalEntregasNovatos.total_entregas, "/", modalEntregasNovatos.meta_entregas)), React.createElement("div", {
             className: "w-full bg-gray-200 rounded-full h-2 sm:h-3 mt-2"
         }, React.createElement("div", {
@@ -12699,7 +12699,7 @@ const hideLoadingScreen = () => {
                         key: t.id,
                         className: "bg-orange-50 border-l-4 border-orange-500 p-3 rounded"
                     }, React.createElement("p", {className: "font-semibold text-gray-800"}, t.titulo),
-                        t.data_prazo && React.createElement("p", {className: "text-xs text-orange-600"}, "📅 Vence: ", new Date(t.data_prazo).toLocaleDateString("pt-BR"))
+                        t.data_prazo && React.createElement("p", {className: "text-xs text-purple-600"}, "📅 Vence: ", new Date(t.data_prazo).toLocaleDateString("pt-BR"))
                     ))
                 ),
                 todoPendentesNotif.length > 5 && React.createElement("p", {className: "text-sm text-gray-500 mt-2"}, "... e mais ", todoPendentesNotif.length - 5, " tarefa(s)")
@@ -13260,7 +13260,7 @@ const hideLoadingScreen = () => {
                                              t.prioridade === "media" ? "bg-yellow-100 text-yellow-700" : "bg-blue-100 text-blue-700")
                                     }, t.prioridade === "alta" ? "🔴 Alta" : t.prioridade === "media" ? "🟡 Média" : "🔵 Baixa"),
                                     isAtrasada && React.createElement("span", {className: "text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700"}, "🔥 Atrasada"),
-                                    isHoje && !isAtrasada && React.createElement("span", {className: "text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-700"}, "📅 Hoje"),
+                                    isHoje && !isAtrasada && React.createElement("span", {className: "text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-700"}, "📅 Hoje"),
                                     // Badge de Recorrente com tipo
                                     t.recorrente && React.createElement("span", {
                                         className: "text-xs px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700"
@@ -14145,7 +14145,7 @@ const hideLoadingScreen = () => {
                                             controls: true,
                                             className: "mt-4 w-full"
                                         }),
-                                        msg.recorrente && React.createElement("div", {className: "mt-3 flex items-center gap-2 text-xs text-orange-600 bg-orange-50 px-3 py-1 rounded-full w-fit"},
+                                        msg.recorrente && React.createElement("div", {className: "mt-3 flex items-center gap-2 text-xs text-purple-600 bg-orange-50 px-3 py-1 rounded-full w-fit"},
                                             React.createElement("span", null, "🔄"),
                                             React.createElement("span", null, "Recorrente: ", msg.tipo_recorrencia)
                                         )
@@ -14241,7 +14241,7 @@ const hideLoadingScreen = () => {
                                             React.createElement("span", {
                                                 className: "px-3 py-1 rounded-full text-xs font-semibold " + (msg.ativo ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500")
                                             }, msg.ativo ? "✓ Ativo" : "Inativo"),
-                                            msg.recorrente && React.createElement("span", {className: "px-3 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-700"}, "🔄 ", msg.tipo_recorrencia)
+                                            msg.recorrente && React.createElement("span", {className: "px-3 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-700"}, "🔄 ", msg.tipo_recorrencia)
                                         )
                                     ),
                                     React.createElement("div", {className: "p-4 bg-gray-50"},
@@ -14424,7 +14424,7 @@ const hideLoadingScreen = () => {
                                         id: "recorrente",
                                         checked: liderancaModal?.dados?.recorrente || false,
                                         onChange: e => setLiderancaModal({...liderancaModal, dados: {...liderancaModal.dados, recorrente: e.target.checked}}),
-                                        className: "w-5 h-5 text-orange-600 rounded"
+                                        className: "w-5 h-5 text-purple-600 rounded"
                                     }),
                                     React.createElement("label", {htmlFor: "recorrente", className: "font-semibold text-gray-700"}, "🔄 Mensagem Recorrente")
                                 ),
@@ -14452,7 +14452,7 @@ const hideLoadingScreen = () => {
                                         })
                                     )
                                 ),
-                                liderancaModal?.dados?.recorrente && React.createElement("p", {className: "text-xs text-orange-600 mt-2"}, 
+                                liderancaModal?.dados?.recorrente && React.createElement("p", {className: "text-xs text-purple-600 mt-2"}, 
                                     "📅 A mensagem será reexibida a cada ", liderancaModal?.dados?.intervalo_recorrencia || 1, " ",
                                     liderancaModal?.dados?.tipo_recorrencia === 'diaria' ? 'dia(s)' : 
                                     liderancaModal?.dados?.tipo_recorrencia === 'semanal' ? 'semana(s)' : 'mês(es)'
@@ -15133,7 +15133,7 @@ const hideLoadingScreen = () => {
                     ),
                     
                     // Status Retorno
-                    ua.status_retorno && React.createElement("span", {className: "inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs " + (ua.status_retorno === "sem_retorno" ? "bg-green-100 text-green-700" : "bg-orange-100 text-orange-700")},
+                    ua.status_retorno && React.createElement("span", {className: "inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs " + (ua.status_retorno === "sem_retorno" ? "bg-green-100 text-green-700" : "bg-purple-100 text-purple-700")},
                         ua.status_retorno === "sem_retorno" ? "✅ Sem Retorno" : "🔄 Com Retorno"
                     ),
                     
@@ -15751,7 +15751,7 @@ const hideLoadingScreen = () => {
                         },
                             React.createElement("div", {className: "h-2 bg-gradient-to-r from-orange-500 to-red-500"}),
                             React.createElement("div", {className: "p-6"},
-                                React.createElement("div", {className: "w-14 h-14 bg-orange-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
+                                React.createElement("div", {className: "w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
                                     React.createElement("span", {className: "text-3xl"}, "🏢")
                                 ),
                                 React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Cliente 767"),
@@ -15988,7 +15988,7 @@ const hideLoadingScreen = () => {
             }, React.createElement("div", {
                 className: "flex items-center gap-2 mb-1"
             }, React.createElement("span", {className: "text-lg"}, "🔄"),
-               React.createElement("span", {className: "text-[10px] text-orange-700 bg-orange-50 px-1.5 py-0.5 rounded font-semibold"}, "Devoluções")),
+               React.createElement("span", {className: "text-[10px] text-purple-700 bg-orange-50 px-1.5 py-0.5 rounded font-semibold"}, "Devoluções")),
                React.createElement("p", {className: "text-xl font-bold text-gray-800"}, nl(ft?.total_retornos || 0).toLocaleString('pt-BR')),
                React.createElement("p", {className: "text-[10px] text-gray-500 font-medium"}, "Retornos"))),
 
@@ -16084,7 +16084,7 @@ const hideLoadingScreen = () => {
             }, "Fora Prazo"), React.createElement("th", {
                 className: "px-3 py-2 text-center text-blue-700 bg-blue-50 min-w-[100px]"
             }, "Prazo Prof"), React.createElement("th", {
-                className: "px-3 py-2 text-center text-orange-700 bg-orange-50 min-w-[100px]"
+                className: "px-3 py-2 text-center text-purple-700 bg-orange-50 min-w-[100px]"
             }, "Fora Prof"), React.createElement("th", {
                 className: "px-2 py-2 text-right text-purple-900"
             }, "Média"), React.createElement("th", {
@@ -16118,7 +16118,7 @@ const hideLoadingScreen = () => {
             }, nl(e.total_os).toLocaleString("pt-BR")), React.createElement("td", {
                 className: "px-2 py-2 text-right"
             }, nl(e.total_entregas).toLocaleString("pt-BR")), React.createElement("td", {
-                className: "px-2 py-2 text-right text-orange-600"
+                className: "px-2 py-2 text-right text-purple-600"
             }, nl(e.total_retornos).toLocaleString("pt-BR")), React.createElement("td", {
                 className: "px-3 py-2 text-center text-green-700 bg-green-50"
             }, React.createElement("div", { className: "font-bold" }, nl(e.dentro_prazo).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm font-semibold" }, (nl(e.dentro_prazo) / (nl(e.total_entregas) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
@@ -16126,7 +16126,7 @@ const hideLoadingScreen = () => {
             }, React.createElement("div", { className: "font-bold" }, nl(e.fora_prazo).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm font-semibold" }, (nl(e.fora_prazo) / (nl(e.total_entregas) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
                 className: "px-3 py-2 text-center text-blue-700 bg-blue-50"
             }, React.createElement("div", { className: "font-bold" }, nl(e.dentro_prazo_prof || 0).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm font-semibold" }, (nl(e.dentro_prazo_prof || 0) / (nl(e.total_entregas) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
-                className: "px-3 py-2 text-center text-orange-700 bg-orange-50"
+                className: "px-3 py-2 text-center text-purple-700 bg-orange-50"
             }, React.createElement("div", { className: "font-bold" }, nl(e.fora_prazo_prof || 0).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm font-semibold" }, (nl(e.fora_prazo_prof || 0) / (nl(e.total_entregas) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
                 className: "px-2 py-2 text-right"
             }, cl(e.tempo_medio)), React.createElement("td", {
@@ -16167,7 +16167,7 @@ const hideLoadingScreen = () => {
             }, React.createElement("div", { className: "font-medium" }, nl(a.fora_prazo).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(a.fora_prazo) / (nl(a.total_entregas) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
                 className: "px-3 py-2 text-center text-blue-600 bg-blue-50"
             }, React.createElement("div", { className: "font-medium" }, nl(a.dentro_prazo_prof || 0).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(a.dentro_prazo_prof || 0) / (nl(a.total_entregas) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
-                className: "px-3 py-2 text-center text-orange-600 bg-orange-50"
+                className: "px-3 py-2 text-center text-purple-600 bg-orange-50"
             }, React.createElement("div", { className: "font-medium" }, nl(a.fora_prazo_prof || 0).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(a.fora_prazo_prof || 0) / (nl(a.total_entregas) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
                 className: "px-2 py-2 text-right text-purple-600"
             }, cl(a.tempo_medio)), React.createElement("td", {
@@ -16192,7 +16192,7 @@ const hideLoadingScreen = () => {
             }, nl(ft?.total_os).toLocaleString("pt-BR")), React.createElement("td", {
                 className: "px-2 py-2 text-right"
             }, nl(ft?.total_entregas).toLocaleString("pt-BR")), React.createElement("td", {
-                className: "px-2 py-2 text-right text-orange-700"
+                className: "px-2 py-2 text-right text-purple-700"
             }, nl(ft?.total_retornos).toLocaleString("pt-BR")), React.createElement("td", {
                 className: "px-3 py-2 text-center text-green-700 bg-green-100"
             }, React.createElement("div", null, nl(ft?.dentro_prazo).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(ft?.dentro_prazo) / (nl(ft?.total_entregas) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
@@ -16200,7 +16200,7 @@ const hideLoadingScreen = () => {
             }, React.createElement("div", null, nl(ft?.fora_prazo).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(ft?.fora_prazo) / (nl(ft?.total_entregas) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
                 className: "px-3 py-2 text-center text-blue-700 bg-blue-100"
             }, React.createElement("div", null, nl(ft?.dentro_prazo_prof).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(ft?.dentro_prazo_prof) / (nl(ft?.total_entregas) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
-                className: "px-3 py-2 text-center text-orange-700 bg-orange-100"
+                className: "px-3 py-2 text-center text-purple-700 bg-purple-100"
             }, React.createElement("div", null, nl(ft?.fora_prazo_prof).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(ft?.fora_prazo_prof) / (nl(ft?.total_entregas) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
                 className: "px-2 py-2 text-right"
             }, cl(ft?.tempo_medio)), React.createElement("td", {
@@ -16586,7 +16586,7 @@ const hideLoadingScreen = () => {
                                             if (filtro === "entregas") return React.createElement("td", {key: filtro, className: "px-3 py-2 text-center text-sky-600 whitespace-nowrap"}, c.entregas);
                                             if (filtro === "noPrazo") return React.createElement("td", {key: filtro, className: "px-3 py-2 text-center whitespace-nowrap"}, React.createElement("span", {className: "px-2 py-0.5 rounded text-xs font-bold " + (c.noPrazo >= 80 ? "bg-green-100 text-green-700" : c.noPrazo >= 60 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700")}, c.noPrazo.toFixed(2) + "%"));
                                             if (filtro === "foraPrazo") return React.createElement("td", {key: filtro, className: "px-3 py-2 text-center whitespace-nowrap"}, React.createElement("span", {className: "px-2 py-0.5 rounded text-xs font-bold " + (c.foraPrazo <= 20 ? "bg-green-100 text-green-700" : c.foraPrazo <= 40 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700")}, c.foraPrazo.toFixed(2) + "%"));
-                                            if (filtro === "retornos") return React.createElement("td", {key: filtro, className: "px-3 py-2 text-center text-orange-600 font-medium whitespace-nowrap"}, c.retornos);
+                                            if (filtro === "retornos") return React.createElement("td", {key: filtro, className: "px-3 py-2 text-center text-purple-600 font-medium whitespace-nowrap"}, c.retornos);
                                             if (filtro === "valorTotal") return React.createElement("td", {key: filtro, className: "px-3 py-2 text-right text-purple-600 font-medium whitespace-nowrap"}, "R$" + c.valorTotal.toLocaleString("pt-BR", {minimumFractionDigits: 2}));
                                             if (filtro === "valorProf") return React.createElement("td", {key: filtro, className: "px-3 py-2 text-right text-amber-600 font-medium whitespace-nowrap"}, "R$" + c.valorProf.toLocaleString("pt-BR", {minimumFractionDigits: 2}));
                                             if (filtro === "faturamentoTotal") return React.createElement("td", {key: filtro, className: "px-3 py-2 text-right text-violet-600 font-medium whitespace-nowrap"}, "R$" + c.faturamentoTotal.toLocaleString("pt-BR", {minimumFractionDigits: 2}));
@@ -16836,7 +16836,7 @@ const hideLoadingScreen = () => {
   });
   
   return React.createElement("svg", {viewBox: "0 0 1000 " + alturaTotal, className: "w-full", style: {height: alturaTotal + "px", minHeight: "150px"}}, elementos);
-})())), !acompLoading && acompDados && acompDados.porData && acompDados.porData.length > 0 && React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-6"}, React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-4"}, "📋 Dados Detalhados"), React.createElement("div", {className: "overflow-x-auto"}, React.createElement("table", {className: "w-full text-xs"}, React.createElement("thead", null, React.createElement("tr", {className: "bg-purple-50"}, React.createElement("th", {className: "px-2 py-2 text-left"}, "Data"), React.createElement("th", {className: "px-2 py-2 text-center"}, "OS"), React.createElement("th", {className: "px-2 py-2 text-center"}, "Entregas"), React.createElement("th", {className: "px-2 py-2 text-center"}, "No Prazo"), React.createElement("th", {className: "px-2 py-2 text-center"}, "Fora"), React.createElement("th", {className: "px-2 py-2 text-center"}, "Retornos"), React.createElement("th", {className: "px-2 py-2 text-center"}, "Taxa"), React.createElement("th", {className: "px-2 py-2 text-right"}, "Valor Total"), React.createElement("th", {className: "px-2 py-2 text-right"}, "Valor Prof."), React.createElement("th", {className: "px-2 py-2 text-center"}, "Ticket"), React.createElement("th", {className: "px-2 py-2 text-center"}, "T.Entrega"), React.createElement("th", {className: "px-2 py-2 text-center"}, "Entreg."))), React.createElement("tbody", null, acompDados.porData.map(function(d,i){ var mins = parseFloat(d.tempo_medio_entrega)||0; var h = Math.floor(mins/60); var m = Math.floor(mins%60); return React.createElement("tr", {key: i, className: i%2===0?"bg-white":"bg-gray-50"}, React.createElement("td", {className: "px-2 py-1 font-medium"}, d.data_formatada), React.createElement("td", {className: "px-2 py-1 text-center font-bold text-blue-600"}, d.total_os), React.createElement("td", {className: "px-2 py-1 text-center text-sky-600"}, d.total_entregas), React.createElement("td", {className: "px-2 py-1 text-center text-green-600"}, d.dentro_prazo), React.createElement("td", {className: "px-2 py-1 text-center text-red-600"}, d.fora_prazo), React.createElement("td", {className: "px-2 py-1 text-center text-orange-600"}, d.retornos||0), React.createElement("td", {className: "px-2 py-1 text-center"}, React.createElement("span", {className: "px-1 py-0 rounded text-xs font-bold "+(parseFloat(d.taxa_prazo)>=80?"bg-green-100 text-green-700":parseFloat(d.taxa_prazo)>=60?"bg-yellow-100 text-yellow-700":"bg-red-100 text-red-700")}, d.taxa_prazo+"%")), React.createElement("td", {className: "px-2 py-1 text-right text-purple-600"}, "R$", parseFloat(d.valor_total||0).toLocaleString("pt-BR",{minimumFractionDigits:0})), React.createElement("td", {className: "px-2 py-1 text-right text-amber-600"}, "R$", parseFloat(d.valor_motoboy||0).toLocaleString("pt-BR",{minimumFractionDigits:0})), React.createElement("td", {className: "px-2 py-1 text-center text-cyan-600"}, "R$", d.ticket_medio), React.createElement("td", {className: "px-2 py-1 text-center text-rose-600"}, String(h).padStart(2,"0")+":"+String(m).padStart(2,"0")), React.createElement("td", {className: "px-2 py-1 text-center text-teal-600"}, d.total_entregadores)); })))))), !acompLoading && comparativoSemanal && comparativoSemanal.semanas && comparativoSemanal.semanas.length > 0 && (function() {
+})())), !acompLoading && acompDados && acompDados.porData && acompDados.porData.length > 0 && React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-6"}, React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-4"}, "📋 Dados Detalhados"), React.createElement("div", {className: "overflow-x-auto"}, React.createElement("table", {className: "w-full text-xs"}, React.createElement("thead", null, React.createElement("tr", {className: "bg-purple-50"}, React.createElement("th", {className: "px-2 py-2 text-left"}, "Data"), React.createElement("th", {className: "px-2 py-2 text-center"}, "OS"), React.createElement("th", {className: "px-2 py-2 text-center"}, "Entregas"), React.createElement("th", {className: "px-2 py-2 text-center"}, "No Prazo"), React.createElement("th", {className: "px-2 py-2 text-center"}, "Fora"), React.createElement("th", {className: "px-2 py-2 text-center"}, "Retornos"), React.createElement("th", {className: "px-2 py-2 text-center"}, "Taxa"), React.createElement("th", {className: "px-2 py-2 text-right"}, "Valor Total"), React.createElement("th", {className: "px-2 py-2 text-right"}, "Valor Prof."), React.createElement("th", {className: "px-2 py-2 text-center"}, "Ticket"), React.createElement("th", {className: "px-2 py-2 text-center"}, "T.Entrega"), React.createElement("th", {className: "px-2 py-2 text-center"}, "Entreg."))), React.createElement("tbody", null, acompDados.porData.map(function(d,i){ var mins = parseFloat(d.tempo_medio_entrega)||0; var h = Math.floor(mins/60); var m = Math.floor(mins%60); return React.createElement("tr", {key: i, className: i%2===0?"bg-white":"bg-gray-50"}, React.createElement("td", {className: "px-2 py-1 font-medium"}, d.data_formatada), React.createElement("td", {className: "px-2 py-1 text-center font-bold text-blue-600"}, d.total_os), React.createElement("td", {className: "px-2 py-1 text-center text-sky-600"}, d.total_entregas), React.createElement("td", {className: "px-2 py-1 text-center text-green-600"}, d.dentro_prazo), React.createElement("td", {className: "px-2 py-1 text-center text-red-600"}, d.fora_prazo), React.createElement("td", {className: "px-2 py-1 text-center text-purple-600"}, d.retornos||0), React.createElement("td", {className: "px-2 py-1 text-center"}, React.createElement("span", {className: "px-1 py-0 rounded text-xs font-bold "+(parseFloat(d.taxa_prazo)>=80?"bg-green-100 text-green-700":parseFloat(d.taxa_prazo)>=60?"bg-yellow-100 text-yellow-700":"bg-red-100 text-red-700")}, d.taxa_prazo+"%")), React.createElement("td", {className: "px-2 py-1 text-right text-purple-600"}, "R$", parseFloat(d.valor_total||0).toLocaleString("pt-BR",{minimumFractionDigits:0})), React.createElement("td", {className: "px-2 py-1 text-right text-amber-600"}, "R$", parseFloat(d.valor_motoboy||0).toLocaleString("pt-BR",{minimumFractionDigits:0})), React.createElement("td", {className: "px-2 py-1 text-center text-cyan-600"}, "R$", d.ticket_medio), React.createElement("td", {className: "px-2 py-1 text-center text-rose-600"}, String(h).padStart(2,"0")+":"+String(m).padStart(2,"0")), React.createElement("td", {className: "px-2 py-1 text-center text-teal-600"}, d.total_entregadores)); })))))), !acompLoading && comparativoSemanal && comparativoSemanal.semanas && comparativoSemanal.semanas.length > 0 && (function() {
   var semanas = comparativoSemanal.semanas;
   if (!semanas || semanas.length === 0) return null;
   
@@ -16907,7 +16907,7 @@ const hideLoadingScreen = () => {
       sky: {bg: "bg-sky-100", text: "text-sky-700", border: "border-sky-200"},
       green: {bg: "bg-green-100", text: "text-green-700", border: "border-green-200"},
       red: {bg: "bg-red-100", text: "text-red-700", border: "border-red-200"},
-      orange: {bg: "bg-orange-100", text: "text-orange-700", border: "border-orange-200"},
+      orange: {bg: "bg-purple-100", text: "text-purple-700", border: "border-orange-200"},
       purple: {bg: "bg-purple-100", text: "text-purple-700", border: "border-purple-200"},
       amber: {bg: "bg-amber-100", text: "text-amber-700", border: "border-amber-200"},
       cyan: {bg: "bg-cyan-100", text: "text-cyan-700", border: "border-cyan-200"},
@@ -17101,22 +17101,25 @@ const hideLoadingScreen = () => {
             
             // === SEÇÃO CLIENTE 767 ===
             "cliente767" === Et && React.createElement("div", {className: "space-y-4"}, 
-                React.createElement("div", {className: "bg-gradient-to-r from-orange-500 to-amber-600 rounded-xl p-6 text-white"}, 
-                    React.createElement("h2", {className: "text-2xl font-bold mb-2"}, "🏢 Cliente 767 - Prazo Especial"),
-                    React.createElement("p", {className: "opacity-90"}, "Prazo de entrega: 120 minutos (2 horas)"),
-                    React.createElement("div", {className: "mt-3 flex flex-wrap gap-2 items-center"}, 
-                        cliente767Filtros.data_inicio && React.createElement("span", {className: "px-3 py-1 bg-white/20 rounded-lg text-sm"}, "📅 De: ", cliente767Filtros.data_inicio),
-                        cliente767Filtros.data_fim && React.createElement("span", {className: "px-3 py-1 bg-white/20 rounded-lg text-sm"}, "📅 Até: ", cliente767Filtros.data_fim),
-                        cliente767Filtros.centros_custo && cliente767Filtros.centros_custo.length > 0 && React.createElement("span", {className: "px-3 py-1 bg-white/20 rounded-lg text-sm"}, "🏪 ", cliente767Filtros.centros_custo.length, " CC"),
-                        React.createElement("button", {onClick: function(){ setCliente767ModalFiltro(true); }, className: "px-4 py-2 bg-white/20 rounded-lg text-sm font-semibold hover:bg-white/30"}, "🔍 Filtros"),
-                        React.createElement("button", {onClick: carregarCliente767, className: "px-4 py-2 bg-white/20 rounded-lg text-sm font-semibold hover:bg-white/30"}, "🔄 Recarregar")
+                React.createElement("div", {className: "bg-purple-700 rounded-2xl p-5 text-white"}, 
+                    React.createElement("div", {className: "flex items-center justify-between"},
+                        React.createElement("div", null,
+                            React.createElement("h2", {className: "text-xl font-medium"}, "Cliente 767 — Grupo Comollati"),
+                            React.createElement("p", {className: "text-purple-200 text-sm mt-1"}, "SLA: 120 minutos (2 horas) — Prazo especial")
+                        ),
+                        React.createElement("div", {className: "flex flex-wrap gap-2 items-center"}, 
+                            cliente767Filtros.data_inicio && React.createElement("span", {className: "px-3 py-1 bg-white/15 rounded-lg text-xs"}, cliente767Filtros.data_inicio, " a ", cliente767Filtros.data_fim),
+                            cliente767Filtros.centros_custo && cliente767Filtros.centros_custo.length > 0 && React.createElement("span", {className: "px-3 py-1 bg-white/15 rounded-lg text-xs"}, cliente767Filtros.centros_custo.length, " CC"),
+                            React.createElement("button", {onClick: function(){ setCliente767ModalFiltro(true); }, className: "px-3 py-2 bg-white/15 rounded-xl text-sm hover:bg-white/25 ring-1 ring-white/10"}, "Filtros"),
+                            React.createElement("button", {onClick: carregarCliente767, className: "px-3 py-2 bg-white/15 rounded-xl text-sm hover:bg-white/25 ring-1 ring-white/10"}, "Recarregar")
+                        )
                     )
                 ),
                 
                 // Modal de Filtro específico do Cliente 767
                 cliente767ModalFiltro && React.createElement("div", {className: "fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"},
                     React.createElement("div", {className: "bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"},
-                        React.createElement("div", {className: "sticky top-0 bg-orange-600 text-white px-6 py-4 rounded-t-xl flex justify-between items-center"},
+                        React.createElement("div", {className: "sticky top-0 bg-purple-700 text-white px-6 py-4 rounded-t-xl flex justify-between items-center"},
                             React.createElement("h3", {className: "text-lg font-bold"}, "🔍 Filtrar - Cliente 767"),
                             React.createElement("button", {onClick: function(){ setCliente767ModalFiltro(false); }, className: "text-white hover:bg-white/20 rounded-lg px-3 py-1 text-xl"}, "✕")
                         ),
@@ -17129,7 +17132,7 @@ const hideLoadingScreen = () => {
                                         type: "date",
                                         value: cliente767Filtros.data_inicio,
                                         onChange: function(e) { setCliente767Filtros(function(f) { return {...f, data_inicio: e.target.value}; }); },
-                                        className: "w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                                        className: "w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                                     })
                                 ),
                                 React.createElement("div", null,
@@ -17138,7 +17141,7 @@ const hideLoadingScreen = () => {
                                         type: "date",
                                         value: cliente767Filtros.data_fim,
                                         onChange: function(e) { setCliente767Filtros(function(f) { return {...f, data_fim: e.target.value}; }); },
-                                        className: "w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                                        className: "w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                                     })
                                 )
                             ),
@@ -17189,7 +17192,7 @@ const hideLoadingScreen = () => {
                                                 var selecionado = cliente767Filtros.centros_custo.includes(cc);
                                                 return React.createElement("label", {
                                                     key: cc,
-                                                    className: "flex items-center gap-2 p-2 rounded cursor-pointer hover:bg-white " + (selecionado ? "bg-orange-100" : "")
+                                                    className: "flex items-center gap-2 p-2 rounded cursor-pointer hover:bg-white " + (selecionado ? "bg-purple-100" : "")
                                                 },
                                                     React.createElement("input", {
                                                         type: "checkbox",
@@ -17202,15 +17205,15 @@ const hideLoadingScreen = () => {
                                                                 return {...f, centros_custo: novosCentros};
                                                             });
                                                         },
-                                                        className: "w-4 h-4 text-orange-600 rounded focus:ring-orange-500"
+                                                        className: "w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
                                                     }),
-                                                    React.createElement("span", {className: "text-sm " + (selecionado ? "font-medium text-orange-700" : "text-gray-700")}, cc)
+                                                    React.createElement("span", {className: "text-sm " + (selecionado ? "font-medium text-purple-700" : "text-gray-700")}, cc)
                                                 );
                                             })
                                         )
                                     : React.createElement("p", {className: "text-gray-500 text-sm text-center py-4"}, "Carregue os dados primeiro para ver os centros de custo disponíveis")
                                 ),
-                                cliente767Filtros.centros_custo.length > 0 && React.createElement("p", {className: "text-xs text-orange-600 mt-1"}, cliente767Filtros.centros_custo.length, " centro(s) selecionado(s)")
+                                cliente767Filtros.centros_custo.length > 0 && React.createElement("p", {className: "text-xs text-purple-600 mt-1"}, cliente767Filtros.centros_custo.length, " centro(s) selecionado(s)")
                             ),
                             
                             // Botão Limpar Tudo
@@ -17226,7 +17229,7 @@ const hideLoadingScreen = () => {
                             }, "Cancelar"),
                             React.createElement("button", {
                                 onClick: function() { setCliente767ModalFiltro(false); carregarCliente767(); },
-                                className: "flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg font-medium hover:bg-orange-700"
+                                className: "flex-1 px-4 py-2 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700"
                             }, "Aplicar Filtros")
                         )
                     )
@@ -17238,131 +17241,138 @@ const hideLoadingScreen = () => {
                 ),
                 
                 !cliente767Loading && cliente767Dados && cliente767Dados.metricas && React.createElement(React.Fragment, null,
-                    // Cards de métricas
-                    React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-4 gap-3"},
-                        React.createElement("div", {className: "bg-white rounded-lg p-4 shadow border-l-4 border-blue-500"},
-                            React.createElement("p", {className: "text-xs text-gray-500"}, "Total OS"),
-                            React.createElement("p", {className: "text-2xl font-bold text-gray-800"}, cliente767Dados.metricas.total_os)
-                        ),
-                        React.createElement("div", {className: "bg-white rounded-lg p-4 shadow border-l-4 border-cyan-500"},
-                            React.createElement("p", {className: "text-xs text-gray-500"}, "Total Entregas"),
-                            React.createElement("p", {className: "text-2xl font-bold text-gray-800"}, cliente767Dados.metricas.total_entregas)
-                        ),
-                        React.createElement("div", {className: "bg-white rounded-lg p-4 shadow border-l-4 border-green-500"},
-                            React.createElement("p", {className: "text-xs text-gray-500"}, "No Prazo (≤120min)"),
-                            React.createElement("p", {className: "text-2xl font-bold text-green-600"}, cliente767Dados.metricas.dentro_prazo)
-                        ),
-                        React.createElement("div", {className: "bg-white rounded-lg p-4 shadow border-l-4 border-red-500"},
-                            React.createElement("p", {className: "text-xs text-gray-500"}, "Fora Prazo (>120min)"),
-                            React.createElement("p", {className: "text-2xl font-bold text-red-600"}, cliente767Dados.metricas.fora_prazo)
-                        )
-                    ),
-                    
-                    // Cards de taxa e tempo
-                    React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-4 gap-3"},
-                        React.createElement("div", {className: "bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg p-4 shadow text-white"},
-                            React.createElement("p", {className: "text-xs opacity-80"}, "Taxa No Prazo"),
-                            React.createElement("p", {className: "text-3xl font-bold"}, cliente767Dados.metricas.taxa_prazo, "%")
-                        ),
-                        React.createElement("div", {className: "bg-gradient-to-br from-sky-500 to-blue-600 rounded-lg p-4 shadow text-white"},
-                            React.createElement("p", {className: "text-xs opacity-80"}, "Tempo Médio Entrega"),
-                            React.createElement("p", {className: "text-2xl font-bold"}, cliente767Dados.metricas.tempo_medio || "00:00")
-                        ),
-                        React.createElement("div", {className: "bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg p-4 shadow text-white"},
-                            React.createElement("p", {className: "text-xs opacity-80"}, "Tempo Médio Coleta"),
-                            React.createElement("p", {className: "text-2xl font-bold"}, cliente767Dados.metricas.tempo_medio_coleta || "00:00")
-                        ),
-                        React.createElement("div", {className: "bg-gradient-to-br from-pink-500 to-rose-600 rounded-lg p-4 shadow text-white"},
-                            React.createElement("p", {className: "text-xs opacity-80"}, "Tempo Médio Alocação"),
-                            React.createElement("p", {className: "text-2xl font-bold"}, cliente767Dados.metricas.tempo_medio_alocacao || "00:00")
-                        )
-                    ),
-                    
-                    // Cards financeiros
-                    React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-4 gap-3"},
-                        React.createElement("div", {className: "bg-white rounded-lg p-4 shadow border-l-4 border-purple-500"},
-                            React.createElement("p", {className: "text-xs text-gray-500"}, "Valor Total"),
-                            React.createElement("p", {className: "text-xl font-bold text-purple-600"}, "R$ ", parseFloat(cliente767Dados.metricas.valor_total||0).toLocaleString("pt-BR", {minimumFractionDigits: 2}))
-                        ),
-                        React.createElement("div", {className: "bg-white rounded-lg p-4 shadow border-l-4 border-amber-500"},
-                            React.createElement("p", {className: "text-xs text-gray-500"}, "Valor Profissional"),
-                            React.createElement("p", {className: "text-xl font-bold text-amber-600"}, "R$ ", parseFloat(cliente767Dados.metricas.valor_prof_total||0).toLocaleString("pt-BR", {minimumFractionDigits: 2}))
-                        ),
-                        React.createElement("div", {className: "bg-white rounded-lg p-4 shadow border-l-4 border-violet-500"},
-                            React.createElement("p", {className: "text-xs text-gray-500"}, "Faturamento"),
-                            React.createElement("p", {className: "text-xl font-bold text-violet-600"}, "R$ ", (parseFloat(cliente767Dados.metricas.valor_total||0) - parseFloat(cliente767Dados.metricas.valor_prof_total||0)).toLocaleString("pt-BR", {minimumFractionDigits: 2}))
-                        ),
-                        React.createElement("div", {className: "bg-white rounded-lg p-4 shadow border-l-4 border-teal-500"},
-                            React.createElement("p", {className: "text-xs text-gray-500"}, "Entregadores"),
-                            React.createElement("p", {className: "text-xl font-bold text-teal-600"}, cliente767Dados.metricas.total_profissionais)
-                        )
-                    ),
-                    
-                    // =============================================
-                    // INDICADOR DE META MENSAL
-                    // =============================================
-                    cliente767Dados.indicadorMeta && React.createElement("div", {className: "bg-gradient-to-r " + (cliente767Dados.indicadorMeta.meta_atingivel ? (cliente767Dados.indicadorMeta.taxa_minima_restante <= 0 ? "from-green-500 to-emerald-600" : "from-blue-500 to-indigo-600") : "from-red-500 to-rose-600") + " rounded-xl p-5 text-white shadow-lg"},
-                        React.createElement("div", {className: "flex items-center justify-between mb-4"},
-                            React.createElement("h3", {className: "text-lg font-bold flex items-center gap-2"}, "🎯 Meta Mensal de 95%"),
-                            React.createElement("span", {className: "text-sm opacity-80"}, cliente767Dados.indicadorMeta.mes_referencia)
-                        ),
-                        React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-4 gap-4 mb-4"},
-                            React.createElement("div", {className: "bg-white/20 rounded-lg p-3"},
-                                React.createElement("p", {className: "text-xs opacity-80"}, "Taxa Atual"),
-                                React.createElement("p", {className: "text-2xl font-bold"}, cliente767Dados.indicadorMeta.taxa_atual, "%")
+                    // ═══ VOLUMETRIA ═══
+                    React.createElement("div", {className: "bg-white rounded-xl shadow p-5 border border-gray-100"},
+                        React.createElement("p", {className: "text-sm font-medium text-gray-500 mb-3"}, "Volumetria"),
+                        React.createElement("div", {className: "grid grid-cols-4 gap-3"},
+                            React.createElement("div", {className: "bg-gray-50 rounded-lg px-4 py-3"},
+                                React.createElement("div", {className: "text-xs text-gray-400 mb-0.5"}, "Total OS"),
+                                React.createElement("div", {className: "text-2xl font-medium text-gray-800"}, Number(cliente767Dados.metricas.total_os || 0).toLocaleString("pt-BR"))
                             ),
-                            React.createElement("div", {className: "bg-white/20 rounded-lg p-3"},
-                                React.createElement("p", {className: "text-xs opacity-80"}, "Dias Restantes"),
-                                React.createElement("p", {className: "text-2xl font-bold"}, cliente767Dados.indicadorMeta.dias_restantes)
+                            React.createElement("div", {className: "bg-gray-50 rounded-lg px-4 py-3"},
+                                React.createElement("div", {className: "text-xs text-gray-400 mb-0.5"}, "Total entregas"),
+                                React.createElement("div", {className: "text-2xl font-medium text-gray-800"}, Number(cliente767Dados.metricas.total_entregas || 0).toLocaleString("pt-BR"))
                             ),
-                            React.createElement("div", {className: "bg-white/20 rounded-lg p-3"},
-                                React.createElement("p", {className: "text-xs opacity-80"}, "No Prazo / Total"),
-                                React.createElement("p", {className: "text-xl font-bold"}, cliente767Dados.indicadorMeta.dentro_prazo_ate_agora, " / ", cliente767Dados.indicadorMeta.total_entregas_ate_agora)
+                            React.createElement("div", {className: "bg-gray-50 rounded-lg px-4 py-3", style: {borderLeft: "3px solid #1D9E75"}},
+                                React.createElement("div", {className: "text-xs text-gray-400 mb-0.5"}, "No prazo"),
+                                React.createElement("div", {className: "text-2xl font-medium", style: {color: "#1D9E75"}}, Number(cliente767Dados.metricas.dentro_prazo || 0).toLocaleString("pt-BR")),
+                                React.createElement("div", {className: "text-xs text-gray-400"}, ((cliente767Dados.metricas.dentro_prazo || 0) / Math.max(cliente767Dados.metricas.total_entregas || 1, 1) * 100).toFixed(1) + "%")
                             ),
-                            React.createElement("div", {className: "bg-white/20 rounded-lg p-3"},
-                                React.createElement("p", {className: "text-xs opacity-80"}, "Taxa Mínima Necessária"),
-                                React.createElement("p", {className: "text-2xl font-bold"}, cliente767Dados.indicadorMeta.taxa_minima_restante > 100 ? ">100" : cliente767Dados.indicadorMeta.taxa_minima_restante, "%")
+                            React.createElement("div", {className: "bg-gray-50 rounded-lg px-4 py-3", style: {borderLeft: "3px solid #E24B4A"}},
+                                React.createElement("div", {className: "text-xs text-gray-400 mb-0.5"}, "Fora do prazo"),
+                                React.createElement("div", {className: "text-2xl font-medium", style: {color: "#E24B4A"}}, Number(cliente767Dados.metricas.fora_prazo || 0).toLocaleString("pt-BR")),
+                                React.createElement("div", {className: "text-xs text-gray-400"}, ((cliente767Dados.metricas.fora_prazo || 0) / Math.max(cliente767Dados.metricas.total_entregas || 1, 1) * 100).toFixed(1) + "%")
                             )
-                        ),
-                        React.createElement("div", {className: "bg-white/10 rounded-lg p-3"},
+                        )
+                    ),
+
+                    // ═══ PERFORMANCE ═══
+                    React.createElement("div", {className: "bg-white rounded-xl shadow p-5 border border-gray-100"},
+                        React.createElement("p", {className: "text-sm font-medium text-gray-500 mb-3"}, "Performance"),
+                        React.createElement("div", {className: "grid grid-cols-4 gap-3"},
+                            React.createElement("div", {className: "bg-gray-50 rounded-lg px-4 py-3", style: {borderLeft: "3px solid #1D9E75"}},
+                                React.createElement("div", {className: "text-xs text-gray-400 mb-0.5"}, "Taxa no prazo"),
+                                React.createElement("div", {className: "text-2xl font-medium", style: {color: "#1D9E75"}}, cliente767Dados.metricas.taxa_prazo + "%"),
+                                React.createElement("div", {className: "w-full h-1.5 bg-gray-200 rounded-full mt-2"}, React.createElement("div", {style: {width: Math.min(parseFloat(cliente767Dados.metricas.taxa_prazo) || 0, 100) + "%", background: "#1D9E75", height: "100%", borderRadius: "9999px"}}))
+                            ),
+                            React.createElement("div", {className: "bg-gray-50 rounded-lg px-4 py-3", style: {borderLeft: "3px solid #534AB7"}},
+                                React.createElement("div", {className: "text-xs text-gray-400 mb-0.5"}, "Tempo med. entrega"),
+                                React.createElement("div", {className: "text-2xl font-medium text-gray-800"}, cliente767Dados.metricas.tempo_medio || "00:00")
+                            ),
+                            React.createElement("div", {className: "bg-gray-50 rounded-lg px-4 py-3", style: {borderLeft: "3px solid #378ADD"}},
+                                React.createElement("div", {className: "text-xs text-gray-400 mb-0.5"}, "Tempo med. coleta"),
+                                React.createElement("div", {className: "text-2xl font-medium text-gray-800"}, cliente767Dados.metricas.tempo_medio_coleta || "00:00")
+                            ),
+                            React.createElement("div", {className: "bg-gray-50 rounded-lg px-4 py-3", style: {borderLeft: "3px solid #378ADD"}},
+                                React.createElement("div", {className: "text-xs text-gray-400 mb-0.5"}, "Tempo med. alocacao"),
+                                React.createElement("div", {className: "text-2xl font-medium text-gray-800"}, cliente767Dados.metricas.tempo_medio_alocacao || "00:00")
+                            )
+                        )
+                    ),
+
+                    // ═══ FINANCEIRO ═══
+                    React.createElement("div", {className: "bg-white rounded-xl shadow p-5 border border-gray-100"},
+                        React.createElement("p", {className: "text-sm font-medium text-gray-500 mb-3"}, "Financeiro"),
+                        React.createElement("div", {className: "grid grid-cols-4 gap-3"},
+                            React.createElement("div", {className: "bg-gray-50 rounded-lg px-4 py-3"},
+                                React.createElement("div", {className: "text-xs text-gray-400 mb-0.5"}, "Valor total"),
+                                React.createElement("div", {className: "text-lg font-medium text-gray-800"}, "R$ ", parseFloat(cliente767Dados.metricas.valor_total||0).toLocaleString("pt-BR", {minimumFractionDigits: 0}))
+                            ),
+                            React.createElement("div", {className: "bg-gray-50 rounded-lg px-4 py-3"},
+                                React.createElement("div", {className: "text-xs text-gray-400 mb-0.5"}, "Valor profissional"),
+                                React.createElement("div", {className: "text-lg font-medium text-gray-800"}, "R$ ", parseFloat(cliente767Dados.metricas.valor_prof_total||0).toLocaleString("pt-BR", {minimumFractionDigits: 0}))
+                            ),
+                            React.createElement("div", {className: "bg-gray-50 rounded-lg px-4 py-3", style: {borderLeft: "3px solid #1D9E75"}},
+                                React.createElement("div", {className: "text-xs text-gray-400 mb-0.5"}, "Faturamento"),
+                                React.createElement("div", {className: "text-lg font-medium", style: {color: "#1D9E75"}}, "R$ ", (parseFloat(cliente767Dados.metricas.valor_total||0) - parseFloat(cliente767Dados.metricas.valor_prof_total||0)).toLocaleString("pt-BR", {minimumFractionDigits: 0}))
+                            ),
+                            React.createElement("div", {className: "bg-gray-50 rounded-lg px-4 py-3"},
+                                React.createElement("div", {className: "text-xs text-gray-400 mb-0.5"}, "Entregadores"),
+                                React.createElement("div", {className: "text-2xl font-medium text-gray-800"}, cliente767Dados.metricas.total_profissionais)
+                            )
+                        )
+                    ),
+
+                    // ═══ META MENSAL ═══
+                    cliente767Dados.indicadorMeta && React.createElement("div", {className: "bg-white rounded-xl shadow p-5 border border-gray-100"},
+                        React.createElement("div", {className: "flex items-center justify-between mb-3"},
                             React.createElement("div", {className: "flex items-center gap-2"},
-                                React.createElement("span", {className: "text-2xl"}, cliente767Dados.indicadorMeta.meta_atingivel ? (cliente767Dados.indicadorMeta.taxa_minima_restante <= 0 ? "✅" : "📊") : "⚠️"),
-                                React.createElement("div", null,
-                                    React.createElement("p", {className: "font-bold"}, cliente767Dados.indicadorMeta.mensagem),
-                                    cliente767Dados.indicadorMeta.dias_restantes > 0 && cliente767Dados.indicadorMeta.taxa_minima_restante > 0 && cliente767Dados.indicadorMeta.taxa_minima_restante <= 100 && React.createElement("p", {className: "text-sm opacity-80"}, "Faltam ", cliente767Dados.indicadorMeta.entregas_no_prazo_faltam, " entregas no prazo de ~", cliente767Dados.indicadorMeta.entregas_estimadas_restantes, " estimadas")
-                                )
+                                React.createElement("p", {className: "text-sm font-medium text-gray-800"}, "Meta mensal de 95%"),
+                                React.createElement("span", {className: "text-xs px-2.5 py-0.5 rounded-full font-medium " + (parseFloat(cliente767Dados.indicadorMeta.taxa_atual) >= 95 ? "bg-green-50 text-green-700 border border-green-200" : parseFloat(cliente767Dados.indicadorMeta.taxa_atual) >= 90 ? "bg-amber-50 text-amber-700 border border-amber-200" : "bg-red-50 text-red-700 border border-red-200")}, parseFloat(cliente767Dados.indicadorMeta.taxa_atual) >= 95 ? "Acima da meta" : "Atenção")
+                            ),
+                            React.createElement("span", {className: "text-xs text-gray-400"}, cliente767Dados.indicadorMeta.mes_referencia)
+                        ),
+                        React.createElement("div", {className: "grid grid-cols-4 gap-3 mb-3"},
+                            React.createElement("div", {className: "bg-gray-50 rounded-lg px-4 py-3", style: {borderLeft: "3px solid " + (parseFloat(cliente767Dados.indicadorMeta.taxa_atual) >= 95 ? "#1D9E75" : "#E24B4A")}},
+                                React.createElement("div", {className: "text-xs text-gray-400 mb-0.5"}, "Taxa atual"),
+                                React.createElement("div", {className: "text-2xl font-medium", style: {color: parseFloat(cliente767Dados.indicadorMeta.taxa_atual) >= 95 ? "#1D9E75" : "#E24B4A"}}, cliente767Dados.indicadorMeta.taxa_atual + "%")
+                            ),
+                            React.createElement("div", {className: "bg-gray-50 rounded-lg px-4 py-3"},
+                                React.createElement("div", {className: "text-xs text-gray-400 mb-0.5"}, "Dias restantes"),
+                                React.createElement("div", {className: "text-2xl font-medium text-gray-800"}, cliente767Dados.indicadorMeta.dias_restantes)
+                            ),
+                            React.createElement("div", {className: "bg-gray-50 rounded-lg px-4 py-3"},
+                                React.createElement("div", {className: "text-xs text-gray-400 mb-0.5"}, "No prazo / total"),
+                                React.createElement("div", {className: "text-lg font-medium text-gray-800"}, cliente767Dados.indicadorMeta.dentro_prazo_ate_agora, " / ", cliente767Dados.indicadorMeta.total_entregas_ate_agora)
+                            ),
+                            React.createElement("div", {className: "bg-gray-50 rounded-lg px-4 py-3"},
+                                React.createElement("div", {className: "text-xs text-gray-400 mb-0.5"}, "Taxa min. necessária"),
+                                React.createElement("div", {className: "text-2xl font-medium text-gray-800"}, cliente767Dados.indicadorMeta.taxa_minima_restante > 100 ? ">100" : cliente767Dados.indicadorMeta.taxa_minima_restante, "%"),
+                                React.createElement("div", {className: "text-xs text-gray-400"}, "Para manter a meta")
                             )
+                        ),
+                        React.createElement("div", {className: "rounded-lg px-4 py-3 " + (cliente767Dados.indicadorMeta.meta_atingivel ? "bg-green-50 border border-green-100" : "bg-red-50 border border-red-100")},
+                            React.createElement("p", {className: "text-sm font-medium " + (cliente767Dados.indicadorMeta.meta_atingivel ? "text-green-800" : "text-red-800")}, cliente767Dados.indicadorMeta.mensagem),
+                            cliente767Dados.indicadorMeta.dias_restantes > 0 && cliente767Dados.indicadorMeta.taxa_minima_restante > 0 && cliente767Dados.indicadorMeta.taxa_minima_restante <= 100 && React.createElement("p", {className: "text-xs mt-1 " + (cliente767Dados.indicadorMeta.meta_atingivel ? "text-green-600" : "text-red-600")}, "Faltam ", cliente767Dados.indicadorMeta.entregas_no_prazo_faltam, " entregas no prazo de ~", cliente767Dados.indicadorMeta.entregas_estimadas_restantes, " estimadas")
                         )
                     ),
-                    
-                    // =============================================
-                    // TABELA POR CENTRO DE CUSTO
-                    // =============================================
-                    cliente767Dados.porCentroCusto && cliente767Dados.porCentroCusto.length > 0 && React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-4"},
-                        React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-4"}, "🏪 Desempenho por Centro de Custo"),
+
+                    // ═══ CENTRO DE CUSTO ═══
+                    cliente767Dados.porCentroCusto && cliente767Dados.porCentroCusto.length > 0 && React.createElement("div", {className: "bg-white rounded-xl shadow p-5 border border-gray-100"},
+                        React.createElement("p", {className: "text-sm font-medium text-gray-500 mb-3"}, "Desempenho por centro de custo"),
                         React.createElement("div", {className: "overflow-x-auto"},
                             React.createElement("table", {className: "w-full text-sm"},
                                 React.createElement("thead", null,
-                                    React.createElement("tr", {className: "bg-purple-50"},
-                                        React.createElement("th", {className: "px-3 py-2 text-left font-bold"}, "Centro de Custo"),
-                                        React.createElement("th", {className: "px-3 py-2 text-center font-bold"}, "OS"),
-                                        React.createElement("th", {className: "px-3 py-2 text-center font-bold"}, "Entregas"),
-                                        React.createElement("th", {className: "px-3 py-2 text-center font-bold text-green-700"}, "No Prazo"),
-                                        React.createElement("th", {className: "px-3 py-2 text-center font-bold text-red-700"}, "Fora Prazo"),
-                                        React.createElement("th", {className: "px-3 py-2 text-center font-bold"}, "Taxa")
+                                    React.createElement("tr", {className: "border-b border-gray-200"},
+                                        React.createElement("th", {className: "px-3 py-2.5 text-left text-gray-500 font-normal text-xs"}, "Centro de custo"),
+                                        React.createElement("th", {className: "px-3 py-2.5 text-right text-gray-500 font-normal text-xs"}, "OS"),
+                                        React.createElement("th", {className: "px-3 py-2.5 text-right text-gray-500 font-normal text-xs"}, "Entregas"),
+                                        React.createElement("th", {className: "px-3 py-2.5 text-right text-gray-500 font-normal text-xs"}, "No prazo"),
+                                        React.createElement("th", {className: "px-3 py-2.5 text-right text-gray-500 font-normal text-xs"}, "Fora prazo"),
+                                        React.createElement("th", {className: "px-3 py-2.5 text-center text-gray-500 font-normal text-xs"}, "Taxa")
                                     )
                                 ),
                                 React.createElement("tbody", null,
                                     cliente767Dados.porCentroCusto.map(function(cc, i) {
                                         var taxa = parseFloat(cc.taxa_prazo) || 0;
-                                        return React.createElement("tr", {key: i, className: i%2===0?"bg-white":"bg-gray-50"},
-                                            React.createElement("td", {className: "px-3 py-2 font-medium"}, cc.centro_custo),
-                                            React.createElement("td", {className: "px-3 py-2 text-center text-blue-600 font-bold"}, cc.total_os),
-                                            React.createElement("td", {className: "px-3 py-2 text-center text-sky-600"}, cc.total_entregas),
-                                            React.createElement("td", {className: "px-3 py-2 text-center text-green-600 font-medium"}, cc.dentro_prazo),
-                                            React.createElement("td", {className: "px-3 py-2 text-center text-red-600 font-medium"}, cc.fora_prazo),
-                                            React.createElement("td", {className: "px-3 py-2 text-center"},
-                                                React.createElement("span", {className: "px-2 py-1 rounded text-xs font-bold " + (taxa >= 95 ? "bg-green-100 text-green-700" : taxa >= 80 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700")}, cc.taxa_prazo + "%")
+                                        return React.createElement("tr", {key: i, className: "border-b border-gray-50 hover:bg-gray-50"},
+                                            React.createElement("td", {className: "px-3 py-2.5 font-medium text-gray-800"}, cc.centro_custo),
+                                            React.createElement("td", {className: "px-3 py-2.5 text-right text-gray-700"}, cc.total_os),
+                                            React.createElement("td", {className: "px-3 py-2.5 text-right text-gray-700"}, cc.total_entregas),
+                                            React.createElement("td", {className: "px-3 py-2.5 text-right text-gray-700"}, cc.dentro_prazo),
+                                            React.createElement("td", {className: "px-3 py-2.5 text-right " + (cc.fora_prazo > 0 ? "text-red-600" : "text-gray-400")}, cc.fora_prazo),
+                                            React.createElement("td", {className: "px-3 py-2.5 text-center"},
+                                                React.createElement("span", {className: "px-2 py-0.5 rounded text-xs font-medium " + (taxa >= 95 ? "bg-green-50 text-green-700" : taxa >= 90 ? "bg-amber-50 text-amber-700" : "bg-red-50 text-red-700")}, cc.taxa_prazo + "%")
                                             )
                                         );
                                     })
@@ -17452,10 +17462,10 @@ const hideLoadingScreen = () => {
                     )
                 ),
                 
-                !cliente767Loading && !cliente767Dados && React.createElement("div", {className: "bg-orange-50 border-2 border-orange-200 rounded-xl p-8 text-center"},
+                !cliente767Loading && !cliente767Dados && React.createElement("div", {className: "bg-purple-50 border border-purple-200 rounded-xl p-8 text-center"},
                     React.createElement("div", {className: "text-5xl mb-4"}, "🏢"),
-                    React.createElement("p", {className: "text-orange-800 font-semibold mb-4"}, "Clique para carregar dados do Cliente 767"),
-                    React.createElement("button", {onClick: carregarCliente767, className: "px-6 py-3 bg-orange-600 text-white rounded-lg font-semibold hover:bg-orange-700"}, "🔄 Carregar Dados")
+                    React.createElement("p", {className: "text-purple-800 font-semibold mb-4"}, "Clique para carregar dados do Cliente 767"),
+                    React.createElement("button", {onClick: carregarCliente767, className: "px-6 py-3 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700"}, "🔄 Carregar Dados")
                 )
             ),
             
@@ -17538,11 +17548,11 @@ const hideLoadingScreen = () => {
                                 React.createElement("span", {className: "px-2 py-0.5 rounded text-xs font-bold " + (pctDentroProf >= 80 ? "bg-violet-100 text-violet-700" : pctDentroProf >= 60 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700")}, pctDentroProf.toFixed(1), "%")
                             ), 
                             React.createElement("td", {className: "px-3 py-2 text-center bg-orange-50"}, 
-                                React.createElement("div", {className: "text-orange-700 font-bold"}, nl(e.fora_prazo_prof || 0).toLocaleString("pt-BR")),
+                                React.createElement("div", {className: "text-purple-700 font-bold"}, nl(e.fora_prazo_prof || 0).toLocaleString("pt-BR")),
                                 React.createElement("span", {className: "text-xs text-orange-500"}, pctForaProf.toFixed(1), "%")
                             ), 
                             React.createElement("td", {className: "px-3 py-2 text-right text-gray-600"}, parseFloat(e.distancia_total || 0).toLocaleString("pt-BR", {maximumFractionDigits: 1}), " km"), 
-                            React.createElement("td", {className: "px-3 py-2 text-right text-orange-600"}, e.retornos || 0), 
+                            React.createElement("td", {className: "px-3 py-2 text-right text-purple-600"}, e.retornos || 0), 
                             React.createElement("td", {className: "px-3 py-2 text-right text-purple-600 font-medium"}, sl(e.valor_prof))
                         ),
                         // Linha expandida com tabela de OS
@@ -17644,14 +17654,14 @@ const hideLoadingScreen = () => {
                     );
                 })()), 
                 // Fora Prazo Prof - qtd + %
-                React.createElement("td", {className: "px-3 py-2 text-center bg-orange-100"}, (function() {
+                React.createElement("td", {className: "px-3 py-2 text-center bg-purple-100"}, (function() {
                     var totalDentroProf = Vt.reduce((e, t) => e + nl(t.dentro_prazo_prof || 0), 0);
                     var totalForaProf = Vt.reduce((e, t) => e + nl(t.fora_prazo_prof || 0), 0);
                     var total = totalDentroProf + totalForaProf;
                     var pct = total > 0 ? (totalForaProf / total * 100).toFixed(1) : "0.0";
                     return React.createElement("div", null,
-                        React.createElement("div", {className: "text-orange-800"}, totalForaProf.toLocaleString("pt-BR")),
-                        React.createElement("span", {className: "text-xs text-orange-600"}, pct + "%")
+                        React.createElement("div", {className: "text-purple-800"}, totalForaProf.toLocaleString("pt-BR")),
+                        React.createElement("span", {className: "text-xs text-purple-600"}, pct + "%")
                     );
                 })()), 
                 React.createElement("td", {className: "px-3 py-2 text-right"}, Vt.reduce((e, t) => e + parseFloat(t.distancia_total || 0), 0).toLocaleString("pt-BR", {maximumFractionDigits: 1}), " km"), 
@@ -17904,7 +17914,7 @@ const hideLoadingScreen = () => {
                                         // Cores da linha
                                         if (statusEfetivo === 'lancado') rowBg = 'bg-green-100';
                                         else if (statusEfetivo === 'reprovado') rowBg = 'bg-red-100';
-                                        else if (statusEfetivo === 'nao_rodou') rowBg = 'bg-orange-100';
+                                        else if (statusEfetivo === 'nao_rodou') rowBg = 'bg-purple-100';
                                         else if (statusEfetivo === 'ultrapassou') rowBg = 'bg-blue-100';
                                         else if (row.status === 'abaixo') rowBg = 'bg-yellow-50';
                                         else rowBg = 'bg-white';
@@ -17953,7 +17963,7 @@ const hideLoadingScreen = () => {
                                                         className: "px-2 py-1 text-xs font-semibold rounded border " +
                                                             (statusEfetivo === 'lancado' ? 'bg-green-200 text-green-800 border-green-400' :
                                                              statusEfetivo === 'reprovado' ? 'bg-red-200 text-red-800 border-red-400' :
-                                                             statusEfetivo === 'nao_rodou' ? 'bg-orange-200 text-orange-800 border-orange-400' :
+                                                             statusEfetivo === 'nao_rodou' ? 'bg-orange-200 text-purple-800 border-orange-400' :
                                                              statusEfetivo === 'ultrapassou' ? 'bg-blue-200 text-blue-800 border-blue-400' :
                                                              'bg-yellow-100 text-yellow-800 border-yellow-300')
                                                     },
@@ -17965,7 +17975,7 @@ const hideLoadingScreen = () => {
                                                     ),
                                                     // Indicador de auto-status
                                                     !statusSalvo && autoStatus && React.createElement("span", {
-                                                        className: "text-[10px] italic " + (autoStatus === 'nao_rodou' ? 'text-orange-600' : 'text-blue-600')
+                                                        className: "text-[10px] italic " + (autoStatus === 'nao_rodou' ? 'text-purple-600' : 'text-blue-600')
                                                     }, "auto"),
                                                     // Mostrar info de quem alterou
                                                     statusInfo?.alterado_por && React.createElement("div", {className: "text-xs text-gray-500"},
@@ -18513,7 +18523,7 @@ const hideLoadingScreen = () => {
                         
                         // Determinar tipo: Coleta (ponto 1), Entrega (ponto >= 2), ou Retorno
                         var tipo = isRetorno ? "Retorno" : (pontoNum === 1 ? "Coleta" : "Entrega");
-                        var tipoClass = isRetorno ? "bg-orange-100 text-orange-700" : 
+                        var tipoClass = isRetorno ? "bg-purple-100 text-purple-700" : 
                                         (pontoNum === 1 ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700");
                         
                         // Função para extrair hora de uma string datetime sem conversão de timezone
@@ -18887,7 +18897,7 @@ const hideLoadingScreen = () => {
                 React.createElement("div", {className: "flex items-center gap-4 text-sm text-purple-600"},
                     React.createElement("span", null, "📅 ", e.data_upload ? new Date(e.data_upload).toLocaleDateString("pt-BR") + " às " + new Date(e.data_upload).toLocaleTimeString("pt-BR", {hour: "2-digit", minute: "2-digit"}) : "-"),
                     e.linhas_inseridas !== undefined ? React.createElement("span", null, "✅ ", e.linhas_inseridas, " inseridas") : React.createElement("span", null, e.total_registros, " registros"),
-                    e.linhas_ignoradas > 0 && React.createElement("span", {className: "text-orange-600"}, "⏭️ ", e.linhas_ignoradas, " ignoradas")
+                    e.linhas_ignoradas > 0 && React.createElement("span", {className: "text-purple-600"}, "⏭️ ", e.linhas_ignoradas, " ignoradas")
                 )
             ), React.createElement("button", {
                 onClick: () => (async (uploadData) => {
@@ -19223,8 +19233,8 @@ const hideLoadingScreen = () => {
                                 React.createElement("div", {className: "text-xs text-purple-800"}, "Tempo Médio")
                             ),
                             React.createElement("div", {className: "bg-orange-50 rounded-lg p-3 text-center"},
-                                React.createElement("div", {className: "text-2xl font-bold text-orange-600"}, relatorioIAResultado.metricas.media_profissionais_por_dia || "0"),
-                                React.createElement("div", {className: "text-xs text-orange-800"}, "Motos/Dia")
+                                React.createElement("div", {className: "text-2xl font-bold text-purple-600"}, relatorioIAResultado.metricas.media_profissionais_por_dia || "0"),
+                                React.createElement("div", {className: "text-xs text-purple-800"}, "Motos/Dia")
                             )
                         ),
                         
@@ -20009,12 +20019,12 @@ const hideLoadingScreen = () => {
                             React.createElement("p", {className: "text-sm text-gray-500"}, prazosProfissionais.length + " prazo(s) específico(s)")
                         )
                     ),
-                    React.createElement("span", {className: "text-2xl text-orange-600 transition-transform " + (configSecaoAberta === "prazos_prof" ? "rotate-180" : "")}, "▼")
+                    React.createElement("span", {className: "text-2xl text-purple-600 transition-transform " + (configSecaoAberta === "prazos_prof" ? "rotate-180" : "")}, "▼")
                 ),
                 configSecaoAberta === "prazos_prof" && React.createElement("div", {className: "p-6 border-t"},
                     // Prazo Padrão Profissional
                     React.createElement("h3", {
-                        className: "font-bold text-orange-800 mb-2"
+                        className: "font-bold text-purple-800 mb-2"
                     }, "⚙️ Prazo Padrão Profissional"),
                     React.createElement("p", {
                         className: "text-sm text-gray-500 mb-4"
@@ -20098,7 +20108,7 @@ const hideLoadingScreen = () => {
                                     ja("Erro ao salvar", "error");
                                 }
                             },
-                            className: "px-4 py-2 bg-orange-600 text-white rounded-lg font-semibold hover:bg-orange-700"
+                            className: "px-4 py-2 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700"
                         }, "💾 Salvar Prazo Padrão")
                     ),
                     
@@ -20220,7 +20230,7 @@ const hideLoadingScreen = () => {
                                     setPrazoProfNovo([{km_min: 0, km_max: 15, prazo_minutos: 60}]);
                                     document.getElementById("bi-prazo-prof-codigo").value = "";
                                 },
-                                className: "px-4 py-2 bg-orange-600 text-white rounded-lg font-semibold hover:bg-orange-700"
+                                className: "px-4 py-2 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700"
                             }, "💾 Salvar Configuração")
                         )
                     ),
@@ -20272,7 +20282,7 @@ const hideLoadingScreen = () => {
                     
                     // Botão para recalcular prazos profissionais
                     React.createElement("div", {className: "bg-gradient-to-r from-orange-100 to-yellow-100 rounded-xl p-6 mt-4 border-2 border-orange-300"},
-                        React.createElement("h3", {className: "font-bold text-orange-800 mb-2 flex items-center gap-2"}, "🔄 Recalcular Prazos Profissionais"),
+                        React.createElement("h3", {className: "font-bold text-purple-800 mb-2 flex items-center gap-2"}, "🔄 Recalcular Prazos Profissionais"),
                         React.createElement("p", {className: "text-sm text-gray-600 mb-4"}, "Atualiza o status de prazo profissional para todas as entregas existentes com base nas configurações atuais."),
                         React.createElement("button", {
                             onClick: async () => {
@@ -20344,7 +20354,7 @@ const hideLoadingScreen = () => {
                         key: t.id,
                         className: "bg-orange-50 border-l-4 border-orange-500 p-3 rounded"
                     }, React.createElement("p", {className: "font-semibold text-gray-800"}, t.titulo),
-                        t.data_prazo && React.createElement("p", {className: "text-xs text-orange-600"}, "📅 Vence: ", new Date(t.data_prazo).toLocaleDateString("pt-BR"))
+                        t.data_prazo && React.createElement("p", {className: "text-xs text-purple-600"}, "📅 Vence: ", new Date(t.data_prazo).toLocaleDateString("pt-BR"))
                     ))
                 ),
                 todoPendentesNotif.length > 5 && React.createElement("p", {className: "text-sm text-gray-500 mt-2"}, "... e mais ", todoPendentesNotif.length - 5, " tarefa(s)")
@@ -20503,7 +20513,7 @@ const hideLoadingScreen = () => {
                     },
                         React.createElement("div", {className: "h-2 bg-gradient-to-r from-orange-500 to-amber-600"}),
                         React.createElement("div", {className: "p-6"},
-                            React.createElement("div", {className: "w-14 h-14 bg-orange-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
+                            React.createElement("div", {className: "w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
                                 React.createElement("span", {className: "text-3xl"}, "📊")
                             ),
                             React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "BI"),
@@ -20744,7 +20754,7 @@ const hideLoadingScreen = () => {
                     key: t.id,
                     className: "bg-orange-50 border-l-4 border-orange-500 p-3 rounded"
                 }, React.createElement("p", {className: "font-semibold text-gray-800"}, t.titulo),
-                    t.data_prazo && React.createElement("p", {className: "text-xs text-orange-600"}, "📅 Vence: ", new Date(t.data_prazo).toLocaleDateString("pt-BR"))
+                    t.data_prazo && React.createElement("p", {className: "text-xs text-purple-600"}, "📅 Vence: ", new Date(t.data_prazo).toLocaleDateString("pt-BR"))
                 ))
             ),
             todoPendentesNotif.length > 5 && React.createElement("p", {className: "text-sm text-gray-500 mt-2"}, "... e mais ", todoPendentesNotif.length - 5, " tarefa(s)")
@@ -21039,7 +21049,7 @@ const hideLoadingScreen = () => {
                 className: "px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-semibold"
             }, "📷 Ver foto(s)")), e.validacao_ia && React.createElement("div", {
                 className: "mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs"
-            }, React.createElement("p", { className: "font-semibold text-blue-800" }, "🤖 Resumo IA:"), React.createElement("p", { className: "text-blue-700 mt-0.5" }, (() => { try { const v = typeof e.validacao_ia === "string" ? JSON.parse(e.validacao_ia) : e.validacao_ia; return v.resumo_admin || (v.sem_ia ? "Foto não validada pela IA" : "Sem resumo"); } catch { return "Sem resumo"; } })()), (() => { try { const v = typeof e.validacao_ia === "string" ? JSON.parse(e.validacao_ia) : e.validacao_ia; return v.alertas_admin?.length > 0 ? React.createElement("p", { className: "text-orange-700 mt-1" }, "⚠️ ", v.alertas_admin.join(" | ")) : null; } catch { return null; } })(), e.tentativas_foto > 1 && React.createElement("p", { className: "text-gray-500 mt-1" }, "📷 Tentativas: ", e.tentativas_foto)),
+            }, React.createElement("p", { className: "font-semibold text-blue-800" }, "🤖 Resumo IA:"), React.createElement("p", { className: "text-blue-700 mt-0.5" }, (() => { try { const v = typeof e.validacao_ia === "string" ? JSON.parse(e.validacao_ia) : e.validacao_ia; return v.resumo_admin || (v.sem_ia ? "Foto não validada pela IA" : "Sem resumo"); } catch { return "Sem resumo"; } })()), (() => { try { const v = typeof e.validacao_ia === "string" ? JSON.parse(e.validacao_ia) : e.validacao_ia; return v.alertas_admin?.length > 0 ? React.createElement("p", { className: "text-purple-700 mt-1" }, "⚠️ ", v.alertas_admin.join(" | ")) : null; } catch { return null; } })(), e.tentativas_foto > 1 && React.createElement("p", { className: "text-gray-500 mt-1" }, "📷 Tentativas: ", e.tentativas_foto)),
             // Esconder Aprovar/Rejeitar quando contestação está aberta
             e.contestacao_status !== 'aberta' && React.createElement(React.Fragment, null, React.createElement("select", {
                 value: "",
@@ -21066,7 +21076,7 @@ const hideLoadingScreen = () => {
             // CONTESTAÇÃO - Badge + chat inline
             e.contestacao_status === 'aberta' && React.createElement("div", { className: "mt-3 p-3 bg-orange-50 border-2 border-orange-400 rounded-lg" },
                 React.createElement("div", { className: "flex items-center justify-between mb-2" },
-                    React.createElement("span", { className: "text-sm font-bold text-orange-800" }, "⚡ CONTESTAÇÃO ABERTA"),
+                    React.createElement("span", { className: "text-sm font-bold text-purple-800" }, "⚡ CONTESTAÇÃO ABERTA"),
                     React.createElement("button", {
                         onClick: async () => {
                             try {
@@ -21284,7 +21294,7 @@ const hideLoadingScreen = () => {
                     [`rankingExp_${k}`]: !p[`rankingExp_${k}`]
                 })
             }, React.createElement("div", {
-                className: "text-3xl font-bold w-12 " + (0 === i ? "text-yellow-500" : 1 === i ? "text-gray-400" : 2 === i ? "text-orange-600" : "text-gray-400")
+                className: "text-3xl font-bold w-12 " + (0 === i ? "text-yellow-500" : 1 === i ? "text-gray-400" : 2 === i ? "text-purple-600" : "text-gray-400")
             }, 0 === i ? "🥇" : 1 === i ? "🥈" : 2 === i ? "🥉" : `${i+1}º`), React.createElement("div", {
                 className: "flex-1"
             }, React.createElement("p", {
@@ -22238,13 +22248,13 @@ function ScoreAdmin({ apiUrl, showToast }) {
               else if (score >= 300) nivel = { icone: '💎', nome: 'Platina', cor: 'bg-purple-100 text-purple-700' };
               else if (score >= 250) nivel = { icone: '🥇', nome: 'Ouro', cor: 'bg-yellow-100 text-yellow-700' };
               else if (score >= 100) nivel = { icone: '🥈', nome: 'Prata', cor: 'bg-gray-200 text-gray-700' };
-              else if (score >= 80) nivel = { icone: '🥉', nome: 'Bronze', cor: 'bg-orange-100 text-orange-700' };
+              else if (score >= 80) nivel = { icone: '🥉', nome: 'Bronze', cor: 'bg-purple-100 text-purple-700' };
               
               return React.createElement('tr', { key: idx, className: 'hover:bg-gray-50 cursor-pointer',
                 onClick: async () => { const res = await fetchAuth(`${apiUrl}/score/profissional/${prof.cod_prof}`); setProfissionalSelecionado(await res.json()); }
               },
                 React.createElement('td', { className: 'px-4 py-3' },
-                  React.createElement('span', { className: `inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold ${prof.posicao === 1 ? 'bg-yellow-100 text-yellow-700' : prof.posicao === 2 ? 'bg-gray-200 text-gray-700' : prof.posicao === 3 ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-600'}` }, 
+                  React.createElement('span', { className: `inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold ${prof.posicao === 1 ? 'bg-yellow-100 text-yellow-700' : prof.posicao === 2 ? 'bg-gray-200 text-gray-700' : prof.posicao === 3 ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600'}` }, 
                     prof.posicao <= 3 ? ['🥇', '🥈', '🥉'][prof.posicao - 1] : prof.posicao)
                 ),
                 React.createElement('td', { className: 'px-4 py-3' },
@@ -22465,7 +22475,7 @@ function AuditLogs({ apiUrl, showToast }) {
       financial: 'bg-green-100 text-green-700',
       data: 'bg-yellow-100 text-yellow-700',
       config: 'bg-gray-100 text-gray-700',
-      score: 'bg-orange-100 text-orange-700',
+      score: 'bg-purple-100 text-purple-700',
       admin: 'bg-red-100 text-red-700'
     };
     return colors[cat] || 'bg-gray-100 text-gray-700';
