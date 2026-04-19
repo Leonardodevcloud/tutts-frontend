@@ -17373,37 +17373,77 @@ const hideLoadingScreen = () => {
                     
                     // Tabela por data
                     cliente767Dados.porData && cliente767Dados.porData.length > 0 && React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-4"},
-                        React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-4"}, "📅 Evolução Diária"),
+                        React.createElement("h3", {className: "font-medium text-gray-800 text-base mb-4"}, "Evolução diária"),
+                        
+                        // Gráfico de evolução de prazo
+                        React.createElement("div", {style: {position: "relative", height: "260px", marginBottom: "24px"}, ref: function(ct) {
+                            if (!ct || !window.Chart) return;
+                            var sorted = cliente767Dados.porData.slice().sort(function(a, b) { return new Date(a.data_solicitado) - new Date(b.data_solicitado); });
+                            var hash = sorted.map(function(d) { return d.taxa_prazo; }).join(",");
+                            if (ct.dataset.chartHash === hash) return;
+                            ct.dataset.chartHash = hash;
+                            ct.innerHTML = "";
+                            var cvs = document.createElement("canvas"); ct.appendChild(cvs);
+                            var labels = sorted.map(function(d) { return d.data_formatada; });
+                            var taxas = sorted.map(function(d) { return parseFloat(d.taxa_prazo) || 0; });
+                            var entregas = sorted.map(function(d) { return d.total_entregas || 0; });
+                            new Chart(cvs, {
+                                type: "bar",
+                                data: {
+                                    labels: labels,
+                                    datasets: [
+                                        { type: "line", label: "Taxa prazo (%)", data: taxas, borderColor: "#1D9E75", backgroundColor: "rgba(29,158,117,0.08)", borderWidth: 2.5, tension: 0.3, pointRadius: 3, pointHoverRadius: 6, pointBackgroundColor: "#1D9E75", pointBorderColor: "#fff", pointBorderWidth: 2, fill: true, yAxisID: "y1", order: 0 },
+                                        { type: "bar", label: "Entregas", data: entregas, backgroundColor: "#CECBF6", borderRadius: 3, borderSkipped: false, barPercentage: 0.65, yAxisID: "y", order: 1 }
+                                    ]
+                                },
+                                options: {
+                                    responsive: true, maintainAspectRatio: false,
+                                    plugins: {
+                                        legend: { display: true, position: "bottom", labels: { padding: 20, usePointStyle: true, pointStyle: "circle", font: { size: 12 } } },
+                                        tooltip: { backgroundColor: "#1e293b", padding: 10, cornerRadius: 8, callbacks: { label: function(ctx) { return ctx.dataset.label === "Taxa prazo (%)" ? " " + ctx.parsed.y.toFixed(1) + "%" : " " + ctx.parsed.y.toLocaleString("pt-BR") + " entregas"; } } }
+                                    },
+                                    scales: {
+                                        x: { grid: { display: false }, border: { display: false }, ticks: { color: "#374151", font: { size: 11 }, maxRotation: 45, autoSkip: true, maxTicksLimit: 20 } },
+                                        y: { position: "left", grid: { color: "rgba(0,0,0,0.06)" }, border: { display: false }, ticks: { color: "#374151", font: { size: 12 }, callback: function(v) { return v >= 1000 ? (v/1000).toFixed(0) + "k" : v; } }, beginAtZero: true, title: { display: true, text: "Entregas", color: "#94a3b8", font: { size: 11 } } },
+                                        y1: { position: "right", grid: { display: false }, border: { display: false }, ticks: { color: "#1D9E75", font: { size: 12 }, callback: function(v) { return v + "%"; } }, min: 80, max: 100, title: { display: true, text: "Taxa prazo", color: "#1D9E75", font: { size: 11 } } }
+                                    },
+                                    layout: { padding: { top: 8 } }
+                                }
+                            });
+                        }}),
+
+                        // Tabela ordenada por data
                         React.createElement("div", {className: "overflow-x-auto"},
-                            React.createElement("table", {className: "w-full text-xs"},
+                            React.createElement("table", {className: "w-full text-sm"},
                                 React.createElement("thead", null,
-                                    React.createElement("tr", {className: "bg-orange-50"},
-                                        React.createElement("th", {className: "px-2 py-2 text-left"}, "Data"),
-                                        React.createElement("th", {className: "px-2 py-2 text-center"}, "OS"),
-                                        React.createElement("th", {className: "px-2 py-2 text-center"}, "Entregas"),
-                                        React.createElement("th", {className: "px-2 py-2 text-center"}, "No Prazo"),
-                                        React.createElement("th", {className: "px-2 py-2 text-center"}, "Fora"),
-                                        React.createElement("th", {className: "px-2 py-2 text-center"}, "Taxa"),
-                                        React.createElement("th", {className: "px-2 py-2 text-center"}, "T.Entrega"),
-                                        React.createElement("th", {className: "px-2 py-2 text-right"}, "Valor")
+                                    React.createElement("tr", {className: "border-b border-gray-200"},
+                                        React.createElement("th", {className: "px-3 py-2.5 text-left text-gray-500 font-normal text-xs"}, "Data"),
+                                        React.createElement("th", {className: "px-3 py-2.5 text-right text-gray-500 font-normal text-xs"}, "OS"),
+                                        React.createElement("th", {className: "px-3 py-2.5 text-right text-gray-500 font-normal text-xs"}, "Entregas"),
+                                        React.createElement("th", {className: "px-3 py-2.5 text-right text-gray-500 font-normal text-xs"}, "No prazo"),
+                                        React.createElement("th", {className: "px-3 py-2.5 text-right text-gray-500 font-normal text-xs"}, "Fora"),
+                                        React.createElement("th", {className: "px-3 py-2.5 text-center text-gray-500 font-normal text-xs"}, "Taxa"),
+                                        React.createElement("th", {className: "px-3 py-2.5 text-right text-gray-500 font-normal text-xs"}, "T. entrega"),
+                                        React.createElement("th", {className: "px-3 py-2.5 text-right text-gray-500 font-normal text-xs"}, "Valor")
                                     )
                                 ),
                                 React.createElement("tbody", null,
-                                    cliente767Dados.porData.map(function(d, i) {
+                                    cliente767Dados.porData.slice().sort(function(a, b) { return new Date(a.data_solicitado) - new Date(b.data_solicitado); }).map(function(d, i) {
                                         var mins = parseFloat(d.tempo_medio_entrega)||0;
                                         var h = Math.floor(mins/60);
                                         var m = Math.floor(mins%60);
-                                        return React.createElement("tr", {key: i, className: i%2===0?"bg-white":"bg-gray-50"},
-                                            React.createElement("td", {className: "px-2 py-1 font-medium"}, d.data_formatada),
-                                            React.createElement("td", {className: "px-2 py-1 text-center font-bold text-blue-600"}, d.total_os),
-                                            React.createElement("td", {className: "px-2 py-1 text-center text-sky-600"}, d.total_entregas),
-                                            React.createElement("td", {className: "px-2 py-1 text-center text-green-600"}, d.dentro_prazo),
-                                            React.createElement("td", {className: "px-2 py-1 text-center text-red-600"}, d.fora_prazo),
-                                            React.createElement("td", {className: "px-2 py-1 text-center"},
-                                                React.createElement("span", {className: "px-1 py-0 rounded text-xs font-bold " + (parseFloat(d.taxa_prazo)>=80?"bg-green-100 text-green-700":parseFloat(d.taxa_prazo)>=60?"bg-yellow-100 text-yellow-700":"bg-red-100 text-red-700")}, d.taxa_prazo + "%")
+                                        var taxa = parseFloat(d.taxa_prazo) || 0;
+                                        return React.createElement("tr", {key: i, className: "border-b border-gray-50 hover:bg-gray-50"},
+                                            React.createElement("td", {className: "px-3 py-2 font-medium text-gray-800"}, d.data_formatada),
+                                            React.createElement("td", {className: "px-3 py-2 text-right text-gray-700"}, d.total_os),
+                                            React.createElement("td", {className: "px-3 py-2 text-right text-gray-700"}, d.total_entregas),
+                                            React.createElement("td", {className: "px-3 py-2 text-right text-gray-700"}, d.dentro_prazo),
+                                            React.createElement("td", {className: "px-3 py-2 text-right " + (d.fora_prazo > 0 ? "text-red-600" : "text-gray-400")}, d.fora_prazo),
+                                            React.createElement("td", {className: "px-3 py-2 text-center"},
+                                                React.createElement("span", {className: "px-2 py-0.5 rounded text-xs font-medium " + (taxa >= 95 ? "bg-green-50 text-green-700" : taxa >= 90 ? "bg-amber-50 text-amber-700" : "bg-red-50 text-red-700")}, d.taxa_prazo + "%")
                                             ),
-                                            React.createElement("td", {className: "px-2 py-1 text-center text-rose-600"}, String(h).padStart(2,"0")+":"+String(m).padStart(2,"0")),
-                                            React.createElement("td", {className: "px-2 py-1 text-right text-purple-600"}, "R$", parseFloat(d.valor_total||0).toLocaleString("pt-BR", {minimumFractionDigits: 0}))
+                                            React.createElement("td", {className: "px-3 py-2 text-right text-gray-600"}, String(h).padStart(2,"0")+":"+String(m).padStart(2,"0")),
+                                            React.createElement("td", {className: "px-3 py-2 text-right text-gray-700"}, "R$ ", parseFloat(d.valor_total||0).toLocaleString("pt-BR", {minimumFractionDigits: 0}))
                                         );
                                     })
                                 )
