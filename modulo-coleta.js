@@ -50,6 +50,46 @@
         });
     }
 
+    // Extrai cidade/UF "limpa" de um endereço favorito.
+    // Endereços antigos têm bug: campo `cidade` foi salvo com CEP (só dígitos).
+    // Quando isso acontece, parseamos do `endereco_completo` (formato Google:
+    // "Rua X, 123 - Bairro, Cidade - UF, CEP, País") como fallback.
+    // O parser procura o padrão "Cidade - UF" em qualquer parte (porque a rua
+    // pode conter hífen, deslocando os índices das partes).
+    function extrairCidadeUF(e) {
+      let cidade = e.cidade || '';
+      let uf = e.uf || '';
+      const parecesCEP = /^\d{5}(-?\d{3})?$/.test(cidade.trim());
+      if (!cidade || parecesCEP) {
+        cidade = '';
+        if (e.endereco_completo) {
+          const partes = e.endereco_completo.split(',').map(s => s.trim());
+          // Procura o "Cidade - UF" em qualquer parte (UF é exatamente 2 letras maiúsculas)
+          for (const parte of partes) {
+            const m = parte.match(/^(.+?)\s*-\s*([A-Z]{2})$/);
+            if (m && m[1] && !/^\d+$/.test(m[1])) { // garante que não é "12345-100"
+              cidade = m[1];
+              if (!uf) uf = m[2];
+              break;
+            }
+          }
+          // Se mesmo assim não achou, pega a parte que NÃO é CEP nem "Brasil"
+          if (!cidade) {
+            for (const parte of partes) {
+              const isCep = /^\d{5}-?\d{3}$/.test(parte);
+              const isPais = /^(Brasil|Brazil)$/i.test(parte);
+              if (!isCep && !isPais && parte.length > 2) {
+                cidade = parte;
+                break;
+              }
+            }
+          }
+        }
+      }
+      if (!cidade) return '—';
+      return cidade + (uf ? ' / ' + uf : '');
+    }
+
     window.ModuloColetaComponent = function(props) {
         const usuario = props.usuario || props.l;
         const apiUrl = props.API_URL;
@@ -1519,7 +1559,7 @@
                                             h('div', null, e.endereco_completo || (e.rua + ', ' + e.numero))
                                         ),
                                         h('td', { className: 'px-3 py-2 text-xs text-gray-600' },
-                                            (e.cidade || '—') + (e.uf ? ' / ' + e.uf : '')
+                                            extrairCidadeUF(e)
                                         ),
                                         h('td', { className: 'px-3 py-2 text-xs' },
                                             e.grupo_nome
