@@ -504,6 +504,7 @@ const SISTEMA_MODULOS_CONFIG = [
     { id: "cs", label: "Sucesso do Cliente", icon: "🤝",
       abas: [{id: "dashboard", label: "Dashboard"}, {id: "clientes", label: "Clientes"}, {id: "interacoes", label: "Interações"}, {id: "ocorrencias", label: "Ocorrências"}, {id: "agenda", label: "Agenda"}, {id: "emails", label: "Emails"}, {id: "emails-automacao", label: "Automação E-mail"}]
     },
+    { id: "coleta", label: "Coleta de Endereços", icon: "📍", abas: [] },
     { id: "config", label: "Configurações", icon: "🔧",
       abas: [{id: "usuarios", label: "Usuários"}, {id: "permissoes", label: "Permissões ADM"}, {id: "clientes-api", label: "Clientes API"}, {id: "auditoria", label: "Auditoria"}, {id: "sistema", label: "Sistema"}]
     },
@@ -14692,6 +14693,29 @@ const hideLoadingScreen = () => {
                     React.createElement("div", {className: "text-center"},
                         React.createElement("div", {className: "animate-spin w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4"}),
                         React.createElement("p", {className: "text-gray-600"}, "Carregando módulo Sucesso do Cliente...")
+                    )
+                );
+            }
+        }
+
+        // ========== MÓDULO COLETA DE ENDEREÇOS (CARREGAMENTO EXTERNO) ==========
+        // Motoboy (role='user') sempre vê este módulo. Admin também.
+        const canAccessColeta = l?.role === 'user' || l?.role === 'admin' || l?.role === 'admin_master' || hasModuleAccess(l, "coleta");
+        if (canAccessColeta && "coleta" === Ee) {
+            if (typeof window.ModuloColetaComponent !== 'undefined') {
+                return React.createElement(window.ModuloColetaComponent, {
+                    usuario: l,
+                    l: l,
+                    API_URL: API_URL,
+                    getToken: getToken,
+                    showToast: ja,
+                    ja: ja,
+                });
+            } else {
+                return React.createElement("div", {className: "min-h-screen bg-gray-50 flex items-center justify-center"},
+                    React.createElement("div", {className: "text-center"},
+                        React.createElement("div", {className: "animate-spin w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4"}),
+                        React.createElement("p", {className: "text-gray-600"}, "Carregando módulo Coleta...")
                     )
                 );
             }
