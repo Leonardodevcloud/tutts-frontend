@@ -9365,6 +9365,38 @@ const hideLoadingScreen = () => {
                     )
                 );
             }
+            // Módulo Coleta de Endereços para user (motoboy)
+            if ("coleta" === Ee) {
+                if (typeof window.ModuloColetaComponent !== 'undefined') {
+                    return React.createElement(window.ModuloColetaComponent, {
+                        usuario: l,
+                        l: l,
+                        API_URL: API_URL,
+                        getToken: getToken,
+                        showToast: ja,
+                        ja: ja,
+                        HeaderCompacto: HeaderCompacto,
+                        Toast: Toast,
+                        LoadingOverlay: LoadingOverlay,
+                        Ee: Ee,
+                        socialProfile: socialProfile,
+                        ul: ul,
+                        o: o,
+                        he: he,
+                        navegarSidebar: navegarSidebar,
+                        n: n,
+                        i: i,
+                        f: f,
+                        E: E,
+                    });
+                }
+                return React.createElement("div", { className: "min-h-screen bg-gray-50 flex items-center justify-center" },
+                    React.createElement("div", { className: "text-center" },
+                        React.createElement("div", { className: "animate-spin w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4" }),
+                        React.createElement("p", { className: "text-gray-600" }, "Carregando módulo Coleta...")
+                    )
+                );
+            }
             return React.createElement("div", {
             className: "min-h-screen bg-gray-50"
         }, i && React.createElement(Toast, i), n && React.createElement(LoadingOverlay, null), 
@@ -21023,6 +21055,22 @@ const hideLoadingScreen = () => {
                             ),
                             React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Agente RPA"),
                             React.createElement("p", {className: "text-sm text-gray-500"}, "Correção de endereços")
+                        )
+                    ),
+
+                    // Coleta de Endereços
+                    hasModuleAccess(l, "coleta") &&
+                    React.createElement("div", {
+                        onClick: () => he("coleta"),
+                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-purple-300"
+                    },
+                        React.createElement("div", {className: "h-2 bg-gradient-to-r from-purple-500 to-indigo-600"}),
+                        React.createElement("div", {className: "p-6"},
+                            React.createElement("div", {className: "w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
+                                React.createElement("span", {className: "text-3xl"}, "📍")
+                            ),
+                            React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Coleta de Endereços"),
+                            React.createElement("p", {className: "text-sm text-gray-500"}, "Cadastre e ganhe")
                         )
                     ),
                     
