@@ -26,20 +26,21 @@
     }
 
     // Comprime imagem antes de enviar: max 1280px, JPEG 75%
-    function comprimirImagem(file) {
+    function comprimirImagem(file, maxDimensao, qualidade) {
+        const MAX = maxDimensao || 1280;
+        const Q = qualidade || 0.75;
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = e => {
                 const img = new Image();
                 img.onload = () => {
-                    const MAX = 1280;
                     let w = img.width, hImg = img.height;
                     if (w > hImg && w > MAX) { hImg = Math.round(hImg * MAX / w); w = MAX; }
                     else if (hImg > MAX) { w = Math.round(w * MAX / hImg); hImg = MAX; }
                     const canvas = document.createElement('canvas');
                     canvas.width = w; canvas.height = hImg;
                     canvas.getContext('2d').drawImage(img, 0, 0, w, hImg);
-                    resolve(canvas.toDataURL('image/jpeg', 0.75));
+                    resolve(canvas.toDataURL('image/jpeg', Q));
                 };
                 img.onerror = reject;
                 img.src = e.target.result;
@@ -182,11 +183,14 @@
         const [nomeCliente, setNomeCliente] = useState('');
         const [gps, setGps] = useState(null); // { lat, lng, accuracy }
         const [capturandoGps, setCapturandoGps] = useState(false);
-        const [foto, setFoto] = useState(null); // base64
+        const [fotoNF, setFotoNF] = useState(null);            // base64 - OBRIGATÓRIA
+        const [fotoNFPreview, setFotoNFPreview] = useState(null);
+        const [foto, setFoto] = useState(null);                // base64 - fachada opcional
         const [fotoPreview, setFotoPreview] = useState(null);
         const [enviando, setEnviando] = useState(false);
-        const [resultado, setResultado] = useState(null); // resposta da api após cadastro
+        const [resultado, setResultado] = useState(null);
         const fileInputRef = useRef(null);
+        const fileInputNFRef = useRef(null);
 
         const capturarGps = () => {
             if (!navigator.geolocation) {
@@ -224,16 +228,33 @@
             }
         };
 
+        // Foto da NF: comprime menos (pra OCR ler texto pequeno melhor)
+        const selecionarFotoNF = async e => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            try {
+                const base64 = await comprimirImagem(file, 1600, 0.85); // mais resolução
+                setFotoNF(base64);
+                setFotoNFPreview(base64);
+            } catch {
+                showToast('❌ Erro ao processar foto da NF', 'error');
+            }
+        };
+
         const limparForm = () => {
-            setNomeCliente(''); setGps(null); setFoto(null); setFotoPreview(null);
+            setNomeCliente(''); setGps(null);
+            setFoto(null); setFotoPreview(null);
+            setFotoNF(null); setFotoNFPreview(null);
             setResultado(null);
             if (fileInputRef.current) fileInputRef.current.value = '';
+            if (fileInputNFRef.current) fileInputNFRef.current.value = '';
         };
 
         const enviar = async () => {
             if (!regiaoId) return showToast('Selecione uma região', 'warning');
             if (!nomeCliente.trim()) return showToast('Digite o nome do cliente', 'warning');
             if (!gps) return showToast('Capture a localização primeiro', 'warning');
+            if (!fotoNF) return showToast('📄 Foto da Nota Fiscal é obrigatória', 'warning');
 
             setEnviando(true);
             try {
@@ -244,14 +265,16 @@
                         nome_cliente: nomeCliente.trim(),
                         latitude: gps.lat,
                         longitude: gps.lng,
+                        foto_nf_base64: fotoNF,
                         foto_base64: foto
                     })
                 });
                 setResultado(resp);
                 showToast(resp.mensagem || '✅ Cadastrado!', 'success');
             } catch (err) {
-                // Erro 409 (duplicata) vem como mensagem simples; só mostramos
-                showToast('❌ ' + err.message, 'error');
+                // Backend retorna `motivo` em alguns erros (NF inválida, duplicata)
+                const detalhe = (err && err.body && (err.body.motivo || err.body.error)) || err.message;
+                showToast('❌ ' + detalhe, 'error');
             } finally {
                 setEnviando(false);
             }
@@ -260,6 +283,7 @@
         // Tela de resultado pós-cadastro
         if (resultado) {
             const aprovado = resultado.auto_aprovado;
+            const dn = resultado.dados_nf || {};
             return h('div', { className: 'max-w-md mx-auto p-4' },
                 h('div', {
                     className: 'rounded-xl p-6 text-center ' +
@@ -270,12 +294,31 @@
                         aprovado ? 'Aprovado Automaticamente!' : 'Em Análise'
                     ),
                     h('div', { className: 'text-sm text-gray-700 mb-3' }, resultado.mensagem),
-                    resultado.confianca > 0 && h('div', { className: 'text-xs text-gray-600 mb-1' },
-                        'Confiança IA: ', h('strong', null, resultado.confianca + '%')
+                    resultado.confianca > 0 && h('div', { className: 'text-xs text-gray-600 mb-2' },
+                        'Confiança: ', h('strong', null, resultado.confianca + '%')
                     ),
-                    resultado.match_google && h('div', { className: 'text-xs text-gray-600 mb-3' },
-                        'Google encontrou: "', h('strong', null, resultado.match_google.nome), '"'
+
+                    // Mostra qual critério aprovou (quando aplicável)
+                    resultado.caminho_aprovacao && h('div', { className: 'bg-white border border-green-300 rounded-lg p-2 mb-3 text-xs text-left' },
+                        h('div', { className: 'font-bold text-green-700 mb-1' }, '🎯 Aprovado por:'),
+                        resultado.caminho_aprovacao === 'fachada' && '📷 Fachada confirmada pelo Google',
+                        resultado.caminho_aprovacao === 'endereco_nf' &&
+                            ('📍 Endereço da NF bate com sua localização' +
+                                (resultado.scores?.distancia_nf_metros !== null
+                                    ? ' (' + resultado.scores.distancia_nf_metros + 'm)' : '')),
+                        resultado.caminho_aprovacao === 'nome_match' && '🔗 Nome da NF bate com a fachada'
                     ),
+
+                    // Dados extraídos da NF
+                    (dn.cnpj_formatado || dn.razao_social) && h('div', { className: 'bg-white border border-gray-200 rounded-lg p-3 mb-3 text-left' },
+                        h('div', { className: 'text-xs font-bold text-gray-500 uppercase mb-2' }, '📄 Extraído da NF'),
+                        dn.razao_social && h('div', { className: 'text-sm font-medium text-gray-800' }, dn.razao_social),
+                        dn.nome_fantasia && dn.nome_fantasia !== dn.razao_social &&
+                            h('div', { className: 'text-xs text-gray-600' }, dn.nome_fantasia),
+                        dn.cnpj_formatado && h('div', { className: 'text-xs text-gray-500 font-mono mt-1' }, dn.cnpj_formatado),
+                        dn.numero_nf && h('div', { className: 'text-xs text-gray-500' }, 'NF nº ', dn.numero_nf)
+                    ),
+
                     h('div', {
                         className: 'text-lg font-bold mb-4 ' + (aprovado ? 'text-green-700' : 'text-blue-700')
                     },
@@ -350,10 +393,45 @@
                 }, capturandoGps ? '⏳ Capturando...' : '📍 Capturar localização atual')
             ),
 
-            // Foto
+            // Foto da NF (OBRIGATÓRIA — em destaque)
+            h('div', { className: 'bg-white rounded-xl shadow p-4 border-2 ' + (fotoNF ? 'border-green-300' : 'border-orange-300') },
+                h('div', { className: 'flex items-center justify-between mb-2' },
+                    h('label', { className: 'text-xs font-bold text-gray-700 uppercase' }, '📄 Nota Fiscal *'),
+                    h('span', { className: 'text-xs px-2 py-0.5 rounded-full ' + (fotoNF ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700 font-bold') },
+                        fotoNF ? '✅ Anexada' : 'OBRIGATÓRIA'
+                    )
+                ),
+                h('div', { className: 'text-xs text-gray-600 mb-2' }, 'Foto da NF, DANFE ou cupom fiscal — usada pra extrair CNPJ e razão social do estabelecimento.'),
+                fotoNFPreview ? h('div', { className: 'space-y-2' },
+                    h('img', { src: fotoNFPreview, className: 'w-full rounded-lg max-h-72 object-contain bg-gray-50' }),
+                    h('button', {
+                        onClick: () => { setFotoNF(null); setFotoNFPreview(null); if (fileInputNFRef.current) fileInputNFRef.current.value = ''; },
+                        className: 'w-full py-2 border border-red-300 text-red-700 rounded-lg text-sm'
+                    }, '🗑️ Remover NF')
+                ) : h('div', null,
+                    h('input', {
+                        type: 'file',
+                        accept: 'image/*',
+                        capture: 'environment',
+                        ref: fileInputNFRef,
+                        onChange: selecionarFotoNF,
+                        className: 'hidden',
+                        id: 'foto-nf'
+                    }),
+                    h('label', {
+                        htmlFor: 'foto-nf',
+                        className: 'block w-full py-3 border-2 border-dashed border-orange-400 bg-orange-50 rounded-lg text-center text-orange-800 font-medium cursor-pointer hover:bg-orange-100'
+                    }, '📄 Tirar foto da Nota Fiscal')
+                )
+            ),
+
+            // Foto da Fachada (OPCIONAL)
             h('div', { className: 'bg-white rounded-xl shadow p-4' },
-                h('label', { className: 'text-xs font-bold text-gray-600 uppercase mb-1 block' }, '📸 Foto da Fachada (opcional)'),
-                h('div', { className: 'text-xs text-gray-500 mb-2' }, 'Com foto, aumenta a chance de aprovação automática'),
+                h('div', { className: 'flex items-center justify-between mb-1' },
+                    h('label', { className: 'text-xs font-bold text-gray-600 uppercase' }, '📸 Foto da Fachada'),
+                    h('span', { className: 'text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600' }, 'Opcional')
+                ),
+                h('div', { className: 'text-xs text-gray-500 mb-2' }, 'Com a fachada, sua chance de aprovação automática aumenta.'),
                 fotoPreview ? h('div', { className: 'space-y-2' },
                     h('img', { src: fotoPreview, className: 'w-full rounded-lg max-h-60 object-cover' }),
                     h('button', {
@@ -380,9 +458,9 @@
             // Enviar
             h('button', {
                 onClick: enviar,
-                disabled: enviando || !regiaoId || !nomeCliente.trim() || !gps,
+                disabled: enviando || !regiaoId || !nomeCliente.trim() || !gps || !fotoNF,
                 className: 'w-full py-4 bg-green-600 text-white rounded-xl font-bold shadow-lg hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed'
-            }, enviando ? '⏳ Enviando...' : '✅ Enviar Cadastro')
+            }, enviando ? '⏳ Analisando NF...' : '✅ Enviar Cadastro')
         );
     }
 
@@ -577,6 +655,7 @@
                 h('div', { className: 'flex gap-1 p-1' },
                     [
                         { id: 'fila', label: '⏳ Fila de Validação' },
+                        { id: 'cadastrados', label: '📚 Cadastrados' },
                         { id: 'regioes', label: '🌎 Regiões' },
                         { id: 'stats', label: '📊 Estatísticas' }
                     ].map(t => h('button', {
@@ -588,6 +667,7 @@
                 )
             ),
             tab === 'fila' && h(AdminFila, { fetchApi, showToast }),
+            tab === 'cadastrados' && h(AdminCadastrados, { fetchApi, showToast }),
             tab === 'regioes' && h(AdminRegioes, { fetchApi, showToast }),
             tab === 'stats' && h(AdminStats, { fetchApi, showToast })
         );
@@ -599,6 +679,8 @@
         const [loading, setLoading] = useState(true);
         const [detalhe, setDetalhe] = useState(null);
         const [fotoAtual, setFotoAtual] = useState(null);
+        const [fotoNFAtual, setFotoNFAtual] = useState(null);
+        const [tabFoto, setTabFoto] = useState('nf'); // 'nf' | 'fachada'
         const [nomeEdit, setNomeEdit] = useState('');
         const [acao, setAcao] = useState(''); // 'rejeitando'
         const [motivoRejeicao, setMotivoRejeicao] = useState('');
@@ -618,12 +700,16 @@
             setDetalhe(p);
             setNomeEdit(p.nome_cliente);
             setFotoAtual(null);
+            setFotoNFAtual(null);
+            setTabFoto(p.tem_foto_nf ? 'nf' : (p.tem_foto ? 'fachada' : 'nf'));
             setAcao(''); setMotivoRejeicao('');
             if (p.tem_foto) {
-                try {
-                    const r = await fetchApi('/admin/coleta/fila/' + p.id + '/foto');
-                    setFotoAtual(r.foto);
-                } catch {}
+                fetchApi('/admin/coleta/fila/' + p.id + '/foto')
+                    .then(r => setFotoAtual(r.foto)).catch(() => {});
+            }
+            if (p.tem_foto_nf) {
+                fetchApi('/admin/coleta/fila/' + p.id + '/foto-nf')
+                    .then(r => setFotoNFAtual(r.foto)).catch(() => {});
             }
         };
 
@@ -664,7 +750,7 @@
                 h('table', { className: 'w-full' },
                     h('thead', { className: 'bg-gray-50 border-b' },
                         h('tr', null,
-                            ['Motoboy', 'Nome cliente', 'Região', 'Confiança', 'Foto', 'Data', ''].map(l =>
+                            ['Motoboy', 'Nome cliente', 'CNPJ', 'Região', 'Endereço', 'Confiança', 'Anexos', 'Data', ''].map(l =>
                                 h('th', { key: l, className: 'text-left px-3 py-2 text-xs font-medium text-gray-600' }, l)
                             )
                         )
@@ -672,8 +758,22 @@
                     h('tbody', null,
                         pendentes.map(p => h('tr', { key: p.id, className: 'border-b hover:bg-gray-50' },
                             h('td', { className: 'px-3 py-2 text-sm' }, p.motoboy_nome || p.cod_profissional),
-                            h('td', { className: 'px-3 py-2 text-sm font-medium' }, p.nome_cliente),
+                            h('td', { className: 'px-3 py-2 text-sm font-medium' },
+                                p.nome_cliente,
+                                p.razao_social && p.razao_social !== p.nome_cliente &&
+                                    h('div', { className: 'text-xs text-gray-500 font-normal' }, p.razao_social)
+                            ),
+                            h('td', { className: 'px-3 py-2 text-xs font-mono text-gray-700' },
+                                p.cnpj
+                                    ? p.cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5')
+                                    : h('span', { className: 'text-gray-400 italic' }, '—')
+                            ),
                             h('td', { className: 'px-3 py-2 text-xs text-gray-600' }, p.regiao_nome),
+                            h('td', { className: 'px-3 py-2 text-xs text-gray-700 max-w-[240px]', title: p.endereco_formatado || '' },
+                                p.endereco_formatado
+                                    ? h('div', { className: 'truncate' }, '📍 ' + p.endereco_formatado)
+                                    : h('span', { className: 'text-gray-400 italic' }, 'Sem endereço')
+                            ),
                             h('td', { className: 'px-3 py-2 text-sm' },
                                 h('span', {
                                     className: 'px-2 py-0.5 rounded text-xs font-medium ' +
@@ -682,7 +782,16 @@
                                          'bg-red-100 text-red-700')
                                 }, p.confianca_ia + '%')
                             ),
-                            h('td', { className: 'px-3 py-2 text-sm' }, p.tem_foto ? '📷' : '—'),
+                            h('td', { className: 'px-3 py-2 text-sm' },
+                                h('div', { className: 'flex gap-1' },
+                                    p.tem_foto_nf
+                                        ? h('span', { title: 'Tem nota fiscal' }, '📄')
+                                        : h('span', { className: 'text-gray-300', title: 'Sem NF' }, '·'),
+                                    p.tem_foto
+                                        ? h('span', { title: 'Tem foto da fachada' }, '📷')
+                                        : h('span', { className: 'text-gray-300', title: 'Sem fachada' }, '·')
+                                )
+                            ),
                             h('td', { className: 'px-3 py-2 text-xs text-gray-500' },
                                 new Date(p.criado_em).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
                             ),
@@ -712,8 +821,28 @@
                     ),
                     h('div', { className: 'grid md:grid-cols-2 gap-4' },
                         h('div', null,
-                            fotoAtual ? h('img', { src: fotoAtual, className: 'w-full rounded-lg' })
-                            : h('div', { className: 'bg-gray-100 rounded-lg h-64 flex items-center justify-center text-gray-400 text-sm' }, 'Sem foto')
+                            // Tabs entre NF e Fachada
+                            h('div', { className: 'flex gap-1 mb-2 bg-gray-100 p-1 rounded-lg' },
+                                h('button', {
+                                    onClick: () => setTabFoto('nf'),
+                                    className: 'flex-1 px-2 py-1 rounded text-xs font-medium ' +
+                                        (tabFoto === 'nf' ? 'bg-white shadow text-gray-900' : 'text-gray-600')
+                                }, '📄 Nota Fiscal' + (detalhe.tem_foto_nf ? '' : ' (sem)')),
+                                h('button', {
+                                    onClick: () => setTabFoto('fachada'),
+                                    className: 'flex-1 px-2 py-1 rounded text-xs font-medium ' +
+                                        (tabFoto === 'fachada' ? 'bg-white shadow text-gray-900' : 'text-gray-600')
+                                }, '📷 Fachada' + (detalhe.tem_foto ? '' : ' (sem)'))
+                            ),
+                            tabFoto === 'nf'
+                                ? (fotoNFAtual
+                                    ? h('img', { src: fotoNFAtual, className: 'w-full rounded-lg max-h-[500px] object-contain bg-gray-50' })
+                                    : h('div', { className: 'bg-gray-100 rounded-lg h-64 flex items-center justify-center text-gray-400 text-sm' },
+                                        detalhe.tem_foto_nf ? '⏳ Carregando NF...' : 'Sem foto da NF'))
+                                : (fotoAtual
+                                    ? h('img', { src: fotoAtual, className: 'w-full rounded-lg max-h-[500px] object-contain bg-gray-50' })
+                                    : h('div', { className: 'bg-gray-100 rounded-lg h-64 flex items-center justify-center text-gray-400 text-sm' },
+                                        detalhe.tem_foto ? '⏳ Carregando fachada...' : 'Sem foto da fachada'))
                         ),
                         h('div', { className: 'space-y-3' },
                             h('div', null,
@@ -734,8 +863,29 @@
                                     className: 'w-full px-2 py-1 border rounded text-sm mt-0.5'
                                 })
                             ),
+
+                            // Card com dados extraídos da NF
+                            (detalhe.cnpj || detalhe.razao_social || detalhe.numero_nf) && h('div', {
+                                className: 'bg-orange-50 border border-orange-200 rounded-lg p-2'
+                            },
+                                h('div', { className: 'text-xs font-bold text-orange-800 uppercase mb-1' }, '📄 Extraído da NF'),
+                                detalhe.razao_social && h('div', { className: 'text-sm font-medium text-gray-800' }, detalhe.razao_social),
+                                detalhe.nome_fantasia && detalhe.nome_fantasia !== detalhe.razao_social &&
+                                    h('div', { className: 'text-xs text-gray-600' }, '↳ ', detalhe.nome_fantasia),
+                                detalhe.cnpj && h('div', { className: 'text-xs text-gray-700 font-mono mt-1' },
+                                    'CNPJ: ', detalhe.cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5')
+                                ),
+                                detalhe.numero_nf && h('div', { className: 'text-xs text-gray-600' }, 'NF nº ', detalhe.numero_nf),
+                                detalhe.endereco_nf && h('div', { className: 'text-xs text-gray-600 mt-1' },
+                                    h('span', { className: 'text-gray-500' }, 'End. NF: '), detalhe.endereco_nf
+                                ),
+                                detalhe.cidade_nf && h('div', { className: 'text-xs text-gray-600' },
+                                    h('span', { className: 'text-gray-500' }, 'Cidade NF: '), detalhe.cidade_nf
+                                )
+                            ),
+
                             h('div', null,
-                                h('div', { className: 'text-xs text-gray-500' }, 'Localização'),
+                                h('div', { className: 'text-xs text-gray-500' }, 'Localização (GPS)'),
                                 h('div', { className: 'text-sm font-mono' }, detalhe.latitude + ', ' + detalhe.longitude),
                                 h('a', {
                                     href: `https://www.google.com/maps/search/?api=1&query=${detalhe.latitude},${detalhe.longitude}`,
@@ -744,7 +894,7 @@
                                 }, '🗺️ Ver no Google Maps')
                             ),
                             h('div', null,
-                                h('div', { className: 'text-xs text-gray-500' }, 'Endereço formatado (Google)'),
+                                h('div', { className: 'text-xs text-gray-500' }, 'Endereço formatado (Google reverse)'),
                                 h('div', { className: 'text-sm' }, detalhe.endereco_formatado || '(Google não retornou)')
                             ),
                             h('div', null,
@@ -753,7 +903,7 @@
                                     'Confiança: ', h('strong', null, detalhe.confianca_ia + '%')
                                 ),
                                 detalhe.match_google && h('div', { className: 'text-xs text-gray-600 mt-1' },
-                                    'Match: "', detalhe.match_google.nome || '-', '"'
+                                    'Match fachada: "', detalhe.match_google.nome || '-', '"'
                                 )
                             )
                         )
@@ -1200,6 +1350,359 @@
                     ),
                     filtrados.length === 0 && h('div', { className: 'text-center py-4 text-gray-400 text-sm' },
                         'Nenhum resultado no filtro'
+                    )
+                )
+            )
+        );
+    }
+
+    // ==================== ADMIN - ENDEREÇOS CADASTRADOS (CRUD) ====================
+    function AdminCadastrados({ fetchApi, showToast }) {
+        const [enderecos, setEnderecos] = useState([]);
+        const [grupos, setGrupos] = useState([]);
+        const [loading, setLoading] = useState(true);
+        const [filtros, setFiltros] = useState({ q: '', grupo_id: '', origem: '' });
+        const [editando, setEditando] = useState(null);
+        const [confirmarExclusao, setConfirmarExclusao] = useState(null);
+
+        const carregar = async () => {
+            setLoading(true);
+            try {
+                const params = new URLSearchParams();
+                if (filtros.q) params.set('q', filtros.q);
+                if (filtros.grupo_id) params.set('grupo_id', filtros.grupo_id);
+                if (filtros.origem) params.set('origem', filtros.origem);
+                const r = await fetchApi('/admin/coleta/enderecos-cadastrados?' + params.toString());
+                setEnderecos(r);
+            } catch (err) { showToast('❌ ' + err.message, 'error'); }
+            setLoading(false);
+        };
+
+        useEffect(() => {
+            fetchApi('/admin/coleta/grupos-enderecos').then(setGrupos).catch(() => {});
+            carregar();
+        }, []);
+
+        const aplicarFiltros = (e) => { e.preventDefault(); carregar(); };
+
+        const salvarEdicao = async () => {
+            try {
+                await fetchApi('/admin/coleta/enderecos-cadastrados/' + editando.id, {
+                    method: 'PATCH',
+                    body: JSON.stringify({
+                        apelido: editando.apelido,
+                        endereco_completo: editando.endereco_completo,
+                        rua: editando.rua,
+                        numero: editando.numero,
+                        bairro: editando.bairro,
+                        cidade: editando.cidade,
+                        uf: editando.uf,
+                        cep: editando.cep,
+                        grupo_enderecos_id: editando.grupo_enderecos_id ? parseInt(editando.grupo_enderecos_id) : null
+                    })
+                });
+                showToast('✅ Salvo', 'success');
+                setEditando(null);
+                carregar();
+            } catch (err) { showToast('❌ ' + err.message, 'error'); }
+        };
+
+        const excluir = async (id) => {
+            try {
+                await fetchApi('/admin/coleta/enderecos-cadastrados/' + id, { method: 'DELETE' });
+                showToast('🗑️ Excluído', 'success');
+                setConfirmarExclusao(null);
+                carregar();
+            } catch (err) { showToast('❌ ' + err.message, 'error'); }
+        };
+
+        const totalMotoboy = enderecos.filter(e => e.origem === 'motoboy').length;
+        const totalCliente = enderecos.filter(e => e.origem === 'cliente').length;
+
+        return h('div', null,
+            // Banner de explicação
+            h('div', { className: 'bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 text-sm text-blue-800' },
+                h('strong', null, 'ℹ️ Todos os endereços cadastrados no sistema. '),
+                'Endereços com origem 🏍️ vieram da Coleta colaborativa (motoboys). Origem 🏢 são favoritos cadastrados manualmente por clientes.'
+            ),
+
+            // Filtros
+            h('form', { onSubmit: aplicarFiltros, className: 'bg-white rounded-lg shadow p-3 mb-4 flex flex-wrap gap-2 items-end' },
+                h('div', { className: 'flex-1 min-w-[200px]' },
+                    h('label', { className: 'text-xs font-medium text-gray-600 block mb-1' }, '🔍 Buscar'),
+                    h('input', {
+                        type: 'text', value: filtros.q,
+                        onChange: e => setFiltros({ ...filtros, q: e.target.value }),
+                        placeholder: 'Nome, endereço, rua, bairro...',
+                        className: 'w-full px-3 py-1.5 border rounded text-sm'
+                    })
+                ),
+                h('div', null,
+                    h('label', { className: 'text-xs font-medium text-gray-600 block mb-1' }, '📚 Grupo'),
+                    h('select', {
+                        value: filtros.grupo_id,
+                        onChange: e => setFiltros({ ...filtros, grupo_id: e.target.value }),
+                        className: 'px-3 py-1.5 border rounded text-sm bg-white'
+                    },
+                        h('option', { value: '' }, 'Todos os grupos'),
+                        grupos.map(g => h('option', { key: g.id, value: g.id }, g.nome + ' (' + g.total_enderecos + ')'))
+                    )
+                ),
+                h('div', null,
+                    h('label', { className: 'text-xs font-medium text-gray-600 block mb-1' }, '👤 Origem'),
+                    h('select', {
+                        value: filtros.origem,
+                        onChange: e => setFiltros({ ...filtros, origem: e.target.value }),
+                        className: 'px-3 py-1.5 border rounded text-sm bg-white'
+                    },
+                        h('option', { value: '' }, 'Todas'),
+                        h('option', { value: 'motoboy' }, '🏍️ Motoboy'),
+                        h('option', { value: 'cliente' }, '🏢 Cliente')
+                    )
+                ),
+                h('button', {
+                    type: 'submit',
+                    className: 'px-4 py-1.5 bg-purple-600 text-white rounded text-sm font-medium hover:bg-purple-700'
+                }, 'Filtrar')
+            ),
+
+            // Resumo
+            h('div', { className: 'flex gap-3 mb-4 text-sm' },
+                h('div', { className: 'bg-white px-3 py-2 rounded shadow flex-1' },
+                    h('span', { className: 'text-gray-500' }, 'Total: '),
+                    h('strong', null, enderecos.length)
+                ),
+                h('div', { className: 'bg-purple-50 px-3 py-2 rounded shadow flex-1' },
+                    h('span', { className: 'text-purple-700' }, '🏍️ Motoboy: '),
+                    h('strong', null, totalMotoboy)
+                ),
+                h('div', { className: 'bg-blue-50 px-3 py-2 rounded shadow flex-1' },
+                    h('span', { className: 'text-blue-700' }, '🏢 Cliente: '),
+                    h('strong', null, totalCliente)
+                )
+            ),
+
+            // Tabela
+            loading
+                ? h('div', { className: 'text-center py-8 text-gray-500' }, 'Carregando...')
+                : enderecos.length === 0
+                    ? h('div', { className: 'bg-white rounded-lg shadow p-8 text-center text-gray-500' }, 'Nenhum endereço encontrado')
+                    : h('div', { className: 'bg-white rounded-lg shadow overflow-hidden' },
+                        h('div', { className: 'overflow-x-auto' },
+                            h('table', { className: 'w-full' },
+                                h('thead', { className: 'bg-gray-50 border-b' },
+                                    h('tr', null,
+                                        ['Origem', 'Cliente/Apelido', 'CNPJ', 'Endereço', 'Cidade/UF', 'Grupo', 'Cadastrado por', 'Usos', ''].map(l =>
+                                            h('th', { key: l, className: 'text-left px-3 py-2 text-xs font-medium text-gray-600' }, l)
+                                        )
+                                    )
+                                ),
+                                h('tbody', null,
+                                    enderecos.map(e => h('tr', { key: e.id, className: 'border-b hover:bg-gray-50' },
+                                        h('td', { className: 'px-3 py-2 text-lg' },
+                                            h('span', { title: e.origem === 'motoboy' ? 'Cadastrado pela Coleta' : 'Favorito de cliente' },
+                                                e.origem === 'motoboy' ? '🏍️' : '🏢'
+                                            )
+                                        ),
+                                        h('td', { className: 'px-3 py-2 text-sm font-medium' },
+                                            e.apelido || '—',
+                                            e.razao_social && e.razao_social !== e.apelido &&
+                                                h('div', { className: 'text-xs text-gray-500 font-normal' }, e.razao_social),
+                                            e.cliente_nome && h('div', { className: 'text-xs text-gray-500' }, e.cliente_nome)
+                                        ),
+                                        h('td', { className: 'px-3 py-2 text-xs font-mono text-gray-700' },
+                                            e.cnpj
+                                                ? e.cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5')
+                                                : h('span', { className: 'text-gray-400 italic' }, '—')
+                                        ),
+                                        h('td', { className: 'px-3 py-2 text-xs text-gray-700 max-w-[240px]', title: e.endereco_completo },
+                                            h('div', { className: 'truncate' }, e.endereco_completo || (e.rua + ', ' + e.numero))
+                                        ),
+                                        h('td', { className: 'px-3 py-2 text-xs text-gray-600' },
+                                            (e.cidade || '—') + (e.uf ? ' / ' + e.uf : '')
+                                        ),
+                                        h('td', { className: 'px-3 py-2 text-xs' },
+                                            e.grupo_nome
+                                                ? h('div', null,
+                                                    h('span', { className: 'font-medium text-purple-700' }, e.grupo_nome),
+                                                    h('div', { className: 'text-gray-500' }, e.clientes_no_grupo + ' cliente(s) veem')
+                                                )
+                                                : h('span', { className: 'text-gray-400' }, 'Sem grupo')
+                                        ),
+                                        h('td', { className: 'px-3 py-2 text-xs text-gray-600' },
+                                            e.motoboy_nome || (e.cliente_nome ? 'Cliente' : '—')
+                                        ),
+                                        h('td', { className: 'px-3 py-2 text-xs text-gray-600' },
+                                            h('div', null, (e.vezes_usado || 0) + 'x'),
+                                            e.ultimo_uso && h('div', { className: 'text-gray-400 text-xs' },
+                                                new Date(e.ultimo_uso).toLocaleDateString('pt-BR')
+                                            )
+                                        ),
+                                        h('td', { className: 'px-3 py-2' },
+                                            h('div', { className: 'flex gap-1' },
+                                                h('button', {
+                                                    onClick: () => setEditando({ ...e }),
+                                                    className: 'px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200'
+                                                }, '✏️'),
+                                                h('button', {
+                                                    onClick: () => setConfirmarExclusao(e),
+                                                    className: 'px-2 py-1 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200'
+                                                }, '🗑️')
+                                            )
+                                        )
+                                    ))
+                                )
+                            )
+                        )
+                    ),
+
+            // Modal Editar
+            editando && h('div', {
+                onClick: () => setEditando(null),
+                className: 'fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4'
+            },
+                h('div', {
+                    onClick: e => e.stopPropagation(),
+                    className: 'bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto'
+                },
+                    h('div', { className: 'flex items-center justify-between p-4 border-b' },
+                        h('div', null,
+                            h('h3', { className: 'font-bold text-lg' }, '✏️ Editar Endereço'),
+                            h('p', { className: 'text-xs text-gray-500' }, 'ID #' + editando.id + ' · Origem: ' + (editando.origem === 'motoboy' ? '🏍️ Coleta' : '🏢 Cliente'))
+                        ),
+                        h('button', { onClick: () => setEditando(null), className: 'text-gray-400 hover:text-gray-600 text-xl' }, '×')
+                    ),
+                    h('div', { className: 'p-4 space-y-3' },
+                        h('div', null,
+                            h('label', { className: 'text-xs font-medium text-gray-600' }, 'Apelido / Nome'),
+                            h('input', {
+                                type: 'text', value: editando.apelido || '',
+                                onChange: e => setEditando({ ...editando, apelido: e.target.value }),
+                                className: 'w-full px-3 py-2 border rounded text-sm mt-1'
+                            })
+                        ),
+                        h('div', null,
+                            h('label', { className: 'text-xs font-medium text-gray-600' }, 'Endereço completo'),
+                            h('input', {
+                                type: 'text', value: editando.endereco_completo || '',
+                                onChange: e => setEditando({ ...editando, endereco_completo: e.target.value }),
+                                className: 'w-full px-3 py-2 border rounded text-sm mt-1'
+                            })
+                        ),
+                        h('div', { className: 'grid grid-cols-3 gap-2' },
+                            h('div', { className: 'col-span-2' },
+                                h('label', { className: 'text-xs font-medium text-gray-600' }, 'Rua'),
+                                h('input', {
+                                    type: 'text', value: editando.rua || '',
+                                    onChange: e => setEditando({ ...editando, rua: e.target.value }),
+                                    className: 'w-full px-3 py-2 border rounded text-sm mt-1'
+                                })
+                            ),
+                            h('div', null,
+                                h('label', { className: 'text-xs font-medium text-gray-600' }, 'Número'),
+                                h('input', {
+                                    type: 'text', value: editando.numero || '',
+                                    onChange: e => setEditando({ ...editando, numero: e.target.value }),
+                                    className: 'w-full px-3 py-2 border rounded text-sm mt-1'
+                                })
+                            )
+                        ),
+                        h('div', { className: 'grid grid-cols-2 gap-2' },
+                            h('div', null,
+                                h('label', { className: 'text-xs font-medium text-gray-600' }, 'Bairro'),
+                                h('input', {
+                                    type: 'text', value: editando.bairro || '',
+                                    onChange: e => setEditando({ ...editando, bairro: e.target.value }),
+                                    className: 'w-full px-3 py-2 border rounded text-sm mt-1'
+                                })
+                            ),
+                            h('div', null,
+                                h('label', { className: 'text-xs font-medium text-gray-600' }, 'CEP'),
+                                h('input', {
+                                    type: 'text', value: editando.cep || '',
+                                    onChange: e => setEditando({ ...editando, cep: e.target.value }),
+                                    className: 'w-full px-3 py-2 border rounded text-sm mt-1'
+                                })
+                            )
+                        ),
+                        h('div', { className: 'grid grid-cols-3 gap-2' },
+                            h('div', { className: 'col-span-2' },
+                                h('label', { className: 'text-xs font-medium text-gray-600' }, 'Cidade'),
+                                h('input', {
+                                    type: 'text', value: editando.cidade || '',
+                                    onChange: e => setEditando({ ...editando, cidade: e.target.value }),
+                                    className: 'w-full px-3 py-2 border rounded text-sm mt-1'
+                                })
+                            ),
+                            h('div', null,
+                                h('label', { className: 'text-xs font-medium text-gray-600' }, 'UF'),
+                                h('input', {
+                                    type: 'text', value: editando.uf || '', maxLength: 2,
+                                    onChange: e => setEditando({ ...editando, uf: e.target.value.toUpperCase() }),
+                                    className: 'w-full px-3 py-2 border rounded text-sm mt-1 uppercase'
+                                })
+                            )
+                        ),
+                        h('div', null,
+                            h('label', { className: 'text-xs font-medium text-gray-600' }, 'Grupo de Endereços'),
+                            h('select', {
+                                value: editando.grupo_enderecos_id || '',
+                                onChange: e => setEditando({ ...editando, grupo_enderecos_id: e.target.value }),
+                                className: 'w-full px-3 py-2 border rounded text-sm bg-white mt-1'
+                            },
+                                h('option', { value: '' }, '— Sem grupo —'),
+                                grupos.map(g => h('option', { key: g.id, value: g.id }, g.nome + ' (' + g.total_clientes + ' clientes)'))
+                            )
+                        ),
+                        editando.latitude && h('div', { className: 'text-xs text-gray-500 bg-gray-50 px-3 py-2 rounded' },
+                            'GPS: ', editando.latitude, ', ', editando.longitude,
+                            ' · ',
+                            h('a', {
+                                href: `https://www.google.com/maps?q=${editando.latitude},${editando.longitude}`,
+                                target: '_blank',
+                                className: 'text-purple-600 underline'
+                            }, 'Ver no Maps')
+                        )
+                    ),
+                    h('div', { className: 'flex gap-2 p-4 border-t' },
+                        h('button', {
+                            onClick: () => setEditando(null),
+                            className: 'flex-1 px-4 py-2 bg-gray-100 rounded font-medium text-sm'
+                        }, 'Cancelar'),
+                        h('button', {
+                            onClick: salvarEdicao,
+                            className: 'flex-1 px-4 py-2 bg-purple-600 text-white rounded font-medium text-sm'
+                        }, '💾 Salvar')
+                    )
+                )
+            ),
+
+            // Confirmação de exclusão
+            confirmarExclusao && h('div', {
+                onClick: () => setConfirmarExclusao(null),
+                className: 'fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4'
+            },
+                h('div', {
+                    onClick: e => e.stopPropagation(),
+                    className: 'bg-white rounded-xl shadow-xl max-w-md w-full p-6'
+                },
+                    h('div', { className: 'text-4xl mb-3 text-center' }, '⚠️'),
+                    h('h3', { className: 'text-lg font-bold text-center mb-2' }, 'Excluir endereço?'),
+                    h('p', { className: 'text-sm text-gray-600 text-center mb-1' }, h('strong', null, confirmarExclusao.apelido)),
+                    h('p', { className: 'text-xs text-gray-500 text-center mb-4' }, confirmarExclusao.endereco_completo),
+                    h('div', { className: 'bg-yellow-50 border border-yellow-200 rounded p-2 text-xs text-yellow-800 mb-4' },
+                        'Esta ação não pode ser desfeita. ',
+                        confirmarExclusao.origem === 'motoboy' && 'O motoboy continua com o ganho — não é estornado.'
+                    ),
+                    h('div', { className: 'flex gap-2' },
+                        h('button', {
+                            onClick: () => setConfirmarExclusao(null),
+                            className: 'flex-1 px-4 py-2 bg-gray-100 rounded font-medium text-sm'
+                        }, 'Cancelar'),
+                        h('button', {
+                            onClick: () => excluir(confirmarExclusao.id),
+                            className: 'flex-1 px-4 py-2 bg-red-600 text-white rounded font-medium text-sm'
+                        }, '🗑️ Excluir')
                     )
                 )
             )
