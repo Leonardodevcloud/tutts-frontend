@@ -20853,7 +20853,7 @@ const hideLoadingScreen = () => {
             ))),
             
             // Conteúdo Principal
-            React.createElement("div", {className: "max-w-4xl mx-auto px-4 py-12"},
+            React.createElement("div", {className: "max-w-6xl mx-auto px-4 py-12"},
                 // Saudação
                 React.createElement("div", {className: "text-center mb-12"},
                     React.createElement("h1", {
@@ -20867,7 +20867,7 @@ const hideLoadingScreen = () => {
                 ),
                 
                 // Botões de Acesso Rápido
-                React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-3 gap-6"},
+                React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6"},
                     // Solicitações
                     hasModuleAccess(l, "solicitacoes") &&
                     React.createElement("div", {
@@ -20881,6 +20881,22 @@ const hideLoadingScreen = () => {
                             ),
                             React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Solicitações"),
                             React.createElement("p", {className: "text-sm text-gray-500"}, "Gerencie pedidos e ajustes")
+                        )
+                    ),
+
+                    // Coleta de Endereços (colaborativa — motoboys cadastram, IA valida)
+                    hasModuleAccess(l, "coleta") &&
+                    React.createElement("div", {
+                        onClick: () => he("coleta"),
+                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-purple-300"
+                    },
+                        React.createElement("div", {className: "h-2 bg-gradient-to-r from-purple-500 to-indigo-600"}),
+                        React.createElement("div", {className: "p-6"},
+                            React.createElement("div", {className: "w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
+                                React.createElement("span", {className: "text-3xl"}, "📍")
+                            ),
+                            React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Coleta de Endereços"),
+                            React.createElement("p", {className: "text-sm text-gray-500"}, "Base colaborativa")
                         )
                     ),
                     
