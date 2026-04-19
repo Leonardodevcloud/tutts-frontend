@@ -2410,7 +2410,7 @@ const hideLoadingScreen = () => {
         [cliente767Dados, setCliente767Dados] = useState(null),
         [cliente767Loading, setCliente767Loading] = useState(false),
         [cliente767ModalFiltro, setCliente767ModalFiltro] = useState(false),
-        [cliente767Filtros, setCliente767Filtros] = useState({ data_inicio: '', data_fim: '', centros_custo: [] }),
+        [cliente767Filtros, setCliente767Filtros] = useState(function() { var h = new Date(); return { data_inicio: new Date(h.getFullYear(), h.getMonth(), 1).toISOString().split('T')[0], data_fim: new Date(h.getFullYear(), h.getMonth() + 1, 0).toISOString().split('T')[0], centros_custo: [] }; }()),
         // Estados do Relatório IA (Gemini)
         [relatorioIATipos, setRelatorioIATipos] = useState([]), // Array de tipos selecionados
         [relatorioIALoading, setRelatorioIALoading] = useState(false),
@@ -17218,7 +17218,7 @@ const hideLoadingScreen = () => {
                             
                             // Botão Limpar Tudo
                             React.createElement("button", {
-                                onClick: function() { setCliente767Filtros({ data_inicio: '', data_fim: '', centros_custo: [] }); },
+                                onClick: function() { var h = new Date(); setCliente767Filtros({ data_inicio: new Date(h.getFullYear(), h.getMonth(), 1).toISOString().split('T')[0], data_fim: new Date(h.getFullYear(), h.getMonth() + 1, 0).toISOString().split('T')[0], centros_custo: [] }); },
                                 className: "w-full px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200"
                             }, "🗑️ Limpar Todos os Filtros")
                         ),
