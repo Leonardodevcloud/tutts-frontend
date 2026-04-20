@@ -1180,11 +1180,61 @@
                 finalizarAdicaoPonto(criarPontoDeSugestao(sug));
             };
             
-            // Confirmar número digitado manualmente e adicionar o ponto
-            const confirmarNumeroManual = () => {
+            // Confirmar número digitado manualmente — re-busca no Google com o número para pegar coordenadas corretas
+            const confirmarNumeroManual = async () => {
                 const num = (aguardandoNumero.numero || '').trim();
                 if (!num) { showToast('Digite o número ou marque S/N', 'warning'); return; }
-                finalizarAdicaoPonto(criarPontoDeSugestao(aguardandoNumero.sugestao, num));
+                
+                const sug = aguardandoNumero.sugestao;
+                const comp = sug.componentes || [];
+                const rua = comp.find(c => c.types?.includes('route'))?.long_name || '';
+                const cidade = comp.find(c => c.types?.includes('administrative_area_level_2'))?.long_name || comp.find(c => c.types?.includes('locality'))?.long_name || '';
+                const bairro = comp.find(c => c.types?.includes('sublocality_level_1'))?.long_name || comp.find(c => c.types?.includes('sublocality'))?.long_name || '';
+                const uf = comp.find(c => c.types?.includes('administrative_area_level_1'))?.short_name || '';
+                
+                // Monta busca com número: "Rua X, 1072 - Bairro, Cidade - UF"
+                const buscaComNumero = `${rua}, ${num}${bairro ? ' - ' + bairro : ''}${cidade ? ', ' + cidade : ''}${uf ? ' - ' + uf : ''}`;
+                console.log('🔢 Re-buscando com número:', buscaComNumero);
+                
+                showToast('🔍 Buscando endereço com nº ' + num + '...', 'info');
+                
+                try {
+                    const resp = await fetch(`${API_URL}/api/geocode/google?endereco=${encodeURIComponent(buscaComNumero)}`);
+                    if (resp.ok) {
+                        const data = await resp.json();
+                        if (data.results?.length > 0) {
+                            // Google encontrou o endereço com número — usar resultado novo
+                            const resultado = data.results[0];
+                            console.log('✅ Google retornou com número:', resultado.endereco, resultado.latitude, resultado.longitude);
+                            finalizarAdicaoPonto({
+                                id: Date.now(),
+                                endereco_completo: resultado.endereco,
+                                rua: rua,
+                                numero: num,
+                                complemento: '',
+                                bairro: bairro,
+                                cidade: cidade,
+                                uf: uf,
+                                cep: resultado.componentes?.find(c => c.types?.includes('postal_code'))?.long_name || '',
+                                latitude: resultado.latitude,
+                                longitude: resultado.longitude,
+                                observacao: '',
+                                telefone: '',
+                                procurar_por: '',
+                                numero_nota: '',
+                                codigo_finalizar: '',
+                                numero_manual: true
+                            });
+                            return;
+                        }
+                    }
+                } catch (err) {
+                    console.error('Erro ao re-buscar com número:', err);
+                }
+                
+                // Fallback: Google não encontrou com número — usar endereço original + número visual
+                console.log('⚠️ Google não encontrou com número, usando original + número manual');
+                finalizarAdicaoPonto(criarPontoDeSugestao(sug, num));
             };
             
             // Marcar como S/N (sem número) — ainda assim adiciona o ponto
