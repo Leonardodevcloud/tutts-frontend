@@ -1108,9 +1108,21 @@
                 let enderecoFinal = sug.endereco || '';
                 if (numeroOverride && numeroOverride !== 'S/N' && !get('street_number')) {
                     // Insere o número após a rua no endereço formatado
+                    // Tenta match com nome completo e abreviado (Google abrevia "Rua" → "R.")
                     const rua = get('route');
-                    if (rua && enderecoFinal.startsWith(rua)) {
-                        enderecoFinal = `${rua}, ${numeroOverride}${enderecoFinal.substring(rua.length)}`;
+                    const ruaShort = getS('route');
+                    if (rua && enderecoFinal.includes(rua)) {
+                        enderecoFinal = enderecoFinal.replace(rua, `${rua}, ${numeroOverride}`);
+                    } else if (ruaShort && enderecoFinal.includes(ruaShort)) {
+                        enderecoFinal = enderecoFinal.replace(ruaShort, `${ruaShort}, ${numeroOverride}`);
+                    } else {
+                        // Fallback: insere após o primeiro " -" ou no início
+                        const dashIdx = enderecoFinal.indexOf(' -');
+                        if (dashIdx > 0) {
+                            enderecoFinal = enderecoFinal.substring(0, dashIdx) + ', ' + numeroOverride + enderecoFinal.substring(dashIdx);
+                        } else {
+                            enderecoFinal = enderecoFinal + ', ' + numeroOverride;
+                        }
                     }
                 }
                 return {
@@ -1578,6 +1590,7 @@
                                                         <div className="flex-1 min-w-0">
                                                             {pontos[0].apelido_salvo && <div className="text-xs text-amber-600 font-medium">⭐ {pontos[0].apelido_salvo}</div>}
                                                             <div className="text-xs font-medium break-words">{pontos[0].endereco_completo || `${pontos[0].rua}, ${pontos[0].numero}`}</div>
+                                                            {pontos[0].numero_manual && pontos[0].numero && <div className="text-xs text-purple-600 font-medium">🔢 Nº {pontos[0].numero}</div>}
                                                             {pontos[0].complemento && <div className="text-xs text-amber-700">🏠 {pontos[0].complemento}</div>}
                                                             {pontos[0].bairro && <div className="text-xs text-gray-500">{pontos[0].bairro}, {pontos[0].cidade}</div>}
                                                             {pontos[0].numero_nota && <div className="text-xs text-amber-600">🏷️ {pontos[0].numero_nota}</div>}
@@ -1666,6 +1679,7 @@
                                                                 <div className="flex-1 min-w-0">
                                                                     {p.apelido_salvo && <div className="text-xs text-blue-600 font-medium">⭐ {p.apelido_salvo}</div>}
                                                                     <div className="text-xs font-medium break-words">{p.endereco_completo || `${p.rua}, ${p.numero}`}</div>
+                                                                    {p.numero_manual && p.numero && <div className="text-xs text-purple-600 font-medium">🔢 Nº {p.numero}</div>}
                                                                     {p.complemento && <div className="text-xs text-blue-700">🏠 {p.complemento}</div>}
                                                                     {p.bairro && <div className="text-xs text-gray-500 break-words">{p.bairro}</div>}
                                                                     {p.numero_nota && <div className="text-xs text-green-600 font-medium">🏷️ Nota: {p.numero_nota}</div>}
