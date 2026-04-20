@@ -1395,7 +1395,7 @@
             const statusPontoIcons = { pendente: '⚪', chegou: '🔵', coletado: '🟡', finalizado: '✅' };
             
             const formatarData = (d) => d ? new Date(d).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
-            const formatarHora = (d) => d ? new Date(d).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '';
+            const formatarHora = (d) => d ? new Date(d).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Bahia' }) : '';
             const contarPontos = (corrida) => { const total = corrida.total_pontos || 0; return { coletas: 1, entregas: Math.max(0, total - 1) }; };
             
             // Analisa o estado completo da corrida e retorna uma mensagem descritiva.
@@ -2166,7 +2166,7 @@
                                                                     )}
                                                                 </td>
                                                                 <td className="px-3 py-3"><span className={`px-2 py-1 rounded-full text-xs font-medium ${c.status === 'finalizado' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{c.status === 'finalizado' ? '✅ Finalizada' : '❌ Cancelada'}</span></td>
-                                                                <td className="px-3 py-3 text-gray-600">{new Date(c.criado_em).toLocaleDateString('pt-BR')} {new Date(c.criado_em).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}</td>
+                                                                <td className="px-3 py-3 text-gray-600">{new Date(c.criado_em).toLocaleDateString('pt-BR')} {new Date(c.criado_em).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit', timeZone: 'America/Bahia'})}</td>
                                                                 <td className="px-3 py-3">{c.profissional_nome || <span className="text-gray-400">-</span>}</td>
                                                                 <td className="px-3 py-3 text-center">{c.total_pontos || '-'}</td>
                                                                 <td className="px-3 py-3">{c.tutts_distancia ? `${c.tutts_distancia} km` : '-'}</td>
@@ -2280,9 +2280,9 @@
                                                                                                             <div className="mt-2 pt-2 border-t border-gray-200">
                                                                                                                 <div className="text-xs text-gray-500 mb-1">⏱️ Horários:</div>
                                                                                                                 <div className="flex flex-wrap gap-3 text-xs">
-                                                                                                                    {p.data_chegada && <span className="text-blue-600">🔵 Chegou: {new Date(p.data_chegada).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}</span>}
-                                                                                                                    {p.data_coletado && <span className="text-yellow-600">🟡 Coletou: {new Date(p.data_coletado).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}</span>}
-                                                                                                                    {p.data_finalizado && <span className="text-green-600">✅ Finalizado: {new Date(p.data_finalizado).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}</span>}
+                                                                                                                    {p.data_chegada && <span className="text-blue-600">🔵 Chegou: {new Date(p.data_chegada).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit', timeZone: 'America/Bahia'})}</span>}
+                                                                                                                    {p.data_coletado && <span className="text-yellow-600">🟡 Coletou: {new Date(p.data_coletado).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit', timeZone: 'America/Bahia'})}</span>}
+                                                                                                                    {p.data_finalizado && <span className="text-green-600">✅ Finalizado: {new Date(p.data_finalizado).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit', timeZone: 'America/Bahia'})}</span>}
                                                                                                                 </div>
                                                                                                             </div>
                                                                                                         )}
