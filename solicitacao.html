@@ -1417,10 +1417,12 @@
                 }
                 
                 // Para 'aceito' e 'em_andamento', olhamos os pontos
-                let pontos = corrida.dados_pontos;
+                // Prioridade: pontos (do detalhe) > pontos_status (do historico) > dados_pontos (webhook/sync)
+                let pontos = corrida.pontos || corrida.pontos_status || corrida.dados_pontos;
                 if (pontos && typeof pontos === 'string') {
                     try { pontos = JSON.parse(pontos); } catch { pontos = null; }
                 }
+                if (!Array.isArray(pontos)) pontos = null;
                 
                 // Normaliza status de cada ponto nos dois formatos possíveis (webhook + sync)
                 const normalizar = (p) => {
