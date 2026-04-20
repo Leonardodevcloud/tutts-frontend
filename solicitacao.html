@@ -566,7 +566,7 @@
                 // Carregar imediatamente ao entrar na aba
                 carregarCorridasAtivas();
                 
-                // Sincronizar com Tutts a cada 30 segundos
+                // Sincronizar com Tutts a cada 15 segundos
                 const intervalSync = setInterval(async () => {
                     try {
                         const resp = await fetch(`${API_URL}/api/solicitacao/sincronizar`, { 
@@ -580,13 +580,13 @@
                             if (corridaSelecionada) carregarDetalheCorrida(corridaSelecionada);
                         }
                     } catch (err) {}
-                }, 30000);
+                }, 15000);
                 
-                // Atualizar lista local a cada 10 segundos
+                // Atualizar lista local a cada 5 segundos
                 const intervalLocal = setInterval(() => { 
                     carregarCorridasAtivas(); 
                     if (corridaSelecionada) carregarDetalheCorrida(corridaSelecionada); 
-                }, 10000);
+                }, 5000);
                 
                 return () => {
                     clearInterval(intervalSync);
