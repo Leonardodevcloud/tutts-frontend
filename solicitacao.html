@@ -1254,7 +1254,8 @@
             };
             
             const salvarEdicaoPonto = () => { const n = [...pontos]; n[pontoEditando] = { ...n[pontoEditando], ...dadosPonto }; setPontos(n); setPontoEditando(null); showToast('✅ Salvo', 'success'); };
-            const salvarPartidaPadrao = async () => { if (pontos.length === 0) return; try { await fetch(`${API_URL}/api/solicitacao/configuracoes`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ endereco_partida_padrao: pontos[0] }) }); showToast('✅ Salvo!', 'success'); } catch {} };
+            const salvarPartidaPadrao = async () => { if (pontos.length === 0) return; try { await fetch(`${API_URL}/api/solicitacao/configuracoes`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ endereco_partida_padrao: pontos[0] }) }); setCliente(prev => ({...prev, endereco_partida_padrao: pontos[0]})); showToast('✅ Salvo como padrão!', 'success'); } catch {} };
+            const removerPartidaPadrao = async () => { try { await fetch(`${API_URL}/api/solicitacao/configuracoes`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ endereco_partida_padrao: null, limpar_endereco_padrao: true }) }); setCliente(prev => ({...prev, endereco_partida_padrao: null})); showToast('Padrão removido', 'success'); } catch {} };
             const limpar = () => { if (cliente.endereco_partida_padrao) setPontos([{ id: Date.now(), ...cliente.endereco_partida_padrao, isPartida: true }]); else setPontos([]); setSugestoes([]); setTermoBusca(''); setPontoRecemAdicionado(null); setNotaRapida(''); };
             
             const enviarSolicitacao = async () => {
@@ -1511,7 +1512,14 @@
                                         <div className="bg-gradient-to-r from-amber-50 to-yellow-50 rounded-xl shadow border-2 border-amber-300 p-3">
                                             <div className="flex items-center justify-between mb-2">
                                                 <span className="text-sm font-bold text-amber-800">📦 PONTO DE COLETA</span>
-                                                {pontos.length > 0 && pontos[0] && <button onClick={salvarPartidaPadrao} className="text-xs text-amber-600 hover:text-amber-800 font-medium">⭐ Padrão</button>}
+                                                {pontos.length > 0 && pontos[0] && (
+                                                    cliente.endereco_partida_padrao ? 
+                                                        React.createElement('div', {className: 'flex items-center gap-1'},
+                                                            React.createElement('span', {className: 'text-xs text-green-600 font-medium'}, '✅ Padrão'),
+                                                            React.createElement('button', {onClick: removerPartidaPadrao, className: 'text-xs text-red-400 hover:text-red-600 font-medium', title: 'Remover padrão'}, '✕')
+                                                        )
+                                                    : <button onClick={salvarPartidaPadrao} className="text-xs text-amber-600 hover:text-amber-800 font-medium">⭐ Salvar como padrão</button>
+                                                )}
                                             </div>
                                             {pontos.length === 0 || !pontos[0] ? (
                                                 <div>
@@ -1581,7 +1589,7 @@
                                                                 <button onClick={() => { setModalSalvarEndereco({ aberto: true, ponto: pontos[0] }); setApelidoSalvar(''); setComplementoSalvar(pontos[0].complemento || ''); }} className="text-gray-400 hover:text-green-600 text-sm" title="Salvar endereço">💾</button>
                                                             )}
                                                             <button onClick={() => abrirEdicaoPonto(0)} className="text-gray-400 hover:text-amber-600 text-sm">✏️</button>
-                                                            <button onClick={() => removerPonto(pontos[0].id)} className="text-gray-400 hover:text-red-600">✕</button>
+                                                            <button onClick={() => removerPonto(pontos[0].id)} className="text-red-500 hover:text-red-700 font-bold">✕</button>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1596,6 +1604,7 @@
                                             </div>
                                             {pontos.length > 0 && (
                                                 <div className="mb-2">
+                                                    <div className="text-xs text-purple-600 mb-1.5 cursor-pointer hover:text-purple-800" onClick={() => { setDrawerEnderecos(true); carregarTodosEnderecos(); }}>📚 Clique aqui para usar endereços já cadastrados</div>
                                                     <div className="flex gap-2">
                                                         <input type="text" value={termoBusca} onChange={(e) => setTermoBusca(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && buscarEndereco()} className="flex-1 px-3 py-2 border rounded-lg text-sm outline-none" placeholder="Digite apelido ou endereço..." />
                                                         <button onClick={buscarEndereco} disabled={buscando} className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm" title="Buscar no Google">{buscando ? '...' : '🔍'}</button>
@@ -1668,7 +1677,7 @@
                                                                         <button onClick={(e) => { e.stopPropagation(); setModalSalvarEndereco({ aberto: true, ponto: p }); setApelidoSalvar(''); setComplementoSalvar(p.complemento || ''); }} className="text-gray-400 hover:text-green-600 text-sm" title="Salvar endereço">💾</button>
                                                                     )}
                                                                     <button onClick={() => abrirEdicaoPonto(idx + 1)} className="text-gray-400 hover:text-blue-600 text-sm">✏️</button>
-                                                                    <button onClick={() => removerPonto(p.id)} className="text-gray-400 hover:text-red-600">✕</button>
+                                                                    <button onClick={() => removerPonto(p.id)} className="text-red-500 hover:text-red-700 font-bold">✕</button>
                                                                 </div>
                                                             </div>
                                                         </div>
