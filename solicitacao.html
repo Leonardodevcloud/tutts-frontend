@@ -127,6 +127,7 @@
             const mapRef = useRef(null);
             const mapInstanceRef = useRef(null);
             const markersLayerRef = useRef(null);
+            const lastPontosHash = useRef('');
             
             useEffect(() => {
                 if (typeof L === 'undefined') return;
@@ -138,6 +139,7 @@
                 const markersLayer = L.layerGroup().addTo(map);
                 mapInstanceRef.current = map;
                 markersLayerRef.current = markersLayer;
+                lastPontosHash.current = '';
                 setTimeout(() => { if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize(); }, 100);
                 return () => { if (mapInstanceRef.current) { mapInstanceRef.current.remove(); mapInstanceRef.current = null; } };
             }, [id]);
@@ -189,7 +191,15 @@
                         .catch(() => { /* mantém a linha reta se o OSRM falhar */ });
                 }
                 
-                if (pontosValidos.length > 0) { const bounds = L.latLngBounds(pontosValidos.map(p => [p.latitude, p.longitude])); map.fitBounds(bounds, { padding: [50, 50] }); }
+                if (pontosValidos.length > 0) {
+                    // Só re-ajusta zoom se os pontos realmente mudaram (evita reset ao polling)
+                    const hash = pontosValidos.map(p => `${p.latitude},${p.longitude},${p.status||''}`).join('|');
+                    if (hash !== lastPontosHash.current) {
+                        lastPontosHash.current = hash;
+                        const bounds = L.latLngBounds(pontosValidos.map(p => [p.latitude, p.longitude]));
+                        map.fitBounds(bounds, { padding: [50, 50] });
+                    }
+                }
                 setTimeout(() => map.invalidateSize(), 50);
             }, [pontos, tipo]);
             
@@ -2192,7 +2202,7 @@
                                                         })}
                                                     </div>
                                                 </div>
-                                                <div className="flex-1" style={{position:'sticky',top:'80px',alignSelf:'flex-start',height:'calc(100vh - 120px)'}}><MapaLeaflet key={`acompanhar-${mapaKey}-${corridaSelecionada}`} id={`mapa-acompanhar-${corridaSelecionada}`} pontos={detalheCorrida.pontos} height="100%" tipo="acompanhar" /></div>
+                                                <div className="flex-1" style={{position:'sticky',top:'270px',alignSelf:'flex-start',height:'calc(100vh - 290px)'}}><MapaLeaflet key={`acompanhar-${mapaKey}-${corridaSelecionada}`} id={`mapa-acompanhar-${corridaSelecionada}`} pontos={detalheCorrida.pontos} height="100%" tipo="acompanhar" /></div>
                                             </div>
                                         </div>
                                     )}
