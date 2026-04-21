@@ -28,6 +28,13 @@
         .map-container { position: relative; z-index: 1; }
         @keyframes slideDown { from { opacity: 0; max-height: 0; } to { opacity: 1; max-height: 500px; } }
         .slide-down { animation: slideDown 0.3s ease-out forwards; }
+        @keyframes confirmIn { from { opacity: 0; transform: scale(0.8) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+        @keyframes checkPop { 0% { transform: scale(0); } 50% { transform: scale(1.3); } 100% { transform: scale(1); } }
+        @keyframes progressShrink { from { width: 100%; } to { width: 0%; } }
+        @keyframes confettiFall { 0% { opacity: 1; transform: translateY(0) rotate(0deg); } 100% { opacity: 0; transform: translateY(200px) rotate(720deg); } }
+        .confirm-card { animation: confirmIn 0.4s ease-out; }
+        .confirm-check { animation: checkPop 0.5s ease-out 0.2s both; }
+        .confirm-progress { animation: progressShrink 4s linear forwards; }
         .foto-modal { z-index: 9999 !important; }
     </style>
 </head>
@@ -393,6 +400,7 @@
             const [pontoEditando, setPontoEditando] = useState(null);
             const [dadosPonto, setDadosPonto] = useState({ observacao: '', telefone: '', procurar_por: '', nome_fantasia: '', numero_nota: '', codigo_finalizar: '', complemento: '' });
             const [corridasAtivas, setCorridasAtivas] = useState([]);
+            const [confirmacaoOS, setConfirmacaoOS] = useState(null); // { os, coleta, entrega, motoboy }
             const [corridaSelecionada, setCorridaSelecionada] = useState(null);
             const [detalheCorrida, setDetalheCorrida] = useState(null);
             const [corridasConcluidas, setCorridasConcluidas] = useState([]);
@@ -1163,6 +1171,9 @@
                     setNotaRapida('');
                 }
                 
+                // Forçar re-render do mapa para auto-fit nos novos pontos
+                setMapaKey(prev => prev + 1);
+                
                 // Perguntar se quer ajustar a posição no mapa
                 setPromptAjuste({ aberto: true, pontoId: novoPonto.id });
                 
@@ -1424,8 +1435,14 @@
                     const resp = await fetch(`${API_URL}/api/solicitacao/corrida`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(payload) });
                     const data = await resp.json();
                     if (resp.ok) { 
-                        const motoboy = config.codigo_profissional ? profissionais.find(p => p.codigo === config.codigo_profissional)?.nome : null; 
-                        showToast(`✅ OS: ${data.os_numero}${motoboy ? ` → ${motoboy}` : ''}${data.modo_teste ? ' (TESTE)' : ''}`, 'success'); 
+                        const motoboy = config.codigo_profissional ? profissionais.find(p => p.codigo === config.codigo_profissional)?.nome : null;
+                        // Extrair endereços para o modal de confirmação
+                        const coletaEnd = pontos[0]?.endereco_completo || pontos[0]?.bairro || 'Coleta';
+                        const entregaEnd = pontos.length > 1 ? (pontos[1]?.endereco_completo || pontos[1]?.bairro || 'Entrega') : 'Entrega';
+                        // Abrir modal de confirmação
+                        setConfirmacaoOS({ os: data.os_numero, coleta: coletaEnd, entrega: entregaEnd, motoboy: motoboy, teste: data.modo_teste });
+                        // Auto-close em 4s
+                        setTimeout(() => setConfirmacaoOS(null), 4000);
                         limpar(); 
                         setConfig(prev => ({ ...prev, codigo_profissional: '' })); 
                         carregarHistorico(); 
@@ -3016,6 +3033,65 @@
                                         ))}
                                     </div>
                                 )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Modal de confirmação de OS lançada */}
+                    {confirmacaoOS && (
+                        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={() => setConfirmacaoOS(null)}>
+                            <div className="confirm-card relative" onClick={e => e.stopPropagation()} style={{width: '360px'}}>
+                                {/* Confetti */}
+                                <div style={{position:'absolute',top:0,left:0,right:0,bottom:0,pointerEvents:'none',overflow:'hidden',borderRadius:'16px'}} ref={el => {
+                                    if (!el || el.dataset.done) return; el.dataset.done='1';
+                                    const cores=['#10b981','#3b82f6','#f59e0b','#8b5cf6','#ef4444','#ec4899'];
+                                    for(let i=0;i<35;i++){const p=document.createElement('div');p.style.cssText=`position:absolute;width:${4+Math.random()*6}px;height:${4+Math.random()*6}px;border-radius:${Math.random()>0.5?'50%':'2px'};background:${cores[Math.floor(Math.random()*cores.length)]};left:${15+Math.random()*70}%;top:20%;animation:confettiFall ${1.2+Math.random()*1}s ease-out ${Math.random()*0.5}s forwards;`;el.appendChild(p);}
+                                }}></div>
+                                
+                                {/* Header verde */}
+                                <div style={{background:'linear-gradient(135deg,#10b981,#059669)',padding:'20px 24px',textAlign:'center',borderRadius:'16px 16px 0 0'}}>
+                                    <div className="confirm-check" style={{width:'48px',height:'48px',background:'rgba(255,255,255,0.25)',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 10px'}}>
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                    </div>
+                                    <div style={{fontSize:'16px',fontWeight:'600',color:'white',marginBottom:'2px'}}>Corrida lançada!</div>
+                                    <div style={{fontSize:'26px',fontWeight:'700',color:'white',letterSpacing:'0.5px'}}>OS #{confirmacaoOS.os}</div>
+                                    {confirmacaoOS.teste && <div style={{background:'rgba(255,255,255,0.25)',color:'white',fontSize:'11px',padding:'2px 10px',borderRadius:'10px',display:'inline-block',marginTop:'6px'}}>MODO TESTE</div>}
+                                </div>
+                                
+                                {/* Rota */}
+                                <div style={{padding:'16px 24px',background:'white',borderRadius:'0 0 16px 16px'}}>
+                                    <div style={{display:'flex',alignItems:'center',gap:'10px',marginBottom:'10px'}}>
+                                        <div style={{width:'28px',height:'28px',borderRadius:'50%',background:'#fef3c7',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'13px',flexShrink:0}}>📦</div>
+                                        <div style={{minWidth:0}}>
+                                            <div style={{fontSize:'11px',color:'#9ca3af'}}>Coleta</div>
+                                            <div style={{fontSize:'13px',fontWeight:'500',color:'#111',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',maxWidth:'260px'}}>{confirmacaoOS.coleta?.split(',').slice(0,2).join(',') || 'Coleta'}</div>
+                                        </div>
+                                    </div>
+                                    <div style={{borderLeft:'2px dashed #e5e7eb',height:'14px',marginLeft:'14px'}}></div>
+                                    <div style={{display:'flex',alignItems:'center',gap:'10px',marginBottom:'14px'}}>
+                                        <div style={{width:'28px',height:'28px',borderRadius:'50%',background:'#dbeafe',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'13px',flexShrink:0}}>📍</div>
+                                        <div style={{minWidth:0}}>
+                                            <div style={{fontSize:'11px',color:'#9ca3af'}}>Entrega</div>
+                                            <div style={{fontSize:'13px',fontWeight:'500',color:'#111',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',maxWidth:'260px'}}>{confirmacaoOS.entrega?.split(',').slice(0,2).join(',') || 'Entrega'}</div>
+                                        </div>
+                                    </div>
+                                    {confirmacaoOS.motoboy && (
+                                        <div style={{background:'#f8fafc',borderRadius:'8px',padding:'8px 12px',display:'flex',alignItems:'center',gap:'8px'}}>
+                                            <span style={{fontSize:'16px'}}>🏍️</span>
+                                            <span style={{fontSize:'13px',fontWeight:'500',color:'#111'}}>{confirmacaoOS.motoboy}</span>
+                                        </div>
+                                    )}
+                                    {!confirmacaoOS.motoboy && (
+                                        <div style={{background:'#f8fafc',borderRadius:'8px',padding:'8px 12px',display:'flex',alignItems:'center',gap:'8px'}}>
+                                            <span style={{fontSize:'16px'}}>🚀</span>
+                                            <span style={{fontSize:'13px',fontWeight:'500',color:'#111'}}>Disparada para a plataforma</span>
+                                        </div>
+                                    )}
+                                </div>
+                                {/* Progress bar */}
+                                <div style={{height:'3px',background:'#e5e7eb',borderRadius:'0 0 16px 16px',overflow:'hidden'}}>
+                                    <div className="confirm-progress" style={{height:'100%',background:'#10b981'}}></div>
+                                </div>
                             </div>
                         </div>
                     )}
