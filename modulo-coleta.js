@@ -1456,11 +1456,7 @@
         const buscarEnderecoGoogle = async (texto) => {
             if (!texto || texto.length < 5) return;
             try {
-                const resp = await fetch(API_URL + '/api/geocode/google?endereco=' + encodeURIComponent(texto), {
-                    headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('token') || '') }
-                });
-                if (!resp.ok) return;
-                const data = await resp.json();
+                const data = await fetchApi('/geocode/google?endereco=' + encodeURIComponent(texto));
                 if (data.results && data.results.length > 0) {
                     const r = data.results[0];
                     const comp = r.componentes || [];
@@ -1475,24 +1471,27 @@
                         uf: (comp.find(c => c.types && c.types.includes('administrative_area_level_1')) || {}).short_name || prev.uf,
                         cep: get('postal_code') || prev.cep,
                         latitude: r.latitude,
-                        longitude: r.longitude,
-                        _mapCenter: [r.latitude, r.longitude]
+                        longitude: r.longitude
                     }));
+                    // Mover mapa para o ponto encontrado
+                    var containers = document.querySelectorAll('[data-map-init]');
+                    containers.forEach(function(c) {
+                        if (c._map && c._marker) {
+                            c._map.setView([r.latitude, r.longitude], 16);
+                            c._marker.setLatLng([r.latitude, r.longitude]);
+                        }
+                    });
                     showToast('📍 Endereço localizado', 'success');
                 } else {
                     showToast('⚠️ Endereço não encontrado', 'warning');
                 }
-            } catch (err) { showToast('❌ Erro na busca', 'error'); }
+            } catch (err) { showToast('❌ ' + err.message, 'error'); }
         };
 
         // Reverse geocode from map coordinates
         const reverseGeocode = async (lat, lng) => {
             try {
-                const resp = await fetch(API_URL + '/api/geocode/google?endereco=' + encodeURIComponent(lat + ',' + lng), {
-                    headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('token') || '') }
-                });
-                if (!resp.ok) return;
-                const data = await resp.json();
+                const data = await fetchApi('/geocode/google?endereco=' + encodeURIComponent(lat + ',' + lng));
                 if (data.results && data.results.length > 0) {
                     const r = data.results[0];
                     const comp = r.componentes || [];
@@ -1734,22 +1733,7 @@
                                         target: '_blank',
                                         className: 'text-purple-600 underline text-xs'
                                     }, 'Google Maps')
-                                ),
-                                editando._mapCenter && h('div', {
-                                    ref: function(el) {
-                                        if (!el || el.dataset.done) return;
-                                        el.dataset.done = '1';
-                                        var containers = el.parentNode.querySelectorAll('[data-map-init]');
-                                        containers.forEach(function(c) {
-                                            if (c._map && c._marker) {
-                                                var ll = [editando._mapCenter[0], editando._mapCenter[1]];
-                                                c._map.setView(ll, 16);
-                                                c._marker.setLatLng(ll);
-                                            }
-                                        });
-                                    },
-                                    style: { display: 'none' }
-                                })
+                                )
                             ),
                             // Coluna direita: Campos
                             h('div', { className: 'space-y-2' },
