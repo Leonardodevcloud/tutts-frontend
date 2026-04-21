@@ -35,6 +35,8 @@
     var _ex = _u(false), exportando = _ex[0], setExportando = _ex[1];
     var _rg = _u([]), regioes = _rg[0], setRegioes = _rg[1];
     var _apc = _u('filtros'), abaPreChat = _apc[0], setAbaPreChat = _apc[1];
+    var _dc = _u(''), dadosContexto = _dc[0], setDadosContexto = _dc[1];
+    var _pcl = _u(false), preCarregando = _pcl[0], setPreCarregando = _pcl[1];
     var _at = _u('instrucoes'), abaTreinar = _at[0], setAbaTreinar = _at[1];
     var _ctx = _u([]), contextos = _ctx[0], setContextos = _ctx[1];
     var _ctxl = _u(false), contextosLoading = _ctxl[0], setContextosLoading = _ctxl[1];
@@ -63,7 +65,7 @@
     function enviar(to) {
       var p = (to || input).trim(); if (!p || loading) return; setInput(''); setLoading(true);
       setMsgs(function(prev) { return [].concat(prev, [{ prompt: p, loading: true }]); });
-      fetchAuth(apiUrl + '/bi/chat-ia', { method: 'POST', body: JSON.stringify({ prompt: p, historico: msgs.map(function(m) { return { prompt: m.prompt, resposta: m.resposta }; }), filtros: filtros, conversa_id: conversaAtual }) }).then(function(r) { return r.json(); }).then(function(data) {
+      fetchAuth(apiUrl + '/bi/chat-ia', { method: 'POST', body: JSON.stringify({ prompt: p, historico: msgs.map(function(m) { return { prompt: m.prompt, resposta: m.resposta }; }), filtros: filtros, conversa_id: conversaAtual, dados_contexto: dadosContexto }) }).then(function(r) { return r.json(); }).then(function(data) {
         var resp = data.resposta || 'Erro', _c = [], _t; var cr = /\[CHART\]\s*\n?([\s\S]*?)\n?\[\/CHART\]/g, cm;
         while ((cm = cr.exec(resp)) !== null) { try { _c.push(JSON.parse(cm[1].trim())); } catch(e) {} }
         _t = resp.replace(/\[CHART\]\s*\n?[\s\S]*?\n?\[\/CHART\]/g, '\n__CHART__\n').split('__CHART__');
@@ -174,7 +176,7 @@
             el('button', { onClick: function() { setSidebarAberta(!sidebarAberta); if (!sidebarAberta) { setConversasLoading(true); fetchAuth(apiUrl + '/bi/chat-ia/conversas').then(function(r) { return r.json(); }).then(function(d) { setConversas(d.conversas || []); setConversasLoading(false); }).catch(function() { setConversasLoading(false); }); } }, className: 'px-3 py-2 bg-white/15 rounded-xl text-sm hover:bg-white/25 ring-1 ring-white/10' }, '📂 Conversas'),
             msgs.length > 0 && el('button', { onClick: function() { setExportando(true); fetchAuth(apiUrl + '/bi/chat-ia/exportar', { method: 'POST', body: JSON.stringify({ mensagens: msgs.map(function(m) { return { prompt: m.prompt, resposta: m.resposta }; }), filtros: filtros }) }).then(function(r) { return r.blob(); }).then(function(b) { var u = URL.createObjectURL(b), a = document.createElement('a'); a.href = u; a.download = 'chat-ia-' + new Date().toISOString().slice(0, 10) + '.docx'; a.click(); URL.revokeObjectURL(u); setExportando(false); }).catch(function() { setExportando(false); }); }, disabled: exportando, className: 'px-3 py-2 bg-white/15 rounded-xl text-sm hover:bg-white/25 ring-1 ring-white/10' }, exportando ? '⏳...' : '📄 Exportar'),
             msgs.length > 0 && !conversaAtual && el('button', { onClick: function() { fetchAuth(apiUrl + '/bi/chat-ia/conversas', { method: 'POST', body: JSON.stringify({ titulo: (msgs[0]?.prompt||'').substring(0, 60) || 'Conversa', filtros: filtros }) }).then(function(r) { return r.json(); }).then(function(d) { if (d.conversa) setConversaAtual(d.conversa.id); }).catch(function() {}); }, className: 'px-3 py-2 bg-white/15 rounded-xl text-sm hover:bg-white/25 ring-1 ring-white/10' }, '💾'),
-            el('button', { onClick: function() { setIniciado(false); setMsgs([]); setConversaAtual(null); setFiltros({ cod_cliente: [], nomes_clientes: [], centro_custo: [], data_inicio: '', data_fim: '', regiao: '' }); setDropAberto(null); setPainelTreinar(false); setAbaPreChat('filtros'); }, className: 'px-3 py-2 bg-white/15 rounded-xl text-sm hover:bg-white/25 ring-1 ring-white/10' }, '🔄 Nova')
+            el('button', { onClick: function() { setIniciado(false); setMsgs([]); setConversaAtual(null); setDadosContexto(''); setFiltros({ cod_cliente: [], nomes_clientes: [], centro_custo: [], data_inicio: '', data_fim: '', regiao: '' }); setDropAberto(null); setPainelTreinar(false); setAbaPreChat('filtros'); }, className: 'px-3 py-2 bg-white/15 rounded-xl text-sm hover:bg-white/25 ring-1 ring-white/10' }, '🔄 Nova')
           )
         )
       ),
@@ -198,7 +200,20 @@
             el('div', null, el('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, '📅 Início'), el('input', { type: 'date', value: filtros.data_inicio, onChange: function(e) { setFiltros(function(p) { return Object.assign({}, p, { data_inicio: e.target.value }); }); }, className: 'w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-purple-500' })),
             el('div', null, el('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, '📅 Fim'), el('input', { type: 'date', value: filtros.data_fim, onChange: function(e) { setFiltros(function(p) { return Object.assign({}, p, { data_fim: e.target.value }); }); }, className: 'w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-purple-500' }))
           ),
-          el('button', { onClick: function() { setDropAberto(null); setIniciado(true); }, className: 'w-full py-3.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl font-bold text-lg hover:from-purple-700 hover:to-indigo-700 shadow-lg transition-all' }, '💬 Iniciar Conversa com a IA')
+          el('button', { onClick: function() { 
+            setDropAberto(null); setPreCarregando(true);
+            fetchAuth(apiUrl + '/bi/chat-ia/pre-carregar', { method: 'POST', body: JSON.stringify({ filtros: filtros }) })
+              .then(function(r) { return r.json(); })
+              .then(function(d) { 
+                if (d.dados_contexto) setDadosContexto(d.dados_contexto);
+                console.log('📊 Dados pré-carregados:', d.resumo);
+                setIniciado(true); setPreCarregando(false);
+              })
+              .catch(function(e) { 
+                console.error('Erro pre-load:', e); 
+                setIniciado(true); setPreCarregando(false);
+              });
+          }, disabled: preCarregando, className: 'w-full py-3.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl font-bold text-lg hover:from-purple-700 hover:to-indigo-700 shadow-lg transition-all' + (preCarregando ? ' opacity-70' : '') }, preCarregando ? '⏳ Carregando dados do período...' : '💬 Iniciar Conversa com a IA')
         ),
         abaPreChat === 'treinar' && el('div', { className: 'p-6' }, PT())
       ),
