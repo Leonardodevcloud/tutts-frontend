@@ -1191,41 +1191,52 @@
                 
                 const sug = aguardandoNumero.sugestao;
                 const comp = sug.componentes || [];
-                const rua = comp.find(c => c.types?.includes('route'))?.long_name || '';
+                const rua = comp.find(c => c.types?.includes('route'))?.long_name || comp.find(c => c.types?.includes('route'))?.short_name || '';
+                const bairro = comp.find(c => c.types?.includes('sublocality_level_1'))?.long_name || comp.find(c => c.types?.includes('sublocality'))?.long_name || '';
                 const cidade = comp.find(c => c.types?.includes('administrative_area_level_2'))?.long_name || comp.find(c => c.types?.includes('locality'))?.long_name || '';
                 const uf = comp.find(c => c.types?.includes('administrative_area_level_1'))?.short_name || '';
                 
-                // Query assertiva: "Rua X, N, Cidade" (padrão que funciona melhor no Google)
-                const buscaComNumero = `${rua}, ${num}, ${cidade}${uf ? ', ' + uf : ''}`;
-                console.log('🔢 Re-buscando com número:', buscaComNumero);
+                // Se não tem rua nos componentes, extrair do endereço formatado
+                const ruaFinal = rua || (sug.endereco || '').split(/\s*[-,]\s*/)[0].trim();
                 
-                try {
-                    const resp = await fetch(`${API_URL}/api/geocode/google?endereco=${encodeURIComponent(buscaComNumero)}`);
-                    if (resp.ok) {
-                        const data = await resp.json();
-                        if (data.results?.length > 0) {
-                            const r = data.results[0];
-                            const rComp = r.componentes || [];
-                            // Validar: aceitar se Google retornou qualquer endereço com rua similar
-                            const ruaRetornada = rComp.find(c => c.types?.includes('route'))?.long_name || '';
-                            const ruaShort = rComp.find(c => c.types?.includes('route'))?.short_name || '';
-                            const ruaOriginal = rua.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-                            const ruaRet = (ruaRetornada || ruaShort || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-                            // Aceitar se pelo menos 8 chars batem (ignora acento e abreviação)
-                            const match = ruaOriginal.length >= 8 && ruaRet.length >= 8 && 
-                                (ruaRet.includes(ruaOriginal.substring(0, 8)) || ruaOriginal.includes(ruaRet.substring(0, 8)));
-                            if (match || !rua) {
-                                console.log('✅ Endereço com número validado:', r.endereco);
+                // 3 tentativas de busca, do mais específico ao mais simples
+                const tentativas = [
+                    `${ruaFinal}, ${num}, ${cidade}${uf ? ', ' + uf : ''}`,
+                    `${ruaFinal}, ${num}, ${cidade}`,
+                    `${ruaFinal} ${num} ${cidade}`
+                ];
+                
+                showToast('🔍 Buscando endereço com nº ' + num + '...', 'info');
+                
+                for (let i = 0; i < tentativas.length; i++) {
+                    const busca = tentativas[i];
+                    console.log(`🔢 Tentativa ${i+1}/3: "${busca}"`);
+                    
+                    try {
+                        const resp = await fetch(`${API_URL}/api/geocode/google?endereco=${encodeURIComponent(busca)}`);
+                        console.log(`🔢 Resposta tentativa ${i+1}: status=${resp.status}`);
+                        
+                        if (resp.ok) {
+                            const data = await resp.json();
+                            if (data.results?.length > 0) {
+                                const r = data.results[0];
+                                const rComp = r.componentes || [];
+                                const get = (t) => (rComp.find(c => c.types?.includes(t)) || {}).long_name || '';
+                                const getS = (t) => (rComp.find(c => c.types?.includes(t)) || {}).short_name || '';
+                                
+                                console.log(`✅ Encontrado na tentativa ${i+1}: ${r.endereco} (${r.latitude}, ${r.longitude})`);
+                                showToast('✅ Endereço localizado com nº ' + num, 'success');
+                                
                                 finalizarAdicaoPonto({
                                     id: Date.now(),
                                     endereco_completo: r.endereco,
-                                    rua: ruaRetornada || rua,
-                                    numero: rComp.find(c => c.types?.includes('street_number'))?.long_name || num,
+                                    rua: get('route') || ruaFinal,
+                                    numero: get('street_number') || num,
                                     complemento: '',
-                                    bairro: rComp.find(c => c.types?.includes('sublocality_level_1'))?.long_name || rComp.find(c => c.types?.includes('sublocality'))?.long_name || comp.find(c => c.types?.includes('sublocality_level_1'))?.long_name || '',
-                                    cidade: rComp.find(c => c.types?.includes('administrative_area_level_2'))?.long_name || cidade,
-                                    uf: rComp.find(c => c.types?.includes('administrative_area_level_1'))?.short_name || uf,
-                                    cep: rComp.find(c => c.types?.includes('postal_code'))?.long_name || '',
+                                    bairro: get('sublocality_level_1') || get('sublocality') || bairro,
+                                    cidade: get('administrative_area_level_2') || get('locality') || cidade,
+                                    uf: getS('administrative_area_level_1') || uf,
+                                    cep: get('postal_code') || '',
                                     latitude: r.latitude,
                                     longitude: r.longitude,
                                     observacao: '', telefone: '', procurar_por: '', nome_fantasia: '', numero_nota: '', codigo_finalizar: '',
@@ -1233,16 +1244,46 @@
                                 });
                                 return;
                             }
-                            console.log('⚠️ Google retornou rua diferente:', ruaRetornada, '≠', rua);
                         }
+                    } catch (err) {
+                        console.error(`❌ Tentativa ${i+1} falhou:`, err.message);
                     }
-                } catch (err) {
-                    console.error('Erro ao re-buscar:', err);
                 }
                 
-                // Fallback: usar endereço original + número
-                console.log('⚠️ Usando endereço original + número manual');
-                finalizarAdicaoPonto(criarPontoDeSugestao(sug, num));
+                // Todas as tentativas falharam — usar endereço original + forçar número no texto
+                console.log('⚠️ Todas tentativas falharam. Usando original + número.');
+                showToast('⚠️ Google não encontrou com nº ' + num + '. Posição aproximada.', 'warning');
+                
+                // Montar endereço com número inserido
+                let enderecoFinal = sug.endereco || '';
+                if (ruaFinal && enderecoFinal.includes(ruaFinal)) {
+                    enderecoFinal = enderecoFinal.replace(ruaFinal, ruaFinal + ', ' + num);
+                } else {
+                    const idx = enderecoFinal.indexOf(' -');
+                    if (idx > 0) {
+                        enderecoFinal = enderecoFinal.substring(0, idx) + ', ' + num + enderecoFinal.substring(idx);
+                    } else {
+                        enderecoFinal = enderecoFinal + ', ' + num;
+                    }
+                }
+                
+                finalizarAdicaoPonto({
+                    id: Date.now(),
+                    endereco_completo: enderecoFinal,
+                    rua: ruaFinal,
+                    numero: num,
+                    complemento: '',
+                    bairro: bairro,
+                    cidade: cidade,
+                    uf: uf,
+                    cep: '',
+                    latitude: sug.latitude,
+                    longitude: sug.longitude,
+                    observacao: '', telefone: '', procurar_por: '', nome_fantasia: '', numero_nota: '', codigo_finalizar: '',
+                    numero_manual: true
+                });
+            };
+            };
             };
             
             // Marcar como S/N (sem número) — ainda assim adiciona o ponto
