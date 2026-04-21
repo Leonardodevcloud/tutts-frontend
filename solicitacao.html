@@ -2192,7 +2192,7 @@
                                                         })}
                                                     </div>
                                                 </div>
-                                                <div className="flex-1"><MapaLeaflet key={`acompanhar-${mapaKey}-${corridaSelecionada}`} id={`mapa-acompanhar-${corridaSelecionada}`} pontos={detalheCorrida.pontos} height="350px" tipo="acompanhar" /></div>
+                                                <div className="flex-1" style={{position:'sticky',top:'80px',alignSelf:'flex-start',height:'calc(100vh - 120px)'}}><MapaLeaflet key={`acompanhar-${mapaKey}-${corridaSelecionada}`} id={`mapa-acompanhar-${corridaSelecionada}`} pontos={detalheCorrida.pontos} height="100%" tipo="acompanhar" /></div>
                                             </div>
                                         </div>
                                     )}
