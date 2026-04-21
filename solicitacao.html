@@ -127,7 +127,7 @@
                 if (!container) return;
                 if (mapInstanceRef.current) { mapInstanceRef.current.remove(); mapInstanceRef.current = null; }
                 const map = L.map(container, { center: center, zoom: zoom, zoomControl: true });
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);
+                L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 20, attribution: 'Google' }).addTo(map);
                 const markersLayer = L.layerGroup().addTo(map);
                 mapInstanceRef.current = map;
                 markersLayerRef.current = markersLayer;
@@ -327,9 +327,9 @@
                     zoomControl: true 
                 });
                 
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
-                    maxZoom: 19, 
-                    attribution: '© OpenStreetMap' 
+                L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { 
+                    maxZoom: 20, 
+                    attribution: 'Google' 
                 }).addTo(map);
                 
                 const icon = L.divIcon({ 
@@ -1600,9 +1600,9 @@
                                 <button onClick={() => setAbaMobile('form')} className={`flex-1 py-2 text-sm ${abaMobile === 'form' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500'}`}>📝 Form</button>
                                 <button onClick={() => setAbaMobile('mapa')} className={`flex-1 py-2 text-sm ${abaMobile === 'mapa' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500'}`}>🗺️ Mapa</button>
                             </div>
-                            <div className="max-w-7xl mx-auto p-2 md:p-4">
+                            <div className="w-full px-2 md:px-4">
                                 <div className="flex flex-col md:flex-row gap-4">
-                                    <div className={`${abaMobile === 'form' ? 'block' : 'hidden'} md:block w-full md:w-96 space-y-3`}>
+                                    <div className={`${abaMobile === 'form' ? 'block' : 'hidden'} md:block w-full md:w-[480px] lg:w-[520px] space-y-3 flex-shrink-0`}>
                                         {/* NOVO: Banner que pergunta se quer ajustar posição no mapa */}
                                         {promptAjuste.aberto && (
                                             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl shadow border-2 border-blue-400 p-3 fade-in">
@@ -1885,8 +1885,8 @@
                                     </div>
                                     
                                     {/* Mapa */}
-                                    <div className={`${abaMobile === 'mapa' ? 'block' : 'hidden'} md:block flex-1`}>
-                                        <MapaLeaflet key={`nova-${mapaKey}`} id="mapa-nova" pontos={pontos} center={localizacaoUsuario ? [localizacaoUsuario.lat, localizacaoUsuario.lng] : undefined} zoom={localizacaoUsuario ? 14 : 12} height="calc(100vh - 200px)" tipo="nova" />
+                                    <div className={`${abaMobile === 'mapa' ? 'block' : 'hidden'} md:block flex-1 md:sticky md:top-16 md:self-start`}>
+                                        <MapaLeaflet key={`nova-${mapaKey}`} id="mapa-nova" pontos={pontos} center={localizacaoUsuario ? [localizacaoUsuario.lat, localizacaoUsuario.lng] : undefined} zoom={localizacaoUsuario ? 14 : 12} height="calc(100vh - 80px)" tipo="nova" />
                                     </div>
                                 </div>
                             </div>
@@ -1895,7 +1895,7 @@
                     
                     {/* ========== ABA ACOMPANHAR ========== */}
                     {abaAtiva === 'acompanhar' && (
-                        <div className="max-w-7xl mx-auto p-2 md:p-4">
+                        <div className="w-full px-2 md:px-4">
                             <div className="flex flex-col md:flex-row gap-4">
                                 <div className="w-full md:w-80 space-y-3">
                                     <div className="bg-white rounded-xl shadow p-3">
@@ -2186,7 +2186,7 @@
                     
                     {/* ========== ABA CONCLUÍDAS ========== */}
                     {abaAtiva === 'concluidas' && (
-                        <div className="max-w-7xl mx-auto p-2 md:p-4">
+                        <div className="w-full px-2 md:px-4">
                             <div className="bg-white rounded-xl shadow p-4">
                                 <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
                                     <h2 className="text-lg font-bold text-gray-800">✅ Corridas Concluídas</h2>
@@ -2408,7 +2408,7 @@
                     
                     {/* ========== ABA MEUS ENDEREÇOS ========== */}
                     {abaAtiva === 'enderecos' && (
-                        <div className="max-w-7xl mx-auto p-2 md:p-4">
+                        <div className="w-full px-2 md:px-4">
                             <div className="bg-white rounded-xl shadow p-4">
                                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
                                     <div>
