@@ -1427,8 +1427,11 @@
 
         const salvarEdicao = async () => {
             try {
-                await fetchApi('/admin/coleta/enderecos-cadastrados/' + editando.id, {
-                    method: 'PATCH',
+                const isNovo = !editando.id;
+                const url = isNovo ? '/admin/coleta/enderecos-cadastrados' : '/admin/coleta/enderecos-cadastrados/' + editando.id;
+                const method = isNovo ? 'POST' : 'PATCH';
+                await fetchApi(url, {
+                    method: method,
                     body: JSON.stringify({
                         apelido: editando.apelido,
                         endereco_completo: editando.endereco_completo,
@@ -1438,13 +1441,76 @@
                         cidade: editando.cidade,
                         uf: editando.uf,
                         cep: editando.cep,
+                        latitude: editando.latitude || null,
+                        longitude: editando.longitude || null,
                         grupo_enderecos_id: editando.grupo_enderecos_id ? parseInt(editando.grupo_enderecos_id) : null
                     })
                 });
-                showToast('✅ Salvo', 'success');
+                showToast(isNovo ? '✅ Endereço criado' : '✅ Salvo', 'success');
                 setEditando(null);
                 carregar();
             } catch (err) { showToast('❌ ' + err.message, 'error'); }
+        };
+
+        // Buscar endereço no Google e atualizar campos + mapa
+        const buscarEnderecoGoogle = async (texto) => {
+            if (!texto || texto.length < 5) return;
+            try {
+                const resp = await fetch(API_URL + '/api/geocode/google?endereco=' + encodeURIComponent(texto), {
+                    headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('token') || '') }
+                });
+                if (!resp.ok) return;
+                const data = await resp.json();
+                if (data.results && data.results.length > 0) {
+                    const r = data.results[0];
+                    const comp = r.componentes || [];
+                    const get = (t) => (comp.find(c => c.types && c.types.includes(t)) || {}).long_name || '';
+                    setEditando(prev => ({
+                        ...prev,
+                        endereco_completo: r.endereco || prev.endereco_completo,
+                        rua: get('route') || prev.rua,
+                        numero: get('street_number') || prev.numero,
+                        bairro: get('sublocality_level_1') || get('sublocality') || prev.bairro,
+                        cidade: get('administrative_area_level_2') || get('locality') || prev.cidade,
+                        uf: (comp.find(c => c.types && c.types.includes('administrative_area_level_1')) || {}).short_name || prev.uf,
+                        cep: get('postal_code') || prev.cep,
+                        latitude: r.latitude,
+                        longitude: r.longitude,
+                        _mapCenter: [r.latitude, r.longitude]
+                    }));
+                    showToast('📍 Endereço localizado', 'success');
+                } else {
+                    showToast('⚠️ Endereço não encontrado', 'warning');
+                }
+            } catch (err) { showToast('❌ Erro na busca', 'error'); }
+        };
+
+        // Reverse geocode from map coordinates
+        const reverseGeocode = async (lat, lng) => {
+            try {
+                const resp = await fetch(API_URL + '/api/geocode/google?endereco=' + encodeURIComponent(lat + ',' + lng), {
+                    headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('token') || '') }
+                });
+                if (!resp.ok) return;
+                const data = await resp.json();
+                if (data.results && data.results.length > 0) {
+                    const r = data.results[0];
+                    const comp = r.componentes || [];
+                    const get = (t) => (comp.find(c => c.types && c.types.includes(t)) || {}).long_name || '';
+                    setEditando(prev => ({
+                        ...prev,
+                        endereco_completo: r.endereco || prev.endereco_completo,
+                        rua: get('route') || prev.rua,
+                        numero: get('street_number') || prev.numero,
+                        bairro: get('sublocality_level_1') || get('sublocality') || prev.bairro,
+                        cidade: get('administrative_area_level_2') || get('locality') || prev.cidade,
+                        uf: (comp.find(c => c.types && c.types.includes('administrative_area_level_1')) || {}).short_name || prev.uf,
+                        cep: get('postal_code') || prev.cep,
+                        latitude: lat,
+                        longitude: lng
+                    }));
+                }
+            } catch (err) { console.error('Reverse geocode error:', err); }
         };
 
         const excluir = async (id) => {
@@ -1506,8 +1572,8 @@
                 }, 'Filtrar')
             ),
 
-            // Resumo
-            h('div', { className: 'flex gap-3 mb-4 text-sm' },
+            // Resumo + Botão criar
+            h('div', { className: 'flex gap-3 mb-4 text-sm items-center' },
                 h('div', { className: 'bg-white px-3 py-2 rounded shadow flex-1' },
                     h('span', { className: 'text-gray-500' }, 'Total: '),
                     h('strong', null, enderecos.length)
@@ -1519,7 +1585,11 @@
                 h('div', { className: 'bg-blue-50 px-3 py-2 rounded shadow flex-1' },
                     h('span', { className: 'text-blue-700' }, '🏢 Cliente: '),
                     h('strong', null, totalCliente)
-                )
+                ),
+                h('button', {
+                    onClick: () => setEditando({ apelido: '', endereco_completo: '', rua: '', numero: '', bairro: '', cidade: '', uf: '', cep: '', latitude: null, longitude: null, grupo_enderecos_id: null, origem: 'admin' }),
+                    className: 'px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 shadow whitespace-nowrap'
+                }, '➕ Novo Endereço')
             ),
 
             // Tabela
@@ -1603,116 +1673,137 @@
             },
                 h('div', {
                     onClick: e => e.stopPropagation(),
-                    className: 'bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto'
+                    className: 'bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[95vh] overflow-y-auto'
                 },
                     h('div', { className: 'flex items-center justify-between p-4 border-b' },
                         h('div', null,
-                            h('h3', { className: 'font-bold text-lg' }, '✏️ Editar Endereço'),
-                            h('p', { className: 'text-xs text-gray-500' }, 'ID #' + editando.id + ' · Origem: ' + (editando.origem === 'motoboy' ? '🏍️ Coleta' : '🏢 Cliente'))
+                            h('h3', { className: 'font-bold text-lg' }, editando.id ? '✏️ Editar Endereço' : '➕ Novo Endereço'),
+                            editando.id && h('p', { className: 'text-xs text-gray-500' }, 'ID #' + editando.id + ' · Origem: ' + (editando.origem === 'motoboy' ? '🏍️ Coleta' : editando.origem === 'admin' ? '👤 Admin' : '🏢 Cliente'))
                         ),
                         h('button', { onClick: () => setEditando(null), className: 'text-gray-400 hover:text-gray-600 text-xl' }, '×')
                     ),
-                    h('div', { className: 'p-4 space-y-3' },
-                        h('div', null,
-                            h('label', { className: 'text-xs font-medium text-gray-600' }, 'Apelido / Nome'),
-                            h('input', {
-                                type: 'text', value: editando.apelido || '',
-                                onChange: e => setEditando({ ...editando, apelido: e.target.value }),
-                                className: 'w-full px-3 py-2 border rounded text-sm mt-1'
-                            })
-                        ),
-                        h('div', null,
-                            h('label', { className: 'text-xs font-medium text-gray-600' }, 'Endereço completo'),
-                            h('input', {
-                                type: 'text', value: editando.endereco_completo || '',
-                                onChange: e => setEditando({ ...editando, endereco_completo: e.target.value }),
-                                className: 'w-full px-3 py-2 border rounded text-sm mt-1'
-                            })
-                        ),
-                        h('div', { className: 'grid grid-cols-3 gap-2' },
-                            h('div', { className: 'col-span-2' },
-                                h('label', { className: 'text-xs font-medium text-gray-600' }, 'Rua'),
+                    h('div', { className: 'p-4' },
+                        // Busca Google
+                        h('div', { className: 'mb-4' },
+                            h('label', { className: 'text-xs font-medium text-gray-600 mb-1 block' }, '🔍 Buscar endereço no Google'),
+                            h('div', { className: 'flex gap-2' },
                                 h('input', {
-                                    type: 'text', value: editando.rua || '',
-                                    onChange: e => setEditando({ ...editando, rua: e.target.value }),
-                                    className: 'w-full px-3 py-2 border rounded text-sm mt-1'
+                                    type: 'text', placeholder: 'Digite endereço, rua, número, bairro...',
+                                    defaultValue: editando.endereco_completo || '',
+                                    onKeyPress: e => { if (e.key === 'Enter') buscarEnderecoGoogle(e.target.value); },
+                                    id: 'coleta-busca-endereco',
+                                    className: 'flex-1 px-3 py-2 border-2 border-purple-200 rounded-lg text-sm focus:border-purple-500 focus:outline-none'
+                                }),
+                                h('button', {
+                                    onClick: () => { var inp = document.getElementById('coleta-busca-endereco'); if (inp) buscarEnderecoGoogle(inp.value); },
+                                    className: 'px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700'
+                                }, '🔍 Buscar')
+                            ),
+                            h('p', { className: 'text-xs text-gray-400 mt-1' }, 'Busque o endereço e arraste o pin no mapa para ajustar a posição exata')
+                        ),
+                        // Mapa + Campos lado a lado
+                        h('div', { className: 'grid grid-cols-2 gap-4' },
+                            // Coluna esquerda: Mapa
+                            h('div', null,
+                                h('div', {
+                                    style: { height: '300px', borderRadius: '12px', border: '1px solid #e5e7eb', overflow: 'hidden' },
+                                    ref: function(container) {
+                                        if (!container || container.dataset.mapInit) return;
+                                        container.dataset.mapInit = '1';
+                                        setTimeout(function() {
+                                            var lat = parseFloat(editando.latitude) || -12.9714;
+                                            var lng = parseFloat(editando.longitude) || -38.5124;
+                                            var map = L.map(container).setView([lat, lng], 15);
+                                            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OSM' }).addTo(map);
+                                            var marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+                                            marker.bindPopup('📍 Arraste para ajustar').openPopup();
+                                            marker.on('dragend', function(ev) {
+                                                var pos = ev.target.getLatLng();
+                                                setEditando(function(prev) { return Object.assign({}, prev, { latitude: pos.lat.toFixed(7), longitude: pos.lng.toFixed(7) }); });
+                                                reverseGeocode(pos.lat.toFixed(7), pos.lng.toFixed(7));
+                                            });
+                                            container._map = map;
+                                            container._marker = marker;
+                                        }, 100);
+                                    }
+                                }),
+                                editando.latitude && h('div', { className: 'text-xs text-gray-500 bg-gray-50 px-3 py-2 rounded-lg mt-2 flex items-center justify-between' },
+                                    h('span', null, '📍 ', parseFloat(editando.latitude || 0).toFixed(6), ', ', parseFloat(editando.longitude || 0).toFixed(6)),
+                                    h('a', {
+                                        href: 'https://www.google.com/maps?q=' + editando.latitude + ',' + editando.longitude,
+                                        target: '_blank',
+                                        className: 'text-purple-600 underline text-xs'
+                                    }, 'Google Maps')
+                                ),
+                                editando._mapCenter && h('div', {
+                                    ref: function(el) {
+                                        if (!el || el.dataset.done) return;
+                                        el.dataset.done = '1';
+                                        var containers = el.parentNode.querySelectorAll('[data-map-init]');
+                                        containers.forEach(function(c) {
+                                            if (c._map && c._marker) {
+                                                var ll = [editando._mapCenter[0], editando._mapCenter[1]];
+                                                c._map.setView(ll, 16);
+                                                c._marker.setLatLng(ll);
+                                            }
+                                        });
+                                    },
+                                    style: { display: 'none' }
                                 })
                             ),
-                            h('div', null,
-                                h('label', { className: 'text-xs font-medium text-gray-600' }, 'Número'),
-                                h('input', {
-                                    type: 'text', value: editando.numero || '',
-                                    onChange: e => setEditando({ ...editando, numero: e.target.value }),
-                                    className: 'w-full px-3 py-2 border rounded text-sm mt-1'
-                                })
+                            // Coluna direita: Campos
+                            h('div', { className: 'space-y-2' },
+                                h('div', null,
+                                    h('label', { className: 'text-xs font-medium text-gray-600' }, 'Apelido / Nome'),
+                                    h('input', { type: 'text', value: editando.apelido || '', onChange: e => setEditando({ ...editando, apelido: e.target.value }), className: 'w-full px-3 py-2 border rounded-lg text-sm mt-1' })
+                                ),
+                                h('div', null,
+                                    h('label', { className: 'text-xs font-medium text-gray-600' }, 'Endereço completo'),
+                                    h('input', { type: 'text', value: editando.endereco_completo || '', onChange: e => setEditando({ ...editando, endereco_completo: e.target.value }), className: 'w-full px-3 py-2 border rounded-lg text-sm mt-1' })
+                                ),
+                                h('div', { className: 'grid grid-cols-3 gap-2' },
+                                    h('div', { className: 'col-span-2' },
+                                        h('label', { className: 'text-xs font-medium text-gray-600' }, 'Rua'),
+                                        h('input', { type: 'text', value: editando.rua || '', onChange: e => setEditando({ ...editando, rua: e.target.value }), className: 'w-full px-3 py-2 border rounded-lg text-sm mt-1' })
+                                    ),
+                                    h('div', null,
+                                        h('label', { className: 'text-xs font-medium text-gray-600' }, 'Número'),
+                                        h('input', { type: 'text', value: editando.numero || '', onChange: e => setEditando({ ...editando, numero: e.target.value }), className: 'w-full px-3 py-2 border rounded-lg text-sm mt-1' })
+                                    )
+                                ),
+                                h('div', { className: 'grid grid-cols-2 gap-2' },
+                                    h('div', null,
+                                        h('label', { className: 'text-xs font-medium text-gray-600' }, 'Bairro'),
+                                        h('input', { type: 'text', value: editando.bairro || '', onChange: e => setEditando({ ...editando, bairro: e.target.value }), className: 'w-full px-3 py-2 border rounded-lg text-sm mt-1' })
+                                    ),
+                                    h('div', null,
+                                        h('label', { className: 'text-xs font-medium text-gray-600' }, 'CEP'),
+                                        h('input', { type: 'text', value: editando.cep || '', onChange: e => setEditando({ ...editando, cep: e.target.value }), className: 'w-full px-3 py-2 border rounded-lg text-sm mt-1' })
+                                    )
+                                ),
+                                h('div', { className: 'grid grid-cols-3 gap-2' },
+                                    h('div', { className: 'col-span-2' },
+                                        h('label', { className: 'text-xs font-medium text-gray-600' }, 'Cidade'),
+                                        h('input', { type: 'text', value: editando.cidade || '', onChange: e => setEditando({ ...editando, cidade: e.target.value }), className: 'w-full px-3 py-2 border rounded-lg text-sm mt-1' })
+                                    ),
+                                    h('div', null,
+                                        h('label', { className: 'text-xs font-medium text-gray-600' }, 'UF'),
+                                        h('input', { type: 'text', value: editando.uf || '', maxLength: 2, onChange: e => setEditando({ ...editando, uf: e.target.value.toUpperCase() }), className: 'w-full px-3 py-2 border rounded-lg text-sm mt-1 uppercase' })
+                                    )
+                                ),
+                                h('div', null,
+                                    h('label', { className: 'text-xs font-medium text-gray-600' }, 'Grupo de Endereços'),
+                                    h('select', { value: editando.grupo_enderecos_id || '', onChange: e => setEditando({ ...editando, grupo_enderecos_id: e.target.value }), className: 'w-full px-3 py-2 border rounded-lg text-sm bg-white mt-1' },
+                                        h('option', { value: '' }, '— Sem grupo —'),
+                                        grupos.map(g => h('option', { key: g.id, value: g.id }, g.nome + ' (' + g.total_clientes + ' clientes)'))
+                                    )
+                                )
                             )
-                        ),
-                        h('div', { className: 'grid grid-cols-2 gap-2' },
-                            h('div', null,
-                                h('label', { className: 'text-xs font-medium text-gray-600' }, 'Bairro'),
-                                h('input', {
-                                    type: 'text', value: editando.bairro || '',
-                                    onChange: e => setEditando({ ...editando, bairro: e.target.value }),
-                                    className: 'w-full px-3 py-2 border rounded text-sm mt-1'
-                                })
-                            ),
-                            h('div', null,
-                                h('label', { className: 'text-xs font-medium text-gray-600' }, 'CEP'),
-                                h('input', {
-                                    type: 'text', value: editando.cep || '',
-                                    onChange: e => setEditando({ ...editando, cep: e.target.value }),
-                                    className: 'w-full px-3 py-2 border rounded text-sm mt-1'
-                                })
-                            )
-                        ),
-                        h('div', { className: 'grid grid-cols-3 gap-2' },
-                            h('div', { className: 'col-span-2' },
-                                h('label', { className: 'text-xs font-medium text-gray-600' }, 'Cidade'),
-                                h('input', {
-                                    type: 'text', value: editando.cidade || '',
-                                    onChange: e => setEditando({ ...editando, cidade: e.target.value }),
-                                    className: 'w-full px-3 py-2 border rounded text-sm mt-1'
-                                })
-                            ),
-                            h('div', null,
-                                h('label', { className: 'text-xs font-medium text-gray-600' }, 'UF'),
-                                h('input', {
-                                    type: 'text', value: editando.uf || '', maxLength: 2,
-                                    onChange: e => setEditando({ ...editando, uf: e.target.value.toUpperCase() }),
-                                    className: 'w-full px-3 py-2 border rounded text-sm mt-1 uppercase'
-                                })
-                            )
-                        ),
-                        h('div', null,
-                            h('label', { className: 'text-xs font-medium text-gray-600' }, 'Grupo de Endereços'),
-                            h('select', {
-                                value: editando.grupo_enderecos_id || '',
-                                onChange: e => setEditando({ ...editando, grupo_enderecos_id: e.target.value }),
-                                className: 'w-full px-3 py-2 border rounded text-sm bg-white mt-1'
-                            },
-                                h('option', { value: '' }, '— Sem grupo —'),
-                                grupos.map(g => h('option', { key: g.id, value: g.id }, g.nome + ' (' + g.total_clientes + ' clientes)'))
-                            )
-                        ),
-                        editando.latitude && h('div', { className: 'text-xs text-gray-500 bg-gray-50 px-3 py-2 rounded' },
-                            'GPS: ', editando.latitude, ', ', editando.longitude,
-                            ' · ',
-                            h('a', {
-                                href: `https://www.google.com/maps?q=${editando.latitude},${editando.longitude}`,
-                                target: '_blank',
-                                className: 'text-purple-600 underline'
-                            }, 'Ver no Maps')
                         )
                     ),
                     h('div', { className: 'flex gap-2 p-4 border-t' },
-                        h('button', {
-                            onClick: () => setEditando(null),
-                            className: 'flex-1 px-4 py-2 bg-gray-100 rounded font-medium text-sm'
-                        }, 'Cancelar'),
-                        h('button', {
-                            onClick: salvarEdicao,
-                            className: 'flex-1 px-4 py-2 bg-purple-600 text-white rounded font-medium text-sm'
-                        }, '💾 Salvar')
+                        h('button', { onClick: () => setEditando(null), className: 'flex-1 px-4 py-2 bg-gray-100 rounded-lg font-medium text-sm' }, 'Cancelar'),
+                        h('button', { onClick: salvarEdicao, className: 'flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg font-medium text-sm hover:bg-purple-700' }, editando.id ? '💾 Salvar' : '➕ Criar Endereço')
                     )
                 )
             ),
