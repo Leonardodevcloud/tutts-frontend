@@ -1174,12 +1174,9 @@
                 const comp = sug.componentes || [];
                 const temNumero = !!comp.find(c => c.types?.includes('street_number'));
                 
-                // Detectar se já tem número — por componente OU no texto do endereço
-                const enderecoStr = sug.endereco || '';
-                // Padrões: "Rua X, 33 -", "Rua X, 33,", "Rua X, 33 ", final com número
-                const temNumeroNoEndereco = temNumero || /,\s*\d+\s*[-,\s]/.test(enderecoStr) || /,\s*\d+\s*$/.test(enderecoStr);
-                
-                if (!temNumeroNoEndereco) {
+                // Só pula o prompt se o Google retornou street_number no componente
+                // NÃO usar regex no endereço formatado — casa com CEP e causa falso positivo
+                if (!temNumero) {
                     setAguardandoNumero({ aberto: true, sugestao: sug, numero: '' });
                     return;
                 }
