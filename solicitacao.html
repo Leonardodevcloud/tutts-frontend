@@ -1885,8 +1885,8 @@
                                     </div>
                                     
                                     {/* Mapa */}
-                                    <div className={`${abaMobile === 'mapa' ? 'block' : 'hidden'} md:block flex-1 md:sticky md:top-16 md:self-start`}>
-                                        <MapaLeaflet key={`nova-${mapaKey}`} id="mapa-nova" pontos={pontos} center={localizacaoUsuario ? [localizacaoUsuario.lat, localizacaoUsuario.lng] : undefined} zoom={localizacaoUsuario ? 14 : 12} height="calc(100vh - 90px)" tipo="nova" />
+                                    <div className={`${abaMobile === 'mapa' ? 'block' : 'hidden'} md:block flex-1`} style={{position: 'sticky', top: '64px', height: 'calc(100vh - 80px)'}}>
+                                        <MapaLeaflet key={`nova-${mapaKey}`} id="mapa-nova" pontos={pontos} center={localizacaoUsuario ? [localizacaoUsuario.lat, localizacaoUsuario.lng] : undefined} zoom={localizacaoUsuario ? 14 : 12} height="100%" tipo="nova" />
                                     </div>
                                 </div>
                             </div>
