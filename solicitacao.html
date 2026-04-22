@@ -775,15 +775,14 @@
                     });
                     if (resp.ok) {
                         const data = await resp.json();
-                        alert(`✅ Sincronização concluída!\n\n${data.atualizadas} corridas atualizadas de ${data.total_verificadas} verificadas.`);
-                        // Recarregar a lista
-                        carregarConcluidas();
+                        showToast(`🔄 ${data.atualizadas} de ${data.total_verificadas} corridas atualizadas`, data.atualizadas > 0 ? 'success' : 'info');
+                        if (data.atualizadas > 0) carregarConcluidas();
                     } else {
                         const err = await resp.json();
-                        alert('❌ Erro: ' + (err.error || 'Falha na sincronização'));
+                        showToast('❌ ' + (err.error || 'Falha na sincronização'), 'error');
                     }
                 } catch (err) {
-                    alert('❌ Erro de conexão');
+                    showToast('❌ Erro de conexão', 'error');
                 } finally {
                     setSincronizandoHistorico(false);
                 }
@@ -2226,7 +2225,7 @@
                                             {sincronizandoHistorico ? (
                                                 <><span className="animate-spin">⏳</span> Sincronizando...</>
                                             ) : (
-                                                <>🔄 Recuperar Dados</>
+                                                <>🔄 Sincronizar com Tutts</>
                                             )}
                                         </button>
                                         <select value={filtroConcluidas} onChange={(e) => setFiltroConcluidas(e.target.value)} className="px-3 py-1.5 border rounded-lg text-sm">
