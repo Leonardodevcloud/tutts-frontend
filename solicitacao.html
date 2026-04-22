@@ -775,7 +775,7 @@
                     });
                     if (resp.ok) {
                         const data = await resp.json();
-                        showToast(`🔄 ${data.atualizadas} de ${data.total_verificadas} corridas atualizadas`, data.atualizadas > 0 ? 'success' : 'info');
+                        showToast(`🔄 ${data.atualizadas} atualizada(s) de ${data.total_verificadas} verificadas (Tutts retornou ${data.total_retornadas_tutts || '?'})`, data.atualizadas > 0 ? 'success' : 'info');
                         if (data.atualizadas > 0) carregarConcluidas();
                     } else {
                         const err = await resp.json();
@@ -2492,8 +2492,14 @@
                                                         {e.observacao_padrao && <div className="text-xs text-gray-500 mt-0.5 italic">💬 {e.observacao_padrao}</div>}
                                                         
                                                         <div className="flex gap-2 mt-3 pt-2 border-t border-purple-100">
-                                                            <button onClick={() => abrirEditarEndereco(e)} className="flex-1 px-2 py-1.5 text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 rounded font-medium">✏️ Editar</button>
-                                                            <button onClick={() => deletarEnderecoSalvo(e.id, e.apelido)} className="flex-1 px-2 py-1.5 text-xs bg-red-100 hover:bg-red-200 text-red-700 rounded font-medium">🗑️ Excluir</button>
+                                                            {e.cliente_id == cliente.id ? (
+                                                                <>
+                                                                    <button onClick={() => abrirEditarEndereco(e)} className="flex-1 px-2 py-1.5 text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 rounded font-medium">✏️ Editar</button>
+                                                                    <button onClick={() => deletarEnderecoSalvo(e.id, e.apelido)} className="flex-1 px-2 py-1.5 text-xs bg-red-100 hover:bg-red-200 text-red-700 rounded font-medium">🗑️ Excluir</button>
+                                                                </>
+                                                            ) : (
+                                                                <div className="text-xs text-gray-400 w-full text-center py-1">🔒 Cadastrado por outro usuário</div>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 );
