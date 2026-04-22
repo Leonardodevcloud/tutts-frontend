@@ -793,6 +793,20 @@
                     if (resp.ok) {
                         const data = await resp.json();
                         setDetalheCorrida(data);
+                        
+                        // Atualizar o card lateral com o status mais recente
+                        setCorridasAtivas(prev => prev.map(c => 
+                            c.id === id ? { 
+                                ...c, 
+                                status: data.status, 
+                                profissional_nome: data.profissional_nome || c.profissional_nome, 
+                                profissional_foto: data.profissional_foto || c.profissional_foto,
+                                // Propagar dados dos pontos para o card lateral
+                                pontos_status: data.pontos ? data.pontos.map(p => ({ status: p.status, ordem: p.ordem, data_chegada: p.data_chegada, data_finalizado: p.data_finalizado })) : c.pontos_status,
+                                dados_pontos: data.dados_pontos || c.dados_pontos
+                            } : c
+                        ));
+                        
                         // Se a corrida foi finalizada ou cancelada, limpar seleção e atualizar listas
                         if (['finalizado', 'cancelado'].includes(data.status)) {
                             showToast(data.status === 'finalizado' ? '🏁 Corrida finalizada!' : '❌ Corrida cancelada', 'info');
