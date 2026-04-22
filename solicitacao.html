@@ -2367,17 +2367,16 @@
                                             <thead className="bg-gray-50"><tr><th className="px-2 py-2 text-center font-medium text-gray-600 w-10"></th><th className="px-2 py-2 text-center font-medium text-gray-600 w-12">Foto</th><th className="px-3 py-2 text-left font-medium text-gray-600">OS</th><th className="px-3 py-2 text-left font-medium text-gray-600">Nota</th><th className="px-3 py-2 text-left font-medium text-gray-600">Status</th><th className="px-3 py-2 text-left font-medium text-gray-600">Data</th><th className="px-3 py-2 text-left font-medium text-gray-600">Profissional</th><th className="px-3 py-2 text-center font-medium text-gray-600">Pontos</th><th className="px-3 py-2 text-left font-medium text-gray-600">Distância</th></tr></thead>
                                             <tbody className="divide-y">
                                                 {corridasConcluidas.filter(c => filtroConcluidas === 'todas' || (filtroConcluidas === 'finalizadas' && c.status === 'finalizado') || (filtroConcluidas === 'canceladas' && c.status === 'cancelado')).map(c => {
-                                                    // Verificar se tem retorno e extrair primeira nota
+                                                    // Verificar se tem retorno
                                                     let temRetorno = false;
-                                                    let primeiraNotaFiscal = null;
                                                     try {
                                                         const dadosPontos = c.dados_pontos ? (typeof c.dados_pontos === 'string' ? JSON.parse(c.dados_pontos) : c.dados_pontos) : [];
                                                         temRetorno = dadosPontos?.some(p => p.is_retorno || p.tipo_ponto === 'retorno');
-                                                        // Pegar primeira nota fiscal (do primeiro ponto de entrega, índice 1+)
-                                                        const pontosEntrega = dadosPontos?.slice(1) || [];
-                                                        const pontoComNota = pontosEntrega.find(p => p.numero_nota && p.numero_nota.trim() !== '');
-                                                        primeiraNotaFiscal = pontoComNota?.numero_nota || null;
                                                     } catch(e) {}
+                                                    // NF: o backend já retorna `primeiro_numero_nota` calculado via subquery no endpoint /historico.
+                                                    // Antes tentávamos extrair de `dados_pontos` (snapshot da Tutts), mas esse campo não contém numero_nota
+                                                    // — a Tutts retorna status/timestamps, não a NF que NÓS enviamos. Por isso a coluna ficava vazia.
+                                                    const primeiraNotaFiscal = c.primeiro_numero_nota || null;
                                                     
                                                     return (
                                                         <React.Fragment key={c.id}>
