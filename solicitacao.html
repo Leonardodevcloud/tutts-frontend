@@ -465,6 +465,12 @@
             const [todosEnderecos, setTodosEnderecos] = useState([]);
             const [carregandoEnderecos, setCarregandoEnderecos] = useState(false);
             const [filtroEnderecos, setFiltroEnderecos] = useState('');
+            // Paginação da aba Meus Endereços (sem filtro, usa paginação; com filtro, busca server-side retorna até 50)
+            const [enderecosTotal, setEnderecosTotal] = useState(0);
+            const [enderecosPagina, setEnderecosPagina] = useState(1);
+            const [enderecosTemMais, setEnderecosTemMais] = useState(false);
+            const [carregandoMaisEnderecos, setCarregandoMaisEnderecos] = useState(false);
+            const [modoFiltroAtivo, setModoFiltroAtivo] = useState(false); // true quando está exibindo resultado de busca por texto
             const [modalNovoEndereco, setModalNovoEndereco] = useState({ aberto: false });
             const [modalEditarEndereco, setModalEditarEndereco] = useState({ aberto: false, endereco: null });
             const [buscaNovoEndereco, setBuscaNovoEndereco] = useState('');
@@ -614,13 +620,70 @@
             
             const carregarHistorico = async () => { try { const resp = await fetch(`${API_URL}/api/solicitacao/historico?limite=20`, { headers: { 'Authorization': `Bearer ${token}` } }); if (resp.ok) { const data = await resp.json(); setHistorico(data.solicitacoes || []); } } catch (err) {} };
             
-            // NOVO: carregar todos os endereços salvos do cliente (aba Meus Endereços)
+            // NOVO: carregar endereços salvos da aba Meus Endereços (paginado)
+            // - Sem filtro: chama com ?pagina=N&limite=100, backend retorna objeto {enderecos, total, tem_mais}
+            // - Com filtro: chama com ?q=termo, backend retorna array (até 50 matches)
             const carregarTodosEnderecos = async () => {
                 setCarregandoEnderecos(true);
                 try {
-                    const resp = await fetch(`${API_URL}/api/solicitacao/enderecos-salvos/buscar`, { headers: { 'Authorization': `Bearer ${token}` } });
-                    if (resp.ok) { const data = await resp.json(); setTodosEnderecos(data || []); }
+                    const resp = await fetch(`${API_URL}/api/solicitacao/enderecos-salvos/buscar?pagina=1&limite=100`, { headers: { 'Authorization': `Bearer ${token}` } });
+                    if (resp.ok) {
+                        const data = await resp.json();
+                        // Backend agora retorna objeto; array só em caso de retrocompat legada
+                        if (Array.isArray(data)) {
+                            setTodosEnderecos(data);
+                            setEnderecosTotal(data.length);
+                            setEnderecosTemMais(false);
+                        } else {
+                            setTodosEnderecos(data.enderecos || []);
+                            setEnderecosTotal(data.total || 0);
+                            setEnderecosTemMais(!!data.tem_mais);
+                        }
+                        setEnderecosPagina(1);
+                        setModoFiltroAtivo(false);
+                    }
                 } catch (err) { console.error('Erro ao carregar endereços:', err); }
+                setCarregandoEnderecos(false);
+            };
+            
+            // Carregar próxima página e fazer append nos endereços já exibidos
+            const carregarMaisEnderecos = async () => {
+                if (carregandoMaisEnderecos || !enderecosTemMais || modoFiltroAtivo) return;
+                setCarregandoMaisEnderecos(true);
+                try {
+                    const proxima = enderecosPagina + 1;
+                    const resp = await fetch(`${API_URL}/api/solicitacao/enderecos-salvos/buscar?pagina=${proxima}&limite=100`, { headers: { 'Authorization': `Bearer ${token}` } });
+                    if (resp.ok) {
+                        const data = await resp.json();
+                        const novos = Array.isArray(data) ? data : (data.enderecos || []);
+                        setTodosEnderecos(prev => [...prev, ...novos]);
+                        setEnderecosPagina(proxima);
+                        if (!Array.isArray(data)) {
+                            setEnderecosTemMais(!!data.tem_mais);
+                            setEnderecosTotal(data.total || enderecosTotal);
+                        } else {
+                            setEnderecosTemMais(false);
+                        }
+                    }
+                } catch (err) { console.error('Erro ao carregar mais endereços:', err); }
+                setCarregandoMaisEnderecos(false);
+            };
+            
+            // Buscar endereços server-side pelo termo do filtro (aba Meus Endereços)
+            // Chamada com debounce pelo useEffect abaixo
+            const buscarEnderecosFiltro = async (termo) => {
+                setCarregandoEnderecos(true);
+                try {
+                    const resp = await fetch(`${API_URL}/api/solicitacao/enderecos-salvos/buscar?q=${encodeURIComponent(termo)}`, { headers: { 'Authorization': `Bearer ${token}` } });
+                    if (resp.ok) {
+                        const data = await resp.json();
+                        const lista = Array.isArray(data) ? data : (data.enderecos || []);
+                        setTodosEnderecos(lista);
+                        setEnderecosTotal(lista.length);
+                        setEnderecosTemMais(false);
+                        setModoFiltroAtivo(true);
+                    }
+                } catch (err) { console.error('Erro ao filtrar endereços:', err); }
                 setCarregandoEnderecos(false);
             };
             
@@ -633,6 +696,25 @@
                     else showToast('❌ Erro ao excluir', 'error');
                 } catch (err) { showToast('❌ Erro de conexão', 'error'); }
             };
+            
+            // Debounce do filtro da aba Meus Endereços: server-side search com 300ms de espera.
+            // Só dispara quando a aba Endereços está aberta (evita fetch desnecessário em outras telas).
+            useEffect(() => {
+                if (abaAtiva !== 'enderecos') return;
+                const termo = (filtroEnderecos || '').trim();
+                // Filtro vazio: recarrega lista paginada (reset completo)
+                if (termo.length === 0) {
+                    // Só recarrega se estava em modo filtro (evita duplo-fetch quando abre a aba)
+                    if (modoFiltroAtivo) carregarTodosEnderecos();
+                    return;
+                }
+                // Termo muito curto (1 caractere): aguarda mais digitação
+                if (termo.length < 2) return;
+                const timer = setTimeout(() => {
+                    buscarEnderecosFiltro(termo);
+                }, 300);
+                return () => clearTimeout(timer);
+            }, [filtroEnderecos, abaAtiva]);
             
             // Abrir modal de edição de endereço salvo
             const abrirEditarEndereco = (endereco) => {
@@ -2474,23 +2556,13 @@
                                     </div>
                                 ) : todosEnderecos.length === 0 ? (
                                     <div className="text-center py-12 text-gray-400">
-                                        <div className="text-5xl mb-3">📭</div>
-                                        <div className="text-sm font-medium">Nenhum endereço salvo ainda</div>
-                                        <div className="text-xs mt-1">Clique em "+ Novo Endereço" para cadastrar o primeiro</div>
+                                        <div className="text-5xl mb-3">{modoFiltroAtivo ? '🔍' : '📭'}</div>
+                                        <div className="text-sm font-medium">{modoFiltroAtivo ? 'Nenhum endereço encontrado' : 'Nenhum endereço salvo ainda'}</div>
+                                        <div className="text-xs mt-1">{modoFiltroAtivo ? 'Tente outro termo de busca' : 'Clique em "+ Novo Endereço" para cadastrar o primeiro'}</div>
                                     </div>
                                 ) : (
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                                        {todosEnderecos
-                                            .filter(e => {
-                                                if (!filtroEnderecos.trim()) return true;
-                                                const q = filtroEnderecos.toLowerCase();
-                                                return (e.apelido || '').toLowerCase().includes(q) ||
-                                                       (e.endereco_completo || '').toLowerCase().includes(q) ||
-                                                       (e.rua || '').toLowerCase().includes(q) ||
-                                                       (e.bairro || '').toLowerCase().includes(q) ||
-                                                       (e.cidade || '').toLowerCase().includes(q);
-                                            })
-                                            .map(e => {
+                                        {todosEnderecos.map(e => {
                                                 const enderecoFinal = e.endereco_completo || [e.rua, e.numero, e.bairro, e.cidade, e.uf].filter(x => x && x.trim()).join(', ');
                                                 return (
                                                     <div key={e.id} className="border-2 border-purple-100 hover:border-purple-300 rounded-lg p-3 transition-colors bg-gradient-to-br from-purple-50 to-white">
@@ -2521,9 +2593,25 @@
                                     </div>
                                 )}
                                 
+                                {/* Botão "Carregar mais" — só aparece sem filtro e quando há próxima página */}
+                                {!modoFiltroAtivo && enderecosTemMais && todosEnderecos.length > 0 && (
+                                    <div className="mt-4 flex justify-center">
+                                        <button 
+                                            onClick={carregarMaisEnderecos} 
+                                            disabled={carregandoMaisEnderecos}
+                                            className="px-6 py-2 bg-purple-100 hover:bg-purple-200 disabled:opacity-50 disabled:cursor-wait text-purple-700 rounded-lg text-sm font-medium transition-colors"
+                                        >
+                                            {carregandoMaisEnderecos ? '⏳ Carregando...' : `⬇️ Carregar mais (${enderecosTotal - todosEnderecos.length} restantes)`}
+                                        </button>
+                                    </div>
+                                )}
+                                
                                 {todosEnderecos.length > 0 && (
                                     <div className="mt-4 pt-4 border-t text-xs text-gray-500 text-center">
-                                        {todosEnderecos.length} endereço(s) salvo(s) · {todosEnderecos.reduce((acc, e) => acc + (e.vezes_usado || 0), 0)} uso(s) total
+                                        {modoFiltroAtivo 
+                                            ? `${todosEnderecos.length} resultado(s) para "${filtroEnderecos}"` 
+                                            : `${todosEnderecos.length} de ${enderecosTotal} endereço(s) salvo(s) · ${todosEnderecos.reduce((acc, e) => acc + (e.vezes_usado || 0), 0)} uso(s) total`
+                                        }
                                     </div>
                                 )}
                             </div>
