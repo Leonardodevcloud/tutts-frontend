@@ -13,7 +13,7 @@
   // ── Constantes ─────────────────────────────────────────────────────────────
   const PONTOS = [2, 3, 4, 5, 6, 7];
   const POLLING_INTERVAL = 5000;
-  const POLLING_TIMEOUT  = 180000;
+  const POLLING_TIMEOUT  = 120000;
   const MAX_FOTO_SIZE    = 5 * 1024 * 1024; // 5MB
 
   // ── Helpers ────────────────────────────────────────────────────────────────
@@ -78,6 +78,10 @@
     const [fotoBase64, setFotoB64]  = useState(null);
     const [fotoPreview, setFotoPre] = useState(null);
     const [valoresOS, setValoresOS] = useState(null); // { antes, depois }
+
+    // Progresso real do RPA — atualizados pelo polling (campos etapa_atual / progresso do banco).
+    const [progresso, setProgresso] = useState(5);
+    const [etapa, setEtapa]         = useState('iniciando');
 
     // Estados da localização do ponto (coordenada + endereço geocodificado)
     const [pontoCoords, setPontoCoords]     = useState(null); // { lat, lng }
@@ -172,6 +176,15 @@
         try {
           const res  = await fetchAuth(`${API_URL}/agent/status/${id}`);
           const data = await res.json();
+
+          // Atualizar progresso visível (vem dos UPDATE que o playwright-agent.js faz via onProgresso).
+          // Usamos Math.max para evitar regressão caso uma resposta atrase.
+          if (typeof data.progresso === 'number') {
+            setProgresso(prev => Math.max(prev, data.progresso));
+          }
+          if (data.etapa_atual) {
+            setEtapa(data.etapa_atual);
+          }
 
           if (data.status === 'sucesso') {
             if (data.valores_antes || data.valores_depois) {
@@ -291,6 +304,9 @@
 
         // Validado OK ou sem validação — direto pro polling
         setSolId(data.id);
+        // Reset do progresso: nova corrida começa do zero visualmente.
+        setProgresso(5);
+        setEtapa('iniciando');
         setFase('polling');
         iniciarPolling(data.id);
 
@@ -412,6 +428,8 @@
       ),
       h('button', {
         onClick: function() {
+          setProgresso(5);
+          setEtapa('iniciando');
           setFase('polling');
           setLoading(true);
           iniciarPolling(solicitacaoId);
@@ -422,9 +440,19 @@
     );
 
     if (fase === 'sucesso') return h('div', { className: 'flex flex-col items-center justify-center py-10 px-6 text-center' },
-      h('div', { className: 'w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mb-6' },
+      // Animação de entrada: check cresce com spring e conteúdo desce com fade.
+      // Mantida sutil pra não atrasar o motoboy — ele quer ver os valores rápido.
+      h('style', null, `
+        @keyframes successPop { 0% { transform: scale(0); opacity: 0; } 60% { transform: scale(1.15); opacity: 1; } 100% { transform: scale(1); } }
+        @keyframes successSlide { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+      `),
+      h('div', {
+        className: 'w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mb-6',
+        style: { animation: 'successPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards' }
+      },
         h('span', { className: 'text-4xl' }, '✅')
       ),
+      h('div', { style: { animation: 'successSlide 0.4s ease-out 0.2s both', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' } },
       h('h2', { className: 'text-2xl font-bold text-green-700 mb-2' }, 'Endereço corrigido com sucesso!'),
       h('p', { className: 'text-gray-500 mb-4' }, `OS ${form.os_numero || ''} — Ponto ${form.ponto || ''}`),
       // Antes x Depois
@@ -461,6 +489,7 @@
         className: 'px-8 py-3 rounded-xl font-semibold text-white',
         style: { background: 'linear-gradient(135deg, #550776, #7c3aed)' },
       }, '+ Nova Correção')
+      ) // fecha wrapper successSlide
     );
 
     if (fase === 'erro' && !loading) return h('div', { className: 'flex flex-col items-center justify-center py-16 px-6 text-center' },
@@ -490,67 +519,103 @@
     );
 
     // ── Render: polling — tela cheia com robô animado ──────────────────
-    if (fase === 'polling') return h('div', {
-      className: 'fixed inset-0 z-50 flex flex-col items-center justify-center px-6 overflow-hidden',
-      style: { background: 'linear-gradient(135deg, #550776 0%, #7c3aed 50%, #550776 100%)', backgroundSize: '200% 200%', animation: 'gradientShift 4s ease infinite', overflowX: 'hidden', overflowY: 'auto', width: '100vw', maxWidth: '100%' }
-    },
-      h('style', null, `
-        @keyframes gradientShift { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
-        @keyframes robotFloat { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-12px); } }
-        @keyframes robotWave { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(20deg); } 75% { transform: rotate(-10deg); } }
-        @keyframes robotBlink { 0%, 42%, 58%, 100% { transform: scaleY(1); } 45%, 55% { transform: scaleY(0.1); } }
-        @keyframes gearSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        @keyframes pulseRing { 0% { transform: scale(0.8); opacity: 0.5; } 50% { transform: scale(1.2); opacity: 0; } 100% { transform: scale(0.8); opacity: 0; } }
-        @keyframes dotPulse { 0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); } 40% { opacity: 1; transform: scale(1.2); } }
-        @keyframes progressBar { 0% { width: 5%; } 20% { width: 25%; } 50% { width: 55%; } 80% { width: 80%; } 100% { width: 95%; } }
-      `),
-      h('div', { style: { position: 'relative', width: '180px', height: '180px', marginBottom: '24px' } },
-        h('div', { style: { position: 'absolute', inset: 0, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.2)', animation: 'pulseRing 2s ease-in-out infinite' } }),
-        h('div', { style: { position: 'absolute', inset: '-10px', borderRadius: '50%', border: '2px solid rgba(255,255,255,0.1)', animation: 'pulseRing 2s ease-in-out 0.5s infinite' } }),
-        h('div', { style: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'robotFloat 3s ease-in-out infinite' } },
-          h('svg', { width: '120', height: '140', viewBox: '0 0 120 140', fill: 'none' },
-            h('line', { x1: '60', y1: '8', x2: '60', y2: '25', stroke: 'white', strokeWidth: '3', strokeLinecap: 'round' }),
-            h('circle', { cx: '60', cy: '6', r: '5', fill: '#fbbf24', style: { animation: 'robotBlink 3s ease infinite' } }),
-            h('rect', { x: '25', y: '25', width: '70', height: '50', rx: '16', fill: 'white', opacity: '0.95' }),
-            h('circle', { cx: '43', cy: '48', r: '7', fill: '#550776' }),
-            h('circle', { cx: '77', cy: '48', r: '7', fill: '#550776' }),
-            h('circle', { cx: '45', cy: '46', r: '2.5', fill: 'white' }),
-            h('circle', { cx: '79', cy: '46', r: '2.5', fill: 'white' }),
-            h('path', { d: 'M 45 58 Q 60 68 75 58', stroke: '#550776', strokeWidth: '2.5', fill: 'none', strokeLinecap: 'round' }),
-            h('rect', { x: '30', y: '80', width: '60', height: '40', rx: '12', fill: 'white', opacity: '0.9' }),
-            h('circle', { cx: '60', cy: '100', r: '8', fill: 'none', stroke: '#7c3aed', strokeWidth: '2', style: { transformOrigin: '60px 100px', animation: 'gearSpin 3s linear infinite' } }),
-            h('circle', { cx: '60', cy: '100', r: '3', fill: '#7c3aed' }),
-            h('g', { style: { transformOrigin: '25px 85px', animation: 'robotWave 1.5s ease-in-out infinite' } },
-              h('rect', { x: '5', y: '82', width: '22', height: '12', rx: '6', fill: 'white', opacity: '0.85' }),
-              h('circle', { cx: '8', cy: '88', r: '6', fill: '#fbbf24' })
-            ),
-            h('rect', { x: '93', y: '88', width: '22', height: '12', rx: '6', fill: 'white', opacity: '0.85' }),
-            h('rect', { x: '35', y: '122', width: '16', height: '10', rx: '5', fill: 'white', opacity: '0.8' }),
-            h('rect', { x: '69', y: '122', width: '16', height: '10', rx: '5', fill: 'white', opacity: '0.8' })
+    if (fase === 'polling') {
+      // Mapa de etapa → frase pro motoboy. Mantém sincronizado com os marcos do
+      // playwright-agent.js (reportar) e com o marco 'iniciando' do agent-worker.
+      const LABELS = {
+        iniciando:    'Preparando conexão…',
+        login:        'Entrando no sistema…',
+        localizando:  'Encontrando sua corrida…',
+        codificando:  'Codificando o novo endereço…',
+        confirmando:  'Confirmando a localização…',
+        recalculando: 'Recalculando o frete…',
+        finalizando:  'Pronto!',
+      };
+      const labelAtual = LABELS[etapa] || LABELS.iniciando;
+      const pctRound = Math.round(progresso);
+
+      return h('div', {
+        className: 'fixed inset-0 z-50 flex flex-col items-center justify-center px-6 overflow-hidden',
+        style: { background: 'linear-gradient(135deg, #550776 0%, #7c3aed 50%, #550776 100%)', backgroundSize: '200% 200%', animation: 'gradientShift 4s ease infinite', overflowX: 'hidden', overflowY: 'auto', width: '100vw', maxWidth: '100%' }
+      },
+        h('style', null, `
+          @keyframes gradientShift { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+          @keyframes pinDrop { 0% { transform: translateY(-55px); opacity: 0; } 15% { opacity: 1; } 40% { transform: translateY(0); } 50% { transform: translateY(-10px); } 60% { transform: translateY(0); } 70% { transform: translateY(-4px); } 80%, 100% { transform: translateY(0); } }
+          @keyframes pinRing { 0% { transform: scale(0.6); opacity: 0.8; } 100% { transform: scale(2.2); opacity: 0; } }
+          @keyframes dotPulse { 0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); } 40% { opacity: 1; transform: scale(1.2); } }
+          @keyframes labelFade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+        `),
+        // ── Mapa estilizado + pin caindo ─────────────────────────────
+        h('div', { style: { position: 'relative', width: '200px', height: '200px', marginBottom: '28px' } },
+          h('svg', { width: '200', height: '200', viewBox: '0 0 200 200' },
+            // Fundo do mapa
+            h('rect', { x: '10', y: '20', width: '180', height: '160', rx: '12', fill: 'rgba(255,255,255,0.08)' }),
+            // Ruas horizontais
+            h('line', { x1: '10', y1: '80',  x2: '190', y2: '80',  stroke: '#fff', strokeWidth: '2', opacity: '0.25' }),
+            h('line', { x1: '10', y1: '130', x2: '190', y2: '130', stroke: '#fff', strokeWidth: '2', opacity: '0.25' }),
+            // Ruas verticais
+            h('line', { x1: '70',  y1: '20', x2: '70',  y2: '180', stroke: '#fff', strokeWidth: '2', opacity: '0.25' }),
+            h('line', { x1: '130', y1: '20', x2: '130', y2: '180', stroke: '#fff', strokeWidth: '2', opacity: '0.25' }),
+            // Quarteirões
+            h('rect', { x: '20',  y: '30',  width: '40', height: '40', rx: '3', fill: '#fff', opacity: '0.08' }),
+            h('rect', { x: '80',  y: '30',  width: '40', height: '40', rx: '3', fill: '#fff', opacity: '0.08' }),
+            h('rect', { x: '140', y: '30',  width: '40', height: '40', rx: '3', fill: '#fff', opacity: '0.08' }),
+            h('rect', { x: '20',  y: '90',  width: '40', height: '30', rx: '3', fill: '#fff', opacity: '0.08' }),
+            h('rect', { x: '140', y: '90',  width: '40', height: '30', rx: '3', fill: '#fff', opacity: '0.08' }),
+            h('rect', { x: '20',  y: '140', width: '40', height: '30', rx: '3', fill: '#fff', opacity: '0.08' }),
+            h('rect', { x: '140', y: '140', width: '40', height: '30', rx: '3', fill: '#fff', opacity: '0.08' }),
+            // Ondas de pulso (sai de baixo do pin)
+            h('circle', { cx: '100', cy: '110', r: '16', fill: 'none', stroke: '#fbbf24', strokeWidth: '2.5', opacity: '0', style: { transformOrigin: '100px 110px', animation: 'pinRing 2.2s infinite' } }),
+            h('circle', { cx: '100', cy: '110', r: '16', fill: 'none', stroke: '#fbbf24', strokeWidth: '2.5', opacity: '0', style: { transformOrigin: '100px 110px', animation: 'pinRing 2.2s 1.1s infinite' } }),
+            // Pin caindo e quicando
+            h('g', { style: { animation: 'pinDrop 3s ease-out infinite', transformOrigin: '100px 110px' } },
+              h('path', { d: 'M 100 75 C 84 75 84 96 100 120 C 116 96 116 75 100 75 Z', fill: '#fbbf24' }),
+              h('circle', { cx: '100', cy: '92', r: '6', fill: '#550776' })
+            )
           )
+        ),
+        // ── Título dinâmico (muda conforme etapa) ────────────────────
+        // key={etapa} força re-mount a cada mudança, acionando a animação de entrada.
+        h('h2', {
+          key: etapa,
+          className: 'text-xl font-bold text-white mb-2 text-center px-4',
+          style: { textShadow: '0 2px 8px rgba(0,0,0,0.3)', animation: 'labelFade 0.4s ease-out', minHeight: '28px' }
+        }, labelAtual),
+        // ── Subtexto fixo ────────────────────────────────────────────
+        h('p', { className: 'text-xs text-purple-200 text-center mb-6 max-w-xs' },
+          'Em instantes você conseguirá finalizar a corrida.'
+        ),
+        // ── Barra de progresso REAL com % ────────────────────────────
+        h('div', { className: 'w-72 max-w-full' },
+          h('div', { className: 'flex justify-between items-center mb-2' },
+            h('span', { className: 'text-[11px] font-semibold text-purple-100 uppercase tracking-wide' }, 'Progresso'),
+            h('span', { className: 'text-sm font-bold text-white', style: { fontVariantNumeric: 'tabular-nums' } }, `${pctRound}%`)
+          ),
+          h('div', { className: 'w-full h-2.5 rounded-full overflow-hidden', style: { background: 'rgba(255,255,255,0.15)' } },
+            h('div', {
+              style: {
+                height: '100%',
+                width: `${pctRound}%`,
+                borderRadius: '9999px',
+                background: 'linear-gradient(90deg, #fbbf24, #f59e0b)',
+                // Transição suaviza o salto entre polls (a cada 5s o progresso pode pular).
+                transition: 'width 1.2s cubic-bezier(0.4, 0, 0.2, 1)',
+              }
+            })
+          )
+        ),
+        // ── 3 bolinhas pulsando ──────────────────────────────────────
+        h('div', { className: 'flex gap-2 mt-7' },
+          h('div', { className: 'w-2 h-2 rounded-full bg-white', style: { animation: 'dotPulse 1.4s ease-in-out infinite' } }),
+          h('div', { className: 'w-2 h-2 rounded-full bg-white', style: { animation: 'dotPulse 1.4s ease-in-out 0.2s infinite' } }),
+          h('div', { className: 'w-2 h-2 rounded-full bg-white', style: { animation: 'dotPulse 1.4s ease-in-out 0.4s infinite' } })
+        ),
+        // ── OS + Ponto ───────────────────────────────────────────────
+        h('div', { className: 'mt-8 px-4 py-2 rounded-full text-xs font-semibold text-purple-200', style: { background: 'rgba(255,255,255,0.1)' } },
+          `OS ${form.os_numero || '—'} • Ponto ${form.ponto || '—'}`
         )
-      ),
-      h('h2', { className: 'text-2xl font-bold text-white mb-3 text-center', style: { textShadow: '0 2px 8px rgba(0,0,0,0.3)' } },
-        'Aguarde...'
-      ),
-      h('p', { className: 'text-base text-purple-100 text-center mb-2 leading-relaxed max-w-xs' },
-        'O robô está executando sua solicitação.'
-      ),
-      h('p', { className: 'text-sm text-purple-200 text-center mb-8 max-w-xs' },
-        'Em menos de 1 minuto seu serviço será atualizado e você conseguirá finalizar a corrida!'
-      ),
-      h('div', { className: 'w-64 h-2 rounded-full overflow-hidden', style: { background: 'rgba(255,255,255,0.15)' } },
-        h('div', { style: { height: '100%', borderRadius: '9999px', background: 'linear-gradient(90deg, #fbbf24, #f59e0b)', animation: 'progressBar 60s ease-out forwards' } })
-      ),
-      h('div', { className: 'flex gap-2 mt-6' },
-        h('div', { className: 'w-2.5 h-2.5 rounded-full bg-white', style: { animation: 'dotPulse 1.4s ease-in-out infinite' } }),
-        h('div', { className: 'w-2.5 h-2.5 rounded-full bg-white', style: { animation: 'dotPulse 1.4s ease-in-out 0.2s infinite' } }),
-        h('div', { className: 'w-2.5 h-2.5 rounded-full bg-white', style: { animation: 'dotPulse 1.4s ease-in-out 0.4s infinite' } })
-      ),
-      h('div', { className: 'mt-8 px-4 py-2 rounded-full text-xs font-semibold text-purple-200', style: { background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(4px)' } },
-        `OS ${form.os_numero || '—'} • Ponto ${form.ponto || '—'}`
-      )
-    );
+      );
+    }
 
     // ── Render: formulário ────────────────────────────────────────────────
     const disabled = loading;
