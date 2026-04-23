@@ -470,7 +470,10 @@
                 }));
                 
                 try {
-                    const resp = await _fetch(`${API_URL}/disponibilidade/linhas/${linha.id}`, { method: "DELETE" });
+                    // ?force=true sinaliza que a exclusão vem da aba admin/Config:
+                    // backend pula a regra de limite mínimo de titulares e decrementa qtd_titulares
+                    // da loja (reconfigurando, não ficando inconsistente).
+                    const resp = await _fetch(`${API_URL}/disponibilidade/linhas/${linha.id}?force=true`, { method: "DELETE" });
                     if (!resp.ok) throw new Error("DELETE falhou");
                     toast(`🗑️ ${rotuloTipo} removido!`, "success");
                 } catch (e) {
