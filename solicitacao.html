@@ -584,13 +584,24 @@
                 carregarCorridasAtivas(); 
             }, []);
             
+            // Ref pra corridaSelecionada — usado dentro do interval de sincronização.
+            // Antes, corridaSelecionada estava nas deps do useEffect, o que fazia o setInterval
+            // ser destruído e recriado a cada clique em card diferente, causando disparos em sequência
+            // e race conditions (card piscava/voltava). Com ref, o interval é criado UMA vez só.
+            const corridaSelecionadaRef = useRef(null);
+            useEffect(() => { corridaSelecionadaRef.current = corridaSelecionada; }, [corridaSelecionada]);
+            
             useEffect(() => {
                 if (abaAtiva !== 'acompanhar') return;
                 
                 // Carregar imediatamente ao entrar na aba
                 carregarCorridasAtivas();
                 
-                // Sincronizar com Tutts a cada 15 segundos
+                // Sincronizar com Tutts a cada 15 segundos.
+                // Antes havia 2 setIntervals (sync 15s + local 5s) rodando em paralelo, o que causava
+                // race condition: ambos chamavam carregarCorridasAtivas()/carregarDetalheCorrida() e
+                // a resposta que chegasse por último sobrescrevia o state, às vezes com dados mais
+                // antigos. Agora 1 só interval, fonte única de verdade.
                 const intervalSync = setInterval(async () => {
                     try {
                         const resp = await fetch(`${API_URL}/api/solicitacao/sincronizar`, { 
@@ -598,25 +609,19 @@
                             headers: { 'Authorization': `Bearer ${token}` } 
                         });
                         if (resp.ok) {
-                            // Recarregar dados após sincronização
                             carregarCorridasAtivas();
                             carregarConcluidas();
-                            if (corridaSelecionada) carregarDetalheCorrida(corridaSelecionada);
+                            // Lê a seleção atual do ref (não das closures) — sem precisar estar nas deps.
+                            const selecionadaAtual = corridaSelecionadaRef.current;
+                            if (selecionadaAtual) carregarDetalheCorrida(selecionadaAtual);
                         }
                     } catch (err) {}
                 }, 15000);
                 
-                // Atualizar lista local a cada 5 segundos
-                const intervalLocal = setInterval(() => { 
-                    carregarCorridasAtivas(); 
-                    if (corridaSelecionada) carregarDetalheCorrida(corridaSelecionada); 
-                }, 5000);
-                
                 return () => {
                     clearInterval(intervalSync);
-                    clearInterval(intervalLocal);
                 };
-            }, [abaAtiva, corridaSelecionada]);
+            }, [abaAtiva]);
             
             const carregarHistorico = async () => { try { const resp = await fetch(`${API_URL}/api/solicitacao/historico?limite=20`, { headers: { 'Authorization': `Bearer ${token}` } }); if (resp.ok) { const data = await resp.json(); setHistorico(data.solicitacoes || []); } } catch (err) {} };
             
