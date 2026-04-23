@@ -19021,17 +19021,23 @@ const hideLoadingScreen = () => {
                             ? API_URL + "/bi/regioes/" + regiaoEditando 
                             : API_URL + "/bi/regioes";
                         var method = regiaoEditando ? "PUT" : "POST";
+                        var payloadDebug = {
+                            nome: regiaoNome.trim(),
+                            itens: regiaoItensAdicionados.map(function(i) {
+                                return { cod_cliente: i.cod_cliente, centro_custo: i.centro_custo };
+                            })
+                        };
+                        console.log("🟡 [REGIAO-DEBUG] Enviando " + method + " para " + url);
+                        console.log("🟡 [REGIAO-DEBUG] Payload:", JSON.stringify(payloadDebug, null, 2));
+                        console.log("🟡 [REGIAO-DEBUG] regiaoItensAdicionados (state):", regiaoItensAdicionados);
                         var resp = await fetchAuth(url, {
                             method: method,
                             headers: {"Content-Type": "application/json"},
-                            body: JSON.stringify({
-                                nome: regiaoNome.trim(),
-                                itens: regiaoItensAdicionados.map(function(i) {
-                                    return { cod_cliente: i.cod_cliente, centro_custo: i.centro_custo };
-                                })
-                            })
+                            body: JSON.stringify(payloadDebug)
                         });
                         var data = await resp.json();
+                        console.log("🟢 [REGIAO-DEBUG] Status HTTP:", resp.status);
+                        console.log("🟢 [REGIAO-DEBUG] Resposta do backend:", data);
                         if (data.success) {
                             ja(regiaoEditando ? "✅ Região atualizada!" : "✅ Região criada!", "success");
                             setRegiaoNome("");
@@ -19044,6 +19050,7 @@ const hideLoadingScreen = () => {
                             ja("❌ Erro: " + data.error, "error");
                         }
                     } catch(err) {
+                        console.error("🔴 [REGIAO-DEBUG] Erro capturado:", err);
                         ja("Erro ao salvar região", "error");
                     }
                 },
