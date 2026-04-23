@@ -1595,13 +1595,42 @@
             };
             const contarPontos = (corrida) => { const total = corrida.total_pontos || 0; return { coletas: 1, entregas: Math.max(0, total - 1) }; };
             
+            // Decide se deve exibir os dados do motoboy (foto, nome, telefone, placa) na UI.
+            // Problema: a Tutts pode devolver dados parciais de um motoboy que está APENAS
+            // VISUALIZANDO a corrida (sem ter aceitado). Nesse caso o nome aparece no banco
+            // mesmo sem vínculo oficial, criando ambiguidade com a label "Aguardando aceite".
+            //
+            // Regra (qualquer UMA das 3 = exibe):
+            //   (1) codigo_profissional preenchido → nós selecionamos ele no dropdown
+            //   (2) status já avançou → aceito/em_andamento/finalizado/cancelado
+            //   (3) foto OU telefone preenchidos → sinal de associação oficial da Tutts
+            //       (visualizadores recebem só nome + placa; associados recebem dados completos)
+            //
+            // Exceção: esta função NÃO é aplicada na aba Concluídas — lá os dados do motoboy
+            // sempre são exibidos (registro histórico de quem efetivamente fez a entrega).
+            const deveExibirMotoboy = (corrida) => {
+                if (!corrida) return false;
+                const temCodigo = corrida.codigo_profissional && String(corrida.codigo_profissional).trim() !== '';
+                const statusAvancado = ['aceito', 'em_andamento', 'finalizado', 'cancelado'].includes(corrida.status);
+                const dadosCompletos = !!corrida.profissional_foto || !!corrida.profissional_telefone;
+                return temCodigo || statusAvancado || dadosCompletos;
+            };
+
             // Analisa o estado completo da corrida e retorna uma mensagem descritiva.
             // Combina o status principal com os eventos dos pontos pra dar uma descrição precisa
             // do que o motoboy está fazendo agora.
             const analisarEstadoCorrida = (corrida) => {
                 // Estados diretos do status principal
                 if (corrida.status === 'enviado') {
-                    return { icone: '⏳', texto: 'Aguardando aceite do motoboy', cor: 'bg-gray-100 text-gray-700 border-gray-300' };
+                    // Se temos motoboy oficialmente vinculado → "Aguardando aceite" (do Fulano)
+                    // Se não temos → "Buscando motoboy..." (plataforma ainda procurando).
+                    // Ver regra completa em deveExibirMotoboy().
+                    const temMotoboyVinculado = deveExibirMotoboy(corrida);
+                    return {
+                        icone: temMotoboyVinculado ? '⏳' : '🔍',
+                        texto: temMotoboyVinculado ? 'Aguardando aceite do motoboy' : 'Buscando motoboy...',
+                        cor: 'bg-gray-100 text-gray-700 border-gray-300'
+                    };
                 }
                 if (corrida.status === 'erro') {
                     return { icone: '❌', texto: 'Erro ao criar corrida', cor: 'bg-red-100 text-red-700 border-red-300' };
@@ -2084,8 +2113,17 @@
                                                         <div key={c.id} onClick={() => selecionarCorrida(c.id)} className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${temRetorno ? 'border-orange-400 bg-orange-50' : corridaSelecionada === c.id ? 'border-blue-500 bg-blue-50 shadow-md' : 'border-gray-200 hover:border-gray-300 hover:shadow'}`}>
                                                             <div className="flex items-center justify-between mb-2">
                                                                 <div className="flex items-center gap-2 min-w-0 flex-1">
-                                                                    {c.profissional_foto ? <img src={c.profissional_foto} className="w-8 h-8 rounded-full object-cover border-2 border-gray-200" /> : <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-sm">🏍️</div>}
-                                                                    <span className="font-medium text-sm text-gray-800 truncate">{c.profissional_nome || 'Aguardando...'}</span>
+                                                                    {deveExibirMotoboy(c) ? (
+                                                                        <>
+                                                                            {c.profissional_foto ? <img src={c.profissional_foto} className="w-8 h-8 rounded-full object-cover border-2 border-gray-200" /> : <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-sm">🏍️</div>}
+                                                                            <span className="font-medium text-sm text-gray-800 truncate">{c.profissional_nome || 'Aguardando...'}</span>
+                                                                        </>
+                                                                    ) : (
+                                                                        <>
+                                                                            <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-sm">🔍</div>
+                                                                            <span className="font-medium text-sm text-gray-500 italic truncate">Buscando motoboy...</span>
+                                                                        </>
+                                                                    )}
                                                                 </div>
                                                                 <span className="text-xs font-bold text-gray-600 whitespace-nowrap">OS #{c.tutts_os_numero || c.id}</span>
                                                             </div>
@@ -2137,11 +2175,15 @@
                                             {/* Card compacto: OS + Profissional + Telefone + Nota + Ações */}
                                             <div className={`p-3 rounded-xl border ${statusCores[detalheCorrida.status]}`}>
                                                 <div className="flex items-center gap-3">
-                                                    {/* Foto */}
-                                                    {detalheCorrida.profissional_foto ? (
-                                                        <img src={detalheCorrida.profissional_foto} className="w-12 h-12 rounded-full object-cover border-2 border-white shadow flex-shrink-0" />
+                                                    {/* Foto — só se motoboy oficialmente vinculado (ver deveExibirMotoboy) */}
+                                                    {deveExibirMotoboy(detalheCorrida) ? (
+                                                        detalheCorrida.profissional_foto ? (
+                                                            <img src={detalheCorrida.profissional_foto} className="w-12 h-12 rounded-full object-cover border-2 border-white shadow flex-shrink-0" />
+                                                        ) : (
+                                                            <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0 text-lg">🏍️</div>
+                                                        )
                                                     ) : (
-                                                        <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0 text-lg">🏍️</div>
+                                                        <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 text-lg">🔍</div>
                                                     )}
                                                     
                                                     {/* Info */}
@@ -2155,10 +2197,14 @@
                                                                 );
                                                             })()}
                                                         </div>
-                                                        <div className="text-sm font-medium text-gray-800 truncate">{detalheCorrida.profissional_nome || 'Aguardando profissional...'}</div>
+                                                        <div className="text-sm font-medium text-gray-800 truncate">
+                                                            {deveExibirMotoboy(detalheCorrida)
+                                                                ? (detalheCorrida.profissional_nome || 'Aguardando profissional...')
+                                                                : <span className="text-gray-500 italic">Buscando motoboy...</span>}
+                                                        </div>
                                                         <div className="flex items-center gap-3 text-xs text-gray-600 mt-1 flex-wrap">
                                                             <span>🕐 {formatarSolicitada(detalheCorrida.criado_em)}</span>
-                                                            {detalheCorrida.profissional_telefone && (
+                                                            {deveExibirMotoboy(detalheCorrida) && detalheCorrida.profissional_telefone && (
                                                                 <a href={`tel:${detalheCorrida.profissional_telefone}`} className="flex items-center gap-1 text-blue-600 hover:text-blue-800">
                                                                     📞 {detalheCorrida.profissional_telefone}
                                                                 </a>
