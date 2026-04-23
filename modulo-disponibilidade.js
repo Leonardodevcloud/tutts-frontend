@@ -416,20 +416,29 @@
                     }
                 }, 600)
             }, s = async (e, t, a = !1) => {
+                // Optimistic update: faz o POST, pega as linhas reais de volta (com ID real do banco)
+                // e insere direto no estado local. Não chama r() — assim não há refetch nem flash da tela.
+                // Se falhar, toast de erro e estado local não muda (sem rollback necessário porque não mudamos nada antes).
                 try {
-                    await _fetch(`${API_URL}/disponibilidade/linhas`, {
+                    const resp = await _fetch(`${API_URL}/disponibilidade/linhas`, {
                         method: "POST",
-                        headers: {
-                            "Content-Type": "application/json"
-                        },
-                        body: JSON.stringify({
-                            loja_id: e,
-                            quantidade: t,
-                            is_excedente: a
-                        })
-                    }), ja(`✅ ${t} ${a?"excedente(s)":"titular(es)"} adicionado(s)!`, "success"), r()
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ loja_id: e, quantidade: t, is_excedente: a })
+                    });
+                    const linhasNovas = await resp.json();
+                    if (!Array.isArray(linhasNovas)) throw new Error("Resposta inválida");
+                    
+                    // Merge no estado: adiciona as novas linhas ao array existente sem tocar no resto.
+                    x(prev => ({
+                        ...prev,
+                        dispData: {
+                            ...prev.dispData,
+                            linhas: [...(prev.dispData?.linhas || []), ...linhasNovas]
+                        }
+                    }));
+                    ja(`✅ ${t} ${a ? "excedente(s)" : "titular(es)"} adicionado(s)!`, "success");
                 } catch (e) {
-                    ja("Erro ao adicionar linhas", "error")
+                    ja("Erro ao adicionar linhas", "error");
                 }
             },
             // Remove UMA linha específica (titular ou excedente) pelo ID.
@@ -450,12 +459,30 @@
                 
                 if (!window.confirm(mensagem)) return;
                 
+                // Optimistic remove: tira a linha do estado imediatamente (tela atualiza sem flash).
+                // Se o DELETE falhar, colocamos de volta e avisamos o usuário (rollback).
+                x(prev => ({
+                    ...prev,
+                    dispData: {
+                        ...prev.dispData,
+                        linhas: (prev.dispData?.linhas || []).filter(l => l.id !== linha.id)
+                    }
+                }));
+                
                 try {
-                    await _fetch(`${API_URL}/disponibilidade/linhas/${linha.id}`, { method: "DELETE" });
+                    const resp = await _fetch(`${API_URL}/disponibilidade/linhas/${linha.id}`, { method: "DELETE" });
+                    if (!resp.ok) throw new Error("DELETE falhou");
                     toast(`🗑️ ${rotuloTipo} removido!`, "success");
-                    reload();
                 } catch (e) {
-                    toast(`Erro ao remover ${rotuloTipo.toLowerCase()}`, "error");
+                    // Rollback: recoloca a linha no estado e avisa.
+                    x(prev => ({
+                        ...prev,
+                        dispData: {
+                            ...prev.dispData,
+                            linhas: [...(prev.dispData?.linhas || []), linha]
+                        }
+                    }));
+                    toast(`Erro ao remover ${rotuloTipo.toLowerCase()} — tente novamente`, "error");
                 }
             },
             // Renderiza o popover que aparece embaixo do badge ao clicar.
@@ -2079,22 +2106,45 @@
                         className: "px-3 py-2 text-center"
                     }, c ? React.createElement(React.Fragment, null, React.createElement("button", {
                         onClick: async () => {
+                            // Optimistic: aplica o novo código/nome no estado local imediatamente e fecha edição.
+                            // Se o PUT falhar, reverte pro valor original.
+                            const novoCodigo = p.editLojaCodigo;
+                            const novoNome = p.editLojaNome;
+                            const lojaOriginal = (p.dispData?.lojas || []).find(l => l.id === t.id);
+                            
+                            x(prev => ({
+                                ...prev,
+                                editandoLoja: null,
+                                dispData: {
+                                    ...prev.dispData,
+                                    lojas: (prev.dispData?.lojas || []).map(l =>
+                                        l.id === t.id ? { ...l, codigo: novoCodigo, nome: novoNome } : l
+                                    )
+                                }
+                            }));
+                            
                             try {
-                                await _fetch(`${API_URL}/disponibilidade/lojas/${t.id}`, {
+                                const resp = await _fetch(`${API_URL}/disponibilidade/lojas/${t.id}`, {
                                     method: "PUT",
-                                    headers: {
-                                        "Content-Type": "application/json"
-                                    },
-                                    body: JSON.stringify({
-                                        codigo: p.editLojaCodigo,
-                                        nome: p.editLojaNome
-                                    })
-                                }), x({
-                                    ...p,
-                                    editandoLoja: null
-                                }), ja("✅ Loja atualizada!", "success"), r()
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({ codigo: novoCodigo, nome: novoNome })
+                                });
+                                if (!resp.ok) throw new Error("PUT falhou");
+                                ja("✅ Loja atualizada!", "success");
                             } catch (e) {
-                                ja("Erro ao atualizar", "error")
+                                // Rollback: restaura código/nome anteriores.
+                                if (lojaOriginal) {
+                                    x(prev => ({
+                                        ...prev,
+                                        dispData: {
+                                            ...prev.dispData,
+                                            lojas: (prev.dispData?.lojas || []).map(l =>
+                                                l.id === t.id ? { ...l, codigo: lojaOriginal.codigo, nome: lojaOriginal.nome } : l
+                                            )
+                                        }
+                                    }));
+                                }
+                                ja("Erro ao atualizar", "error");
                             }
                         },
                         className: "px-2 py-1 bg-green-100 text-green-700 rounded text-xs mr-1"
@@ -2122,13 +2172,42 @@
                         className: "px-2 py-1 bg-red-100 text-red-700 rounded text-xs mr-1",
                         title: "Adicionar excedente"
                     }, "+E"), React.createElement("button", {
-                        onClick: () => (async (e, t) => {
-                            if (window.confirm(`Remover loja "${t}"?`)) try {
-                                await _fetch(`${API_URL}/disponibilidade/lojas/${e}`, {
-                                    method: "DELETE"
-                                }), ja("🗑️ Loja removida!", "success"), r()
+                        onClick: () => (async (lojaId, lojaNome) => {
+                            if (!window.confirm(`Remover loja "${lojaNome}"?`)) return;
+                            
+                            // Optimistic: guarda loja + linhas pra rollback, remove tudo do estado local.
+                            // Sem flash da tabela inteira — a linha da loja simplesmente some.
+                            const lojasAntes = p.dispData?.lojas || [];
+                            const linhasAntes = p.dispData?.linhas || [];
+                            const lojaRemovida = lojasAntes.find(l => l.id === lojaId);
+                            const linhasRemovidas = linhasAntes.filter(l => l.loja_id === lojaId);
+                            
+                            x(prev => ({
+                                ...prev,
+                                dispData: {
+                                    ...prev.dispData,
+                                    lojas: (prev.dispData?.lojas || []).filter(l => l.id !== lojaId),
+                                    linhas: (prev.dispData?.linhas || []).filter(l => l.loja_id !== lojaId)
+                                }
+                            }));
+                            
+                            try {
+                                const resp = await _fetch(`${API_URL}/disponibilidade/lojas/${lojaId}`, { method: "DELETE" });
+                                if (!resp.ok) throw new Error("DELETE falhou");
+                                ja("🗑️ Loja removida!", "success");
                             } catch (e) {
-                                ja("Erro ao remover loja", "error")
+                                // Rollback: recoloca loja e linhas.
+                                if (lojaRemovida) {
+                                    x(prev => ({
+                                        ...prev,
+                                        dispData: {
+                                            ...prev.dispData,
+                                            lojas: [...(prev.dispData?.lojas || []), lojaRemovida],
+                                            linhas: [...(prev.dispData?.linhas || []), ...linhasRemovidas]
+                                        }
+                                    }));
+                                }
+                                ja("Erro ao remover loja", "error");
                             }
                         })(t.id, t.nome),
                         className: "px-2 py-1 bg-red-100 text-red-700 rounded text-xs",
