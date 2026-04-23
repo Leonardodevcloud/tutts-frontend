@@ -1573,6 +1573,18 @@
             
             const formatarData = (d) => d ? new Date(d).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
             const formatarHora = (d) => d ? new Date(d).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Bahia' }) : '';
+            // Extrai HH:MM DIRETO da string, sem passar por new Date().
+            // Necessário pros timestamps dos pontos (data_chegada/data_coletado/data_finalizado) porque
+            // o backend serializa esses campos com sufixo Z (UTC fake) quando vêm do merge com dados_pontos,
+            // o que fazia new Date().toLocaleTimeString() subtrair 3h. Aqui só pega os dígitos da string,
+            // funcionando independente de como o timestamp vem (ISO com Z, string plain, Date, etc).
+            const formatarHoraPonto = (valor) => {
+                if (!valor) return '';
+                const str = valor instanceof Date ? valor.toISOString() : String(valor);
+                // Match: ISO "2026-04-22T17:19:47.000Z" OU plain "2026-04-22 17:19:47"
+                const m = str.match(/[T\s](\d{2}):(\d{2})/);
+                return m ? `${m[1]}:${m[2]}` : '';
+            };
             // Formata "Solicitada às HH:MM" se foi hoje; caso contrário "Solicitada DD/MM às HH:MM"
             const formatarSolicitada = (d) => {
                 if (!d) return '';
@@ -2273,14 +2285,14 @@
                                                                                             <div className="flex items-center gap-2 text-xs">
                                                                                                 <span className="w-5 text-center">📍</span>
                                                                                                 <span className="text-blue-700 flex-1">Chegou no {isColeta ? 'ponto' : 'cliente'}</span>
-                                                                                                <span className="font-mono text-gray-600 text-xs">{formatarHora(p.data_chegada)}</span>
+                                                                                                <span className="font-mono text-gray-600 text-xs">{formatarHoraPonto(p.data_chegada)}</span>
                                                                                             </div>
                                                                                         )}
                                                                                         {isColeta && p.data_coletado && (
                                                                                             <div className="flex items-center gap-2 text-xs">
                                                                                                 <span className="w-5 text-center">📦</span>
                                                                                                 <span className="text-indigo-700 flex-1">Confirmou coleta</span>
-                                                                                                <span className="font-mono text-gray-600 text-xs">{formatarHora(p.data_coletado)}</span>
+                                                                                                <span className="font-mono text-gray-600 text-xs">{formatarHoraPonto(p.data_coletado)}</span>
                                                                                             </div>
                                                                                         )}
                                                                                         {p.data_finalizado && (() => {
@@ -2293,7 +2305,7 @@
                                                                                                 <div className="flex items-center gap-2 text-xs">
                                                                                                     <span className="w-5 text-center">{icone}</span>
                                                                                                     <span className={`${corTexto} flex-1 font-medium`}>{label}</span>
-                                                                                                    <span className="font-mono text-gray-600 text-xs">{formatarHora(p.data_finalizado)}</span>
+                                                                                                    <span className="font-mono text-gray-600 text-xs">{formatarHoraPonto(p.data_finalizado)}</span>
                                                                                                 </div>
                                                                                             );
                                                                                         })()}
@@ -2541,9 +2553,9 @@
                                                                                                             <div className="mt-2 pt-2 border-t border-gray-200">
                                                                                                                 <div className="text-xs text-gray-500 mb-1">⏱️ Horários:</div>
                                                                                                                 <div className="flex flex-wrap gap-3 text-xs">
-                                                                                                                    {p.data_chegada && <span className="text-blue-600">🔵 Chegou: {new Date(p.data_chegada).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit', timeZone: 'America/Bahia'})}</span>}
-                                                                                                                    {p.data_coletado && <span className="text-yellow-600">🟡 Coletou: {new Date(p.data_coletado).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit', timeZone: 'America/Bahia'})}</span>}
-                                                                                                                    {p.data_finalizado && <span className="text-green-600">✅ Finalizado: {new Date(p.data_finalizado).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit', timeZone: 'America/Bahia'})}</span>}
+                                                                                                                    {p.data_chegada && <span className="text-blue-600">🔵 Chegou: {formatarHoraPonto(p.data_chegada)}</span>}
+                                                                                                                    {p.data_coletado && <span className="text-yellow-600">🟡 Coletou: {formatarHoraPonto(p.data_coletado)}</span>}
+                                                                                                                    {p.data_finalizado && <span className="text-green-600">✅ Finalizado: {formatarHoraPonto(p.data_finalizado)}</span>}
                                                                                                                 </div>
                                                                                                             </div>
                                                                                                         )}
