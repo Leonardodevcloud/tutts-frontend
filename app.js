@@ -18862,10 +18862,22 @@ const hideLoadingScreen = () => {
                                         checked: isSelected,
                                         onChange: async function(e) {
                                             var codStr = String(c.cod_cliente);
+                                            var codNum = parseInt(c.cod_cliente);
                                             if (e.target.checked) {
                                                 // Adicionar cliente à seleção
                                                 setRegiaoClienteSelecionado(function(prev) {
                                                     return prev ? [...prev, codStr] : [codStr];
+                                                });
+                                                // Adicionar item consolidado (centro_custo: null = todos os CCs).
+                                                // Se usuário clicar depois num centro específico, esse item é removido
+                                                // (ver onChange dos centros específicos mais abaixo).
+                                                var nomeCli = il(codNum) || c.nome_cliente || "Cliente " + codNum;
+                                                setRegiaoItensAdicionados(function(prev) {
+                                                    var jaTem = prev.some(function(i) {
+                                                        return i.cod_cliente === codNum && i.centro_custo === null;
+                                                    });
+                                                    if (jaTem) return prev;
+                                                    return [...prev, { cod_cliente: codNum, nome_cliente: nomeCli, centro_custo: null }];
                                                 });
                                                 // Buscar centros de custo
                                                 try {
@@ -18890,7 +18902,7 @@ const hideLoadingScreen = () => {
                                                     delete novo[codStr];
                                                     return novo;
                                                 });
-                                                // Remover itens adicionados desse cliente
+                                                // Remover itens adicionados desse cliente (consolidado + todos específicos)
                                                 setRegiaoItensAdicionados(function(prev) {
                                                     return prev.filter(function(i) { return String(i.cod_cliente) !== codStr; });
                                                 });
@@ -18927,18 +18939,31 @@ const hideLoadingScreen = () => {
                                 React.createElement("label", {className: "flex items-center gap-2 p-1 hover:bg-gray-50 rounded cursor-pointer ml-2"},
                                     React.createElement("input", {
                                         type: "checkbox",
-                                        onChange: function() {
-                                            var novoItem = {
-                                                cod_cliente: parseInt(codCliente),
-                                                nome_cliente: nomeCliente,
-                                                centro_custo: null
-                                            };
-                                            var existe = regiaoItensAdicionados.some(function(i) { 
-                                                return i.cod_cliente === novoItem.cod_cliente && i.centro_custo === null; 
-                                            });
-                                            if (!existe) {
-                                                setRegiaoItensAdicionados(function(prev) { return [...prev, novoItem]; });
-                                                ja("✅ " + codCliente + " - Todos CC adicionado", "success");
+                                        // Marcado quando há item consolidado (centro_custo: null) desse cliente
+                                        checked: regiaoItensAdicionados.some(function(i) {
+                                            return i.cod_cliente === parseInt(codCliente) && i.centro_custo === null;
+                                        }),
+                                        onChange: function(e) {
+                                            var codNum = parseInt(codCliente);
+                                            if (e.target.checked) {
+                                                // Ao marcar "Todos": remove específicos desse cliente e garante o consolidado
+                                                // (exclusividade — ou todos, ou específicos, nunca os dois)
+                                                setRegiaoItensAdicionados(function(prev) {
+                                                    var semDesseCliente = prev.filter(function(i) {
+                                                        return i.cod_cliente !== codNum;
+                                                    });
+                                                    return [...semDesseCliente, { cod_cliente: codNum, nome_cliente: nomeCliente, centro_custo: null }];
+                                                });
+                                                ja("✅ " + codCliente + " - Todos CC selecionado", "success");
+                                            } else {
+                                                // Ao desmarcar "Todos": remove o consolidado desse cliente.
+                                                // Usuário fica sem itens desse cliente — pode marcar específicos depois,
+                                                // ou desmarcar o cliente inteiro na Coluna 1.
+                                                setRegiaoItensAdicionados(function(prev) {
+                                                    return prev.filter(function(i) {
+                                                        return !(i.cod_cliente === codNum && i.centro_custo === null);
+                                                    });
+                                                });
                                             }
                                         },
                                         className: "w-3 h-3"
@@ -18953,18 +18978,42 @@ const hideLoadingScreen = () => {
                                     },
                                         React.createElement("input", {
                                             type: "checkbox",
-                                            onChange: function() {
-                                                var novoItem = {
-                                                    cod_cliente: parseInt(codCliente),
-                                                    nome_cliente: nomeCliente,
-                                                    centro_custo: cc.centro_custo
-                                                };
-                                                var existe = regiaoItensAdicionados.some(function(i) { 
-                                                    return i.cod_cliente === novoItem.cod_cliente && i.centro_custo === novoItem.centro_custo; 
-                                                });
-                                                if (!existe) {
-                                                    setRegiaoItensAdicionados(function(prev) { return [...prev, novoItem]; });
+                                            // Marcado quando esse centro específico está na lista
+                                            checked: regiaoItensAdicionados.some(function(i) {
+                                                return i.cod_cliente === parseInt(codCliente) && i.centro_custo === cc.centro_custo;
+                                            }),
+                                            onChange: function(e) {
+                                                var codNum = parseInt(codCliente);
+                                                if (e.target.checked) {
+                                                    // Ao marcar um CC específico:
+                                                    // 1. Remove o item consolidado (centro_custo: null) desse cliente, se houver
+                                                    //    (exclusividade — não pode ter "todos" e específicos ao mesmo tempo)
+                                                    // 2. Adiciona o específico
+                                                    setRegiaoItensAdicionados(function(prev) {
+                                                        var semConsolidado = prev.filter(function(i) {
+                                                            return !(i.cod_cliente === codNum && i.centro_custo === null);
+                                                        });
+                                                        return [...semConsolidado, { cod_cliente: codNum, nome_cliente: nomeCliente, centro_custo: cc.centro_custo }];
+                                                    });
                                                     ja("✅ " + cc.centro_custo + " adicionado", "success");
+                                                } else {
+                                                    // Ao desmarcar um específico:
+                                                    // 1. Remove esse específico
+                                                    // 2. Se era o ÚLTIMO específico desse cliente (e o cliente continua selecionado),
+                                                    //    volta pro consolidado (senão o cliente ficaria sem nenhum item e desapareceria da região).
+                                                    setRegiaoItensAdicionados(function(prev) {
+                                                        var semEste = prev.filter(function(i) {
+                                                            return !(i.cod_cliente === codNum && i.centro_custo === cc.centro_custo);
+                                                        });
+                                                        var aindaTemEspecificoDesteCliente = semEste.some(function(i) {
+                                                            return i.cod_cliente === codNum && i.centro_custo !== null;
+                                                        });
+                                                        var clienteAindaMarcado = regiaoClienteSelecionado && regiaoClienteSelecionado.includes(String(codNum));
+                                                        if (!aindaTemEspecificoDesteCliente && clienteAindaMarcado) {
+                                                            return [...semEste, { cod_cliente: codNum, nome_cliente: nomeCliente, centro_custo: null }];
+                                                        }
+                                                        return semEste;
+                                                    });
                                                 }
                                             },
                                             className: "w-3 h-3"
@@ -19021,23 +19070,17 @@ const hideLoadingScreen = () => {
                             ? API_URL + "/bi/regioes/" + regiaoEditando 
                             : API_URL + "/bi/regioes";
                         var method = regiaoEditando ? "PUT" : "POST";
-                        var payloadDebug = {
-                            nome: regiaoNome.trim(),
-                            itens: regiaoItensAdicionados.map(function(i) {
-                                return { cod_cliente: i.cod_cliente, centro_custo: i.centro_custo };
-                            })
-                        };
-                        console.log("🟡 [REGIAO-DEBUG] Enviando " + method + " para " + url);
-                        console.log("🟡 [REGIAO-DEBUG] Payload:", JSON.stringify(payloadDebug, null, 2));
-                        console.log("🟡 [REGIAO-DEBUG] regiaoItensAdicionados (state):", regiaoItensAdicionados);
                         var resp = await fetchAuth(url, {
                             method: method,
                             headers: {"Content-Type": "application/json"},
-                            body: JSON.stringify(payloadDebug)
+                            body: JSON.stringify({
+                                nome: regiaoNome.trim(),
+                                itens: regiaoItensAdicionados.map(function(i) {
+                                    return { cod_cliente: i.cod_cliente, centro_custo: i.centro_custo };
+                                })
+                            })
                         });
                         var data = await resp.json();
-                        console.log("🟢 [REGIAO-DEBUG] Status HTTP:", resp.status);
-                        console.log("🟢 [REGIAO-DEBUG] Resposta do backend:", data);
                         if (data.success) {
                             ja(regiaoEditando ? "✅ Região atualizada!" : "✅ Região criada!", "success");
                             setRegiaoNome("");
@@ -19050,7 +19093,6 @@ const hideLoadingScreen = () => {
                             ja("❌ Erro: " + data.error, "error");
                         }
                     } catch(err) {
-                        console.error("🔴 [REGIAO-DEBUG] Erro capturado:", err);
                         ja("Erro ao salvar região", "error");
                     }
                 },
