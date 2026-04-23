@@ -1062,14 +1062,21 @@
                 }
             };
             
-            // Buscar salvos quando digita
+            // Buscar salvos quando digita — debounce 300ms evita spam de requests.
+            // Antes: a cada caractere digitado, disparava um GET (ex: "estrada de campinas" = 19 requests).
+            // Agora: espera 300ms após a última tecla pra buscar. Reduz ~90% das requests sem afetar UX.
             useEffect(() => {
-                if (termoBusca.length >= 2) {
-                    buscarEnderecosSalvos(termoBusca);
-                } else if (termoBusca.length === 0) {
+                if (termoBusca.length === 0) {
                     setMostrarSalvos(false);
                     setEnderecosSalvos([]);
+                    return;
                 }
+                if (termoBusca.length < 2) return;
+                
+                const timer = setTimeout(() => {
+                    buscarEnderecosSalvos(termoBusca);
+                }, 300);
+                return () => clearTimeout(timer);
             }, [termoBusca]);
             
             // NOVO: autocomplete Google com debounce 400ms — economiza requisições
