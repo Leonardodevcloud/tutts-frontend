@@ -463,6 +463,12 @@
             
             // NOVO: estados da aba "Meus Endereços"
             const [todosEnderecos, setTodosEnderecos] = useState([]);
+            // Modo "trocar endereço" — ativado pelo modal de edição quando usuário clica em "🔄 Trocar endereço".
+            // Enquanto ativo, as funções finalizarAdicaoPonto e adicionarPontoSalvo substituem o endereço
+            // do ponto existente (pontoIdx) em vez de criar um novo. Os campos auxiliares (nome_fantasia,
+            // numero_nota, observacao, etc) do dadosPonto são preservados em dadosPreservados e restaurados
+            // quando o modal reabrir após a escolha do novo endereço.
+            const [modoTrocarEndereco, setModoTrocarEndereco] = useState({ ativo: false, pontoIdx: null, dadosPreservados: null });
             const [carregandoEnderecos, setCarregandoEnderecos] = useState(false);
             const [filtroEnderecos, setFiltroEnderecos] = useState('');
             // Paginação da aba Meus Endereços (sem filtro, usa paginação; com filtro, busca server-side retorna até 50)
@@ -1097,6 +1103,48 @@
             
             // Adicionar ponto de endereço salvo
             const adicionarPontoSalvo = async (endereco) => {
+                // Modo trocar endereço: substitui endereço do ponto existente, mantendo campos auxiliares.
+                // Para endereço salvo, só trocamos os campos de localização — não sobrescrevemos
+                // nome_fantasia/observacao/telefone/complemento, que foram preservados em dadosPreservados.
+                if (modoTrocarEndereco.ativo) {
+                    const idx = modoTrocarEndereco.pontoIdx;
+                    setPontos(prev => prev.map((p, i) => i === idx ? {
+                        ...p,
+                        endereco_completo: endereco.endereco_completo || `${endereco.rua}, ${endereco.numero} - ${endereco.bairro}, ${endereco.cidade}`,
+                        rua: endereco.rua,
+                        numero: endereco.numero,
+                        bairro: endereco.bairro,
+                        cidade: endereco.cidade,
+                        uf: endereco.uf,
+                        cep: endereco.cep,
+                        latitude: parseFloat(endereco.latitude),
+                        longitude: parseFloat(endereco.longitude),
+                        endereco_salvo_id: endereco.id,
+                        apelido_salvo: endereco.apelido,
+                        ajustado_manualmente: false
+                    } : p));
+                    
+                    // Incrementar uso (best-effort)
+                    try {
+                        await fetch(`${API_URL}/api/solicitacao/enderecos-salvos/${endereco.id}/usar`, {
+                            method: 'PATCH',
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                    } catch (err) {}
+                    
+                    setDadosPonto(modoTrocarEndereco.dadosPreservados);
+                    setPontoEditando(idx);
+                    setModoTrocarEndereco({ ativo: false, pontoIdx: null, dadosPreservados: null });
+                    
+                    setTermoBusca('');
+                    setSugestoes([]);
+                    setMostrarSalvos(false);
+                    setEnderecosSalvos([]);
+                    setDrawerEnderecos(false);
+                    showToast(`✅ Endereço trocado para "${endereco.apelido}"`, 'success');
+                    return;
+                }
+                
                 if (pontos.length >= 2) { showToast('Este fluxo permite apenas 1 ponto de entrega', 'error'); return; }
                 
                 const novoId = Date.now();
@@ -1266,6 +1314,41 @@
             
             // Finaliza a adição do ponto (efeitos colaterais: toast, prompt de ajuste, nota rápida)
             const finalizarAdicaoPonto = (novoPonto) => {
+                // Modo trocar endereço: substitui os campos de endereço do ponto existente
+                // em vez de criar um novo, preservando nome_fantasia/numero_nota/observacao/telefone/complemento.
+                if (modoTrocarEndereco.ativo) {
+                    const idx = modoTrocarEndereco.pontoIdx;
+                    setPontos(prev => prev.map((p, i) => i === idx ? {
+                        ...p,
+                        endereco_completo: novoPonto.endereco_completo,
+                        rua: novoPonto.rua,
+                        numero: novoPonto.numero,
+                        bairro: novoPonto.bairro,
+                        cidade: novoPonto.cidade,
+                        uf: novoPonto.uf,
+                        cep: novoPonto.cep,
+                        latitude: novoPonto.latitude,
+                        longitude: novoPonto.longitude,
+                        // Zera vínculo com endereço salvo (endereço foi trocado)
+                        endereco_salvo_id: null,
+                        apelido_salvo: null,
+                        // Flag pra exibição de "posição ajustada" volta a false — ajuste prévio perdeu validade
+                        ajustado_manualmente: false
+                    } : p));
+                    
+                    // Restaura o modal de edição com os dados auxiliares preservados
+                    setDadosPonto(modoTrocarEndereco.dadosPreservados);
+                    setPontoEditando(idx);
+                    setModoTrocarEndereco({ ativo: false, pontoIdx: null, dadosPreservados: null });
+                    
+                    setTermoBusca('');
+                    setSugestoes([]);
+                    setAguardandoNumero({ aberto: false, sugestao: null, numero: '' });
+                    setMapaKey(prev => prev + 1);
+                    showToast('✅ Endereço trocado', 'success');
+                    return;
+                }
+                
                 const novosPontos = [...pontos, novoPonto];
                 setPontos(novosPontos);
                 setTermoBusca('');
@@ -1288,7 +1371,8 @@
             };
             
             const adicionarPonto = (sug) => {
-                if (pontos.length >= 2) { showToast('Este fluxo permite apenas 1 ponto de entrega', 'error'); return; }
+                // Em modo trocar endereço, o guard de 2 pontos não se aplica (estamos substituindo, não adicionando)
+                if (!modoTrocarEndereco.ativo && pontos.length >= 2) { showToast('Este fluxo permite apenas 1 ponto de entrega', 'error'); return; }
                 const comp = sug.componentes || [];
                 const temNumero = !!comp.find(c => c.types?.includes('street_number'));
                 
@@ -1469,7 +1553,8 @@
                 setDadosPonto({ 
                     observacao: p.observacao || '', 
                     telefone: p.telefone || '', 
-                    procurar_por: p.procurar_por || '', 
+                    procurar_por: p.procurar_por || '',   // mantido pra retrocompat de leitura de corridas antigas
+                    nome_fantasia: p.nome_fantasia || '', // novo campo (razão social)
                     numero_nota: p.numero_nota || '', 
                     codigo_finalizar: p.codigo_finalizar || '',
                     complemento: p.complemento || ''
@@ -1480,7 +1565,46 @@
                 setNotaRapida('');
             };
             
-            const salvarEdicaoPonto = () => { const n = [...pontos]; n[pontoEditando] = { ...n[pontoEditando], ...dadosPonto }; setPontos(n); setPontoEditando(null); showToast('✅ Salvo', 'success'); };
+            // Inicia troca de endereço: fecha o modal de edição, guarda os campos auxiliares,
+            // e devolve o foco pra busca de endereço (o fluxo é: usuário escolhe um endereço novo,
+            // o modal reabre automaticamente com os campos auxiliares restaurados).
+            const iniciarTrocarEndereco = (idx) => {
+                setModoTrocarEndereco({ 
+                    ativo: true, 
+                    pontoIdx: idx, 
+                    dadosPreservados: { ...dadosPonto }
+                });
+                setPontoEditando(null); // fecha modal de edição
+                setTimeout(() => {
+                    const campo = document.querySelector('input[placeholder*="apelido ou endereço"]');
+                    if (campo) { campo.focus(); campo.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+                }, 100);
+                showToast('🔄 Escolha o novo endereço (digite ou selecione dos salvos)', 'info');
+            };
+            
+            // Cancela o modo trocar endereço e reabre o modal de edição sem mudar o endereço.
+            const cancelarTrocarEndereco = () => {
+                const idx = modoTrocarEndereco.pontoIdx;
+                const dados = modoTrocarEndereco.dadosPreservados;
+                setModoTrocarEndereco({ ativo: false, pontoIdx: null, dadosPreservados: null });
+                if (dados) setDadosPonto(dados);
+                if (idx !== null) setPontoEditando(idx);
+                setTermoBusca('');
+                setSugestoes([]);
+            };
+            
+            const salvarEdicaoPonto = () => { 
+                // Validação: pontos de entrega (idx > 0) exigem razão social e NF — igual ao form de cadastro novo
+                if (pontoEditando !== 0) {
+                    if (!dadosPonto.nome_fantasia?.trim()) { showToast('⚠️ Razão social / Nome fantasia é obrigatório', 'warning'); return; }
+                    if (!dadosPonto.numero_nota?.trim()) { showToast('⚠️ Nº da NF é obrigatório', 'warning'); return; }
+                }
+                const n = [...pontos]; 
+                n[pontoEditando] = { ...n[pontoEditando], ...dadosPonto }; 
+                setPontos(n); 
+                setPontoEditando(null); 
+                showToast('✅ Salvo', 'success'); 
+            };
             const salvarPartidaPadrao = async () => { if (pontos.length === 0) return; try { await fetch(`${API_URL}/api/solicitacao/configuracoes`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ endereco_partida_padrao: pontos[0] }) }); setCliente(prev => ({...prev, endereco_partida_padrao: pontos[0]})); showToast('✅ Salvo como padrão!', 'success'); } catch {} };
             const removerPartidaPadrao = async () => { try { await fetch(`${API_URL}/api/solicitacao/configuracoes`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ endereco_partida_padrao: null, limpar_endereco_padrao: true }) }); setCliente(prev => ({...prev, endereco_partida_padrao: null})); showToast('Padrão removido', 'success'); } catch {} };
             const limpar = () => { if (cliente.endereco_partida_padrao) setPontos([{ id: Date.now(), ...cliente.endereco_partida_padrao, isPartida: true }]); else setPontos([]); setSugestoes([]); setTermoBusca(''); setPontoRecemAdicionado(null); setNotaRapida(''); };
@@ -1850,7 +1974,15 @@
                                                 <span className="text-sm font-bold text-blue-800">📍 PONTO DE ENTREGA {pontos.length > 1 ? '(1/1)' : '(0/1)'}</span>
                                                 {pontos.length > 1 && <button onClick={() => setPontos(pontos.slice(0, 1))} className="text-xs text-red-500 hover:text-red-700">Limpar</button>}
                                             </div>
-                                            {pontos.length > 0 && (
+                                            
+                                            {/* Banner do modo trocar endereço */}
+                                            {modoTrocarEndereco.ativo && (
+                                                <div className="mb-2 p-2 bg-purple-100 border border-purple-300 rounded flex items-center justify-between gap-2">
+                                                    <span className="text-xs text-purple-800 font-medium">🔄 Trocando endereço do ponto {modoTrocarEndereco.pontoIdx + 1} — escolha o novo abaixo</span>
+                                                    <button onClick={cancelarTrocarEndereco} className="text-xs text-purple-700 hover:text-purple-900 underline whitespace-nowrap">Cancelar</button>
+                                                </div>
+                                            )}
+                                            {(pontos.length > 0 || modoTrocarEndereco.ativo) && (
                                                 <div className="mb-2">
                                                     <div className="text-xs text-purple-600 mb-1.5 cursor-pointer hover:text-purple-800" onClick={() => { setDrawerEnderecos(true); carregarTodosEnderecos(); }}>📚 Clique aqui para usar endereços já cadastrados</div>
                                                     <div className="flex gap-2">
@@ -2983,40 +3115,71 @@
                     {pontoEditando !== null && (
                         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setPontoEditando(null)}>
                             <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-4" onClick={e => e.stopPropagation()}>
-                                <div className="flex items-center justify-between mb-4">
-                                    <span className="font-bold">✏️ Editar Ponto {pontoEditando + 1}</span>
+                                <div className="flex items-center justify-between mb-3">
+                                    <span className="font-bold">✏️ Editar Ponto {pontoEditando + 1}{pontoEditando === 0 ? ' (Coleta)' : ''}</span>
                                     <button onClick={() => setPontoEditando(null)} className="text-gray-400 hover:text-gray-600">✕</button>
                                 </div>
-                                <div className="space-y-3">
-                                    {/* Campo Número Nota - Destaque */}
-                                    <div className="bg-green-50 p-3 rounded-lg border border-green-200">
-                                        <label className="text-xs text-green-700 font-medium">🏷️ Número da Nota/Pedido</label>
-                                        <input 
-                                            type="text" 
-                                            value={dadosPonto.numero_nota} 
-                                            onChange={(e) => setDadosPonto({...dadosPonto, numero_nota: e.target.value})} 
-                                            className="w-full px-3 py-2 border border-green-300 rounded text-sm mt-1 focus:ring-2 focus:ring-green-400 outline-none" 
-                                            placeholder="Ex: NF-12345, PED-0001..."
-                                        />
+                                
+                                {/* Endereço atual + botão trocar */}
+                                {pontos[pontoEditando] && (
+                                    <div className="mb-3 p-2 bg-gray-50 border border-gray-200 rounded text-xs">
+                                        <div className="text-gray-500 mb-1">📍 Endereço atual:</div>
+                                        <div className="text-gray-800 break-words">{pontos[pontoEditando].endereco_completo || `${pontos[pontoEditando].rua || ''}, ${pontos[pontoEditando].numero || ''}`}</div>
+                                        <button 
+                                            onClick={() => iniciarTrocarEndereco(pontoEditando)}
+                                            className="mt-2 w-full px-3 py-1.5 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded text-xs font-medium"
+                                        >
+                                            🔄 Trocar endereço
+                                        </button>
                                     </div>
+                                )}
+                                
+                                <div className="space-y-3">
+                                    {/* Razão social / Nome fantasia — só para entregas */}
+                                    {pontoEditando !== 0 && (
+                                        <div>
+                                            <label className="text-xs text-gray-600 flex items-center gap-1">
+                                                🏢 Razão social / Nome fantasia <span className="text-red-500">*</span>
+                                            </label>
+                                            <input 
+                                                type="text" 
+                                                value={dadosPonto.nome_fantasia || ''} 
+                                                onChange={(e) => setDadosPonto({...dadosPonto, nome_fantasia: e.target.value})} 
+                                                className="w-full px-3 py-2 border rounded text-sm mt-1" 
+                                                placeholder="Ex: LBC COMÉRCIO LTDA"
+                                            />
+                                        </div>
+                                    )}
+                                    
+                                    <div>
+                                        <label className="text-xs text-gray-600">🏠 Complemento</label>
+                                        <input type="text" value={dadosPonto.complemento || ''} onChange={(e) => setDadosPonto({...dadosPonto, complemento: e.target.value})} className="w-full px-3 py-2 border rounded text-sm mt-1" placeholder="Quadra, Lote, Apto, Bloco..." />
+                                    </div>
+                                    
+                                    {/* Nº NF — só para entregas */}
+                                    {pontoEditando !== 0 && (
+                                        <div className="bg-green-50 p-3 rounded-lg border border-green-200">
+                                            <label className="text-xs text-green-700 font-medium flex items-center gap-1">
+                                                🏷️ Número da NF / Pedido <span className="text-red-500">*</span>
+                                            </label>
+                                            <input 
+                                                type="text" 
+                                                value={dadosPonto.numero_nota || ''} 
+                                                onChange={(e) => setDadosPonto({...dadosPonto, numero_nota: e.target.value})} 
+                                                className="w-full px-3 py-2 border border-green-300 rounded text-sm mt-1 focus:ring-2 focus:ring-green-400 outline-none" 
+                                                placeholder="Ex: NF-12345, PED-0001..."
+                                            />
+                                        </div>
+                                    )}
                                     
                                     <div>
                                         <label className="text-xs text-gray-600">📝 Observação</label>
-                                        <textarea value={dadosPonto.observacao} onChange={(e) => setDadosPonto({...dadosPonto, observacao: e.target.value})} className="w-full px-3 py-2 border rounded text-sm" rows="2" placeholder="Instruções para o motoboy..." />
+                                        <textarea value={dadosPonto.observacao || ''} onChange={(e) => setDadosPonto({...dadosPonto, observacao: e.target.value})} className="w-full px-3 py-2 border rounded text-sm mt-1" rows="2" placeholder="Instruções para o motoboy..." />
                                     </div>
+                                    
                                     <div>
-                                        <label className="text-xs text-gray-600">🏠 Complemento</label>
-                                        <input type="text" value={dadosPonto.complemento} onChange={(e) => setDadosPonto({...dadosPonto, complemento: e.target.value})} className="w-full px-3 py-2 border rounded text-sm" placeholder="Quadra, Lote, Apto, Bloco..." />
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div>
-                                            <label className="text-xs text-gray-600">📞 Telefone</label>
-                                            <input type="text" value={dadosPonto.telefone} onChange={(e) => setDadosPonto({...dadosPonto, telefone: e.target.value})} className="w-full px-3 py-2 border rounded text-sm" placeholder="(62) 99999-9999" />
-                                        </div>
-                                        <div>
-                                            <label className="text-xs text-gray-600">👤 Procurar por</label>
-                                            <input type="text" value={dadosPonto.procurar_por} onChange={(e) => setDadosPonto({...dadosPonto, procurar_por: e.target.value})} className="w-full px-3 py-2 border rounded text-sm" placeholder="Nome do responsável" />
-                                        </div>
+                                        <label className="text-xs text-gray-600">📞 Telefone</label>
+                                        <input type="tel" value={dadosPonto.telefone || ''} onChange={(e) => setDadosPonto({...dadosPonto, telefone: e.target.value})} className="w-full px-3 py-2 border rounded text-sm mt-1" placeholder="(62) 99999-9999" />
                                     </div>
                                 </div>
                                 <div className="flex gap-2 mt-4">
