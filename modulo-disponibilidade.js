@@ -462,52 +462,70 @@
             // Mostra a lista de linhas com nome+status+botão remover. Fecha no X ou clicando no badge de novo.
             renderPopoverLinhas = (linhas, titulo, onFechar, adicionarFn, reload, toast, nomeLoja) => {
                 const rotuloTipo = titulo === 'Titulares' ? 'titular' : 'excedente';
+                // Modal centralizado: backdrop escuro cobre a tela, modal no meio.
+                // fixed inset-0 foge do overflow da tabela (que cortava o popover antigo).
+                // onClick no backdrop fecha; stopPropagation no modal interno evita fechar ao clicar dentro.
                 return React.createElement("div", {
-                    // absolute + z-50 pra ficar por cima da próxima linha da tabela.
-                    // onClick stopPropagation pra clicar dentro do popover não disparar outras ações da tabela.
-                    className: "absolute left-1/2 top-full mt-1 -translate-x-1/2 bg-white border border-gray-300 rounded-lg shadow-xl z-50 min-w-[240px] max-w-[320px]",
-                    onClick: (e) => e.stopPropagation(),
-                    style: { textAlign: "left" }
+                    className: "fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4",
+                    onClick: onFechar
                 },
-                    // Header com título + botão fechar
                     React.createElement("div", {
-                        className: "flex items-center justify-between px-3 py-2 border-b bg-gray-50 rounded-t-lg"
+                        className: "bg-white border border-gray-300 rounded-lg shadow-2xl w-full max-w-md",
+                        onClick: (e) => e.stopPropagation(),
+                        style: { textAlign: "left" }
                     },
-                        React.createElement("span", { className: "text-xs font-semibold text-gray-700" },
-                            `${titulo} (${linhas.length})`
-                        ),
-                        React.createElement("button", {
-                            onClick: onFechar,
-                            className: "text-gray-400 hover:text-gray-700 text-sm leading-none px-1"
-                        }, "✕")
-                    ),
-                    // Lista de linhas (scroll se muito alta)
-                    linhas.length === 0
-                        ? React.createElement("div", {
-                            className: "px-3 py-4 text-xs text-gray-500 text-center italic"
-                        }, `Nenhum ${rotuloTipo} cadastrado`)
-                        : React.createElement("div", {
-                            className: "max-h-64 overflow-y-auto"
-                        }, linhas.map((linha, idx) => React.createElement("div", {
-                            key: linha.id,
-                            className: "flex items-center justify-between px-3 py-2 border-b last:border-b-0 hover:bg-gray-50 text-xs"
+                        // Header com título + nome da loja + botão fechar
+                        React.createElement("div", {
+                            className: "flex items-center justify-between px-4 py-3 border-b bg-gray-50 rounded-t-lg"
                         },
-                            React.createElement("div", { className: "flex-1 min-w-0 mr-2" },
-                                React.createElement("div", { className: "font-medium text-gray-800 truncate" },
-                                    linha.nome_profissional
-                                        ? linha.nome_profissional
-                                        : React.createElement("span", { className: "text-gray-400 italic" }, `${idx + 1}. (vazia)`)
+                            React.createElement("div", null,
+                                React.createElement("div", { className: "text-sm font-semibold text-gray-800" },
+                                    `${titulo} (${linhas.length})`
                                 ),
-                                linha.nome_profissional && React.createElement("div", {
-                                    className: "text-[10px] text-gray-500 mt-0.5"
-                                }, linha.status || 'A CONFIRMAR')
+                                React.createElement("div", { className: "text-xs text-gray-500 mt-0.5 truncate max-w-[300px]" }, nomeLoja)
                             ),
                             React.createElement("button", {
-                                onClick: () => removerLinhaIndividual(linha, titulo.slice(0, -1), nomeLoja, reload, toast),
-                                className: "px-2 py-1 bg-red-50 text-red-600 hover:bg-red-100 rounded text-xs flex-shrink-0",
-                                title: `Remover ${rotuloTipo}`
-                            }, "🗑️")
-                        )))
+                                onClick: onFechar,
+                                className: "text-gray-400 hover:text-gray-700 text-lg leading-none px-2"
+                            }, "✕")
+                        ),
+                        // Lista de linhas (scroll interno se muitas)
+                        linhas.length === 0
+                            ? React.createElement("div", {
+                                className: "px-4 py-6 text-sm text-gray-500 text-center italic"
+                            }, `Nenhum ${rotuloTipo} cadastrado`)
+                            : React.createElement("div", {
+                                className: "max-h-[60vh] overflow-y-auto"
+                            }, linhas.map((linha, idx) => React.createElement("div", {
+                                key: linha.id,
+                                className: "flex items-center justify-between px-4 py-2.5 border-b last:border-b-0 hover:bg-gray-50"
+                            },
+                                React.createElement("div", { className: "flex-1 min-w-0 mr-3" },
+                                    React.createElement("div", { className: "text-sm font-medium text-gray-800 truncate" },
+                                        linha.nome_profissional
+                                            ? linha.nome_profissional
+                                            : React.createElement("span", { className: "text-gray-400 italic" }, `${idx + 1}. (vazia)`)
+                                    ),
+                                    linha.nome_profissional && React.createElement("div", {
+                                        className: "text-xs text-gray-500 mt-0.5"
+                                    }, linha.status || 'A CONFIRMAR')
+                                ),
+                                React.createElement("button", {
+                                    onClick: () => removerLinhaIndividual(linha, titulo.slice(0, -1), nomeLoja, reload, toast),
+                                    className: "px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded text-sm flex-shrink-0",
+                                    title: `Remover ${rotuloTipo}`
+                                }, "🗑️")
+                            ))),
+                        // Footer com ação secundária de fechar
+                        React.createElement("div", {
+                            className: "px-4 py-2 border-t bg-gray-50 rounded-b-lg flex justify-end"
+                        },
+                            React.createElement("button", {
+                                onClick: onFechar,
+                                className: "px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800"
+                            }, "Fechar")
+                        )
+                    )
                 );
             }, n = {
                 "A CONFIRMAR": "bg-yellow-100 text-yellow-800 border-yellow-300",
@@ -2023,9 +2041,9 @@
                         }),
                         className: "w-full px-2 py-1 border rounded text-xs"
                     }) : t.nome), React.createElement("td", {
-                        className: "px-3 py-2 text-center relative"
+                        className: "px-3 py-2 text-center"
                     },
-                        // Badge clicável de titulares: abre popover com listagem das linhas desse tipo
+                        // Badge clicável de titulares: abre modal com listagem das linhas desse tipo
                         // pra permitir remoção individual (feature nova, além do botão +T que só adiciona).
                         React.createElement("button", {
                             onClick: () => x({
@@ -2037,11 +2055,11 @@
                             className: "px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200 cursor-pointer",
                             title: "Clique para gerenciar titulares"
                         }, l),
-                        // Popover de gerenciamento — aparece só pra (loja, tipo) ativos
+                        // Modal de gerenciamento — aparece só pra (loja, tipo) ativos
                         p.verLinhas && p.verLinhas.lojaId === t.id && p.verLinhas.tipo === 'titular' &&
                             renderPopoverLinhas(a.filter(e => !e.is_excedente), 'Titulares', () => x({ ...p, verLinhas: null }), s, r, ja, t.nome)
                     ), React.createElement("td", {
-                        className: "px-3 py-2 text-center relative"
+                        className: "px-3 py-2 text-center"
                     },
                         React.createElement("button", {
                             onClick: () => x({
