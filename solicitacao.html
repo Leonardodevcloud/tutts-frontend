@@ -504,7 +504,7 @@
             
             const [config, setConfig] = useState({
                 numero_pedido: '', centro_custo: cliente.centro_custo_padrao || '', usuario_solicitante: cliente.nome,
-                data_retirada: '', hora_retirada: '', forma_pagamento: cliente.forma_pagamento_padrao || 'F',
+                data_retirada: '', hora_retirada: '', agendar: false, forma_pagamento: cliente.forma_pagamento_padrao || 'F',
                 ponto_receber: '', retorno: false, obs_retorno: '', ordenar: false, 
                 codigo_profissional: '',
                 sem_profissional: false
@@ -1498,7 +1498,11 @@
                 
                 setLoading(true);
                 try {
-                    const dataRet = config.data_retirada && config.hora_retirada ? `${config.data_retirada} ${config.hora_retirada}:00` : '';
+                    // Só envia data_retirada se o toggle "Agendar" estiver ativo E ambos os campos preenchidos.
+                    // Sem toggle ativo = corrida imediata (string vazia na API Tutts).
+                    const dataRet = config.agendar && config.data_retirada && config.hora_retirada
+                        ? `${config.data_retirada} ${config.hora_retirada}:00`
+                        : '';
                     
                     // Buscar dados do profissional selecionado
                     const profSelecionado = config.codigo_profissional ? profissionais.find(p => p.codigo === config.codigo_profissional) : null;
@@ -1554,7 +1558,9 @@
                         // Auto-close em 4s
                         setTimeout(() => setConfirmacaoOS(null), 4000);
                         limpar(); 
-                        setConfig(prev => ({ ...prev, codigo_profissional: '' })); 
+                        // Reset dos campos de agendamento + motoboy. Sem isso, a próxima corrida
+                        // herdaria o toggle ativo e data/hora da anterior.
+                        setConfig(prev => ({ ...prev, codigo_profissional: '', agendar: false, data_retirada: '', hora_retirada: '' })); 
                         carregarHistorico(); 
                         carregarCorridasAtivas(); 
                     }
@@ -1592,6 +1598,23 @@
                 const hoje = new Date();
                 const mesmoDia = dt.toDateString() === hoje.toDateString();
                 return mesmoDia ? `Solicitada às ${formatarHora(d)}` : `Solicitada ${formatarData(d)}`;
+            };
+            // Corrida agendada: data_retirada preenchida. Usa formatarHoraPonto pra evitar
+            // shift de timezone do driver pg (mesmo padrão dos timestamps de pontos).
+            const isCorridaAgendada = (corrida) => !!(corrida && corrida.data_retirada);
+            // "Retirada hoje às 17:30" ou "Retirada em 24/04 às 17:30".
+            const formatarRetirada = (corrida) => {
+                if (!isCorridaAgendada(corrida)) return '';
+                const hora = formatarHoraPonto(corrida.data_retirada);
+                // Extrai DD/MM comparando com hoje (dia do banco, sem converter timezone).
+                const str = String(corrida.data_retirada);
+                const m = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+                if (!m || !hora) return `Retirada às ${hora}`;
+                const hoje = new Date();
+                const hojeStr = `${hoje.getFullYear()}-${String(hoje.getMonth()+1).padStart(2,'0')}-${String(hoje.getDate()).padStart(2,'0')}`;
+                const dataRet = `${m[1]}-${m[2]}-${m[3]}`;
+                if (dataRet === hojeStr) return `Retirada hoje às ${hora}`;
+                return `Retirada em ${m[3]}/${m[2]} às ${hora}`;
             };
             const contarPontos = (corrida) => { const total = corrida.total_pontos || 0; return { coletas: 1, entregas: Math.max(0, total - 1) }; };
             
@@ -2066,6 +2089,56 @@
                                             <div className="flex flex-wrap gap-4 mt-3">
                                                 <label className="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" checked={config.retorno} onChange={(e) => setConfig({...config, retorno: e.target.checked})} className="w-4 h-4" />↩️ Retorno</label>
                                             </div>
+                                            {/* Agendamento: toggle controla se o campo data_retirada é enviado.
+                                                Quando ligado, expõe data/hora; quando desligado, envia string vazia (corrida imediata).
+                                                Comportamento do backend Tutts: campo é informativo — corrida fica disponível AGORA,
+                                                motoboy vê o horário pra saber quando chegar na origem. */}
+                                            <div className="mt-3 pt-3 border-t border-gray-200">
+                                                <label className={`flex items-center gap-2 text-sm cursor-pointer ${config.agendar ? 'text-blue-700 font-medium' : ''}`}>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={!!config.agendar}
+                                                        onChange={(e) => setConfig({
+                                                            ...config,
+                                                            agendar: e.target.checked,
+                                                            // Ao desligar, limpa os campos — senão ficam em memória e poderiam ser enviados
+                                                            ...(e.target.checked ? {} : { data_retirada: '', hora_retirada: '' })
+                                                        })}
+                                                        className="w-4 h-4"
+                                                    />
+                                                    📅 Agendar retirada pra horário específico
+                                                </label>
+                                                {config.agendar && (
+                                                    <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+                                                        <div className="grid grid-cols-2 gap-2">
+                                                            <div>
+                                                                <label className="text-xs text-gray-600">📆 Data</label>
+                                                                <input
+                                                                    type="date"
+                                                                    value={config.data_retirada || ''}
+                                                                    onChange={(e) => setConfig({...config, data_retirada: e.target.value})}
+                                                                    className="w-full px-2 py-1.5 border border-blue-300 rounded text-sm mt-0.5"
+                                                                />
+                                                            </div>
+                                                            <div>
+                                                                <label className="text-xs text-gray-600">🕐 Hora</label>
+                                                                <input
+                                                                    type="time"
+                                                                    value={config.hora_retirada || ''}
+                                                                    onChange={(e) => setConfig({...config, hora_retirada: e.target.value})}
+                                                                    className="w-full px-2 py-1.5 border border-blue-300 rounded text-sm mt-0.5"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                        {config.data_retirada && config.hora_retirada && (
+                                                            <div className="text-xs text-blue-700 mt-2 flex items-start gap-1">
+                                                                <span>ℹ️</span>
+                                                                <span>Motoboy saberá que o pacote ficará pronto às <strong>{config.hora_retirada}</strong>. A corrida será disparada agora.</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                         
                                         {/* Botão Enviar */}
@@ -2109,8 +2182,17 @@
                                                     // Verificar se tem ponto de retorno
                                                     const temRetorno = c.pontos?.some(p => p.is_retorno || p.tipo_ponto === 'retorno') || 
                                                                        (c.dados_pontos && JSON.parse(typeof c.dados_pontos === 'string' ? c.dados_pontos : JSON.stringify(c.dados_pontos || []))?.some(p => p.is_retorno));
+                                                    const ehAgendada = isCorridaAgendada(c);
+                                                    // Precedência da borda: retorno (laranja) > selecionada (azul escuro) > agendada (azul) > padrão.
+                                                    const classeBorda = temRetorno
+                                                        ? 'border-orange-400 bg-orange-50'
+                                                        : corridaSelecionada === c.id
+                                                            ? 'border-blue-500 bg-blue-50 shadow-md'
+                                                            : ehAgendada
+                                                                ? 'border-blue-400 hover:border-blue-500 hover:shadow'
+                                                                : 'border-gray-200 hover:border-gray-300 hover:shadow';
                                                     return (
-                                                        <div key={c.id} onClick={() => selecionarCorrida(c.id)} className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${temRetorno ? 'border-orange-400 bg-orange-50' : corridaSelecionada === c.id ? 'border-blue-500 bg-blue-50 shadow-md' : 'border-gray-200 hover:border-gray-300 hover:shadow'}`}>
+                                                        <div key={c.id} onClick={() => selecionarCorrida(c.id)} className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${classeBorda}`}>
                                                             <div className="flex items-center justify-between mb-2">
                                                                 <div className="flex items-center gap-2 min-w-0 flex-1">
                                                                     {deveExibirMotoboy(c) ? (
@@ -2125,7 +2207,16 @@
                                                                         </>
                                                                     )}
                                                                 </div>
-                                                                <span className="text-xs font-bold text-gray-600 whitespace-nowrap">OS #{c.tutts_os_numero || c.id}</span>
+                                                                <div className="flex items-center gap-1 flex-shrink-0">
+                                                                    {/* Badge: agendada (azul com hora) vs imediata (cinza discreto).
+                                                                        Usa formatarHoraPonto pra evitar shift de timezone do driver pg. */}
+                                                                    {ehAgendada ? (
+                                                                        <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-[10px] font-semibold whitespace-nowrap">📅 {formatarHoraPonto(c.data_retirada)}</span>
+                                                                    ) : (
+                                                                        <span className="px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-[10px] font-medium whitespace-nowrap">Imediata</span>
+                                                                    )}
+                                                                    <span className="text-xs font-bold text-gray-600 whitespace-nowrap">OS #{c.tutts_os_numero || c.id}</span>
+                                                                </div>
                                                             </div>
                                                             {/* Status unificado: mensagem descritiva baseada no status + eventos do webhook */}
                                                             {(() => {
@@ -2155,6 +2246,10 @@
                                                             <div className="flex items-center justify-between mt-2 text-xs text-gray-500">
                                                                 <span>📦 {coletas} → 📍 {entregas}</span>
                                                             </div>
+                                                            {/* Linha destacada só em agendadas — reforça o horário de retirada pro admin. */}
+                                                            {ehAgendada && (
+                                                                <div className="mt-1 text-xs text-blue-700 font-medium">📅 {formatarRetirada(c)}</div>
+                                                            )}
                                                             <div className="mt-1 text-xs text-gray-500">🕐 {formatarSolicitada(c.criado_em)}</div>
                                                             {c.primeiro_numero_nota && <div className="mt-2 text-xs text-green-600 font-medium">🏷️ {c.primeiro_numero_nota}</div>}
                                                         </div>
@@ -2190,6 +2285,11 @@
                                                     <div className="flex-1 min-w-0">
                                                         <div className="flex items-center gap-2 flex-wrap">
                                                             <span className="font-bold text-sm">OS #{detalheCorrida.tutts_os_numero || detalheCorrida.id}</span>
+                                                            {/* Badge de agendamento — visível apenas em corridas com data_retirada.
+                                                                Destaque visual pra operação não confundir com corrida imediata. */}
+                                                            {isCorridaAgendada(detalheCorrida) && (
+                                                                <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-semibold">📅 {formatarHoraPonto(detalheCorrida.data_retirada)}</span>
+                                                            )}
                                                             {(() => {
                                                                 const estado = analisarEstadoCorrida(detalheCorrida);
                                                                 return (
@@ -2202,6 +2302,10 @@
                                                                 ? (detalheCorrida.profissional_nome || 'Aguardando profissional...')
                                                                 : <span className="text-gray-500 italic">Buscando motoboy...</span>}
                                                         </div>
+                                                        {/* Linha da retirada agendada — aparece logo abaixo do nome, em destaque azul. */}
+                                                        {isCorridaAgendada(detalheCorrida) && (
+                                                            <div className="text-xs text-blue-700 font-medium mt-0.5">📅 {formatarRetirada(detalheCorrida)}</div>
+                                                        )}
                                                         <div className="flex items-center gap-3 text-xs text-gray-600 mt-1 flex-wrap">
                                                             <span>🕐 {formatarSolicitada(detalheCorrida.criado_em)}</span>
                                                             {deveExibirMotoboy(detalheCorrida) && detalheCorrida.profissional_telefone && (
