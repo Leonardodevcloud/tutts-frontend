@@ -276,9 +276,13 @@
         showToast('GPS obrigatório! Ative a localização e clique em "Atualizar GPS".', 'error');
         return;
       }
-      // 2026-04: foto NF obrigatória, fachada opcional
+      // 2026-04 v2: AMBAS fotos obrigatórias (NF + fachada)
       if (!fotoNfBase64) {
         showToast('Foto da nota fiscal é obrigatória!', 'error');
+        return;
+      }
+      if (!fotoBase64) {
+        showToast('Foto da fachada é obrigatória!', 'error');
         return;
       }
 
@@ -297,8 +301,8 @@
             localizacao_raw: form.localizacao_raw.trim(),
             motoboy_lat:     gps.lat,
             motoboy_lng:     gps.lng,
-            foto_nf:         fotoNfBase64,           // OBRIGATÓRIA agora
-            foto_fachada:    fotoBase64 || null,    // opcional
+            foto_nf:         fotoNfBase64,
+            foto_fachada:    fotoBase64,
           }),
         });
 
@@ -876,9 +880,9 @@
               )
         ),
 
-        // ── Foto da fachada (OPCIONAL — bônus de confiança) ──────────────
+        // ── Foto da fachada (OBRIGATÓRIA — necessária pras regras de cruzamento) ──
         h('div', null,
-          h('label', { className: 'block text-sm font-semibold text-gray-700 mb-1.5' }, '📸 Foto da fachada ', h('span', { className: 'text-xs font-normal text-gray-500' }, '(opcional)')),
+          h('label', { className: 'block text-sm font-semibold text-gray-700 mb-1.5' }, '📸 Foto da fachada *'),
 
           // Input hidden
           h('input', {
@@ -911,7 +915,7 @@
               },
                 h('span', { className: 'text-3xl' }, '📷'),
                 h('span', { className: 'text-sm font-semibold text-purple-700' }, 'Tirar foto da fachada'),
-                h('span', { className: 'text-xs text-purple-500' }, 'Opcional — aumenta a confiança')
+                h('span', { className: 'text-xs text-purple-500' }, 'Obrigatório — toque para abrir a câmera')
               )
         ),
 
