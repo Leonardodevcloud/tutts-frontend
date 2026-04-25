@@ -505,7 +505,7 @@ const SISTEMA_MODULOS_CONFIG = [
     { id: "cs", label: "Sucesso do Cliente", icon: "🤝",
       abas: [{id: "dashboard", label: "Dashboard"}, {id: "clientes", label: "Clientes"}, {id: "interacoes", label: "Interações"}, {id: "ocorrencias", label: "Ocorrências"}, {id: "agenda", label: "Agenda"}, {id: "emails", label: "Emails"}, {id: "emails-automacao", label: "Automação E-mail"}]
     },
-    { id: "coleta", label: "Coleta de Endereços", icon: "📍", abas: [] },
+    { id: "coleta", label: "Consultar Endereços", icon: "📍", abas: [] },
     { id: "config", label: "Configurações", icon: "🔧",
       abas: [{id: "usuarios", label: "Usuários"}, {id: "permissoes", label: "Permissões ADM"}, {id: "clientes-api", label: "Clientes API"}, {id: "auditoria", label: "Auditoria"}, {id: "sistema", label: "Sistema"}]
     },
@@ -9327,7 +9327,7 @@ const hideLoadingScreen = () => {
                             onClick: () => he("home"),
                             className: "p-2 bg-white/20 rounded-lg hover:bg-white/30"
                         }, "← Voltar"),
-                        React.createElement("h1", { className: "text-xl font-bold" }, "📍 Coleta de Endereços")
+                        React.createElement("h1", { className: "text-xl font-bold" }, "📍 Consulte aqui os endereços dos clientes")
                     ),
                     // Conteúdo
                     typeof window.ModuloColetaComponent !== 'undefined'
@@ -10081,7 +10081,8 @@ const hideLoadingScreen = () => {
             className: "text-white/60 text-2xl"
         }, "›")),
 
-        // Coleta de Endereços (novo módulo) — estilo "featured" como o Filas
+        // Consultar Endereços (antes "Coleta de Endereços") — estilo "featured" como o Filas
+        // 2026-04: tela apenas de consulta, motoboy não cadastra mais
         hasModuleAccess(l, "coleta") && React.createElement("button", {
             onClick: function() { if(typeof window._tuttsSetModulo === 'function') window._tuttsSetModulo("coleta"); },
             className: "w-full bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl shadow-lg p-4 sm:p-6 flex items-center gap-3 sm:gap-4 hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98]"
@@ -10091,9 +10092,9 @@ const hideLoadingScreen = () => {
             className: "text-left flex-1"
         }, React.createElement("h3", {
             className: "text-lg font-bold text-white"
-        }, "Coleta de Endereços"), React.createElement("p", {
+        }, "Consultar Endereços"), React.createElement("p", {
             className: "text-sm text-white/80"
-        }, "Cadastre endereços e ganhe R$ 1,00 por aprovação")), React.createElement("span", {
+        }, "Veja endereços já cadastrados na sua região")), React.createElement("span", {
             className: "text-white/60 text-2xl"
         }, "›")),
 
@@ -19932,7 +19933,7 @@ const hideLoadingScreen = () => {
                         )
                     ),
 
-                    // Coleta de Endereços (colaborativa — motoboys cadastram, IA valida)
+                    // Coleta de Endereços (admin gerencia regiões e endereços; motoboy só consulta)
                     hasModuleAccess(l, "coleta") &&
                     React.createElement("div", {
                         onClick: () => he("coleta"),
@@ -19943,8 +19944,8 @@ const hideLoadingScreen = () => {
                             React.createElement("div", {className: "w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
                                 React.createElement("span", {className: "text-3xl"}, "📍")
                             ),
-                            React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Coleta de Endereços"),
-                            React.createElement("p", {className: "text-sm text-gray-500"}, "Base colaborativa")
+                            React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Endereços"),
+                            React.createElement("p", {className: "text-sm text-gray-500"}, "Gerenciar base de endereços")
                         )
                     ),
                     

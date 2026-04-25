@@ -159,8 +159,12 @@
     };
 
     // ==================== VIEW MOTOBOY (mobile-first) ====================
+    // 2026-04: Simplificado pra apenas CONSULTA.
+    // Antes: 3 abas (Cadastrar, Consultar, Ganhos) + bottom nav.
+    // Agora: tela única de consulta — motoboy não cadastra mais nem ganha R$.
+    // As funções TabCadastrar e TabWallet ficam preservadas no arquivo
+    // (dead code) caso queiramos reativar no futuro.
     function ViewMotoboy({ fetchApi, showToast }) {
-        const [tab, setTab] = useState('cadastrar'); // cadastrar | consultar | wallet
         const [regioes, setRegioes] = useState([]);
         const [loading, setLoading] = useState(true);
 
@@ -184,36 +188,15 @@
             return h('div', { className: 'max-w-md mx-auto p-4 mt-8' },
                 h('div', { className: 'bg-yellow-50 border-2 border-yellow-300 rounded-xl p-5 text-center' },
                     h('div', { className: 'text-5xl mb-3' }, '📍'),
-                    h('div', { className: 'font-bold text-yellow-800 mb-1' }, 'Ainda sem regiões vinculadas'),
-                    h('div', { className: 'text-sm text-yellow-700' }, 'Entre em contato com o admin para ser incluído em uma região e começar a cadastrar endereços.')
+                    h('div', { className: 'font-bold text-yellow-800 mb-1' }, 'Sem regiões vinculadas'),
+                    h('div', { className: 'text-sm text-yellow-700' }, 'Entre em contato com o admin para ser incluído em uma região e ter acesso aos endereços dos clientes.')
                 )
             );
         }
 
-        return h('div', { className: 'bg-gray-50 pb-20 min-h-[calc(100vh-4rem)]' },
-            // Conteúdo da aba (header agora vem do app.js)
-            tab === 'cadastrar' && h(TabCadastrar, { fetchApi, showToast, regioes }),
-            tab === 'consultar' && h(TabConsultar, { fetchApi, showToast }),
-            tab === 'wallet' && h(TabWallet, { fetchApi, showToast }),
-
-            // Bottom navigation mobile
-            h('div', { className: 'fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-40' },
-                h('div', { className: 'flex justify-around max-w-md mx-auto' },
-                    [
-                        { id: 'cadastrar', icon: '➕', label: 'Cadastrar' },
-                        { id: 'consultar', icon: '🔍', label: 'Consultar' },
-                        { id: 'wallet', icon: '💰', label: 'Ganhos' }
-                    ].map(t => h('button', {
-                        key: t.id,
-                        onClick: () => setTab(t.id),
-                        className: 'flex-1 py-3 flex flex-col items-center gap-0.5 transition-colors ' +
-                            (tab === t.id ? 'text-purple-600 bg-purple-50' : 'text-gray-500')
-                    },
-                        h('span', { className: 'text-xl' }, t.icon),
-                        h('span', { className: 'text-xs font-medium' }, t.label)
-                    ))
-                )
-            )
+        // Tela única de consulta — sem tabs, sem bottom nav
+        return h('div', { className: 'bg-gray-50 min-h-[calc(100vh-4rem)]' },
+            h(TabConsultar, { fetchApi, showToast })
         );
     }
 
@@ -538,6 +521,10 @@
         const abrirWaze = (lat, lng) => window.open(`https://waze.com/ul?ll=${lat},${lng}&navigate=yes`, '_blank');
 
         return h('div', { className: 'max-w-md mx-auto p-4 space-y-3' },
+            h('div', { className: 'bg-purple-50 border border-purple-200 rounded-lg p-3 text-xs text-purple-800 mb-2' },
+                '💡 Aqui você consulta os endereços dos clientes da sua região. ',
+                'Use os botões para abrir no Maps ou Waze.'
+            ),
             h('input', {
                 type: 'text',
                 value: filtro,
@@ -548,52 +535,74 @@
 
             loading && h('div', { className: 'text-center py-8 text-gray-400' }, '⏳ Carregando...'),
 
-            !loading && dados.meus_pendentes.length > 0 && h('div', null,
-                h('h3', { className: 'text-xs font-bold text-gray-500 uppercase mb-2' }, 'Meus cadastros pendentes'),
-                h('div', { className: 'space-y-2' },
-                    dados.meus_pendentes.map(p => h('div', {
-                        key: 'p-' + p.id,
-                        className: 'rounded-lg p-3 border-2 ' +
-                            (p.status === 'rejeitado' ? 'bg-red-50 border-red-200' : 'bg-yellow-50 border-yellow-200')
-                    },
-                        h('div', { className: 'flex items-start justify-between gap-2' },
-                            h('div', { className: 'flex-1' },
-                                h('div', { className: 'font-bold text-sm' }, p.apelido || p.nome_cliente),
-                                h('div', { className: 'text-xs text-gray-600 mt-0.5' }, p.endereco_completo || '(em análise)'),
-                                h('div', { className: 'text-xs mt-1 ' + (p.status === 'rejeitado' ? 'text-red-700' : 'text-yellow-700') },
-                                    p.status === 'rejeitado' ? '❌ Rejeitado: ' + (p.motivo_rejeicao || '') : '⏳ Aguardando admin'
-                                )
-                            )
-                        )
-                    ))
-                )
-            ),
+            // 2026-04: Seção "meus_pendentes" REMOVIDA — motoboy não cadastra mais.
 
             !loading && dados.aprovados.length > 0 && h('div', null,
-                h('h3', { className: 'text-xs font-bold text-gray-500 uppercase mb-2 mt-4' }, 'Endereços das minhas regiões (' + dados.aprovados.length + ')'),
+                h('h3', { className: 'text-xs font-bold text-gray-500 uppercase mb-2 mt-4' },
+                    'Endereços das suas regiões (' + dados.aprovados.length + ')'),
                 h('div', { className: 'space-y-2' },
-                    dados.aprovados.map(e => h('div', {
-                        key: 'a-' + e.id,
-                        className: 'bg-white rounded-lg p-3 shadow border border-gray-200'
-                    },
-                        h('div', { className: 'font-bold text-sm text-purple-800' }, '⭐ ' + (e.apelido || '(sem nome)')),
-                        h('div', { className: 'text-xs text-gray-700 mt-0.5 break-words' }, e.endereco_completo || '-'),
-                        e.regiao_nome && h('div', { className: 'text-xs text-gray-500 mt-0.5' }, '📍 ' + e.regiao_nome),
-                        h('div', { className: 'flex gap-1 mt-2 pt-2 border-t border-gray-100' },
-                            e.tem_foto && e.pendente_id && h('button', {
-                                onClick: () => abrirFoto(e.pendente_id),
-                                className: 'flex-1 py-1.5 text-xs bg-gray-100 text-gray-700 rounded'
-                            }, '📷 Foto'),
-                            h('button', {
-                                onClick: () => abrirMaps(e.latitude, e.longitude),
-                                className: 'flex-1 py-1.5 text-xs bg-blue-100 text-blue-700 rounded'
-                            }, '🗺️ Maps'),
-                            h('button', {
-                                onClick: () => abrirWaze(e.latitude, e.longitude),
-                                className: 'flex-1 py-1.5 text-xs bg-indigo-100 text-indigo-700 rounded'
-                            }, '🚗 Waze')
-                        )
-                    ))
+                    dados.aprovados.map(e => {
+                        // Nome principal: prioriza nome_fantasia → razao_social → apelido → procurar_por
+                        const nomePrincipal = e.nome_fantasia || e.razao_social || e.apelido || e.procurar_por_padrao || '(sem nome)';
+                        // Razão social entre parênteses só se diferente do nome principal
+                        const mostraRazao = e.razao_social && e.razao_social.toUpperCase() !== nomePrincipal.toUpperCase();
+
+                        return h('div', {
+                            key: 'a-' + e.id,
+                            className: 'bg-white rounded-lg p-3 shadow border border-gray-200'
+                        },
+                            // Nome do estabelecimento
+                            h('div', { className: 'font-bold text-sm text-purple-800' },
+                                '🏢 ' + nomePrincipal,
+                                mostraRazao && h('span', { className: 'font-normal text-xs text-gray-500 ml-1' }, '(' + e.razao_social + ')')
+                            ),
+
+                            // Endereço completo
+                            h('div', { className: 'text-xs text-gray-700 mt-1 break-words' },
+                                '📍 ' + (e.endereco_completo || '-')
+                            ),
+
+                            // Cliente / "Procurar por"
+                            e.procurar_por_padrao && h('div', { className: 'text-xs text-gray-700 mt-1' },
+                                '👤 Procurar por: ', h('span', { className: 'font-medium' }, e.procurar_por_padrao)
+                            ),
+
+                            // Telefone (clicável pra ligar)
+                            e.telefone_padrao && h('div', { className: 'text-xs text-gray-700 mt-1' },
+                                '📞 ',
+                                h('a', {
+                                    href: 'tel:' + (e.telefone_padrao || '').replace(/\D/g, ''),
+                                    className: 'text-blue-600 underline'
+                                }, e.telefone_padrao)
+                            ),
+
+                            // Observação
+                            e.observacao_padrao && h('div', {
+                                className: 'text-xs text-gray-700 mt-1 bg-yellow-50 border border-yellow-200 rounded p-2'
+                            },
+                                '📝 ', h('span', { className: 'whitespace-pre-wrap' }, e.observacao_padrao)
+                            ),
+
+                            // Região
+                            e.regiao_nome && h('div', { className: 'text-xs text-gray-500 mt-1' }, '🗂️ ' + e.regiao_nome),
+
+                            // Botões de navegação
+                            h('div', { className: 'flex gap-1 mt-2 pt-2 border-t border-gray-100' },
+                                e.tem_foto && e.pendente_id && h('button', {
+                                    onClick: () => abrirFoto(e.pendente_id),
+                                    className: 'flex-1 py-1.5 text-xs bg-gray-100 text-gray-700 rounded'
+                                }, '📷 Foto'),
+                                h('button', {
+                                    onClick: () => abrirMaps(e.latitude, e.longitude),
+                                    className: 'flex-1 py-1.5 text-xs bg-blue-100 text-blue-700 rounded'
+                                }, '🗺️ Maps'),
+                                h('button', {
+                                    onClick: () => abrirWaze(e.latitude, e.longitude),
+                                    className: 'flex-1 py-1.5 text-xs bg-indigo-100 text-indigo-700 rounded'
+                                }, '🚗 Waze')
+                            )
+                        );
+                    })
                 )
             ),
 
