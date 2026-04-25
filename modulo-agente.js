@@ -70,6 +70,8 @@
     const pollingRef                = useRef(null);
     const timeoutRef                = useRef(null);
     const fotoInputRef              = useRef(null);
+    // 2026-04: foto da NF agora é OBRIGATÓRIA (fachada virou opcional)
+    const fotoNfInputRef            = useRef(null);
 
     // GPS e foto states
     const [gps, setGps]             = useState(null);       // { lat, lng }
@@ -77,6 +79,10 @@
     const [gpsErro, setGpsErro]     = useState('');
     const [fotoBase64, setFotoB64]  = useState(null);
     const [fotoPreview, setFotoPre] = useState(null);
+    // 2026-04: foto NF (obrigatória) + estado pra mostrar confirmação Receita
+    const [fotoNfBase64, setFotoNfB64] = useState(null);
+    const [fotoNfPreview, setFotoNfPre] = useState(null);
+    const [validacaoReceita, setValidacaoReceita] = useState(null); // { nome, situacao, ativa, mensagem }
     const [valoresOS, setValoresOS] = useState(null); // { antes, depois }
 
     // Progresso real do RPA — atualizados pelo polling (campos etapa_atual / progresso do banco).
@@ -165,6 +171,29 @@
       }
     }
 
+    // 2026-04: handler da foto da NF (mesma lógica, state separado)
+    async function handleFotoNf(e) {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      if (!file.type.startsWith('image/')) {
+        showToast('Selecione uma imagem válida.', 'error');
+        return;
+      }
+      if (file.size > MAX_FOTO_SIZE * 2) {
+        showToast('Imagem muito grande. Máximo 10MB antes da compressão.', 'error');
+        return;
+      }
+
+      try {
+        const compressed = await compressImage(file);
+        setFotoNfB64(compressed);
+        setFotoNfPre(compressed);
+      } catch {
+        showToast('Erro ao processar a imagem.', 'error');
+      }
+    }
+
     const iniciarPolling = useCallback((id) => {
       timeoutRef.current = setTimeout(() => {
         pararPolling();
@@ -247,14 +276,16 @@
         showToast('GPS obrigatório! Ative a localização e clique em "Atualizar GPS".', 'error');
         return;
       }
-      if (!fotoBase64) {
-        showToast('Foto da fachada é obrigatória!', 'error');
+      // 2026-04: foto NF obrigatória, fachada opcional
+      if (!fotoNfBase64) {
+        showToast('Foto da nota fiscal é obrigatória!', 'error');
         return;
       }
 
       setLoading(true);
       setFase('validando');
       setDetalhe('');
+      setValidacaoReceita(null);
 
       try {
         const res = await fetchAuth(`${API_URL}/agent/corrigir-endereco`, {
@@ -266,7 +297,8 @@
             localizacao_raw: form.localizacao_raw.trim(),
             motoboy_lat:     gps.lat,
             motoboy_lng:     gps.lng,
-            foto_fachada:    fotoBase64,
+            foto_nf:         fotoNfBase64,           // OBRIGATÓRIA agora
+            foto_fachada:    fotoBase64 || null,    // opcional
           }),
         });
 
@@ -280,15 +312,32 @@
             setLoading(false);
             return;
           }
-          // Foto rejeitada pela IA — feedback específico
+          // NF rejeitada pela IA — feedback específico
+          if (data.nf_rejeitada) {
+            setFase('foto_rejeitada');
+            setDetalhe(data.motivo_rejeicao || 'A foto da NF não é válida. Tire uma foto mais clara mostrando o cabeçalho.');
+            setLoading(false);
+            return;
+          }
+          // Foto fachada rejeitada pela IA — feedback específico
           if (data.foto_rejeitada) {
             setFase('foto_rejeitada');
-            setDetalhe(data.motivo_rejeicao || 'A foto enviada não é válida.');
+            setDetalhe(data.motivo_rejeicao || 'A foto da fachada não é válida.');
             setLoading(false);
             return;
           }
           setFase('erro'); setDetalhe(msg); setLoading(false);
           return;
+        }
+
+        // 2026-04: salva dados da Receita Federal pra mostrar pro motoboy
+        if (data.cruzamento || data.receita) {
+          setValidacaoReceita({
+            mensagem: data.cruzamento?.mensagem || null,
+            receita: data.receita || null,
+            score_max: data.cruzamento?.score_max || 0,
+            salvo_no_banco: data.cruzamento?.salvo_no_banco || false,
+          });
         }
 
         // Verificar resultado da validação de localização
@@ -324,6 +373,9 @@
       setLoading(false);
       setFotoB64(null);
       setFotoPre(null);
+      setFotoNfB64(null);
+      setFotoNfPre(null);
+      setValidacaoReceita(null);
       setPontoCoords(null);
       setEnderecoGeo('');
       capturarGPS();
@@ -455,6 +507,43 @@
       h('div', { style: { animation: 'successSlide 0.4s ease-out 0.2s both', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' } },
       h('h2', { className: 'text-2xl font-bold text-green-700 mb-2' }, 'Endereço corrigido com sucesso!'),
       h('p', { className: 'text-gray-500 mb-4' }, `OS ${form.os_numero || ''} — Ponto ${form.ponto || ''}`),
+
+      // 2026-04: Banner de confirmação Receita Federal
+      validacaoReceita && validacaoReceita.mensagem && h('div', {
+        className: 'w-full max-w-sm mb-4 rounded-xl p-4 ' +
+          (validacaoReceita.receita?.ativa
+            ? 'bg-blue-50 border-2 border-blue-300'
+            : 'bg-yellow-50 border-2 border-yellow-300')
+      },
+        h('p', {
+          className: 'text-sm font-bold mb-1 ' +
+            (validacaoReceita.receita?.ativa ? 'text-blue-900' : 'text-yellow-900')
+        }, validacaoReceita.mensagem),
+        validacaoReceita.receita && h('div', { className: 'text-xs text-gray-700 space-y-0.5' },
+          validacaoReceita.receita.razao_social && h('div', null,
+            h('span', { className: 'font-semibold' }, 'Razão social: '),
+            validacaoReceita.receita.razao_social
+          ),
+          validacaoReceita.receita.nome_fantasia && h('div', null,
+            h('span', { className: 'font-semibold' }, 'Nome fantasia: '),
+            validacaoReceita.receita.nome_fantasia
+          ),
+          validacaoReceita.receita.endereco && h('div', null,
+            h('span', { className: 'font-semibold' }, 'Endereço Receita: '),
+            validacaoReceita.receita.endereco
+          ),
+          h('div', { className: 'flex items-center gap-2 mt-1' },
+            h('span', {
+              className: 'inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ' +
+                (validacaoReceita.receita.ativa ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800')
+            }, validacaoReceita.receita.situacao),
+            validacaoReceita.salvo_no_banco && h('span', {
+              className: 'inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-200 text-purple-800'
+            }, '💾 Salvo na base')
+          )
+        )
+      ),
+
       // Antes x Depois
       valoresOS && (valoresOS.antes || valoresOS.depois) && h('div', { className: 'w-full max-w-sm mb-6' },
         valoresOS.antes && h('div', { className: 'bg-orange-50 border border-orange-200 rounded-xl p-4 mb-3' },
@@ -749,9 +838,47 @@
               )
         ),
 
-        // ── Foto da fachada ──────────────────────────────────────────────
+        // ── Foto da NF (OBRIGATÓRIA) ─────────────────────────────────────
         h('div', null,
-          h('label', { className: 'block text-sm font-semibold text-gray-700 mb-1.5' }, '📸 Foto da fachada *'),
+          h('label', { className: 'block text-sm font-semibold text-gray-700 mb-1.5' }, '🧾 Foto da nota fiscal *'),
+
+          h('input', {
+            ref: fotoNfInputRef,
+            type: 'file',
+            accept: 'image/*',
+            capture: 'environment',
+            onChange: handleFotoNf,
+            className: 'hidden',
+          }),
+
+          fotoNfPreview
+            ? h('div', { className: 'relative' },
+                h('img', {
+                  src: fotoNfPreview,
+                  className: 'w-full h-48 object-cover rounded-xl border-2 border-blue-300',
+                  alt: 'Foto da NF',
+                }),
+                h('button', {
+                  onClick: () => { setFotoNfB64(null); setFotoNfPre(null); },
+                  className: 'absolute top-2 right-2 w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-lg hover:bg-red-600',
+                }, '✕'),
+                h('div', { className: 'absolute bottom-2 left-2 px-2 py-1 bg-blue-500 text-white text-xs rounded-lg font-semibold' }, '✓ NF capturada')
+              )
+            : h('button', {
+                onClick: () => fotoNfInputRef.current?.click(),
+                disabled,
+                className: `w-full h-32 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-2 transition
+                  ${disabled ? 'border-gray-200 bg-gray-50 cursor-not-allowed' : 'border-blue-300 bg-blue-50 hover:bg-blue-100 hover:border-blue-400 cursor-pointer'}`,
+              },
+                h('span', { className: 'text-3xl' }, '🧾'),
+                h('span', { className: 'text-sm font-semibold text-blue-700' }, 'Tirar foto da nota fiscal'),
+                h('span', { className: 'text-xs text-blue-500' }, 'Obrigatório — mostre o cabeçalho com CNPJ')
+              )
+        ),
+
+        // ── Foto da fachada (OPCIONAL — bônus de confiança) ──────────────
+        h('div', null,
+          h('label', { className: 'block text-sm font-semibold text-gray-700 mb-1.5' }, '📸 Foto da fachada ', h('span', { className: 'text-xs font-normal text-gray-500' }, '(opcional)')),
 
           // Input hidden
           h('input', {
@@ -784,7 +911,7 @@
               },
                 h('span', { className: 'text-3xl' }, '📷'),
                 h('span', { className: 'text-sm font-semibold text-purple-700' }, 'Tirar foto da fachada'),
-                h('span', { className: 'text-xs text-purple-500' }, 'Obrigatório — toque para abrir a câmera')
+                h('span', { className: 'text-xs text-purple-500' }, 'Opcional — aumenta a confiança')
               )
         ),
 
