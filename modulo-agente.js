@@ -1181,6 +1181,19 @@
       } catch { showToast('Erro ao carregar foto', 'error'); }
     };
 
+    // 2026-04: abrir foto da NF (mesmo modal, endpoint diferente)
+    const abrirFotoNf = async (id) => {
+      try {
+        const res = await fetchAuth(`${API_URL}/agent/foto-nf/${id}`);
+        const data = await res.json();
+        if (data.foto) {
+          setFotoModal(data.foto);
+        } else {
+          showToast('Foto da NF não encontrada', 'error');
+        }
+      } catch { showToast('Erro ao carregar foto da NF', 'error'); }
+    };
+
     // Estado do modal de mapa
     const [mapaModal, setMapaModal] = useState(null); // { r } registro completo
 
@@ -1381,6 +1394,81 @@
                             )
                           ),
                           v.match?.endereco && h('p', { className: 'text-xs text-gray-500 mt-2' }, '📍 Google: ', v.match.endereco)
+                        );
+                      })(),
+                      // 2026-04: Bloco da Validação NF + Receita Federal
+                      (() => {
+                        const vnf = r.validacao_nf;
+                        if (!vnf) return null;
+                        const dados = vnf.dados || {};
+                        const receita = vnf.receita;
+                        const cruz = vnf.cruzamento;
+                        const receitaOk = receita && receita.ok;
+                        const ativa = receitaOk && receita.ativa;
+                        return h('div', { className: 'p-3 bg-indigo-50 rounded-lg col-span-2' },
+                          h('div', { className: 'flex items-center justify-between mb-2' },
+                            h('p', { className: 'font-semibold text-indigo-700' }, '🧾 Validação NF + Receita Federal'),
+                            h('button', {
+                              onClick: (e) => { e.stopPropagation(); abrirFotoNf(r.id); },
+                              className: 'text-xs px-2 py-1 rounded-lg bg-indigo-100 text-indigo-700 hover:bg-indigo-200 font-semibold'
+                            }, '📷 Ver foto da NF')
+                          ),
+                          // Dados extraídos da NF (Gemini)
+                          h('div', { className: 'bg-white rounded p-2 mb-2' },
+                            h('p', { className: 'text-[10px] font-bold text-gray-500 mb-1' }, '📄 EXTRAÍDO DA NF (IA)'),
+                            h('div', { className: 'grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs text-gray-700' },
+                              dados.cnpj_formatado && h('div', null, h('span', { className: 'font-semibold' }, 'CNPJ: '), dados.cnpj_formatado),
+                              typeof vnf.confianca === 'number' && h('div', null, h('span', { className: 'font-semibold' }, 'Confiança IA: '), `${vnf.confianca}%`),
+                              dados.razao_social && h('div', { className: 'col-span-2' }, h('span', { className: 'font-semibold' }, 'Razão social: '), dados.razao_social),
+                              dados.nome_fantasia && h('div', { className: 'col-span-2' }, h('span', { className: 'font-semibold' }, 'Nome fantasia: '), dados.nome_fantasia),
+                              dados.endereco_nf && h('div', { className: 'col-span-2' }, h('span', { className: 'font-semibold' }, 'Endereço NF: '), dados.endereco_nf)
+                            )
+                          ),
+                          // Dados oficiais Receita
+                          receita && h('div', {
+                            className: 'rounded p-2 mb-2 ' + (ativa ? 'bg-blue-50 border border-blue-200' : (receitaOk ? 'bg-yellow-50 border border-yellow-200' : 'bg-red-50 border border-red-200'))
+                          },
+                            h('div', { className: 'flex items-center gap-2 mb-1' },
+                              h('p', { className: 'text-[10px] font-bold ' + (ativa ? 'text-blue-700' : (receitaOk ? 'text-yellow-700' : 'text-red-700')) }, '🏛️ RECEITA FEDERAL'),
+                              receitaOk && h('span', {
+                                className: 'inline-block px-2 py-0.5 rounded-full text-[9px] font-bold ' +
+                                  (ativa ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800')
+                              }, receita.situacao),
+                              receitaOk && receita.fonte && h('span', { className: 'text-[9px] text-gray-500' }, `via ${receita.fonte}`)
+                            ),
+                            !receitaOk && h('p', { className: 'text-xs text-red-600' }, receita.motivo || 'Erro consultando Receita'),
+                            receitaOk && h('div', { className: 'grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs text-gray-700' },
+                              receita.razao_social && h('div', { className: 'col-span-2' }, h('span', { className: 'font-semibold' }, 'Razão social: '), receita.razao_social),
+                              receita.nome_fantasia && h('div', { className: 'col-span-2' }, h('span', { className: 'font-semibold' }, 'Nome fantasia: '), receita.nome_fantasia),
+                              receita.endereco && h('div', { className: 'col-span-2' }, h('span', { className: 'font-semibold' }, 'Endereço: '), receita.endereco),
+                              receita.telefone && h('div', null, h('span', { className: 'font-semibold' }, '📞 '), receita.telefone),
+                              receita.cep && h('div', null, h('span', { className: 'font-semibold' }, 'CEP: '), receita.cep)
+                            )
+                          ),
+                          // Cruzamento (scores)
+                          cruz && cruz.scores && Object.keys(cruz.scores).length > 0 && h('div', { className: 'bg-white rounded p-2' },
+                            h('div', { className: 'flex items-center justify-between mb-1' },
+                              h('p', { className: 'text-[10px] font-bold text-gray-500' }, '🧮 CRUZAMENTO (scores)'),
+                              h('div', { className: 'flex items-center gap-1' },
+                                h('span', { className: 'text-[10px] text-gray-500' }, 'Máx:'),
+                                h('span', {
+                                  className: 'text-xs font-bold ' + ((cruz.score_max || 0) >= 90 ? 'text-green-600' : (cruz.score_max || 0) >= 70 ? 'text-yellow-600' : 'text-red-600')
+                                }, `${cruz.score_max || 0}%`),
+                                cruz.salvo_no_banco && h('span', {
+                                  className: 'inline-block px-1.5 py-0.5 rounded text-[9px] font-bold bg-purple-200 text-purple-800 ml-1'
+                                }, '💾 Salvo')
+                              )
+                            ),
+                            h('div', { className: 'grid grid-cols-2 md:grid-cols-3 gap-1 text-[10px]' },
+                              Object.entries(cruz.scores).map(([k, v]) =>
+                                h('div', { key: k, className: 'flex justify-between bg-gray-50 rounded px-2 py-1' },
+                                  h('span', { className: 'text-gray-600' }, k.replace(/_/g, ' ')),
+                                  h('span', { className: 'font-bold ' + (v >= 90 ? 'text-green-600' : v >= 70 ? 'text-yellow-600' : 'text-red-600') }, `${v}%`)
+                                )
+                              )
+                            ),
+                            cruz.mensagem_motoboy && h('p', { className: 'text-[10px] text-gray-600 mt-1.5 italic' }, '↳ ', cruz.mensagem_motoboy)
+                          )
                         );
                       })(),
                       // Valores Antes x Depois
