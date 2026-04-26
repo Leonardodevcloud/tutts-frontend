@@ -70,8 +70,6 @@
     const pollingRef                = useRef(null);
     const timeoutRef                = useRef(null);
     const fotoInputRef              = useRef(null);
-    // 2026-04: foto da NF agora é OBRIGATÓRIA (fachada virou opcional)
-    const fotoNfInputRef            = useRef(null);
 
     // GPS e foto states
     const [gps, setGps]             = useState(null);       // { lat, lng }
@@ -79,13 +77,6 @@
     const [gpsErro, setGpsErro]     = useState('');
     const [fotoBase64, setFotoB64]  = useState(null);
     const [fotoPreview, setFotoPre] = useState(null);
-    // 2026-04: foto NF (obrigatória) + estado pra mostrar confirmação Receita
-    const [fotoNfBase64, setFotoNfB64] = useState(null);
-    const [fotoNfPreview, setFotoNfPre] = useState(null);
-    const [validacaoReceita, setValidacaoReceita] = useState(null); // { nome, situacao, ativa, mensagem }
-    // 2026-04 v3: alternativa à foto NF — motoboy pode digitar CNPJ direto
-    const [modoIdentificacao, setModoIdentificacao] = useState('foto'); // 'foto' | 'cnpj'
-    const [cnpjManual, setCnpjManual] = useState('');
     const [valoresOS, setValoresOS] = useState(null); // { antes, depois }
 
     // Progresso real do RPA — atualizados pelo polling (campos etapa_atual / progresso do banco).
@@ -174,29 +165,6 @@
       }
     }
 
-    // 2026-04: handler da foto da NF (mesma lógica, state separado)
-    async function handleFotoNf(e) {
-      const file = e.target.files?.[0];
-      if (!file) return;
-
-      if (!file.type.startsWith('image/')) {
-        showToast('Selecione uma imagem válida.', 'error');
-        return;
-      }
-      if (file.size > MAX_FOTO_SIZE * 2) {
-        showToast('Imagem muito grande. Máximo 10MB antes da compressão.', 'error');
-        return;
-      }
-
-      try {
-        const compressed = await compressImage(file);
-        setFotoNfB64(compressed);
-        setFotoNfPre(compressed);
-      } catch {
-        showToast('Erro ao processar a imagem.', 'error');
-      }
-    }
-
     const iniciarPolling = useCallback((id) => {
       timeoutRef.current = setTimeout(() => {
         pararPolling();
@@ -270,32 +238,6 @@
       showToast('Localização enviada com sucesso!', 'success');
     }
 
-    // 2026-04 v3: helpers pra CNPJ digitado manualmente
-    function formatarCNPJ(v) {
-      // 12.345.678/0001-90
-      const d = String(v || '').replace(/\D/g, '').slice(0, 14);
-      return d
-        .replace(/^(\d{2})(\d)/, '$1.$2')
-        .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
-        .replace(/\.(\d{3})(\d)/, '.$1/$2')
-        .replace(/(\d{4})(\d)/, '$1-$2');
-    }
-
-    function validarCNPJ(cnpj) {
-      const c = String(cnpj || '').replace(/\D/g, '');
-      if (c.length !== 14) return false;
-      if (/^(\d)\1+$/.test(c)) return false;
-      const calc = (base, pesos) => {
-        let s = 0;
-        for (let i = 0; i < pesos.length; i++) s += parseInt(base[i], 10) * pesos[i];
-        const r = s % 11;
-        return r < 2 ? 0 : 11 - r;
-      };
-      const p1 = [5,4,3,2,9,8,7,6,5,4,3,2];
-      const p2 = [6,5,4,3,2,9,8,7,6,5,4,3,2];
-      return calc(c, p1) === parseInt(c[12], 10) && calc(c, p2) === parseInt(c[13], 10);
-    }
-
     const handleSubmit = async () => {
       if (!form.os_numero.trim() || !form.ponto || !form.localizacao_raw.trim()) {
         showToast('Preencha todos os campos obrigatórios.', 'error');
@@ -303,19 +245,6 @@
       }
       if (!gps) {
         showToast('GPS obrigatório! Ative a localização e clique em "Atualizar GPS".', 'error');
-        return;
-      }
-      // 2026-04 v3: motoboy pode mandar foto NF OU CNPJ digitado (XOR)
-      const cnpjLimpo = String(cnpjManual).replace(/\D/g, '');
-      const temFoto = !!fotoNfBase64;
-      const temCnpj = cnpjLimpo.length > 0;
-
-      if (!temFoto && !temCnpj) {
-        showToast('Envie a foto da nota OU digite o CNPJ do cliente!', 'error');
-        return;
-      }
-      if (temCnpj && !validarCNPJ(cnpjLimpo)) {
-        showToast('CNPJ inválido. Confira os dígitos.', 'error');
         return;
       }
       if (!fotoBase64) {
@@ -326,7 +255,6 @@
       setLoading(true);
       setFase('validando');
       setDetalhe('');
-      setValidacaoReceita(null);
 
       try {
         const res = await fetchAuth(`${API_URL}/agent/corrigir-endereco`, {
@@ -338,8 +266,6 @@
             localizacao_raw: form.localizacao_raw.trim(),
             motoboy_lat:     gps.lat,
             motoboy_lng:     gps.lng,
-            foto_nf:         temFoto ? fotoNfBase64 : null,
-            cnpj_manual:     temCnpj ? cnpjLimpo : null,
             foto_fachada:    fotoBase64,
           }),
         });
@@ -354,32 +280,15 @@
             setLoading(false);
             return;
           }
-          // NF rejeitada pela IA — feedback específico
-          if (data.nf_rejeitada) {
-            setFase('foto_rejeitada');
-            setDetalhe(data.motivo_rejeicao || 'A foto da NF não é válida. Tire uma foto mais clara mostrando o cabeçalho.');
-            setLoading(false);
-            return;
-          }
-          // Foto fachada rejeitada pela IA — feedback específico
+          // Foto rejeitada pela IA — feedback específico
           if (data.foto_rejeitada) {
             setFase('foto_rejeitada');
-            setDetalhe(data.motivo_rejeicao || 'A foto da fachada não é válida.');
+            setDetalhe(data.motivo_rejeicao || 'A foto enviada não é válida.');
             setLoading(false);
             return;
           }
           setFase('erro'); setDetalhe(msg); setLoading(false);
           return;
-        }
-
-        // 2026-04: salva dados da Receita Federal pra mostrar pro motoboy
-        if (data.cruzamento || data.receita) {
-          setValidacaoReceita({
-            mensagem: data.cruzamento?.mensagem || null,
-            receita: data.receita || null,
-            score_max: data.cruzamento?.score_max || 0,
-            salvo_no_banco: data.cruzamento?.salvo_no_banco || false,
-          });
         }
 
         // Verificar resultado da validação de localização
@@ -415,11 +324,6 @@
       setLoading(false);
       setFotoB64(null);
       setFotoPre(null);
-      setFotoNfB64(null);
-      setFotoNfPre(null);
-      setCnpjManual('');
-      setModoIdentificacao('foto');
-      setValidacaoReceita(null);
       setPontoCoords(null);
       setEnderecoGeo('');
       capturarGPS();
@@ -551,43 +455,6 @@
       h('div', { style: { animation: 'successSlide 0.4s ease-out 0.2s both', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' } },
       h('h2', { className: 'text-2xl font-bold text-green-700 mb-2' }, 'Endereço corrigido com sucesso!'),
       h('p', { className: 'text-gray-500 mb-4' }, `OS ${form.os_numero || ''} — Ponto ${form.ponto || ''}`),
-
-      // 2026-04: Banner de confirmação Receita Federal
-      validacaoReceita && validacaoReceita.mensagem && h('div', {
-        className: 'w-full max-w-sm mb-4 rounded-xl p-4 ' +
-          (validacaoReceita.receita?.ativa
-            ? 'bg-blue-50 border-2 border-blue-300'
-            : 'bg-yellow-50 border-2 border-yellow-300')
-      },
-        h('p', {
-          className: 'text-sm font-bold mb-1 ' +
-            (validacaoReceita.receita?.ativa ? 'text-blue-900' : 'text-yellow-900')
-        }, validacaoReceita.mensagem),
-        validacaoReceita.receita && h('div', { className: 'text-xs text-gray-700 space-y-0.5' },
-          validacaoReceita.receita.razao_social && h('div', null,
-            h('span', { className: 'font-semibold' }, 'Razão social: '),
-            validacaoReceita.receita.razao_social
-          ),
-          validacaoReceita.receita.nome_fantasia && h('div', null,
-            h('span', { className: 'font-semibold' }, 'Nome fantasia: '),
-            validacaoReceita.receita.nome_fantasia
-          ),
-          validacaoReceita.receita.endereco && h('div', null,
-            h('span', { className: 'font-semibold' }, 'Endereço Receita: '),
-            validacaoReceita.receita.endereco
-          ),
-          h('div', { className: 'flex items-center gap-2 mt-1' },
-            h('span', {
-              className: 'inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ' +
-                (validacaoReceita.receita.ativa ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800')
-            }, validacaoReceita.receita.situacao),
-            validacaoReceita.salvo_no_banco && h('span', {
-              className: 'inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-200 text-purple-800'
-            }, '💾 Salvo na base')
-          )
-        )
-      ),
-
       // Antes x Depois
       valoresOS && (valoresOS.antes || valoresOS.depois) && h('div', { className: 'w-full max-w-sm mb-6' },
         valoresOS.antes && h('div', { className: 'bg-orange-50 border border-orange-200 rounded-xl p-4 mb-3' },
@@ -882,89 +749,7 @@
               )
         ),
 
-        // ── Identificação do cliente: foto NF OU CNPJ digitado ──────────
-        h('div', null,
-          h('label', { className: 'block text-sm font-semibold text-gray-700 mb-1.5' }, '🧾 Identificar cliente *'),
-
-          // Toggle: 2 botões lado a lado
-          h('div', { className: 'flex gap-1 mb-3 bg-gray-100 rounded-xl p-1' },
-            h('button', {
-              onClick: () => { setModoIdentificacao('foto'); setCnpjManual(''); },
-              disabled,
-              className: 'flex-1 py-2 rounded-lg text-xs font-semibold transition ' +
-                (modoIdentificacao === 'foto'
-                  ? 'bg-blue-500 text-white shadow'
-                  : 'bg-transparent text-gray-600 hover:bg-white'),
-            }, '📷 Foto da NF'),
-            h('button', {
-              onClick: () => { setModoIdentificacao('cnpj'); setFotoNfB64(null); setFotoNfPre(null); },
-              disabled,
-              className: 'flex-1 py-2 rounded-lg text-xs font-semibold transition ' +
-                (modoIdentificacao === 'cnpj'
-                  ? 'bg-blue-500 text-white shadow'
-                  : 'bg-transparent text-gray-600 hover:bg-white'),
-            }, '⌨️ Digitar CNPJ')
-          ),
-
-          // Modo FOTO: input de arquivo
-          modoIdentificacao === 'foto' && h(React.Fragment, null,
-            h('input', {
-              ref: fotoNfInputRef,
-              type: 'file',
-              accept: 'image/*',
-              capture: 'environment',
-              onChange: handleFotoNf,
-              className: 'hidden',
-            }),
-            fotoNfPreview
-              ? h('div', { className: 'relative' },
-                  h('img', {
-                    src: fotoNfPreview,
-                    className: 'w-full h-48 object-cover rounded-xl border-2 border-blue-300',
-                    alt: 'Foto da NF',
-                  }),
-                  h('button', {
-                    onClick: () => { setFotoNfB64(null); setFotoNfPre(null); },
-                    className: 'absolute top-2 right-2 w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-lg hover:bg-red-600',
-                  }, '✕'),
-                  h('div', { className: 'absolute bottom-2 left-2 px-2 py-1 bg-blue-500 text-white text-xs rounded-lg font-semibold' }, '✓ NF capturada')
-                )
-              : h('button', {
-                  onClick: () => fotoNfInputRef.current?.click(),
-                  disabled,
-                  className: 'w-full h-32 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-2 transition ' +
-                    (disabled ? 'border-gray-200 bg-gray-50 cursor-not-allowed' : 'border-blue-300 bg-blue-50 hover:bg-blue-100 hover:border-blue-400 cursor-pointer'),
-                },
-                  h('span', { className: 'text-3xl' }, '🧾'),
-                  h('span', { className: 'text-sm font-semibold text-blue-700' }, 'Tirar foto da nota fiscal'),
-                  h('span', { className: 'text-xs text-blue-500' }, 'Mostre o cabeçalho com CNPJ')
-                )
-          ),
-
-          // Modo CNPJ: input de texto
-          modoIdentificacao === 'cnpj' && h('div', null,
-            h('input', {
-              type: 'text',
-              inputMode: 'numeric',
-              value: cnpjManual,
-              onChange: (e) => setCnpjManual(formatarCNPJ(e.target.value)),
-              placeholder: '00.000.000/0000-00',
-              maxLength: 18,
-              disabled,
-              className: 'w-full px-4 py-3 rounded-xl border-2 text-base font-mono tracking-wider transition ' +
-                (cnpjManual && !validarCNPJ(cnpjManual)
-                  ? 'border-red-300 bg-red-50 text-red-700'
-                  : (cnpjManual && validarCNPJ(cnpjManual)
-                      ? 'border-green-300 bg-green-50 text-green-700'
-                      : 'border-blue-300 bg-blue-50 text-blue-700')) +
-                (disabled ? ' cursor-not-allowed opacity-60' : ''),
-            }),
-            cnpjManual && !validarCNPJ(cnpjManual) && h('p', { className: 'text-xs text-red-500 mt-1.5' }, '⚠️ CNPJ inválido — confira os dígitos'),
-            cnpjManual && validarCNPJ(cnpjManual) && h('p', { className: 'text-xs text-green-600 mt-1.5' }, '✓ CNPJ válido — vamos consultar a Receita Federal')
-          )
-        ),
-
-        // ── Foto da fachada (OBRIGATÓRIA — necessária pras regras de cruzamento) ──
+        // ── Foto da fachada ──────────────────────────────────────────────
         h('div', null,
           h('label', { className: 'block text-sm font-semibold text-gray-700 mb-1.5' }, '📸 Foto da fachada *'),
 
@@ -1269,19 +1054,6 @@
       } catch { showToast('Erro ao carregar foto', 'error'); }
     };
 
-    // 2026-04: abrir foto da NF (mesmo modal, endpoint diferente)
-    const abrirFotoNf = async (id) => {
-      try {
-        const res = await fetchAuth(`${API_URL}/agent/foto-nf/${id}`);
-        const data = await res.json();
-        if (data.foto) {
-          setFotoModal(data.foto);
-        } else {
-          showToast('Foto da NF não encontrada', 'error');
-        }
-      } catch { showToast('Erro ao carregar foto da NF', 'error'); }
-    };
-
     // Estado do modal de mapa
     const [mapaModal, setMapaModal] = useState(null); // { r } registro completo
 
@@ -1482,81 +1254,6 @@
                             )
                           ),
                           v.match?.endereco && h('p', { className: 'text-xs text-gray-500 mt-2' }, '📍 Google: ', v.match.endereco)
-                        );
-                      })(),
-                      // 2026-04: Bloco da Validação NF + Receita Federal
-                      (() => {
-                        const vnf = r.validacao_nf;
-                        if (!vnf) return null;
-                        const dados = vnf.dados || {};
-                        const receita = vnf.receita;
-                        const cruz = vnf.cruzamento;
-                        const receitaOk = receita && receita.ok;
-                        const ativa = receitaOk && receita.ativa;
-                        return h('div', { className: 'p-3 bg-indigo-50 rounded-lg col-span-2' },
-                          h('div', { className: 'flex items-center justify-between mb-2' },
-                            h('p', { className: 'font-semibold text-indigo-700' }, '🧾 Validação NF + Receita Federal'),
-                            h('button', {
-                              onClick: (e) => { e.stopPropagation(); abrirFotoNf(r.id); },
-                              className: 'text-xs px-2 py-1 rounded-lg bg-indigo-100 text-indigo-700 hover:bg-indigo-200 font-semibold'
-                            }, '📷 Ver foto da NF')
-                          ),
-                          // Dados extraídos da NF (Gemini)
-                          h('div', { className: 'bg-white rounded p-2 mb-2' },
-                            h('p', { className: 'text-[10px] font-bold text-gray-500 mb-1' }, '📄 EXTRAÍDO DA NF (IA)'),
-                            h('div', { className: 'grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs text-gray-700' },
-                              dados.cnpj_formatado && h('div', null, h('span', { className: 'font-semibold' }, 'CNPJ: '), dados.cnpj_formatado),
-                              typeof vnf.confianca === 'number' && h('div', null, h('span', { className: 'font-semibold' }, 'Confiança IA: '), `${vnf.confianca}%`),
-                              dados.razao_social && h('div', { className: 'col-span-2' }, h('span', { className: 'font-semibold' }, 'Razão social: '), dados.razao_social),
-                              dados.nome_fantasia && h('div', { className: 'col-span-2' }, h('span', { className: 'font-semibold' }, 'Nome fantasia: '), dados.nome_fantasia),
-                              dados.endereco_nf && h('div', { className: 'col-span-2' }, h('span', { className: 'font-semibold' }, 'Endereço NF: '), dados.endereco_nf)
-                            )
-                          ),
-                          // Dados oficiais Receita
-                          receita && h('div', {
-                            className: 'rounded p-2 mb-2 ' + (ativa ? 'bg-blue-50 border border-blue-200' : (receitaOk ? 'bg-yellow-50 border border-yellow-200' : 'bg-red-50 border border-red-200'))
-                          },
-                            h('div', { className: 'flex items-center gap-2 mb-1' },
-                              h('p', { className: 'text-[10px] font-bold ' + (ativa ? 'text-blue-700' : (receitaOk ? 'text-yellow-700' : 'text-red-700')) }, '🏛️ RECEITA FEDERAL'),
-                              receitaOk && h('span', {
-                                className: 'inline-block px-2 py-0.5 rounded-full text-[9px] font-bold ' +
-                                  (ativa ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800')
-                              }, receita.situacao),
-                              receitaOk && receita.fonte && h('span', { className: 'text-[9px] text-gray-500' }, `via ${receita.fonte}`)
-                            ),
-                            !receitaOk && h('p', { className: 'text-xs text-red-600' }, receita.motivo || 'Erro consultando Receita'),
-                            receitaOk && h('div', { className: 'grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs text-gray-700' },
-                              receita.razao_social && h('div', { className: 'col-span-2' }, h('span', { className: 'font-semibold' }, 'Razão social: '), receita.razao_social),
-                              receita.nome_fantasia && h('div', { className: 'col-span-2' }, h('span', { className: 'font-semibold' }, 'Nome fantasia: '), receita.nome_fantasia),
-                              receita.endereco && h('div', { className: 'col-span-2' }, h('span', { className: 'font-semibold' }, 'Endereço: '), receita.endereco),
-                              receita.telefone && h('div', null, h('span', { className: 'font-semibold' }, '📞 '), receita.telefone),
-                              receita.cep && h('div', null, h('span', { className: 'font-semibold' }, 'CEP: '), receita.cep)
-                            )
-                          ),
-                          // Cruzamento (scores)
-                          cruz && cruz.scores && Object.keys(cruz.scores).length > 0 && h('div', { className: 'bg-white rounded p-2' },
-                            h('div', { className: 'flex items-center justify-between mb-1' },
-                              h('p', { className: 'text-[10px] font-bold text-gray-500' }, '🧮 CRUZAMENTO (scores)'),
-                              h('div', { className: 'flex items-center gap-1' },
-                                h('span', { className: 'text-[10px] text-gray-500' }, 'Máx:'),
-                                h('span', {
-                                  className: 'text-xs font-bold ' + ((cruz.score_max || 0) >= 90 ? 'text-green-600' : (cruz.score_max || 0) >= 70 ? 'text-yellow-600' : 'text-red-600')
-                                }, `${cruz.score_max || 0}%`),
-                                cruz.salvo_no_banco && h('span', {
-                                  className: 'inline-block px-1.5 py-0.5 rounded text-[9px] font-bold bg-purple-200 text-purple-800 ml-1'
-                                }, '💾 Salvo')
-                              )
-                            ),
-                            h('div', { className: 'grid grid-cols-2 md:grid-cols-3 gap-1 text-[10px]' },
-                              Object.entries(cruz.scores).map(([k, v]) =>
-                                h('div', { key: k, className: 'flex justify-between bg-gray-50 rounded px-2 py-1' },
-                                  h('span', { className: 'text-gray-600' }, k.replace(/_/g, ' ')),
-                                  h('span', { className: 'font-bold ' + (v >= 90 ? 'text-green-600' : v >= 70 ? 'text-yellow-600' : 'text-red-600') }, `${v}%`)
-                                )
-                              )
-                            ),
-                            cruz.mensagem_motoboy && h('p', { className: 'text-[10px] text-gray-600 mt-1.5 italic' }, '↳ ', cruz.mensagem_motoboy)
-                          )
                         );
                       })(),
                       // Valores Antes x Depois
@@ -1894,6 +1591,215 @@
   let _analyticsFetching = false;
   let _analyticsError = false;
 
+  // ========================================================================
+  // TAB LIBERAÇÕES (admin) — 2026-04 v3
+  // Lista jobs de liberacoes_pontos via GET /agent/liberar-ponto/historico
+  // Visualização simples: status, OS, motoboy, hora, erro se falhou
+  // ========================================================================
+  function TabLiberacoes({ API_URL, fetchAuth, showToast }) {
+    const [dados, setDados]     = useState([]);
+    const [total, setTotal]     = useState(0);
+    const [loading, setLoading] = useState(false);
+    const [filtros, setFiltros] = useState({ status: '', os_numero: '', de: '', ate: '' });
+    const [page, setPage]       = useState(1);
+    const PER_PAGE = 30;
+
+    const filtrosRef = useRef(filtros);
+    filtrosRef.current = filtros;
+
+    const carregar = useCallback(async (pg = 1, f) => {
+      const filtrosAtivos = f || filtrosRef.current;
+      setLoading(true);
+      try {
+        const params = new URLSearchParams({ page: pg, per_page: PER_PAGE });
+        if (filtrosAtivos.status)    params.set('status',    filtrosAtivos.status);
+        if (filtrosAtivos.os_numero) params.set('os_numero', filtrosAtivos.os_numero);
+        if (filtrosAtivos.de)        params.set('de',        filtrosAtivos.de);
+        if (filtrosAtivos.ate)       params.set('ate',       filtrosAtivos.ate);
+
+        const res  = await fetchAuth(`${API_URL}/agent/liberar-ponto/historico?${params}`);
+        const data = await res.json();
+        setDados(data.registros || []);
+        setTotal(data.total || 0);
+        setPage(pg);
+      } catch {
+        showToast('Erro ao carregar liberações', 'error');
+      } finally {
+        setLoading(false);
+      }
+    }, [fetchAuth, API_URL, showToast]);
+
+    useEffect(() => { carregar(); }, []);
+
+    const totalPaginas = Math.ceil(total / PER_PAGE);
+    const aplicarFiltros = () => carregar(1, filtros);
+    const handleFiltro = (e) => {
+      const { name, value } = e.target;
+      setFiltros(f => ({ ...f, [name]: value }));
+    };
+    const limparFiltros = () => {
+      const v = { status: '', os_numero: '', de: '', ate: '' };
+      setFiltros(v);
+      carregar(1, v);
+    };
+
+    const labelStatus = {
+      sucesso: '✅ Sucesso',
+      falhou: '❌ Falhou',
+      processando: '⏳ Processando',
+      pendente: '⏸️ Pendente',
+    };
+    const corStatus = {
+      sucesso:     'bg-green-100 text-green-800 border-green-300',
+      falhou:      'bg-red-100 text-red-800 border-red-300',
+      processando: 'bg-blue-100 text-blue-800 border-blue-300',
+      pendente:    'bg-yellow-100 text-yellow-800 border-yellow-300',
+    };
+
+    const fmtData = (s) => {
+      if (!s) return '—';
+      const d = new Date(s);
+      return d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
+    };
+
+    return h('div', { className: 'p-4 max-w-6xl mx-auto' },
+
+      // Cabeçalho com contadores
+      h('div', { className: 'flex justify-between items-center mb-4' },
+        h('div', null,
+          h('h2', { className: 'text-xl font-bold text-gray-800' }, '🔓 Liberações de OS'),
+          h('p', { className: 'text-sm text-gray-500' }, `Total: ${total} registro(s)`)
+        ),
+        h('button', {
+          onClick: () => carregar(page, filtros),
+          disabled: loading,
+          className: 'px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-semibold disabled:opacity-50',
+        }, loading ? 'Carregando...' : '🔄 Atualizar')
+      ),
+
+      // Filtros
+      h('div', { className: 'bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-4' },
+        h('div', { className: 'grid grid-cols-1 md:grid-cols-5 gap-3' },
+          h('div', null,
+            h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1' }, 'Status'),
+            h('select', {
+              name: 'status',
+              value: filtros.status,
+              onChange: handleFiltro,
+              className: 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm',
+            },
+              h('option', { value: '' }, 'Todos'),
+              h('option', { value: 'pendente' }, 'Pendente'),
+              h('option', { value: 'processando' }, 'Processando'),
+              h('option', { value: 'sucesso' }, 'Sucesso'),
+              h('option', { value: 'falhou' }, 'Falhou')
+            )
+          ),
+          h('div', null,
+            h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1' }, 'OS'),
+            h('input', {
+              type: 'text', name: 'os_numero', value: filtros.os_numero, onChange: handleFiltro,
+              placeholder: 'Ex: 1144499',
+              className: 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm',
+            })
+          ),
+          h('div', null,
+            h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1' }, 'De'),
+            h('input', {
+              type: 'date', name: 'de', value: filtros.de, onChange: handleFiltro,
+              className: 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm',
+            })
+          ),
+          h('div', null,
+            h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1' }, 'Até'),
+            h('input', {
+              type: 'date', name: 'ate', value: filtros.ate, onChange: handleFiltro,
+              className: 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm',
+            })
+          ),
+          h('div', { className: 'flex items-end gap-2' },
+            h('button', {
+              onClick: aplicarFiltros,
+              className: 'flex-1 px-3 py-2 bg-purple-600 text-white rounded-lg text-sm font-semibold hover:bg-purple-700',
+            }, 'Filtrar'),
+            h('button', {
+              onClick: limparFiltros,
+              className: 'px-3 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm hover:bg-gray-300',
+            }, 'Limpar')
+          )
+        )
+      ),
+
+      // Tabela
+      h('div', { className: 'bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden' },
+        loading && dados.length === 0
+          ? h('div', { className: 'p-10 text-center text-gray-500' }, 'Carregando...')
+          : dados.length === 0
+            ? h('div', { className: 'p-10 text-center text-gray-500' },
+                h('p', { className: 'text-4xl mb-2' }, '📭'),
+                h('p', null, 'Nenhuma liberação encontrada com esses filtros.')
+              )
+            : h('div', { className: 'overflow-x-auto' },
+                h('table', { className: 'w-full text-sm' },
+                  h('thead', { className: 'bg-gray-50 border-b border-gray-200' },
+                    h('tr', null,
+                      h('th', { className: 'text-left px-3 py-2 font-semibold text-gray-600' }, 'ID'),
+                      h('th', { className: 'text-left px-3 py-2 font-semibold text-gray-600' }, 'OS'),
+                      h('th', { className: 'text-left px-3 py-2 font-semibold text-gray-600' }, 'Motoboy'),
+                      h('th', { className: 'text-left px-3 py-2 font-semibold text-gray-600' }, 'Status'),
+                      h('th', { className: 'text-left px-3 py-2 font-semibold text-gray-600' }, 'Criado em'),
+                      h('th', { className: 'text-left px-3 py-2 font-semibold text-gray-600' }, 'Detalhe')
+                    )
+                  ),
+                  h('tbody', null,
+                    dados.map(r => h('tr', {
+                      key: r.id,
+                      className: 'border-b border-gray-100 hover:bg-gray-50',
+                    },
+                      h('td', { className: 'px-3 py-2 font-mono text-xs text-gray-500' }, `#${r.id}`),
+                      h('td', { className: 'px-3 py-2 font-bold' }, r.os_numero),
+                      h('td', { className: 'px-3 py-2' },
+                        h('div', null,
+                          h('div', { className: 'font-medium text-gray-800' }, r.usuario_nome || '—'),
+                          r.cod_profissional && h('div', { className: 'text-xs text-gray-500' }, `Cód: ${r.cod_profissional}`)
+                        )
+                      ),
+                      h('td', { className: 'px-3 py-2' },
+                        h('span', {
+                          className: `inline-block px-2 py-1 rounded-lg text-xs font-semibold border ${corStatus[r.status] || 'bg-gray-100 border-gray-300'}`,
+                        }, labelStatus[r.status] || r.status)
+                      ),
+                      h('td', { className: 'px-3 py-2 text-xs text-gray-600' }, fmtData(r.criado_em)),
+                      h('td', { className: 'px-3 py-2 text-xs' },
+                        r.status === 'sucesso' && r.mensagem_retorno && h('span', { className: 'text-green-600' }, '✓ ', r.mensagem_retorno),
+                        r.status === 'falhou' && r.erro && h('div', { className: 'text-red-600 max-w-md break-words' }, '⚠️ ', r.erro),
+                        r.status === 'processando' && h('span', { className: 'text-blue-600' },
+                          r.etapa_atual ? `${r.etapa_atual} (${r.progresso || 0}%)` : 'Em andamento...'
+                        )
+                      )
+                    ))
+                  )
+                )
+              )
+      ),
+
+      // Paginação
+      totalPaginas > 1 && h('div', { className: 'flex justify-center items-center gap-2 mt-4' },
+        h('button', {
+          onClick: () => carregar(page - 1, filtros),
+          disabled: page <= 1 || loading,
+          className: 'px-3 py-1 bg-white border border-gray-300 rounded-lg text-sm disabled:opacity-50',
+        }, '← Anterior'),
+        h('span', { className: 'text-sm text-gray-600' }, `Página ${page} de ${totalPaginas}`),
+        h('button', {
+          onClick: () => carregar(page + 1, filtros),
+          disabled: page >= totalPaginas || loading,
+          className: 'px-3 py-1 bg-white border border-gray-300 rounded-lg text-sm disabled:opacity-50',
+        }, 'Próxima →')
+      )
+    );
+  }
+
   function TabAnalytics({ API_URL, fetchAuth, showToast }) {
     const containerRef = useRef(null);
     const [, forceUpdate] = useState(0);
@@ -2120,7 +2026,11 @@
     }, []);
 
     const ABAS = isAdmin
-      ? [{ id: 'historico', label: '📋 Histórico' }, { id: 'analytics', label: '📊 Analytics' }]
+      ? [
+          { id: 'historico',   label: '📋 Histórico' },
+          { id: 'liberacoes',  label: '🔓 Liberação de OS' },  // 2026-04 v3
+          { id: 'analytics',   label: '📊 Analytics' },
+        ]
       : [{ id: 'formulario', label: '📍 Correção' }, { id: 'meu-historico', label: '📋 Minhas Solicitações' }];
 
     return h('div', { className: `${HeaderCompacto ? 'min-h-screen' : 'overflow-y-auto'} bg-gray-50 flex flex-col` },
@@ -2160,6 +2070,9 @@
           ? h(React.Fragment, null,
               h('div', { style: { display: aba === 'historico' ? 'block' : 'none' } },
                 h(TabHistorico, { API_URL, fetchAuth, showToast, usuario })
+              ),
+              h('div', { style: { display: aba === 'liberacoes' ? 'block' : 'none' } },
+                h(TabLiberacoes, { API_URL, fetchAuth, showToast })
               ),
               h('div', { style: { display: aba === 'analytics' ? 'block' : 'none' } },
                 h(TabAnalytics, { API_URL, fetchAuth, showToast })
