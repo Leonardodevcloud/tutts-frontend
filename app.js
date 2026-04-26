@@ -18111,14 +18111,38 @@ const hideLoadingScreen = () => {
                 className: "bg-white rounded-xl shadow p-6"
             }, React.createElement("h2", {
                 className: "text-xl font-bold text-purple-900 mb-6"
-            }, "📤 Upload de Planilha"), 
-                        // === 2026-04 v3 — Card Importacao Automatica (RPA) ===
-            React.createElement("div", { className: "mb-4" },
-                window.BiImportAutoTab
-                    ? React.createElement(window.BiImportAutoTab, { API_URL: API_URL, fetchAuth: fetchAuth, showToast: ja })
-                    : React.createElement("div", { className: "bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800" }, "Aguardando carregamento do modulo de importacao automatica...")
+            }, "📤 Upload de Planilha"),
+            // === 2026-04 v3 — Sub-abas Manual / Automatico ===
+            React.createElement("div", { className: "bg-purple-50 rounded-lg p-1 inline-flex gap-1 mb-4" },
+                React.createElement("button", {
+                    id: "bi-subtab-btn-manual",
+                    type: "button",
+                    onClick: function() {
+                        document.getElementById("bi-subtab-manual").style.display = "block";
+                        document.getElementById("bi-subtab-auto").style.display   = "none";
+                        document.getElementById("bi-subtab-btn-manual").className = "px-4 py-2 rounded-md font-semibold text-sm bg-white text-purple-800 shadow";
+                        document.getElementById("bi-subtab-btn-auto").className   = "px-4 py-2 rounded-md font-semibold text-sm text-purple-600 hover:bg-purple-100";
+                        try { localStorage.setItem("bi_upload_subtab", "manual"); } catch(e) {}
+                    },
+                    className: "px-4 py-2 rounded-md font-semibold text-sm bg-white text-purple-800 shadow"
+                }, "📄 Manual"),
+                React.createElement("button", {
+                    id: "bi-subtab-btn-auto",
+                    type: "button",
+                    onClick: function() {
+                        document.getElementById("bi-subtab-manual").style.display = "none";
+                        document.getElementById("bi-subtab-auto").style.display   = "block";
+                        document.getElementById("bi-subtab-btn-auto").className   = "px-4 py-2 rounded-md font-semibold text-sm bg-white text-purple-800 shadow";
+                        document.getElementById("bi-subtab-btn-manual").className = "px-4 py-2 rounded-md font-semibold text-sm text-purple-600 hover:bg-purple-100";
+                        try { localStorage.setItem("bi_upload_subtab", "auto"); } catch(e) {}
+                    },
+                    className: "px-4 py-2 rounded-md font-semibold text-sm text-purple-600 hover:bg-purple-100"
+                }, "🤖 Automático (RPA)")
             ),
-            // Upload Manual
+
+            // ========== Sub-aba MANUAL ==========
+            React.createElement("div", { id: "bi-subtab-manual", style: { display: "block" } },
+                // Upload Manual
             React.createElement("div", {
                 className: "border-2 border-dashed border-purple-300 rounded-xl p-10 text-center bg-purple-50"
             }, React.createElement("p", {
@@ -18393,7 +18417,22 @@ const hideLoadingScreen = () => {
                     }
                 })(e),
                 className: "px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 font-semibold text-sm"
-            }, "🗑️ Excluir"))))), React.createElement("div", {
+            }, "🗑️ Excluir"))))),
+            ),
+
+            // ========== Sub-aba AUTOMATICO (RPA) ==========
+            React.createElement("div", { id: "bi-subtab-auto", style: { display: "none" } },
+                window.BiImportAutoTab
+                    ? React.createElement(window.BiImportAutoTab, { API_URL: API_URL, fetchAuth: fetchAuth, showToast: ja })
+                    : React.createElement("div", { className: "bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800" }, "Aguardando carregamento do modulo de importacao automatica...")
+            ),
+
+            // Restaurar sub-aba do localStorage
+            React.createElement("script", {
+                dangerouslySetInnerHTML: { __html: '(function(){try{var s=localStorage.getItem("bi_upload_subtab");if(s==="auto"){setTimeout(function(){var btn=document.getElementById("bi-subtab-btn-auto");if(btn)btn.click();},50);}}catch(e){}})();' }
+            }),
+
+            React.createElement("div", {
                 className: "bg-blue-50 border border-blue-200 rounded-xl p-4"
             }, React.createElement("div", {
                 className: "flex items-center justify-between"
