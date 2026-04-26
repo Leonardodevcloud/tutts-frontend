@@ -2326,7 +2326,7 @@ const hideLoadingScreen = () => {
         }), [qe, Ue] = useState({
             avisos: [],
             loading: !0
-        }), [ze, Be] = useState(null), [Ve, Je] = useState(0), [Qe, He] = useState([]), [Ge, We] = useState(!1), [Ze, Ye] = useState([]), [Ke, Xe] = useState([]), [et, tt] = useState([]), [at, lt] = useState([]), [rt, ot] = useState(!0), [ct, st] = useState(0), [nt, mt] = useState("produtos"), [it, dt] = useState([]), [pt, xt] = useState("lista"), [ut, gt] = useState([]), [bt, Rt] = useState([]), [Et, ht] = useState(() => { try { return localStorage.getItem("tutts_tab_bi") || "home-bi"; } catch(e) { return "home-bi"; } }), [chatIaMsgs, setChatIaMsgs] = useState([]), [chatIaInput, setChatIaInput] = useState(""), [chatIaLoading, setChatIaLoading] = useState(false), [chatIaSql, setChatIaSql] = useState(null), [chatIaFiltros, setChatIaFiltros] = useState({ cod_cliente: [], nomes_clientes: [], centro_custo: [], data_inicio: "", data_fim: "", regiao: "" }), [chatIaIniciado, setChatIaIniciado] = useState(false), [chatIaClientes, setChatIaClientes] = useState([]), [chatIaCentros, setChatIaCentros] = useState([]), [chatIaFiltrosLoading, setChatIaFiltrosLoading] = useState(false), [chatIaDropAberto, setChatIaDropAberto] = useState(null), [chatIaBuscaCliente, setChatIaBuscaCliente] = useState(""), [chatIaConversas, setChatIaConversas] = useState([]), [chatIaConversaAtual, setChatIaConversaAtual] = useState(null), [chatIaConversasLoading, setChatIaConversasLoading] = useState(false), [chatIaSidebarAberta, setChatIaSidebarAberta] = useState(false), [chatIaExportando, setChatIaExportando] = useState(false), [chatIaRegioes, setChatIaRegioes] = useState([]), [ft, Nt] = useState(null), [mostrarDetalhes, setMostrarDetalhes] = useState(false), [yt, vt] = useState([]), [wt, _t] = useState([{
+        }), [ze, Be] = useState(null), [Ve, Je] = useState(0), [Qe, He] = useState([]), [Ge, We] = useState(!1), [Ze, Ye] = useState([]), [Ke, Xe] = useState([]), [et, tt] = useState([]), [at, lt] = useState([]), [rt, ot] = useState(!0), [ct, st] = useState(0), [nt, mt] = useState("produtos"), [it, dt] = useState([]), [pt, xt] = useState("lista"), [ut, gt] = useState([]), [bt, Rt] = useState([]), [Et, ht] = useState(() => { try { return localStorage.getItem("tutts_tab_bi") || "home-bi"; } catch(e) { return "home-bi"; } }), [uploadSubTab, setUploadSubTab] = useState("manual"), [chatIaMsgs, setChatIaMsgs] = useState([]), [chatIaInput, setChatIaInput] = useState(""), [chatIaLoading, setChatIaLoading] = useState(false), [chatIaSql, setChatIaSql] = useState(null), [chatIaFiltros, setChatIaFiltros] = useState({ cod_cliente: [], nomes_clientes: [], centro_custo: [], data_inicio: "", data_fim: "", regiao: "" }), [chatIaIniciado, setChatIaIniciado] = useState(false), [chatIaClientes, setChatIaClientes] = useState([]), [chatIaCentros, setChatIaCentros] = useState([]), [chatIaFiltrosLoading, setChatIaFiltrosLoading] = useState(false), [chatIaDropAberto, setChatIaDropAberto] = useState(null), [chatIaBuscaCliente, setChatIaBuscaCliente] = useState(""), [chatIaConversas, setChatIaConversas] = useState([]), [chatIaConversaAtual, setChatIaConversaAtual] = useState(null), [chatIaConversasLoading, setChatIaConversasLoading] = useState(false), [chatIaSidebarAberta, setChatIaSidebarAberta] = useState(false), [chatIaExportando, setChatIaExportando] = useState(false), [chatIaRegioes, setChatIaRegioes] = useState([]), [ft, Nt] = useState(null), [mostrarDetalhes, setMostrarDetalhes] = useState(false), [yt, vt] = useState([]), [wt, _t] = useState([{
             km_min: 0,
             km_max: 15,
             prazo_minutos: 45
@@ -10157,19 +10157,6 @@ const hideLoadingScreen = () => {
         }, "Corrigir localização de ponto de entrega")), React.createElement("span", {
             className: "text-orange-400 text-2xl"
         }, "›")), React.createElement("button", {
-            onClick: () => x({ ...p, userTab: "liberar-ponto" }),
-            className: "w-full bg-white rounded-2xl shadow-lg p-4 sm:p-6 flex items-center gap-3 sm:gap-4 hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98] border-l-4 border-blue-500"
-        }, React.createElement("div", {
-            className: "w-12 h-12 sm:w-16 sm:h-16 bg-blue-100 rounded-xl flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0"
-        }, "🔓"), React.createElement("div", {
-            className: "text-left flex-1"
-        }, React.createElement("h3", {
-            className: "text-lg font-bold text-gray-800"
-        }, "Liberar OS"), React.createElement("p", {
-            className: "text-sm text-gray-500"
-        }, "Liberar Ponto 1 do app via RPA")), React.createElement("span", {
-            className: "text-blue-400 text-2xl"
-        }, "›")), React.createElement("button", {
             onClick: () => x({
                 ...p,
                 userTab: "saque"
@@ -10269,7 +10256,7 @@ const hideLoadingScreen = () => {
             className: "p-2 bg-white rounded-lg shadow hover:bg-gray-50"
         }, "← Voltar"), React.createElement("h1", {
             className: "text-base sm:text-xl font-bold text-gray-800"
-        }, "solicitacoes" === p.userTab && "📋 Solicitar Ajuste", "saque" === p.userTab && "💰 Saque Emergencial", "indicacoes" === p.userTab && "👥 Promoção de Indicação", "promo-novatos" === p.userTab && "🚀 Promoções Novatos", "seguro-iza" === p.userTab && "🛡️ Seguro de Vida - IZA", "loja" === p.userTab && "🛒 Lojinha Tutts", "correcao-endereco" === p.userTab && "📍 Correção de Endereço", "liberar-ponto" === p.userTab && "🔓 Liberar OS")), "solicitacoes" === p.userTab && React.createElement(React.Fragment, null,
+        }, "solicitacoes" === p.userTab && "📋 Solicitar Ajuste", "saque" === p.userTab && "💰 Saque Emergencial", "indicacoes" === p.userTab && "👥 Promoção de Indicação", "promo-novatos" === p.userTab && "🚀 Promoções Novatos", "seguro-iza" === p.userTab && "🛡️ Seguro de Vida - IZA", "loja" === p.userTab && "🛒 Lojinha Tutts", "correcao-endereco" === p.userTab && "📍 Correção de Endereço")), "solicitacoes" === p.userTab && React.createElement(React.Fragment, null,
         // MODAL DE REJEIÇÃO
         (function() {
             var rejNaoLidas = (j || []).filter(function(s) { var hoje = new Date(); hoje.setHours(0,0,0,0); return s.status === 'rejeitado' && s.contestacao_lida === false && s.contestacao_status !== 'encerrada_rejeitada' && s.contestacao_status !== 'aberta' && new Date(s.updated_at || s.created_at) >= hoje; });
@@ -12539,7 +12526,7 @@ const hideLoadingScreen = () => {
                     else ja("Selecione um tamanho", "error")
             },
             className: "flex-1 px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-xl font-semibold hover:opacity-90"
-        }, "✅ Confirmar Pedido"))))))), "correcao-endereco" === p.userTab && (typeof window.ModuloAgenteComponent !== 'undefined' ? React.createElement(window.ModuloAgenteComponent, { usuario: l, API_URL: API_URL, fetchAuth: fetchAuth, HeaderCompacto: null, showToast: ja, he: he, Ee: Ee }) : React.createElement(window._CorrecaoEnderecoInline, { usuario: l, API_URL: API_URL, fetchAuth: fetchAuth, showToast: ja })), "liberar-ponto" === p.userTab && (typeof window.ModuloLiberacaoComponent !== 'undefined' ? React.createElement(window.ModuloLiberacaoComponent, { usuario: l, API_URL: API_URL, fetchAuth: fetchAuth, showToast: ja }) : React.createElement("div", { className: "p-6 text-center text-gray-500" }, "Carregando módulo...")));
+        }, "✅ Confirmar Pedido"))))))), "correcao-endereco" === p.userTab && (typeof window.ModuloAgenteComponent !== 'undefined' ? React.createElement(window.ModuloAgenteComponent, { usuario: l, API_URL: API_URL, fetchAuth: fetchAuth, HeaderCompacto: null, showToast: ja, he: he, Ee: Ee }) : React.createElement(window._CorrecaoEnderecoInline, { usuario: l, API_URL: API_URL, fetchAuth: fetchAuth, showToast: ja })));
         }
         // Verificar permissão para Financeiro (admin comum)
         const canAccessFinanceiro = hasModuleAccess(l, "financeiro");
@@ -18106,8 +18093,29 @@ const hideLoadingScreen = () => {
                 return Object.keys(osUnicas).length;
             })(), " OS únicas. Use os filtros para refinar a busca.")
             ), "upload" === Et && React.createElement("div", {
-                className: "space-y-6"
-            }, React.createElement("div", {
+                className: "space-y-4"
+            }, 
+            // ── Barra de sub-abas: Manual | Automático ──
+            React.createElement("div", {
+                className: "flex gap-2 bg-white p-2 rounded-xl shadow-sm border border-gray-200"
+            },
+                React.createElement("button", {
+                    onClick: () => setUploadSubTab("manual"),
+                    className: "flex-1 px-4 py-2 rounded-lg text-sm font-semibold transition " +
+                        ("manual" === uploadSubTab
+                            ? "bg-purple-600 text-white shadow"
+                            : "bg-transparent text-gray-600 hover:bg-gray-100")
+                }, "📤 Upload Manual"),
+                React.createElement("button", {
+                    onClick: () => setUploadSubTab("auto"),
+                    className: "flex-1 px-4 py-2 rounded-lg text-sm font-semibold transition " +
+                        ("auto" === uploadSubTab
+                            ? "bg-purple-600 text-white shadow"
+                            : "bg-transparent text-gray-600 hover:bg-gray-100")
+                }, "🤖 Importação Automática (RPA)")
+            ),
+            // ── Conteúdo MANUAL ──
+            "manual" === uploadSubTab && React.createElement("div", {
                 className: "bg-white rounded-xl shadow p-6"
             }, React.createElement("h2", {
                 className: "text-xl font-bold text-purple-900 mb-6"
@@ -18399,7 +18407,12 @@ const hideLoadingScreen = () => {
                 onClick: xl,
                 disabled: ba,
                 className: "px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50"
-            }, ba ? "⏳ Recalculando..." : "🔄 Recalcular")))), 
+            }, ba ? "⏳ Recalculando..." : "🔄 Recalcular"))),
+            // ── Conteúdo AUTOMÁTICO (RPA) ──
+            "auto" === uploadSubTab && (typeof window.BiImportAutoTab !== 'undefined'
+                ? React.createElement(window.BiImportAutoTab, { API_URL: API_URL, fetchAuth: fetchAuth, showToast: ja })
+                : React.createElement("div", { className: "bg-white rounded-xl shadow p-6 text-center text-gray-500" }, "Carregando módulo de importação automática..."))
+            ), 
             
             // ========== ABA RELATÓRIO IA ==========
             "relatorio-ia" === Et && React.createElement("div", {className: "space-y-6"},
