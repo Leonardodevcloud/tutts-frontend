@@ -18112,6 +18112,12 @@ const hideLoadingScreen = () => {
             }, React.createElement("h2", {
                 className: "text-xl font-bold text-purple-900 mb-6"
             }, "📤 Upload de Planilha"), 
+                        // === 2026-04 v3 — Card Importacao Automatica (RPA) ===
+            React.createElement("div", { className: "mb-4" },
+                window.BiImportAutoTab
+                    ? React.createElement(window.BiImportAutoTab, { API_URL: API_URL, fetchAuth: fetchAuth, showToast: ja })
+                    : React.createElement("div", { className: "bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800" }, "Aguardando carregamento do modulo de importacao automatica...")
+            ),
             // Upload Manual
             React.createElement("div", {
                 className: "border-2 border-dashed border-purple-300 rounded-xl p-10 text-center bg-purple-50"
