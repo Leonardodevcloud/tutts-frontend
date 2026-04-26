@@ -18114,8 +18114,9 @@ const hideLoadingScreen = () => {
                             : "bg-transparent text-gray-600 hover:bg-gray-100")
                 }, "🤖 Importação Automática (RPA)")
             ),
-            // ── Conteúdo MANUAL ──
-            "manual" === uploadSubTab && React.createElement("div", {
+            // ── Conteúdo MANUAL (3 cards: Upload + Histórico + Recalcular) ──
+            "manual" === uploadSubTab && React.createElement(React.Fragment, null,
+            React.createElement("div", {
                 className: "bg-white rounded-xl shadow p-6"
             }, React.createElement("h2", {
                 className: "text-xl font-bold text-purple-900 mb-6"
@@ -18407,12 +18408,12 @@ const hideLoadingScreen = () => {
                 onClick: xl,
                 disabled: ba,
                 className: "px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50"
-            }, ba ? "⏳ Recalculando..." : "🔄 Recalcular"))),
+            }, ba ? "⏳ Recalculando..." : "🔄 Recalcular")))),
             // ── Conteúdo AUTOMÁTICO (RPA) ──
             "auto" === uploadSubTab && (typeof window.BiImportAutoTab !== 'undefined'
                 ? React.createElement(window.BiImportAutoTab, { API_URL: API_URL, fetchAuth: fetchAuth, showToast: ja })
                 : React.createElement("div", { className: "bg-white rounded-xl shadow p-6 text-center text-gray-500" }, "Carregando módulo de importação automática..."))
-            ), 
+            ),
             
             // ========== ABA RELATÓRIO IA ==========
             "relatorio-ia" === Et && React.createElement("div", {className: "space-y-6"},
