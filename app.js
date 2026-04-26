@@ -2648,16 +2648,10 @@ const hideLoadingScreen = () => {
                 const [gpsErro, setGpsErro] = React.useState('');
                 const [fotoBase64, setFotoBase64] = React.useState(null);
                 const [fotoPreview, setFotoPreview] = React.useState(null);
-                // 2026-04: foto da NF + dados Receita Federal
-                const [fotoNfBase64, setFotoNfBase64] = React.useState(null);
-                const [fotoNfPreview, setFotoNfPreview] = React.useState(null);
-                const [validacaoReceita, setValidacaoReceita] = React.useState(null);
                 const [loading, setLoading] = React.useState(false);
                 const [fase, setFase] = React.useState('idle');
                 const [detalheErro, setDetalheErro] = React.useState('');
                 const fotoRef = React.useRef(null);
-                // 2026-04: ref pra input da NF
-                const fotoNfRef = React.useRef(null);
                 const pollingRef = React.useRef(null);
                 const timeoutRef = React.useRef(null);
 
@@ -2684,12 +2678,6 @@ const hideLoadingScreen = () => {
                     if (!file.type.startsWith('image/')) { showToast('Selecione uma imagem', 'error'); return; }
                     try { const b64 = await compressImg(file); setFotoBase64(b64); setFotoPreview(b64); } catch { showToast('Erro ao processar imagem', 'error'); }
                 }
-                // 2026-04: handler foto NF
-                async function handleFotoNf(e) {
-                    const file = e.target.files?.[0]; if (!file) return;
-                    if (!file.type.startsWith('image/')) { showToast('Selecione uma imagem', 'error'); return; }
-                    try { const b64 = await compressImg(file); setFotoNfBase64(b64); setFotoNfPreview(b64); } catch { showToast('Erro ao processar NF', 'error'); }
-                }
 
                 function pararPolling() {
                     if (pollingRef.current) clearInterval(pollingRef.current);
@@ -2701,36 +2689,15 @@ const hideLoadingScreen = () => {
                 async function handleSubmit() {
                     if (!form.os_numero.trim() || !form.ponto || !form.localizacao_raw.trim()) { showToast('Preencha todos os campos', 'error'); return; }
                     if (!gps) { showToast('GPS obrigatório! Ative e clique Atualizar GPS.', 'error'); return; }
-                    // 2026-04: foto NF obrigatória, fachada opcional
-                    if (!fotoNfBase64) { showToast('Foto da nota fiscal é obrigatória!', 'error'); return; }
-                    setLoading(true); setFase('polling'); setDetalheErro(''); setValidacaoReceita(null);
+                    if (!fotoBase64) { showToast('Foto da fachada obrigatória!', 'error'); return; }
+                    setLoading(true); setFase('polling'); setDetalheErro('');
                     try {
                         const res = await fetchAuth(API_URL + '/agent/corrigir-endereco', {
                             method: 'POST', headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                os_numero: form.os_numero.trim(),
-                                ponto: parseInt(form.ponto, 10),
-                                localizacao_raw: form.localizacao_raw.trim(),
-                                motoboy_lat: gps.lat, motoboy_lng: gps.lng,
-                                foto_nf: fotoNfBase64,
-                                foto_fachada: fotoBase64 || null,
-                            })
+                            body: JSON.stringify({ os_numero: form.os_numero.trim(), ponto: parseInt(form.ponto, 10), localizacao_raw: form.localizacao_raw.trim(), motoboy_lat: gps.lat, motoboy_lng: gps.lng, foto_fachada: fotoBase64 })
                         });
                         const data = await res.json();
-                        if (!res.ok) {
-                            const msg = data.erros ? data.erros.join(' ') : (data.erro || 'Erro');
-                            if (data.nf_rejeitada || data.foto_rejeitada) { setFase('erro'); setDetalheErro(data.motivo_rejeicao || msg); setLoading(false); return; }
-                            setFase('erro'); setDetalheErro(msg); setLoading(false); return;
-                        }
-                        // 2026-04: salva dados Receita pra mostrar
-                        if (data.cruzamento || data.receita) {
-                            setValidacaoReceita({
-                                mensagem: data.cruzamento?.mensagem || null,
-                                receita: data.receita || null,
-                                score_max: data.cruzamento?.score_max || 0,
-                                salvo_no_banco: data.cruzamento?.salvo_no_banco || false,
-                            });
-                        }
+                        if (!res.ok) { setFase('erro'); setDetalheErro(data.erros ? data.erros.join(' ') : (data.erro || 'Erro')); setLoading(false); return; }
                         // Polling
                         const solId = data.id;
                         timeoutRef.current = setTimeout(() => { pararPolling(); setFase('timeout'); setLoading(false); }, 180000);
@@ -2745,7 +2712,7 @@ const hideLoadingScreen = () => {
                     } catch { setFase('erro'); setDetalheErro('Falha de conexão'); setLoading(false); }
                 }
 
-                function resetar() { pararPolling(); setForm({ os_numero: '', ponto: '', localizacao_raw: '' }); setFase('idle'); setDetalheErro(''); setLoading(false); setFotoBase64(null); setFotoPreview(null); setFotoNfBase64(null); setFotoNfPreview(null); setValidacaoReceita(null); capturarGPS(); }
+                function resetar() { pararPolling(); setForm({ os_numero: '', ponto: '', localizacao_raw: '' }); setFase('idle'); setDetalheErro(''); setLoading(false); setFotoBase64(null); setFotoPreview(null); capturarGPS(); }
 
                 const h = React.createElement;
                 if (fase === 'sucesso') return h('div', { className: 'flex flex-col items-center justify-center py-16 px-6 text-center' },
@@ -2811,25 +2778,9 @@ const hideLoadingScreen = () => {
                                 gps && h('button', { onClick: () => { setForm(f => ({ ...f, localizacao_raw: gps.lat + ', ' + gps.lng })); showToast('Localização GPS inserida!', 'success'); }, disabled, className: 'text-xs px-3 py-1 rounded-lg font-semibold text-purple-700 bg-purple-50 border border-purple-200 hover:bg-purple-100' }, '📍 Usar minha localização')
                             )
                         ),
-                        // Foto NF (OBRIGATÓRIA - 2026-04)
+                        // Foto
                         h('div', null,
-                            h('label', { className: 'block text-sm font-semibold text-gray-700 mb-1.5' }, '🧾 Foto da nota fiscal *'),
-                            h('input', { ref: fotoNfRef, type: 'file', accept: 'image/*', capture: 'environment', onChange: handleFotoNf, className: 'hidden' }),
-                            fotoNfPreview
-                                ? h('div', { className: 'relative' },
-                                    h('img', { src: fotoNfPreview, className: 'w-full h-48 object-cover rounded-xl border-2 border-blue-300' }),
-                                    h('button', { onClick: () => { setFotoNfBase64(null); setFotoNfPreview(null); }, className: 'absolute top-2 right-2 w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-lg' }, '✕'),
-                                    h('div', { className: 'absolute bottom-2 left-2 px-2 py-1 bg-blue-500 text-white text-xs rounded-lg font-semibold' }, '✓ NF capturada')
-                                )
-                                : h('button', { onClick: () => fotoNfRef.current?.click(), disabled, className: 'w-full h-32 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-2 ' + (disabled ? 'border-gray-200 bg-gray-50' : 'border-blue-300 bg-blue-50 hover:bg-blue-100 cursor-pointer') },
-                                    h('span', { className: 'text-3xl' }, '🧾'),
-                                    h('span', { className: 'text-sm font-semibold text-blue-700' }, 'Tirar foto da nota fiscal'),
-                                    h('span', { className: 'text-xs text-blue-500' }, 'Obrigatório — mostre o cabeçalho com CNPJ')
-                                )
-                        ),
-                        // Foto fachada (OPCIONAL agora)
-                        h('div', null,
-                            h('label', { className: 'block text-sm font-semibold text-gray-700 mb-1.5' }, '📸 Foto da fachada ', h('span', { className: 'text-xs font-normal text-gray-500' }, '(opcional)')),
+                            h('label', { className: 'block text-sm font-semibold text-gray-700 mb-1.5' }, '📸 Foto da fachada *'),
                             h('input', { ref: fotoRef, type: 'file', accept: 'image/*', capture: 'environment', onChange: handleFoto, className: 'hidden' }),
                             fotoPreview
                                 ? h('div', { className: 'relative' },
@@ -2840,7 +2791,7 @@ const hideLoadingScreen = () => {
                                 : h('button', { onClick: () => fotoRef.current?.click(), disabled, className: 'w-full h-32 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-2 ' + (disabled ? 'border-gray-200 bg-gray-50' : 'border-purple-300 bg-purple-50 hover:bg-purple-100 cursor-pointer') },
                                     h('span', { className: 'text-3xl' }, '📷'),
                                     h('span', { className: 'text-sm font-semibold text-purple-700' }, 'Tirar foto da fachada'),
-                                    h('span', { className: 'text-xs text-purple-500' }, 'Opcional — aumenta a confiança')
+                                    h('span', { className: 'text-xs text-purple-500' }, 'Obrigatório')
                                 )
                         ),
                         // Botão enviar
@@ -10206,6 +10157,19 @@ const hideLoadingScreen = () => {
         }, "Corrigir localização de ponto de entrega")), React.createElement("span", {
             className: "text-orange-400 text-2xl"
         }, "›")), React.createElement("button", {
+            onClick: () => x({ ...p, userTab: "liberar-ponto" }),
+            className: "w-full bg-white rounded-2xl shadow-lg p-4 sm:p-6 flex items-center gap-3 sm:gap-4 hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98] border-l-4 border-blue-500"
+        }, React.createElement("div", {
+            className: "w-12 h-12 sm:w-16 sm:h-16 bg-blue-100 rounded-xl flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0"
+        }, "🔓"), React.createElement("div", {
+            className: "text-left flex-1"
+        }, React.createElement("h3", {
+            className: "text-lg font-bold text-gray-800"
+        }, "Liberar OS"), React.createElement("p", {
+            className: "text-sm text-gray-500"
+        }, "Liberar Ponto 1 do app via RPA")), React.createElement("span", {
+            className: "text-blue-400 text-2xl"
+        }, "›")), React.createElement("button", {
             onClick: () => x({
                 ...p,
                 userTab: "saque"
@@ -10305,7 +10269,7 @@ const hideLoadingScreen = () => {
             className: "p-2 bg-white rounded-lg shadow hover:bg-gray-50"
         }, "← Voltar"), React.createElement("h1", {
             className: "text-base sm:text-xl font-bold text-gray-800"
-        }, "solicitacoes" === p.userTab && "📋 Solicitar Ajuste", "saque" === p.userTab && "💰 Saque Emergencial", "indicacoes" === p.userTab && "👥 Promoção de Indicação", "promo-novatos" === p.userTab && "🚀 Promoções Novatos", "seguro-iza" === p.userTab && "🛡️ Seguro de Vida - IZA", "loja" === p.userTab && "🛒 Lojinha Tutts", "correcao-endereco" === p.userTab && "📍 Correção de Endereço")), "solicitacoes" === p.userTab && React.createElement(React.Fragment, null,
+        }, "solicitacoes" === p.userTab && "📋 Solicitar Ajuste", "saque" === p.userTab && "💰 Saque Emergencial", "indicacoes" === p.userTab && "👥 Promoção de Indicação", "promo-novatos" === p.userTab && "🚀 Promoções Novatos", "seguro-iza" === p.userTab && "🛡️ Seguro de Vida - IZA", "loja" === p.userTab && "🛒 Lojinha Tutts", "correcao-endereco" === p.userTab && "📍 Correção de Endereço", "liberar-ponto" === p.userTab && "🔓 Liberar OS")), "solicitacoes" === p.userTab && React.createElement(React.Fragment, null,
         // MODAL DE REJEIÇÃO
         (function() {
             var rejNaoLidas = (j || []).filter(function(s) { var hoje = new Date(); hoje.setHours(0,0,0,0); return s.status === 'rejeitado' && s.contestacao_lida === false && s.contestacao_status !== 'encerrada_rejeitada' && s.contestacao_status !== 'aberta' && new Date(s.updated_at || s.created_at) >= hoje; });
@@ -12575,7 +12539,7 @@ const hideLoadingScreen = () => {
                     else ja("Selecione um tamanho", "error")
             },
             className: "flex-1 px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-xl font-semibold hover:opacity-90"
-        }, "✅ Confirmar Pedido"))))))), "correcao-endereco" === p.userTab && (typeof window.ModuloAgenteComponent !== 'undefined' ? React.createElement(window.ModuloAgenteComponent, { usuario: l, API_URL: API_URL, fetchAuth: fetchAuth, HeaderCompacto: null, showToast: ja, he: he, Ee: Ee }) : React.createElement(window._CorrecaoEnderecoInline, { usuario: l, API_URL: API_URL, fetchAuth: fetchAuth, showToast: ja })));
+        }, "✅ Confirmar Pedido"))))))), "correcao-endereco" === p.userTab && (typeof window.ModuloAgenteComponent !== 'undefined' ? React.createElement(window.ModuloAgenteComponent, { usuario: l, API_URL: API_URL, fetchAuth: fetchAuth, HeaderCompacto: null, showToast: ja, he: he, Ee: Ee }) : React.createElement(window._CorrecaoEnderecoInline, { usuario: l, API_URL: API_URL, fetchAuth: fetchAuth, showToast: ja })), "liberar-ponto" === p.userTab && (typeof window.ModuloLiberacaoComponent !== 'undefined' ? React.createElement(window.ModuloLiberacaoComponent, { usuario: l, API_URL: API_URL, fetchAuth: fetchAuth, showToast: ja }) : React.createElement("div", { className: "p-6 text-center text-gray-500" }, "Carregando módulo...")));
         }
         // Verificar permissão para Financeiro (admin comum)
         const canAccessFinanceiro = hasModuleAccess(l, "financeiro");
