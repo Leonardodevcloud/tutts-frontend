@@ -38,116 +38,129 @@
     }, s.label);
   }
 
-  // ── Compressão de imagem memory-safe ──────────────────────────────────────
-  // 2026-04 (correção): em iPhones e Androids antigos com fotos modernas (>10MP),
-  // o pipeline antigo (FileReader→DataURL→Image→Canvas→DataURL) podia estourar a
-  // heap do WebView e o navegador MATAVA a aba silenciosamente — sintoma reportado
-  // pelos motoboys: "o sistema fechou ao colocar a foto".
-  //
-  // Esta versão:
-  //  1. Usa URL.createObjectURL (não duplica o arquivo em string base64 antes de decodificar).
-  //  2. Reduz progressivamente o maxWidth até a heap aguentar (retry em downscale).
-  //  3. Faz revokeObjectURL e zera referências ao final pra liberar memória rápido.
-  //  4. Faz toBlob → readAsDataURL (em vez de toDataURL direto), que é ~2x mais leve em iOS.
-  //  5. Captura erros assíncronos do canvas/encode (que antes silenciavam e fechavam a aba).
+  // ── Compressão de imagem memory-safe + tolerante a HEIC/formatos exoticos ──
+  // 2026-04-27: descobrimos que muitos uploads falhavam porque iPhones entregam HEIC
+  // que o navegador NÃO decodifica via Image(), e Androids antigos travam em fotos
+  // grandes. Esta versão tenta múltiplas estratégias antes de desistir:
+  //   1. createImageBitmap(file) — suporte mais amplo, decoda em worker thread
+  //   2. fallback para Image() com URL.createObjectURL — funciona pra JPG/PNG normais
+  //   3. retry com downscale progressivo se OOM
   function compressImage(file, maxWidth = 1200, quality = 0.7) {
-    return new Promise((resolve, reject) => {
-      // Tentativas progressivamente mais agressivas se o navegador estiver com pouca RAM.
-      const tentativas = [
-        { maxWidth, quality },
-        { maxWidth: Math.min(maxWidth, 1000), quality: 0.65 },
-        { maxWidth: 800,  quality: 0.6 },
-        { maxWidth: 640,  quality: 0.55 },
-      ];
+    const tentativas = [
+      { mw: maxWidth, q: quality },
+      { mw: 1000, q: 0.65 },
+      { mw: 800,  q: 0.6  },
+      { mw: 640,  q: 0.55 },
+    ];
 
-      const objectUrl = URL.createObjectURL(file);
-
-      const cleanup = () => {
-        try { URL.revokeObjectURL(objectUrl); } catch (_) {}
-      };
-
-      const tentarComprimir = (idx) => {
-        if (idx >= tentativas.length) {
-          cleanup();
-          reject(new Error('Não foi possível comprimir a imagem (memória insuficiente).'));
-          return;
+    // Encoda canvas em data URL via toBlob+FileReader (mais leve em mobile)
+    function encodeCanvas(canvas, q) {
+      return new Promise((resolve, reject) => {
+        if (canvas.toBlob) {
+          canvas.toBlob((blob) => {
+            if (!blob) { reject(new Error('toBlob retornou null')); return; }
+            const fr = new FileReader();
+            fr.onload  = () => resolve(fr.result);
+            fr.onerror = () => reject(new Error('FileReader falhou'));
+            fr.readAsDataURL(blob);
+          }, 'image/jpeg', q);
+        } else {
+          try { resolve(canvas.toDataURL('image/jpeg', q)); }
+          catch (e) { reject(e); }
         }
-        const { maxWidth: mw, quality: q } = tentativas[idx];
+      });
+    }
+
+    // Desenha um source (ImageBitmap ou HTMLImageElement) num canvas e encoda
+    async function drawAndEncode(source, w, h, q) {
+      let cw = source.width || w;
+      let ch = source.height || h;
+      if (!cw || !ch) throw new Error('Dimensões inválidas');
+      if (cw > w) { ch = Math.round((ch * w) / cw); cw = w; }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = cw; canvas.height = ch;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('Canvas 2D indisponível');
+      ctx.drawImage(source, 0, 0, cw, ch);
+      const result = await encodeCanvas(canvas, q);
+      // Liberar bitmap rapido
+      try { canvas.width = 0; canvas.height = 0; } catch(_) {}
+      return result;
+    }
+
+    // Tentativa 1: createImageBitmap (decoda HEIC em alguns navegadores recentes,
+    // funciona com qualquer formato que o navegador conheça, e roda fora da main thread)
+    async function viaImageBitmap() {
+      if (typeof createImageBitmap !== 'function') throw new Error('createImageBitmap nao suportado');
+      let bitmap;
+      try {
+        bitmap = await createImageBitmap(file);
+      } catch (err) {
+        throw new Error('createImageBitmap falhou: ' + (err && err.message ? err.message : 'unknown'));
+      }
+      try {
+        for (const t of tentativas) {
+          try {
+            const result = await drawAndEncode(bitmap, t.mw, t.mw, t.q);
+            return result;
+          } catch (drawErr) {
+            // tenta tamanho menor
+            continue;
+          }
+        }
+        throw new Error('Não foi possível comprimir (memória insuficiente).');
+      } finally {
+        try { bitmap.close && bitmap.close(); } catch(_) {}
+      }
+    }
+
+    // Tentativa 2: Image() + objectURL (caminho clássico)
+    function viaImageElement() {
+      return new Promise((resolve, reject) => {
+        const objectUrl = URL.createObjectURL(file);
+        const cleanup = () => { try { URL.revokeObjectURL(objectUrl); } catch(_) {} };
 
         const img = new Image();
-        // decoding async ajuda a não travar a UI thread
         img.decoding = 'async';
-        img.onload = () => {
-          let canvas, ctx;
-          try {
-            let w = img.naturalWidth || img.width;
-            let ht = img.naturalHeight || img.height;
-            if (!w || !ht) throw new Error('Dimensões inválidas da imagem.');
-            if (w > mw) { ht = Math.round((ht * mw) / w); w = mw; }
-
-            canvas = document.createElement('canvas');
-            canvas.width = w;
-            canvas.height = ht;
-            ctx = canvas.getContext('2d');
-            if (!ctx) throw new Error('Canvas 2D indisponível.');
-            ctx.drawImage(img, 0, 0, w, ht);
-          } catch (drawErr) {
-            // Liberar bitmap antes de tentar de novo
-            img.src = '';
-            // Tenta tamanho menor
-            tentarComprimir(idx + 1);
-            return;
-          }
-
-          // toBlob é mais leve que toDataURL em mobile (não duplica em string)
-          const onBlob = (blob) => {
-            // Liberar canvas e bitmap imediatamente
-            try { canvas.width = 0; canvas.height = 0; } catch (_) {}
-            img.src = '';
-
-            if (!blob) {
-              // toBlob falhou — tenta downscale
-              tentarComprimir(idx + 1);
-              return;
-            }
-
-            const reader = new FileReader();
-            reader.onload = () => {
-              cleanup();
-              resolve(reader.result);
-            };
-            reader.onerror = () => {
-              cleanup();
-              reject(new Error('Falha lendo blob comprimido.'));
-            };
-            reader.readAsDataURL(blob);
-          };
-
-          if (canvas.toBlob) {
-            canvas.toBlob(onBlob, 'image/jpeg', q);
-          } else {
-            // Fallback antigo (Safari muito antigo) — toDataURL direto, com try
+        img.onload = async () => {
+          for (const t of tentativas) {
             try {
-              const dataUrl = canvas.toDataURL('image/jpeg', q);
-              try { canvas.width = 0; canvas.height = 0; } catch (_) {}
+              const result = await drawAndEncode(img, t.mw, t.mw, t.q);
               img.src = '';
               cleanup();
-              resolve(dataUrl);
-            } catch (e) {
-              tentarComprimir(idx + 1);
+              resolve(result);
+              return;
+            } catch (drawErr) {
+              continue;
             }
           }
+          img.src = '';
+          cleanup();
+          reject(new Error('Não foi possível comprimir (memória insuficiente).'));
         };
         img.onerror = () => {
-          // Pode ser HEIC não suportado, arquivo corrompido, etc.
           cleanup();
-          reject(new Error('Não foi possível ler a imagem. Tente outro arquivo (JPG/PNG).'));
+          // Mensagem mais amigavel — geralmente é HEIC do iPhone
+          reject(new Error('Formato da foto não suportado. Tire a foto novamente diretamente pela câmera do app, ou converta pra JPG.'));
         };
         img.src = objectUrl;
-      };
+      });
+    }
 
-      tentarComprimir(0);
-    });
+    // Pipeline: tenta ImageBitmap primeiro (mais robusto), se falhar tenta Image
+    return (async () => {
+      try {
+        return await viaImageBitmap();
+      } catch (e1) {
+        try {
+          return await viaImageElement();
+        } catch (e2) {
+          // Se as duas falharam, joga o erro mais informativo (geralmente o segundo)
+          throw e2;
+        }
+      }
+    })();
   }
 
   // ── ABA: Formulário do motoboy ──────────────────────────────────────────────
@@ -244,16 +257,15 @@
 
     async function handleFoto(e) {
       const file = e.target.files?.[0];
-      // Limpa o input para permitir reupload do mesmo arquivo
-      try { e.target.value = ''; } catch (_) {}
+      try { e.target.value = ''; } catch(_) {}
       if (!file) return;
 
-      if (!file.type.startsWith('image/')) {
+      if (!file.type.startsWith('image/') && !/\.(jpe?g|png|heic|heif|webp)$/i.test(file.name || '')) {
         showToast('Selecione uma imagem válida.', 'error');
         return;
       }
       if (file.size > MAX_FOTO_SIZE * 4) {
-        showToast('Imagem muito grande. Tire uma foto com menos qualidade ou redimensione antes.', 'error');
+        showToast('Imagem muito grande. Tire outra foto com menos qualidade.', 'error');
         return;
       }
 
@@ -270,15 +282,15 @@
     // 2026-04: handler da foto da NF (mesma lógica, state separado)
     async function handleFotoNf(e) {
       const file = e.target.files?.[0];
-      try { e.target.value = ''; } catch (_) {}
+      try { e.target.value = ''; } catch(_) {}
       if (!file) return;
 
-      if (!file.type.startsWith('image/')) {
+      if (!file.type.startsWith('image/') && !/\.(jpe?g|png|heic|heif|webp)$/i.test(file.name || '')) {
         showToast('Selecione uma imagem válida.', 'error');
         return;
       }
       if (file.size > MAX_FOTO_SIZE * 4) {
-        showToast('Imagem muito grande. Tire uma foto com menos qualidade ou redimensione antes.', 'error');
+        showToast('Imagem muito grande. Tire outra foto com menos qualidade.', 'error');
         return;
       }
 
@@ -1368,13 +1380,22 @@
     const abrirFotoNf = async (id) => {
       try {
         const res = await fetchAuth(`${API_URL}/agent/foto-nf/${id}`);
+        if (res.status === 404) {
+          const data = await res.json().catch(() => ({}));
+          showToast(data.erro || 'Esta solicitação não tem foto da NF salva.', 'info');
+          return;
+        }
+        if (!res.ok) {
+          showToast('Erro ao carregar foto da NF', 'error');
+          return;
+        }
         const data = await res.json();
         if (data.foto) {
           setFotoModal(data.foto);
         } else {
           showToast('Foto da NF não encontrada', 'error');
         }
-      } catch { showToast('Erro ao carregar foto da NF', 'error'); }
+      } catch { showToast('Erro de conexão ao carregar foto da NF', 'error'); }
     };
 
     // Estado do modal de mapa
@@ -1591,10 +1612,15 @@
                         return h('div', { className: 'p-3 bg-indigo-50 rounded-lg col-span-2' },
                           h('div', { className: 'flex items-center justify-between mb-2' },
                             h('p', { className: 'font-semibold text-indigo-700' }, '🧾 Validação NF + Receita Federal'),
-                            h('button', {
-                              onClick: (e) => { e.stopPropagation(); abrirFotoNf(r.id); },
-                              className: 'text-xs px-2 py-1 rounded-lg bg-indigo-100 text-indigo-700 hover:bg-indigo-200 font-semibold'
-                            }, '📷 Ver foto da NF')
+                            r.tem_foto_nf
+                              ? h('button', {
+                                  onClick: (e) => { e.stopPropagation(); abrirFotoNf(r.id); },
+                                  className: 'text-xs px-2 py-1 rounded-lg bg-indigo-100 text-indigo-700 hover:bg-indigo-200 font-semibold'
+                                }, '📷 Ver foto da NF')
+                              : h('span', {
+                                  className: 'text-[10px] px-2 py-1 rounded-lg bg-gray-100 text-gray-500 font-medium',
+                                  title: 'Esta solicitação não tem foto da NF salva (CNPJ digitado ou falha no upload)'
+                                }, '🚫 Sem foto da NF')
                           ),
                           // Dados extraídos da NF (Gemini)
                           h('div', { className: 'bg-white rounded p-2 mb-2' },
