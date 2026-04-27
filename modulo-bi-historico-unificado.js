@@ -1,16 +1,21 @@
 /**
- * modulo-bi-historico-unificado.js
+ * modulo-bi-historico-unificado.js (v2 - sem loop)
  * Componente React Vanilla — Histórico unificado de uploads (manuais + RPA)
  * Exporta: window.BiHistoricoUnificado
  *
  * Endpoints usados:
  *  - GET    /bi/uploads/historico-unificado?origem=todos|manual|auto
  *  - DELETE /bi/uploads/historico-unificado/:origem/:id
+ *
+ * 2026-04 v2: corrige loop infinito de re-render.
+ *   Causa: fetchAuth e showToast eram funções novas a cada render do pai,
+ *   o que recriava o useCallback "carregar", o que disparava o useEffect.
+ *   Solução: usar useRef pra props voláteis, depender APENAS de filtro no useEffect.
  */
 (function () {
   'use strict';
 
-  const { useState, useEffect, useCallback, useRef } = React;
+  const { useState, useEffect, useRef } = React;
   const h = React.createElement;
 
   function fmtDataHora(d) {
@@ -30,31 +35,59 @@
     } catch (e) { return String(d).slice(0, 16); }
   }
 
-  function BiHistoricoUnificado({ API_URL, fetchAuth, showToast }) {
+  function BiHistoricoUnificado(props) {
     const [dados, setDados]       = useState([]);
     const [loading, setLoading]   = useState(false);
-    const [filtro, setFiltro]     = useState('todos');  // 'todos' | 'manual' | 'auto'
+    const [filtro, setFiltro]     = useState('todos');
 
-    const carregar = useCallback(async () => {
+    // Props voláteis em ref — evita recriar callbacks a cada render
+    const propsRef = useRef(props);
+    propsRef.current = props;
+
+    // Carregar dados (depende SÓ de filtro)
+    useEffect(() => {
+      let cancelado = false;
+      const { API_URL, fetchAuth, showToast } = propsRef.current;
+      
       setLoading(true);
-      try {
-        const url = `${API_URL}/bi/uploads/historico-unificado?origem=${filtro}&limit=100`;
-        const r = await fetchAuth(url);
-        const json = await r.json();
-        if (Array.isArray(json)) setDados(json);
-        else setDados([]);
-      } catch (e) {
-        console.error('Erro histórico unificado:', e);
-        showToast && showToast('Erro ao carregar histórico', 'error');
-        setDados([]);
-      } finally {
-        setLoading(false);
-      }
-    }, [API_URL, fetchAuth, filtro, showToast]);
+      const url = `${API_URL}/bi/uploads/historico-unificado?origem=${filtro}&limit=100`;
+      
+      fetchAuth(url)
+        .then(r => r.json())
+        .then(json => {
+          if (cancelado) return;
+          if (Array.isArray(json)) setDados(json);
+          else setDados([]);
+        })
+        .catch(e => {
+          if (cancelado) return;
+          console.error('Erro histórico unificado:', e);
+          showToast && showToast('Erro ao carregar histórico', 'error');
+          setDados([]);
+        })
+        .finally(() => {
+          if (!cancelado) setLoading(false);
+        });
 
-    useEffect(() => { carregar(); }, [carregar]);
+      return () => { cancelado = true; };
+    }, [filtro]);  // ← APENAS filtro como dependência
+
+    function handleAtualizar() {
+      // Força reload mudando filtro pra ele mesmo (cria nova ref de useEffect dep array)
+      // Como filtro não muda, vou usar incremento de chave
+      setFiltro(f => f); // não dispara
+      // Solução real: chamar diretamente
+      const { API_URL, fetchAuth, showToast } = propsRef.current;
+      setLoading(true);
+      fetchAuth(`${API_URL}/bi/uploads/historico-unificado?origem=${filtro}&limit=100`)
+        .then(r => r.json())
+        .then(json => Array.isArray(json) ? setDados(json) : setDados([]))
+        .catch(() => showToast && showToast('Erro ao carregar', 'error'))
+        .finally(() => setLoading(false));
+    }
 
     async function handleExcluir(item) {
+      const { API_URL, fetchAuth, showToast } = propsRef.current;
       const tipo = item.origem === 'auto' ? 'job RPA' : 'upload manual';
       const desc = item.arquivo + ' (' + (item.por || '?') + ')';
       if (!confirm('Excluir ' + tipo + ': ' + desc + ' ?')) return;
@@ -65,7 +98,7 @@
         const j = await r.json();
         if (j.success) {
           showToast && showToast('✅ Excluído!', 'success');
-          carregar();
+          handleAtualizar();
         } else {
           showToast && showToast('Erro ao excluir', 'error');
         }
@@ -78,7 +111,7 @@
       h('button', {
         type: 'button',
         onClick: () => setFiltro(id),
-        className: 'px-3 py-1.5 rounded-md text-xs font-semibold border ' + (
+        className: 'px-3 py-1.5 rounded-md text-xs font-semibold border transition ' + (
           filtro === id
             ? 'bg-purple-100 text-purple-800 border-purple-300'
             : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
@@ -99,14 +132,14 @@
           btnFiltro('manual', '📄 Manual', totalManual),
           h('button', {
             type: 'button',
-            onClick: carregar,
+            onClick: handleAtualizar,
             disabled: loading,
             className: 'px-3 py-1.5 rounded-md text-xs font-semibold bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50'
           }, loading ? '⏳' : '🔄 Atualizar')
         )
       ),
 
-      loading
+      loading && dados.length === 0
         ? h('p', { className: 'text-center text-gray-400 py-4 text-sm' }, '⏳ Carregando...')
         : dados.length === 0
           ? h('p', { className: 'text-center text-gray-400 py-4 text-sm' }, 'Nenhum upload encontrado')
@@ -123,8 +156,8 @@
                   )
                 ),
                 h('tbody', null,
-                  dados.map((item, i) =>
-                    h('tr', { key: item.origem + '-' + item.id, className: 'border-b border-gray-100 hover:bg-purple-50' },
+                  dados.map(function(item) {
+                    return h('tr', { key: item.origem + '-' + item.id, className: 'border-b border-gray-100 hover:bg-purple-50' },
                       h('td', { className: 'py-2 px-2' },
                         h('span', {
                           className: item.origem === 'auto'
@@ -143,13 +176,13 @@
                       h('td', { className: 'py-2 px-2 text-right' },
                         h('button', {
                           type: 'button',
-                          onClick: () => handleExcluir(item),
+                          onClick: function() { handleExcluir(item); },
                           className: 'text-red-500 hover:text-red-700 text-base',
                           title: 'Excluir'
                         }, '🗑️')
                       )
-                    )
-                  )
+                    );
+                  })
                 )
               )
             )
@@ -157,5 +190,5 @@
   }
 
   window.BiHistoricoUnificado = BiHistoricoUnificado;
-  console.log('✅ Módulo BI Histórico Unificado carregado');
+  console.log('✅ Módulo BI Histórico Unificado v2 carregado');
 })();
