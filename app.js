@@ -18112,37 +18112,24 @@ const hideLoadingScreen = () => {
             }, React.createElement("h2", {
                 className: "text-xl font-bold text-purple-900 mb-6"
             }, "📤 Upload de Planilha"),
-            // === 2026-04 v3 — Sub-abas Manual / Automatico ===
-            React.createElement("div", { className: "bg-purple-50 rounded-lg p-1 inline-flex gap-1 mb-4" },
-                React.createElement("button", {
-                    id: "bi-subtab-btn-manual",
-                    type: "button",
-                    onClick: function() {
-                        document.getElementById("bi-subtab-manual").style.display = "block";
-                        document.getElementById("bi-subtab-auto").style.display   = "none";
-                        document.getElementById("bi-subtab-btn-manual").className = "px-4 py-2 rounded-md font-semibold text-sm bg-white text-purple-800 shadow";
-                        document.getElementById("bi-subtab-btn-auto").className   = "px-4 py-2 rounded-md font-semibold text-sm text-purple-600 hover:bg-purple-100";
-                        try { localStorage.setItem("bi_upload_subtab", "manual"); } catch(e) {}
-                    },
-                    className: "px-4 py-2 rounded-md font-semibold text-sm bg-white text-purple-800 shadow"
-                }, "📄 Manual"),
-                React.createElement("button", {
-                    id: "bi-subtab-btn-auto",
-                    type: "button",
-                    onClick: function() {
-                        document.getElementById("bi-subtab-manual").style.display = "none";
-                        document.getElementById("bi-subtab-auto").style.display   = "block";
-                        document.getElementById("bi-subtab-btn-auto").className   = "px-4 py-2 rounded-md font-semibold text-sm bg-white text-purple-800 shadow";
-                        document.getElementById("bi-subtab-btn-manual").className = "px-4 py-2 rounded-md font-semibold text-sm text-purple-600 hover:bg-purple-100";
-                        try { localStorage.setItem("bi_upload_subtab", "auto"); } catch(e) {}
-                    },
-                    className: "px-4 py-2 rounded-md font-semibold text-sm text-purple-600 hover:bg-purple-100"
-                }, "🤖 Automático (RPA)")
-            ),
-
-            // ========== Sub-aba MANUAL ==========
-            React.createElement("div", { id: "bi-subtab-manual", style: { display: "block" } },
-                // Upload Manual
+                        // === 2026-04 v3 — Layout 2 cards + historico unificado ===
+            React.createElement("div", { className: "grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4" },
+                
+                // CARD AUTOMATICO (RPA)
+                React.createElement("div", { className: "bg-white rounded-xl shadow p-5" },
+                    window.BiImportAutoTab
+                        ? React.createElement(window.BiImportAutoTab, { API_URL: API_URL, fetchAuth: fetchAuth, showToast: ja, hideHistorico: true })
+                        : React.createElement("div", { className: "bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800" }, "Aguardando carregamento do modulo de importacao automatica...")
+                ),
+                
+                // CARD MANUAL
+                React.createElement("div", { className: "bg-white rounded-xl shadow p-5" },
+                    React.createElement("div", { className: "flex items-center gap-2 mb-1" },
+                        React.createElement("span", { className: "text-lg" }, "📄"),
+                        React.createElement("h3", { className: "text-base font-semibold text-purple-900" }, "Upload Manual")
+                    ),
+                    React.createElement("p", { className: "text-xs text-purple-700 mb-3" }, "Arraste ou selecione planilhas Excel"),
+                    // Upload Manual
             React.createElement("div", {
                 className: "border-2 border-dashed border-purple-300 rounded-xl p-10 text-center bg-purple-50"
             }, React.createElement("p", {
@@ -18376,62 +18363,16 @@ const hideLoadingScreen = () => {
                     ha(null);
                 },
                 className: "px-4 py-2 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 text-sm"
-            }, "📊 Inicializar Prazos DAX")))), React.createElement("div", {
-                className: "bg-white rounded-xl shadow p-6"
-            }, React.createElement("h2", {
-                className: "text-xl font-bold text-purple-900 mb-4"
-            }, "📋 Histórico de Uploads"), 0 === Mt.length ? React.createElement("p", {
-                className: "text-gray-500 text-center py-8"
-            }, "Nenhum upload realizado ainda") : React.createElement("div", {
-                className: "space-y-3"
-            }, Mt.map((e, t) => React.createElement("div", {
-                key: e.id || t,
-                className: "flex items-center justify-between p-4 bg-purple-50 rounded-lg border border-purple-200"
-            }, React.createElement("div", {className: "flex-1"}, 
-                React.createElement("div", {className: "flex items-center gap-3 mb-1"},
-                    React.createElement("p", {className: "font-semibold text-purple-900"}, 
-                        "📄 ", e.nome_arquivo || "Arquivo Excel"
-                    ),
-                    e.usuario_nome && React.createElement("span", {
-                        className: "text-xs bg-purple-200 text-purple-700 px-2 py-0.5 rounded-full"
-                    }, "👤 ", e.usuario_nome)
-                ),
-                React.createElement("div", {className: "flex items-center gap-4 text-sm text-purple-600"},
-                    React.createElement("span", null, "📅 ", e.data_upload ? new Date(e.data_upload).toLocaleDateString("pt-BR") + " às " + new Date(e.data_upload).toLocaleTimeString("pt-BR", {hour: "2-digit", minute: "2-digit"}) : "-"),
-                    e.linhas_inseridas !== undefined ? React.createElement("span", null, "✅ ", e.linhas_inseridas, " inseridas") : React.createElement("span", null, e.total_registros, " registros"),
-                    e.linhas_ignoradas > 0 && React.createElement("span", {className: "text-purple-600"}, "⏭️ ", e.linhas_ignoradas, " ignoradas")
+            }, "📊 Inicializar Prazos DAX")))),
                 )
-            ), React.createElement("button", {
-                onClick: () => (async (uploadData) => {
-                    const dataStr = uploadData.data_upload ? new Date(uploadData.data_upload).toLocaleDateString("pt-BR") : "este upload";
-                    if (confirm(`Excluir upload de ${dataStr}?`)) try {
-                        // Se tem ID, usa o novo endpoint
-                        const endpoint = uploadData.id 
-                            ? `${API_URL}/bi/uploads/historico/${uploadData.id}`
-                            : `${API_URL}/bi/uploads/${uploadData.data_upload}`;
-                        const t = await fetchAuth(endpoint, { method: "DELETE" }),
-                            a = await t.json();
-                        ja(`✅ Upload excluído!`, "success"), ll(), el()
-                    } catch (err) {
-                        ja("Erro ao excluir", "error")
-                    }
-                })(e),
-                className: "px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 font-semibold text-sm"
-            }, "🗑️ Excluir"))))),
             ),
-
-            // ========== Sub-aba AUTOMATICO (RPA) ==========
-            React.createElement("div", { id: "bi-subtab-auto", style: { display: "none" } },
-                window.BiImportAutoTab
-                    ? React.createElement(window.BiImportAutoTab, { API_URL: API_URL, fetchAuth: fetchAuth, showToast: ja })
-                    : React.createElement("div", { className: "bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800" }, "Aguardando carregamento do modulo de importacao automatica...")
-            ),
-
-            // Restaurar sub-aba do localStorage
-            React.createElement("script", {
-                dangerouslySetInnerHTML: { __html: '(function(){try{var s=localStorage.getItem("bi_upload_subtab");if(s==="auto"){setTimeout(function(){var btn=document.getElementById("bi-subtab-btn-auto");if(btn)btn.click();},50);}}catch(e){}})();' }
-            }),
-
+            
+            // HISTORICO UNIFICADO (manual + RPA combinados)
+            window.BiHistoricoUnificado
+                ? React.createElement(window.BiHistoricoUnificado, { API_URL: API_URL, fetchAuth: fetchAuth, showToast: ja })
+                : React.createElement("div", { className: "bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800" }, "Aguardando carregamento do historico unificado..."),
+            
+            // RECALCULAR PRAZOS
             React.createElement("div", {
                 className: "bg-blue-50 border border-blue-200 rounded-xl p-4"
             }, React.createElement("div", {
