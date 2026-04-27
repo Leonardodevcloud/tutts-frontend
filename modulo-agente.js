@@ -38,25 +38,115 @@
     }, s.label);
   }
 
+  // ── Compressão de imagem memory-safe ──────────────────────────────────────
+  // 2026-04 (correção): em iPhones e Androids antigos com fotos modernas (>10MP),
+  // o pipeline antigo (FileReader→DataURL→Image→Canvas→DataURL) podia estourar a
+  // heap do WebView e o navegador MATAVA a aba silenciosamente — sintoma reportado
+  // pelos motoboys: "o sistema fechou ao colocar a foto".
+  //
+  // Esta versão:
+  //  1. Usa URL.createObjectURL (não duplica o arquivo em string base64 antes de decodificar).
+  //  2. Reduz progressivamente o maxWidth até a heap aguentar (retry em downscale).
+  //  3. Faz revokeObjectURL e zera referências ao final pra liberar memória rápido.
+  //  4. Faz toBlob → readAsDataURL (em vez de toDataURL direto), que é ~2x mais leve em iOS.
+  //  5. Captura erros assíncronos do canvas/encode (que antes silenciavam e fechavam a aba).
   function compressImage(file, maxWidth = 1200, quality = 0.7) {
     return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          let w = img.width, ht = img.height;
-          if (w > maxWidth) { ht = (ht * maxWidth) / w; w = maxWidth; }
-          canvas.width = w; canvas.height = ht;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, w, ht);
-          resolve(canvas.toDataURL('image/jpeg', quality));
-        };
-        img.onerror = reject;
-        img.src = e.target.result;
+      // Tentativas progressivamente mais agressivas se o navegador estiver com pouca RAM.
+      const tentativas = [
+        { maxWidth, quality },
+        { maxWidth: Math.min(maxWidth, 1000), quality: 0.65 },
+        { maxWidth: 800,  quality: 0.6 },
+        { maxWidth: 640,  quality: 0.55 },
+      ];
+
+      const objectUrl = URL.createObjectURL(file);
+
+      const cleanup = () => {
+        try { URL.revokeObjectURL(objectUrl); } catch (_) {}
       };
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
+
+      const tentarComprimir = (idx) => {
+        if (idx >= tentativas.length) {
+          cleanup();
+          reject(new Error('Não foi possível comprimir a imagem (memória insuficiente).'));
+          return;
+        }
+        const { maxWidth: mw, quality: q } = tentativas[idx];
+
+        const img = new Image();
+        // decoding async ajuda a não travar a UI thread
+        img.decoding = 'async';
+        img.onload = () => {
+          let canvas, ctx;
+          try {
+            let w = img.naturalWidth || img.width;
+            let ht = img.naturalHeight || img.height;
+            if (!w || !ht) throw new Error('Dimensões inválidas da imagem.');
+            if (w > mw) { ht = Math.round((ht * mw) / w); w = mw; }
+
+            canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = ht;
+            ctx = canvas.getContext('2d');
+            if (!ctx) throw new Error('Canvas 2D indisponível.');
+            ctx.drawImage(img, 0, 0, w, ht);
+          } catch (drawErr) {
+            // Liberar bitmap antes de tentar de novo
+            img.src = '';
+            // Tenta tamanho menor
+            tentarComprimir(idx + 1);
+            return;
+          }
+
+          // toBlob é mais leve que toDataURL em mobile (não duplica em string)
+          const onBlob = (blob) => {
+            // Liberar canvas e bitmap imediatamente
+            try { canvas.width = 0; canvas.height = 0; } catch (_) {}
+            img.src = '';
+
+            if (!blob) {
+              // toBlob falhou — tenta downscale
+              tentarComprimir(idx + 1);
+              return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = () => {
+              cleanup();
+              resolve(reader.result);
+            };
+            reader.onerror = () => {
+              cleanup();
+              reject(new Error('Falha lendo blob comprimido.'));
+            };
+            reader.readAsDataURL(blob);
+          };
+
+          if (canvas.toBlob) {
+            canvas.toBlob(onBlob, 'image/jpeg', q);
+          } else {
+            // Fallback antigo (Safari muito antigo) — toDataURL direto, com try
+            try {
+              const dataUrl = canvas.toDataURL('image/jpeg', q);
+              try { canvas.width = 0; canvas.height = 0; } catch (_) {}
+              img.src = '';
+              cleanup();
+              resolve(dataUrl);
+            } catch (e) {
+              tentarComprimir(idx + 1);
+            }
+          }
+        };
+        img.onerror = () => {
+          // Pode ser HEIC não suportado, arquivo corrompido, etc.
+          cleanup();
+          reject(new Error('Não foi possível ler a imagem. Tente outro arquivo (JPG/PNG).'));
+        };
+        img.src = objectUrl;
+      };
+
+      tentarComprimir(0);
     });
   }
 
@@ -154,14 +244,16 @@
 
     async function handleFoto(e) {
       const file = e.target.files?.[0];
+      // Limpa o input para permitir reupload do mesmo arquivo
+      try { e.target.value = ''; } catch (_) {}
       if (!file) return;
 
       if (!file.type.startsWith('image/')) {
         showToast('Selecione uma imagem válida.', 'error');
         return;
       }
-      if (file.size > MAX_FOTO_SIZE * 2) {
-        showToast('Imagem muito grande. Máximo 10MB antes da compressão.', 'error');
+      if (file.size > MAX_FOTO_SIZE * 4) {
+        showToast('Imagem muito grande. Tire uma foto com menos qualidade ou redimensione antes.', 'error');
         return;
       }
 
@@ -169,22 +261,24 @@
         const compressed = await compressImage(file);
         setFotoB64(compressed);
         setFotoPre(compressed);
-      } catch {
-        showToast('Erro ao processar a imagem.', 'error');
+      } catch (err) {
+        const msg = err && err.message ? err.message : 'Erro ao processar a imagem.';
+        showToast(msg, 'error');
       }
     }
 
     // 2026-04: handler da foto da NF (mesma lógica, state separado)
     async function handleFotoNf(e) {
       const file = e.target.files?.[0];
+      try { e.target.value = ''; } catch (_) {}
       if (!file) return;
 
       if (!file.type.startsWith('image/')) {
         showToast('Selecione uma imagem válida.', 'error');
         return;
       }
-      if (file.size > MAX_FOTO_SIZE * 2) {
-        showToast('Imagem muito grande. Máximo 10MB antes da compressão.', 'error');
+      if (file.size > MAX_FOTO_SIZE * 4) {
+        showToast('Imagem muito grande. Tire uma foto com menos qualidade ou redimensione antes.', 'error');
         return;
       }
 
@@ -192,8 +286,9 @@
         const compressed = await compressImage(file);
         setFotoNfB64(compressed);
         setFotoNfPre(compressed);
-      } catch {
-        showToast('Erro ao processar a imagem.', 'error');
+      } catch (err) {
+        const msg = err && err.message ? err.message : 'Erro ao processar a imagem.';
+        showToast(msg, 'error');
       }
     }
 
