@@ -1070,6 +1070,14 @@
                 setCoachAberto(false);
               },
               onCancelar: () => setCoachAberto(false),
+              // 2026-04 v4.1: motoboy pode desistir da foto e digitar CNPJ
+              // direto. Fecha o coach e troca pra modo CNPJ.
+              onTrocarParaCnpj: () => {
+                setCoachAberto(false);
+                setFotoNfB64(null);
+                setFotoNfPre(null);
+                setModoIdentificacao('cnpj');
+              },
             })
           ),
 
