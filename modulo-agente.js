@@ -991,7 +991,8 @@
 
         // ── Identificação do cliente: foto NF OU CNPJ digitado ──────────
         h('div', null,
-          h('label', { className: 'block text-sm font-semibold text-gray-700 mb-1.5' }, '🧾 Identificar cliente *'),
+          h('label', { className: 'block text-sm font-semibold text-gray-700 mb-0.5' }, '🧾 Identificar cliente *'),
+          h('p', { className: 'text-xs text-gray-500 mb-2' }, 'Obrigatório — escolha um dos dois abaixo'),
 
           // Toggle: 2 botões lado a lado
           h('div', { className: 'flex gap-1 mb-3 bg-gray-100 rounded-xl p-1' },
@@ -1039,12 +1040,12 @@
               : h('button', {
                   onClick: () => fotoNfInputRef.current?.click(),
                   disabled,
-                  className: 'w-full h-32 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-2 transition ' +
-                    (disabled ? 'border-gray-200 bg-gray-50 cursor-not-allowed' : 'border-blue-300 bg-blue-50 hover:bg-blue-100 hover:border-blue-400 cursor-pointer'),
+                  className: 'w-full h-32 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-1 transition ' +
+                    (disabled ? 'border-gray-200 bg-gray-50 cursor-not-allowed' : 'border-blue-400 bg-blue-50 hover:bg-blue-100 hover:border-blue-500 cursor-pointer'),
                 },
                   h('span', { className: 'text-3xl' }, '🧾'),
-                  h('span', { className: 'text-sm font-semibold text-blue-700' }, 'Tirar foto da nota fiscal'),
-                  h('span', { className: 'text-xs text-blue-500' }, 'Mostre o cabeçalho com CNPJ')
+                  h('span', { className: 'text-sm font-bold text-blue-700' }, 'Tirar foto da nota fiscal *'),
+                  h('span', { className: 'text-xs text-blue-600' }, 'Obrigatório — mostre o cabeçalho com CNPJ')
                 )
           ),
 
@@ -1622,9 +1623,13 @@
                                   title: 'Esta solicitação não tem foto da NF salva (CNPJ digitado ou falha no upload)'
                                 }, '🚫 Sem foto da NF')
                           ),
-                          // Dados extraídos da NF (Gemini)
+                          // Dados extraídos: IA (foto) ou CNPJ digitado pelo motoboy
                           h('div', { className: 'bg-white rounded p-2 mb-2' },
-                            h('p', { className: 'text-[10px] font-bold text-gray-500 mb-1' }, '📄 EXTRAÍDO DA NF (IA)'),
+                            h('p', { className: 'text-[10px] font-bold text-gray-500 mb-1' },
+                              vnf.origem === 'cnpj_manual'
+                                ? '⌨️ CNPJ DIGITADO PELO MOTOBOY'
+                                : '📄 EXTRAÍDO DA NF (IA)'
+                            ),
                             h('div', { className: 'grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs text-gray-700' },
                               dados.cnpj_formatado && h('div', null, h('span', { className: 'font-semibold' }, 'CNPJ: '), dados.cnpj_formatado),
                               typeof vnf.confianca === 'number' && h('div', null, h('span', { className: 'font-semibold' }, 'Confiança IA: '), `${vnf.confianca}%`),
