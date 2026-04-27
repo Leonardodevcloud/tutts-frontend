@@ -262,12 +262,13 @@
    * Componente principal que apresenta a câmera ao vivo + indicadores.
    *
    * Props:
-   *   API_URL (string)        — base da API
-   *   fetchAuth (function)    — wrapper de fetch com auth
-   *   onCapturada (function)  — callback(base64) chamado quando foto é aprovada
-   *   onCancelar (function)   — callback() chamado quando motoboy fecha
+   *   API_URL (string)            — base da API
+   *   fetchAuth (function)        — wrapper de fetch com auth
+   *   onCapturada (function)      — callback(base64) chamado quando foto é APROVADA pela IA
+   *   onCancelar (function)       — callback() chamado quando motoboy fecha sem capturar
+   *   onTrocarParaCnpj (function) — callback() chamado quando motoboy desiste e quer digitar CNPJ
    */
-  function FotoNfCoach({ API_URL, fetchAuth, onCapturada, onCancelar }) {
+  function FotoNfCoach({ API_URL, fetchAuth, onCapturada, onCancelar, onTrocarParaCnpj }) {
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
     const streamRef = useRef(null);
@@ -277,9 +278,8 @@
     const [cameraIniciando, setCameraIniciando] = useState(true);
     const [erroCamera, setErroCamera] = useState(null);
 
-    // Estado das métricas em tempo real (Fase 1)
+    // Estado das métricas em tempo real (Fase 1) — só visual, NÃO auto-captura mais
     const [metricas, setMetricas] = useState(null);
-    const [framesOkConsecutivos, setFramesOkConsecutivos] = useState(0);
 
     // Estado da captura
     const [capturando, setCapturando] = useState(false);
@@ -343,6 +343,9 @@
     }, []);
 
     // ── 2. Loop de análise contínua (1 frame a cada 1500ms) ──────────────
+    // 2026-04 v4.1: REMOVIDA auto-captura — motoboy reclamou que era invasivo.
+    // Agora os indicadores são SÓ visuais (✓ Foco, ✓ Iluminação, ✓ Contraste).
+    // A captura SEMPRE é feita pelo botão central (clique manual).
     useEffect(() => {
       if (!cameraDisponivel || cameraIniciando || fotoCapturada) return;
 
@@ -350,14 +353,13 @@
         if (!analiseAtivaRef.current || !videoRef.current) return;
         if (videoRef.current.readyState < 2) return;  // esperando dados
         const agora = Date.now();
-        if (agora - ultimoFrameRef.current < 1400) return;  // safety
+        if (agora - ultimoFrameRef.current < 1400) return;
         ultimoFrameRef.current = agora;
 
         try {
           const canvas = await imagemParaCanvas(videoRef.current, 800);
           const m = analisarLocal(canvas);
           setMetricas(m);
-          setFramesOkConsecutivos(prev => m.ok ? prev + 1 : 0);
         } catch (err) {
           // Silencioso — análise é best-effort
         }
@@ -395,23 +397,14 @@
       }
     }, [capturando, API_URL, fetchAuth]);
 
-    // ── 4. Auto-captura quando 2 frames OK consecutivos (~3s estável) ───
-    useEffect(() => {
-      if (framesOkConsecutivos >= 2 && !capturando && !fotoCapturada) {
-        // Vibração rápida pra avisar que vai capturar
-        if (navigator.vibrate) navigator.vibrate(60);
-        // Pequeno delay pra motoboy ver o feedback visual antes
-        const t = setTimeout(() => capturar(), 600);
-        return () => clearTimeout(t);
-      }
-    }, [framesOkConsecutivos, capturando, fotoCapturada, capturar]);
+    // ── 4. Auto-captura REMOVIDA (2026-04 v4.1) ──
+    // Motoboy reclamou que invadia. Agora SÓ captura no clique do botão.
 
     // ── 5. Refazer foto ─────────────────────────────────────────────────
     const refazer = useCallback(async () => {
       setFotoCapturada(null);
       setPreviewResult(null);
       setMetricas(null);
-      setFramesOkConsecutivos(0);
       setCapturando(false);
 
       // Reabre câmera
@@ -515,6 +508,10 @@
         padding: '14px 28px', borderRadius: 12, background: '#ef4444',
         color: 'white', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 16,
       },
+      btnTrocarCnpj: {
+        padding: '14px 28px', borderRadius: 12, background: '#7c3aed',
+        color: 'white', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 16,
+      },
       preview: {
         flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
         padding: 16, overflow: 'auto',
@@ -565,6 +562,14 @@
 
     // Modo: Foto já capturada — mostra resultado da Fase 2
     if (fotoCapturada) {
+      // 2026-04 v4.1: novo footer baseado no resultado da IA.
+      // Se IA aprovou (previewResult.ok === true): mostra "Usar Esta Foto"
+      // Se IA reprovou: mostra "Tirar Outra" + "Digitar CNPJ" (sem "usar mesmo assim")
+      // Se ainda carregando ou erro técnico: mostra só "Tirar Outra"
+      const aprovado = previewResult && previewResult.ok === true;
+      const reprovado = previewResult && previewResult.ok === false && !previewResult.erro;
+      const erroTecnico = previewResult && previewResult.erro;
+
       return h('div', { style: styles.overlay },
         h('div', { style: styles.header },
           h('span', { style: { fontWeight: 700, fontSize: 18 } }, '📷 Resultado da Análise'),
@@ -575,9 +580,20 @@
           renderResultadoPreview(),
         ),
         h('div', { style: styles.footer },
-          h('button', { onClick: refazer, style: styles.btnRefazer }, '↻ Tirar Outra'),
-          previewResult && previewResult.ok && h('button', { onClick: aprovar, style: styles.btnAprovar }, '✓ Usar Esta Foto'),
-          previewResult && !previewResult.ok && h('button', { onClick: aprovar, style: { ...styles.btnAprovar, background: '#f59e0b' } }, '⚠ Usar Mesmo Assim'),
+          // Sempre tem "Tirar Outra" (a não ser durante loading)
+          !previewLoading && h('button', { onClick: refazer, style: styles.btnRefazer }, '↻ Tirar Outra'),
+
+          // Se aprovou: mostra "Usar Esta Foto" verde
+          aprovado && h('button', { onClick: aprovar, style: styles.btnAprovar }, '✓ Usar Esta Foto'),
+
+          // Se reprovou: mostra "Digitar CNPJ" como alternativa
+          reprovado && onTrocarParaCnpj && h('button', {
+            onClick: onTrocarParaCnpj,
+            style: styles.btnTrocarCnpj,
+          }, '⌨ Digitar CNPJ'),
+
+          // Erro técnico (Gemini fora, timeout): permite usar mesmo assim com aviso
+          erroTecnico && h('button', { onClick: aprovar, style: { ...styles.btnAprovar, background: '#f59e0b' } }, '⚠ Usar Mesmo Assim'),
         ),
       );
     }
@@ -615,15 +631,25 @@
           metricas.dica
         ),
         !cameraIniciando && metricas && metricas.ok && h('div', { style: { ...styles.dicaCentral, background: 'rgba(34,197,94,0.85)' } },
-          framesOkConsecutivos >= 2 ? '📸 Capturando...' : '👍 Ótimo! Segure firme'
+          '👍 Foto pronta — clique no botão abaixo'
         ),
       ),
       h('div', { style: styles.footer },
-        h('button', {
-          onClick: capturar,
-          disabled: capturando,
-          style: { ...styles.btnCapturar, opacity: capturando ? 0.5 : 1 },
-        }, h('div', { style: { width: 56, height: 56, borderRadius: '50%', background: '#7c3aed' } })),
+        h('div', { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 } },
+          h('button', {
+            onClick: capturar,
+            disabled: capturando || cameraIniciando,
+            style: {
+              ...styles.btnCapturar,
+              opacity: (capturando || cameraIniciando) ? 0.4 : 1,
+              cursor: (capturando || cameraIniciando) ? 'not-allowed' : 'pointer',
+            },
+            'aria-label': 'Tirar foto da NF',
+          }, h('div', { style: { width: 56, height: 56, borderRadius: '50%', background: '#7c3aed' } })),
+          h('div', { style: { fontSize: 12, fontWeight: 600, opacity: 0.9, marginTop: 4 } },
+            capturando ? 'Capturando...' : 'TIRAR FOTO'
+          ),
+        ),
       ),
     );
 
@@ -653,19 +679,29 @@
       const icone = previewResult.ok ? '✅' : (previewResult.qualidade === 'media' ? '⚠️' : '❌');
       const titulo = previewResult.ok
         ? 'Foto aprovada!'
-        : (previewResult.qualidade === 'media' ? 'Pode funcionar...' : 'Refazer recomendado');
+        : 'Não consegui ler bem essa NF';
 
       return h('div', { style: { ...styles.cardResultado, borderLeft: `4px solid ${cor}` } },
         h('div', { style: { fontSize: 18, fontWeight: 700, marginBottom: 8 } }, `${icone} ${titulo}`),
-        previewResult.cnpj_lido && h('div', { style: { fontSize: 14, marginBottom: 6 } },
-          h('strong', null, 'CNPJ identificado: '),
+        previewResult.ok && previewResult.cnpj_lido && h('div', { style: { fontSize: 14, marginBottom: 6 } },
+          h('strong', null, '✓ CNPJ identificado: '),
           previewResult.cnpj_lido,
         ),
         previewResult.dica && h('div', { style: { fontSize: 14, marginTop: 8, padding: 10, background: 'rgba(255,255,255,0.1)', borderRadius: 8 } },
-          h('strong', null, '💡 Dica: '),
+          h('strong', null, '💡 '),
           previewResult.dica,
         ),
-        previewResult.problemas && previewResult.problemas.length > 0 && h('div', { style: { fontSize: 12, marginTop: 8, opacity: 0.7 } },
+        // Quando reprovado, instrui motoboy sobre as opções abaixo
+        !previewResult.ok && h('div', {
+          style: { fontSize: 13, marginTop: 10, padding: 10, background: 'rgba(255,255,255,0.08)', borderRadius: 8, lineHeight: 1.4 }
+        },
+          '👇 Você pode ',
+          h('strong', null, 'tirar outra foto'),
+          ' ou, se a NF estiver ruim, ',
+          h('strong', null, 'digitar o CNPJ'),
+          ' direto.'
+        ),
+        previewResult.problemas && previewResult.problemas.length > 0 && h('div', { style: { fontSize: 11, marginTop: 8, opacity: 0.6 } },
           'Detectado: ', previewResult.problemas.join(', ')
         ),
       );
@@ -674,5 +710,5 @@
 
   // Expõe o componente pra o modulo-agente.js usar
   window.FotoNfCoach = FotoNfCoach;
-  console.log('✅ FotoNfCoach carregado — camera coaching v1.0');
+  console.log('✅ FotoNfCoach carregado — camera coaching v1.1 (rigoroso, sem auto-captura)');
 })();
