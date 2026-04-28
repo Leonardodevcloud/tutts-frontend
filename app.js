@@ -7847,16 +7847,27 @@ const hideLoadingScreen = () => {
                 }), Xt({});
                 
                 // Também recarregar a lista de OS com os mesmos filtros
+                // 🔧 FIX BI-OS-FILTROS (2026-04): antes usava e.cod_cliente/e.centro_custo
+                // raw, ignorando a resolução de região → clientes feita acima.
+                // Também faltava clientes_sem_filtro_cc (CC local por dono) e
+                // categorias multi (que vinham como categoria singular). Resultado:
+                // a aba Análise por OS retornava TODAS as OS independente do filtro
+                // de região/CC. Agora reusamos clientesParaEnviar/centrosCustoParaEnviar
+                // já resolvidos no fluxo principal acima.
                 const osParams = new URLSearchParams;
                 e.data_inicio && osParams.append("data_inicio", e.data_inicio);
                 e.data_fim && osParams.append("data_fim", e.data_fim);
-                e.cod_cliente && e.cod_cliente.length > 0 && osParams.append("cod_cliente", e.cod_cliente.join(","));
-                e.centro_custo && e.centro_custo.length > 0 && osParams.append("centro_custo", e.centro_custo.join(","));
+                clientesParaEnviar && clientesParaEnviar.length > 0 && osParams.append("cod_cliente", clientesParaEnviar.join(","));
+                centrosCustoParaEnviar && centrosCustoParaEnviar.length > 0 && osParams.append("centro_custo", centrosCustoParaEnviar.join(","));
+                clientesSemFiltroCC && clientesSemFiltroCC.length > 0 && osParams.append("clientes_sem_filtro_cc", clientesSemFiltroCC.join(","));
                 e.cod_prof && osParams.append("cod_prof", e.cod_prof);
-                e.categoria && osParams.append("categoria", e.categoria);
+                // Categorias agora é array (e.categorias). Mantemos compat com e.categoria singular (legacy).
+                const _catsOS = e.categorias || (e.categoria ? [e.categoria] : []);
+                _catsOS.length > 0 && osParams.append("categoria", _catsOS.join(","));
                 e.cidade && osParams.append("cidade", e.cidade);
                 e.status_prazo && osParams.append("status_prazo", e.status_prazo);
                 e.status_retorno && osParams.append("status_retorno", e.status_retorno);
+                console.log("📋 entregas-lista params:", osParams.toString());
                 const osResponse = await fetchAuth(`${API_URL}/bi/entregas-lista?${osParams}`);
                 const osData = await osResponse.json();
                 Ut(Array.isArray(osData) ? osData : []);
