@@ -173,8 +173,6 @@
     const pollingRef                = useRef(null);
     const timeoutRef                = useRef(null);
     const fotoInputRef              = useRef(null);
-    // 2026-04: foto da NF agora é OBRIGATÓRIA (fachada virou opcional)
-    const fotoNfInputRef            = useRef(null);
 
     // GPS e foto states
     const [gps, setGps]             = useState(null);       // { lat, lng }
@@ -182,14 +180,9 @@
     const [gpsErro, setGpsErro]     = useState('');
     const [fotoBase64, setFotoB64]  = useState(null);
     const [fotoPreview, setFotoPre] = useState(null);
-    // 2026-04: foto NF (obrigatória) + estado pra mostrar confirmação Receita
-    const [fotoNfBase64, setFotoNfB64] = useState(null);
-    const [fotoNfPreview, setFotoNfPre] = useState(null);
-    // 2026-04 v4: camera coaching modal — substitui o input file tradicional
-    const [coachAberto, setCoachAberto] = useState(false);
     const [validacaoReceita, setValidacaoReceita] = useState(null); // { nome, situacao, ativa, mensagem }
-    // 2026-04 v3: alternativa à foto NF — motoboy pode digitar CNPJ direto
-    const [modoIdentificacao, setModoIdentificacao] = useState('foto'); // 'foto' | 'cnpj'
+    // 2026-04 v5: única forma de identificar cliente é CNPJ digitado.
+    // Foto da NF foi removida porque motos não conseguiam capturar legível.
     const [cnpjManual, setCnpjManual] = useState('');
     const [valoresOS, setValoresOS] = useState(null); // { antes, depois }
 
@@ -275,31 +268,6 @@
         const compressed = await compressImage(file);
         setFotoB64(compressed);
         setFotoPre(compressed);
-      } catch (err) {
-        const msg = err && err.message ? err.message : 'Erro ao processar a imagem.';
-        showToast(msg, 'error');
-      }
-    }
-
-    // 2026-04: handler da foto da NF (mesma lógica, state separado)
-    async function handleFotoNf(e) {
-      const file = e.target.files?.[0];
-      try { e.target.value = ''; } catch(_) {}
-      if (!file) return;
-
-      if (!file.type.startsWith('image/') && !/\.(jpe?g|png|heic|heif|webp)$/i.test(file.name || '')) {
-        showToast('Selecione uma imagem válida.', 'error');
-        return;
-      }
-      if (file.size > MAX_FOTO_SIZE * 4) {
-        showToast('Imagem muito grande. Tire outra foto com menos qualidade.', 'error');
-        return;
-      }
-
-      try {
-        const compressed = await compressImage(file);
-        setFotoNfB64(compressed);
-        setFotoNfPre(compressed);
       } catch (err) {
         const msg = err && err.message ? err.message : 'Erro ao processar a imagem.';
         showToast(msg, 'error');
@@ -414,16 +382,13 @@
         showToast('GPS obrigatório! Ative a localização e clique em "Atualizar GPS".', 'error');
         return;
       }
-      // 2026-04 v3: motoboy pode mandar foto NF OU CNPJ digitado (XOR)
+      // 2026-04 v5: única forma de identificar é CNPJ digitado (foto da NF removida).
       const cnpjLimpo = String(cnpjManual).replace(/\D/g, '');
-      const temFoto = !!fotoNfBase64;
-      const temCnpj = cnpjLimpo.length > 0;
-
-      if (!temFoto && !temCnpj) {
-        showToast('Envie a foto da nota OU digite o CNPJ do cliente!', 'error');
+      if (cnpjLimpo.length === 0) {
+        showToast('Digite o CNPJ do cliente!', 'error');
         return;
       }
-      if (temCnpj && !validarCNPJ(cnpjLimpo)) {
+      if (!validarCNPJ(cnpjLimpo)) {
         showToast('CNPJ inválido. Confira os dígitos.', 'error');
         return;
       }
@@ -447,8 +412,10 @@
             localizacao_raw: form.localizacao_raw.trim(),
             motoboy_lat:     gps.lat,
             motoboy_lng:     gps.lng,
-            foto_nf:         temFoto ? fotoNfBase64 : null,
-            cnpj_manual:     temCnpj ? cnpjLimpo : null,
+            // 2026-04 v5: foto_nf removida do payload — sempre null.
+            // Backend continua aceitando o campo pra compatibilidade
+            // com solicitações antigas, mas frontend só manda cnpj_manual.
+            cnpj_manual:     cnpjLimpo,
             foto_fachada:    fotoBase64,
           }),
         });
@@ -524,10 +491,7 @@
       setLoading(false);
       setFotoB64(null);
       setFotoPre(null);
-      setFotoNfB64(null);
-      setFotoNfPre(null);
       setCnpjManual('');
-      setModoIdentificacao('foto');
       setValidacaoReceita(null);
       setPontoCoords(null);
       setEnderecoGeo('');
@@ -991,117 +955,30 @@
               )
         ),
 
-        // ── Identificação do cliente: foto NF OU CNPJ digitado ──────────
+        // ── Identificação do cliente: CNPJ digitado ──────────
+        // 2026-04 v5: foto da NF removida — motos não conseguiam tirar
+        // legível mesmo com camera coaching. Agora é só CNPJ digitado.
         h('div', null,
-          h('label', { className: 'block text-sm font-semibold text-gray-700 mb-0.5' }, '🧾 Identificar cliente *'),
-          h('p', { className: 'text-xs text-gray-500 mb-2' }, 'Obrigatório — escolha um dos dois abaixo'),
-
-          // Toggle: 2 botões lado a lado
-          h('div', { className: 'flex gap-1 mb-3 bg-gray-100 rounded-xl p-1' },
-            h('button', {
-              onClick: () => { setModoIdentificacao('foto'); setCnpjManual(''); },
-              disabled,
-              className: 'flex-1 py-2 rounded-lg text-xs font-semibold transition ' +
-                (modoIdentificacao === 'foto'
-                  ? 'bg-blue-500 text-white shadow'
-                  : 'bg-transparent text-gray-600 hover:bg-white'),
-            }, '📷 Foto da NF'),
-            h('button', {
-              onClick: () => { setModoIdentificacao('cnpj'); setFotoNfB64(null); setFotoNfPre(null); },
-              disabled,
-              className: 'flex-1 py-2 rounded-lg text-xs font-semibold transition ' +
-                (modoIdentificacao === 'cnpj'
-                  ? 'bg-blue-500 text-white shadow'
-                  : 'bg-transparent text-gray-600 hover:bg-white'),
-            }, '⌨️ Digitar CNPJ')
-          ),
-
-          // Modo FOTO: camera coaching com IA (substitui input file tradicional)
-          // 2026-04 v4: o input file antigo causava muito problema de qualidade.
-          // Agora abre modal full-screen com câmera ao vivo + indicadores de
-          // qualidade em tempo real + pré-validação Gemini antes do submit.
-          modoIdentificacao === 'foto' && h(React.Fragment, null,
-            // Input file fallback (ainda existe pra compatibilidade caso coach falhe)
-            h('input', {
-              ref: fotoNfInputRef,
-              type: 'file',
-              accept: 'image/*',
-              capture: 'environment',
-              onChange: handleFotoNf,
-              className: 'hidden',
-            }),
-            fotoNfPreview
-              ? h('div', { className: 'relative' },
-                  h('img', {
-                    src: fotoNfPreview,
-                    className: 'w-full h-48 object-cover rounded-xl border-2 border-blue-300',
-                    alt: 'Foto da NF',
-                  }),
-                  h('button', {
-                    onClick: () => { setFotoNfB64(null); setFotoNfPre(null); },
-                    className: 'absolute top-2 right-2 w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-lg hover:bg-red-600',
-                  }, '✕'),
-                  h('div', { className: 'absolute bottom-2 left-2 px-2 py-1 bg-blue-500 text-white text-xs rounded-lg font-semibold' }, '✓ NF capturada')
-                )
-              : h('button', {
-                  onClick: () => {
-                    if (typeof window.FotoNfCoach === 'function') {
-                      setCoachAberto(true);
-                    } else {
-                      // Fallback: se FotoNfCoach não carregou, usa input file tradicional
-                      fotoNfInputRef.current && fotoNfInputRef.current.click();
-                    }
-                  },
-                  disabled,
-                  className: 'w-full h-32 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-1 transition ' +
-                    (disabled ? 'border-gray-200 bg-gray-50 cursor-not-allowed' : 'border-blue-400 bg-blue-50 hover:bg-blue-100 hover:border-blue-500 cursor-pointer'),
-                },
-                  h('span', { className: 'text-3xl' }, '🧾'),
-                  h('span', { className: 'text-sm font-bold text-blue-700' }, 'Tirar foto da nota fiscal *'),
-                  h('span', { className: 'text-xs text-blue-600' }, 'Câmera com guia inteligente')
-                ),
-            // Modal do camera coaching (renderizado fora do fluxo normal via fixed)
-            coachAberto && typeof window.FotoNfCoach === 'function' && h(window.FotoNfCoach, {
-              API_URL,
-              fetchAuth,
-              onCapturada: (base64) => {
-                setFotoNfB64(base64);
-                setFotoNfPre(base64);
-                setCoachAberto(false);
-              },
-              onCancelar: () => setCoachAberto(false),
-              // 2026-04 v4.1: motoboy pode desistir da foto e digitar CNPJ
-              // direto. Fecha o coach e troca pra modo CNPJ.
-              onTrocarParaCnpj: () => {
-                setCoachAberto(false);
-                setFotoNfB64(null);
-                setFotoNfPre(null);
-                setModoIdentificacao('cnpj');
-              },
-            })
-          ),
-
-          // Modo CNPJ: input de texto
-          modoIdentificacao === 'cnpj' && h('div', null,
-            h('input', {
-              type: 'text',
-              inputMode: 'numeric',
-              value: cnpjManual,
-              onChange: (e) => setCnpjManual(formatarCNPJ(e.target.value)),
-              placeholder: '00.000.000/0000-00',
-              maxLength: 18,
-              disabled,
-              className: 'w-full px-4 py-3 rounded-xl border-2 text-base font-mono tracking-wider transition ' +
-                (cnpjManual && !validarCNPJ(cnpjManual)
-                  ? 'border-red-300 bg-red-50 text-red-700'
-                  : (cnpjManual && validarCNPJ(cnpjManual)
-                      ? 'border-green-300 bg-green-50 text-green-700'
-                      : 'border-blue-300 bg-blue-50 text-blue-700')) +
-                (disabled ? ' cursor-not-allowed opacity-60' : ''),
-            }),
-            cnpjManual && !validarCNPJ(cnpjManual) && h('p', { className: 'text-xs text-red-500 mt-1.5' }, '⚠️ CNPJ inválido — confira os dígitos'),
-            cnpjManual && validarCNPJ(cnpjManual) && h('p', { className: 'text-xs text-green-600 mt-1.5' }, '✓ CNPJ válido — vamos consultar a Receita Federal')
-          )
+          h('label', { className: 'block text-sm font-semibold text-gray-700 mb-0.5' }, '🧾 CNPJ do cliente *'),
+          h('p', { className: 'text-xs text-gray-500 mb-2' }, 'Digite o CNPJ que aparece na NF — vamos consultar a Receita Federal'),
+          h('input', {
+            type: 'text',
+            inputMode: 'numeric',
+            value: cnpjManual,
+            onChange: (e) => setCnpjManual(formatarCNPJ(e.target.value)),
+            placeholder: '00.000.000/0000-00',
+            maxLength: 18,
+            disabled,
+            className: 'w-full px-4 py-3 rounded-xl border-2 text-base font-mono tracking-wider transition ' +
+              (cnpjManual && !validarCNPJ(cnpjManual)
+                ? 'border-red-300 bg-red-50 text-red-700'
+                : (cnpjManual && validarCNPJ(cnpjManual)
+                    ? 'border-green-300 bg-green-50 text-green-700'
+                    : 'border-blue-300 bg-blue-50 text-blue-700')) +
+              (disabled ? ' cursor-not-allowed opacity-60' : ''),
+          }),
+          cnpjManual && !validarCNPJ(cnpjManual) && h('p', { className: 'text-xs text-red-500 mt-1.5' }, '⚠️ CNPJ inválido — confira os dígitos'),
+          cnpjManual && validarCNPJ(cnpjManual) && h('p', { className: 'text-xs text-green-600 mt-1.5' }, '✓ CNPJ válido — vamos consultar a Receita Federal')
         ),
 
         // ── Foto da fachada (OBRIGATÓRIA — necessária pras regras de cruzamento) ──
