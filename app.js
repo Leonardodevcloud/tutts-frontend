@@ -2667,6 +2667,11 @@ const hideLoadingScreen = () => {
                 React.useEffect(() => { capturarGPS(); }, []);
 
                 function compressImg(file) {
+                    // 🛡️ 2026-04: usa window.imageUtils.compressImageSafe (memory-safe pra mobile fraco)
+                    if (window.imageUtils && window.imageUtils.compressImageSafe) {
+                        return window.imageUtils.compressImageSafe(file, { maxWidth: 1200, quality: 0.7 });
+                    }
+                    // Fallback (só se image-utils.js não carregou)
                     return new Promise((resolve, reject) => {
                         const reader = new FileReader();
                         reader.onload = (e) => { const img = new Image(); img.onload = () => { const c = document.createElement('canvas'); let w = img.width, h = img.height; if (w > 1200) { h = (h * 1200) / w; w = 1200; } c.width = w; c.height = h; c.getContext('2d').drawImage(img, 0, 0, w, h); resolve(c.toDataURL('image/jpeg', 0.7)); }; img.onerror = reject; img.src = e.target.result; };
@@ -3950,21 +3955,31 @@ const hideLoadingScreen = () => {
         };
         
         // Função para upload de imagem
-        const handleLiderancaImagemUpload = (file) => {
+        const handleLiderancaImagemUpload = async (file) => {
             if (!file) return;
             if (file.size > 20 * 1024 * 1024) {
                 ja("Imagem muito grande! Máximo 20MB", "error");
                 return;
             }
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setLiderancaImagemPreview(reader.result);
+            // 🛡️ 2026-04: comprime via image-utils antes de manter em memória.
+            // Antes: readAsDataURL direto = pico de RAM enorme em mobile fraco.
+            try {
+                const dataUrl = window.imageUtils && window.imageUtils.compressImageSafe
+                    ? await window.imageUtils.compressImageSafe(file, { maxWidth: 1280, quality: 0.75 })
+                    : await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => resolve(reader.result);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(file);
+                    });
+                setLiderancaImagemPreview(dataUrl);
                 setLiderancaModal(prev => ({
                     ...prev,
-                    dados: { ...prev.dados, midia_url: reader.result, midia_tipo: 'imagem' }
+                    dados: { ...prev.dados, midia_url: dataUrl, midia_tipo: 'imagem' }
                 }));
-            };
-            reader.readAsDataURL(file);
+            } catch (err) {
+                ja("Erro ao processar imagem: " + (err.message || 'desconhecido'), "error");
+            }
         };
         
         // Limpar mídia
@@ -3980,21 +3995,31 @@ const hideLoadingScreen = () => {
         // ==================== FIM FUNÇÕES MENSAGENS DA LIDERANÇA ====================
         
         // ==================== FUNÇÕES DO EDITOR DE FOTO DE PERFIL ====================
-        const handlePhotoEditorOpen = (file) => {
+        const handlePhotoEditorOpen = async (file) => {
             if (!file) return;
             // Aumentado de 500KB para 10MB
             if (file.size > 10 * 1024 * 1024) {
                 ja("Imagem muito grande! Máximo 10MB", "error");
                 return;
             }
-            const reader = new FileReader();
-            reader.onload = ev => {
-                setPhotoEditorSrc(ev.target.result);
+            // 🛡️ 2026-04: comprime ANTES de carregar no editor — editor de foto de perfil
+            // mantém múltiplas cópias (zoom/pan) e dobra pressão de RAM em mobile fraco.
+            try {
+                const dataUrl = window.imageUtils && window.imageUtils.compressImageSafe
+                    ? await window.imageUtils.compressImageSafe(file, { maxWidth: 1024, quality: 0.8 })
+                    : await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = ev => resolve(ev.target.result);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(file);
+                    });
+                setPhotoEditorSrc(dataUrl);
                 setPhotoEditorZoom(1);
                 setPhotoEditorPosition({x: 0, y: 0});
                 setPhotoEditorOpen(true);
-            };
-            reader.readAsDataURL(file);
+            } catch (err) {
+                ja("Erro ao carregar imagem: " + (err.message || 'desconhecido'), "error");
+            }
         };
         
         const handlePhotoEditorSave = () => {
@@ -5593,12 +5618,20 @@ const hideLoadingScreen = () => {
                 let imagem_base64 = null;
                 
                 // Converter imagem para base64 se existir
+                // 🛡️ 2026-04: comprime via image-utils pra evitar OOM em mobile fraco
                 if (relatorioForm.imagem) {
-                    imagem_base64 = await new Promise((resolve) => {
-                        const reader = new FileReader();
-                        reader.onload = () => resolve(reader.result);
-                        reader.readAsDataURL(relatorioForm.imagem);
-                    });
+                    if (window.imageUtils && window.imageUtils.compressImageSafe) {
+                        imagem_base64 = await window.imageUtils.compressImageSafe(
+                            relatorioForm.imagem,
+                            { maxWidth: 1280, quality: 0.75 }
+                        );
+                    } else {
+                        imagem_base64 = await new Promise((resolve) => {
+                            const reader = new FileReader();
+                            reader.onload = () => resolve(reader.result);
+                            reader.readAsDataURL(relatorioForm.imagem);
+                        });
+                    }
                 }
                 
                 const payload = {
@@ -5981,15 +6014,24 @@ const hideLoadingScreen = () => {
             }
         };
         
-        const handleAvisoImageUpload = (e) => {
+        const handleAvisoImageUpload = async (e) => {
             const file = e.target.files[0];
             if (!file) return;
             
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                setAvisoForm(f => ({ ...f, imagem_url: ev.target.result }));
-            };
-            reader.readAsDataURL(file);
+            // 🛡️ 2026-04: comprime via image-utils pra evitar OOM em mobile fraco
+            try {
+                const dataUrl = window.imageUtils && window.imageUtils.compressImageSafe
+                    ? await window.imageUtils.compressImageSafe(file, { maxWidth: 1280, quality: 0.75 })
+                    : await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = ev => resolve(ev.target.result);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(file);
+                    });
+                setAvisoForm(f => ({ ...f, imagem_url: dataUrl }));
+            } catch (err) {
+                ja("Erro ao processar imagem: " + (err.message || 'desconhecido'), "error");
+            }
         };
         
         // useEffect para carregar avisos quando entrar na aba
@@ -8905,28 +8947,37 @@ const hideLoadingScreen = () => {
                 }
                 s(!1)
             } else ja("Preencha todos os campos", "error")
-        }, Wl = ["Ajuste de Retorno", "Ajuste de Pedágio", "Ajustes Simões Filho e Camaçari"], Zl = (e, t = 1920, a = .85) => new Promise((l, r) => {
-            const o = new FileReader;
-            o.onload = e => {
-                const o = new Image;
-                o.onload = () => {
-                    const e = document.createElement("canvas");
-                    let r = o.width,
-                        c = o.height;
-                    // Redimensionar mantendo proporção se maior que o limite
-                    if (r > t || c > t) {
-                        if (r > c) {
-                            c = c * t / r;
-                            r = t;
-                        } else {
-                            r = r * t / c;
-                            c = t;
+        }, Wl = ["Ajuste de Retorno", "Ajuste de Pedágio", "Ajustes Simões Filho e Camaçari"], Zl = (e, t = 1280, a = .75) => {
+            // 🛡️ 2026-04: usa window.imageUtils.compressImageSafe pra evitar OOM em mobile fraco.
+            // Antes: readAsDataURL → Image → canvas → toDataURL (pico ~80MB RAM, mata PWA).
+            // Agora: createImageBitmap → canvas → toBlob (pico ~25MB, com retry e fallback).
+            // Resolve relatos de "app fecha sozinho ao enviar foto em ajuste".
+            if (window.imageUtils && window.imageUtils.compressImageSafe) {
+                return window.imageUtils.compressImageSafe(e, { maxWidth: t, quality: a });
+            }
+            // Fallback caso image-utils.js não tenha carregado (não deveria acontecer)
+            return new Promise((l, r) => {
+                const o = new FileReader;
+                o.onload = e => {
+                    const o = new Image;
+                    o.onload = () => {
+                        const e = document.createElement("canvas");
+                        let r = o.width,
+                            c = o.height;
+                        if (r > t || c > t) {
+                            if (r > c) {
+                                c = c * t / r;
+                                r = t;
+                            } else {
+                                r = r * t / c;
+                                c = t;
+                            }
                         }
-                    }
-                    e.width = r, e.height = c, e.getContext("2d").drawImage(o, 0, 0, r, c), l(e.toDataURL("image/jpeg", a))
-                }, o.onerror = r, o.src = e.target.result
-            }, o.onerror = r, o.readAsDataURL(e)
-        }), Yl = async () => {
+                        e.width = r, e.height = c, e.getContext("2d").drawImage(o, 0, 0, r, c), l(e.toDataURL("image/jpeg", a))
+                    }, o.onerror = r, o.src = e.target.result
+                }, o.onerror = r, o.readAsDataURL(e)
+            });
+        }, Yl = async () => {
             s(!0);
             try {
                 const e = p.imagens?.length > 0 ? p.imagens.join("|||") : null;
@@ -22211,3 +22262,26 @@ function AuditLogs({ apiUrl, showToast }) {
 }
 
 ReactDOM.render(React.createElement(App, null), document.getElementById("root"), hideLoadingScreen);
+
+// 🛡️ 2026-04: detecta se a sessão anterior crashou durante processamento de foto
+// (PWA fechado pelo SO por OOM em mobile fraco). Reporta pro backend pra
+// ajustarmos limites por aparelho. Roda 1 vez no boot, fire-and-forget.
+(function detectarECrashAnterior() {
+    try {
+        if (!window.imageUtils || !window.imageUtils.detectarCrashAnterior) return;
+        const crash = window.imageUtils.detectarCrashAnterior();
+        if (!crash) return;
+        // Não bloqueia render. Reporta sem auth (endpoint público pra diagnóstico)
+        setTimeout(function() {
+            try {
+                fetch(window.API_URL + '/diag/foto-crash', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(crash),
+                    keepalive: true,
+                }).catch(function() { /* silencioso */ });
+                console.log('[image-utils] crash anterior detectado e reportado:', crash);
+            } catch(_) {}
+        }, 5000); // delay 5s pra não competir com auth/load inicial
+    } catch(_) {}
+})();
