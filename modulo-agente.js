@@ -182,6 +182,11 @@
     const pollingRef                = useRef(null);
     const timeoutRef                = useRef(null);
     const fotoInputRef              = useRef(null);
+    // 🛡️ 2026-04: separamos câmera (capture:environment) de galeria (sem capture).
+    // Em Androids antigos, capture:environment as vezes não dispara nada (botão "morto")
+    // porque o app de câmera padrão foi substituído/desabilitado pelo fabricante.
+    // Galeria como fallback SEMPRE funciona.
+    const fotoGaleriaRef            = useRef(null);
 
     // GPS e foto states
     const [gps, setGps]             = useState(null);       // { lat, lng }
@@ -991,15 +996,27 @@
         ),
 
         // ── Foto da fachada (OBRIGATÓRIA — necessária pras regras de cruzamento) ──
+        // 🛡️ 2026-04: 2 inputs separados — câmera (capture) + galeria (sem capture).
+        // Resolve relato de "botão não responde nada" em Android antigo onde
+        // capture:environment falha silenciosamente (app de câmera modificado pelo
+        // fabricante, ROM antiga, etc). Galeria como fallback SEMPRE funciona.
         h('div', null,
           h('label', { className: 'block text-sm font-semibold text-gray-700 mb-1.5' }, '📸 Foto da fachada *'),
 
-          // Input hidden
+          // Input câmera (com capture)
           h('input', {
             ref: fotoInputRef,
             type: 'file',
             accept: 'image/*',
             capture: 'environment', // Câmera traseira no mobile
+            onChange: handleFoto,
+            className: 'hidden',
+          }),
+          // Input galeria (SEM capture — abre seletor de arquivos/galeria normal)
+          h('input', {
+            ref: fotoGaleriaRef,
+            type: 'file',
+            accept: 'image/*',
             onChange: handleFoto,
             className: 'hidden',
           }),
@@ -1017,15 +1034,37 @@
                 }, '✕'),
                 h('div', { className: 'absolute bottom-2 left-2 px-2 py-1 bg-green-500 text-white text-xs rounded-lg font-semibold' }, '✓ Foto capturada')
               )
-            : h('button', {
-                onClick: () => fotoInputRef.current?.click(),
-                disabled,
-                className: `w-full h-32 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-2 transition
-                  ${disabled ? 'border-gray-200 bg-gray-50 cursor-not-allowed' : 'border-purple-300 bg-purple-50 hover:bg-purple-100 hover:border-purple-400 cursor-pointer'}`,
-              },
-                h('span', { className: 'text-3xl' }, '📷'),
-                h('span', { className: 'text-sm font-semibold text-purple-700' }, 'Tirar foto da fachada'),
-                h('span', { className: 'text-xs text-purple-500' }, 'Obrigatório — toque para abrir a câmera')
+            : h('div', { className: 'grid grid-cols-2 gap-2' },
+                // Botão Câmera
+                h('button', {
+                  onClick: () => {
+                    try {
+                      if (fotoInputRef.current) fotoInputRef.current.click();
+                    } catch (_) {}
+                  },
+                  disabled,
+                  className: `h-32 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-2 transition
+                    ${disabled ? 'border-gray-200 bg-gray-50 cursor-not-allowed' : 'border-purple-300 bg-purple-50 hover:bg-purple-100 hover:border-purple-400 cursor-pointer'}`,
+                },
+                  h('span', { className: 'text-3xl' }, '📷'),
+                  h('span', { className: 'text-sm font-semibold text-purple-700' }, 'Câmera'),
+                  h('span', { className: 'text-[10px] text-purple-500' }, 'Tirar foto agora')
+                ),
+                // Botão Galeria (fallback pra Android antigo onde capture trava)
+                h('button', {
+                  onClick: () => {
+                    try {
+                      if (fotoGaleriaRef.current) fotoGaleriaRef.current.click();
+                    } catch (_) {}
+                  },
+                  disabled,
+                  className: `h-32 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-2 transition
+                    ${disabled ? 'border-gray-200 bg-gray-50 cursor-not-allowed' : 'border-blue-300 bg-blue-50 hover:bg-blue-100 hover:border-blue-400 cursor-pointer'}`,
+                },
+                  h('span', { className: 'text-3xl' }, '🖼️'),
+                  h('span', { className: 'text-sm font-semibold text-blue-700' }, 'Galeria'),
+                  h('span', { className: 'text-[10px] text-blue-500' }, 'Foto já tirada')
+                )
               )
         ),
 
