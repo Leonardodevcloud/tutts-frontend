@@ -282,14 +282,18 @@
   <script src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js" crossorigin="anonymous"></script>
   <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js" crossorigin="anonymous"></script>
   <!-- Service Worker + Módulos -->
-  <script src="/ModuloFinanceiro.js?v=20260330_FIN_BI_v1"></script>
+  <!-- 🛡️ image-utils.js: compressão segura de foto pra mobile (carrega ANTES de tudo
+       porque vários módulos dependem de window.imageUtils). Resolve PWA fechando
+       sozinho ao motoboy enviar foto em celular fraco. -->
+  <script src="/image-utils.js?v=20260430_IMG_UTILS_v1"></script>
+  <script src="/ModuloFinanceiro.js?v=20260430_IMG_UTILS_v1"></script>
   <script src="/modulo-operacional.js?v=20260326_CC_v12"></script>
   <script src="/modulo-config.js?v=20260326_CC_v12"></script>
   <script src="/modulo-cs.js?v=20260413_CS_EMAIL_v10"></script>
-  <script src="/modulo-coleta.js?v=20260419_COLETA_v12_CIDADE_FIX"></script>
+  <script src="/modulo-coleta.js?v=20260430_IMG_UTILS_v1"></script>
   <script src="/modulo-disponibilidade.js?v=20260404_TOOLTIP_DELETE_v10"></script>
   <script src="/filas.js?v=20260330_FIN_BI_v1"></script>
-  <script src="/modulo-agente.js?v=20260428_CNPJ_ONLY"></script>
+  <script src="/modulo-agente.js?v=20260430_IMG_UTILS_v1"></script>
     <script src="/modulo-bi-import.js?v=20260426_2102"></script>
   <script src="/modulo-bi-historico-unificado.js?v=20260426_2106"></script>
 <script src="/modulo-liberacao.js?v=20260425_LIBERAR_v1"></script>
@@ -300,7 +304,7 @@
   <script src="/modulo-uber.js?v=20260412_UBER_v4"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="/ChatIAModule.js?v=20260419_CHATIA_v6"></script>
-  <script src="/app.js?v=20260426_2102"></script>
+  <script src="/app.js?v=20260430_IMG_UTILS_v1"></script>
   
   <script>
     // PWA Install Prompt
