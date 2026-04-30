@@ -2820,14 +2820,22 @@
                 accept: "image/*",
                 onChange: t => (async (e, t) => {
                     if (!t) return;
-                    const a = new FileReader;
-                    a.onload = t => {
+                    // 🛡️ 2026-04: usa imageUtils pra memory-safe em mobile fraco
+                    try {
+                        const dataUrl = window.imageUtils && window.imageUtils.compressImageSafe
+                            ? await window.imageUtils.compressImageSafe(t, { maxWidth: 1280, quality: 0.75 })
+                            : await new Promise((resolve, reject) => {
+                                const a = new FileReader();
+                                a.onload = t => resolve(t.target.result);
+                                a.onerror = reject;
+                                a.readAsDataURL(t);
+                            });
                         const a = [...fe.imagens];
-                        a[e] = t.target.result, Ne({
-                            ...fe,
-                            imagens: a
-                        })
-                    }, a.readAsDataURL(t)
+                        a[e] = dataUrl;
+                        Ne({ ...fe, imagens: a });
+                    } catch (err) {
+                        console.error('Erro ao processar imagem:', err);
+                    }
                 })(e, t.target.files[0]),
                 className: "absolute inset-0 opacity-0 cursor-pointer"
             }), fe.imagens[e] && React.createElement("button", {
@@ -3749,17 +3757,28 @@
                                 uploadingEstoqueImage: !0
                             });
                             try {
-                                const e = new FileReader;
-                                e.onload = e => {
-                                    const t = e.target.result;
+                                // 🛡️ 2026-04: usa imageUtils.compressImageSafe (memory-safe pra mobile)
+                                const lerArquivo = window.imageUtils && window.imageUtils.compressImageSafe
+                                    ? window.imageUtils.compressImageSafe(t, { maxWidth: 1280, quality: 0.8 })
+                                    : new Promise((resolve, reject) => {
+                                        const fr = new FileReader();
+                                        fr.onload = ev => resolve(ev.target.result);
+                                        fr.onerror = () => reject(new Error("Erro ao ler arquivo"));
+                                        fr.readAsDataURL(t);
+                                    });
+                                lerArquivo.then(dataUrl => {
                                     x({
                                         ...p,
-                                        lojaEstoqueImagem: t,
+                                        lojaEstoqueImagem: dataUrl,
                                         uploadingEstoqueImage: !1
-                                    }), ja("✅ Imagem carregada!", "success")
-                                }, e.onerror = () => {
-                                    throw new Error("Erro ao ler arquivo")
-                                }, e.readAsDataURL(t)
+                                    });
+                                    ja("✅ Imagem carregada!", "success");
+                                }).catch(e => {
+                                    console.error("Erro upload:", e); ja("Erro ao carregar imagem", "error"); x({
+                                        ...p,
+                                        uploadingEstoqueImage: !1
+                                    });
+                                });
                             } catch (e) {
                                 console.error("Erro upload:", e), ja("Erro ao carregar imagem", "error"), x({
                                     ...p,
@@ -4291,17 +4310,28 @@
                                 uploadingImage: !0
                             });
                             try {
-                                const e = new FileReader;
-                                e.onload = e => {
-                                    const t = e.target.result;
+                                // 🛡️ 2026-04: usa imageUtils.compressImageSafe (memory-safe pra mobile)
+                                const lerArquivo = window.imageUtils && window.imageUtils.compressImageSafe
+                                    ? window.imageUtils.compressImageSafe(t, { maxWidth: 1280, quality: 0.8 })
+                                    : new Promise((resolve, reject) => {
+                                        const fr = new FileReader();
+                                        fr.onload = ev => resolve(ev.target.result);
+                                        fr.onerror = () => reject(new Error("Erro ao ler arquivo"));
+                                        fr.readAsDataURL(t);
+                                    });
+                                lerArquivo.then(dataUrl => {
                                     x({
                                         ...p,
-                                        lojaProdutoImagem: t,
+                                        lojaProdutoImagem: dataUrl,
                                         uploadingImage: !1
-                                    }), ja("✅ Imagem carregada!", "success")
-                                }, e.onerror = () => {
-                                    throw new Error("Erro ao ler arquivo")
-                                }, e.readAsDataURL(t)
+                                    });
+                                    ja("✅ Imagem carregada!", "success");
+                                }).catch(e => {
+                                    console.error("Erro upload:", e); ja("Erro ao carregar imagem", "error"); x({
+                                        ...p,
+                                        uploadingImage: !1
+                                    });
+                                });
                             } catch (e) {
                                 console.error("Erro upload:", e), ja("Erro ao carregar imagem", "error"), x({
                                     ...p,
