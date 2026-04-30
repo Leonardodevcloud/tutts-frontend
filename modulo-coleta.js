@@ -26,9 +26,17 @@
     }
 
     // Comprime imagem antes de enviar: max 1280px, JPEG 75%
+    // 🛡️ 2026-04: usa window.imageUtils.compressImageSafe (memory-safe pra mobile fraco).
+    // Resolve PWA fechando sozinho ao motoboy enviar foto em celular fraco.
     function comprimirImagem(file, maxDimensao, qualidade) {
         const MAX = maxDimensao || 1280;
         const Q = qualidade || 0.75;
+
+        if (window.imageUtils && window.imageUtils.compressImageSafe) {
+            return window.imageUtils.compressImageSafe(file, { maxWidth: MAX, quality: Q });
+        }
+
+        // Fallback (só se image-utils.js não carregou)
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = e => {
