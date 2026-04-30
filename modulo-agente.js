@@ -45,7 +45,16 @@
   //   1. createImageBitmap(file) — suporte mais amplo, decoda em worker thread
   //   2. fallback para Image() com URL.createObjectURL — funciona pra JPG/PNG normais
   //   3. retry com downscale progressivo se OOM
+  //
+  // 2026-04-30: agora delega pra window.imageUtils.compressImageSafe (mesmo código,
+  // unificado em arquivo compartilhado). Mantém implementação local como fallback
+  // pra caso image-utils.js não tenha carregado.
   function compressImage(file, maxWidth = 1200, quality = 0.7) {
+    // 🛡️ Caminho preferido: imageUtils unificado
+    if (window.imageUtils && window.imageUtils.compressImageSafe) {
+      return window.imageUtils.compressImageSafe(file, { maxWidth: maxWidth, quality: quality });
+    }
+    // Fallback (só se image-utils.js não carregou)
     const tentativas = [
       { mw: maxWidth, q: quality },
       { mw: 1000, q: 0.65 },
