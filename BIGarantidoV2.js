@@ -379,7 +379,16 @@ function renderTabelaAnalise({ e, garantidoData, garantidoStatusMap, garantidoSt
           e("div", null,
             e("div", { style: { fontWeight: 500, color: "#111827", fontSize: 12, lineHeight: 1.2 } }, row.profissional || "—"),
             e("div", { style: { fontFamily: "ui-monospace, monospace", fontSize: 10, color: "#9CA3AF" } },
-              row.cod_prof + " · " + fmtData(row.data))
+              row.cod_prof + " · " + fmtData(row.data)),
+            // 2026-05-01: trazer de volta "onde rodou" (centro de custo)
+            row.onde_rodou && e("div", {
+              style: {
+                fontSize: 10, color: "#6B7280", marginTop: 2,
+                display: "inline-flex", alignItems: "center", gap: 3,
+                maxWidth: 240, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+              },
+              title: row.onde_rodou
+            }, "📍 ", row.onde_rodou)
           )
         )
       ),
@@ -492,6 +501,13 @@ function renderTabelaAnalise({ e, garantidoData, garantidoStatusMap, garantidoSt
           ...Object.keys(grupos).map(clienteKey => {
             const linhas = grupos[clienteKey];
             const nomeCliente = il && typeof il === "function" ? il(clienteKey) : null;
+            // Fallbacks pra nome do cliente: máscara → nome_cliente_garantido → onde_rodou parsed
+            let nomeFinal = nomeCliente || (linhas[0]?.nome_cliente_garantido) || "";
+            if (!nomeFinal && linhas[0]?.onde_rodou) {
+              // Tenta extrair nome do "onde_rodou" tipo "17 - Embrepar / 17- EMBREPAR"
+              const m = String(linhas[0].onde_rodou).match(/[-\s]+([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ0-9\s]+?)(?:\s*\/|\s*$)/);
+              if (m && m[1]) nomeFinal = m[1].trim();
+            }
             const totalNeg = linhas.reduce((s, r) => s + (r.valor_negociado || 0), 0);
             const totalProd = linhas.reduce((s, r) => s + (r.valor_produzido || 0), 0);
             const diff = totalProd - totalNeg;
@@ -512,7 +528,7 @@ function renderTabelaAnalise({ e, garantidoData, garantidoStatusMap, garantidoSt
                           borderRadius: 4, fontSize: 9, fontWeight: 700,
                         }
                       }, clienteKey),
-                      nomeCliente || (linhas[0]?.nome_cliente_garantido) || ""
+                      nomeFinal || ""
                     ),
                     e("span", { style: { display: "flex", gap: 14, fontSize: 10, color: "#6b7280", flexWrap: "wrap" } },
                       e("span", null, linhas.length + " prof" + (linhas.length > 1 ? "s" : "")),
