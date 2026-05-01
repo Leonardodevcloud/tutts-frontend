@@ -191,14 +191,11 @@
         }
 
         // Toggle visual reutilizável.
-        // 🐛 FIX FINAL 2026-04: deixei de tentar fazer toggle "bonito" e voltei pro
-        // mais primitivo possível — <button> com texto "Habilitar" / "Desabilitar".
-        // Se ISSO não funcionar, o problema não é no componente, é em algum CSS global
-        // do app que tá interceptando todos os cliques nessa região da tela.
-        // Estrutura: 1 elemento HTML, 1 onClick, sem overlays, sem children clicáveis.
-        // 🆘 z-index 999999 + position relative força o botão a ficar ACIMA de qualquer
-        // overlay invisível que esteja capturando o click (modal travado, loading não
-        // desmontado, etc). Workaround pro caso de overlay externo bloqueando.
+        // 🐛 FIX 2026-04-30 (final): botão simples, SEM style inline de z-index/position.
+        // O z-index 999999 anterior estava promovendo o botão pra fora do fluxo normal
+        // do flexbox e renderizando ele no topo da tela (em cima do header). Por isso
+        // os clicks "não funcionavam" — você clicava no espaço VAZIO onde o botão
+        // deveria estar, mas o botão real tava em outro lugar da tela.
         function Toggle(opts) {
             const { ativo, onChange, disabled, label = 'toggle' } = opts;
             const texto  = ativo ? '✅ HABILITADO (clique pra desligar)' : '⭕ DESLIGADO (clique pra ligar)';
@@ -210,7 +207,7 @@
                 disabled: disabled,
                 onClick: function(e) {
                     if (e && e.preventDefault) e.preventDefault();
-                    console.log('[FinConfigToggle] CLICK em', label, '— ativo:', ativo, '— disabled:', disabled);
+                    console.log('[FinConfigToggle] CLICK em', label, '— ativo:', ativo);
                     if (disabled) return;
                     if (typeof onChange !== 'function') {
                         console.error('[FinConfigToggle] onChange invalido:', onChange);
@@ -222,12 +219,7 @@
                         console.error('[FinConfigToggle] erro:', err);
                     }
                 },
-                style: {
-                    position: 'relative',
-                    zIndex: 999999,
-                    pointerEvents: 'auto',
-                },
-                className: 'px-4 py-2 rounded-lg font-semibold text-sm transition-colors ' + corClass + (disabled ? ' opacity-50 cursor-not-allowed' : ' cursor-pointer'),
+                className: 'px-4 py-2 rounded-lg font-semibold text-sm transition-colors whitespace-nowrap ' + corClass + (disabled ? ' opacity-50 cursor-not-allowed' : ' cursor-pointer'),
             }, disabled ? 'Salvando...' : texto);
         }
 
