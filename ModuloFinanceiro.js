@@ -193,25 +193,19 @@
         }
 
         // ════════════════════════════════════════════════════════════════════
-        // 🐛 FIX FINAL 2026-04-30 (round 7): handlers nativos via addEventListener
+        // 🐛 FIX FINAL 2026-04-30 (round 8): callback refs anexam listeners SÍNCRONOS
         // ════════════════════════════════════════════════════════════════════
-        // O React estava perdendo o handler onClick após algumas re-renders do
-        // componente pai. O elemento DOM existia, recebia o click, mas o listener
-        // sintético do React não disparava (provavelmente porque FinConfigTogglesSecao
-        // é declarada fora do componente principal mas usada dentro dele, e a
-        // reconciliação do React quebra a identidade do componente entre renders).
+        // Round 7 falhou porque useEffect com [config !== null] não disparou nas
+        // condições corretas — debug mostrou listenersChrome=0 no botão.
         //
-        // Solução: usar useRef pra pegar o nó DOM real, e useEffect pra anexar
-        // addEventListener nativo. Isso bypassa completamente o sistema de eventos
-        // sintéticos do React.
-        const btnHabRef  = React.useRef(null);
-        const btnAutoRef = React.useRef(null);
+        // Solução robusta: callback ref. React chama essa função DIRETAMENTE quando
+        // monta/desmonta o nó DOM, antes mesmo de useEffect rodar. Não tem como o
+        // listener não ser anexado. Usa closure pra acessar o handler atual via ref.
 
-        // Refs com os handlers atuais (pra os listeners nativos sempre verem o estado mais novo)
+        // Refs com os handlers atuais (atualizados a cada render — sem disparar re-render)
         const handlerHabRef  = React.useRef(null);
         const handlerAutoRef = React.useRef(null);
 
-        // Atualiza handlers a cada render — sem disparar re-render
         handlerHabRef.current = function() {
             console.log('[FinConfig] CLICK Saques Habilitados — atual:', valorBool('saques_habilitados'));
             if (!podeEditar || salvando === 'saques_habilitados') return;
@@ -231,20 +225,47 @@
             salvar('saques_automaticos', false);
         };
 
-        // Anexa listeners nativos UMA vez (ao mount) e remove no unmount
-        React.useEffect(() => {
-            const btnHab  = btnHabRef.current;
-            const btnAuto = btnAutoRef.current;
-            const onHab   = (e) => { e.preventDefault(); handlerHabRef.current && handlerHabRef.current(); };
-            const onAuto  = (e) => { e.preventDefault(); handlerAutoRef.current && handlerAutoRef.current(); };
-            if (btnHab)  btnHab.addEventListener('click', onHab);
-            if (btnAuto) btnAuto.addEventListener('click', onAuto);
-            console.log('[FinConfig] listeners nativos anexados:', { hab: !!btnHab, auto: !!btnAuto });
-            return () => {
-                if (btnHab)  btnHab.removeEventListener('click', onHab);
-                if (btnAuto) btnAuto.removeEventListener('click', onAuto);
+        // Callback refs: React chama com o nó DOM quando monta, e com null quando desmonta.
+        // Anexamos addEventListener nativo direto. Se React desmontar e remontar, refaz tudo.
+        // Usamos useMemo com [] pra memoizar a função (evita recriar a cada render — senão
+        // o callback ref é chamado com null+nó toda hora).
+        const refHab = React.useMemo(() => {
+            let nodoAtual = null;
+            const onClick = (e) => {
+                e.preventDefault();
+                if (handlerHabRef.current) handlerHabRef.current();
             };
-        }, [config !== null]); // re-anexa quando config carrega (botões só renderizam depois)
+            return (nodo) => {
+                if (nodoAtual) {
+                    nodoAtual.removeEventListener('click', onClick);
+                    console.log('[FinConfig] listener REMOVIDO de saques_habilitados');
+                }
+                nodoAtual = nodo;
+                if (nodo) {
+                    nodo.addEventListener('click', onClick);
+                    console.log('[FinConfig] listener ANEXADO em saques_habilitados');
+                }
+            };
+        }, []);
+
+        const refAuto = React.useMemo(() => {
+            let nodoAtual = null;
+            const onClick = (e) => {
+                e.preventDefault();
+                if (handlerAutoRef.current) handlerAutoRef.current();
+            };
+            return (nodo) => {
+                if (nodoAtual) {
+                    nodoAtual.removeEventListener('click', onClick);
+                    console.log('[FinConfig] listener REMOVIDO de saques_automaticos');
+                }
+                nodoAtual = nodo;
+                if (nodo) {
+                    nodo.addEventListener('click', onClick);
+                    console.log('[FinConfig] listener ANEXADO em saques_automaticos');
+                }
+            };
+        }, []);
 
         // ── Renderização ──
         if (loading) {
@@ -290,7 +311,7 @@
                 ),
                 // 🐛 Botão inline com ref + listener nativo (ver useEffect acima)
                 React.createElement('button', {
-                    ref: btnHabRef,
+                    ref: refHab,
                     type: 'button',
                     disabled: salvando === 'saques_habilitados',
                     className: 'px-4 py-2 rounded-lg font-semibold text-sm transition-colors whitespace-nowrap ' +
@@ -323,7 +344,7 @@
                     }, ultimaAlteracao('saques_automaticos'))
                 ),
                 React.createElement('button', {
-                    ref: btnAutoRef,
+                    ref: refAuto,
                     type: 'button',
                     disabled: salvando === 'saques_automaticos',
                     className: 'px-4 py-2 rounded-lg font-semibold text-sm transition-colors whitespace-nowrap ' +
