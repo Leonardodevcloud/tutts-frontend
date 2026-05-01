@@ -2329,7 +2329,7 @@ const hideLoadingScreen = () => {
         }), [ze, Be] = useState(null), [Ve, Je] = useState(0), [Qe, He] = useState([]), [Ge, We] = useState(!1), [Ze, Ye] = useState([]), [Ke, Xe] = useState([]), [et, tt] = useState([]), [at, lt] = useState([]), [rt, ot] = useState(!0), [ct, st] = useState(0), [nt, mt] = useState("produtos"), [it, dt] = useState([]), [pt, xt] = useState("lista"), [ut, gt] = useState([]), [bt, Rt] = useState([]),
         // 🆕 2026-04: status global de saques (kill switch via /financial/config).
         // Default { habilitados: true } pra não bloquear motoboy se request falhar.
-        [saquesStatus, setSaquesStatus] = useState({ habilitados: true, mensagem: '' }), [Et, ht] = useState(() => { try { return localStorage.getItem("tutts_tab_bi") || "home-bi"; } catch(e) { return "home-bi"; } }), [chatIaMsgs, setChatIaMsgs] = useState([]), [chatIaInput, setChatIaInput] = useState(""), [chatIaLoading, setChatIaLoading] = useState(false), [chatIaSql, setChatIaSql] = useState(null), [chatIaFiltros, setChatIaFiltros] = useState({ cod_cliente: [], nomes_clientes: [], centro_custo: [], data_inicio: "", data_fim: "", regiao: "" }), [chatIaIniciado, setChatIaIniciado] = useState(false), [chatIaClientes, setChatIaClientes] = useState([]), [chatIaCentros, setChatIaCentros] = useState([]), [chatIaFiltrosLoading, setChatIaFiltrosLoading] = useState(false), [chatIaDropAberto, setChatIaDropAberto] = useState(null), [chatIaBuscaCliente, setChatIaBuscaCliente] = useState(""), [chatIaConversas, setChatIaConversas] = useState([]), [chatIaConversaAtual, setChatIaConversaAtual] = useState(null), [chatIaConversasLoading, setChatIaConversasLoading] = useState(false), [chatIaSidebarAberta, setChatIaSidebarAberta] = useState(false), [chatIaExportando, setChatIaExportando] = useState(false), [chatIaRegioes, setChatIaRegioes] = useState([]), [ft, Nt] = useState(null), [mostrarDetalhes, setMostrarDetalhes] = useState(false), [yt, vt] = useState([]), [wt, _t] = useState([{
+        [saquesStatus, setSaquesStatus] = useState({ habilitados: true, automaticos: false, mensagem: '' }), [Et, ht] = useState(() => { try { return localStorage.getItem("tutts_tab_bi") || "home-bi"; } catch(e) { return "home-bi"; } }), [chatIaMsgs, setChatIaMsgs] = useState([]), [chatIaInput, setChatIaInput] = useState(""), [chatIaLoading, setChatIaLoading] = useState(false), [chatIaSql, setChatIaSql] = useState(null), [chatIaFiltros, setChatIaFiltros] = useState({ cod_cliente: [], nomes_clientes: [], centro_custo: [], data_inicio: "", data_fim: "", regiao: "" }), [chatIaIniciado, setChatIaIniciado] = useState(false), [chatIaClientes, setChatIaClientes] = useState([]), [chatIaCentros, setChatIaCentros] = useState([]), [chatIaFiltrosLoading, setChatIaFiltrosLoading] = useState(false), [chatIaDropAberto, setChatIaDropAberto] = useState(null), [chatIaBuscaCliente, setChatIaBuscaCliente] = useState(""), [chatIaConversas, setChatIaConversas] = useState([]), [chatIaConversaAtual, setChatIaConversaAtual] = useState(null), [chatIaConversasLoading, setChatIaConversasLoading] = useState(false), [chatIaSidebarAberta, setChatIaSidebarAberta] = useState(false), [chatIaExportando, setChatIaExportando] = useState(false), [chatIaRegioes, setChatIaRegioes] = useState([]), [ft, Nt] = useState(null), [mostrarDetalhes, setMostrarDetalhes] = useState(false), [yt, vt] = useState([]), [wt, _t] = useState([{
             km_min: 0,
             km_max: 15,
             prazo_minutos: 45
@@ -4667,7 +4667,7 @@ const hideLoadingScreen = () => {
                     const r = await fetchAuth(`${API_URL}/financial/saques-status`);
                     if (r.ok) {
                         const data = await r.json();
-                        setSaquesStatus(data || { habilitados: true, mensagem: '' });
+                        setSaquesStatus(data || { habilitados: true, automaticos: false, mensagem: '' });
                     }
                 } catch (e) {
                     // Falha-aberta: se request falhar, presume habilitados
@@ -4684,12 +4684,12 @@ const hideLoadingScreen = () => {
                     const [e, t, statusSaques] = await Promise.all([
                         fetchAuth(`${API_URL}/horarios/verificar`).then(e => e.json()),
                         fetchAuth(`${API_URL}/avisos?ativos=true`).then(e => e.json()),
-                        fetchAuth(`${API_URL}/financial/saques-status`).then(r => r.json()).catch(() => ({ habilitados: true, mensagem: '' })),
+                        fetchAuth(`${API_URL}/financial/saques-status`).then(r => r.json()).catch(() => ({ habilitados: true, automaticos: false, mensagem: '' })),
                     ]);
                     Be(e);
                     const a = t.filter(t => !t.exibir_fora_horario || t.exibir_fora_horario && !e.dentroHorario);
                     He(a);
-                    setSaquesStatus(statusSaques || { habilitados: true, mensagem: '' });
+                    setSaquesStatus(statusSaques || { habilitados: true, automaticos: false, mensagem: '' });
                 } catch (e) {
                     console.error("Erro ao verificar horário:", e), Be({
                         dentroHorario: !0
@@ -10814,7 +10814,7 @@ const hideLoadingScreen = () => {
             className: "animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"
         }), React.createElement("span", {
             className: "ml-3"
-        }, "Verificando horário...")) : ze.dentroHorario || Ge ? React.createElement(React.Fragment, null, Qe.length > 0 && React.createElement("div", {
+        }, "Verificando horário...")) : (ze.dentroHorario || Ge || saquesStatus.automaticos) ? React.createElement(React.Fragment, null, Qe.length > 0 && React.createElement("div", {
             className: "space-y-2 mb-4"
         }, Qe.map(e => React.createElement("div", {
             key: e.id,
@@ -10823,7 +10823,10 @@ const hideLoadingScreen = () => {
             className: "font-bold text-sm"
         }, e.titulo), React.createElement("p", {
             className: "text-xs text-gray-700"
-        }, e.mensagem)))), ze && !ze.dentroHorario && Ge && React.createElement("div", {
+        }, e.mensagem)))),
+        // 🆕 2026-04-30: aviso de "fora do horário" não aparece quando auto-saque está ON
+        // (auto-saque = pagamento Stark imediato 24/7, horário de atendimento não se aplica).
+        ze && !ze.dentroHorario && Ge && !saquesStatus.automaticos && React.createElement("div", {
             className: "bg-purple-100 border border-orange-300 rounded-xl p-3 mb-4 flex items-center gap-3"
         }, React.createElement("span", {
             className: "text-2xl"
