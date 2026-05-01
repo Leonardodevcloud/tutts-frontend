@@ -190,18 +190,52 @@
             return `Última alteração: ${dataStr}${c.updated_by ? ' por ' + c.updated_by : ''}`;
         }
 
-        // Toggle visual reutilizável
+        // Toggle visual reutilizável.
+        // 🐛 FIX 2026-04: troquei <button> por <div role="button"> porque o app tem
+        // CSS global em <button> que pode estar interceptando pointer-events.
+        // Também adicionei logs pra debug — aparece no console se o click NÃO chega
+        // (problema de UI) ou se chega mas falha depois (problema de lógica).
         function Toggle(opts) {
-            const { ativo, onChange, disabled, corOn = 'bg-emerald-500', corOff = 'bg-gray-300' } = opts;
-            return React.createElement('button', {
-                type: 'button',
-                disabled: disabled,
-                onClick: () => onChange(!ativo),
-                className: `relative inline-flex h-7 w-12 items-center rounded-full transition ${ativo ? corOn : corOff} ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`,
+            const { ativo, onChange, disabled, corOn = 'bg-emerald-500', corOff = 'bg-gray-300', label = 'toggle' } = opts;
+            return React.createElement('div', {
+                role: 'button',
+                tabIndex: disabled ? -1 : 0,
                 'aria-pressed': ativo ? 'true' : 'false',
+                'aria-disabled': disabled ? 'true' : 'false',
+                onClick: (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('[FinConfigToggle] click em', label, '— ativo atual:', ativo, '— disabled:', disabled);
+                    if (disabled) {
+                        console.log('[FinConfigToggle] bloqueado: disabled=true (provavelmente salvando)');
+                        return;
+                    }
+                    if (typeof onChange !== 'function') {
+                        console.error('[FinConfigToggle] onChange não é função:', typeof onChange);
+                        return;
+                    }
+                    try {
+                        onChange(!ativo);
+                    } catch (err) {
+                        console.error('[FinConfigToggle] exception em onChange:', err);
+                    }
+                },
+                onKeyDown: (e) => {
+                    if (disabled) return;
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        try { onChange(!ativo); } catch (err) { console.error('[FinConfigToggle] keydown error:', err); }
+                    }
+                },
+                style: {
+                    pointerEvents: disabled ? 'none' : 'auto',
+                    userSelect: 'none',
+                },
+                className: `relative inline-flex h-7 w-12 items-center rounded-full transition-colors duration-200 ${ativo ? corOn : corOff} ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:opacity-90'}`,
             },
                 React.createElement('span', {
-                    className: `inline-block h-5 w-5 transform rounded-full bg-white shadow transition ${ativo ? 'translate-x-6' : 'translate-x-1'}`
+                    style: { pointerEvents: 'none' },
+                    className: `inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform duration-200 ${ativo ? 'translate-x-6' : 'translate-x-1'}`
                 })
             );
         }
@@ -252,6 +286,7 @@
                     ativo: habOn,
                     onChange: onToggleSaquesHabilitados,
                     disabled: salvando === 'saques_habilitados',
+                    label: 'saques_habilitados',
                 })
             ),
 
@@ -283,6 +318,7 @@
                     onChange: onToggleSaquesAutomaticos,
                     disabled: salvando === 'saques_automaticos',
                     corOn: 'bg-amber-500',
+                    label: 'saques_automaticos',
                 })
             ),
 
