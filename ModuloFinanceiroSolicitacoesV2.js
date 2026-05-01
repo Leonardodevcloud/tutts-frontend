@@ -389,6 +389,7 @@ window.SolicitacoesV2 = function SolicitacoesV2(props) {
                 ),
                 e("th", { style: thStyle({ textAlign: "left" }) }, "Profissional"),
                 e("th", { style: thStyle({ textAlign: "right" }) }, "Solicitado"),
+                e("th", { style: thStyle({ textAlign: "right" }) }, "Recebido"),
                 e("th", { style: thStyle({ textAlign: "left" }) }, "PIX"),
                 e("th", { style: thStyle({ textAlign: "left" }) }, "Status"),
                 e("th", { style: thStyle({ textAlign: "right", width: 60 }) }, "Hora"),
@@ -396,7 +397,7 @@ window.SolicitacoesV2 = function SolicitacoesV2(props) {
             ),
             e("tbody", null,
               paginadas.length === 0 && e("tr", null,
-                e("td", { colSpan: 6, style: { padding: 32, textAlign: "center", color: "#9CA3AF", fontSize: 13 } },
+                e("td", { colSpan: 7, style: { padding: 32, textAlign: "center", color: "#9CA3AF", fontSize: 13 } },
                   "Nenhum saque encontrado com esse filtro"
                 )
               ),
@@ -415,7 +416,8 @@ window.SolicitacoesV2 = function SolicitacoesV2(props) {
                 else if (isSelected) bgRow = "#EEF2FF";
                 else if (isAtrasado && !isPagoStark && !isEmLote && !isProcessandoPix) bgRow = "#FEF2F2";
                 else if (s.is_restricted && s.status !== "rejeitado" && !isPagoStark) bgRow = "#FEE2E2";
-                else if (s.has_gratuity && !isPagoStark && !isEmLote && !isProcessandoPix && s.status === "aguardando_aprovacao") bgRow = "#DBEAFE";
+                // Gratuidade visível em qualquer status (não só aguardando) — fundo azul bem clarinho
+                else if (s.has_gratuity) bgRow = "#EFF6FF";
 
                 return e("tr", {
                   key: s.id,
@@ -458,6 +460,10 @@ window.SolicitacoesV2 = function SolicitacoesV2(props) {
                   e("td", { style: { ...tdStyle(), textAlign: "right" } },
                     e("span", { style: { fontWeight: 600, color: "#111827", fontVariantNumeric: "tabular-nums" } }, er(s.requested_amount))
                   ),
+                  // Recebido (líquido)
+                  e("td", { style: { ...tdStyle(), textAlign: "right" } },
+                    e("span", { style: { fontWeight: 500, color: "#0F6E56", fontVariantNumeric: "tabular-nums" } }, er(s.final_amount))
+                  ),
                   // PIX
                   e("td", { style: tdStyle() },
                     e("span", { style: { fontFamily: "ui-monospace, monospace", fontSize: 10.5, color: "#6b7280" } }, s.pix_key || "—")
@@ -486,13 +492,14 @@ window.SolicitacoesV2 = function SolicitacoesV2(props) {
                     }, "⚡ auto"),
                     s.has_gratuity && e("span", {
                       style: {
-                        display: "inline-flex", alignItems: "center", marginLeft: 4,
-                        padding: "1px 5px", background: "#FEF3C7",
+                        display: "inline-flex", alignItems: "center", gap: 3, marginLeft: 4,
+                        padding: "1px 6px", background: "#FEF3C7",
                         color: "#92400E", borderRadius: 3,
-                        fontSize: 9, fontWeight: 500,
+                        fontSize: 9, fontWeight: 700,
+                        textTransform: "uppercase", letterSpacing: "0.4px",
                       },
-                      title: "Saque com gratuidade"
-                    }, "🎁"),
+                      title: "Saque com gratuidade aplicada"
+                    }, "🎁 grat."),
                     s.is_restricted && e("span", {
                       style: {
                         display: "inline-flex", alignItems: "center", marginLeft: 4,
