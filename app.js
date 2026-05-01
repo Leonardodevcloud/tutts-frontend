@@ -2329,7 +2329,11 @@ const hideLoadingScreen = () => {
         }), [ze, Be] = useState(null), [Ve, Je] = useState(0), [Qe, He] = useState([]), [Ge, We] = useState(!1), [Ze, Ye] = useState([]), [Ke, Xe] = useState([]), [et, tt] = useState([]), [at, lt] = useState([]), [rt, ot] = useState(!0), [ct, st] = useState(0), [nt, mt] = useState("produtos"), [it, dt] = useState([]), [pt, xt] = useState("lista"), [ut, gt] = useState([]), [bt, Rt] = useState([]),
         // 🆕 2026-04: status global de saques (kill switch via /financial/config).
         // Default { habilitados: true } pra não bloquear motoboy se request falhar.
-        [saquesStatus, setSaquesStatus] = useState({ habilitados: true, automaticos: false, mensagem: '' }), [Et, ht] = useState(() => { try { return localStorage.getItem("tutts_tab_bi") || "home-bi"; } catch(e) { return "home-bi"; } }), [chatIaMsgs, setChatIaMsgs] = useState([]), [chatIaInput, setChatIaInput] = useState(""), [chatIaLoading, setChatIaLoading] = useState(false), [chatIaSql, setChatIaSql] = useState(null), [chatIaFiltros, setChatIaFiltros] = useState({ cod_cliente: [], nomes_clientes: [], centro_custo: [], data_inicio: "", data_fim: "", regiao: "" }), [chatIaIniciado, setChatIaIniciado] = useState(false), [chatIaClientes, setChatIaClientes] = useState([]), [chatIaCentros, setChatIaCentros] = useState([]), [chatIaFiltrosLoading, setChatIaFiltrosLoading] = useState(false), [chatIaDropAberto, setChatIaDropAberto] = useState(null), [chatIaBuscaCliente, setChatIaBuscaCliente] = useState(""), [chatIaConversas, setChatIaConversas] = useState([]), [chatIaConversaAtual, setChatIaConversaAtual] = useState(null), [chatIaConversasLoading, setChatIaConversasLoading] = useState(false), [chatIaSidebarAberta, setChatIaSidebarAberta] = useState(false), [chatIaExportando, setChatIaExportando] = useState(false), [chatIaRegioes, setChatIaRegioes] = useState([]), [ft, Nt] = useState(null), [mostrarDetalhes, setMostrarDetalhes] = useState(false), [yt, vt] = useState([]), [wt, _t] = useState([{
+        // 🆕 2026-04-30: state pro modal de limites (abre ao clicar "Ver meus limites")
+        // e pro modal de sucesso após enviar saque (auto-destrói em 2,8s).
+        [saquesStatus, setSaquesStatus] = useState({ habilitados: true, automaticos: false, mensagem: '' }),
+        [modalLimitesAberto, setModalLimitesAberto] = useState(false),
+        [saqueSucessoModal, setSaqueSucessoModal] = useState(false), [Et, ht] = useState(() => { try { return localStorage.getItem("tutts_tab_bi") || "home-bi"; } catch(e) { return "home-bi"; } }), [chatIaMsgs, setChatIaMsgs] = useState([]), [chatIaInput, setChatIaInput] = useState(""), [chatIaLoading, setChatIaLoading] = useState(false), [chatIaSql, setChatIaSql] = useState(null), [chatIaFiltros, setChatIaFiltros] = useState({ cod_cliente: [], nomes_clientes: [], centro_custo: [], data_inicio: "", data_fim: "", regiao: "" }), [chatIaIniciado, setChatIaIniciado] = useState(false), [chatIaClientes, setChatIaClientes] = useState([]), [chatIaCentros, setChatIaCentros] = useState([]), [chatIaFiltrosLoading, setChatIaFiltrosLoading] = useState(false), [chatIaDropAberto, setChatIaDropAberto] = useState(null), [chatIaBuscaCliente, setChatIaBuscaCliente] = useState(""), [chatIaConversas, setChatIaConversas] = useState([]), [chatIaConversaAtual, setChatIaConversaAtual] = useState(null), [chatIaConversasLoading, setChatIaConversasLoading] = useState(false), [chatIaSidebarAberta, setChatIaSidebarAberta] = useState(false), [chatIaExportando, setChatIaExportando] = useState(false), [chatIaRegioes, setChatIaRegioes] = useState([]), [ft, Nt] = useState(null), [mostrarDetalhes, setMostrarDetalhes] = useState(false), [yt, vt] = useState([]), [wt, _t] = useState([{
             km_min: 0,
             km_max: 15,
             prazo_minutos: 45
@@ -8744,7 +8748,10 @@ const hideLoadingScreen = () => {
                     s(!1);
                     return;
                 }
-                ja("✅ Saque solicitado!", "success"), 
+                ja("✅ Saque solicitado!", "success"),
+                // 🆕 2026-04-30: dispara animação de sucesso (modal auto-destrutível em 2,8s)
+                setSaqueSucessoModal(true),
+                setTimeout(() => setSaqueSucessoModal(false), 2800),
                 x({
                     ...p,
                     withdrawAmount: "",
@@ -11034,50 +11041,83 @@ const hideLoadingScreen = () => {
             return React.createElement("div", {
                 className: "space-y-4"
             }, 
-            // Card Saldo Plific
+            // 🆕 2026-04-30 REDESIGN: Banner gradient roxo→dourado com saldo
             React.createElement("div", {
-                className: "rounded-xl p-4 border-2 " + (saldoPlificUser.loading ? "bg-gray-50 border-gray-200" : saldoPlificUser.erro ? "bg-red-50 border-red-300" : saldoDisp !== null && saldoDisp <= 0 ? "bg-red-50 border-red-300" : "bg-purple-50 border-purple-300")
-            }, 
-                React.createElement("div", {className: "flex items-center justify-between"},
-                    React.createElement("div", {className: "flex items-center gap-3"},
-                        React.createElement("span", {className: "text-3xl"}, "💰"),
-                        React.createElement("div", null,
-                            React.createElement("p", {className: "text-sm font-medium text-gray-600"}, "Seu Saldo Disponível"),
-                            saldoPlificUser.loading ? 
-                                React.createElement("p", {className: "text-lg font-bold text-gray-400"}, "Carregando...") :
-                            saldoPlificUser.erro ?
-                                React.createElement("p", {className: "text-lg font-bold text-red-600"}, "Erro ao carregar") :
-                            saldoDisp !== null ?
-                                React.createElement("p", {className: "text-2xl font-bold " + (saldoDisp > 0 ? "text-green-600" : "text-red-600")}, "R$ " + saldoDisp.toFixed(2).replace(".", ",")) :
-                                React.createElement("p", {className: "text-lg font-bold text-gray-400"}, "Não disponível")
-                        )
-                    ),
-                    React.createElement("button", {
-                        onClick: function() { buscarSaldoPlificUsuario(true); },
-                        disabled: saldoPlificUser.loading,
-                        className: "p-2 text-purple-600 hover:bg-purple-100 rounded-lg transition-colors"
-                    }, "🔄")
+                style: {
+                    position: "relative",
+                    background: "linear-gradient(135deg, #3C3489 0%, #534AB7 50%, #BA7517 100%)",
+                    borderRadius: "12px",
+                    padding: "16px 18px",
+                    color: "white",
+                    overflow: "hidden",
+                    boxShadow: "0 4px 12px rgba(60, 52, 137, 0.25)"
+                }
+            },
+                // Círculos decorativos sutis
+                React.createElement("div", {
+                    style: {
+                        position: "absolute", top: "-20px", right: "-20px",
+                        width: "100px", height: "100px", borderRadius: "50%",
+                        background: "rgba(255,255,255,0.06)", pointerEvents: "none"
+                    }
+                }),
+                React.createElement("div", {
+                    style: {
+                        position: "absolute", bottom: "-30px", right: "30px",
+                        width: "60px", height: "60px", borderRadius: "50%",
+                        background: "rgba(255,255,255,0.04)", pointerEvents: "none"
+                    }
+                }),
+                React.createElement("div", { style: { position: "relative", zIndex: 1 } },
+                    React.createElement("p", {
+                        style: {
+                            fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.6px",
+                            opacity: 0.85, margin: "0 0 4px 0"
+                        }
+                    }, "Saldo disponível"),
+                    saldoPlificUser.loading
+                        ? React.createElement("p", { style: { fontSize: "20px", margin: 0, opacity: 0.7 } }, "Carregando...")
+                        : saldoPlificUser.erro
+                            ? React.createElement("p", { style: { fontSize: "20px", margin: 0, opacity: 0.85 } }, "Erro ao carregar")
+                            : saldoDisp !== null
+                                ? React.createElement("p", {
+                                    style: {
+                                        fontSize: "30px", fontWeight: 600, lineHeight: 1,
+                                        margin: 0, letterSpacing: "-0.5px"
+                                    }
+                                }, "R$ " + saldoDisp.toFixed(2).replace(".", ","))
+                                : React.createElement("p", { style: { fontSize: "20px", margin: 0, opacity: 0.7 } }, "Não disponível"),
+                    totalPend > 0 && React.createElement("p", {
+                        style: { fontSize: "11px", opacity: 0.85, margin: "8px 0 0 0" }
+                    }, "📋 R$ " + totalPend.toFixed(2).replace(".", ",") + " em saques aguardando aprovação")
                 ),
-                totalPend > 0 && React.createElement("p", {
-                    className: "text-xs text-purple-600 mt-2"
-                }, "📋 R$ " + totalPend.toFixed(2).replace(".", ",") + " em saques aguardando aprovação"),
-                saldoDisp !== null && saldoDisp <= 0 && React.createElement("p", {
-                    className: "text-sm text-red-600 mt-2 font-medium"
-                }, "⚠️ Você não possui saldo suficiente para solicitar saque emergencial.")
+                // Botão refresh discreto no canto inferior direito
+                React.createElement("button", {
+                    onClick: function() { buscarSaldoPlificUsuario(true); },
+                    disabled: saldoPlificUser.loading,
+                    style: {
+                        position: "absolute", bottom: "14px", right: "14px",
+                        width: "32px", height: "32px",
+                        borderRadius: "50%",
+                        background: "rgba(255,255,255,0.18)",
+                        border: "none",
+                        cursor: saldoPlificUser.loading ? "wait" : "pointer",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        fontSize: "14px",
+                        zIndex: 2
+                    },
+                    title: "Atualizar saldo"
+                }, saldoPlificUser.loading ? "⏳" : "🔄")
             ),
-            React.createElement("div", {
-                className: "rounded-lg p-4 border " + (0 === m ? "bg-red-50 border-red-300" : "bg-green-50 border-green-300")
-            }, React.createElement("div", {
-                className: "flex items-center justify-between"
-            }, React.createElement("div", {
-                className: "flex items-center gap-2"
-            }, React.createElement("span", {
-                className: "text-2xl"
-            }, 0 === m ? "⏳" : "✅"), React.createElement("div", null, React.createElement("p", {
-                className: "font-semibold " + (0 === m ? "text-red-800" : "text-green-800")
-            }, 0 === m ? "Permitido apenas 1 saque por hora!" : "Saque disponível"), React.createElement("p", {
-                className: "text-sm " + (0 === m ? "text-red-600" : "text-green-600")
-            }, 0 === m ? `Tente novamente em: ${tempoRestanteStr || "calculando..."}` : "Você pode solicitar seu saque emergencial"))))), t && React.createElement("div", {
+            // Aviso de saldo zerado (só quando aplicável — fica fora do banner)
+            saldoDisp !== null && saldoDisp <= 0 && React.createElement("p", {
+                className: "text-sm text-red-600 font-medium px-2"
+            }, "⚠️ Você não possui saldo suficiente para solicitar saque emergencial."),
+            // 🚀 Caixa "Saque disponível" foi REMOVIDA conforme redesign 2026-04-30
+            // Caixa de aviso "Atenção 4,5%" foi REMOVIDA (info aparece dinâmica no preview)
+            // Caixa grande de "Seus Limites de Saque" foi REMOVIDA — virou link "Ver meus limites →"
+            // que abre modal com a info detalhada (state: modalLimitesAberto)
+            t && React.createElement("div", {
                 className: "bg-green-50 border border-green-300 rounded-lg p-4"
             }, React.createElement("p", {
                 className: "text-green-800 font-semibold"
@@ -11096,13 +11136,7 @@ const hideLoadingScreen = () => {
                 className: "text-green-700 text-sm mt-1"
             }, "Valor máximo permitido: ", React.createElement("strong", null, er(a))), React.createElement("p", {
                 className: "text-green-600 text-xs mt-1"
-            }, "Restam ", e.remaining, " uso(s) desta gratuidade")), !t && React.createElement("div", {
-                className: "bg-yellow-50 border border-yellow-300 rounded-lg p-4"
-            }, React.createElement("p", {
-                className: "text-yellow-800 font-semibold"
-            }, "⚠️ Atenção!"), React.createElement("p", {
-                className: "text-yellow-700 text-sm mt-1"
-            }, "Conforme termo de uso do saque emergencial, será cobrada uma taxa de ", React.createElement("strong", null, "4,5%"), " sobre o valor solicitado", React.createElement("br", null), React.createElement("span", { className: "text-xs" }, "+ taxa fixa de ", React.createElement("strong", null, "R$ 0,40"), " para saques de R$ 15 a R$ 100."))), limitesSaque && limitesSaque.solicitacao_pendente && React.createElement("div", {
+            }, "Restam ", e.remaining, " uso(s) desta gratuidade")), limitesSaque && limitesSaque.solicitacao_pendente && React.createElement("div", {
                 className: "bg-purple-50 border-2 border-purple-400 rounded-lg p-4 animate-pulse"
             }, React.createElement("div", { className: "flex items-center gap-2" },
                 React.createElement("span", { className: "text-2xl" }, "⏳"),
@@ -11110,78 +11144,28 @@ const hideLoadingScreen = () => {
                     React.createElement("p", { className: "text-purple-800 font-bold" }, "Limite extra solicitado!"),
                     React.createElement("p", { className: "text-purple-600 text-sm mt-1" }, "Aguarde a liberação pelo financeiro ou entre em contato.")
                 )
-            )), limitesSaque && React.createElement("div", {
-                className: "bg-blue-50 border border-blue-200 rounded-lg p-3"
-            }, React.createElement("p", { className: "text-sm font-semibold text-blue-800 mb-2" }, "📊 Seus Limites de Saque"),
-            React.createElement("div", { className: "grid grid-cols-3 gap-2 text-center" },
-                React.createElement("div", { className: "bg-white rounded-lg p-2 shadow-sm" },
-                    React.createElement("p", { className: "text-xs text-gray-500" }, "Por saque"),
-                    React.createElement("p", { className: "text-sm font-bold text-blue-700" }, "R$ " + limitesSaque.por_saque.limite.toFixed(2).replace(".", ","))
-                ),
-                React.createElement("div", { className: "bg-white rounded-lg p-2 shadow-sm" },
-                    React.createElement("p", { className: "text-xs text-gray-500" }, "Hoje"),
-                    React.createElement("p", { className: "text-sm font-bold " + (limitesSaque.diario.disponivel <= 0 ? "text-red-600" : "text-green-600") }, "R$ " + limitesSaque.diario.disponivel.toFixed(2).replace(".", ",")),
-                    React.createElement("p", { className: "text-xs text-gray-400" }, "de R$ " + limitesSaque.diario.limite.toFixed(2).replace(".", ","))
-                ),
-                React.createElement("div", { className: "bg-white rounded-lg p-2 shadow-sm" },
-                    React.createElement("p", { className: "text-xs text-gray-500" }, "Semana"),
-                    React.createElement("p", { className: "text-sm font-bold " + (limitesSaque.semanal.disponivel <= 0 ? "text-red-600" : "text-green-600") }, "R$ " + limitesSaque.semanal.disponivel.toFixed(2).replace(".", ",")),
-                    React.createElement("p", { className: "text-xs text-gray-400" }, "de R$ " + (limitesSaque.semanal.limite_efetivo || limitesSaque.semanal.limite).toFixed(2).replace(".", ","))
-                )
-            ),
-            limitesSaque.semanal.extra_liberado > 0 && React.createElement("p", {
-                className: "text-green-600 text-xs mt-1 text-center font-semibold"
-            }, "🔄 Ciclo renovado pelo financeiro! Limite restaurado."),
-            limitesSaque.ciclo && React.createElement("p", {
-                className: "text-gray-400 text-xs mt-1 text-center"
-            }, "📅 Ciclo: " + new Date(limitesSaque.ciclo.inicio + "T12:00:00").toLocaleDateString("pt-BR") + " a " + new Date(limitesSaque.ciclo.fim + "T12:00:00").toLocaleDateString("pt-BR") + " (reseta toda terça)"),
-            (limitesSaque.diario.disponivel <= 0 || limitesSaque.semanal.disponivel <= 0) && React.createElement("p", {
-                className: "text-red-600 text-xs mt-2 font-semibold text-center"
-            }, limitesSaque.diario.disponivel <= 0 ? "⚠️ Limite diário esgotado!" : "⚠️ Limite semanal esgotado!"),
-            (p.withdrawAmount && parseFloat(p.withdrawAmount) > 0 && parseFloat(p.withdrawAmount) > limitesSaque.max_disponivel && limitesSaque.max_disponivel > 0) && React.createElement("p", {
-                className: "text-purple-600 text-xs mt-1 font-semibold text-center"
-            }, "⚠️ Valor desejado excede o limite disponível (R$ " + limitesSaque.max_disponivel.toFixed(2).replace(".", ",") + ")"),
-            (limitesSaque.diario.disponivel <= 0 || limitesSaque.semanal.disponivel <= 0 || limitesSaque.solicitacao_pendente || (p.withdrawAmount && parseFloat(p.withdrawAmount) > 0 && (limitesSaque.diario.disponivel < parseFloat(p.withdrawAmount) || limitesSaque.semanal.disponivel < parseFloat(p.withdrawAmount)))) && React.createElement("div", { className: "mt-2 text-center" },
-                !limitesSaque.solicitacao_pendente && React.createElement("button", {
-                    onClick: async () => {
-                        setSolicitandoLimite(true);
-                        try {
-                            const resp = await fetchAuth(`${API_URL}/withdrawals/solicitar-limite`, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    userCod: l.cod_profissional || l.codProfissional,
-                                    userName: l.nome || l.fullName || l.username,
-                                    motivo: 'Limite esgotado - solicitação via app'
-                                })
-                            });
-                            const data = await resp.json();
-                            if (resp.ok) {
-                                ja('✅ Solicitação enviada! O financeiro será notificado.', 'success');
-                                const lr = await fetchAuth(`${API_URL}/withdrawals/limites/${l.cod_profissional || l.codProfissional}`);
-                                if (lr.ok) setLimitesSaque(await lr.json());
-                            } else {
-                                ja('❌ ' + (data.error || 'Erro ao solicitar'), 'error');
-                            }
-                        } catch (err) {
-                            ja('❌ Erro de conexão', 'error');
+            )),
+            // Input do valor + link discreto "Ver meus limites →"
+            React.createElement("div", null,
+                React.createElement("div", {
+                    style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }
+                },
+                    React.createElement("label", {
+                        className: "text-sm font-semibold"
+                    }, "Quanto você quer sacar?",
+                        t && React.createElement("span", { className: "text-green-600 text-xs ml-1" }, "(máx: ", er(a), ")")
+                    ),
+                    limitesSaque && React.createElement("button", {
+                        onClick: () => setModalLimitesAberto(true),
+                        style: {
+                            fontSize: "12px", color: "#1D4ED8",
+                            background: "none", border: "none",
+                            cursor: "pointer", padding: 0,
+                            fontWeight: 500
                         }
-                        setSolicitandoLimite(false);
-                    },
-                    disabled: solicitandoLimite,
-                    className: "mt-1 w-full bg-purple-600 text-white py-2 px-4 rounded-lg text-sm font-bold hover:bg-purple-700 disabled:opacity-50 transition-all"
-                }, solicitandoLimite ? "⏳ Enviando..." : "📩 Clique para solicitar mais limite"),
-                limitesSaque.solicitacao_pendente && React.createElement("p", {
-                    className: "text-purple-600 text-xs mt-2 font-semibold"
-                }, "⏳ Você já tem uma solicitação pendente. Aguarde a liberação pelo financeiro.")
-            )
-            ), React.createElement("div", null, React.createElement("label", {
-                className: "block text-sm font-semibold mb-1"
-            }, "Valor ", t && React.createElement("span", {
-                className: "text-green-600 text-xs"
-            }, "(máx: ", er(a), ")"), React.createElement("span", {
-                className: "text-gray-500 text-xs ml-1"
-            }, "(mín: R$ 15,00 • máx: R$ 1.000,00)")), React.createElement("input", {
+                    }, "Ver meus limites →")
+                ),
+                React.createElement("input", {
                 type: "text",
                 inputMode: "decimal",
                 value: p.withdrawAmount || "",
@@ -11339,7 +11323,230 @@ const hideLoadingScreen = () => {
             }, "Entre em contato com o suporte"), React.createElement("p", {
                 className: "text-xs text-gray-400 mt-2"
             }, new Date(e.created_at).toLocaleString("pt-BR")))
-        }))), "dados" === p.saqueTab && React.createElement("div", {
+        })),
+        // 🆕 2026-04-30 REDESIGN: Modal de limites (abre ao clicar "Ver meus limites →")
+        modalLimitesAberto && limitesSaque && React.createElement("div", {
+            onClick: () => setModalLimitesAberto(false),
+            style: {
+                position: "fixed", inset: 0,
+                background: "rgba(0,0,0,0.45)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                zIndex: 9999,
+                padding: "16px"
+            }
+        },
+            React.createElement("div", {
+                onClick: e => e.stopPropagation(),
+                style: {
+                    background: "white",
+                    borderRadius: "12px",
+                    padding: "20px",
+                    maxWidth: "360px",
+                    width: "100%",
+                    boxShadow: "0 20px 50px rgba(0,0,0,0.3)"
+                }
+            },
+                React.createElement("div", {
+                    style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }
+                },
+                    React.createElement("h3", {
+                        style: { fontSize: "16px", fontWeight: 600, margin: 0, display: "flex", alignItems: "center", gap: "6px" }
+                    }, "📊 Seus limites de saque"),
+                    React.createElement("button", {
+                        onClick: () => setModalLimitesAberto(false),
+                        style: { background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: "#666", padding: "4px 8px" }
+                    }, "✕")
+                ),
+                React.createElement("div", { style: { paddingBottom: "12px", borderBottom: "1px solid #eee" } },
+                    React.createElement("div", { style: { display: "flex", justifyContent: "space-between", fontSize: "14px" } },
+                        React.createElement("span", { style: { color: "#666" } }, "Por solicitação"),
+                        React.createElement("span", { style: { fontWeight: 600 } }, "R$ " + limitesSaque.por_saque.limite.toFixed(2).replace(".", ","))
+                    )
+                ),
+                React.createElement("div", { style: { padding: "12px 0", borderBottom: "1px solid #eee" } },
+                    React.createElement("div", { style: { display: "flex", justifyContent: "space-between", fontSize: "14px", marginBottom: "6px" } },
+                        React.createElement("span", { style: { color: "#666" } }, "Hoje"),
+                        React.createElement("span", null,
+                            React.createElement("strong", { style: { fontWeight: 600 } }, "R$ " + limitesSaque.diario.utilizado.toFixed(2).replace(".", ",")),
+                            " de R$ " + limitesSaque.diario.limite.toFixed(2).replace(".", ",")
+                        )
+                    ),
+                    React.createElement("div", { style: { height: "5px", background: "#f0f0f0", borderRadius: "3px", overflow: "hidden" } },
+                        React.createElement("div", {
+                            style: {
+                                height: "100%",
+                                background: limitesSaque.diario.disponivel <= 0 ? "#dc2626" : "#534AB7",
+                                width: Math.min(100, (limitesSaque.diario.utilizado / limitesSaque.diario.limite) * 100) + "%",
+                                transition: "width 0.3s"
+                            }
+                        })
+                    )
+                ),
+                React.createElement("div", { style: { padding: "12px 0", borderBottom: "1px solid #eee" } },
+                    React.createElement("div", { style: { display: "flex", justifyContent: "space-between", fontSize: "14px", marginBottom: "6px" } },
+                        React.createElement("span", { style: { color: "#666" } }, "Esta semana"),
+                        React.createElement("span", null,
+                            React.createElement("strong", { style: { fontWeight: 600 } }, "R$ " + limitesSaque.semanal.utilizado.toFixed(2).replace(".", ",")),
+                            " de R$ " + (limitesSaque.semanal.limite_efetivo || limitesSaque.semanal.limite).toFixed(2).replace(".", ",")
+                        )
+                    ),
+                    React.createElement("div", { style: { height: "5px", background: "#f0f0f0", borderRadius: "3px", overflow: "hidden" } },
+                        React.createElement("div", {
+                            style: {
+                                height: "100%",
+                                background: limitesSaque.semanal.disponivel <= 0 ? "#dc2626" : "#534AB7",
+                                width: Math.min(100, (limitesSaque.semanal.utilizado / (limitesSaque.semanal.limite_efetivo || limitesSaque.semanal.limite)) * 100) + "%",
+                                transition: "width 0.3s"
+                            }
+                        })
+                    )
+                ),
+                limitesSaque.ciclo && React.createElement("p", {
+                    style: { fontSize: "11px", color: "#999", marginTop: "12px", marginBottom: 0 }
+                }, "📅 Ciclo: " + new Date(limitesSaque.ciclo.inicio + "T12:00:00").toLocaleDateString("pt-BR") + " a " + new Date(limitesSaque.ciclo.fim + "T12:00:00").toLocaleDateString("pt-BR") + " · reseta toda terça"),
+                // Botão de solicitar mais limite (preserva lógica existente)
+                (limitesSaque.diario.disponivel <= 0 || limitesSaque.semanal.disponivel <= 0) && !limitesSaque.solicitacao_pendente && React.createElement("button", {
+                    onClick: async () => {
+                        setSolicitandoLimite(true);
+                        try {
+                            const resp = await fetchAuth(`${API_URL}/withdrawals/solicitar-limite`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    userCod: l.cod_profissional || l.codProfissional,
+                                    userName: l.nome || l.fullName || l.username,
+                                    motivo: 'Limite esgotado - solicitação via app'
+                                })
+                            });
+                            const data = await resp.json();
+                            if (resp.ok) {
+                                ja('✅ Solicitação enviada! O financeiro será notificado.', 'success');
+                                const lr = await fetchAuth(`${API_URL}/withdrawals/limites/${l.cod_profissional || l.codProfissional}`);
+                                if (lr.ok) setLimitesSaque(await lr.json());
+                                setModalLimitesAberto(false);
+                            } else {
+                                ja('❌ ' + (data.error || 'Erro ao solicitar'), 'error');
+                            }
+                        } catch (err) {
+                            ja('❌ Erro de conexão', 'error');
+                        }
+                        setSolicitandoLimite(false);
+                    },
+                    disabled: solicitandoLimite,
+                    style: {
+                        marginTop: "16px", width: "100%",
+                        background: "#7C3AED", color: "white",
+                        border: "none", borderRadius: "8px",
+                        padding: "10px 16px", fontWeight: 600, fontSize: "14px",
+                        cursor: solicitandoLimite ? "wait" : "pointer",
+                        opacity: solicitandoLimite ? 0.6 : 1
+                    }
+                }, solicitandoLimite ? "⏳ Enviando..." : "📩 Solicitar mais limite"),
+                limitesSaque.solicitacao_pendente && React.createElement("p", {
+                    style: { fontSize: "12px", color: "#7C3AED", marginTop: "12px", fontWeight: 600, textAlign: "center" }
+                }, "⏳ Você já tem uma solicitação pendente de limite extra.")
+            )
+        ),
+        // 🆕 2026-04-30 REDESIGN: Modal de sucesso após enviar saque (auto-destrói em 2,8s)
+        saqueSucessoModal && React.createElement("div", {
+            style: {
+                position: "fixed", inset: 0,
+                background: "rgba(255,255,255,0.97)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                zIndex: 99999,
+                animation: "tuttsFadeIn 0.25s"
+            }
+        },
+            // Confetes
+            (() => {
+                const cores = ['#5DCAA5','#534AB7','#EF9F27','#D85A30','#378ADD','#BA7517'];
+                const confetes = [];
+                for (let i = 0; i < 22; i++) {
+                    confetes.push(React.createElement("div", {
+                        key: i,
+                        style: {
+                            position: "absolute",
+                            top: "38%",
+                            left: (35 + Math.random() * 30) + "%",
+                            width: "6px", height: "12px",
+                            background: cores[i % cores.length],
+                            opacity: 0,
+                            animation: `tuttsConfete 1.7s ease-out ${(Math.random() * 0.25)}s forwards`,
+                            "--tx": (Math.random() * 280 - 140) + "px",
+                            "--rot": (Math.random() * 720 - 360) + "deg"
+                        }
+                    }));
+                }
+                return confetes;
+            })(),
+            React.createElement("div", {
+                style: {
+                    background: "white",
+                    border: "1px solid #e5e7eb",
+                    borderRadius: "16px",
+                    padding: "32px 24px 22px",
+                    textAlign: "center",
+                    width: "86%", maxWidth: "320px",
+                    boxShadow: "0 25px 50px rgba(0,0,0,0.25)",
+                    animation: "tuttsScaleIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)",
+                    position: "relative",
+                    zIndex: 2
+                }
+            },
+                React.createElement("div", {
+                    style: {
+                        width: "72px", height: "72px",
+                        borderRadius: "50%",
+                        background: "#E1F5EE",
+                        margin: "0 auto 16px",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        position: "relative"
+                    }
+                },
+                    React.createElement("div", {
+                        style: {
+                            position: "absolute", inset: "-8px",
+                            borderRadius: "50%",
+                            border: "3px solid #5DCAA5",
+                            opacity: 0,
+                            animation: "tuttsRing 0.75s ease-out forwards"
+                        }
+                    }),
+                    React.createElement("svg", {
+                        width: 32, height: 32, viewBox: "0 0 24 24", fill: "none",
+                        style: {
+                            strokeDasharray: 30,
+                            strokeDashoffset: 30,
+                            animation: "tuttsDraw 0.45s ease-out 0.18s forwards"
+                        }
+                    },
+                        React.createElement("path", {
+                            d: "M5 12 l5 5 l9 -10",
+                            stroke: "#0F6E56", strokeWidth: 2.8,
+                            strokeLinecap: "round", strokeLinejoin: "round"
+                        })
+                    )
+                ),
+                React.createElement("p", {
+                    style: { fontSize: "18px", fontWeight: 600, color: "#0F6E56", margin: "0 0 8px" }
+                }, "Solicitação recebida!"),
+                React.createElement("p", {
+                    style: { fontSize: "13px", color: "#666", lineHeight: 1.5, margin: "0 0 16px" }
+                }, "Em alguns segundos o valor estará disponível na sua conta."),
+                React.createElement("div", {
+                    style: { height: "3px", background: "#f3f4f6", borderRadius: "2px", overflow: "hidden" }
+                },
+                    React.createElement("div", {
+                        style: {
+                            height: "100%", background: "#1D9E75",
+                            transformOrigin: "left",
+                            animation: "tuttsDrain 2.8s linear forwards"
+                        }
+                    })
+                )
+            )
+        )
+        ), "dados" === p.saqueTab && React.createElement("div", {
             className: "space-y-4"
         }, T && !F ? React.createElement(React.Fragment, null, React.createElement("div", {
             className: "bg-green-50 border-2 border-green-300 rounded-xl p-5"
