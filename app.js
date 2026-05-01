@@ -81,7 +81,7 @@ const escapeAttr = (text) => {
 // ==================== FIM FUNÇÕES DE SEGURANÇA ====================
 
 // ==================== SISTEMA DE VERSÃO E CACHE ====================
-const APP_VERSION = "2.2.3"; // Security Patch V3 - Refresh Token + Account Lock
+const APP_VERSION = "2.3.0"; // Auth + Performance — grace window real, cache seletivo, contadores agregados
 const VERSION_KEY = "tutts_app_version";
 
 // Verificar se precisa limpar cache (versão diferente)
@@ -2331,7 +2331,7 @@ const hideLoadingScreen = () => {
             validacao: [],
             loja: [],
             gratuidades: []
-        }), [j, C] = useState([]), [dashStats, setDashStats] = useState(null), [buscaResults, setBuscaResults] = useState([]), [buscaTotal, setBuscaTotal] = useState(0), [buscaLoading, setBuscaLoading] = useState(false), [A, S] = useState([]), [k, P] = useState(!1), [T, D] = useState(null), [L, I] = useState([]), [F, $] = useState(!1), [M, O] = useState([]), [q, U] = useState([]), [z, B] = useState([]), [V, J] = useState(null), [Q, H] = useState([]), [G, W] = useState([]), [Z, Y] = useState([]), [K, X] = useState({}), [ee, te] = useState([]), [ae, le] = useState([]), [re, oe] = useState([]), [ce, se] = useState([]), [ne, me] = useState([]), [ie, de] = useState([]), [progressoNovatos, setProgressoNovatos] = useState([]), [modalEntregasNovatos, setModalEntregasNovatos] = useState(null), [pe, xe] = useState([]), [cidadesIndicacao, setCidadesIndicacao] = useState([]), [ue, ge] = useState(!1), [be, Re] = useState(null), [Ee, he] = useState(() => { try { return localStorage.getItem("tutts_modulo_ativo") || "home"; } catch(e) { return "home"; } }), [mensagemGentileza, setMensagemGentileza] = useState(() => getMensagemGentileza()), [elegibilidadeNovatos, setElegibilidadeNovatos] = useState({ elegivel: false, motivo: '', promocoes: [], carregando: true }), [regioesNovatos, setRegioesNovatos] = useState([]), [clientesBINovatos, setClientesBINovatos] = useState([]), [clientesSelecionados, setClientesSelecionados] = useState([]), [carregandoClientes, setCarregandoClientes] = useState(false), [solicitacoesPagina, setSolicitacoesPagina] = useState(1), [acertoRealizado, setAcertoRealizado] = useState(() => { try { const saved = localStorage.getItem("tutts_acerto_realizado"); return saved !== null ? JSON.parse(saved) : true; } catch(e) { return true; } }), [solicitacoesPorPagina] = useState(50), [conciliacaoPagina, setConciliacaoPagina] = useState(1), [conciliacaoPorPagina] = useState(120), [processandoWithdrawals, setProcessandoWithdrawals] = useState(new Set()), [rankingRetorno, setRankingRetorno] = useState([]), [rankingLoading, setRankingLoading] = useState(false), [relatorioData, setRelatorioData] = useState(null), [relatorioLoading, setRelatorioLoading] = useState(false), [validacaoData, setValidacaoData] = useState(null), [validacaoLoading, setValidacaoLoading] = useState(false), [conciliacaoData, setConciliacaoData] = useState(null), [conciliacaoLoading, setConciliacaoLoading] = useState(false), [resumoData, setResumoData] = useState(null), [resumoLoading, setResumoLoading] = useState(false), [cadastroIndicados, setCadastroIndicados] = useState({}), [cadastroIndicadosLoading, setCadastroIndicadosLoading] = useState(false), 
+        }), [j, C] = useState([]), [dashStats, setDashStats] = useState(null), [buscaResults, setBuscaResults] = useState([]), [buscaTotal, setBuscaTotal] = useState(0), [buscaLoading, setBuscaLoading] = useState(false), [A, S] = useState([]), [k, P] = useState(!1), [T, D] = useState(null), [L, I] = useState([]), [F, $] = useState(!1), [M, O] = useState([]), [q, U] = useState([]), [z, B] = useState([]), [V, J] = useState(null), [Q, H] = useState([]), [G, W] = useState([]), [Z, Y] = useState([]), [K, X] = useState({}), [ee, te] = useState([]), [ae, le] = useState([]), [re, oe] = useState([]), [ce, se] = useState([]), [ne, me] = useState([]), [ie, de] = useState([]), [progressoNovatos, setProgressoNovatos] = useState([]), [modalEntregasNovatos, setModalEntregasNovatos] = useState(null), [pe, xe] = useState([]), [cidadesIndicacao, setCidadesIndicacao] = useState([]), [ue, ge] = useState(!1), [be, Re] = useState(null), [Ee, he] = useState(() => { try { return localStorage.getItem("tutts_modulo_ativo") || "home"; } catch(e) { return "home"; } }), [mensagemGentileza, setMensagemGentileza] = useState(() => getMensagemGentileza()), [elegibilidadeNovatos, setElegibilidadeNovatos] = useState({ elegivel: false, motivo: '', promocoes: [], carregando: true }), [regioesNovatos, setRegioesNovatos] = useState([]), [clientesBINovatos, setClientesBINovatos] = useState([]), [clientesSelecionados, setClientesSelecionados] = useState([]), [carregandoClientes, setCarregandoClientes] = useState(false), [solicitacoesPagina, setSolicitacoesPagina] = useState(1), [acertoRealizado, setAcertoRealizado] = useState(() => { try { const saved = localStorage.getItem("tutts_acerto_realizado"); return saved !== null ? JSON.parse(saved) : true; } catch(e) { return true; } }), [solicitacoesPorPagina] = useState(50), [conciliacaoPagina, setConciliacaoPagina] = useState(1), [conciliacaoPorPagina] = useState(120), [processandoWithdrawals, setProcessandoWithdrawals] = useState(new Set()), [rankingRetorno, setRankingRetorno] = useState([]), [rankingLoading, setRankingLoading] = useState(false), [relatorioData, setRelatorioData] = useState(null), [relatorioLoading, setRelatorioLoading] = useState(false), [validacaoData, setValidacaoData] = useState(null), [validacaoLoading, setValidacaoLoading] = useState(false), [conciliacaoData, setConciliacaoData] = useState(null), [conciliacaoLoading, setConciliacaoLoading] = useState(false), [resumoData, setResumoData] = useState(null), [resumoLoading, setResumoLoading] = useState(false), [cadastroIndicados, setCadastroIndicados] = useState({}), [cadastroIndicadosLoading, setCadastroIndicadosLoading] = useState(false), [withdrawalCounts, setWithdrawalCounts] = useState(null), 
         
         // Helper para parse de saldo (aceita número ou string brasileira)
         parseSaldoBR = (valor) => {
@@ -4542,12 +4542,18 @@ const hideLoadingScreen = () => {
             const carregarDados = async () => {
                 N(!0);
                 try {
-                    // Carregar TODOS os saques para visão geral + pedidos + gratuidades
-                    // Usar fetchAuth para enviar token JWT
-                    const [saquesRes, pedidosRes, gratuidadesRes] = await Promise.all([
-                        fetchAuth(`${API_URL}/withdrawals`),
+                    // 🔧 PERFORMANCE FIX (2026-05): antes baixava TODA a tabela
+                    // de saques (12k+ linhas, ~10MB JSON, levava 50s). Agora
+                    // pede só os 500 mais recentes (cobre operação de 1-2 dias)
+                    // e busca contadores agregados num endpoint leve para os
+                    // badges "Todas 12.378", "Aprovadas 7.182" etc.
+                    // Para visão histórica completa, abas de Validação/Conciliação
+                    // já filtram por data e seguem sem limit.
+                    const [saquesRes, pedidosRes, gratuidadesRes, contadoresRes] = await Promise.all([
+                        fetchAuth(`${API_URL}/withdrawals?limit=500`),
                         fetchAuth(`${API_URL}/loja/pedidos`),
-                        fetchAuth(`${API_URL}/gratuities`)
+                        fetchAuth(`${API_URL}/gratuities`),
+                        fetchAuth(`${API_URL}/withdrawals/resumo-contadores`).catch(() => null)
                     ]);
                     
                     // Verificar se as respostas são válidas
@@ -4560,6 +4566,10 @@ const hideLoadingScreen = () => {
                     const saques = await saquesRes.json();
                     const pedidos = await pedidosRes.json();
                     const gratuidades = await gratuidadesRes.json();
+                    let contadoresSaques = null;
+                    if (contadoresRes && contadoresRes.ok) {
+                        try { contadoresSaques = await contadoresRes.json(); } catch(_) {}
+                    }
                     
                     // Verificar se são arrays válidos
                     if (!Array.isArray(saques) || !Array.isArray(gratuidades)) {
@@ -4586,13 +4596,19 @@ const hideLoadingScreen = () => {
                         Sa.current = countPedidos;
                     }
                     
-                    // IMPORTANTE: Carregar TODOS os saques para a tabela
+                    // 🔧 Salva os 500 saques recentes + os contadores agregados.
+                    // O componente SolicitacoesV2 usa withdrawalCounts pros badges
+                    // (totais corretos vindos do backend) e q (saques) pra renderizar
+                    // a tabela paginada.
                     U(saques); tt(pedidos); H(gratuidades);
+                    if (contadoresSaques) {
+                        try { setWithdrawalCounts(contadoresSaques); } catch(_) {}
+                    }
                     
                     const abaAtiva = p.finTab || "home-fin";
                     "solicitacoes" === abaAtiva || "validacao" === abaAtiva ? Pa("solicitacoes") : "loja" === abaAtiva ? Pa("loja") : "gratuidades" === abaAtiva && Pa("gratuidades");
                     h(new Date);
-                    console.log('✅ Dados carregados:', saques.length, 'total,', pendentes.length, 'pendentes');
+                    console.log('✅ Dados carregados:', saques.length, 'recentes (de', contadoresSaques?.todas || '?', 'total),', pendentes.length, 'pendentes');
                 } catch (e) { console.error("Erro:", e); }
                 N(!1);
             };
@@ -13052,6 +13068,8 @@ const hideLoadingScreen = () => {
                     // Paginação
                     solicitacoesPagina, setSolicitacoesPagina, conciliacaoPagina, setConciliacaoPagina,
                     solicitacoesPorPagina, conciliacaoPorPagina, acertoRealizado, setAcertoRealizado,
+                    // 🔧 Contadores agregados de saques (vem do backend, não calcula no cliente)
+                    withdrawalCounts, setWithdrawalCounts,
                     // Proteção contra débito duplicado
                     processandoWithdrawals, setProcessandoWithdrawals,
                     // Validação server-side
