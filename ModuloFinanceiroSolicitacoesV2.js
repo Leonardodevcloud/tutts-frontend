@@ -42,6 +42,7 @@ window.SolicitacoesV2 = function SolicitacoesV2(props) {
     traduzirErroStarkFE,
     fetchAuth, API_URL,
     exportarXLSXSaques,
+    abrirQRPix, // 2026-04-30: botão 💠 ao lado da chave PIX abre PixQRCodeModal (saque manual)
   } = props;
 
   const e = React.createElement;
@@ -465,8 +466,26 @@ window.SolicitacoesV2 = function SolicitacoesV2(props) {
                     e("span", { style: { fontWeight: 500, color: "#0F6E56", fontVariantNumeric: "tabular-nums" } }, er(s.final_amount))
                   ),
                   // PIX
-                  e("td", { style: tdStyle() },
-                    e("span", { style: { fontFamily: "ui-monospace, monospace", fontSize: 10.5, color: "#6b7280" } }, s.pix_key || "—")
+                  e("td", { style: tdStyle(), onClick: (ev) => ev.stopPropagation() },
+                    e("div", { style: { display: "flex", alignItems: "center", gap: 6 } },
+                      e("span", {
+                        style: { fontFamily: "ui-monospace, monospace", fontSize: 10.5, color: "#6b7280", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 180 },
+                        title: s.pix_key || "—"
+                      }, s.pix_key || "—"),
+                      // Botão QR Code PIX (saque manual) — escondido se rejeitado
+                      s.status !== "rejeitado" && abrirQRPix && e("button", {
+                        onClick: (ev) => { ev.stopPropagation(); abrirQRPix(s); },
+                        style: {
+                          background: "transparent", border: "none",
+                          cursor: "pointer", fontSize: 14,
+                          padding: "2px 4px", lineHeight: 1,
+                          transition: "transform 0.15s",
+                        },
+                        onMouseEnter: (ev) => { ev.currentTarget.style.transform = "scale(1.25)"; },
+                        onMouseLeave: (ev) => { ev.currentTarget.style.transform = "scale(1)"; },
+                        title: "Gerar QR Code PIX (pagamento manual)"
+                      }, "💠")
+                    )
                   ),
                   // Status
                   e("td", { style: tdStyle() },
@@ -556,6 +575,7 @@ window.SolicitacoesV2 = function SolicitacoesV2(props) {
         e, drawerSaque, setDrawerSaque, setDrawerEditandoStatus, drawerEditandoStatus,
         drawerMotivoRej, setDrawerMotivoRej,
         Jl, er, ja, p, x, traduzirErroStarkFE, statusLabelCurto, isAutoSaque, formatHora, formatData,
+        abrirQRPix,
       })
     ),
   );
@@ -564,7 +584,7 @@ window.SolicitacoesV2 = function SolicitacoesV2(props) {
 // ────────────────────────────────────────────────────────────────────────────
 // RENDER DRAWER (extraído pra função pra arquivo não ficar caótico)
 // ────────────────────────────────────────────────────────────────────────────
-function renderDrawer({ e, drawerSaque, setDrawerSaque, setDrawerEditandoStatus, drawerEditandoStatus, drawerMotivoRej, setDrawerMotivoRej, Jl, er, ja, p, x, traduzirErroStarkFE, statusLabelCurto, isAutoSaque, formatHora, formatData }) {
+function renderDrawer({ e, drawerSaque, setDrawerSaque, setDrawerEditandoStatus, drawerEditandoStatus, drawerMotivoRej, setDrawerMotivoRej, Jl, er, ja, p, x, traduzirErroStarkFE, statusLabelCurto, isAutoSaque, formatHora, formatData, abrirQRPix }) {
   const s = drawerSaque;
   const status = statusLabelCurto(s);
   const isPagoStark = "pago_stark" === s.status || s.stark_status === "pago";
@@ -674,6 +694,13 @@ function renderDrawer({ e, drawerSaque, setDrawerSaque, setDrawerEditandoStatus,
         style: drawerActionStyle,
       }, "⏸ Marcar inativo"),
       // Geral
+      e("button", {
+        onClick: () => {
+          if (abrirQRPix) abrirQRPix(s);
+          else ja("Função QR não disponível", "error");
+        },
+        style: { ...drawerActionStyle, background: "#534AB7", color: "white", borderColor: "#534AB7" },
+      }, "💠 Gerar QR Pix"),
       e("button", {
         onClick: () => {
           const dados = `Saque #${s.id}\nMotoboy: ${s.user_name} (cod ${s.user_cod})\nValor: ${er(s.requested_amount)}\nLíquido: ${er(s.final_amount)}\nPIX: ${s.pix_key}\nStatus: ${status.txt}`;
