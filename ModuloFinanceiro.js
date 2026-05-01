@@ -55,7 +55,301 @@
         }
         return s.length > 80 ? s.substring(0, 77) + '...' : s;
     };
-    
+
+    // ════════════════════════════════════════════════════════════════════
+    // SUB-COMPONENTE: FinConfigTogglesSecao
+    // ════════════════════════════════════════════════════════════════════
+    // 2026-04: Toggles de configuração do módulo financeiro:
+    //   - Saques habilitados (kill switch global)
+    //   - Saques automáticos (modo auto: solicitação → débito → Stark imediato)
+    //
+    // - Permissão: só admin/admin_master vê. admin_financeiro NÃO pode mexer aqui.
+    // - Lê GET /api/financial/config no mount + após cada update.
+    // - Modal de confirmação pra LIGAR auto-saque (digita CONFIRMAR).
+    // - Backend valida via header X-Confirm-Auto-Saque (defesa em profundidade).
+    function FinConfigTogglesSecao(props) {
+        const { API_URL, fetchAuth, usuario, ja } = props;
+        const [config, setConfig] = React.useState(null);
+        const [loading, setLoading] = React.useState(true);
+        const [salvando, setSalvando] = React.useState(null); // chave atualmente sendo salva
+        const [modalConfirmAuto, setModalConfirmAuto] = React.useState(false);
+        const [textoConfirm, setTextoConfirm] = React.useState('');
+
+        const podeEditar = usuario && (usuario.role === 'admin' || usuario.role === 'admin_master');
+
+        const carregar = React.useCallback(async () => {
+            try {
+                const r = await fetchAuth(`${API_URL}/financial/config`);
+                if (!r.ok) {
+                    if (r.status === 403) {
+                        setConfig(null);
+                        setLoading(false);
+                        return;
+                    }
+                    throw new Error('HTTP ' + r.status);
+                }
+                const d = await r.json();
+                setConfig(d.config || {});
+            } catch (err) {
+                console.error('Erro ao ler /financial/config:', err);
+                ja && ja('Erro ao carregar configurações: ' + (err.message || 'desconhecido'), 'error');
+            } finally {
+                setLoading(false);
+            }
+        }, [API_URL, fetchAuth, ja]);
+
+        React.useEffect(() => { carregar(); }, [carregar]);
+
+        async function salvar(chave, novoValor, headers) {
+            setSalvando(chave);
+            try {
+                const opts = {
+                    method: 'PUT',
+                    headers: Object.assign({ 'Content-Type': 'application/json' }, headers || {}),
+                    body: JSON.stringify({ chave, valor: String(novoValor) }),
+                };
+                const r = await fetchAuth(`${API_URL}/financial/config`, opts);
+                const d = await r.json().catch(() => ({}));
+                if (!r.ok) {
+                    if (r.status === 428 && d.requer_confirmacao) {
+                        // Backend exigiu confirmação; o frontend já deveria ter mandado.
+                        ja && ja('Confirmação obrigatória ao ligar saques automáticos.', 'error');
+                        return false;
+                    }
+                    throw new Error(d.error || 'HTTP ' + r.status);
+                }
+                ja && ja('✅ Configuração atualizada', 'success');
+                await carregar();
+                return true;
+            } catch (err) {
+                console.error('Erro ao salvar config:', err);
+                ja && ja('❌ ' + (err.message || 'erro ao salvar'), 'error');
+                return false;
+            } finally {
+                setSalvando(null);
+            }
+        }
+
+        function onToggleSaquesHabilitados(novoValor) {
+            if (!podeEditar) return;
+            salvar('saques_habilitados', novoValor);
+        }
+
+        function onToggleSaquesAutomaticos(novoValor) {
+            if (!podeEditar) return;
+            // Pra LIGAR, exige modal de confirmação
+            if (novoValor === true) {
+                setTextoConfirm('');
+                setModalConfirmAuto(true);
+                return;
+            }
+            // Pra DESLIGAR, só salva direto
+            salvar('saques_automaticos', false);
+        }
+
+        async function confirmarLigarAuto() {
+            if (textoConfirm.trim().toUpperCase() !== 'CONFIRMAR') {
+                ja && ja('Digite exatamente CONFIRMAR pra prosseguir.', 'error');
+                return;
+            }
+            const ok = await salvar('saques_automaticos', true, {
+                'X-Confirm-Auto-Saque': 'SIM',
+            });
+            if (ok) {
+                setModalConfirmAuto(false);
+                setTextoConfirm('');
+            }
+        }
+
+        // ── Helpers de display ──
+        function valorBool(chave) {
+            if (!config || !config[chave]) return false;
+            const v = String(config[chave].valor).trim().toLowerCase();
+            return v === 'true' || v === '1' || v === 'yes';
+        }
+        function ultimaAlteracao(chave) {
+            if (!config || !config[chave]) return null;
+            const c = config[chave];
+            if (!c.updated_at) return null;
+            const d = new Date(c.updated_at);
+            const dataStr = d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+            return `Última alteração: ${dataStr}${c.updated_by ? ' por ' + c.updated_by : ''}`;
+        }
+
+        // Toggle visual reutilizável
+        function Toggle(opts) {
+            const { ativo, onChange, disabled, corOn = 'bg-emerald-500', corOff = 'bg-gray-300' } = opts;
+            return React.createElement('button', {
+                type: 'button',
+                disabled: disabled,
+                onClick: () => onChange(!ativo),
+                className: `relative inline-flex h-7 w-12 items-center rounded-full transition ${ativo ? corOn : corOff} ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`,
+                'aria-pressed': ativo ? 'true' : 'false',
+            },
+                React.createElement('span', {
+                    className: `inline-block h-5 w-5 transform rounded-full bg-white shadow transition ${ativo ? 'translate-x-6' : 'translate-x-1'}`
+                })
+            );
+        }
+
+        // ── Renderização ──
+        if (loading) {
+            return React.createElement('div', { className: 'bg-white rounded-xl shadow p-4 mb-6' },
+                React.createElement('p', { className: 'text-sm text-gray-500' }, 'Carregando configurações...')
+            );
+        }
+
+        // Não-admin (admin_financeiro) cai aqui — não vê a seção
+        if (!podeEditar || !config) {
+            return null;
+        }
+
+        const habOn = valorBool('saques_habilitados');
+        const autoOn = valorBool('saques_automaticos');
+
+        return React.createElement('div', { className: 'bg-white rounded-xl shadow p-4 mb-6 border-l-4 border-slate-500' },
+            React.createElement('h3', { className: 'font-bold text-gray-800 mb-1 flex items-center gap-2' },
+                React.createElement('span', null, '⚙️'),
+                'Sistema de Saques'
+            ),
+            React.createElement('p', { className: 'text-sm text-gray-500 mb-4' },
+                'Controle global de solicitações de saque e modo automático de pagamento.'
+            ),
+
+            // ── Toggle: saques_habilitados ──
+            React.createElement('div', { className: 'flex items-start justify-between gap-4 p-4 bg-gray-50 rounded-lg mb-3' },
+                React.createElement('div', { className: 'flex-1' },
+                    React.createElement('div', { className: 'flex items-center gap-2 mb-1' },
+                        React.createElement('span', { className: 'font-semibold text-gray-800' }, 'Saques habilitados'),
+                        habOn
+                            ? React.createElement('span', { className: 'text-xs px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full font-semibold' }, 'ATIVO')
+                            : React.createElement('span', { className: 'text-xs px-2 py-0.5 bg-red-100 text-red-700 rounded-full font-semibold' }, 'DESABILITADO')
+                    ),
+                    React.createElement('p', { className: 'text-xs text-gray-600 leading-relaxed' },
+                        'Quando desabilitado, motoboys recebem mensagem ',
+                        React.createElement('em', null, '"Saques temporariamente indisponíveis"'),
+                        ' e o backend rejeita qualquer tentativa.'
+                    ),
+                    ultimaAlteracao('saques_habilitados') && React.createElement('p', {
+                        className: 'text-[11px] text-gray-400 mt-1.5'
+                    }, ultimaAlteracao('saques_habilitados'))
+                ),
+                React.createElement(Toggle, {
+                    ativo: habOn,
+                    onChange: onToggleSaquesHabilitados,
+                    disabled: salvando === 'saques_habilitados',
+                })
+            ),
+
+            // ── Toggle: saques_automaticos ──
+            React.createElement('div', {
+                className: `flex items-start justify-between gap-4 p-4 rounded-lg mb-3 ${autoOn ? 'bg-amber-50 border-2 border-amber-300' : 'bg-gray-50'}`
+            },
+                React.createElement('div', { className: 'flex-1' },
+                    React.createElement('div', { className: 'flex items-center gap-2 mb-1' },
+                        React.createElement('span', { className: 'font-semibold text-gray-800' }, 'Saques automáticos'),
+                        autoOn
+                            ? React.createElement('span', { className: 'text-xs px-2 py-0.5 bg-amber-200 text-amber-900 rounded-full font-semibold animate-pulse' }, '⚡ MODO AUTO')
+                            : React.createElement('span', { className: 'text-xs px-2 py-0.5 bg-gray-200 text-gray-700 rounded-full font-semibold' }, 'MANUAL')
+                    ),
+                    React.createElement('p', { className: 'text-xs text-gray-700 leading-relaxed' },
+                        'Quando ativo: motoboy solicita → débito Plific → ',
+                        React.createElement('strong', null, 'pagamento Stark imediato'),
+                        '. Sem cron, sem aprovação admin.'
+                    ),
+                    React.createElement('p', { className: 'text-xs text-amber-700 leading-relaxed mt-1.5 font-semibold' },
+                        '⚠️ Atenção: pagamentos saem direto da conta Stark. Limites atuais (mín R$ 15, máx R$ 1.000/saque, R$ 1.000/dia, R$ 1.500/semana) continuam valendo.'
+                    ),
+                    ultimaAlteracao('saques_automaticos') && React.createElement('p', {
+                        className: 'text-[11px] text-gray-400 mt-1.5'
+                    }, ultimaAlteracao('saques_automaticos'))
+                ),
+                React.createElement(Toggle, {
+                    ativo: autoOn,
+                    onChange: onToggleSaquesAutomaticos,
+                    disabled: salvando === 'saques_automaticos',
+                    corOn: 'bg-amber-500',
+                })
+            ),
+
+            // ── Aviso de fallback ──
+            autoOn && React.createElement('div', {
+                className: 'text-xs text-gray-600 p-3 bg-blue-50 border border-blue-200 rounded-lg leading-relaxed'
+            },
+                React.createElement('strong', null, 'ℹ️ Comportamento de fallback: '),
+                'se o pagamento Stark falhar (CPF inválido, chave Pix errada, etc.), o saque cai automaticamente no fluxo manual (status ',
+                React.createElement('code', { className: 'px-1 bg-blue-100 rounded' }, 'aguardando_pagamento_stark'),
+                ') e o cron de 8-18h processa normalmente. O débito Plific NÃO é revertido.'
+            ),
+
+            // ── Modal de confirmação pra ligar auto ──
+            modalConfirmAuto && React.createElement('div', {
+                className: 'fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4',
+                onClick: () => { if (!salvando) { setModalConfirmAuto(false); setTextoConfirm(''); } }
+            },
+                React.createElement('div', {
+                    className: 'bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6',
+                    onClick: (e) => e.stopPropagation(),
+                },
+                    React.createElement('h3', { className: 'text-2xl font-bold text-amber-700 mb-3 flex items-center gap-2' },
+                        React.createElement('span', null, '⚠️'),
+                        'Ligar saques automáticos?'
+                    ),
+                    React.createElement('div', { className: 'space-y-3 text-sm text-gray-700 mb-4' },
+                        React.createElement('p', null,
+                            'Você está prestes a ativar o modo de pagamento automático. A partir desse momento, ',
+                            React.createElement('strong', null, 'cada saque solicitado por motoboy será pago imediatamente via Stark Bank'),
+                            ' sem revisão do administrador.'
+                        ),
+                        React.createElement('div', { className: 'p-3 bg-amber-50 border border-amber-300 rounded-lg' },
+                            React.createElement('p', { className: 'font-semibold text-amber-900 mb-1' }, 'O que continua valendo:'),
+                            React.createElement('ul', { className: 'list-disc list-inside text-xs text-amber-900 space-y-0.5' },
+                                React.createElement('li', null, 'Mínimo R$ 15 e máximo R$ 1.000 por saque'),
+                                React.createElement('li', null, 'Limite de R$ 1.000 por dia, R$ 1.500 por semana'),
+                                React.createElement('li', null, 'Bloqueio de profissionais restritos'),
+                                React.createElement('li', null, 'Validação de CPF e chave Pix')
+                            )
+                        ),
+                        React.createElement('p', { className: 'text-xs text-gray-600' },
+                            'Se o pagamento Stark falhar, o saque cai automaticamente no fluxo manual.'
+                        ),
+                        React.createElement('p', { className: 'font-semibold' },
+                            'Pra confirmar, digite ',
+                            React.createElement('code', { className: 'px-2 py-0.5 bg-gray-200 rounded font-mono' }, 'CONFIRMAR'),
+                            ' abaixo:'
+                        ),
+                        React.createElement('input', {
+                            type: 'text',
+                            value: textoConfirm,
+                            onChange: (e) => setTextoConfirm(e.target.value),
+                            placeholder: 'Digite CONFIRMAR',
+                            disabled: !!salvando,
+                            autoFocus: true,
+                            className: 'w-full px-4 py-3 border-2 border-amber-300 rounded-lg font-mono uppercase focus:border-amber-500 focus:outline-none',
+                            onKeyDown: (e) => {
+                                if (e.key === 'Enter' && textoConfirm.trim().toUpperCase() === 'CONFIRMAR') {
+                                    confirmarLigarAuto();
+                                }
+                            }
+                        })
+                    ),
+                    React.createElement('div', { className: 'flex gap-3' },
+                        React.createElement('button', {
+                            disabled: !!salvando,
+                            onClick: () => { setModalConfirmAuto(false); setTextoConfirm(''); },
+                            className: 'flex-1 px-4 py-3 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 disabled:opacity-50',
+                        }, 'Cancelar'),
+                        React.createElement('button', {
+                            disabled: !!salvando || textoConfirm.trim().toUpperCase() !== 'CONFIRMAR',
+                            onClick: confirmarLigarAuto,
+                            className: 'flex-1 px-4 py-3 bg-amber-600 text-white rounded-lg font-semibold hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed',
+                        }, salvando ? 'Salvando...' : '⚡ Ativar modo auto')
+                    )
+                )
+            )
+        );
+    }
+
     window.renderModuloFinanceiro = function(props) {
         const {
             c, s, p, x, q, U, Q, H, Z, Y, K, X, z, B, V, J,
@@ -690,18 +984,18 @@
                             )
                         ),
                         
-                        // Card Horários
+                        // Card Configurações (antigo "Horários" — agora unifica horários + toggles de saque)
                         React.createElement("div", {
                             onClick: () => { x({...p, finTab: "horarios"}); },
-                            className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-sky-300"
+                            className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-slate-300"
                         },
-                            React.createElement("div", {className: "h-2 bg-gradient-to-r from-sky-500 to-blue-600"}),
+                            React.createElement("div", {className: "h-2 bg-gradient-to-r from-slate-500 to-slate-700"}),
                             React.createElement("div", {className: "p-6"},
-                                React.createElement("div", {className: "w-14 h-14 bg-sky-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
-                                    React.createElement("span", {className: "text-3xl"}, "🕐")
+                                React.createElement("div", {className: "w-14 h-14 bg-slate-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
+                                    React.createElement("span", {className: "text-3xl"}, "⚙️")
                                 ),
-                                React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Horários"),
-                                React.createElement("p", {className: "text-sm text-gray-500"}, "Configurar horários de funcionamento para saques.")
+                                React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Configurações"),
+                                React.createElement("p", {className: "text-sm text-gray-500"}, "Toggles de saque, horários de atendimento e regras gerais.")
                             )
                         ),
                         
@@ -5249,7 +5543,11 @@
                 }))), b.length > 20 && React.createElement("p", {
                     className: "text-center text-gray-500 text-sm mt-2"
                 }, "Mostrando 20 de ", b.length, " registros"))))
-            })()), "horarios" === p.finTab && React.createElement(React.Fragment, null, Me.loading ? React.createElement("div", {
+            })()), "horarios" === p.finTab && React.createElement(React.Fragment, null,
+                // 🔧 NOVO 2026-04: Seção de toggles do financeiro (saques habilitados / saques automáticos)
+                // Sub-componente isolado com state próprio. Só admin/admin_master pode ver/editar.
+                React.createElement(FinConfigTogglesSecao, { API_URL: API_URL, fetchAuth: fetchAuth, usuario: l, ja: ja }),
+                Me.loading ? React.createElement("div", {
                 className: "flex items-center justify-center py-12"
             }, React.createElement("div", {
                 className: "animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"
