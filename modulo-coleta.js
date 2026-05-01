@@ -1445,22 +1445,49 @@
         const salvarEdicao = async () => {
             try {
                 const isNovo = !editando.id;
+                // 🔧 2026-05: se faltar rua mas tiver endereco_completo, dispara busca
+                // automaticamente antes de salvar (caso o user não tenha clicado em "Buscar").
+                // Sem isso, o backend grava só com endereco_completo (vai ter o fix server-side
+                // que parseia, mas é melhor já mandar tudo certo).
+                let dadosFinais = editando;
+                if (isNovo && !editando.rua && editando.endereco_completo && editando.endereco_completo.length > 5) {
+                    try {
+                        const data = await fetchApi('/geocode/google?endereco=' + encodeURIComponent(editando.endereco_completo));
+                        if (data.results && data.results.length > 0) {
+                            const r = data.results[0];
+                            const comp = r.componentes || [];
+                            const get = (t) => (comp.find(c => c.types && c.types.includes(t)) || {}).long_name || '';
+                            dadosFinais = {
+                                ...editando,
+                                rua: get('route') || editando.rua,
+                                numero: get('street_number') || editando.numero,
+                                bairro: get('sublocality_level_1') || get('sublocality') || editando.bairro,
+                                cidade: get('administrative_area_level_2') || get('locality') || editando.cidade,
+                                uf: (comp.find(c => c.types && c.types.includes('administrative_area_level_1')) || {}).short_name || editando.uf,
+                                cep: get('postal_code') || editando.cep,
+                                latitude: r.latitude || editando.latitude,
+                                longitude: r.longitude || editando.longitude,
+                                endereco_completo: r.endereco || editando.endereco_completo
+                            };
+                        }
+                    } catch (geoErr) { /* segue mesmo sem geocode — backend tem fallback */ }
+                }
                 const url = isNovo ? '/admin/coleta/enderecos-cadastrados' : '/admin/coleta/enderecos-cadastrados/' + editando.id;
                 const method = isNovo ? 'POST' : 'PATCH';
                 await fetchApi(url, {
                     method: method,
                     body: JSON.stringify({
-                        apelido: editando.apelido,
-                        endereco_completo: editando.endereco_completo,
-                        rua: editando.rua,
-                        numero: editando.numero,
-                        bairro: editando.bairro,
-                        cidade: editando.cidade,
-                        uf: editando.uf,
-                        cep: editando.cep,
-                        latitude: editando.latitude || null,
-                        longitude: editando.longitude || null,
-                        grupo_enderecos_id: editando.grupo_enderecos_id ? parseInt(editando.grupo_enderecos_id) : null
+                        apelido: dadosFinais.apelido,
+                        endereco_completo: dadosFinais.endereco_completo,
+                        rua: dadosFinais.rua,
+                        numero: dadosFinais.numero,
+                        bairro: dadosFinais.bairro,
+                        cidade: dadosFinais.cidade,
+                        uf: dadosFinais.uf,
+                        cep: dadosFinais.cep,
+                        latitude: dadosFinais.latitude || null,
+                        longitude: dadosFinais.longitude || null,
+                        grupo_enderecos_id: dadosFinais.grupo_enderecos_id ? parseInt(dadosFinais.grupo_enderecos_id) : null
                     })
                 });
                 showToast(isNovo ? '✅ Endereço criado' : '✅ Salvo', 'success');
