@@ -202,9 +202,43 @@ const pararRefreshProativo = () => {
 let _authBootstrapResolver;
 const _authBootstrapPromise = new Promise(resolve => { _authBootstrapResolver = resolve; });
 
+// 🔧 BUGFIX F5-DISCONNECT (2026-05): coordenação entre páginas/abas.
+// Como o sistema é multi-HTML (index.html, roteirizador.html, solicitacao.html),
+// cada navegação é um page load completo — o IIFE abaixo dispara um POST
+// /users/refresh-token toda vez. Se duas páginas abrirem em rápida sucessão
+// (clique em link enquanto outra ainda carrega), as duas disparam refresh
+// concorrente e a segunda recebia 401 → logout silencioso.
+// Agora gravamos timestamp do último refresh bem-sucedido em localStorage
+// e pulamos o refresh se foi há menos de 10s.
+const LAST_REFRESH_KEY = 'tutts_last_refresh_ts';
+const REFRESH_SKIP_WINDOW_MS = 10000; // 10s
+
+const podePularRefreshInicial = () => {
+    try {
+        const last = parseInt(localStorage.getItem(LAST_REFRESH_KEY) || '0', 10);
+        if (!last) return false;
+        const elapsed = Date.now() - last;
+        return elapsed >= 0 && elapsed < REFRESH_SKIP_WINDOW_MS;
+    } catch (e) { return false; }
+};
+
+const marcarRefreshFeito = () => {
+    try { localStorage.setItem(LAST_REFRESH_KEY, String(Date.now())); } catch (e) {}
+};
+
 (async function restaurarTokenAoCarregar() {
     const userSalvo = sessionStorage.getItem("tutts_user");
     if (userSalvo && !_accessToken) {
+        // 🔧 Pula refresh se outra página/aba acabou de fazer (< 10s)
+        // Como o cookie HttpOnly continua válido, o próximo fetchAuth
+        // que retornar 401 com expired=true vai disparar refresh sob demanda.
+        if (podePularRefreshInicial()) {
+            console.log('🔄 Refresh pulado (outra página renovou há pouco) — fetchAuth renova sob demanda');
+            _authBootstrapResolver();
+            // Inicia o refresh proativo, mas espera 30s antes do primeiro tick
+            setTimeout(() => iniciarRefreshProativo(), 30000);
+            return;
+        }
         try {
             const response = await fetch(API_URL + '/users/refresh-token', {
                 method: 'POST',
@@ -216,6 +250,7 @@ const _authBootstrapPromise = new Promise(resolve => { _authBootstrapResolver = 
                 const data = await response.json();
                 if (data.token) {
                     _accessToken = data.token;
+                    marcarRefreshFeito(); // 🔧 Marca pra outras páginas pularem
                     // 🔧 FIX: Atualizar CSRF no restore também
                     if (data.csrfToken) {
                         sessionStorage.setItem('tutts_csrf', data.csrfToken);
@@ -273,6 +308,7 @@ const renovarToken = async () => {
             if (response.ok) {
                 const data = await response.json();
                 setToken(data.token);
+                marcarRefreshFeito(); // 🔧 Marca pra outras páginas pularem refresh inicial
                 // 🔒 Atualizar CSRF token se veio novo
                 if (data.csrfToken) {
                     sessionStorage.setItem('tutts_csrf', data.csrfToken);
@@ -317,6 +353,7 @@ const fazerLogoutCompleto = () => {
     sessionStorage.removeItem("tutts_csrf");
     sessionStorage.removeItem("tutts_todo_notif_shown"); // 🔒 Reset flag para próximo login
     localStorage.removeItem("tutts_refresh_token"); // Limpar resquício antigo
+    localStorage.removeItem(LAST_REFRESH_KEY); // 🔧 Limpa timestamp de refresh
     // 🔧 FIX HOME-NO-LOGIN: limpa o último módulo ativo e o estado das abas
     // pra que o próximo login sempre abra na Home, não no último módulo usado.
     try { localStorage.removeItem("tutts_modulo_ativo"); } catch(e) {}
@@ -356,11 +393,19 @@ const fetchAuth = async (url, options = {}, retryCount = 0) => {
     }
     
     try {
+        // 🔧 PERFORMANCE FIX (2026-05): cache: 'no-store' só em mutações.
+        // Antes era global, o que desabilitava o cache HTTP do browser pra TUDO,
+        // inclusive endpoints estáticos como /bi/cidades, /bi/regioes, etc.
+        // Mesmo o backend tendo cache em RAM, o browser ainda pagava o RTT
+        // Salvador → Railway toda vez (~150-300ms cada). Agora GETs usam
+        // 'default' (respeita Cache-Control do servidor) e mutações continuam
+        // com 'no-store' pra evitar dados stale após escrita.
+        const isMutation = !['GET', 'HEAD', 'OPTIONS'].includes(method);
         const response = await fetch(url, {
             ...options,
             headers,
             credentials: 'include', // 🔒 Envia cookies HttpOnly automaticamente
-            cache: 'no-store' // 🔄 Garante dados frescos após mutações (fix v6.1)
+            cache: isMutation ? 'no-store' : 'default'
         });
         
         // Se token expirou, tentar renovar automaticamente
@@ -2265,6 +2310,7 @@ const hideLoadingScreen = () => {
                 _accessToken = null; // 🔒 Limpar token em memória
                 sessionStorage.removeItem("tutts_csrf");
                 localStorage.removeItem("tutts_refresh_token"); // Limpar resquício antigo
+                localStorage.removeItem(LAST_REFRESH_KEY); // 🔧 Limpa timestamp de refresh
                 // 🔧 FIX HOME-NO-LOGIN: limpa último módulo e estado das abas
                 // pra que o próximo login caia na Home.
                 try { localStorage.removeItem("tutts_modulo_ativo"); } catch(e) {}
@@ -8526,6 +8572,7 @@ const hideLoadingScreen = () => {
                 // Salvar token JWT ANTES de buscar permissões
                 if (t.token) {
                     setToken(t.token);
+                    marcarRefreshFeito(); // 🔧 Marca pra outras páginas pularem refresh inicial
                 }
                 if (t.refreshToken) {
                     setRefreshToken(t.refreshToken);
