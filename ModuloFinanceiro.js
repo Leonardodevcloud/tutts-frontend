@@ -794,7 +794,28 @@
                 className: "text-sm"
             }, React.createElement("strong", null, "Valor:"), " ", er(p.deleteConfirm.requested_amount)), React.createElement("p", {
                 className: "text-sm"
-            }, React.createElement("strong", null, "Data:"), " ", new Date(p.deleteConfirm.created_at).toLocaleString("pt-BR"))), React.createElement("p", {
+            }, React.createElement("strong", null, "Data:"), " ", new Date(p.deleteConfirm.created_at).toLocaleString("pt-BR"))),
+            // 🆕 2026-04-30: Alerta especial pra status protegidos (force-delete)
+            (() => {
+                const e = p.deleteConfirm;
+                const protegido = e.status === "pago_stark" || e.status === "processando" || e.status === "aguardando_pagamento_stark" || e.stark_status === "processando" || e.stark_status === "pago";
+                if (!protegido) return null;
+                return React.createElement("div", {
+                    className: "bg-red-50 border-2 border-red-400 rounded-lg p-3 mb-4"
+                },
+                    React.createElement("p", {
+                        className: "text-red-800 font-bold text-sm mb-1"
+                    }, "⚠️ ATENÇÃO — Saque em processamento"),
+                    React.createElement("p", {
+                        className: "text-red-700 text-xs leading-relaxed"
+                    },
+                        "Status: ", React.createElement("strong", null, e.status),
+                        e.debito ? React.createElement(React.Fragment, null, " — ", React.createElement("strong", null, "débito Plific JÁ FOI FEITO")) : null,
+                        ". Excluir este saque NÃO devolve o dinheiro pro motoboy automaticamente. Você precisa estornar manualmente depois."
+                    )
+                );
+            })(),
+            React.createElement("p", {
                 className: "text-red-600 text-sm mb-4 font-semibold"
             }, "Esta ação não pode ser desfeita!"), React.createElement("div", {
                 className: "flex gap-3"
@@ -806,19 +827,31 @@
                 className: "flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300"
             }, "Cancelar"), React.createElement("button", {
                 onClick: () => (async e => {
+                    // 🐛 FIX 2026-04-30: o código antigo era "otimista" — removia da UI ANTES
+                    // de a API responder e mostrava toast "Excluída!" mesmo quando o backend
+                    // rejeitava (saques em processamento têm exclusão bloqueada por segurança).
+                    // Resultado: motoboy via "excluída", mas no F5 voltava porque nunca deletou.
+                    // Agora: aguarda response, valida response.ok, mostra erro real do backend.
                     try {
-                        // Otimista: remove da tela imediatamente
+                        const resp = await fetchAuth(`${API_URL}/withdrawals/${e}`, {
+                            method: "DELETE"
+                        });
+                        if (!resp.ok) {
+                            const errData = await resp.json().catch(() => ({}));
+                            const msg = errData.motivo || errData.error || `Erro ao excluir (HTTP ${resp.status})`;
+                            ja("❌ " + msg, "error");
+                            x({ ...p, deleteConfirm: null });
+                            return;
+                        }
+                        // Sucesso: agora sim remove da UI e mostra toast
                         const idRemover = e;
                         U(prev => prev.filter(w => w.id !== idRemover));
                         x({ ...p, deleteConfirm: null });
                         ja("🗑️ Solicitação excluída!", "success");
-                        // Depois chama API
-                        await fetchAuth(`${API_URL}/withdrawals/${e}`, {
-                            method: "DELETE"
-                        });
                     } catch (err) {
-                        ja("Erro ao excluir - recarregando", "error");
-                        Ua();
+                        ja("❌ Erro ao excluir: " + (err.message || "rede indisponível"), "error");
+                        x({ ...p, deleteConfirm: null });
+                        Ua(); // recarrega lista pra estado consistente
                     }
                 })(p.deleteConfirm.id),
                 className: "flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700"
@@ -1715,14 +1748,23 @@
                 ) : (e.status === "aprovado" || e.status === "aprovado_gratuidade") ? React.createElement("span", {className: "text-orange-500"}, "Pendente") : e.status === "aguardando_pagamento_stark" ? React.createElement("span", {className: "text-green-600 font-medium"}, "✅ OK") : React.createElement("span", {className: "text-gray-400"}, "-")),
                 React.createElement("td", {
                     className: "px-2 py-3 text-center"
-                }, React.createElement("button", {
-                    onClick: () => x({
-                        ...p,
-                        deleteConfirm: e
-                    }),
-                    className: "px-2 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700",
-                    title: "Excluir"
-                }, "🗑️")))
+                },
+                    // 🐛 FIX 2026-04-30: status protegidos mostram lixeira AMARELA (alerta)
+                    // pra admin_master ter ciência de que tá forçando exclusão.
+                    // Backend valida role e bloqueia se não for admin_master.
+                    (() => {
+                        const protegido = e.status === "pago_stark" || e.status === "processando" || e.status === "aguardando_pagamento_stark" || e.stark_status === "processando" || e.stark_status === "pago";
+                        const corBg = protegido ? "bg-amber-500 hover:bg-amber-600" : "bg-red-600 hover:bg-red-700";
+                        const titulo = protegido ? "⚠️ FORÇAR exclusão — saque em processamento ou pago (apenas admin_master)" : "Excluir";
+                        return React.createElement("button", {
+                            onClick: () => x({
+                                ...p,
+                                deleteConfirm: e
+                            }),
+                            className: "px-2 py-1 " + corBg + " text-white rounded text-xs",
+                            title: titulo
+                        }, protegido ? "⚠️" : "🗑️");
+                    })()))
             }))), 
             // Controles de paginação
             (() => {
