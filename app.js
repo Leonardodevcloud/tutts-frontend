@@ -8639,6 +8639,11 @@ const hideLoadingScreen = () => {
         }, Bl = async () => {
             if (!p.finName || !p.finCpf || !p.finPix) return void ja("Preencha todos os campos", "error");
             if (!p.pixTipo) return void ja("❌ Selecione o tipo da chave PIX", "error");
+            // 🆕 2026-04-30: bloquear salvamento de valor mascarado (vindo do GET /financial/data)
+            // Se motoboy clicou Salvar sem editar, p.finCpf/p.finPix podem estar com asteriscos
+            // (ex: "***583**18") — backend rejeitaria, mas erro visual é confuso. Bloqueia aqui.
+            if (temMascara(p.finCpf)) return void ja("❌ Clique no campo CPF e digite seu CPF completo", "error");
+            if (temMascara(p.finPix)) return void ja("❌ Clique no campo Chave PIX e digite sua chave completa", "error");
             // Validar CPF antes de enviar
             const validacaoCpf = validarCPFCompleto(p.finCpf);
             if (!validacaoCpf.valido) return void ja(`❌ ${validacaoCpf.mensagem}`, "error");
@@ -9074,6 +9079,10 @@ const hideLoadingScreen = () => {
             const t = e.replace(/\D/g, "").slice(0, 11);
             return t.length <= 3 ? t : t.length <= 6 ? `${t.slice(0,3)}.${t.slice(3)}` : t.length <= 9 ? `${t.slice(0,3)}.${t.slice(3,6)}.${t.slice(6)}` : `${t.slice(0,3)}.${t.slice(3,6)}.${t.slice(6,9)}-${t.slice(9)}`
         }, 
+        // 🆕 2026-04-30: helper pra detectar valor mascarado vindo do backend
+        // (CPF/PIX vêm como ***583**18 por segurança quando lidos pelo motoboy).
+        // Usado pra limpar input no focus + bloquear salvamento de valor mascarado.
+        temMascara = (s) => typeof s === 'string' && s.indexOf('*') !== -1,
         // Função para validar CPF completo (com dígito verificador)
         validarCPFCompleto = (cpf) => {
             const cpfLimpo = cpf.replace(/\D/g, "");
@@ -11420,8 +11429,21 @@ const hideLoadingScreen = () => {
                 ...p,
                 finCpf: Xl(e.target.value)
             }),
-            className: "w-full px-4 py-2 border rounded-lg",
-            placeholder: "000.000.000-00",
+            // 🆕 2026-04-30: se valor for mascarado (***583**18), limpa ao focar
+            // pra motoboy digitar o CPF completo. Restaura mascara se sair sem digitar.
+            onFocus: () => {
+                if (temMascara(p.finCpf)) {
+                    x({ ...p, finCpf: "" });
+                }
+            },
+            onBlur: () => {
+                if (!p.finCpf || p.finCpf.trim() === "") {
+                    x({ ...p, finCpf: T?.cpf || "" });
+                }
+            },
+            title: temMascara(p.finCpf) ? "Clique pra digitar seu CPF completo" : "",
+            className: "w-full px-4 py-2 border rounded-lg" + (temMascara(p.finCpf) ? " bg-yellow-50 cursor-pointer" : ""),
+            placeholder: "Digite os 11 dígitos do seu CPF",
             maxLength: 14
         })), React.createElement("div", null, React.createElement("label", {
             className: "block text-sm font-semibold mb-2"
@@ -11469,11 +11491,23 @@ const hideLoadingScreen = () => {
                 ...p,
                 finPix: ar(e.target.value, p.pixTipo)
             }),
+            // 🆕 2026-04-30: limpa ao focar se mascarada, restaura ao perder foco vazio
+            onFocus: () => {
+                if (temMascara(p.finPix)) {
+                    x({ ...p, finPix: "" });
+                }
+            },
+            onBlur: () => {
+                if (!p.finPix || p.finPix.trim() === "") {
+                    x({ ...p, finPix: T?.pix_key || "" });
+                }
+            },
+            title: temMascara(p.finPix) ? "Clique pra digitar sua chave PIX completa" : "",
             placeholder: lr(p.pixTipo),
             disabled: !p.pixTipo,
             maxLength: "cpf" === p.pixTipo ? 14 : "cnpj" === p.pixTipo ? 18 : "telefone" === p.pixTipo ? 15 : 100,
-            className: "w-full px-4 py-2 border rounded-lg transition-all " + (p.pixTipo ? p.finPix ? tr(p.finPix, p.pixTipo).valido ? "border-green-500 bg-green-50" : "border-red-500 bg-red-50" : "" : "bg-gray-100 cursor-not-allowed")
-        }), p.finPix && p.pixTipo && React.createElement("p", {
+            className: "w-full px-4 py-2 border rounded-lg transition-all " + (p.pixTipo ? p.finPix ? temMascara(p.finPix) ? "bg-yellow-50 cursor-pointer" : tr(p.finPix, p.pixTipo).valido ? "border-green-500 bg-green-50" : "border-red-500 bg-red-50" : "" : "bg-gray-100 cursor-not-allowed")
+        }), p.finPix && p.pixTipo && !temMascara(p.finPix) && React.createElement("p", {
             className: "mt-1 text-sm " + (tr(p.finPix, p.pixTipo).valido ? "text-green-600" : "text-red-600")
         }, tr(p.finPix, p.pixTipo).mensagem), !p.pixTipo && React.createElement("p", {
             className: "mt-1 text-sm text-gray-500"
