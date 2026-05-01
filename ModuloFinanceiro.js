@@ -77,9 +77,21 @@
 
         const podeEditar = usuario && (usuario.role === 'admin' || usuario.role === 'admin_master');
 
-        const carregar = React.useCallback(async () => {
+        // 🐛 FIX 2026-04: refs pra estabilizar fetchAuth/API_URL/ja entre renders.
+        // Sem isso, props mudam a cada render do pai → useCallback recria função →
+        // useEffect dispara de novo → loop infinito de GET /financial/config.
+        // Logs do Railway mostraram 180+ chamadas/segundo até bater rate limit (HTTP 429).
+        const fetchAuthRef = React.useRef(fetchAuth);
+        const apiUrlRef    = React.useRef(API_URL);
+        const jaRef        = React.useRef(ja);
+        // Atualiza refs sem disparar re-render
+        fetchAuthRef.current = fetchAuth;
+        apiUrlRef.current    = API_URL;
+        jaRef.current        = ja;
+
+        async function carregar() {
             try {
-                const r = await fetchAuth(`${API_URL}/financial/config`);
+                const r = await fetchAuthRef.current(`${apiUrlRef.current}/financial/config`);
                 if (!r.ok) {
                     if (r.status === 403) {
                         setConfig(null);
@@ -92,13 +104,15 @@
                 setConfig(d.config || {});
             } catch (err) {
                 console.error('Erro ao ler /financial/config:', err);
-                ja && ja('Erro ao carregar configurações: ' + (err.message || 'desconhecido'), 'error');
+                jaRef.current && jaRef.current('Erro ao carregar configurações: ' + (err.message || 'desconhecido'), 'error');
             } finally {
                 setLoading(false);
             }
-        }, [API_URL, fetchAuth, ja]);
+        }
 
-        React.useEffect(() => { carregar(); }, [carregar]);
+        // 🐛 FIX: Carrega UMA vez no mount. Deps vazias = só roda na primeira renderização.
+        // Recargas manuais via salvar() chamam carregar() explicitamente.
+        React.useEffect(() => { carregar(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
         async function salvar(chave, novoValor, headers) {
             setSalvando(chave);
@@ -108,22 +122,22 @@
                     headers: Object.assign({ 'Content-Type': 'application/json' }, headers || {}),
                     body: JSON.stringify({ chave, valor: String(novoValor) }),
                 };
-                const r = await fetchAuth(`${API_URL}/financial/config`, opts);
+                const r = await fetchAuthRef.current(`${apiUrlRef.current}/financial/config`, opts);
                 const d = await r.json().catch(() => ({}));
                 if (!r.ok) {
                     if (r.status === 428 && d.requer_confirmacao) {
                         // Backend exigiu confirmação; o frontend já deveria ter mandado.
-                        ja && ja('Confirmação obrigatória ao ligar saques automáticos.', 'error');
+                        jaRef.current && jaRef.current('Confirmação obrigatória ao ligar saques automáticos.', 'error');
                         return false;
                     }
                     throw new Error(d.error || 'HTTP ' + r.status);
                 }
-                ja && ja('✅ Configuração atualizada', 'success');
+                jaRef.current && jaRef.current('✅ Configuração atualizada', 'success');
                 await carregar();
                 return true;
             } catch (err) {
                 console.error('Erro ao salvar config:', err);
-                ja && ja('❌ ' + (err.message || 'erro ao salvar'), 'error');
+                jaRef.current && jaRef.current('❌ ' + (err.message || 'erro ao salvar'), 'error');
                 return false;
             } finally {
                 setSalvando(null);
