@@ -80,7 +80,10 @@ window.BIGarantidoV2 = function BIGarantidoV2(props) {
     setTimeout(carregarGarantido, 100);
   };
 
-  return e("div", { style: { display: "flex", flexDirection: "column", gap: 12 } },
+  return e("div", {
+    className: "max-w-7xl mx-auto p-6",
+    style: { display: "flex", flexDirection: "column", gap: 12 }
+  },
 
     // ====================== TOOLBAR (header + KPIs + filtros) ======================
     e("div", {
