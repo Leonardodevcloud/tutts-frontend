@@ -393,7 +393,7 @@ window.SolicitacoesV2 = function SolicitacoesV2(props) {
                 e("th", { style: thStyle({ textAlign: "right" }) }, "Recebido"),
                 e("th", { style: thStyle({ textAlign: "left" }) }, "PIX"),
                 e("th", { style: thStyle({ textAlign: "left" }) }, "Status"),
-                e("th", { style: thStyle({ textAlign: "right", width: 60 }) }, "Hora"),
+                e("th", { style: thStyle({ textAlign: "right", width: 80 }) }, "Data/Hora"),
               )
             ),
             e("tbody", null,
@@ -468,23 +468,23 @@ window.SolicitacoesV2 = function SolicitacoesV2(props) {
                   // PIX
                   e("td", { style: tdStyle(), onClick: (ev) => ev.stopPropagation() },
                     e("div", { style: { display: "flex", alignItems: "center", gap: 6 } },
-                      e("span", {
-                        style: { fontFamily: "ui-monospace, monospace", fontSize: 10.5, color: "#6b7280", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 180 },
-                        title: s.pix_key || "—"
-                      }, s.pix_key || "—"),
-                      // Botão QR Code PIX (saque manual) — escondido se rejeitado
+                      // Botão QR Code PIX (saque manual) — antes da chave, escondido se rejeitado
                       s.status !== "rejeitado" && abrirQRPix && e("button", {
                         onClick: (ev) => { ev.stopPropagation(); abrirQRPix(s); },
                         style: {
                           background: "transparent", border: "none",
                           cursor: "pointer", fontSize: 14,
-                          padding: "2px 4px", lineHeight: 1,
+                          padding: 0, lineHeight: 1, flexShrink: 0,
                           transition: "transform 0.15s",
                         },
                         onMouseEnter: (ev) => { ev.currentTarget.style.transform = "scale(1.25)"; },
                         onMouseLeave: (ev) => { ev.currentTarget.style.transform = "scale(1)"; },
                         title: "Gerar QR Code PIX (pagamento manual)"
-                      }, "💠")
+                      }, "💠"),
+                      e("span", {
+                        style: { fontFamily: "ui-monospace, monospace", fontSize: 10.5, color: "#6b7280", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 180 },
+                        title: s.pix_key || "—"
+                      }, s.pix_key || "—")
                     )
                   ),
                   // Status
@@ -529,8 +529,11 @@ window.SolicitacoesV2 = function SolicitacoesV2(props) {
                       title: "Motoboy com restrição"
                     }, "🔒")
                   ),
-                  // Hora
-                  e("td", { style: { ...tdStyle(), textAlign: "right", color: "#9CA3AF", fontVariantNumeric: "tabular-nums" } }, formatHora(s.created_at)),
+                  // Data/Hora
+                  e("td", { style: { ...tdStyle(), textAlign: "right", color: "#9CA3AF", fontVariantNumeric: "tabular-nums" } },
+                    e("div", { style: { fontSize: 11, color: "#6B7280", fontWeight: 500, lineHeight: 1.2 } }, formatData(s.created_at)),
+                    e("div", { style: { fontSize: 10, color: "#9CA3AF", marginTop: 1 } }, formatHora(s.created_at))
+                  ),
                 );
               })
             )
