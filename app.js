@@ -482,7 +482,7 @@ const SISTEMA_MODULOS_CONFIG = [
       abas: [{id: "dashboard", label: "Dashboard"}, {id: "search", label: "Busca"}, {id: "ranking", label: "Ranking"}, {id: "relatorios", label: "Relatórios"}]
     },
     { id: "financeiro", label: "Financeiro", icon: "💰",
-      abas: [{id: "home-fin", label: "🏠 Home"}, {id: "solicitacoes", label: "📋 Solicitações"}, {id: "limites", label: "🔓 Limites"}, {id: "stark-bank", label: "🏦 Pix Stark"}, {id: "acerto-prof", label: "💼 Acerto Prof"}, {id: "conciliacao-acerto", label: "📊 Conc. Acerto"}, {id: "validacao", label: "✅ Validação"}, {id: "conciliacao", label: "🔄 Conciliação"}, {id: "resumo", label: "📑 Resumo"}, {id: "gratuidades", label: "🎁 Gratuidades"}, {id: "restritos", label: "🚫 Restritos"}, {id: "indicacoes", label: "🤝 Indicações"}, {id: "promo-novatos", label: "🎯 Promo Novatos"}, {id: "loja", label: "🛒 Loja"}, {id: "relatorios", label: "📈 Relatórios"}, {id: "horarios", label: "🕐 Horários"}, {id: "avisos", label: "📢 Avisos"}, {id: "backup", label: "💾 Backup"}, {id: "saldo-plific", label: "💳 Saldo Plific"}]
+      abas: [{id: "home-fin", label: "🏠 Home"}, {id: "solicitacoes", label: "📋 Solicitações"}, {id: "limites", label: "🔓 Limites"}, {id: "stark-bank", label: "🏦 Pix Stark"}, {id: "acerto-prof", label: "💼 Acerto Prof"}, {id: "conciliacao-acerto", label: "📊 Conc. Acerto"}, {id: "validacao", label: "✅ Validação"}, {id: "conciliacao", label: "🔄 Conciliação"}, {id: "resumo", label: "📑 Resumo"}, {id: "gratuidades", label: "🎁 Gratuidades"}, {id: "restritos", label: "🚫 Restritos"}, {id: "indicacoes", label: "🤝 Indicações"}, {id: "promo-novatos", label: "🎯 Promo Novatos"}, {id: "loja", label: "🛒 Loja"}, {id: "relatorios", label: "📈 Relatórios"}, {id: "horarios", label: "⚙️ Configurações"}, {id: "avisos", label: "📢 Avisos"}, {id: "backup", label: "💾 Backup"}, {id: "saldo-plific", label: "💳 Saldo Plific"}]
     },
     { id: "operacional", label: "Operacional", icon: "⚙️",
       abas: [{id: "indicacoes", label: "Indicações"}, {id: "promo-novatos", label: "Promo Novatos"}, {id: "avisos", label: "Avisos"}, {id: "novas-operacoes", label: "Novas Operações"}, {id: "recrutamento", label: "Recrutamento"}, {id: "localizacao-clientes", label: "Localização Clientes"}, {id: "relatorio-diario", label: "Relatório Diário"}, {id: "score-prof", label: "Score Prof"}, {id: "incentivos", label: "Acompanhamento"}]
@@ -3389,7 +3389,7 @@ const hideLoadingScreen = () => {
             },
             {
                 titulo: "💰 Saque Emergencial",
-                descricao: "Precisa de dinheiro antes do pagamento regular? Solicite um saque emergencial! Uma taxa de 4,5% será aplicada e o valor cai na sua conta em até 1 hora.",
+                descricao: "Precisa de dinheiro antes do pagamento regular? Solicite um saque emergencial! Taxa de 4,5% (+ R$ 0,40 para saques de R$ 15 a R$ 100). Cai na sua conta em até 1 hora.",
                 icone: "💵",
                 destaque: "saque"
             },
@@ -10015,7 +10015,7 @@ const hideLoadingScreen = () => {
                                     React.createElement("span", {className: "text-2xl"}, "📊"),
                                     React.createElement("span", {className: "text-white font-bold"}, "Taxa Administrativa")
                                 ),
-                                React.createElement("p", {style: { color: "rgba(255,255,255,0.8)" }}, "Apenas ", React.createElement("span", {className: "font-bold text-xl", style: { color: "#f37601" }}, "4,5%"), " sobre o valor")
+                                React.createElement("p", {style: { color: "rgba(255,255,255,0.8)" }}, "Apenas ", React.createElement("span", {className: "font-bold text-xl", style: { color: "#f37601" }}, "4,5%"), " sobre o valor", React.createElement("br", null), React.createElement("span", { style: { fontSize: "12px", color: "rgba(255,255,255,0.7)" } }, "+ R$ 0,40 fixo para saques de R$ 15 a R$ 100"))
                             )
                         ),
                         React.createElement("div", {
@@ -11090,7 +11090,7 @@ const hideLoadingScreen = () => {
                 className: "text-yellow-800 font-semibold"
             }, "⚠️ Atenção!"), React.createElement("p", {
                 className: "text-yellow-700 text-sm mt-1"
-            }, "Conforme termo de uso do saque emergencial, será cobrado um valor de ", React.createElement("strong", null, "4,5%"), " na solicitação.")), limitesSaque && limitesSaque.solicitacao_pendente && React.createElement("div", {
+            }, "Conforme termo de uso do saque emergencial, será cobrada uma taxa de ", React.createElement("strong", null, "4,5%"), " sobre o valor solicitado", React.createElement("br", null), React.createElement("span", { className: "text-xs" }, "+ taxa fixa de ", React.createElement("strong", null, "R$ 0,40"), " para saques de R$ 15 a R$ 100."))), limitesSaque && limitesSaque.solicitacao_pendente && React.createElement("div", {
                 className: "bg-purple-50 border-2 border-purple-400 rounded-lg p-4 animate-pulse"
             }, React.createElement("div", { className: "flex items-center gap-2" },
                 React.createElement("span", { className: "text-2xl" }, "⏳"),
@@ -11209,12 +11209,25 @@ const hideLoadingScreen = () => {
             }, "❌ Valor excede seu saldo disponível (R$ " + saldoDisp.toFixed(2).replace(".", ",") + ")"), p.withdrawAmount && parseFloat(p.withdrawAmount) >= 10 && !r && (() => {
                 const e = (e => {
                     const t = G.find(e => "ativa" === e.status && e.remaining > 0),
-                        a = !!t,
-                        l = a ? 0 : .045 * e;
+                        a = !!t;
+                    // 🆕 2026-04-30: Nova taxa
+                    //   - Saques de R$ 15 a R$ 100 → 4,5% + R$ 0,40
+                    //   - Saques acima de R$ 100   → só 4,5%
+                    //   - Com gratuidade           → grátis (zero)
+                    let l = 0;
+                    let temTaxaFixa = false;
+                    if (!a) {
+                        l = 0.045 * e;
+                        if (e >= 15 && e <= 100) {
+                            l += 0.40;
+                            temTaxaFixa = true;
+                        }
+                    }
                     return {
                         fee: l,
                         final: e - l,
                         hasGrat: a,
+                        temTaxaFixa: temTaxaFixa,
                         maxGratValue: t ? parseFloat(t.value) : 0,
                         gratAtiva: t
                     }
@@ -11225,11 +11238,33 @@ const hideLoadingScreen = () => {
                     className: "flex justify-between"
                 }, React.createElement("span", null, "Solicitado:"), React.createElement("span", {
                     className: "font-bold"
-                }, er(p.withdrawAmount))), React.createElement("div", {
+                }, er(p.withdrawAmount))),
+                // 🆕 2026-04-30: detalhamento da taxa (4,5% + R$ 0,40 quando 15-100)
+                e.hasGrat ? React.createElement("div", {
                     className: "flex justify-between"
                 }, React.createElement("span", null, "Taxa:"), React.createElement("span", {
-                    className: e.hasGrat ? "text-green-600 font-bold" : "text-red-600"
-                }, e.hasGrat ? "ISENTA" : `-${er(e.fee)}`)), React.createElement("hr", null), React.createElement("div", {
+                    className: "text-green-600 font-bold"
+                }, "ISENTA")) : React.createElement(React.Fragment, null,
+                    React.createElement("div", {
+                        className: "flex justify-between text-sm"
+                    },
+                        React.createElement("span", { className: "text-gray-600" }, "Taxa percentual (4,5%):"),
+                        React.createElement("span", { className: "text-red-600" }, `-${er(0.045 * parseFloat(p.withdrawAmount))}`)
+                    ),
+                    e.temTaxaFixa && React.createElement("div", {
+                        className: "flex justify-between text-sm"
+                    },
+                        React.createElement("span", { className: "text-gray-600" }, "Taxa fixa:"),
+                        React.createElement("span", { className: "text-red-600" }, "-R$ 0,40")
+                    ),
+                    React.createElement("div", {
+                        className: "flex justify-between font-semibold border-t pt-1.5"
+                    },
+                        React.createElement("span", null, "Total de taxas:"),
+                        React.createElement("span", { className: "text-red-600" }, `-${er(e.fee)}`)
+                    )
+                ),
+                React.createElement("hr", null), React.createElement("div", {
                     className: "flex justify-between text-lg"
                 }, React.createElement("span", {
                     className: "font-bold"
@@ -11580,7 +11615,7 @@ const hideLoadingScreen = () => {
             className: "bg-gray-50 rounded-lg p-4 mb-6 max-h-80 overflow-y-auto text-sm"
         }, React.createElement("p", {
             className: "text-gray-700 leading-relaxed"
-        }, "Uma taxa administrativa de 4,5% será aplicada sobre o valor solicitado e deduzida automaticamente na transferência. As solicitações são processadas de segunda a sexta, das 09:00 às 18:00, e aos sábados, das 08:00 às 12:00. Solicitações feitas fora desse horário serão atendidas no próximo dia útil. É sua responsabilidade garantir que as informações fornecidas estejam corretas, pois não nos responsabilizamos por atrasos ou transferências erradas causadas por dados incorretos. O dinheiro será transferido em até 1 hora após a confirmação, dentro do horário de funcionamento.")), React.createElement("button", {
+        }, "Uma taxa administrativa de 4,5% será aplicada sobre o valor solicitado e deduzida automaticamente na transferência. Para saques de R$ 15 a R$ 100, será cobrada também uma taxa fixa adicional de R$ 0,40. As solicitações são processadas de segunda a sexta, das 09:00 às 18:00, e aos sábados, das 08:00 às 12:00. Solicitações feitas fora desse horário serão atendidas no próximo dia útil. É sua responsabilidade garantir que as informações fornecidas estejam corretas, pois não nos responsabilizamos por atrasos ou transferências erradas causadas por dados incorretos. O dinheiro será transferido em até 1 hora após a confirmação, dentro do horário de funcionamento.")), React.createElement("button", {
             onClick: zl,
             disabled: c,
             className: "w-full bg-purple-600 text-white py-3 rounded-lg font-bold disabled:opacity-50"
