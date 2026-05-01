@@ -1224,6 +1224,7 @@
                 acertoRealizado, setAcertoRealizado,
                 traduzirErroStarkFE,
                 fetchAuth, API_URL,
+                abrirQRPix: J, // setter do state V — abre o PixQRCodeModal renderizado pelo parent
             }) : React.createElement("div", {
                 style: { padding: 32, textAlign: "center", color: "#991B1B", background: "#FEE2E2", border: "1px solid #FECACA", borderRadius: 8 }
             }, "⚠️ Componente SolicitacoesV2 não foi carregado. Verifique se ModuloFinanceiroSolicitacoesV2.js está no index.html antes do ModuloFinanceiro.js."))
