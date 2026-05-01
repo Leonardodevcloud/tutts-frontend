@@ -98,10 +98,12 @@ window.SolicitacoesV2 = function SolicitacoesV2(props) {
   // ────────────────────────────────────────────────────────────────────────────
   // Antes calculava varrendo q.filter(...) — exigia baixar TODA a tabela.
   // Agora prefere os totais agregados do backend (withdrawalCounts), que
-  // são sempre o universo COMPLETO. Se não vier (loading inicial ou erro),
-  // cai no cálculo local sobre os 500 recentes (números aproximados, mas
-  // a tela continua funcional).
-  const wc = withdrawalCounts || null;
+  // são sempre o universo COMPLETO. Se não vier (loading inicial, endpoint
+  // ainda não deployado, ou erro), cai no cálculo local sobre os 500 recentes.
+  // 🐛 BUGFIX: testa wc.todas != null (não só wc truthy), porque ModuloFinanceiro
+  // passa {} como fallback quando withdrawalCounts é null — isso era truthy e
+  // levava a wc.todas === undefined → crash em .toLocaleString().
+  const wc = (withdrawalCounts && withdrawalCounts.todas != null) ? withdrawalCounts : null;
   const cntTotal       = wc ? wc.todas       : q.length;
   const cntAtrasados   = wc ? wc.atrasados   : q.filter(s => "aguardando_aprovacao" === s.status && Date.now() - new Date(s.created_at).getTime() >= 36e5).length;
   const cntAguardando  = wc ? wc.aguardando  : q.filter(s => "aguardando_aprovacao" === s.status).length;
@@ -315,7 +317,7 @@ window.SolicitacoesV2 = function SolicitacoesV2(props) {
               padding: "1px 6px", borderRadius: 8,
               fontSize: 10, fontWeight: 600,
             }
-          }, chip.count.toLocaleString("pt-BR"))
+          }, (chip.count != null ? chip.count : 0).toLocaleString("pt-BR"))
         );
       }),
 
