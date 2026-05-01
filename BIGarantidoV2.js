@@ -582,12 +582,12 @@ function renderTabelaAnalise({ e, garantidoData, garantidoStatusMap, garantidoSt
 
           // Linha de totais
           garantidoStats && e("tr", { style: { background: "#F9FAFB", borderTop: "2px solid #D1D5DB", fontWeight: 600 } },
-            e("td", { style: { padding: "12px", color: "#4B5563", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.5px", borderRight: "1px solid #E5E7EB" }, colSpan: 2 }, "Total geral"),
-            e("td", { style: { padding: "12px", textAlign: "center", color: "#111827", fontVariantNumeric: "tabular-nums", fontSize: 13, borderRight: "1px solid #E5E7EB" } },
+            e("td", { style: { padding: "12px", color: "#4B5563", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.5px", borderRight: "1px solid #F3F4F6" }, colSpan: 2 }, "Total geral"),
+            e("td", { style: { padding: "12px", textAlign: "center", color: "#111827", fontVariantNumeric: "tabular-nums", fontSize: 13, borderRight: "1px solid #F3F4F6" } },
               garantidoStats.total_entregas || garantidoData.reduce((s, r) => s + (r.entregas || 0), 0)),
-            e("td", { style: { padding: "12px", color: "#111827", fontSize: 12, borderRight: "1px solid #E5E7EB" } },
+            e("td", { style: { padding: "12px", color: "#111827", fontSize: 12, borderRight: "1px solid #F3F4F6" } },
               fmtBRL(garantidoStats.total_produzido || 0) + " / " + fmtBRL(garantidoStats.total_negociado || 0)),
-            e("td", { style: { padding: "12px", textAlign: "right", color: "#991B1B", fontVariantNumeric: "tabular-nums", fontSize: 13, borderRight: "1px solid #E5E7EB" } },
+            e("td", { style: { padding: "12px", textAlign: "right", color: "#991B1B", fontVariantNumeric: "tabular-nums", fontSize: 13, borderRight: "1px solid #F3F4F6" } },
               fmtBRL(garantidoStats.total_complemento || 0)),
             e("td", { style: { padding: "12px" } }, ""),
           )
@@ -657,8 +657,8 @@ function thStyle() {
     textTransform: "uppercase", letterSpacing: "0.4px",
     padding: "10px 12px",
     background: "#F9FAFB",
-    borderBottom: "1px solid #D1D5DB",
-    borderRight: "1px solid #E5E7EB",
+    borderBottom: "1px solid #E5E7EB",
+    borderRight: "1px solid #F3F4F6",
   };
 }
 
@@ -667,8 +667,8 @@ function tdBordered(extra) {
   return Object.assign({
     padding: "10px 12px",
     verticalAlign: "middle",
-    borderRight: "1px solid #E5E7EB",
-    borderBottom: "1px solid #E5E7EB",
+    borderRight: "1px solid #F3F4F6",
+    borderBottom: "1px solid #F3F4F6",
   }, extra || {});
 }
 
