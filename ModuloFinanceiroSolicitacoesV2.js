@@ -43,6 +43,7 @@ window.SolicitacoesV2 = function SolicitacoesV2(props) {
     fetchAuth, API_URL,
     exportarXLSXSaques,
     abrirQRPix, // 2026-04-30: botão 💠 ao lado da chave PIX abre PixQRCodeModal (saque manual)
+    withdrawalCounts, // 🔧 contadores agregados do backend (Todas, Aprovadas, etc.)
   } = props;
 
   const e = React.createElement;
@@ -92,13 +93,22 @@ window.SolicitacoesV2 = function SolicitacoesV2(props) {
   const inicio = (solicitacoesPagina - 1) * solicitacoesPorPagina;
   const paginadas = filtradas.slice(inicio, inicio + solicitacoesPorPagina);
 
-  // Contadores pra chips
-  const cntAtrasados = q.filter(s => "aguardando_aprovacao" === s.status && Date.now() - new Date(s.created_at).getTime() >= 36e5).length;
-  const cntAguardando = q.filter(s => "aguardando_aprovacao" === s.status).length;
-  const cntAprovadas = q.filter(s => "aprovado" === s.status).length;
-  const cntGratuidade = q.filter(s => "aprovado_gratuidade" === s.status).length;
-  const cntRejeitadas = q.filter(s => "rejeitado" === s.status).length;
-  const cntInativos = q.filter(s => "inativo" === s.status).length;
+  // ────────────────────────────────────────────────────────────────────────────
+  // 🔧 PERFORMANCE FIX (2026-05): Contadores pros badges
+  // ────────────────────────────────────────────────────────────────────────────
+  // Antes calculava varrendo q.filter(...) — exigia baixar TODA a tabela.
+  // Agora prefere os totais agregados do backend (withdrawalCounts), que
+  // são sempre o universo COMPLETO. Se não vier (loading inicial ou erro),
+  // cai no cálculo local sobre os 500 recentes (números aproximados, mas
+  // a tela continua funcional).
+  const wc = withdrawalCounts || null;
+  const cntTotal       = wc ? wc.todas       : q.length;
+  const cntAtrasados   = wc ? wc.atrasados   : q.filter(s => "aguardando_aprovacao" === s.status && Date.now() - new Date(s.created_at).getTime() >= 36e5).length;
+  const cntAguardando  = wc ? wc.aguardando  : q.filter(s => "aguardando_aprovacao" === s.status).length;
+  const cntAprovadas   = wc ? wc.aprovadas   : q.filter(s => "aprovado" === s.status).length;
+  const cntGratuidade  = wc ? wc.gratuidade  : q.filter(s => "aprovado_gratuidade" === s.status).length;
+  const cntRejeitadas  = wc ? wc.rejeitadas  : q.filter(s => "rejeitado" === s.status).length;
+  const cntInativos    = wc ? wc.inativos    : q.filter(s => "inativo" === s.status).length;
 
   // ────────────────────────────────────────────────────────────────────────────
   // HELPERS DE UI
@@ -276,7 +286,7 @@ window.SolicitacoesV2 = function SolicitacoesV2(props) {
       }
     },
       ...[
-        { id: "", label: "Todas", count: q.length },
+        { id: "", label: "Todas", count: cntTotal },
         { id: "atrasados", label: "Atrasados", count: cntAtrasados },
         { id: "aguardando_aprovacao", label: "Aguardando", count: cntAguardando },
         { id: "aprovado", label: "Aprovadas", count: cntAprovadas },
