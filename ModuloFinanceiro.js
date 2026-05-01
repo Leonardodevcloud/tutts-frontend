@@ -144,6 +144,8 @@
             }
         }
 
+        // ⚠️ Funções abaixo virou código morto (substituídas pelos handlers nativos
+        // via addEventListener no useEffect). Mantidas por enquanto pra histórico.
         function onToggleSaquesHabilitados(novoValor) {
             if (!podeEditar) return;
             salvar('saques_habilitados', novoValor);
@@ -190,38 +192,59 @@
             return `Última alteração: ${dataStr}${c.updated_by ? ' por ' + c.updated_by : ''}`;
         }
 
-        // Toggle visual reutilizável.
-        // 🐛 FIX 2026-04-30 (final): botão simples, SEM style inline de z-index/position.
-        // O z-index 999999 anterior estava promovendo o botão pra fora do fluxo normal
-        // do flexbox e renderizando ele no topo da tela (em cima do header). Por isso
-        // os clicks "não funcionavam" — você clicava no espaço VAZIO onde o botão
-        // deveria estar, mas o botão real tava em outro lugar da tela.
-        function Toggle(opts) {
-            const { ativo, onChange, disabled, label = 'toggle' } = opts;
-            const texto  = ativo ? '✅ HABILITADO (clique pra desligar)' : '⭕ DESLIGADO (clique pra ligar)';
-            const corClass = ativo
-                ? 'bg-emerald-500 hover:bg-emerald-600 text-white'
-                : 'bg-gray-300 hover:bg-gray-400 text-gray-800';
-            return React.createElement('button', {
-                type: 'button',
-                disabled: disabled,
-                onClick: function(e) {
-                    if (e && e.preventDefault) e.preventDefault();
-                    console.log('[FinConfigToggle] CLICK em', label, '— ativo:', ativo);
-                    if (disabled) return;
-                    if (typeof onChange !== 'function') {
-                        console.error('[FinConfigToggle] onChange invalido:', onChange);
-                        return;
-                    }
-                    try {
-                        onChange(!ativo);
-                    } catch (err) {
-                        console.error('[FinConfigToggle] erro:', err);
-                    }
-                },
-                className: 'px-4 py-2 rounded-lg font-semibold text-sm transition-colors whitespace-nowrap ' + corClass + (disabled ? ' opacity-50 cursor-not-allowed' : ' cursor-pointer'),
-            }, disabled ? 'Salvando...' : texto);
-        }
+        // ════════════════════════════════════════════════════════════════════
+        // 🐛 FIX FINAL 2026-04-30 (round 7): handlers nativos via addEventListener
+        // ════════════════════════════════════════════════════════════════════
+        // O React estava perdendo o handler onClick após algumas re-renders do
+        // componente pai. O elemento DOM existia, recebia o click, mas o listener
+        // sintético do React não disparava (provavelmente porque FinConfigTogglesSecao
+        // é declarada fora do componente principal mas usada dentro dele, e a
+        // reconciliação do React quebra a identidade do componente entre renders).
+        //
+        // Solução: usar useRef pra pegar o nó DOM real, e useEffect pra anexar
+        // addEventListener nativo. Isso bypassa completamente o sistema de eventos
+        // sintéticos do React.
+        const btnHabRef  = React.useRef(null);
+        const btnAutoRef = React.useRef(null);
+
+        // Refs com os handlers atuais (pra os listeners nativos sempre verem o estado mais novo)
+        const handlerHabRef  = React.useRef(null);
+        const handlerAutoRef = React.useRef(null);
+
+        // Atualiza handlers a cada render — sem disparar re-render
+        handlerHabRef.current = function() {
+            console.log('[FinConfig] CLICK Saques Habilitados — atual:', valorBool('saques_habilitados'));
+            if (!podeEditar || salvando === 'saques_habilitados') return;
+            const novoValor = !valorBool('saques_habilitados');
+            salvar('saques_habilitados', novoValor);
+        };
+        handlerAutoRef.current = function() {
+            console.log('[FinConfig] CLICK Saques Automaticos — atual:', valorBool('saques_automaticos'));
+            if (!podeEditar || salvando === 'saques_automaticos') return;
+            const ativoAtual = valorBool('saques_automaticos');
+            const novoValor = !ativoAtual;
+            if (novoValor === true) {
+                setTextoConfirm('');
+                setModalConfirmAuto(true);
+                return;
+            }
+            salvar('saques_automaticos', false);
+        };
+
+        // Anexa listeners nativos UMA vez (ao mount) e remove no unmount
+        React.useEffect(() => {
+            const btnHab  = btnHabRef.current;
+            const btnAuto = btnAutoRef.current;
+            const onHab   = (e) => { e.preventDefault(); handlerHabRef.current && handlerHabRef.current(); };
+            const onAuto  = (e) => { e.preventDefault(); handlerAutoRef.current && handlerAutoRef.current(); };
+            if (btnHab)  btnHab.addEventListener('click', onHab);
+            if (btnAuto) btnAuto.addEventListener('click', onAuto);
+            console.log('[FinConfig] listeners nativos anexados:', { hab: !!btnHab, auto: !!btnAuto });
+            return () => {
+                if (btnHab)  btnHab.removeEventListener('click', onHab);
+                if (btnAuto) btnAuto.removeEventListener('click', onAuto);
+            };
+        }, [config !== null]); // re-anexa quando config carrega (botões só renderizam depois)
 
         // ── Renderização ──
         if (loading) {
@@ -265,12 +288,15 @@
                         className: 'text-[11px] text-gray-400 mt-1.5'
                     }, ultimaAlteracao('saques_habilitados'))
                 ),
-                React.createElement(Toggle, {
-                    ativo: habOn,
-                    onChange: onToggleSaquesHabilitados,
+                // 🐛 Botão inline com ref + listener nativo (ver useEffect acima)
+                React.createElement('button', {
+                    ref: btnHabRef,
+                    type: 'button',
                     disabled: salvando === 'saques_habilitados',
-                    label: 'saques_habilitados',
-                })
+                    className: 'px-4 py-2 rounded-lg font-semibold text-sm transition-colors whitespace-nowrap ' +
+                        (habOn ? 'bg-emerald-500 hover:bg-emerald-600 text-white' : 'bg-gray-300 hover:bg-gray-400 text-gray-800') +
+                        (salvando === 'saques_habilitados' ? ' opacity-50 cursor-not-allowed' : ' cursor-pointer'),
+                }, salvando === 'saques_habilitados' ? 'Salvando...' : (habOn ? '✅ HABILITADO (clique pra desligar)' : '⭕ DESLIGADO (clique pra ligar)'))
             ),
 
             // ── Toggle: saques_automaticos ──
@@ -296,13 +322,14 @@
                         className: 'text-[11px] text-gray-400 mt-1.5'
                     }, ultimaAlteracao('saques_automaticos'))
                 ),
-                React.createElement(Toggle, {
-                    ativo: autoOn,
-                    onChange: onToggleSaquesAutomaticos,
+                React.createElement('button', {
+                    ref: btnAutoRef,
+                    type: 'button',
                     disabled: salvando === 'saques_automaticos',
-                    corOn: 'bg-amber-500',
-                    label: 'saques_automaticos',
-                })
+                    className: 'px-4 py-2 rounded-lg font-semibold text-sm transition-colors whitespace-nowrap ' +
+                        (autoOn ? 'bg-amber-500 hover:bg-amber-600 text-white' : 'bg-gray-300 hover:bg-gray-400 text-gray-800') +
+                        (salvando === 'saques_automaticos' ? ' opacity-50 cursor-not-allowed' : ' cursor-pointer'),
+                }, salvando === 'saques_automaticos' ? 'Salvando...' : (autoOn ? '⚡ AUTO ATIVO (clique pra desligar)' : '⭕ MANUAL (clique pra ligar AUTO)'))
             ),
 
             // ── Aviso de fallback ──
