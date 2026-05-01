@@ -191,53 +191,36 @@
         }
 
         // Toggle visual reutilizável.
-        // 🐛 FIX 2026-04: troquei <button> por <div role="button"> porque o app tem
-        // CSS global em <button> que pode estar interceptando pointer-events.
-        // Também adicionei logs pra debug — aparece no console se o click NÃO chega
-        // (problema de UI) ou se chega mas falha depois (problema de lógica).
+        // 🐛 FIX FINAL 2026-04: deixei de tentar fazer toggle "bonito" e voltei pro
+        // mais primitivo possível — <button> com texto "Habilitar" / "Desabilitar".
+        // Se ISSO não funcionar, o problema não é no componente, é em algum CSS global
+        // do app que tá interceptando todos os cliques nessa região da tela.
+        // Estrutura: 1 elemento HTML, 1 onClick, sem overlays, sem children clicáveis.
         function Toggle(opts) {
-            const { ativo, onChange, disabled, corOn = 'bg-emerald-500', corOff = 'bg-gray-300', label = 'toggle' } = opts;
-            return React.createElement('div', {
-                role: 'button',
-                tabIndex: disabled ? -1 : 0,
-                'aria-pressed': ativo ? 'true' : 'false',
-                'aria-disabled': disabled ? 'true' : 'false',
-                onClick: (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    console.log('[FinConfigToggle] click em', label, '— ativo atual:', ativo, '— disabled:', disabled);
-                    if (disabled) {
-                        console.log('[FinConfigToggle] bloqueado: disabled=true (provavelmente salvando)');
-                        return;
-                    }
+            const { ativo, onChange, disabled, label = 'toggle' } = opts;
+            const texto  = ativo ? '✅ HABILITADO (clique pra desligar)' : '⭕ DESLIGADO (clique pra ligar)';
+            const corClass = ativo
+                ? 'bg-emerald-500 hover:bg-emerald-600 text-white'
+                : 'bg-gray-300 hover:bg-gray-400 text-gray-800';
+            return React.createElement('button', {
+                type: 'button',
+                disabled: disabled,
+                onClick: function(e) {
+                    if (e && e.preventDefault) e.preventDefault();
+                    console.log('[FinConfigToggle] CLICK em', label, '— ativo:', ativo, '— disabled:', disabled);
+                    if (disabled) return;
                     if (typeof onChange !== 'function') {
-                        console.error('[FinConfigToggle] onChange não é função:', typeof onChange);
+                        console.error('[FinConfigToggle] onChange invalido:', onChange);
                         return;
                     }
                     try {
                         onChange(!ativo);
                     } catch (err) {
-                        console.error('[FinConfigToggle] exception em onChange:', err);
+                        console.error('[FinConfigToggle] erro:', err);
                     }
                 },
-                onKeyDown: (e) => {
-                    if (disabled) return;
-                    if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        try { onChange(!ativo); } catch (err) { console.error('[FinConfigToggle] keydown error:', err); }
-                    }
-                },
-                style: {
-                    pointerEvents: disabled ? 'none' : 'auto',
-                    userSelect: 'none',
-                },
-                className: `relative inline-flex h-7 w-12 items-center rounded-full transition-colors duration-200 ${ativo ? corOn : corOff} ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:opacity-90'}`,
-            },
-                React.createElement('span', {
-                    style: { pointerEvents: 'none' },
-                    className: `inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform duration-200 ${ativo ? 'translate-x-6' : 'translate-x-1'}`
-                })
-            );
+                className: 'px-4 py-2 rounded-lg font-semibold text-sm transition-colors ' + corClass + (disabled ? ' opacity-50 cursor-not-allowed' : ' cursor-pointer'),
+            }, disabled ? 'Salvando...' : texto);
         }
 
         // ── Renderização ──
