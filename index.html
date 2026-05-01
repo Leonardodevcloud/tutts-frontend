@@ -180,6 +180,31 @@
     .row-blue { background-color: #dbeafe !important; border-left: 4px solid #3b82f6 !important; }
     .row-red { background-color: #fee2e2 !important; border-left: 4px solid #ef4444 !important; }
     
+    /* 🆕 2026-04-30 REDESIGN: animações da tela de saque do motoboy */
+    @keyframes tuttsFadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes tuttsScaleIn {
+      from { transform: scale(0.85) translateY(8px); opacity: 0.5; }
+      to { transform: scale(1) translateY(0); opacity: 1; }
+    }
+    @keyframes tuttsRing {
+      0% { opacity: 0.7; transform: scale(0.7); }
+      100% { opacity: 0; transform: scale(1.5); }
+    }
+    @keyframes tuttsDraw {
+      to { stroke-dashoffset: 0; }
+    }
+    @keyframes tuttsDrain {
+      to { transform: scaleX(0); }
+    }
+    @keyframes tuttsConfete {
+      0% { opacity: 0; transform: translate(0, 0) rotate(0); }
+      10% { opacity: 1; }
+      100% { opacity: 0; transform: translate(var(--tx, 0), 220px) rotate(var(--rot, 360deg)); }
+    }
+    
     /* Shimmer animation for loading bar */
     @keyframes shimmer {
       0% { background-position: -200% 0; }
@@ -304,7 +329,7 @@
   <script src="/modulo-uber.js?v=20260412_UBER_v4"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="/ChatIAModule.js?v=20260419_CHATIA_v6"></script>
-  <script src="/app.js?v=20260430_AUTO_24H_v1"></script>
+  <script src="/app.js?v=20260430_REDESIGN_v1"></script>
   
   <script>
     // PWA Install Prompt
